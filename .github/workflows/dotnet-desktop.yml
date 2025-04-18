@@ -146,4 +146,4 @@ jobs:
           update: true
           token: ${{ secrets.GITHUB_TOKEN }}
           name: MSLX Build-${{ github.run_number }}
-          tag_name: v${{ github.run_number }}-preview
+          tag_name: Dev

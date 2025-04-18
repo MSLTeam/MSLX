@@ -64,10 +64,10 @@ namespace MSLX.Core.ViewModels.FrpService.MSLFrp
                     // 关闭登录中弹窗
                     MainViewModel.DialogManager.DismissDialog();
                     JObject json = JObject.Parse(response.Content);
-                    if ((int)json["code"] == 200)
+                    if (json["code"]?.Value<int>() == 200)
                     {
                         Console.WriteLine("登录成功！");
-                        token = (string)json["data"]["token"];
+                        token = json["data"]["token"].Value<string>();
                         if (IsSaveLoginStatus)
                         {
                             ConfigService.Config.WriteConfigKey("MSLUserToken", token);
@@ -77,8 +77,8 @@ namespace MSLX.Core.ViewModels.FrpService.MSLFrp
                     }
                     else
                     {
-                        MessageService.ShowToast("登录失败", (string)json["msg"], NotificationType.Error);
-                        Debug.WriteLine((string)json["msg"]);
+                        MessageService.ShowToast("登录失败", json["msg"]?.Value<string>() ?? "未知错误！", NotificationType.Error);
+                        Debug.WriteLine(json["msg"]?.Value<string>() ?? string.Empty);
                     }
                 }
                 catch (Exception ex)
