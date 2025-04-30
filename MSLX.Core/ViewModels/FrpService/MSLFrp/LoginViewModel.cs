@@ -39,6 +39,8 @@ namespace MSLX.Core.ViewModels.FrpService.MSLFrp
         [ObservableProperty]
         private string _password;
         [ObservableProperty]
+        private string _twoFaCode;
+        [ObservableProperty]
         private bool _isSaveLoginStatus;
         private string token;
 
@@ -59,7 +61,8 @@ namespace MSLX.Core.ViewModels.FrpService.MSLFrp
                     HttpService.HttpResponse response = await MSLUser.PostAsync("/user/login", HttpService.PostContentType.Json, new
                     {
                         email = Account,
-                        password = Password
+                        password = Password,
+                        twoFactorAuthKey = TwoFaCode
                     });
                     // 关闭登录中弹窗
                     MainViewModel.DialogManager.DismissDialog();

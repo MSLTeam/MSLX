@@ -23,6 +23,10 @@
                     <TextBlock VerticalAlignment="Center" Text="密码: " FontSize="15"  Margin="0,0,3,0"/>
                     <TextBox MinWidth="200" PasswordChar="*" Text="{Binding Password}"/>
                 </StackPanel>
+                <StackPanel HorizontalAlignment="Center" Orientation="Horizontal" Margin="0,6,0,0">
+                    <TextBlock VerticalAlignment="Center" Text="2FA: " FontSize="15"  Margin="0,0,3,0"/>
+                    <TextBox MinWidth="200" PasswordChar="*" Text="{Binding TwoFaCode}"/>
+                </StackPanel>
                 <StackPanel Margin="0,3,0,20" HorizontalAlignment="Center" Orientation="Horizontal">
                     <ToggleSwitch IsChecked="{Binding IsSaveLoginStatus}"/>
                     <TextBlock Text="保存登录状态" VerticalAlignment="Center"></TextBlock>
