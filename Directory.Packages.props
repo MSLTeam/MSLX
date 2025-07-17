@@ -6,26 +6,26 @@
   <ItemGroup>
     <!-- Avalonia packages -->
     <!-- Important: keep version in sync! -->
-    <PackageVersion Include="Avalonia" Version="11.2.7" />
+    <PackageVersion Include="Avalonia" Version="11.3.2" />
     <PackageVersion Include="Avalonia.AvaloniaEdit" Version="11.2.0" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="11.2.5" />
-    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.2.7" />
-    <PackageVersion Include="Avalonia.Diagnostics" Version="11.2.7" />
-    <PackageVersion Include="Avalonia.Desktop" Version="11.2.7" />
+    <PackageVersion Include="Avalonia.Fonts.Inter" Version="11.3.2" />
+    <PackageVersion Include="Avalonia.Diagnostics" Version="11.3.2" />
+    <PackageVersion Include="Avalonia.Desktop" Version="11.3.2" />
     <PackageVersion Include="Avalonia.iOS" Version="11.2.1" />
     <PackageVersion Include="Avalonia.Browser" Version="11.2.7" />
     <PackageVersion Include="Avalonia.Android" Version="11.2.1" />
-    <PackageVersion Include="Avalonia.Xaml.Interactions" Version="11.2.7" />
-    <PackageVersion Include="Avalonia.Xaml.Interactivity" Version="11.2.7" />
+    <PackageVersion Include="Avalonia.Xaml.Interactions" Version="11.3.0.6" />
+    <PackageVersion Include="Avalonia.Xaml.Interactivity" Version="11.3.0.6" />
     <PackageVersion Include="AvaloniaEdit.TextMate" Version="11.2.0" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageVersion Include="Dotnet.Bundle" Version="0.9.13" />
-    <PackageVersion Include="Downloader" Version="3.3.4" />
+    <PackageVersion Include="Downloader" Version="4.0.2" />
     <PackageVersion Include="Markdown.Avalonia" Version="11.0.3-a1" />
-    <PackageVersion Include="Material.Icons.Avalonia" Version="2.3.1" />
+    <PackageVersion Include="Material.Icons.Avalonia" Version="2.4.1" />
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageVersion Include="SharpZipLib" Version="1.4.2" />
-    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.116.1" />
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="3.119.0" />
     <PackageVersion Include="TextMateSharp.Grammars" Version="1.0.66" />
     <PackageVersion Include="Tommy" Version="3.1.2" />
     <PackageVersion Include="Xamarin.AndroidX.Core.SplashScreen" Version="1.0.1.1" />
