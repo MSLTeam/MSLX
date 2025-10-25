@@ -1,4 +1,5 @@
-﻿using Avalonia;
+﻿using AtomUI.Fonts.AlibabaSans;
+using Avalonia;
 using System;
 
 namespace MSLX.Desktop
@@ -14,9 +15,14 @@ namespace MSLX.Desktop
 
         // Avalonia configuration, don't remove; also used by visual designer.
         public static AppBuilder BuildAvaloniaApp()
-            => AppBuilder.Configure<App>()
-                .UsePlatformDetect()
-                .WithInterFont()
-                .LogToTrace();
+        {
+            return AppBuilder.Configure<App>()
+                             .UsePlatformDetect()
+                             .WithAlibabaSansFont()
+                             .With(new Win32PlatformOptions())
+                             .WithAlibabaSansFont()
+                             .LogToTrace();
+
+        }
     }
 }

@@ -1,4 +1,5 @@
-<Window xmlns="https://github.com/avaloniaui"
+<atom:Window xmlns="https://github.com/avaloniaui"
+		xmlns:atom="using:AtomUI.Controls"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -6,4 +7,4 @@
         x:Class="MSLX.Desktop.MainWindow"
         Title="MSLX.Desktop">
     Welcome to Avalonia!
-</Window>
+</atom:Window>

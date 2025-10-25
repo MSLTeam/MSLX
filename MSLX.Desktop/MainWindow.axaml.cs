@@ -1,12 +1,10 @@
-using Avalonia.Controls;
 
-namespace MSLX.Desktop
+namespace MSLX.Desktop;
+
+public partial class MainWindow : AtomUI.Controls.Window
 {
-    public partial class MainWindow : Window
+    public MainWindow()
     {
-        public MainWindow()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
     }
 }
