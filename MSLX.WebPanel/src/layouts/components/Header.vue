@@ -2,14 +2,14 @@
   <div :class="layoutCls">
     <t-head-menu :class="menuCls" :theme="theme" expand-type="popup" :value="active">
       <template #logo>
-        <span v-if="showLogo" class="header-logo-container" @click="handleNav('/dashboard/base')">
-          <logo-full class="t-logo" />
+        <span v-if="showLogo" :class="`${prefix}-side-nav-logo-wrapper`" @click="handleNav('/dashboard/base')">
+          <img style="width: 32px;margin-right: 8px;" :src="CustomLogo" :class="`${prefix}-side-nav-logo-img`" alt="logo" />
+          <span  style="font-size: 18px;font-weight: bold;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;" :class="`${prefix}-side-nav-logo-text`"> MSLX 管理中心 </span>
         </span>
         <div v-else class="header-operate-left">
           <t-button theme="default" shape="square" variant="text" @click="changeCollapsed">
             <t-icon class="collapsed-icon" name="view-list" />
           </t-button>
-          <search :layout="layout" />
         </div>
       </template>
       <template v-if="layout !== 'side'" #default>
@@ -17,12 +17,6 @@
       </template>
       <template #operations>
         <div class="operations-container">
-          <!-- 搜索框 -->
-          <search v-if="layout !== 'side'" :layout="layout" />
-
-          <!-- 全局通知 -->
-          <notice />
-
           <t-tooltip placement="bottom" content="代码仓库">
             <t-button theme="default" shape="square" variant="text" @click="navToGitHub">
               <t-icon name="logo-github" />
@@ -48,7 +42,7 @@
               <template #icon>
                 <t-icon class="header-user-avatar" name="user-circle" />
               </template>
-              <div class="header-user-account">Tencent</div>
+              <div class="header-user-account">User</div>
               <template #suffix><t-icon name="chevron-down" /></template>
             </t-button>
           </t-dropdown>
@@ -73,9 +67,9 @@ import { prefix } from '@/config/global';
 import LogoFull from '@/assets/assets-logo-full.svg?component';
 import type { MenuRoute } from '@/types/interface';
 
-import Notice from './Notice.vue';
-import Search from './Search.vue';
+
 import MenuContent from './MenuContent.vue';
+import CustomLogo from "@/assets/logo.png";
 
 const props = defineProps({
   theme: {
@@ -151,11 +145,11 @@ const handleLogout = () => {
 };
 
 const navToGitHub = () => {
-  window.open('https://github.com/tencent/tdesign-vue-next-starter');
+  window.open('https://github.com/MSLTeam/MSLX');
 };
 
 const navToHelper = () => {
-  window.open('http://tdesign.tencent.com/starter/docs/get-started');
+  window.open('https://www.mslmc.cn');
 };
 </script>
 <style lang="less" scoped>

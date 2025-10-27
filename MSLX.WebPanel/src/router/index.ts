@@ -1,4 +1,4 @@
-import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router';
+import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import uniq from 'lodash/uniq';
 
 // 自动导入modules文件夹下所有ts文件
@@ -73,7 +73,7 @@ export const getActive = (maxLevel = 3): string => {
 };
 
 const router = createRouter({
-  history: createWebHashHistory(),
+  history: createWebHistory(),
   routes: allRoutes,
   scrollBehavior() {
     return {

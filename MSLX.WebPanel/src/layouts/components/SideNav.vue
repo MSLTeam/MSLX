@@ -3,12 +3,13 @@
     <t-menu :class="menuCls" :theme="theme" :value="active" :collapsed="collapsed" :default-expanded="defaultExpanded">
       <template #logo>
         <span v-if="showLogo" :class="`${prefix}-side-nav-logo-wrapper`" @click="goHome">
-          <component :is="getLogo()" :class="`${prefix}-side-nav-logo-${collapsed ? 't' : 'tdesign'}-logo`" />
+          <img style="width: 32px;margin-right: 8px;" :src="CustomLogo" :class="`${prefix}-side-nav-logo-img`" alt="logo" />
+          <span v-if="!collapsed" style="font-size: 18px;font-weight: bold;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;" :class="`${prefix}-side-nav-logo-text`"> MSLX 管理中心 </span>
         </span>
       </template>
       <menu-content :nav-data="menu" />
       <template #operations>
-        <span class="version-container"> {{ !collapsed ? 'TDesign Starter' : '' }} {{ pgk.version }} </span>
+        <span class="version-container"> {{ !collapsed ? 'MSLX Web Panel' : '' }} {{ pgk.version }} </span>
       </template>
     </t-menu>
     <div :class="`${prefix}-side-nav-placeholder${collapsed ? '-hidden' : ''}`"></div>
@@ -27,8 +28,7 @@ import pgk from '../../../package.json';
 import type { MenuRoute } from '@/types/interface';
 import { getActive, getRoutesExpanded } from '@/router';
 
-import AssetLogo from '@/assets/assets-t-logo.svg?component';
-import AssetLogoFull from '@/assets/assets-logo-full.svg?component';
+import CustomLogo from '@/assets/logo.png';
 import MenuContent from './MenuContent.vue';
 
 const MIN_POINT = 992 - 1;
@@ -117,11 +117,8 @@ onMounted(() => {
 const goHome = () => {
   router.push('/dashboard/base');
 };
-
-const getLogo = () => {
-  if (collapsed.value) return AssetLogo;
-  return AssetLogoFull;
-};
 </script>
 
-<style lang="less" scoped></style>
+<style lang="less" scoped>
+
+</style>

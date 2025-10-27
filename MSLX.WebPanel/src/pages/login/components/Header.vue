@@ -1,6 +1,9 @@
 <template>
   <header class="login-header">
-    <logo-full-icon class="logo" />
+    <span class="logo">
+      <img src="@/assets/logo.png" :class="`${prefix}-side-nav-logo-img`" alt="logo" />
+      <span> MSLX 管理中心 </span>
+    </span>
     <div class="operations-container">
       <t-button theme="default" shape="square" variant="text" @click="navToGitHub">
         <t-icon name="logo-github" class="icon" />
@@ -16,8 +19,8 @@
 </template>
 
 <script setup lang="ts">
-import LogoFullIcon from '@/assets/assets-logo-full.svg?component';
 import { useSettingStore } from '@/store';
+import { prefix } from '@/config/global';
 
 const settingStore = useSettingStore();
 const toggleSettingPanel = () => {
@@ -27,17 +30,17 @@ const toggleSettingPanel = () => {
 };
 
 const navToGitHub = () => {
-  window.open('https://github.com/tencent/tdesign-vue-next-starter');
+  window.open('https://github.com/MSLTeam/MSLX');
 };
 
 const navToHelper = () => {
-  window.open('http://tdesign.tencent.com/starter/docs/get-started');
+  window.open('https://www.mslmc.cn');
 };
 </script>
 
 <style lang="less" scoped>
 .login-header {
-  padding: 0 24px;
+  padding: 12px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -45,7 +48,19 @@ const navToHelper = () => {
   color: var(--td-text-color-primary);
 
   .logo {
-    width: 188px;
+    display: flex;
+    align-items: center;
+
+    img {
+      width: 32px;
+      margin-right: 8px;
+    }
+
+    span {
+      font-size: 18px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
   }
 
   .operations-container {
