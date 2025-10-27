@@ -2,6 +2,7 @@
 using MSLX.Daemon.Models;
 using Newtonsoft.Json.Linq;
 using System.Reflection;
+using MSLX.Daemon.Utils;
 
 namespace MSLX.Daemon.Controllers
 {
@@ -15,7 +16,14 @@ namespace MSLX.Daemon.Controllers
             {
                 ["clientName"] = "MSLX Daemon",
                 ["version"] = Assembly.GetEntryAssembly()?.GetName()?.Version?.ToString() ?? "0.0.0.0",
-                ["serverTime"] = DateTime.Now
+                ["user"] = ConfigServices.Config.ReadConfigKey("user")?.ToString() ?? "MSLX User",
+                ["avatar"] = ConfigServices.Config.ReadConfigKey("avatar")?.ToString() ?? "https://www.mslmc.cn/logo.png",
+                ["serverTime"] = DateTime.Now,
+                ["targetFrontendVersion"] = new JObject
+                {
+                    ["desktop"] = "1.0.0",
+                    ["panel"] = "1.0.0"
+                }
             };
 
             var response = new ApiResponse<JObject>

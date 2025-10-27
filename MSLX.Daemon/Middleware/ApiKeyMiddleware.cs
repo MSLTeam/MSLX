@@ -1,4 +1,5 @@
 ﻿using MSLX.Daemon.Models;
+using MSLX.Daemon.Utils;
 using Newtonsoft.Json;
 
 namespace MSLX.Daemon.Middleware
@@ -14,7 +15,7 @@ namespace MSLX.Daemon.Middleware
         {
             _next = next;
             // 从 appsettings.json 读取 Key
-            _apiKey = "API_KEY";
+            _apiKey = ConfigServices.Config.ReadConfigKey("api-key")?.ToString() ?? "";
         }
 
         // 验证核心方法
@@ -23,6 +24,12 @@ namespace MSLX.Daemon.Middleware
             if (!context.Request.Headers.TryGetValue(ApiKeyHeaderName, out var extractedApiKey))
             {
                 await HandleErrorAsync(context, 401, "未提供 API 密钥");
+                return;
+            }
+
+            if (String.IsNullOrEmpty(_apiKey))
+            {
+                await HandleErrorAsync(context, 500, "API 密钥未配置");
                 return;
             }
 
