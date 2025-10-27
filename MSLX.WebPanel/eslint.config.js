@@ -80,7 +80,7 @@ export default defineConfigWithVueTs([
 
   // 10. 针对 .vue 文件的覆盖
   {
-    files: ["*.vue"],
+    files: ["**/*.vue"],
     rules: {
       "vue/component-name-in-template-casing": ["error", "kebab-case"],
       "vue/require-default-prop": "off",
@@ -93,7 +93,7 @@ export default defineConfigWithVueTs([
 
   // 11. 针对 .ts 文件的覆盖
   {
-    files: ["*.ts", "*.tsx"],
+    files: ["**/*.ts", "**/*.tsx"],
     rules: {
       "constructor-super": "off",
       "getter-return": "off",
