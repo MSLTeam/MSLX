@@ -20,4 +20,3 @@ yarn-error.log
 .stylelintcache
 yarn.lock
 package-lock.json
-pnpm-lock.yaml
