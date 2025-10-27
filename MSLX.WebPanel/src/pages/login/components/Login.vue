@@ -1,3 +1,46 @@
+<script setup lang="ts">
+import { ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { MessagePlugin } from 'tdesign-vue-next';
+import type { FormInstanceFunctions, FormRule } from 'tdesign-vue-next';
+import { useUserStore } from '@/store';
+
+const userStore = useUserStore();
+
+const INITIAL_DATA = {
+  url: 'localhost:1027',
+  key: '',
+  checked: false,
+};
+
+const FORM_RULES: Record<string, FormRule[]> = {
+  url: [{ required: true, message: '连接地址必填', type: 'error' }],
+  key: [{ required: true, message: '密钥必填', type: 'error' }],
+};
+
+const form = ref<FormInstanceFunctions>();
+const formData = ref({ ...INITIAL_DATA });
+const showPsw = ref(false);
+
+const router = useRouter();
+const route = useRoute();
+
+const onSubmit = async ({ validateResult }) => {
+  if (validateResult === true) {
+    try {
+      await userStore.login(formData.value);
+
+      MessagePlugin.success('登陆成功');
+      const redirect = route.query.redirect as string;
+      const redirectUrl = redirect ? decodeURIComponent(redirect) : '/dashboard';
+      router.push(redirectUrl);
+    } catch (e) {
+      console.log(e);
+      MessagePlugin.error(e.message);
+    }
+  }
+};
+</script>
 <template>
   <t-form
     ref="form"
@@ -45,49 +88,7 @@
   </t-form>
 </template>
 
-<script setup lang="ts">
-import { ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { MessagePlugin } from 'tdesign-vue-next';
-import type { FormInstanceFunctions, FormRule } from 'tdesign-vue-next';
-import { useUserStore } from '@/store';
 
-const userStore = useUserStore();
-
-const INITIAL_DATA = {
-  url: 'localhost:1027',
-  key: 'apikey',
-  checked: false,
-};
-
-const FORM_RULES: Record<string, FormRule[]> = {
-  url: [{ required: true, message: '连接地址必填', type: 'error' }],
-  key: [{ required: true, message: '密钥必填', type: 'error' }],
-};
-
-const form = ref<FormInstanceFunctions>();
-const formData = ref({ ...INITIAL_DATA });
-const showPsw = ref(false);
-
-const router = useRouter();
-const route = useRoute();
-
-const onSubmit = async ({ validateResult }) => {
-  if (validateResult === true) {
-    try {
-      await userStore.login(formData.value);
-
-      MessagePlugin.success('登陆成功');
-      const redirect = route.query.redirect as string;
-      const redirectUrl = redirect ? decodeURIComponent(redirect) : '/dashboard';
-      router.push(redirectUrl);
-    } catch (e) {
-      console.log(e);
-      MessagePlugin.error(e.message);
-    }
-  }
-};
-</script>
 
 <style lang="less" scoped>
 @import url('../index.less');

@@ -3,14 +3,8 @@ import isString from 'lodash/isString';
 import merge from 'lodash/merge';
 import type { AxiosTransform, CreateAxiosOptions } from './AxiosTransform';
 import { VAxios } from './Axios';
-import proxy from '@/config/proxy';
 import { joinTimestamp, formatRequestDate, setObjToUrlParams } from './utils';
-import { TOKEN_NAME } from '@/config/global';
-
-const env = import.meta.env.MODE || 'development';
-
-// 如果是mock模式 或 没启用直连代理 就不配置host 会走本地Mock拦截 或 Vite 代理
-const host = env === 'mock' || !proxy.isRequestProxy ? '' : proxy[env].host;
+import { TOKEN_NAME, BASE_URL_NAME } from '@/config/global';
 
 // 数据处理，方便区分多种处理方式
 const transform: AxiosTransform = {
@@ -29,7 +23,6 @@ const transform: AxiosTransform = {
       return res;
     }
     // 不进行任何处理，直接返回
-    // 用于页面代码可能需要直接获取code，data，message这些信息时开启
     if (!isTransformResponse) {
       return res.data;
     }
@@ -40,16 +33,18 @@ const transform: AxiosTransform = {
       throw new Error('请求接口错误');
     }
 
-    //  这里 code为 后台统一的字段，需要在 types.ts内修改为项目自己的接口返回格式
-    const { code } = data;
+    //  使用 camelCase (code, message)
+    const { code, message } = data as any;
 
-    // 这里逻辑可以根据项目进行修改
-    const hasSuccess = data && code === 0;
+    // 判断成功码为 200
+    const hasSuccess = data && code === 200;
     if (hasSuccess) {
+      // 返回 camelCase 的 data
       return data.data;
     }
 
-    throw new Error(`请求接口错误, 错误码: ${code}`);
+    // 优化错误提示，使用后端的 message
+    throw new Error(message || `请求接口错误, 错误码: ${code}`);
   },
 
   // 请求前处理配置
@@ -62,7 +57,7 @@ const transform: AxiosTransform = {
     }
 
     // 将baseUrl拼接
-    if (apiUrl && isString(apiUrl)) {
+    if (apiUrl && isString(apiUrl) && !config.baseURL) {
       config.url = `${apiUrl}${config.url}`;
     }
     const params = config.params || {};
@@ -73,10 +68,8 @@ const transform: AxiosTransform = {
     }
     if (config.method?.toUpperCase() === 'GET') {
       if (!isString(params)) {
-        // 给 get 请求加上时间戳参数，避免从缓存中拿数据。
         config.params = Object.assign(params || {}, joinTimestamp(joinTime, false));
       } else {
-        // 兼容restful风格
         config.url = `${config.url + params}${joinTimestamp(joinTime, true)}`;
         config.params = undefined;
       }
@@ -92,7 +85,6 @@ const transform: AxiosTransform = {
         config.data = data;
         config.params = params;
       } else {
-        // 非GET请求如果没有提供data，则将params视为data
         config.data = params;
         config.params = undefined;
       }
@@ -100,7 +92,6 @@ const transform: AxiosTransform = {
         config.url = setObjToUrlParams(config.url as string, { ...config.params, ...config.data });
       }
     } else {
-      // 兼容restful风格
       config.url += params;
       config.params = undefined;
     }
@@ -108,14 +99,21 @@ const transform: AxiosTransform = {
   },
 
   // 请求拦截器处理
-  requestInterceptors: (config, options) => {
-    // 请求之前处理config
+  requestInterceptors: (config, _options) => {
     const token = localStorage.getItem(TOKEN_NAME);
+    const baseUrl = localStorage.getItem(BASE_URL_NAME);
+
+    // 动态设置 baseURL
+    if (baseUrl && !/^(https?:)?\/\//.test(config.url || '') && !config.baseURL) {
+      config.baseURL = baseUrl;
+    }
+
+    // 动态设置 x-api-key
     if (token && (config as Recordable)?.requestOptions?.withToken !== false) {
-      // jwt token
-      (config as Recordable).headers.Authorization = options.authenticationScheme
-        ? `${options.authenticationScheme} ${token}`
-        : token;
+      if (config.headers) {
+        delete config.headers.Authorization;
+      }
+      (config as Recordable).headers['x-api-key'] = token;
     }
     return config;
   },
@@ -127,22 +125,40 @@ const transform: AxiosTransform = {
 
   // 响应错误处理
   responseInterceptorsCatch: (error: any) => {
-    const { config } = error;
-    if (!config || !config.requestOptions.retry) return Promise.reject(error);
+    const { config, response } = error;
 
-    config.retryCount = config.retryCount || 0;
+    // 优先处理有 JSON 响应的错误 (如 401, 403, 500)
+    if (response && response.data) {
+      const data = response.data;
+      const message = (data as any)?.message;
 
-    if (config.retryCount >= config.requestOptions.retry.count) return Promise.reject(error);
+      if (message) {
+        // 如果后端 JSON 中有 message, 抛出这个 message
+        return Promise.reject(new Error(message));
+      }
+      // 如果有 JSON 但没有 'message'，也立即 reject, 不重试
+      return Promise.reject(error);
+    }
 
-    config.retryCount += 1;
+    // 只有在没有 JSON 响应时 (如网络错误/超时) 才尝试重试
+    if (config && config.requestOptions.retry) {
+      config.retryCount = config.retryCount || 0;
 
-    const backoff = new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(config);
-      }, config.requestOptions.retry.delay || 1);
-    });
-    config.headers = { ...config.headers, 'Content-Type': 'application/json;charset=UTF-8' };
-    return backoff.then((config) => request.request(config));
+      if (config.retryCount < config.requestOptions.retry.count) {
+        config.retryCount += 1;
+
+        const backoff = new Promise((resolve) => {
+          setTimeout(() => {
+            resolve(config);
+          }, config.requestOptions.retry.delay || 1);
+        });
+        config.headers = { ...config.headers, 'Content-Type': 'application/json;charset=UTF-8' };
+        return backoff.then((config) => request.request(config));
+      }
+    }
+
+    // 重试失败或不重试的网络错误
+    return Promise.reject(error);
   },
 };
 
@@ -150,42 +166,22 @@ function createAxios(opt?: Partial<CreateAxiosOptions>) {
   return new VAxios(
     merge(
       <CreateAxiosOptions>{
-        // https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication#authentication_schemes
-        // 例如: authenticationScheme: 'Bearer'
         authenticationScheme: '',
-        // 超时
         timeout: 10 * 1000,
-        // 携带Cookie
-        withCredentials: true,
-        // 头信息
+        withCredentials: false,
         headers: { 'Content-Type': 'application/json;charset=UTF-8' },
-        // 数据处理方式
         transform,
-        // 配置项，下面的选项都可以在独立的接口请求中覆盖
         requestOptions: {
-          // 接口地址
-          apiUrl: host,
-          // 是否自动添加接口前缀
+          apiUrl: '',
           isJoinPrefix: true,
-          // 接口前缀
-          // 例如: https://www.baidu.com/api
-          // urlPrefix: '/api'
           urlPrefix: '/api',
-          // 是否返回原生响应头 比如：需要获取响应头时使用该属性
           isReturnNativeResponse: false,
-          // 需要对返回数据进行处理
           isTransformResponse: true,
-          // post请求的时候添加参数到url
           joinParamsToUrl: false,
-          // 格式化提交参数时间
           formatDate: true,
-          // 是否加入时间戳
-          joinTime: true,
-          // 忽略重复请求
+          joinTime: false, // 之前已关闭时间戳
           ignoreRepeatRequest: true,
-          // 是否携带token
           withToken: true,
-          // 重试
           retry: {
             count: 3,
             delay: 1000,

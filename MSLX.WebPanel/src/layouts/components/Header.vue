@@ -40,9 +40,9 @@
             </template>
             <t-button class="header-user-btn" theme="default" variant="text">
               <template #icon>
-                <t-icon class="header-user-avatar" name="user-circle" />
+                <t-avatar :image="userStore.userInfo.avatar" />
               </template>
-              <div class="header-user-account">User</div>
+              <div class="header-user-account" style="margin-left: 6px;">{{ userStore.userInfo.name }}</div>
               <template #suffix><t-icon name="chevron-down" /></template>
             </t-button>
           </t-dropdown>
@@ -61,11 +61,12 @@
 import { computed } from 'vue';
 import type { PropType } from 'vue';
 import { useRouter } from 'vue-router';
-import { useSettingStore } from '@/store';
+import { useSettingStore,useUserStore } from '@/store';
 import { getActive } from '@/router';
 import { prefix } from '@/config/global';
-import LogoFull from '@/assets/assets-logo-full.svg?component';
 import type { MenuRoute } from '@/types/interface';
+
+const userStore = useUserStore();
 
 
 import MenuContent from './MenuContent.vue';
