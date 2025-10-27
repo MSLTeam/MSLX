@@ -28,9 +28,9 @@ namespace MSLX.Daemon.Controllers
 
             var response = new ApiResponse<JObject>
             {
-                Code = 200,
-                Message = "MSLX Daemon 状态正常",
-                Data = statusData
+                code = 200,
+                message = "MSLX Daemon 状态正常",
+                data = statusData
             };
 
             return Ok(response);

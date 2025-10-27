@@ -12,6 +12,16 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.WebHost.UseUrls("http://localhost:1027");
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: "AllowAll",
+        policy  =>
+        {
+            policy.AllowAnyOrigin() // 允许任何源
+                .AllowAnyHeader() // 允许任何 Header
+                .AllowAnyMethod(); // 允许任何方法
+        });
+});
 
 var app = builder.Build();
 
@@ -29,6 +39,7 @@ logger.LogInformation($"将使用 {ConfigServices.GetAppDataPath()} 作为应用
 ConfigServices.Initialize(loggerFactory);
 logger.LogInformation("欢迎您！" + ConfigServices.Config.ReadConfigKey("user"));
 
+app.UseCors("AllowAll");
 app.UseMiddleware<ApiKeyMiddleware>();
 
 // Configure the HTTP request pipeline.
