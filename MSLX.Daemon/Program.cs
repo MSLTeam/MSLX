@@ -30,6 +30,7 @@ var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
 
 var logger = loggerFactory.CreateLogger("Program"); 
 
+logger.LogInformation("  __  __   ____    _      __  __\n |  \\/  | / ___|  | |     \\ \\/ /\n | |\\/| | \\___ \\  | |      \\  / \n | |  | |  ___) | | |___   /  \\ \n |_|  |_| |____/  |_____| /_/\\_\\\n                                ");
 logger.LogInformation("MSLX.Daemon 守护进程正在启动...");
 logger.LogInformation("应用程序已构建 (app.Build() 已完成)");
 logger.LogInformation("正在配置中间件 (Middleware)...");
