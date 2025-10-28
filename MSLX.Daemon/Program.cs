@@ -47,8 +47,8 @@ builder.Services.AddControllers()
                 .FirstOrDefault()?.ErrorMessage ?? "请求参数验证失败"; // 提供一个默认错误
             var response = new ApiResponse<object>
             {
-                code = 400,
-                message = firstErrorMessage
+                Code = 400,
+                Message = firstErrorMessage
             };
             
             return new BadRequestObjectResult(response);

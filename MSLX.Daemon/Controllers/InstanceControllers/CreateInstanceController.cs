@@ -35,9 +35,9 @@ public class CreateInstanceController : ControllerBase
         
         var response = new ApiResponse<JObject>
         {
-            code = 200,
-            message = "创建任务已提交", 
-            data = new JObject
+            Code = 200,
+            Message = "创建任务已提交", 
+            Data = new JObject
             {
                 ["serverId"] = serverId
             }
