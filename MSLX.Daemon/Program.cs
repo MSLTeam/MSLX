@@ -1,7 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
+using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Middleware;
 using MSLX.Daemon.Models;
+using MSLX.Daemon.Services;
+using MSLX.Daemon.Utils.BackgroundTasks;
+using MSLX.Daemon.Utils.BackgroundTasks.BackgroundTasks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +29,14 @@ builder.Services.AddCors(options =>
         });
 });
 
+builder.Services.AddSignalR();
+builder.Services.AddSingleton<IBackgroundTaskQueue>(ctx =>
+{
+    // 队列容量
+    return new BackgroundTaskQueue(100);
+});
+builder.Services.AddHostedService<ServerCreationService>();
+
 // 覆盖默认的模型验证失败响应
 builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
@@ -43,6 +55,8 @@ builder.Services.AddControllers()
             return new BadRequestObjectResult(response);
         };
     });
+
+builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 
@@ -73,6 +87,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseAuthorization();
 
+// 注册SignalR实时通信服务
+app.MapHub<CreationProgressHub>("/api/hubs/creationProgressHub");
 app.MapControllers();
 
 app.Run();

@@ -8,13 +8,12 @@ namespace MSLX.Daemon.Middleware
     {
         private readonly RequestDelegate _next;
         private readonly string _apiKey;
-        private const string ApiKeyHeaderName = "x-api-key"; // 读取的请求头
+        private const string ApiKeyHeaderName = "x-api-key"; // 读取的请求头(和查询参数)
 
         // 注入中间件
         public ApiKeyMiddleware(RequestDelegate next)
         {
             _next = next;
-            // 从 appsettings.json 读取 Key
             _apiKey = ConfigServices.Config.ReadConfigKey("api-key")?.ToString() ?? "";
         }
 
@@ -23,9 +22,14 @@ namespace MSLX.Daemon.Middleware
         {
             if (!context.Request.Headers.TryGetValue(ApiKeyHeaderName, out var extractedApiKey))
             {
-                await HandleErrorAsync(context, 401, "未提供 API 密钥");
-                return;
+                // 如果 Header 没有，则尝试从 Query String 读取
+                if (!context.Request.Query.TryGetValue(ApiKeyHeaderName, out extractedApiKey))
+                {
+                    await HandleErrorAsync(context, 401, "未提供 API 密钥");
+                    return;
+                }
             }
+
 
             if (String.IsNullOrEmpty(_apiKey))
             {

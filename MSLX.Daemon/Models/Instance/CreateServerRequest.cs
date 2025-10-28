@@ -17,6 +17,7 @@ public class CreateServerRequest
     
     public string? java { get; set; } 
     public string? args { get; set; }
-    
     public string? path { get; set; }
+    [RegularExpression(@"^https?://.+", ErrorMessage = "核心下载地址 (coreUrl) 必须以 http:// 或 https:// 开头")]
+    public string? coreUrl { get; set; }
 }
