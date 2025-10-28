@@ -2,8 +2,8 @@
 {
     public class ApiResponse<T>
     {
-        public int code { get; set; } = 200;
-        public string message { get; set; } = "";
-        public T? data { get; set; }
+        public int Code { get; set; } = 200;
+        public string Message { get; set; } = "";
+        public T? Data { get; set; }
     }
 }

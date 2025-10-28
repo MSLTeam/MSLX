@@ -51,16 +51,15 @@ namespace MSLX.Daemon.Middleware
         {
             var response = new ApiResponse<object>
             {
-                code = statusCode,
-                message = message,
+                Code = statusCode,
+                Message = message,
             };
 
             // 设置相应
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = statusCode;
 
-            var jsonResponse = JsonConvert.SerializeObject(response);
-            await context.Response.WriteAsync(jsonResponse);
+            await context.Response.WriteAsJsonAsync(response);
         }
     }
 }
