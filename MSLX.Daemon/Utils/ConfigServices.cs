@@ -9,10 +9,8 @@ public static class ConfigServices
     public static ServerListConfig ServerList { get; private set; } = null!;
     public static FrpListConfig FrpList { get; private set; } = null!;
 
-    public static void Initialize(ILoggerFactory loggerFactory)
+    public static void Initialize()
     {
-        ApplicationLogging.LoggerFactory = loggerFactory;
-
         Config = new IConfigService();
         ServerList = new ServerListConfig();
         FrpList = new FrpListConfig();

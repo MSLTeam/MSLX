@@ -24,11 +24,11 @@ public class PlatFormServices
     }
     
     
-    public static string GetDeviceId()
+    public static string? GetDeviceId()
     {
         try
         {
-            string platformId;
+            string? platformId;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 // Windows 获取 SID

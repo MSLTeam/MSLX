@@ -37,7 +37,7 @@ logger.LogInformation("正在配置中间件 (Middleware)...");
 logger.LogInformation($"将使用 {ConfigServices.GetAppDataPath()} 作为应用程序数据目录。");
 
 // 初始化配置服务
-ConfigServices.Initialize(loggerFactory);
+ConfigServices.Initialize();
 logger.LogInformation("欢迎您！" + ConfigServices.Config.ReadConfigKey("user"));
 
 app.UseCors("AllowAll");

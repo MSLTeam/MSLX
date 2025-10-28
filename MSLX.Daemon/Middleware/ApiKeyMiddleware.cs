@@ -47,8 +47,8 @@ namespace MSLX.Daemon.Middleware
         {
             var response = new ApiResponse<object>
             {
-                code = statusCode,
-                message = message,
+                Code = statusCode,
+                Message = message,
             };
 
             // 设置相应
