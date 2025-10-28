@@ -4,17 +4,17 @@ import BaseIcon from '@/assets/assets-slide-dashboard.svg';
 
 export default [
   {
-    path: '/dashboard-base',
+    path: '/dashboard',
     component: Layout,
-    redirect: '/dashboard-base/index',
-    name: 'dashboardBaseSingle',
+    redirect: '/dashboard/base',
+    name: 'dashboard',
     meta: {
-      title: '概览直达',
-      icon: BaseIcon,
+      title: '仪表盘',
+      icon: 'dashboard',
     },
     children: [
       {
-        path: 'index',
+        path: 'base',
         name: 'DashboardBaseIndex',
         component: () => import('@/pages/dashboard/base/index.vue'),
         meta: { title: '概览直达', hidden: true },
@@ -22,17 +22,17 @@ export default [
     ],
   },
   {
-    path: '/dashboard',
+    path: '/instance',
     component: Layout,
-    redirect: '/dashboard/base',
-    name: 'dashboard',
-    meta: { title: '仪表盘', icon: DashboardIcon },
+    // redirect: '/instance/list',
+    name: 'instance',
+    meta: { title: '服务端管理', icon: 'root-list' },
     children: [
       {
-        path: 'base',
-        name: 'DashboardBase',
-        component: () => import('@/pages/dashboard/base/index.vue'),
-        meta: { title: '概览仪表盘' },
+        path: 'list',
+        name: 'InstanceList',
+        component: () => import('@/pages/instance/createInstance/index.vue'),
+        meta: { title: '创建服务端' },
       },
       {
         path: 'detail',

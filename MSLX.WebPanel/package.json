@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@eslint/js": "^9.38.0",
+    "@microsoft/signalr": "^9.0.6",
     "axios": "^1.7.2",
     "dayjs": "^1.11.11",
     "echarts": "^5.5.1",
@@ -28,8 +29,8 @@
     "pinia-plugin-persistedstate": "^3.2.1",
     "qrcode.vue": "^3.4.1",
     "qs": "^6.13.0",
-    "tdesign-icons-vue-next": "^0.2.2",
-    "tdesign-vue-next": "^1.9.4",
+    "tdesign-icons-vue-next": "^0.4.1",
+    "tdesign-vue-next": "^1.17.1",
     "tvision-color": "^1.6.0",
     "typescript-eslint": "^8.46.2",
     "vue": "^3.4.31",
