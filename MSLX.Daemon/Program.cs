@@ -47,8 +47,8 @@ builder.Services.AddControllers()
                 .FirstOrDefault()?.ErrorMessage ?? "请求参数验证失败"; // 提供一个默认错误
             var response = new ApiResponse<object>
             {
-                code = 400,
-                message = firstErrorMessage
+                Code = 400,
+                Message = firstErrorMessage
             };
             
             return new BadRequestObjectResult(response);
@@ -64,7 +64,7 @@ var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
 
 var logger = loggerFactory.CreateLogger("Program"); 
 
-logger.LogInformation("  __  __   ____    _      __  __\n |  \\/  | / ___|  | |     \\ \\/ /\n | |\\/| | \\___ \\  | |      \\  / \n | |  | |  ___) | | |___   /  \\ \n |_|  |_| |____/  |_____| /_/\\_\\\n                                ");
+logger.LogInformation("\n  __  __   ____    _      __  __\n |  \\/  | / ___|  | |     \\ \\/ /\n | |\\/| | \\___ \\  | |      \\  / \n | |  | |  ___) | | |___   /  \\ \n |_|  |_| |____/  |_____| /_/\\_\\\n                                ");
 logger.LogInformation("MSLX.Daemon 守护进程正在启动...");
 logger.LogInformation("应用程序已构建 (app.Build() 已完成)");
 logger.LogInformation("正在配置中间件 (Middleware)...");
