@@ -142,6 +142,8 @@ const startSignalRConnection = async (serverId: string) => {
     return;
   }
 
+  let isSuccessHandled = false;
+
   const hubUrl = new URL('/api/hubs/creationProgressHub', baseUrl);
   hubUrl.searchParams.append('x-api-key', token);
 
@@ -168,6 +170,9 @@ const startSignalRConnection = async (serverId: string) => {
     }
 
     if (prog === 100) {
+      // 主动标记成功
+      isSuccessHandled = true;
+
       MessagePlugin.success('服务器创建成功！');
       hubConnection.value?.stop();
       isCreating.value = false;
@@ -190,11 +195,14 @@ const startSignalRConnection = async (serverId: string) => {
     await hubConnection.value.invoke('TrackServer', serverId);
     addLog('已订阅任务，等待服务器响应...');
   } catch (err: any) {
-    addLog(`SignalR 连接失败: ${err.message}`, -1);
-    MessagePlugin.error('无法连接到实时进度服务');
-    isCreating.value = false;
-    isSubmitting.value = false;
-    currentStep.value = 0;
+    // 不成功才弹出错误
+    if (!isSuccessHandled) {
+      addLog(`SignalR 连接失败: ${err.message}`, -1);
+      MessagePlugin.error('无法连接到实时进度服务');
+      isCreating.value = false;
+      isSubmitting.value = false;
+      currentStep.value = 0;
+    }
   }
 };
 
