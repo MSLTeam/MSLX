@@ -32,7 +32,7 @@ public static class ConfigServices
 
     public class IConfigService : IDisposable
     {
-        private readonly string _configPath = Path.Combine(GetAppDataPath(), "Configs", "Config.json");
+        private readonly string _configPath = Path.Combine(GetAppDataPath(),"DaemonData", "Configs", "Config.json");
         private JObject _configCache;
         private readonly ReaderWriterLockSlim _configLock = new ReaderWriterLockSlim();
         private readonly ILogger _logger;
@@ -133,7 +133,7 @@ public static class ConfigServices
 
     public class ServerListConfig : IDisposable
     {
-        private readonly string _serverListPath = Path.Combine(GetAppDataPath(), "Configs", "ServerList.json");
+        private readonly string _serverListPath = Path.Combine(GetAppDataPath(),"DaemonData", "Configs", "ServerList.json");
         private JArray _serverListCache;
         private readonly ReaderWriterLockSlim _configLock = new ReaderWriterLockSlim();
         private readonly ReaderWriterLockSlim _serverListLock = new ReaderWriterLockSlim();
@@ -309,7 +309,7 @@ public static class ConfigServices
 
     public class FrpListConfig : IDisposable
     {
-        private readonly string _frpListPath = Path.Combine(GetAppDataPath(), "Configs", "FrpList.json");
+        private readonly string _frpListPath = Path.Combine(GetAppDataPath(),"DaemonData", "Configs", "FrpList.json");
         private JArray _frpListCache;
         private readonly ReaderWriterLockSlim _frpListLock = new ReaderWriterLockSlim();
         private readonly ILogger _logger;

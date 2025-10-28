@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Middleware;
+using MSLX.Daemon.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,6 +24,25 @@ builder.Services.AddCors(options =>
                 .AllowAnyMethod(); // 允许任何方法
         });
 });
+
+// 覆盖默认的模型验证失败响应
+builder.Services.AddControllers()
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var firstErrorMessage = context.ModelState.Values
+                .SelectMany(v => v.Errors)
+                .FirstOrDefault()?.ErrorMessage ?? "请求参数验证失败"; // 提供一个默认错误
+            var response = new ApiResponse<object>
+            {
+                code = 400,
+                message = firstErrorMessage
+            };
+            
+            return new BadRequestObjectResult(response);
+        };
+    });
 
 var app = builder.Build();
 
