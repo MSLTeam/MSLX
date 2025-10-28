@@ -55,8 +55,7 @@ namespace MSLX.Daemon.Middleware
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = statusCode;
 
-            var jsonResponse = JsonConvert.SerializeObject(response);
-            await context.Response.WriteAsync(jsonResponse);
+            await context.Response.WriteAsJsonAsync(response);
         }
     }
 }
