@@ -1,108 +1,154 @@
+@keyframes gradient-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+
+@keyframes text-shine {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 .light {
   &.login-wrapper {
-    background-color: white;
-    background-image: url('@/assets/assets-login-bg-white.png');
+    background: linear-gradient(-45deg, #89f7fe, #b093e6, #66a6ff, #d3a5ff);
+    background-size: 400% 400%;
+    animation: gradient-flow 10s ease infinite;
+
+    .login-container {
+      background: rgba(255, 255, 255, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+
+    .title-container .title {
+      background: linear-gradient(-45deg, #405bff, #9333ea, #20bdff, #d333ea);
+      // 应用渐变所需属性
+      background-size: 300% 300%;
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: text-shine 8s ease-in-out infinite;
+    }
   }
 }
 
 .dark {
   &.login-wrapper {
-    background-color: var(--td-bg-color-page);
-    background-image: url('@/assets/assets-login-bg-black.png');
+    background: linear-gradient(-45deg, #30039b, #2e0249, #52057b, #160040);
+    background-size: 400% 400%;
+    animation: gradient-flow 10s ease infinite;
+
+    .login-container {
+      background: rgba(40, 42, 53, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    :deep(.t-input),
+    :deep(.t-textarea),
+    :deep(.t-select__single) {
+      background-color: rgba(0, 0, 0, 0.3) !important;
+      border-color: rgba(255, 255, 255, 0.2) !important;
+    }
+    :deep(.t-input__inner),
+    :deep(.t-textarea__inner) {
+      color: var(--td-text-color-primary) !important;
+    }
+
+    .title-container .title {
+      background: linear-gradient(-45deg, #a7b2ff, #d8b4fe, #89f7fe, #f7b4ff);
+      // 应用渐变所需属性
+      background-size: 300% 300%;
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: text-shine 8s ease-in-out infinite;
+    }
   }
 }
 
 .login-wrapper {
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-size: cover;
-  background-position: 100%;
   position: relative;
+  overflow: hidden;
+
+  @media (max-width: 768px) {
+    overflow-y: auto;
+    min-height: 100vh;
+  }
+}
+
+.login-panel {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    padding: 20px;
+  }
 }
 
 .login-container {
-  position: absolute;
-  top: 22%;
-  left: 5%;
-  min-height: 500px;
-  line-height: 22px;
+  padding: 40px;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+
+  position: relative;
+  top: auto;
+  left: auto;
+
+  @media (max-width: 992px) {
+    margin-right: 0;
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    padding: 32px 24px;
+    margin-top: 20px;
+    margin-bottom: 20px;
+    max-width: 400px;
+  }
 }
 
 .title-container {
+  // --- 解决问题2：标题居中 ---
+  text-align: center;
+
   .title {
     font-size: 36px;
     line-height: 44px;
-    color: var(--td-text-color-primary);
+    // 移除默认颜色，让渐变生效
+    // color: var(--td-text-color-primary);
     margin-top: 4px;
 
     &.margin-no {
       margin-top: 0;
     }
   }
-
-  .sub-title {
-    margin-top: 16px;
-
-    .tip {
-      display: inline-block;
-      margin-right: 8px;
-      font-size: 14px;
-
-      &:first-child {
-        color: var(--td-text-color-secondary);
-      }
-
-      &:last-child {
-        color: var(--td-text-color-primary);
-        cursor: pointer;
-      }
-    }
-  }
 }
 
 .item-container {
-  width: 400px;
   margin-top: 48px;
-
-  &.login-qrcode {
-    .tip-container {
-      width: 192px;
-      margin-bottom: 16px;
-      font-size: 14px;
-      display: flex;
-      justify-content: space-between;
-
-      .tip {
-        color: var(--td-text-color-primary);
-      }
-
-      .refresh {
-        display: flex;
-        align-items: center;
-        color: var(--td-brand-color);
-
-        .t-icon {
-          font-size: 14px;
-          margin-left: 4px;
-        }
-
-        &:hover {
-          cursor: pointer;
-        }
-      }
-    }
-
-    .bottom-container {
-      margin-top: 32px;
-    }
-  }
-
-  &.login-phone {
-    .bottom-container {
-      margin-top: 66px;
-    }
-  }
 
   .check-container {
     display: flex;
@@ -119,25 +165,8 @@
 
     span {
       color: var(--td-brand-color);
-
       &:hover {
         cursor: pointer;
-      }
-    }
-  }
-
-  .verification-code {
-    display: flex;
-    align-items: center;
-
-    :deep(.t-form__controls) {
-      width: 100%;
-
-      button {
-        flex-shrink: 0;
-        width: 102px;
-        height: 40px;
-        margin-left: 11px;
       }
     }
   }
@@ -145,57 +174,38 @@
   .btn-container {
     margin-top: 48px;
   }
-}
 
-.switch-container {
-  margin-top: 24px;
-
-  .tip {
-    font-size: 14px;
-    color: var(--td-brand-color);
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    margin-right: 14px;
-
-    &:last-child {
-      &::after {
-        display: none;
-      }
-    }
-
-    &::after {
-      content: '';
-      display: block;
-      width: 1px;
-      height: 12px;
-      background: var(--td-gray-color-3);
-      margin-left: 14px;
-    }
+  @media (max-width: 768px) {
+    width: 100%;
+    margin-top: 32px;
   }
 }
 
-.check-container {
-  font-size: 14px;
-  color: var(--td-text-color-secondary);
-
-  .tip {
-    float: right;
-    font-size: 14px;
-    color: var(--td-brand-color);
-  }
-}
+// --- 解决问题4：已移除 .login-illustration 样式 ---
 
 .copyright {
   font-size: 14px;
-  position: absolute;
-  left: 5%;
-  bottom: 64px;
+  position: relative; // 恢复正常文档流
+  left: auto;
+  bottom: auto;
+  text-align: center;
+  margin-top: 32px; // 在卡片内部，与表单保持间距
   color: var(--td-text-color-secondary);
+
+  @media (max-width: 768px) {
+    margin-top: 20px;
+    padding-bottom: 0; // 在卡片内不需要额外底部 padding
+  }
 }
 
-@media screen and (max-height: 700px) {
-  .copyright {
-    display: none;
+.tdesign-setting-outside {
+  position: fixed;
+  top: 10%;
+  right: 20px;
+  z-index: 1000;
+
+  @media (max-width: 768px) {
+    top: 60px;
+    right: 10px;
   }
 }
