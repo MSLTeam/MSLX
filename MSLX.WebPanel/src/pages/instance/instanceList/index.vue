@@ -1,9 +1,8 @@
-<script setup lang="ts">
-</script>
+<script setup lang="ts"></script>
 
 <template>
   <t-card>
-    我也不知道放什么喵～
+    服务端列表预留页面
   </t-card>
 </template>
 

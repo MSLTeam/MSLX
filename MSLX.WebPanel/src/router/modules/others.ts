@@ -2,7 +2,7 @@ import Layout from '@/layouts/index.vue';
 
 export default [
   {
-    path: '/dashboard/about',
+    path: '/about',
     component: Layout,
     name: 'aboutBase',
     meta: {
@@ -13,7 +13,7 @@ export default [
       {
         path: '',
         name: 'about',
-        component: () => import('@/pages/user/index.vue'),
+        component: () => import('@/pages/about/index.vue'),
         meta: { title: '关于面板', hidden: true },
       },
     ],
