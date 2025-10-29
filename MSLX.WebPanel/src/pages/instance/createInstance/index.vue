@@ -224,136 +224,147 @@ const viewDetails = () => {
 
 <template>
   <t-card>
-    <!-- 步骤条 -->
-    <t-steps :current="currentStep" status="process">
-      <t-step-item title="基本信息" />
-      <t-step-item title="Java 环境" />
-      <t-step-item title="核心文件" />
-      <t-step-item title="资源配置" />
-      <t-step-item title="创建实例" />
-      <t-step-item title="完成" />
-    </t-steps>
-
-    <!--
-      表单步骤 (v-if="!isCreating && !isSuccess")
-    -->
-    <div v-if="!isCreating && !isSuccess" class="form-step-container">
-      <t-form ref="formRef" :data="formData" :rules="FORM_RULES" label-align="top" class="step-form" @submit="onSubmit">
-        <!-- 步骤 1: 基本信息 -->
-        <div v-show="currentStep === 0" class="step-content">
-          <t-form-item label="实例名称" name="name">
-            <t-input v-model="formData.name" placeholder="为你的服务器起个名字" />
-          </t-form-item>
-          <t-form-item label="实例路径" name="path" help="选填，留空将使用默认路径">
-            <t-input v-model="formData.path" placeholder="例如: D:\MyServer" />
-          </t-form-item>
-        </div>
-
-        <!-- 步骤 2: Java 环境 -->
-        <div v-show="currentStep === 1" class="step-content">
-          <t-alert theme="info" title="如何选择 Java 版本?" class="java-alert">
-            <template #message>
-              <p>不同的 Minecraft 版本需要不同的 Java 版本。</p>
-              <ul>
-                <li>MC 1.17 及以上: 需要 Java 17 或更高版本。</li>
-                <li>MC 1.13 - 1.16: 需要 Java 11。</li>
-                <li>MC 1.12 及以下: 需要 Java 8。</li>
-              </ul>
-              <p>你可以输入 'java' 来使用系统默认环境，或提供 java.exe 的完整路径。</p>
-            </template>
-          </t-alert>
-          <t-form-item label="Java 路径" name="java">
-            <t-input v-model="formData.java" placeholder="例如: C:\Program Files\Java\jdk-17\bin\java.exe" />
-          </t-form-item>
-        </div>
-
-        <!-- 步骤 3: 核心文件 -->
-        <div v-show="currentStep === 2" class="step-content">
-          <t-form-item label="核心名称" name="core" help="这是下载后保存的文件名，例如 paper.jar">
-            <t-input v-model="formData.core" placeholder="例如: paper-1.18.2.jar" />
-          </t-form-item>
-          <t-form-item label="核心下载地址 (可选)" name="coreUrl" help="如果留空，将不会自动下载核心文件">
-            <t-input v-model="formData.coreUrl" placeholder="http://.../server.jar" />
-          </t-form-item>
-        </div>
-
-        <!-- 步骤 4: 资源配置 -->
-        <div v-show="currentStep === 3" class="step-content">
-          <t-row :gutter="16">
-            <t-col :span="6">
-              <t-form-item label="最小内存 (MB)" name="minM">
-                <t-input-number v-model="formData.minM" :min="1" />
-              </t-form-item>
-            </t-col>
-            <t-col :span="6">
-              <t-form-item label="最大内存 (MB)" name="maxM">
-                <t-input-number v-model="formData.maxM" :min="1" />
-              </t-form-item>
-            </t-col>
-          </t-row>
-          <t-form-item label="额外 JVM 参数 (可选)" name="args" help="例如: -XX:+UseG1GC">
-            <t-textarea v-model="formData.args" placeholder="-XX:+UseG1GC" />
-          </t-form-item>
-        </div>
-
-        <!-- 导航按钮 -->
-        <t-form-item class="step-actions">
-          <t-button v-if="currentStep > 0" theme="default" @click="prevStep">上一步</t-button>
-          <t-button v-if="currentStep < 3" type="button" @click="nextStep">下一步</t-button>
-          <t-button v-if="currentStep === 3" theme="primary" type="submit" :loading="isSubmitting"> 提交创建 </t-button>
-        </t-form-item>
-      </t-form>
-    </div>
-
-    <!--
-      步骤 5: 实时进度 (v-if="isCreating")
-    -->
-    <div v-if="isCreating" class="step-content creation-progress">
-      <div class="progress-title">正在创建实例 ({{ createdServerId }})</div>
-      <p>请勿关闭此页面，创建过程可能需要几分钟...</p>
-
-      <t-progress theme="plump" :percentage="progress" :label="`${progress.toFixed(2)}%`" />
-
-      <div class="log-container">
-        <t-list :split="true">
-          <t-list-item v-for="(log, index) in statusMessages" :key="index">
-            <t-list-item-meta>
-              <template #description>
-                <span class="log-time">[{{ log.time }}]</span>
-                <span class="log-message">{{ log.message }}</span>
-              </template>
-            </t-list-item-meta>
-          </t-list-item>
-        </t-list>
+    <div class="main-layout-container">
+      <div class="steps-aside">
+        <t-steps layout="vertical" style="margin-top: 16px;" :current="currentStep" status="process" readonly>
+          <t-step-item title="基本信息" content="填写实例名称和路径" />
+          <t-step-item title="Java 环境" content="配置 Java 运行时" />
+          <t-step-item title="核心文件" content="指定核心文件及下载" />
+          <t-step-item title="资源配置" content="设置内存与 JVM 参数" />
+          <t-step-item title="创建实例" content="提交并等待创建" />
+          <t-step-item title="完成" content="查看创建结果" />
+        </t-steps>
       </div>
-    </div>
 
-    <!--
-      步骤 6: 成功页 (v-if="isSuccess")
-    -->
-    <div v-if="isSuccess" class="result-success">
-      <t-icon class="result-success-icon" name="check-circle" />
-      <div class="result-success-title">服务器 ({{ createdServerId }}) 已创建成功</div>
-      <div class="result-success-describe">你现在可以去服务器列表启动它了</div>
-      <div>
-        <t-button @click="goToHome"> 返回 (创建新实例) </t-button>
-        <t-button theme="default" @click="viewDetails"> 查看详情 (假) </t-button>
+      <div class="main-content">
+        <div v-if="!isCreating && !isSuccess" class="form-step-container">
+          <t-form ref="formRef" :data="formData" :rules="FORM_RULES" label-align="top" class="step-form" @submit="onSubmit">
+            <div v-show="currentStep === 0" class="step-content">
+              <t-form-item label="实例名称" name="name">
+                <t-input v-model="formData.name" placeholder="为你的服务器起个名字" />
+              </t-form-item>
+              <t-form-item label="实例路径" name="path" help="选填，留空将使用默认路径">
+                <t-input v-model="formData.path" placeholder="例如: D:\MyServer" />
+              </t-form-item>
+            </div>
+
+            <div v-show="currentStep === 1" class="step-content">
+              <t-alert theme="info" title="如何选择 Java 版本?" class="java-alert">
+                <template #message>
+                  <p>不同的 Minecraft 版本需要不同的 Java 版本。</p>
+                  <ul>
+                    <li>MC 1.17 及以上: 需要 Java 17 或更高版本。</li>
+                    <li>MC 1.13 - 1.16: 需要 Java 11。</li>
+                    <li>MC 1.12 及以下: 需要 Java 8。</li>
+                  </ul>
+                  <p>你可以输入 'java' 来使用系统默认环境，或提供 java.exe 的完整路径。</p>
+                </template>
+              </t-alert>
+              <t-form-item label="Java 路径" name="java">
+                <t-input v-model="formData.java" placeholder="例如: C:\Program Files\Java\jdk-17\bin\java.exe" />
+              </t-form-item>
+            </div>
+
+            <div v-show="currentStep === 2" class="step-content">
+              <t-form-item label="核心名称" name="core" help="这是下载后保存的文件名，例如 paper.jar">
+                <t-input v-model="formData.core" placeholder="例如: paper-1.18.2.jar" />
+              </t-form-item>
+              <t-form-item label="核心下载地址 (可选)" name="coreUrl" help="如果留空，将不会自动下载核心文件">
+                <t-input v-model="formData.coreUrl" placeholder="http://.../server.jar" />
+              </t-form-item>
+            </div>
+
+            <div v-show="currentStep === 3" class="step-content">
+              <t-row :gutter="16">
+                <t-col :span="6">
+                  <t-form-item label="最小内存 (MB)" name="minM">
+                    <t-input-number v-model="formData.minM" :min="1" />
+                  </t-form-item>
+                </t-col>
+                <t-col :span="6">
+                  <t-form-item label="最大内存 (MB)" name="maxM">
+                    <t-input-number v-model="formData.maxM" :min="1" />
+                  </t-form-item>
+                </t-col>
+              </t-row>
+              <t-form-item label="额外 JVM 参数 (可选)" name="args" help="例如: -XX:+UseG1GC">
+                <t-textarea v-model="formData.args" placeholder="-XX:+UseG1GC" />
+              </t-form-item>
+            </div>
+
+            <t-form-item class="step-actions">
+              <t-button v-if="currentStep > 0" theme="default" @click="prevStep">上一步</t-button>
+              <t-button v-if="currentStep < 3" type="button" @click="nextStep">下一步</t-button>
+              <t-button v-if="currentStep === 3" theme="primary" type="submit" :loading="isSubmitting"> 提交创建 </t-button>
+            </t-form-item>
+          </t-form>
+        </div>
+
+        <div v-if="isCreating" class="step-content creation-progress">
+          <div class="progress-title">正在创建实例 ({{ createdServerId }})</div>
+          <p>请勿关闭此页面，创建过程可能需要几分钟...</p>
+
+          <t-progress theme="plump" :percentage="progress" :label="`${progress.toFixed(2)}%`" />
+
+          <div class="log-container">
+            <t-list :split="true">
+              <t-list-item v-for="(log, index) in statusMessages" :key="index">
+                <t-list-item-meta>
+                  <template #description>
+                    <span class="log-time">[{{ log.time }}]</span>
+                    <span class="log-message">{{ log.message }}</span>
+                  </template>
+                </t-list-item-meta>
+              </t-list-item>
+            </t-list>
+          </div>
+        </div>
+
+        <div v-if="isSuccess" class="result-success">
+          <t-icon class="result-success-icon" name="check-circle" />
+          <div class="result-success-title">服务器 ({{ createdServerId }}) 已创建成功</div>
+          <div class="result-success-describe">你现在可以去服务器列表启动它了</div>
+          <div>
+            <t-button @click="goToHome"> 返回 (创建新实例) </t-button>
+            <t-button theme="default" @click="viewDetails"> 查看详情 (假) </t-button>
+          </div>
+        </div>
       </div>
     </div>
   </t-card>
 </template>
 
 <style scoped lang="less">
+/* --- 新增：2 列表单布局 --- */
+.main-layout-container {
+  display: flex;
+  gap: 32px;
+}
+
+.steps-aside {
+  flex-shrink: 0;
+  width: 220px; // 步骤条的宽度
+  border-right: 1px solid var(--td-border-level-2-color);
+  padding-right: 32px;
+}
+
+.main-content {
+  flex-grow: 1;
+  min-width: 0; // 防止 flex 溢出
+}
+
+/* --- 修改：调整原样式以适应新布局 --- */
+
 // form-step-container
 .form-step-container {
-  padding-top: 24px;
+  padding-top: 0; // 原为 24px，现在由布局控制
 }
 
 // step-content
 .step-content {
   max-width: 600px;
-  margin: 24px auto;
-  padding: 16px;
+  margin: 0; // 原为 24px auto，移除自动居中
+  padding: 16px 0; // 保留垂直 padding
 }
 
 // java-alert
@@ -373,6 +384,7 @@ const viewDetails = () => {
 // creation-progress
 .creation-progress {
   text-align: center;
+  padding: 16px; // 保持内边距
 
   .progress-title {
     font-size: 18px;
@@ -405,7 +417,8 @@ const viewDetails = () => {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  height: 75vh;
+  min-height: 50vh; // 原为 height: 75vh，改为 min-height 更灵活
+  padding: 32px 0;
 
   &-icon {
     font-size: 64px;
@@ -426,6 +439,30 @@ const viewDetails = () => {
     font-size: 14px;
     color: var(--td-text-color-primary);
     line-height: 22px;
+  }
+}
+
+/* --- 新增：响应式布局 (移动端) --- */
+@media (max-width: 768px) {
+  .main-layout-container {
+    flex-direction: column; // 垂直堆叠
+    gap: 24px;
+  }
+
+  .steps-aside {
+    width: 100%;
+    border-right: none; // 移除右边框
+    padding-right: 0;
+    border-bottom: 1px solid var(--td-border-level-2-color); // 添加下边框
+    padding-bottom: 24px;
+  }
+
+  .step-content {
+    max-width: 100%; // 移动端占满宽度
+  }
+
+  .result-success {
+    min-height: 40vh;
   }
 }
 </style>
