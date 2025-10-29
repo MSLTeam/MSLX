@@ -2,6 +2,8 @@ import { defineStore } from 'pinia';
 import { TOKEN_NAME, BASE_URL_NAME } from '@/config/global';
 import { store, usePermissionStore } from '@/store';
 import { request } from '@/utils/request';
+import router from '@/router';
+import { MessagePlugin } from 'tdesign-vue-next';
 
 const InitUserInfo = {
   name: '',
@@ -25,7 +27,7 @@ export const useUserStore = defineStore('user', {
     async login(loginParams: Record<string, unknown>) {
       const { url, key } = loginParams as { url: string; key: string };
 
-      // 1. 处理 URL
+      // 1处理 URL
       let processedUrl = url;
       if (!/^(https?:)?\/\//.test(url)) {
         processedUrl = `http://${url}`;
@@ -41,17 +43,17 @@ export const useUserStore = defineStore('user', {
           },
         });
 
-        // 4. 登录成功，存储 token 和 baseUrl
+        // 登录成功，存储 token 和 baseUrl
         this.token = key;
         this.baseUrl = processedUrl;
         localStorage.setItem(TOKEN_NAME, key);
         localStorage.setItem(BASE_URL_NAME, processedUrl);
 
-        // 5. 存储用户信息 (resData 已经是 data.data)
+        // 存储用户信息
         this.userInfo = {
           name: resData.user,
           avatar: resData.avatar,
-          roles: ['all'], // 假设登录成功就是 'all' 权限
+          roles: ['all'],
           ...resData,
         };
 
@@ -80,9 +82,11 @@ export const useUserStore = defineStore('user', {
           ...resData,
         };
       } catch (e) {
+        // 获取不到用户信息 要求重新登录
         console.error('Get user info failed:', e);
         await this.logout();
-        throw new Error('获取用户信息失败，请重新登录');
+        await router.push('/login');
+        MessagePlugin.error('连接 MSLX 守护进程失败，请重新登录！');
       }
     },
 
@@ -104,7 +108,6 @@ export const useUserStore = defineStore('user', {
       if (ctx.store.token) {
         const permissionStore = usePermissionStore();
 
-        // --- 修正点: 'this' 在这里是 undefined, 必须用 ctx.store ---
         ctx.store.getUserInfo().then(() => {
           permissionStore.initRoutes(ctx.store.roles || []);
         }).catch(() => {

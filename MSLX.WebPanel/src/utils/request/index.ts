@@ -141,6 +141,7 @@ const transform: AxiosTransform = {
     }
 
     // 只有在没有 JSON 响应时 (如网络错误/超时) 才尝试重试
+    /*
     if (config && config.requestOptions.retry) {
       config.retryCount = config.retryCount || 0;
 
@@ -155,7 +156,7 @@ const transform: AxiosTransform = {
         config.headers = { ...config.headers, 'Content-Type': 'application/json;charset=UTF-8' };
         return backoff.then((config) => request.request(config));
       }
-    }
+    }*/
 
     // 重试失败或不重试的网络错误
     return Promise.reject(error);
