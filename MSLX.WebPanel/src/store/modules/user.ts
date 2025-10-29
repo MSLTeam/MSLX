@@ -5,6 +5,10 @@ import { request } from '@/utils/request';
 import router from '@/router';
 import { MessagePlugin } from 'tdesign-vue-next';
 
+// 存储记忆信息
+const REMEMBER_URL_NAME = 'remembered_url';
+const REMEMBER_KEY_NAME = 'remembered_key';
+
 const InitUserInfo = {
   name: '',
   avatar: '',
@@ -25,7 +29,7 @@ export const useUserStore = defineStore('user', {
   },
   actions: {
     async login(loginParams: Record<string, unknown>) {
-      const { url, key } = loginParams as { url: string; key: string };
+      const { url, key, checked } = loginParams as { url: string; key: string; checked: boolean };
 
       // 1处理 URL
       let processedUrl = url;
@@ -43,11 +47,20 @@ export const useUserStore = defineStore('user', {
           },
         });
 
-        // 登录成功，存储 token 和 baseUrl
+        // 登录成功，存储 token 和 baseUrl (当前会话)
         this.token = key;
         this.baseUrl = processedUrl;
         localStorage.setItem(TOKEN_NAME, key);
         localStorage.setItem(BASE_URL_NAME, processedUrl);
+
+        // 记住
+        if (checked) {
+          localStorage.setItem(REMEMBER_URL_NAME, url);
+          localStorage.setItem(REMEMBER_KEY_NAME, key);
+        } else {
+          localStorage.removeItem(REMEMBER_URL_NAME);
+          localStorage.removeItem(REMEMBER_KEY_NAME);
+        }
 
         // 存储用户信息
         this.userInfo = {
@@ -57,7 +70,7 @@ export const useUserStore = defineStore('user', {
           ...resData,
         };
 
-        // 6. 初始化动态路由
+        // 初始化动态路由
         const permissionStore = usePermissionStore();
         permissionStore.initRoutes(this.userInfo.roles);
 
