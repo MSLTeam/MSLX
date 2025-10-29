@@ -2,31 +2,42 @@
   <div :class="layoutCls">
     <t-head-menu :class="menuCls" :theme="theme" expand-type="popup" :value="active">
       <template #logo>
-        <span v-if="showLogo" :class="`${prefix}-side-nav-logo-wrapper`" @click="handleNav('/dashboard/base')">
+        <span v-if="showLogo" :class="`${prefix}-side-nav-logo-wrapper hide-on-mobile`" @click="handleNav('/dashboard/base')">
           <img style="width: 32px;margin-right: 8px;" :src="CustomLogo" :class="`${prefix}-side-nav-logo-img`" alt="logo" />
           <span  style="font-size: 18px;font-weight: bold;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;" :class="`${prefix}-side-nav-logo-text`"> MSLX 管理中心 </span>
         </span>
-        <div v-else class="header-operate-left">
+
+        <div v-else class="header-operate-left hide-on-mobile">
+          <t-button theme="default" shape="square" variant="text" @click="changeCollapsed">
+            <t-icon class="collapsed-icon" name="view-list" />
+          </t-button>
+        </div>
+
+        <div class="header-operate-left show-on-mobile">
           <t-button theme="default" shape="square" variant="text" @click="changeCollapsed">
             <t-icon class="collapsed-icon" name="view-list" />
           </t-button>
         </div>
       </template>
+
       <template v-if="layout !== 'side'" #default>
         <menu-content class="header-menu" :nav-data="menu" />
       </template>
+
       <template #operations>
         <div class="operations-container">
-          <t-tooltip placement="bottom" content="代码仓库">
+          <t-tooltip placement="bottom" content="代码仓库" class="hide-on-mobile">
             <t-button theme="default" shape="square" variant="text" @click="navToGitHub">
               <t-icon name="logo-github" />
             </t-button>
           </t-tooltip>
-          <t-tooltip placement="bottom" content="帮助文档">
+
+          <t-tooltip placement="bottom" content="帮助文档" class="hide-on-mobile">
             <t-button theme="default" shape="square" variant="text" @click="navToHelper">
               <t-icon name="help-circle" />
             </t-button>
           </t-tooltip>
+
           <t-dropdown :min-column-width="135" trigger="click">
             <template #dropdown>
               <t-dropdown-menu>
@@ -46,7 +57,27 @@
               <template #suffix><t-icon name="chevron-down" /></template>
             </t-button>
           </t-dropdown>
-          <t-tooltip placement="bottom" content="系统设置">
+
+          <t-dropdown :min-column-width="135" trigger="click" class="show-on-mobile">
+            <template #dropdown>
+              <t-dropdown-menu>
+                <t-dropdown-item class="operations-dropdown-container-item" @click="navToGitHub">
+                  <t-icon name="logo-github"></t-icon>代码仓库
+                </t-dropdown-item>
+                <t-dropdown-item class="operations-dropdown-container-item" @click="navToHelper">
+                  <t-icon name="help-circle"></t-icon>帮助文档
+                </t-dropdown-item>
+                <t-dropdown-item class="operations-dropdown-container-item" @click="toggleSettingPanel">
+                  <t-icon name="setting"></t-icon>系统设置
+                </t-dropdown-item>
+              </t-dropdown-menu>
+            </template>
+            <t-button theme="default" shape="square" variant="text">
+              <t-icon name="more" />
+            </t-button>
+          </t-dropdown>
+
+          <t-tooltip placement="bottom" content="系统设置" class="hide-on-mobile">
             <t-button theme="default" shape="square" variant="text" @click="toggleSettingPanel">
               <t-icon name="setting" />
             </t-button>
@@ -58,6 +89,7 @@
 </template>
 
 <script setup lang="ts">
+// (✨ 修改) 移除了 ref, onMounted, onUnmounted
 import { computed } from 'vue';
 import type { PropType } from 'vue';
 import { useRouter } from 'vue-router';
@@ -105,6 +137,8 @@ const props = defineProps({
 
 const router = useRouter();
 const settingStore = useSettingStore();
+
+// (✨ 删除) 所有 isMobile 相关的 JS 逻辑
 
 const toggleSettingPanel = () => {
   settingStore.updateConfig({
@@ -190,7 +224,6 @@ const navToHelper = () => {
 .operations-container {
   display: flex;
   align-items: center;
-  margin-right: 12px;
 
   .t-popup__reference {
     display: flex;
@@ -284,7 +317,7 @@ const navToHelper = () => {
   align-items: center;
 
   .t-icon {
-    margin-right: 8px;
+    margin-right: 3px;
   }
 
   :deep(.t-dropdown__item) {
@@ -307,6 +340,40 @@ const navToHelper = () => {
     :deep(.t-dropdown__item) {
       margin-bottom: 8px;
     }
+  }
+}
+
+
+/* (✨ 新增) 纯 CSS 媒体查询适配 */
+
+/* 1. 默认隐藏“移动端专属”元素
+   我们用 .show-on-mobile 来标记它们 */
+.show-on-mobile {
+  display: none !important;
+}
+
+/* 2. 定义移动端断点 (例如 768px 或更小) */
+@media (max-width: 768px) {
+
+  /* 2.1 隐藏“桌面端专属”元素
+     我们用 .hide-on-mobile 来标记它们 */
+  .hide-on-mobile {
+    display: none !important;
+  }
+
+  /* 2.2 显示“移动端专属”元素 */
+
+  /* 移动端汉堡菜单 */
+  .header-operate-left.show-on-mobile {
+    display: flex !important;
+  }
+
+  /* 移动端“更多”下拉菜单
+     它在 .operations-container (flex) 内部,
+     用 inline-flex 确保它和其他图标 (如用户头像) 在一行 */
+  .operations-container .show-on-mobile {
+    display: inline-flex !important;
+    align-items: center; /* 确保垂直居中 */
   }
 }
 </style>
