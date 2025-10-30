@@ -3,6 +3,7 @@ import Layout from '@/layouts/index.vue';
 export default [
   {
     path: '/dashboard',
+    redirect: '/dashboard/base',
     component: Layout,
     name: 'dashboard',
     meta: {
