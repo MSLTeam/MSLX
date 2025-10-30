@@ -20,10 +20,12 @@
   "dependencies": {
     "@eslint/js": "^9.38.0",
     "@microsoft/signalr": "^9.0.6",
+    "@vueuse/core": "^14.0.0",
     "axios": "^1.13.1",
     "dayjs": "^1.11.11",
     "echarts": "^5.5.1",
     "lodash": "^4.17.21",
+    "md-editor-v3": "^6.1.0",
     "nprogress": "^0.2.0",
     "pinia": "^2.1.7",
     "pinia-plugin-persistedstate": "^3.2.1",

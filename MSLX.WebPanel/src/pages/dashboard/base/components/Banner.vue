@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// 1. 导入 onMounted
 import { ref, onMounted } from 'vue';
 import { Card as TCard, Icon as TIcon } from 'tdesign-vue-next';
 import { useUserStore } from '@/store';
@@ -7,17 +6,15 @@ import { request } from '@/utils/request'
 
 const userStore = useUserStore();
 
-// 3. 初始化 oneMsg
-const oneMsg = ref(''); // 默认显示加载中
+const oneMsg = ref('');
 
-// 4. 定义获取一言的函数（从旧组件迁移）
 async function getHitokoto() {
-  // 发生错误时的备用“一言”
   const fallbackMsg = 'Every little creature in the world has their own piece of paradise.\n' +
     'Plants take root in the boundless earth, and their leaves grow toward the stars.';
 
   try {
     // 异步请求
+    // (注意：如果你还没改拦截器，请使用我之前推荐的“智能识别”方案，否则这里会报错)
     const res = await request.get({
       url: '/?c=a&c=b&c=c&c=d',
       baseURL: 'https://v1.hitokoto.cn'
@@ -37,7 +34,6 @@ async function getHitokoto() {
   }
 }
 
-// 5. 在组件挂载时调用
 onMounted(() => {
   getHitokoto();
 });
@@ -66,9 +62,6 @@ onMounted(() => {
 </template>
 
 <style scoped lang="less">
-// -------------------------------------
-// 样式迁移 (已适配 TDesign CSS 变量)
-// -------------------------------------
 
 .welcome-header {
   display: flex;
@@ -85,9 +78,7 @@ onMounted(() => {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  // 使用 TDesign 的品牌色变量
   border: 2px solid var(--td-brand-color);
-  // 使用 TDesign 的阴影变量
   box-shadow: var(--td-shadow-1);
 }
 
@@ -101,29 +92,26 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  // 使用 TDesign 的一级文本颜色变量
   color: var(--td-text-color-primary);
-  font-size: var(--td-font-size-xl); // 适配 TDesign 字号
+  font-size: var(--td-font-size-xl);
   font-weight: 600;
 
   .welcome-icon {
-    // 使用 TDesign 的警告色（橙色）变量
     color: var(--td-warning-color);
-    font-size: 1.2em; // 图标稍大
+    font-size: 1.2em;
   }
 }
 
 .hitokoto-text {
   margin: 0;
-  // 使用 TDesign 的二级（次要）文本颜色变量
   color: var(--td-text-color-secondary);
   font-size: var(--td-font-size-m);
-  font-style: italic; // 保留旧组件的斜体样式
+  font-style: italic;
   line-height: 1.6;
 }
 
 // -------------------------------------
-// 响应式布局 (从旧组件迁移)
+// 响应式布局
 // -------------------------------------
 @media screen and (max-width: 768px) {
   .welcome-header {
@@ -133,6 +121,10 @@ onMounted(() => {
 
   .welcome-info {
     text-align: center;
+  }
+
+  .welcome-text {
+    justify-content: center;
   }
 }
 </style>
