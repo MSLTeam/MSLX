@@ -82,7 +82,13 @@
   }
 
   &-content-layout {
-    padding: var(--td-comp-paddingTB-xxl) var(--td-comp-paddingLR-xxl);
+    padding: var(--td-comp-paddingTB-l) var(--td-comp-paddingLR-l);
+  }
+
+  @media (max-width: 768px) {
+    &-content-layout {
+      padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-s);
+    }
   }
 
   &-layout {
