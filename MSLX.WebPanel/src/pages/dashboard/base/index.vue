@@ -1,10 +1,9 @@
 <script setup lang="ts">
+import Banner from './components/Banner.vue'
 </script>
 
 <template>
-  <t-card>
-    我也不知道放什么喵～
-  </t-card>
+  <banner />
 </template>
 
 <style scoped lang="less"></style>
