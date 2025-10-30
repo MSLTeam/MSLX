@@ -8,7 +8,7 @@ import { TOKEN_NAME, BASE_URL_NAME } from '@/config/global';
 
 // 数据处理，方便区分多种处理方式
 const transform: AxiosTransform = {
-  // 处理请求数据。如果数据不是预期格式，可直接抛出错误
+  // 处理请求数据
   transformRequestHook: (res, options) => {
     const { isTransformResponse, isReturnNativeResponse } = options;
 
@@ -33,18 +33,27 @@ const transform: AxiosTransform = {
       throw new Error('请求接口错误');
     }
 
-    //  使用 camelCase (code, message)
-    const { code, message } = data as any;
+    // 智能识别逻辑
 
-    // 判断成功码为 200
-    const hasSuccess = data && code === 200;
-    if (hasSuccess) {
-      // 返回 camelCase 的 data
-      return data.data;
+    // 检查响应数据是否是项目期望的 { code, message } 标准结构
+    const hasStandardStructure = data &&
+      Reflect.has(data, 'code') &&
+      Reflect.has(data, 'message');
+
+    if (hasStandardStructure) {
+      // 标准结构
+      const { code, message } = data as any;
+      const hasSuccess = code === 200;
+      if (hasSuccess) {
+        return data.data; // 返回标准结构中的 data 字段
+      }
+      throw new Error(message || `请求接口错误, 错误码: ${code}`);
+
+    } else {
+      // 2不是标准结构：
+      return data;
     }
 
-    // 优化错误提示，使用后端的 message
-    throw new Error(message || `请求接口错误, 错误码: ${code}`);
   },
 
   // 请求前处理配置
@@ -125,7 +134,7 @@ const transform: AxiosTransform = {
 
   // 响应错误处理
   responseInterceptorsCatch: (error: any) => {
-    const { config, response } = error;
+    const {  response } = error;
 
     // 优先处理有 JSON 响应的错误 (如 401, 403, 500)
     if (response && response.data) {
@@ -175,7 +184,7 @@ function createAxios(opt?: Partial<CreateAxiosOptions>) {
         requestOptions: {
           apiUrl: '',
           isJoinPrefix: true,
-          urlPrefix: '/api',
+          urlPrefix: '',
           isReturnNativeResponse: false,
           isTransformResponse: true,
           joinParamsToUrl: false,

@@ -1,12 +1,9 @@
 import Layout from '@/layouts/index.vue';
-import DashboardIcon from '@/assets/assets-slide-dashboard.svg';
-import BaseIcon from '@/assets/assets-slide-dashboard.svg';
 
 export default [
   {
     path: '/dashboard',
     component: Layout,
-    redirect: '/dashboard/base',
     name: 'dashboard',
     meta: {
       title: '仪表盘',

@@ -40,7 +40,7 @@ export const useUserStore = defineStore('user', {
       try {
         // 将 baseURL 和 headers 作为 AxiosRequestConfig (第一个参数) 的一部分传入
         const resData = await request.get({
-          url: '/status',
+          url: '/api/status',
           baseURL: processedUrl,
           headers: {
             'x-api-key': key,
@@ -86,7 +86,7 @@ export const useUserStore = defineStore('user', {
       }
 
       try {
-        const resData = await request.get({ url: '/status' });
+        const resData = await request.get({ url: '/api/status' });
 
         this.userInfo = {
           name: resData.user,

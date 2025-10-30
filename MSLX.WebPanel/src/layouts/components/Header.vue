@@ -89,7 +89,6 @@
 </template>
 
 <script setup lang="ts">
-// (✨ 修改) 移除了 ref, onMounted, onUnmounted
 import { computed } from 'vue';
 import type { PropType } from 'vue';
 import { useRouter } from 'vue-router';
