@@ -107,7 +107,7 @@ const onSubmit = async () => {
 
   try {
     const response = await request.post({
-      url: '/instance/createServer',
+      url: '/api/instance/createServer',
       data: apiData,
     });
 
