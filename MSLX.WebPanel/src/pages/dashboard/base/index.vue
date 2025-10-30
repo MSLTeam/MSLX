@@ -5,9 +5,11 @@ import Announcement from './components/Announcement.vue';
 </script>
 
 <template>
-  <banner />
-  <info-card style="margin-top: 12px;"/>
-  <announcement style="margin-top: 12px;"/>
+ <div>
+   <banner />
+   <info-card style="margin-top: 12px;"/>
+   <announcement style="margin-top: 12px;"/>
+ </div>
 </template>
 
 <style scoped lang="less"></style>
