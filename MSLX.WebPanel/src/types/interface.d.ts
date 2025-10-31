@@ -1,4 +1,3 @@
-import { RouteRecordName, LocationQueryRaw } from 'vue-router';
 import STYLE_CONFIG from '@/config/style';
 
 export interface MenuRoute {
@@ -33,20 +32,4 @@ export interface NotificationItem {
   collected: boolean;
   date: string;
   quality: string;
-}
-
-export interface TRouterInfo {
-  path: string;
-  query?: LocationQueryRaw;
-  routeIdx?: number;
-  title?: string;
-  name?: RouteRecordName;
-  isAlive?: boolean;
-  isHome?: boolean;
-  meta?: any;
-}
-
-export interface TTabRouterType {
-  isRefreshing: boolean;
-  tabRouterList: Array<TRouterInfo>;
 }

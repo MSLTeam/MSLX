@@ -48,10 +48,9 @@ function calcHeight() {
     return;
   }
   let clientHeight = 0;
-  const { showFooter, isUseTabsRouter, showBreadcrumb } = settingStore;
+  const { showFooter, showBreadcrumb } = settingStore;
   const headerHeight = parseFloat(sizeXxxl);
-  const navDom = document.querySelector('.t-tabs__nav');
-  const navHeight = isUseTabsRouter ? getOuterHeight(navDom) : 0;
+  const navHeight = 0;
   const breadcrumbDom = document.querySelector('.t-breadcrumb');
   const breadcrumbHeight = showBreadcrumb ? getOuterHeight(breadcrumbDom) : 0;
   const contentPadding = parseFloat(paddingTBXxl) * 2;
@@ -71,7 +70,7 @@ function hideLoading() {
 useWindowSizeFn(calcHeight, { immediate: true });
 
 watch(
-  [() => settingStore.showFooter, () => settingStore.isUseTabsRouter, () => settingStore.showBreadcrumb],
+  [() => settingStore.showFooter, () => settingStore.showBreadcrumb],
   debounce(calcHeight, 250),
 );
 </script>

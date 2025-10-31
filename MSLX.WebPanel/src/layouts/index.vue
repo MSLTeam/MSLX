@@ -24,10 +24,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue';
+import { computed,  watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRoute } from 'vue-router';
-import { useSettingStore, useTabsRouterStore } from '@/store';
+import { useSettingStore } from '@/store';
 
 import SettingCom from './setting.vue';
 import LayoutHeader from './components/LayoutHeader.vue';
@@ -40,7 +40,6 @@ import '@/style/layout.less';
 
 const route = useRoute();
 const settingStore = useSettingStore();
-const tabsRouterStore = useTabsRouterStore();
 const setting = storeToRefs(settingStore);
 
 const mainLayoutCls = computed(() => [
@@ -49,24 +48,9 @@ const mainLayoutCls = computed(() => [
   },
 ]);
 
-const appendNewRoute = () => {
-  const {
-    path,
-    query,
-    meta: { title },
-    name,
-  } = route;
-  tabsRouterStore.appendTabRouterList({ path, query, title: title as string, name, isAlive: true, meta: route.meta });
-};
-
-onMounted(() => {
-  appendNewRoute();
-});
-
 watch(
   () => route.path,
   () => {
-    appendNewRoute();
     document.querySelector(`.${prefix}-layout`).scrollTo({ top: 0, behavior: 'smooth' });
   },
 );

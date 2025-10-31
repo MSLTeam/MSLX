@@ -8,7 +8,6 @@ export default {
   isFooterAside: false,
   isSidebarFixed: true,
   isHeaderFixed: true,
-  isUseTabsRouter: false,
   showHeader: true,
   backgroundTheme: 'blueGrey',
   brandTheme: 'default',
