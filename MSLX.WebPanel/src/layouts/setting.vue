@@ -1,9 +1,9 @@
 <template>
   <t-drawer
     v-model:visible="showSettingPanel"
-    size="408px"
+    :size="drawerSize"
     :footer="false"
-    header="页面配置"
+    header="面板样式"
     :close-btn="true"
     class="setting-drawer-container"
     @close-btn-click="handleCloseDrawer"
@@ -15,7 +15,7 @@
           <div v-for="(item, index) in MODE_OPTIONS" :key="index" class="setting-layout-drawer">
             <div>
               <t-radio-button :key="index" :value="item.type"
-                ><component :is="getModeIcon(item.type)"
+              ><component :is="getModeIcon(item.type)"
               /></t-radio-button>
               <p :style="{ textAlign: 'center', marginTop: '8px' }">{{ item.text }}</p>
             </div>
@@ -69,38 +69,16 @@
           </div>
         </t-radio-group>
 
-        <t-form-item v-show="formData.layout === 'mix'" label="分割菜单（混合模式下有效）" name="splitMenu">
-          <t-switch v-model="formData.splitMenu" />
-        </t-form-item>
-
-        <t-form-item v-show="formData.layout === 'mix'" label="固定 Sidebar" name="isSidebarFixed">
-          <t-switch v-model="formData.isSidebarFixed" />
-        </t-form-item>
-
-        <div class="setting-group-title">元素开关</div>
-        <t-form-item v-show="formData.layout === 'side'" label="显示 Header" name="showHeader">
-          <t-switch v-model="formData.showHeader" />
-        </t-form-item>
-        <t-form-item label="显示 Breadcrumbs" name="showBreadcrumb">
-          <t-switch v-model="formData.showBreadcrumb" />
-        </t-form-item>
-        <t-form-item label="显示 Footer" name="showFooter">
-          <t-switch v-model="formData.showFooter" />
-        </t-form-item>
       </t-form>
-      <div class="setting-info">
-        <p>请复制后手动修改配置文件: /src/config/style.ts</p>
-        <t-button theme="primary" variant="text" @click="handleCopy"> 复制配置项 </t-button>
-      </div>
     </div>
   </t-drawer>
 </template>
 <script setup lang="ts">
-import { ref, computed, onMounted, watchEffect } from 'vue';
-import { MessagePlugin } from 'tdesign-vue-next';
+import { ref, computed, onMounted, watchEffect, onBeforeUnmount } from 'vue';
+// import { MessagePlugin } from 'tdesign-vue-next';
 import type { PopupVisibleChangeContext } from 'tdesign-vue-next';
 import { Color } from 'tvision-color';
-import useClipboard from 'vue-clipboard3';
+// import useClipboard from 'vue-clipboard3';
 
 import { useSettingStore } from '@/store';
 import Thumbnail from '@/components/thumbnail/index.vue';
@@ -115,12 +93,22 @@ import SettingAutoIcon from '@/assets/assets-setting-auto.svg';
 
 const settingStore = useSettingStore();
 
-const LAYOUT_OPTION = ['side', 'top', 'mix'];
+const screenWidth = ref(window.innerWidth);
+const isMobile = computed(() => screenWidth.value < 480); // 480px断点
+const drawerSize = computed(() => {
+  return isMobile.value ? '85%' : '408px';
+});
+
+const updateScreenWidth = () => {
+  screenWidth.value = window.innerWidth;
+};
+
+const LAYOUT_OPTION = ['side', 'top'];
 const COLOR_OPTIONS = ['default', 'cyan', 'green', 'yellow', 'orange', 'red', 'pink', 'purple', 'dynamic'];
 const MODE_OPTIONS = [
+  { type: 'auto', text: '跟随系统' },
   { type: 'light', text: '明亮' },
   { type: 'dark', text: '暗黑' },
-  { type: 'auto', text: '跟随系统' },
 ];
 const initStyleConfig = () => {
   const styleConfig = STYLE_CONFIG;
@@ -164,6 +152,11 @@ onMounted(() => {
   document.querySelector('.dynamic-color-btn').addEventListener('click', () => {
     isColoPickerDisplay.value = true;
   });
+  window.addEventListener('resize', updateScreenWidth); // 👈 监听
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateScreenWidth);
 });
 
 const onPopupVisibleChange = (visible: boolean, context: PopupVisibleChangeContext) => {
@@ -171,7 +164,7 @@ const onPopupVisibleChange = (visible: boolean, context: PopupVisibleChangeConte
     isColoPickerDisplay.value = visible;
   }
 };
-
+/* 复制方法
 const handleCopy = () => {
   const text = JSON.stringify(formData.value, null, 4);
   const { toClipboard } = useClipboard();
@@ -184,7 +177,7 @@ const handleCopy = () => {
       MessagePlugin.closeAll();
       MessagePlugin.error('复制失败');
     });
-};
+}; */
 const getModeIcon = (mode: string) => {
   if (mode === 'light') {
     return SettingLightIcon;
@@ -291,12 +284,25 @@ watchEffect(() => {
 .setting-drawer-container {
   .setting-container {
     padding-bottom: 100px;
+
+    /* 移动端增加左右内边距 */
+    @media (max-width: 480px) {
+      padding: 0 16px 100px 16px;
+    }
   }
+
   :deep(.t-radio-group.t-size-m) {
     min-height: 32px;
     width: 100%;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+
+    /* 移动端靠左排列 */
+    @media (max-width: 480px) {
+      justify-content: flex-start;
+    }
   }
 
   :deep(.t-radio-group.t-size-m .t-radio-button) {
@@ -307,7 +313,6 @@ watchEffect(() => {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 16px;
 
     :deep(.t-radio-button) {
       display: inline-flex;
