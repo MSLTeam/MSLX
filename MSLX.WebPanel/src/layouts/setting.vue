@@ -152,7 +152,7 @@ onMounted(() => {
   document.querySelector('.dynamic-color-btn').addEventListener('click', () => {
     isColoPickerDisplay.value = true;
   });
-  window.addEventListener('resize', updateScreenWidth); // 👈 监听
+  window.addEventListener('resize', updateScreenWidth);
 });
 
 onBeforeUnmount(() => {

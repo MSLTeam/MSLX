@@ -2,18 +2,12 @@
   <div :class="layoutCls">
     <t-head-menu :class="menuCls" :theme="theme" expand-type="popup" :value="active">
       <template #logo>
-        <span v-if="showLogo" :class="`${prefix}-side-nav-logo-wrapper hide-on-mobile`" @click="handleNav('/dashboard/base')">
-          <img style="width: 32px;margin-right: 8px;" :src="CustomLogo" :class="`${prefix}-side-nav-logo-img`" alt="logo" />
-          <span  style="font-size: 18px;font-weight: bold;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;" :class="`${prefix}-side-nav-logo-text`"> MSLX 管理中心 </span>
+        <span v-if="showLogo" :class="`${prefix}-side-nav-logo-wrapper`" @click="handleNav('/dashboard/base')">
+          <img style="width: 32px;" :src="CustomLogo" :class="`${prefix}-side-nav-logo-img`" alt="logo" />
+          <span  style="margin-left: 8px;font-size: 18px;font-weight: bold;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;" :class="`${prefix}-side-nav-logo-text hide-on-mobile`"> MSLX 管理中心 </span>
         </span>
 
-        <div v-else class="header-operate-left hide-on-mobile">
-          <t-button theme="default" shape="square" variant="text" @click="changeCollapsed">
-            <t-icon class="collapsed-icon" name="view-list" />
-          </t-button>
-        </div>
-
-        <div class="header-operate-left show-on-mobile">
+        <div v-if="layout == 'side'" class="header-operate-left show-on-mobile">
           <t-button theme="default" shape="square" variant="text" @click="changeCollapsed">
             <t-icon class="collapsed-icon" name="view-list" />
           </t-button>
@@ -21,9 +15,23 @@
       </template>
 
       <template v-if="layout !== 'side'" #default>
-        <menu-content class="header-menu" :nav-data="menu" />
-      </template>
+        <menu-content class="header-menu hide-on-mobile" :nav-data="menu" />
 
+        <t-popup
+          placement="bottom-left"
+          class="show-on-mobile header-menu-mobile-popup"
+          :overlay-style="{ padding: '0', width: '100%', marginTop: '2px', boxShadow: 'none', borderTop: '1px solid var(--td-border-level-1-color)' }"
+        >
+          <t-button style="margin-left: -16px;" theme="default" shape="square" variant="text">
+            <t-icon name="app" />
+          </t-button>
+          <template #content>
+            <t-menu :value="active" :theme="theme" expand-mutex @change="handleMenuChange" style="width: 100vw;">
+              <menu-content :nav-data="menu" />
+            </t-menu>
+          </template>
+        </t-popup>
+      </template>
       <template #operations>
         <div class="operations-container">
           <t-tooltip placement="bottom" content="代码仓库" class="hide-on-mobile">
@@ -137,8 +145,6 @@ const props = defineProps({
 const router = useRouter();
 const settingStore = useSettingStore();
 
-// (✨ 删除) 所有 isMobile 相关的 JS 逻辑
-
 const toggleSettingPanel = () => {
   settingStore.updateConfig({
     showSettingPanel: true,
@@ -171,6 +177,12 @@ const handleNav = (url) => {
   router.push(url);
 };
 
+const handleMenuChange = (value: string) => {
+  // value = 路由 path
+  if (value) {
+    router.push(value);
+  }
+};
 const handleLogout = () => {
   router.push({
     path: '/login',
@@ -218,6 +230,11 @@ const navToHelper = () => {
     min-width: unset;
     padding: 0px 16px;
   }
+}
+
+.header-menu-mobile-popup {
+  display: inline-flex;
+  align-items: center;
 }
 
 .operations-container {
@@ -342,37 +359,46 @@ const navToHelper = () => {
   }
 }
 
-
-/* (✨ 新增) 纯 CSS 媒体查询适配 */
-
-/* 1. 默认隐藏“移动端专属”元素
-   我们用 .show-on-mobile 来标记它们 */
 .show-on-mobile {
   display: none !important;
 }
 
-/* 2. 定义移动端断点 (例如 768px 或更小) */
-@media (max-width: 768px) {
+// 低于一定宽度菜单显示不了 那就算移动端咯
+@media (max-width: 1012px) {
 
-  /* 2.1 隐藏“桌面端专属”元素
-     我们用 .hide-on-mobile 来标记它们 */
   .hide-on-mobile {
     display: none !important;
   }
 
-  /* 2.2 显示“移动端专属”元素 */
-
-  /* 移动端汉堡菜单 */
   .header-operate-left.show-on-mobile {
     display: flex !important;
   }
 
-  /* 移动端“更多”下拉菜单
-     它在 .operations-container (flex) 内部,
-     用 inline-flex 确保它和其他图标 (如用户头像) 在一行 */
+  .header-menu-mobile-popup.show-on-mobile {
+    display: inline-flex !important;
+    align-items: center;
+  }
+
   .operations-container .show-on-mobile {
     display: inline-flex !important;
-    align-items: center; /* 确保垂直居中 */
+    align-items: center;
+  }
+
+  :deep(.t-head-menu__inner) {
+    display: flex;
+    justify-content: space-between;
+  }
+  :deep(.t-head-menu__logo) {
+    flex-shrink: 0; // 防止 logo 被压缩
+  }
+  :deep(.t-head-menu__operations) {
+    flex-shrink: 0; // 防止操作按钮被压缩
+  }
+  :deep(.t-head-menu__default) {
+    flex: 0 1 auto !important;
+    margin-left: 16px;
   }
 }
+
+
 </style>
