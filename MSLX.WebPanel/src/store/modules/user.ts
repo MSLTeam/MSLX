@@ -12,6 +12,18 @@ const REMEMBER_KEY_NAME = 'remembered_key';
 const InitUserInfo = {
   name: '',
   avatar: '',
+  version: '',
+  systemInfo:{
+    netVersion: "",
+    osType: "",
+    osVersion: "",
+    osArchitecture: "",
+    hostname: ""
+  },
+  targetFrontendVersion:{
+    desktop:"",
+    panel: ""
+  },
   roles: [],
 };
 

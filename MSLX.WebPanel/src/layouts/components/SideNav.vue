@@ -9,7 +9,7 @@
       </template>
       <menu-content :nav-data="menu" />
       <template #operations>
-        <span class="version-container"> {{ !collapsed ? 'MSLX Web Panel' : '' }} {{ pgk.version }} </span>
+        <span class="version-container"> {{ !collapsed ? 'MSLX Web Panel' : '' }} {{ pkg.version }} </span>
       </template>
     </t-menu>
     <div :class="`${prefix}-side-nav-placeholder${collapsed ? '-hidden' : ''}`"></div>
@@ -24,7 +24,7 @@ import union from 'lodash/union';
 
 import { useSettingStore } from '@/store';
 import { prefix } from '@/config/global';
-import pgk from '../../../package.json';
+import pkg from '@/../package.json';
 import type { MenuRoute } from '@/types/interface';
 import { getActive, getRoutesExpanded } from '@/router';
 

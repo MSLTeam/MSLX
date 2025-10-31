@@ -1,6 +1,9 @@
 <script setup lang="ts">
-// 导入 TDesign 组件
-import { Card as TCard, Tag as TTag, Icon as TIcon } from 'tdesign-vue-next';
+// 🔽 1. 在这里导入 Tooltip (TTooltip)
+import { Card as TCard, Tag as TTag, Icon as TIcon, Tooltip as TTooltip } from 'tdesign-vue-next';
+import { useUserStore } from '@/store';
+import pkg from '@/../package.json';
+const userStore = useUserStore();
 </script>
 
 <template>
@@ -11,7 +14,7 @@ import { Card as TCard, Tag as TTag, Icon as TIcon } from 'tdesign-vue-next';
           <t-icon name="server" />
           <span>实例数量：</span>
         </span>
-        <span class="info-value">10</span>
+        <span class="info-value">不知道哦！</span>
       </div>
 
       <div class="info-item">
@@ -19,7 +22,7 @@ import { Card as TCard, Tag as TTag, Icon as TIcon } from 'tdesign-vue-next';
           <t-icon name="logo-codepen" />
           <span>NET环境：</span>
         </span>
-        <span class="info-value">6.0.8</span>
+        <span class="info-value">{{ userStore.userInfo.systemInfo.netVersion }}</span>
       </div>
 
       <div class="info-item">
@@ -27,7 +30,7 @@ import { Card as TCard, Tag as TTag, Icon as TIcon } from 'tdesign-vue-next';
           <t-icon name="dashboard" />
           <span>面板版本：</span>
         </span>
-        <span class="info-value">v1.2.3</span>
+        <span class="info-value">v{{ pkg.version }}</span>
       </div>
 
       <div class="info-item">
@@ -35,7 +38,7 @@ import { Card as TCard, Tag as TTag, Icon as TIcon } from 'tdesign-vue-next';
           <t-icon name="cloud" />
           <span>节点版本：</span>
         </span>
-        <span class="info-value">v1.2.3</span>
+        <span class="info-value">v{{ userStore.userInfo.version }}</span>
       </div>
 
       <div class="info-item">
@@ -43,7 +46,7 @@ import { Card as TCard, Tag as TTag, Icon as TIcon } from 'tdesign-vue-next';
           <t-icon name="desktop" />
           <span>主机名：</span>
         </span>
-        <span class="info-value">MyHost-Server-01</span>
+        <span class="info-value truncate-value">{{ userStore.userInfo.systemInfo.hostname }}</span>
       </div>
 
       <div class="info-item">
@@ -51,7 +54,7 @@ import { Card as TCard, Tag as TTag, Icon as TIcon } from 'tdesign-vue-next';
           <t-icon name="system-code" />
           <span>系统类型：</span>
         </span>
-        <span class="info-value">Linux (amd64)</span>
+        <span class="info-value">{{ userStore.userInfo.systemInfo.osType }} ({{ userStore.userInfo.systemInfo.osArchitecture }})</span>
       </div>
 
       <div class="info-item">
@@ -59,16 +62,20 @@ import { Card as TCard, Tag as TTag, Icon as TIcon } from 'tdesign-vue-next';
           <t-icon name="system-setting" />
           <span>系统版本：</span>
         </span>
-        <span class="info-value">Ubuntu 22.04 LTS</span>
-      </div>
 
+        <t-tooltip :content="userStore.userInfo.systemInfo.osVersion" :max-width="'400px'">
+          <span class="info-value truncate-value">
+            {{ userStore.userInfo.systemInfo.osVersion }}
+          </span>
+        </t-tooltip>
+      </div>
       <div class="info-item">
         <span class="info-label">
           <t-icon name="check-circle" />
-          <span>版本状态：</span>
+          <span>版本匹配：</span>
         </span>
         <span class="info-value">
-          <t-tag theme="success" variant="light">匹配</t-tag>
+          <t-tag :theme="(userStore.userInfo.targetFrontendVersion.panel === pkg.version)? 'success' : 'danger'" variant="light">{{ (userStore.userInfo.targetFrontendVersion.panel === pkg.version)? '正确匹配' : '请更新' }}</t-tag>
         </span>
       </div>
     </div>
@@ -85,12 +92,14 @@ import { Card as TCard, Tag as TTag, Icon as TIcon } from 'tdesign-vue-next';
 .info-item {
   display: flex;
   align-items: center;
-  justify-content: flex-start; // 确保内容从左开始
+  justify-content: space-between;
   padding: 10px 14px;
 
   background-color: var(--td-bg-color-container-hover);
   border-radius: var(--td-radius-medium);
   font-size: var(--td-font-size-m);
+
+  overflow: hidden;
 }
 
 .info-label {
@@ -106,7 +115,7 @@ import { Card as TCard, Tag as TTag, Icon as TIcon } from 'tdesign-vue-next';
   color: var(--td-text-color-primary);
   font-weight: 600;
 
-  margin-left: auto;
+  /* margin-left: auto; */ /* 👈 3.2 移除 */
   padding-left: 10px;
 
   text-align: right;
@@ -115,6 +124,14 @@ import { Card as TCard, Tag as TTag, Icon as TIcon } from 'tdesign-vue-next';
   :deep(.t-tag) {
     font-weight: 600;
   }
+}
+
+.truncate-value {
+  white-space: nowrap;
+  overflow: hidden; /* 隐藏溢出 */
+  text-overflow: ellipsis; /* 显示省略号 */
+  word-break: normal;
+  min-width: 0;
 }
 
 // 响应式
