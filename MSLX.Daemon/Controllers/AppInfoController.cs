@@ -3,6 +3,7 @@ using MSLX.Daemon.Models;
 using Newtonsoft.Json.Linq;
 using System.Reflection;
 using MSLX.Daemon.Utils;
+using System.Runtime.InteropServices;
 
 namespace MSLX.Daemon.Controllers
 {
@@ -12,6 +13,36 @@ namespace MSLX.Daemon.Controllers
         [HttpGet("api/status")]
         public IActionResult GetStatus()
         {
+            string osType;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                osType = "Windows";
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                osType = "Linux";
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                osType = "macOS";
+            }
+            else
+            {
+                // 其他系统，使用详细描述
+                osType = RuntimeInformation.OSDescription; 
+            }
+
+            // 系统信息
+            var systemInfo = new JObject
+            {
+                ["netVersion"] = RuntimeInformation.FrameworkDescription, // NET环境版本
+                ["osType"] = osType, // 系统类型
+                ["osVersion"] = RuntimeInformation.OSDescription,
+                ["osArchitecture"] = RuntimeInformation.OSArchitecture.ToString(), // 系统架构
+                ["hostname"] = Environment.MachineName // 主机名
+            };
+            
+
             var statusData = new JObject
             {
                 ["clientName"] = "MSLX Daemon",
@@ -23,7 +54,8 @@ namespace MSLX.Daemon.Controllers
                 {
                     ["desktop"] = "1.0.0",
                     ["panel"] = "1.0.0"
-                }
+                },
+                ["systemInfo"] = systemInfo // <-- 将新的 JObject 添加到这里
             };
 
             var response = new ApiResponse<JObject>
