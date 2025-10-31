@@ -1,5 +1,4 @@
 <script setup lang="ts">
-// 🔽 1. 在这里导入 Tooltip (TTooltip)
 import { Card as TCard, Tag as TTag, Icon as TIcon, Tooltip as TTooltip } from 'tdesign-vue-next';
 import { useUserStore } from '@/store';
 import pkg from '@/../package.json';
