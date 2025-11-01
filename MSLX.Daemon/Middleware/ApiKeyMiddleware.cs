@@ -1,6 +1,5 @@
 ﻿using MSLX.Daemon.Models;
 using MSLX.Daemon.Utils;
-using Newtonsoft.Json;
 
 namespace MSLX.Daemon.Middleware
 {

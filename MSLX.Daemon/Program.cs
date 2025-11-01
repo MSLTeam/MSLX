@@ -35,6 +35,7 @@ builder.Services.AddSingleton<IBackgroundTaskQueue>(ctx =>
     return new BackgroundTaskQueue(100);
 });
 builder.Services.AddHostedService<ServerCreationService>();
+builder.Services.AddScoped<MCServerService>();
 
 // 覆盖默认的模型验证失败响应
 builder.Services.AddControllers()
