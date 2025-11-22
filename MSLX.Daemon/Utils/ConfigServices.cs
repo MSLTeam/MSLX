@@ -202,7 +202,7 @@ public static class ConfigServices
             _serverListLock.EnterWriteLock();
             try
             {
-                if (_serverListCache.Any(s => s["ID"]?.Value<int>() == server.ID))
+                if (_serverListCache.Any(s => s["ID"]?.Value<uint>() == server.ID))
                 {
                     return false;
                 }
@@ -219,13 +219,13 @@ public static class ConfigServices
             }
         }
 
-        public bool DeleteServer(int serverId)
+        public bool DeleteServer(uint serverId)
         {
             _serverListLock.EnterWriteLock();
             try
             {
                 var target = _serverListCache
-                    .FirstOrDefault(s => s["ID"]?.Value<int>() == serverId);
+                    .FirstOrDefault(s => s["ID"]?.Value<uint>() == serverId);
 
                 if (target == null) return false;
 
@@ -245,7 +245,7 @@ public static class ConfigServices
             try
             {
                 var target = _serverListCache
-                    .FirstOrDefault(s => s["ID"]?.Value<int>() == updatedServer.ID);
+                    .FirstOrDefault(s => s["ID"]?.Value<uint>() == updatedServer.ID);
 
                 if (target == null) return false;
 
@@ -259,13 +259,13 @@ public static class ConfigServices
             }
         }
 
-        public McServerInfo.ServerInfo? GetServer(int serverId)
+        public McServerInfo.ServerInfo? GetServer(uint serverId)
         {
             _serverListLock.EnterReadLock();
             try
             {
                 return _serverListCache
-                    .FirstOrDefault(s => s["ID"]?.Value<int>() == serverId)
+                    .FirstOrDefault(s => s["ID"]?.Value<uint>() == serverId)
                     ?.ToObject<McServerInfo.ServerInfo>();
             }
             finally
@@ -274,13 +274,13 @@ public static class ConfigServices
             }
         }
 
-        public int GenerateServerId()
+        public uint GenerateServerId()
         {
             _serverListLock.EnterReadLock();
             try
             {
                 return _serverListCache.Any()
-                    ? _serverListCache.Max(s => s["ID"]!.Value<int>()) + 1
+                    ? _serverListCache.Max(s => s["ID"]!.Value<uint>()) + 1
                     : 1;
             }
             finally

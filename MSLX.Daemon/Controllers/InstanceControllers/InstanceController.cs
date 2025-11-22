@@ -1,7 +1,8 @@
+using Downloader;
 using Microsoft.AspNetCore.Mvc;
+using MSLX.Daemon.Models.Instance;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
-using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Controllers.InstanceControllers
 {
@@ -15,22 +16,17 @@ namespace MSLX.Daemon.Controllers.InstanceControllers
         }
 
         [HttpPost("api/instance/start")]
-        public async Task<IActionResult> StartInstance([FromQuery] int? id)
+        public async Task<IActionResult> StartInstance([FromBody] LaunchServerRequest request)
         {
-            if (id == null)
+            if (!request.ID.HasValue)
             {
-                return BadRequest(new { message = "Empty ID." });
+                return Ok(ApiResponseService.CreateResponse(400, "服务器ID无效"));
             }
-            var result = await _mcServerService.StartServer((int)id);
-            if (result)
-            {
-                return Ok(ApiResponseService.CreateResponse<JObject>(200, "Instance started."));
-            }
-            else
-            {
-                return Ok(ApiResponseService.CreateResponse<JObject>(400, "Failed to start instance."));
-            }
-        }
+            var result = await _mcServerService.StartServer(request.ID.Value);
 
+            return result
+                ? Ok(ApiResponseService.Success("Instance started."))
+                : Ok(ApiResponseService.Error("Failed to start instance."));
+        }
     }
 }

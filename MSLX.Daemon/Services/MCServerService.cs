@@ -5,7 +5,7 @@ namespace MSLX.Daemon.Services
     public class MCServerService
     {
 
-        public async Task<bool> StartServer(int instanceId)
+        public async Task<bool> StartServer(uint instanceId)
         {
             await Task.Delay(1000); // Ä£ÄâÒì²½²Ù×÷
             ConfigServices.ServerListConfig config = ConfigServices.ServerList;
