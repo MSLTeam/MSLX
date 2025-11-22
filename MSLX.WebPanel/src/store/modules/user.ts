@@ -84,7 +84,7 @@ export const useUserStore = defineStore('user', {
 
         // 初始化动态路由
         const permissionStore = usePermissionStore();
-        permissionStore.initRoutes(this.userInfo.roles);
+        await permissionStore.initRoutes(this.userInfo.roles);
 
       } catch (e) {
         console.error('Login failed:', e);
@@ -109,13 +109,19 @@ export const useUserStore = defineStore('user', {
       } catch (e) {
         // 获取不到用户信息 要求重新登录
         console.error('Get user info failed:', e);
-        await this.logout();
+        await this.logout(); // logout 会清除路由
         await router.push('/login');
         MessagePlugin.error('连接 MSLX 守护进程失败，请重新登录！');
       }
     },
 
+    /**
+     * +++ 修改 logout +++
+     */
     async logout() {
+      const permissionStore = usePermissionStore();
+      await permissionStore.clearRoutes();
+
       localStorage.removeItem(TOKEN_NAME);
       localStorage.removeItem(BASE_URL_NAME);
       this.token = '';
@@ -129,7 +135,6 @@ export const useUserStore = defineStore('user', {
   },
   persist: {
     afterRestore: (ctx) => {
-      // 页面加载、持久化数据恢复后
       if (ctx.store.token) {
         const permissionStore = usePermissionStore();
 
