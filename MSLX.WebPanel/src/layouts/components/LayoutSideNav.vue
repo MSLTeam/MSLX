@@ -32,6 +32,6 @@ const sideMenu = computed(() => {
       }
     });
   }
-  return newMenuRouters;
+  return newMenuRouters as any;
 });
 </script>

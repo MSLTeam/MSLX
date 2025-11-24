@@ -72,6 +72,14 @@ export const getActive = (maxLevel = 3): string => {
     .join('');
 };
 
+export function changeUrl(url: string) {
+  if(url.includes('http')){
+    window.open(url);
+  }else{
+    router.replace(url);
+  }
+}
+
 const router = createRouter({
   history: createWebHistory(),
   routes: allRoutes,

@@ -29,6 +29,6 @@ const headerMenu = computed(() => {
     }
     return [];
   }
-  return menuRouters.value;
+  return menuRouters.value as any;
 });
 </script>
