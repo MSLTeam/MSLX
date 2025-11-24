@@ -400,7 +400,6 @@ const handleAddTunnel = () => {
 <style scoped lang="less">
 .page-container {
   padding: 20px;
-  max-width: 1200px;
   margin: 0 auto;
 }
 
