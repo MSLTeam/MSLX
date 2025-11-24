@@ -367,7 +367,7 @@ public static class ConfigServices
                 if (_frpListCache.Any(s => s["ID"]?.Value<int>() == id))
                     return false;
 
-                string folderPath = Path.Combine(GetAppDataPath(), "Configs", "Frpc", id.ToString());
+                string folderPath = Path.Combine(GetAppDataPath(),"DaemonData", "Configs", "Frpc", id.ToString());
                 string filePath = Path.Combine(folderPath, $"frpc.{configType}");
                 try
                 {
@@ -406,7 +406,7 @@ public static class ConfigServices
 
                 _frpListCache.Remove(target);
                 SaveJson(_frpListPath, _frpListCache);
-                Directory.Delete(Path.Combine(GetAppDataPath(), "Configs", "Frpc", id.ToString()), true);
+                Directory.Delete(Path.Combine(GetAppDataPath(),"DaemonData", "Configs", "Frpc", id.ToString()), true);
                 return true;
             }
             finally
