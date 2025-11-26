@@ -20,7 +20,7 @@ namespace MSLX.Daemon.Controllers.InstanceControllers
         {
             if (!request.ID.HasValue)
             {
-                return Ok(ApiResponseService.CreateResponse(400, "服务器ID无效"));
+                return Ok(ApiResponseService.CreateResponse(400, "鏈嶅姟鍣↖D鏃犳晥"));
             }
             var result = await _mcServerService.StartServer(request.ID.Value);
 
