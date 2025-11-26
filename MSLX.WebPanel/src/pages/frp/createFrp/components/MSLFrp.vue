@@ -13,7 +13,7 @@ import { request } from '@/utils/request';
 import { generateRandomString } from '@/utils/tools';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { openLoginPopup } from '@/utils/popup';
-import { createFrpTunnel } from '@/pages/frp/createFrp/utils/createRequest';
+import { createFrpTunnel } from '@/pages/frp/createFrp/utils/create';
 
 interface UserInfo {
   uid: number;
@@ -203,8 +203,7 @@ async function handleUseTunnel() {
     });
 
     if (res.code === 200) {
-      await createFrpTunnel(currentTunnel.value.name, res.data, 'MSLFrp');
-      MessagePlugin.success('添加成功'); // 如果错误会被拦截器捕获 这里可以直接成功
+      await createFrpTunnel(currentTunnel.value.name, res.data, 'MSLFrp'); // 错误会抛出 这个函数会自动跳转+成功提示
     } else {
       MessagePlugin.error(res.msg);
     }

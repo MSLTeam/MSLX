@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import { useUserStore } from '@/store';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 
+
 // 终端相关
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
@@ -26,6 +27,9 @@ import { MessagePlugin } from 'tdesign-vue-next';
 // API
 import { getTunnelInfo, postFrpAction } from '@/api/frp';
 import { TunnelInfoModel } from '@/api/model/frp';
+import { useTunnelsStore } from '@/store/modules/frp';
+
+const tunnelsStore = useTunnelsStore();
 
 const route = useRoute();
 const userStore = useUserStore();
@@ -146,6 +150,8 @@ async function getThisTunnelInfo() {
   try {
     tunnelInfo.value = await getTunnelInfo(frpId.value);
     isRunning.value = tunnelInfo.value.isRunning;
+    // 因为开关隧道都需要使用此函数 故在此刷新隧道
+    await tunnelsStore.getTunnels();
   } catch (error) {
     console.error('获取隧道信息失败', error);
     term?.writeln(`\x1b[1;31m[Error] 获取隧道信息失败: ${error}\x1b[0m`);

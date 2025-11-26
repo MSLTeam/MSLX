@@ -5,10 +5,11 @@ import { ChevronRightIcon, CloudIcon, ServerIcon } from 'tdesign-icons-vue-next'
 import Result from '@/components/result/index.vue';
 
 import type { FrpListModel } from '@/api/model/frp';
-import { getFrpList } from '@/api/frp';
 import { changeUrl } from '@/router';
+import { useTunnelsStore } from '@/store/modules/frp';
 
-const frpList = ref<FrpListModel[]>([]);
+const tunnelsStore = useTunnelsStore();
+
 const loading = ref(true);
 const isError = ref(false);
 
@@ -27,7 +28,7 @@ async function getList() {
   try {
     loading.value = true;
     isError.value = false; // 每次请求前重置错误状态
-    frpList.value = await getFrpList();
+    await tunnelsStore.getTunnels();
   } catch (error) {
     console.error(error);
     isError.value = true; // 标记发生错误
@@ -65,7 +66,7 @@ onMounted(() => {
 
       <!-- 空状态 (没有数据) -->
       <result
-        v-else-if="frpList.length === 0"
+        v-else-if="tunnelsStore.frpList.length === 0"
         title="暂无隧道"
         tip="您还没有创建任何 Frp 隧道，快去创建一个吧"
         type="404"
@@ -75,7 +76,7 @@ onMounted(() => {
 
       <!-- 列表展示 -->
       <t-row v-else :gutter="[20, 20]">
-        <t-col v-for="item in frpList" :key="item.id" :xs="24" :sm="12" :md="6" :lg="4" :xl="4">
+        <t-col v-for="item in tunnelsStore.frpList" :key="item.id" :xs="24" :sm="12" :md="6" :lg="4" :xl="4">
           <div class="design-card" @click="handleCardClick(item)">
             <div
               class="status-bar"
