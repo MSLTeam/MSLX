@@ -32,7 +32,7 @@ async function getList() {
 }
 
 const handleCardClick = (item: FrpListModel) => {
-  changeUrl(`/frp/console/${item.id}`)
+  changeUrl(`/frp/console/${item.id}`);
 };
 
 onMounted(() => {
