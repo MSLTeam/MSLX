@@ -49,6 +49,12 @@ export default [
       {
         path: 'list',
         name: 'FrpList',
+        component: () => import('@/pages/frp/list/index.vue'),
+        meta: { title: '隧道列表' },
+      },
+      {
+        path: 'create',
+        name: 'FrpCreate',
         component: () => import('@/pages/frp/createFrp/index.vue'),
         meta: { title: '创建隧道' },
       },
