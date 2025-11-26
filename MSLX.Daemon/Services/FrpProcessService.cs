@@ -133,7 +133,7 @@ public class FrpProcessService
                     context.Process.WaitForExit(1000); 
                 }
                 
-                RecordLog(id, context, "--- 进程已停止 ---");
+                RecordLog(id, context, "Frpc进程已经退出...");
                 
                 return true;
             }
