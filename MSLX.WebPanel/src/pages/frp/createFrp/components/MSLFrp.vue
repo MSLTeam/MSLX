@@ -158,6 +158,7 @@ async function initDashboardData() {
       MessagePlugin.warning('登录已过期，请重新登录～');
       mslUserToken.value = '';
       localStorage.removeItem("msl-user-token");
+      return;
     }
 
     if (nodeRes.code === 200) {
