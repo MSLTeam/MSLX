@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
+using MSLX.Daemon.Models.Frp;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
 using Newtonsoft.Json.Linq;
@@ -45,4 +46,31 @@ public class FrpController : ControllerBase
             Data = resultList
         });
     }
+    
+    [HttpPost("action")]
+    public IActionResult OperatingFrp([FromBody] FrpActionRequest request)
+    {
+        if (request.Action == "start")
+        {
+            var (success, msg) = _frpService.StartFrp(request.Id);
+            return Ok(new ApiResponse<object>
+            {
+                Code = success ? 200 : 500,
+                Message = msg
+            });
+        }
+        else if (request.Action == "stop")
+        {
+            bool success = _frpService.StopFrp(request.Id);
+            return Ok(new ApiResponse<object>
+            {
+                Code = success ? 200 : 500,
+                Message = success ? "已停止" : "停止失败或未运行"
+            });
+        }
+        
+        return BadRequest(new ApiResponse<object> { Code = 400, Message = "未知操作" });
+    }
+    
+    
 }
