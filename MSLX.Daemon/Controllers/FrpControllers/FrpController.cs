@@ -4,6 +4,8 @@ using MSLX.Daemon.Models.Frp;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
 using Newtonsoft.Json.Linq;
+using Tomlyn;
+using Tomlyn.Model;
 
 namespace MSLX.Daemon.Controllers.FrpControllers;
 
@@ -70,6 +72,118 @@ public class FrpController : ControllerBase
         }
         
         return BadRequest(new ApiResponse<object> { Code = 400, Message = "未知操作" });
+    }
+    
+    
+    [HttpGet("info")]
+    public IActionResult GetFrpInfo([FromQuery] int id)
+    {
+        // 您在运行吗。jpg
+        bool isRunning = _frpService.IsFrpRunning(id);
+        var response = new FrpInfoResponse
+        {
+            IsRunning = isRunning,
+        };
+
+        // 获取配置
+        var frpConfigMeta = ConfigServices.FrpList.GetFrpConfig(id);
+        if (frpConfigMeta == null)
+        {
+            return NotFound(new ApiResponse<object> { Code = 404, Message = "找不到该配置" });
+        }
+
+        string configType = frpConfigMeta["ConfigType"]?.ToString() ?? "ini";
+
+        // 暂时只支持toml喵
+        if (configType.ToLower() != "toml")
+        {
+            return Ok(new ApiResponse<FrpInfoResponse>
+            {
+                Code = 200,
+                Data = response,
+                Message = "非 TOML 格式，无法解析详情"
+            });
+        }
+
+        // 读取文件
+        string configPath = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Configs", "Frpc", id.ToString(), $"frpc.toml");
+        if (!System.IO.File.Exists(configPath))
+        {
+            // 说实话 这能丢？
+            return Ok(new ApiResponse<FrpInfoResponse>
+            {
+                Code = 200, 
+                Data = response, 
+                Message = "配置文件丢失" 
+            });
+        }
+
+        try
+        {
+            // 这里是解析toml的
+            string tomlContent = System.IO.File.ReadAllText(configPath);
+            var model = Toml.ToModel(tomlContent);
+            
+            string serverAddr = "未知";
+            if (model.TryGetValue("serverAddr", out var addrObj))
+            {
+                serverAddr = addrObj.ToString()!;
+            }
+
+            // MSLFrp特有的域名字段
+            string? remoteDomain = null;
+            if (model.TryGetValue("metadatas", out var metaObj) && metaObj is TomlTable metaTable)
+            {
+                if (metaTable.TryGetValue("mslFrpRemoteDomain", out var domainObj))
+                {
+                    remoteDomain = domainObj.ToString();
+                }
+            }
+
+            // 获取proxies列表（一般就一个 但是可能存在自定义多个隧道的问题）
+            if (model.TryGetValue("proxies", out var proxiesObj) && proxiesObj is TomlTableArray proxiesArray)
+            {
+                foreach (var proxyItem in proxiesArray)
+                {
+                    string name = proxyItem.TryGetValue("name", out var n) ? n.ToString()! : "Unknown";
+                    string type = proxyItem.TryGetValue("type", out var t) ? t.ToString()! : "Unknown";
+                    string localIp = proxyItem.TryGetValue("localIP", out var lip) ? lip.ToString()! : "127.0.0.1";
+                    string localPort = proxyItem.TryGetValue("localPort", out var lp) ? lp.ToString()! : "?";
+                    string remotePort = proxyItem.TryGetValue("remotePort", out var rp) ? rp.ToString()! : "?";
+
+                    // 构造地址
+                    string mainHost = !string.IsNullOrEmpty(remoteDomain) ? remoteDomain : serverAddr;
+                    
+                    var detail = new ProxyDetail
+                    {
+                        ProxyName = name,
+                        Type = type,
+                        LocalAddress = $"{localIp}:{localPort}",
+                        RemoteAddressMain = $"{mainHost}:{remotePort}",
+                        RemoteAddressBackup = $"{serverAddr}:{remotePort}"
+                    };
+
+                    response.Proxies.Add(detail);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // 空列表
+            return Ok(new ApiResponse<FrpInfoResponse>
+            {
+                Code = 200,
+                Data = response, 
+                Message = $"配置文件解析失败: {ex.Message}"
+            });
+        }
+
+        return Ok(new ApiResponse<FrpInfoResponse>
+        {
+            Code = 200,
+            Message = "获取成功",
+            Data = response
+        });
     }
     
     
