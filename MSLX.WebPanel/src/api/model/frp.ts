@@ -5,3 +5,16 @@ export interface FrpListModel {
   configType: string;
   status: boolean;
 }
+
+export interface ProxyInfoModel {
+  proxyName: string;
+  type: string;
+  localAddress: string;
+  remoteAddressMain: string;
+  remoteAddressBackup: string;
+}
+
+export interface TunnelInfoModel{
+  isRunning: boolean;
+  proxies: ProxyInfoModel[];
+}

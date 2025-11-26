@@ -1,5 +1,5 @@
 import { request } from '@/utils/request';
-import { FrpListModel } from '@/api/model/frp';
+import { FrpListModel, TunnelInfoModel } from '@/api/model/frp';
 
 export function getFrpList() {
   return request.get<FrpListModel[]>({
@@ -12,6 +12,15 @@ export function postFrpAction(action:string , id:number){
     url: '/api/frp/action',
     data:{
       action,
+      id
+    }
+  });
+}
+
+export function getTunnelInfo(id:number){
+  return request.get<TunnelInfoModel>({
+    url: '/api/frp/info',
+    params:{
       id
     }
   });
