@@ -4,6 +4,7 @@ import { ChevronRightIcon, CloudIcon, ServerIcon } from 'tdesign-icons-vue-next'
 
 import type { FrpListModel } from '@/api/model/frp';
 import { getFrpList } from '@/api/frp';
+import { changeUrl } from '@/router';
 
 const frpList = ref<FrpListModel[]>([]);
 const loading = ref(true);
@@ -31,7 +32,7 @@ async function getList() {
 }
 
 const handleCardClick = (item: FrpListModel) => {
-  console.log('跳转详情:', item);
+  changeUrl(`/frp/console/${item.id}`)
 };
 
 onMounted(() => {

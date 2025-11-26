@@ -58,6 +58,12 @@ export default [
         component: () => import('@/pages/frp/createFrp/index.vue'),
         meta: { title: '创建隧道' },
       },
+      {
+        path: 'console/:id',
+        name: 'FrpConsole',
+        component: () => import('@/pages/frp/console/index.vue'),
+        meta: { title: '隧道控制台',hidden: true },
+      },
     ],
   },
 ];
