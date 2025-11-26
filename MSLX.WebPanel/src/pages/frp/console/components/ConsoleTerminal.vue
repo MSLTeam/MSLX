@@ -24,7 +24,7 @@ let hubConnection: HubConnection | null = null;
 // 主题配置
 const termThemes = {
   dark: {
-    background: '#181818', foreground: '#cccccc', cursor: '#ffffff', selectionBackground: '#264f78',
+    background: '#181818', foreground: '#cccccc', cursor: 'transparent', selectionBackground: '#264f78',
     black: '#000000', red: '#cd3131', green: '#0dbc79', yellow: '#e5e510',
     blue: '#2472c8', magenta: '#bc3fbc', cyan: '#11a8cd', white: '#e5e5e5',
     brightBlack: '#666666', brightRed: '#f14c4c', brightGreen: '#23d18b',
@@ -32,7 +32,7 @@ const termThemes = {
     brightCyan: '#29b8db', brightWhite: '#e5e5e5',
   },
   light: {
-    background: '#ffffff', foreground: '#333333', cursor: '#333333', selectionBackground: '#add6ff',
+    background: '#ffffff', foreground: '#333333', cursor: 'transparent', selectionBackground: '#add6ff',
     black: '#000000', red: '#cd3131', green: '#00bc79', yellow: '#9d9d10',
     blue: '#2472c8', magenta: '#bc3fbc', cyan: '#11a8cd', white: '#e5e5e5',
     brightBlack: '#666666', brightRed: '#f14c4c', brightGreen: '#23d18b',
@@ -68,7 +68,7 @@ const initTerminal = () => {
 
   const isDark = document.documentElement.getAttribute('theme-mode') === 'dark';
   term = new Terminal({
-    cursorBlink: true,
+    cursorBlink: false, // 关闭光标闪烁
     cursorStyle: 'bar',
     fontSize: 13,
     fontFamily: 'Menlo, Monaco, "Courier New", monospace',
@@ -202,7 +202,7 @@ onUnmounted(async () => {
   box-shadow: var(--td-shadow-2);
   position: relative;
   width: 100%;
-  height: 100%; // 占满父容器
+  height: 100%;
 
   .terminal-header {
     height: 38px;
@@ -233,8 +233,41 @@ onUnmounted(async () => {
     top: 38px; bottom: 0; left: 0; right: 0;
     padding: 6px 0 0 10px;
     z-index: 1;
+
     :deep(.xterm-screen) {
       width: 100% !important; height: 100% !important;
+    }
+
+    /* 滚动条美化核心代码 */
+    :deep(.xterm-viewport) {
+      // 兼容 Firefox
+      scrollbar-width: thin;
+      scrollbar-color: rgba(121, 121, 121, 0.4) transparent;
+
+      // Webkit (Chrome, Edge, Safari)
+      &::-webkit-scrollbar {
+        width: 10px;  // 纵向滚动条宽度
+        height: 10px; // 横向滚动条高度
+      }
+
+      &::-webkit-scrollbar-track {
+        background: transparent; // 轨道透明
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background-color: rgba(121, 121, 121, 0.4); // 滑块颜色，半透明灰色
+        border-radius: 6px; // 圆角
+        border: 2px solid transparent; // 留出边缘间隙，让滑块看起来是悬浮的
+        background-clip: content-box; // 内容裁剪
+
+        &:hover {
+          background-color: rgba(121, 121, 121, 0.7); // 悬停加深
+        }
+      }
+
+      &::-webkit-scrollbar-corner {
+        background: transparent;
+      }
     }
   }
 }
