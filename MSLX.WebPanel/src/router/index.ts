@@ -65,6 +65,9 @@ export const getActive = (maxLevel = 3): string => {
   if (!route.path) {
     return '';
   }
+  if (route.meta?.activeMenu) {
+    return route.meta.activeMenu as string;
+  }
   return route.path
     .split('/')
     .filter((_item: string, index: number) => index <= maxLevel && index > 0)
