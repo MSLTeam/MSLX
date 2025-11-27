@@ -56,7 +56,7 @@ public static class ConfigServices
                 _logger.LogInformation("正在初始化配置文件...");
                 _logger.LogInformation("您的默认 API Key 是: {ApiKey}", apikey);
 
-                File.WriteAllText(path, $"{{\n    \"api-key\":\"{apikey}\",\n    \"user\":\"MSLX用户\",\n    \"avatar\":\"https://www.mslmc.cn/logo.png\"\n}}");
+                File.WriteAllText(path, $"{{\n    \"apiKey\":\"{apikey}\",\n    \"user\":\"MSLX用户\",\n    \"avatar\":\"https://www.mslmc.cn/logo.png\"\n}}");
             }
         }
 

@@ -22,7 +22,7 @@ namespace MSLX.Daemon.Middleware
         {
             _next = next;
             _cache = cache;
-            _apiKey = ConfigServices.Config.ReadConfigKey("api-key")?.ToString() ?? "";
+            _apiKey = ConfigServices.Config.ReadConfigKey("apiKey")?.ToString() ?? "";
         }
 
         public async Task InvokeAsync(HttpContext context)
