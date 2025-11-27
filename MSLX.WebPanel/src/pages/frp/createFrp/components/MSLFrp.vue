@@ -243,9 +243,9 @@ const handleAddTunnel = () => {
     </div>
 
     <div v-else class="dashboard-container">
-      <t-loading :loading="loading" text="加载数据中..." fullscreen />
+      <t-loading attach="#app-space" :loading="loading" text="加载数据中..." />
 
-      <t-space direction="vertical" size="large" style="width: 100%">
+      <t-space id="app-space" direction="vertical" size="large" style="width: 100%">
 
         <t-card v-if="userInfo" :bordered="false" title="用户信息" class="info-card">
           <template #actions>

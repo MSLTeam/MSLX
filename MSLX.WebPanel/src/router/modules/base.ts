@@ -24,7 +24,7 @@ export default [
     component: Layout,
     // redirect: '/instance/list',
     name: 'instance',
-    meta: { title: '服务端管理', icon: 'root-list' },
+    meta: { title: '服务端管理', icon: 'server' },
     children: [
       {
         path: 'list',
