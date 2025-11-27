@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Utils;
@@ -41,6 +42,16 @@ builder.Services.AddSingleton<IBackgroundTaskQueue>(ctx =>
 builder.Services.AddHostedService<ServerCreationService>();
 builder.Services.AddScoped<MCServerService>();
 
+// 配置转发头选项
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    // 处理 X-Forwarded-For (IP) 和 X-Forwarded-Proto (协议 http/https)
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    
+    // 需要清空已知代理列表
+    options.KnownNetworks.Clear(); 
+    options.KnownProxies.Clear();
+});
 
 // 覆盖默认的模型验证失败响应
 builder.Services.AddControllers()
@@ -80,8 +91,12 @@ logger.LogInformation($"将使用 {ConfigServices.GetAppDataPath()} 作为应用
 ConfigServices.Initialize(loggerFactory);
 logger.LogInformation("欢迎您！" + ConfigServices.Config.ReadConfigKey("user"));
 
+app.UseForwardedHeaders();
+
 app.UseCors("AllowAll");
 app.UseMiddleware<ApiKeyMiddleware>();
+
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

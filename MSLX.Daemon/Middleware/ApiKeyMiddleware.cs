@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Utils;
+using System.Net; // 需引入
 
 namespace MSLX.Daemon.Middleware
 {
@@ -26,14 +27,19 @@ namespace MSLX.Daemon.Middleware
 
         public async Task InvokeAsync(HttpContext context)
         {
-            var clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            // 获取 IP 对象
+            var remoteIp = context.Connection.RemoteIpAddress;
+            var clientIp = remoteIp?.ToString() ?? "127.0.0.1";
+
+            // 是否本地回环地址
+            bool isLocalIp = remoteIp != null && IPAddress.IsLoopback(remoteIp);
             
             // 定义缓存 Key
             string banKey = $"BAN_{clientIp}";
             string countKey = $"ERR_COUNT_{clientIp}";
 
-            // IP是否已被封？
-            if (_cache.TryGetValue(banKey, out _))
+            // IP是否已被封？ (如果是本地 IP，直接跳过此检查)
+            if (!isLocalIp && _cache.TryGetValue(banKey, out _))
             {
                 // 你被封了～
                 await HandleErrorAsync(context, 403, $"您的 IP 已被暂时封禁，请于 {BanDuration.TotalMinutes} 分钟后再试。");
@@ -45,7 +51,11 @@ namespace MSLX.Daemon.Middleware
             {
                 if (!context.Request.Query.TryGetValue(ApiKeyHeaderName, out extractedApiKey))
                 {
-                    await ProcessFailureAsync(clientIp, countKey, banKey); // 记录失败
+                    // 非本地回环地址才记录失败次数
+                    if (!isLocalIp) 
+                    {
+                        await ProcessFailureAsync(clientIp, countKey, banKey); // 记录失败
+                    }
                     await HandleErrorAsync(context, 401, "未提供 API 密钥");
                     return;
                 }
@@ -61,7 +71,11 @@ namespace MSLX.Daemon.Middleware
             // 校验APIKey
             if (!_apiKey.Equals(extractedApiKey))
             {
-                await ProcessFailureAsync(clientIp, countKey, banKey); // 记录失败
+                // 只有非本地 IP 才记录失败次数
+                if (!isLocalIp)
+                {
+                    await ProcessFailureAsync(clientIp, countKey, banKey); // 记录失败
+                }
                 await HandleErrorAsync(context, 401, "API 密钥无效");
                 return;
             }
