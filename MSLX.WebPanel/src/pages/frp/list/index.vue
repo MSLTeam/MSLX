@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { ChevronRightIcon, CloudIcon, ServerIcon } from 'tdesign-icons-vue-next';
+import { ChevronRightIcon, CloudIcon, ServerIcon, DeleteIcon } from 'tdesign-icons-vue-next';
 
 import Result from '@/components/result/index.vue';
 
 import type { FrpListModel } from '@/api/model/frp';
 import { changeUrl } from '@/router';
 import { useTunnelsStore } from '@/store/modules/frp';
+import { postDeleteFrpTunnel } from '@/api/frp';
+import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 
 const tunnelsStore = useTunnelsStore();
 
@@ -41,6 +43,26 @@ const handleCardClick = (item: FrpListModel) => {
   changeUrl(`/frp/console/${item.id}`);
 };
 
+const handleDelete = (id: number) => {
+  const confirmDialog = DialogPlugin.confirm({
+    header: '确认删除隧道?',
+    body: '删除后该隧道将无法恢复。确定要继续吗？',
+    theme: 'danger',
+    onConfirm: async () => {
+      try {
+        await postDeleteFrpTunnel(id);
+        MessagePlugin.success(`隧道 ${id} 删除成功`);
+        await getList();
+        confirmDialog.hide();
+      } catch (error) {
+        MessagePlugin.error(error.message);
+      }
+    },
+    onClose: () => {
+      confirmDialog.hide();
+    },
+  });
+};
 
 onMounted(() => {
   getList();
@@ -50,17 +72,11 @@ onMounted(() => {
 <template>
   <div class="dashboard-wrapper">
     <div class="content-container">
-
       <!-- 加载状态 -->
       <t-loading v-if="loading" size="medium" text="加载中..." class="loading-box" />
 
       <!-- 错误状态 (获取失败) -->
-      <result
-        v-else-if="isError"
-        title="获取数据失败"
-        tip="无法连接到服务器，请检查网络或稍后重试"
-        type="500"
-      >
+      <result v-else-if="isError" title="获取数据失败" tip="无法连接到服务器，请检查网络或稍后重试" type="500">
         <t-button @click="getList">重试</t-button>
       </result>
 
@@ -76,7 +92,7 @@ onMounted(() => {
 
       <!-- 列表展示 -->
       <t-row v-else :gutter="[20, 20]">
-        <t-col v-for="item in tunnelsStore.frpList" :key="item.id" :xs="24" :sm="12" :md="6" :lg="4" :xl="4">
+        <t-col v-for="item in tunnelsStore.frpList" :key="item.id" :span="24" :xs="12" :sm="12" :md="6" :lg="6" :xl="4">
           <div class="design-card" @click="handleCardClick(item)">
             <div
               class="status-bar"
@@ -88,7 +104,9 @@ onMounted(() => {
                 <div class="icon-box">
                   <server-icon />
                 </div>
-                <t-tag variant="light" :theme="item.status ? 'success' : 'warning'">{{ item.status ? '运行中' : '未运行' }}</t-tag>
+                <t-tag variant="light" :theme="item.status ? 'success' : 'warning'">{{
+                  item.status ? '运行中' : '未运行'
+                }}</t-tag>
               </div>
 
               <div class="title-section">
@@ -104,6 +122,10 @@ onMounted(() => {
                 <t-tag size="small" :theme="getConfigTheme(item.configType) as any" variant="outline" shape="round">
                   {{ item.configType }}
                 </t-tag>
+
+                <t-button shape="circle" theme="danger" size="small" @click="handleDelete(item.id)" @click.stop="() => {}">
+                  <template #icon> <delete-icon /></template>
+                </t-button>
               </div>
 
               <div class="hover-action">
@@ -209,6 +231,7 @@ onMounted(() => {
     gap: 8px;
     flex-wrap: wrap;
     margin-top: auto;
+    align-items: center;
   }
 
   .hover-action {
