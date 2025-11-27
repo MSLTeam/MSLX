@@ -11,6 +11,7 @@ public class FrpProcessService
 {
     private readonly ILogger<FrpProcessService> _logger;
     private readonly IHubContext<FrpConsoleHub> _hubContext; 
+    private readonly IHostApplicationLifetime _appLifetime; 
 
     // 捆绑进程对象和缓存日志的类
     public class FrpContext
@@ -28,15 +29,19 @@ public class FrpProcessService
     private readonly string _frpcExecutablePath;
 
     // 注入构造函数
-    public FrpProcessService(ILogger<FrpProcessService> logger, IHubContext<FrpConsoleHub> hubContext)
+    public FrpProcessService(ILogger<FrpProcessService> logger, IHubContext<FrpConsoleHub> hubContext, IHostApplicationLifetime appLifetime)
     {
         _logger = logger;
         _hubContext = hubContext;
+        _appLifetime = appLifetime;
         
         // TODO: 下载Frpc
         string baseDir = ConfigServices.GetAppDataPath();
         string exeName = PlatFormServices.GetOs() == "Windows" ? "frpc.exe" : "frpc";
         _frpcExecutablePath = Path.Combine(baseDir, "DaemonData", "Tools", exeName);
+
+        // 注册退出事件 结束全部Frp进程
+        _appLifetime.ApplicationStopping.Register(StopAllFrp);
     }
 
     public bool IsFrpRunning(int id)
@@ -156,9 +161,33 @@ public class FrpProcessService
         }
         return new List<string>();
     }
+    
+
+    // 程序退出时调用的批量清理方法
+    private void StopAllFrp()
+    {
+        if (_activeProcesses.IsEmpty) return;
+
+        _logger.LogInformation("主程序正在退出，正在清理所有 FRP 子进程...");
+        foreach (var kvp in _activeProcesses)
+        {
+            try
+            {
+                var context = kvp.Value;
+                if (context.Process != null && !context.Process.HasExited)
+                {
+                    context.Process.Kill();
+                }
+            }
+            catch
+            {
+                _logger.LogError("清理 FRP 子进程时出错");
+            }
+        }
+        _activeProcesses.Clear();
+    }
 
     // 记录日志的方法
-
     private void RecordLog(int frpId, FrpContext context, string? data)
     {
         if (string.IsNullOrWhiteSpace(data)) return;
