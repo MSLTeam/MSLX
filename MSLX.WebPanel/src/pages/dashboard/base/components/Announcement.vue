@@ -71,8 +71,18 @@ onMounted(() => {
 </template>
 
 <style scoped lang="less">
+// 覆盖MD编辑器一些颜色变为主题色
 :deep(.md-editor-preview a){
-  color: var(--td-brand-color) !important;
+  color: var(--td-brand-color);
+}
+
+:deep(.md-editor-preview code){
+  color: var(--td-brand-color);
+  background-color: color-mix(in srgb, var(--td-brand-color), transparent 80%);
+}
+
+:deep(.md-editor div.default-theme){
+  --md-theme-quote-border: 5px solid var(--td-brand-color);
 }
 
 .card-header {
