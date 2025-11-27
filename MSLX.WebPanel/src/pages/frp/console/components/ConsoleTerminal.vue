@@ -131,7 +131,7 @@ const startSignalR = async () => {
   hubConnection = new HubConnectionBuilder()
     .withUrl(hubUrl.toString(), { withCredentials: false })
     .configureLogging(LogLevel.Warning)
-    .withAutomaticReconnect()
+    .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
     .build();
 
   hubConnection.on('ReceiveLog', (message: string) => {
@@ -143,6 +143,32 @@ const startSignalR = async () => {
       }, 2000);
     }
   });
+
+  // 重连
+  hubConnection.onreconnecting((error) => {
+    term?.writeln('\x1b[1;33m[System] 检测到连接中断，正在尝试重连...\x1b[0m');
+    console.warn('SignalR Reconnecting:', error);
+  });
+
+  // 重连成功
+  hubConnection.onreconnected(async () => {
+    term?.writeln('\x1b[1;32m[System] 网络已恢复，重新连接日志服务...\x1b[0m');
+    try {
+      await hubConnection?.invoke('JoinGroup', props.frpId);
+      term?.writeln('\x1b[1;32m[System] 日志服务成功重新连接！\x1b[0m');
+    } catch (err: any) {
+      term?.writeln(`\x1b[1;31m[Error] 重新连接日志服务失败: ${err.message}\x1b[0m`);
+    }
+  });
+
+  // 连接彻底关了
+  hubConnection.onclose((error) => {
+    if (error) {
+      term?.writeln(`\x1b[1;31m[System] 日志服务连接已断开: ${error.message}\x1b[0m`);
+      term?.writeln('\x1b[1;31m[System] 请刷新页面或检查网络连接。\x1b[0m');
+    }
+  });
+
 
   try {
     await hubConnection.start();
