@@ -71,6 +71,10 @@ onMounted(() => {
 </template>
 
 <style scoped lang="less">
+:deep(.md-editor-preview a){
+  color: var(--td-brand-color) !important;
+}
+
 .card-header {
   display: flex;
   align-items: center;
