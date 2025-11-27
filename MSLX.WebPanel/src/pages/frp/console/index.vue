@@ -79,7 +79,7 @@ watch(
   async (newId) => {
     if (newId) {
       frpId.value = parseInt(newId as string);
-      terminalRef.value?.writeln('\x1b[33m[System] 检测到 Frp ID 变更，正在刷新数据...\x1b[0m');
+      // terminalRef.value?.writeln('\x1b[33m[System] 检测到 Frp ID 变更，正在刷新数据...\x1b[0m');
       await fetchTunnelInfo();
     }
   },
@@ -100,6 +100,7 @@ onMounted(() => {
         <console-terminal
           ref="terminalRef"
           :frp-id="frpId"
+          @update="fetchTunnelInfo()"
         />
       </div>
 

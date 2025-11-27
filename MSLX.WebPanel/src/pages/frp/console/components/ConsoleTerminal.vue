@@ -11,6 +11,10 @@ const props = defineProps<{
   frpId: number;
 }>();
 
+const emit = defineEmits<{
+  update: []
+}>();
+
 const userStore = useUserStore();
 const terminalWrapper = ref<HTMLElement | null>(null);
 const terminalBody = ref<HTMLElement | null>(null);
@@ -132,6 +136,12 @@ const startSignalR = async () => {
 
   hubConnection.on('ReceiveLog', (message: string) => {
     term?.writeln(colorizeLog(message));
+    // 包含MSLX的信息应当检查隧道状态
+    if(message.includes('[MSLX]')){
+      setTimeout(()=>{
+        emit('update');
+      }, 2000);
+    }
   });
 
   try {

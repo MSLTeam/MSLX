@@ -97,7 +97,7 @@ public class FrpProcessService
             // 监听日志流
             process.OutputDataReceived += (sender, e) => RecordLog(id, context, e.Data);
             process.ErrorDataReceived += (sender, e) => RecordLog(id, context, e.Data);
-
+            RecordLog(id, context, "[MSLX] Frpc进程开始启动...");
             // 启动！
             process.Start();
             
@@ -133,7 +133,7 @@ public class FrpProcessService
                     context.Process.WaitForExit(1000); 
                 }
                 
-                RecordLog(id, context, "Frpc进程已经退出...");
+                RecordLog(id, context, "[MSLX] Frpc进程已经退出...");
                 
                 return true;
             }
