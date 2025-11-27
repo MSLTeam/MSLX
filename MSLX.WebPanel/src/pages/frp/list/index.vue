@@ -92,7 +92,7 @@ onMounted(() => {
 
       <!-- 列表展示 -->
       <t-row v-else :gutter="[20, 20]">
-        <t-col v-for="item in tunnelsStore.frpList" :key="item.id" :span="24" :xs="12" :sm="12" :md="6" :lg="6" :xl="4">
+        <t-col v-for="item in tunnelsStore.frpList" :key="item.id" :span="24" :xs="12" :sm="6" :md="6" :lg="4" :xl="4">
           <div class="design-card" @click="handleCardClick(item)">
             <div
               class="status-bar"
