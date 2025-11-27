@@ -19,3 +19,9 @@ public class CreateFrpRequest
     [AllowedValues("toml", "ini","cmd", ErrorMessage = "配置文件格式 (format) 错误")]
     public string format { get; set; }
 }
+
+public class DeleteFrpRequest
+{
+    [Required(ErrorMessage = "隧道ID (id) 不能为空")]
+    public int id { get; set; }
+}
