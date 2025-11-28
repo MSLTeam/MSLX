@@ -94,7 +94,8 @@ logger.LogInformation("欢迎您！" + ConfigServices.Config.ReadConfigKey("user
 app.UseForwardedHeaders();
 
 app.UseCors("AllowAll");
-app.UseMiddleware<ApiKeyMiddleware>();
+app.UseMiddleware<BlockLoopbackMiddleware>(); // 可配置的拦截本地访问中间件
+app.UseMiddleware<ApiKeyMiddleware>(); // APIKey校验中间件
 
 
 
