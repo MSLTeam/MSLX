@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue'; // 引入 onMounted
 import { useRoute, useRouter } from 'vue-router';
 import { MessagePlugin } from 'tdesign-vue-next';
 import type { FormInstanceFunctions, FormRule } from 'tdesign-vue-next';
@@ -29,21 +29,75 @@ const showPsw = ref(false);
 const router = useRouter();
 const route = useRoute();
 
+// 登录成功后的跳转逻辑
+const handleLoginSuccess = () => {
+  MessagePlugin.success('登陆成功');
+  const redirect = route.query.redirect as string;
+  const redirectUrl = redirect ? decodeURIComponent(redirect) : '/dashboard/base';
+  router.push(redirectUrl);
+
+  if (formData.value.checked) {
+    localStorage.setItem(REMEMBER_URL_NAME, formData.value.url);
+    localStorage.setItem(REMEMBER_KEY_NAME, formData.value.key);
+  } else {
+    localStorage.removeItem(REMEMBER_URL_NAME);
+    localStorage.removeItem(REMEMBER_KEY_NAME);
+  }
+};
+
+// 手动提交
 const onSubmit = async ({ validateResult }) => {
   if (validateResult === true) {
     try {
       await userStore.login(formData.value);
-
-      MessagePlugin.success('登陆成功');
-      const redirect = route.query.redirect as string;
-      const redirectUrl = redirect ? decodeURIComponent(redirect) : '/dashboard/base';
-      router.push(redirectUrl);
-    } catch (e) {
+      handleLoginSuccess();
+    } catch (e: any) {
       console.log(e);
-      MessagePlugin.error(e.message);
+      MessagePlugin.error(e.message || '登录失败');
     }
   }
 };
+
+// 自动登录逻辑
+const checkAutoLogin = async () => {
+  const authParam = route.query.auth as string;
+
+  if (!authParam) return;
+
+  try {
+    const decodedStr = window.atob(authParam);
+    const lastIndex = decodedStr.lastIndexOf('|');
+
+    if (lastIndex === -1) {
+      MessagePlugin.warning('自动登录链接无效');
+      return;
+    }
+
+    const url = decodedStr.substring(0, lastIndex);
+    const key = decodedStr.substring(lastIndex + 1);
+
+    if (!url || !key) return;
+
+    formData.value.url = url;
+    formData.value.key = key;
+
+    const msgInstance = MessagePlugin.loading('检测到登录参数，正在自动登录...');
+
+    await userStore.login(formData.value);
+
+    MessagePlugin.close(msgInstance);
+    handleLoginSuccess();
+
+  } catch (e: any) {
+    console.error('Auto login failed:', e);
+    MessagePlugin.error('自动登录链接无效或已过期');
+  }
+};
+
+// 组件挂载时检查
+onMounted(() => {
+  checkAutoLogin();
+});
 </script>
 
 <template>
@@ -84,16 +138,11 @@ const onSubmit = async ({ validateResult }) => {
       <t-checkbox v-model="formData.checked">记住连接信息</t-checkbox>
     </div>
 
-
     <t-form-item class="btn-container">
       <t-button block size="large" type="submit"> 登录 </t-button>
     </t-form-item>
-
-
   </t-form>
 </template>
-
-
 
 <style lang="less" scoped>
 @import url('../index.less');
