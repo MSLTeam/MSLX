@@ -17,6 +17,7 @@ const formData = reactive<SettingsModel>({
   user: '',
   avatar: '',
   fireWallBanLocalAddr: false,
+  openWebConsoleOnLaunch: true,
 });
 
 // 头像相关
@@ -110,7 +111,7 @@ onMounted(() => {
         <t-form
           ref="form"
           :data="formData"
-          :label-width="100"
+          :label-width="120"
           label-align="left"
           @submit="onSubmit"
         >
@@ -171,6 +172,19 @@ onMounted(() => {
             </t-space>
           </t-form-item>
 
+          <t-divider dashed />
+
+          <div class="section-title">
+            <t-icon name="desktop" /> MSLX 守护进程端设置
+          </div>
+
+          <t-form-item label="自动打开控制台" help="MSLX 守护进程启动成功后，是否自动登录网页端控制台。">
+            <t-space align="center">
+              <t-switch v-model="formData.openWebConsoleOnLaunch" />
+              <span class="status-text">{{ formData.openWebConsoleOnLaunch ? '已开启' : '已关闭' }}</span>
+            </t-space>
+          </t-form-item>
+
           <t-form-item>
             <t-button theme="primary" type="submit" :loading="submitLoading" block class="save-btn">
               <template #icon><t-icon name="save" /></template>
@@ -184,7 +198,7 @@ onMounted(() => {
         <div class="about-content">
           <p class="about-desc">感谢以下开发者对本项目的杰出贡献：</p>
           <t-row :gutter="[16, 16]">
-            <t-col :span="6" :xs="12" v-for="dev in developers" :key="dev.name">
+            <t-col v-for="dev in developers" :key="dev.name" :span="6" :xs="12">
               <div class="dev-card">
                 <t-avatar :image="dev.avatar" size="60px" shape="circle" />
                 <div class="dev-info">
@@ -202,89 +216,89 @@ onMounted(() => {
 </template>
 
 <style scoped lang="less">
-.settings-page {
-  margin: 0 auto;
-}
-
-.section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--td-text-color-primary);
-  margin-bottom: 24px;
-  margin-top: 8px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  .t-icon {
-    font-size: 18px;
-    color: var(--td-brand-color);
-  }
-}
-
-.avatar-preview {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-
-  .preview-tips {
-    font-size: 12px;
-    color: var(--td-text-color-placeholder);
-  }
-}
-
-.status-text {
-  font-size: 14px;
-  color: var(--td-text-color-secondary);
-}
-
-.save-btn {
-  margin-top: 16px;
-
-  /* 移动端按钮加高 */
-  @media screen and (max-width: 768px) {
-    height: 44px;
-  }
-}
-
-/* 关于模块样式 */
-.about-content {
-  .about-desc {
-    color: var(--td-text-color-secondary);
-    margin-bottom: 20px;
-    font-size: 14px;
-  }
-}
-
-.dev-card {
-  display: flex;
-  align-items: center;
-  background-color: var(--td-bg-color-container-hover);
-  padding: 16px;
-  border-radius: var(--td-radius-medium);
-  transition: all 0.3s;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--td-shadow-1);
+  .settings-page {
+    margin: 0 auto;
   }
 
-  .dev-info {
-    margin-left: 12px;
+  .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--td-text-color-primary);
+    margin-bottom: 24px;
+    margin-top: 8px;
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 8px;
 
-    .dev-name {
-      font-weight: 600;
-      font-size: 16px;
-      color: var(--td-text-color-primary);
+    .t-icon {
+      font-size: 18px;
+      color: var(--td-brand-color);
     }
+  }
 
-    .dev-role {
+  .avatar-preview {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .preview-tips {
       font-size: 12px;
       color: var(--td-text-color-placeholder);
-      margin-top: 2px;
     }
   }
-}
+
+  .status-text {
+    font-size: 14px;
+    color: var(--td-text-color-secondary);
+  }
+
+  .save-btn {
+    margin-top: 16px;
+
+    /* 移动端按钮加高 */
+    @media screen and (max-width: 768px) {
+      height: 44px;
+    }
+  }
+
+  /* 关于模块样式 */
+  .about-content {
+    .about-desc {
+      color: var(--td-text-color-secondary);
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+  }
+
+  .dev-card {
+    display: flex;
+    align-items: center;
+    background-color: var(--td-bg-color-container-hover);
+    padding: 16px;
+    border-radius: var(--td-radius-medium);
+    transition: all 0.3s;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--td-shadow-1);
+    }
+
+    .dev-info {
+      margin-left: 12px;
+      display: flex;
+      flex-direction: column;
+
+      .dev-name {
+        font-weight: 600;
+        font-size: 16px;
+        color: var(--td-text-color-primary);
+      }
+
+      .dev-role {
+        font-size: 12px;
+        color: var(--td-text-color-placeholder);
+        margin-top: 2px;
+      }
+    }
+  }
 </style>

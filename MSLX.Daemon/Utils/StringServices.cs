@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 
 namespace MSLX.Daemon.Utils;
 
@@ -50,6 +51,13 @@ public class StringServices
         DateTime utcTime = origin.AddSeconds(seconds);
         TimeZoneInfo cstZone = TimeZoneInfo.FindSystemTimeZoneById("China Standard Time");
         return TimeZoneInfo.ConvertTimeFromUtc(utcTime, cstZone);
+    }
+    
+    public static string EncodeToBase64(string plainText)
+    {
+        if (string.IsNullOrEmpty(plainText)) return "";
+        var plainTextBytes = Encoding.UTF8.GetBytes(plainText);
+        return Convert.ToBase64String(plainTextBytes);
     }
 
 }
