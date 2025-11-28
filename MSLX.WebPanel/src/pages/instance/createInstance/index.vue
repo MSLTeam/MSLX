@@ -28,6 +28,7 @@ const formData = ref({
   java: 'java',
   core: '',
   coreUrl: '',
+  coreSha256: '',
   minM: 1024,
   maxM: 4096,
   args: '',
@@ -50,7 +51,7 @@ const FORM_RULES: FormRules = {
   maxM: [{ required: true, min: 1, message: '最大内存必须大于0', trigger: 'blur' }],
 };
 
-const stepValidationFields = [['name', 'path'], ['java'], ['core', 'coreUrl'], ['minM', 'maxM', 'args']];
+const stepValidationFields = [['name', 'path'], ['java'], ['core', 'coreUrl','coreSha256'], ['minM', 'maxM', 'args']];
 
 // 步骤导航
 
@@ -102,6 +103,7 @@ const onSubmit = async () => {
     ...formData.value,
     path: formData.value.path || null,
     coreUrl: formData.value.coreUrl || null,
+    coreSha256: formData.value.coreSha256 || null,
     args: formData.value.args || null,
   };
 
@@ -214,7 +216,7 @@ onUnmounted(() => {
 const goToHome = () => {
   isSuccess.value = false;
   currentStep.value = 0;
-  formData.value = { ...formData.value, name: '', core: '', coreUrl: '', path: '', args: '' };
+  formData.value = { ...formData.value, name: '', core: '', coreUrl: '',coreSha256: '', path: '', args: '' };
 };
 
 const viewDetails = () => {
@@ -271,6 +273,9 @@ const viewDetails = () => {
               </t-form-item>
               <t-form-item label="核心下载地址 (可选)" name="coreUrl" help="如果留空，将不会自动下载核心文件">
                 <t-input v-model="formData.coreUrl" placeholder="http://.../server.jar" />
+              </t-form-item>
+              <t-form-item label="核心下载文件Sha256" name="coreSha256" help="如果留空，将不会校验下载文件的完整性">
+                <t-input v-model="formData.coreSha256" placeholder="" />
               </t-form-item>
             </div>
 
