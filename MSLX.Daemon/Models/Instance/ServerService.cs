@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace MSLX.Daemon.Models.Instance;
 public class LaunchServerRequest
 {
-    [Required(ErrorMessage = "·şÎñÆ÷ID²»ÄÜÎª¿Õ")]
-    [Range(1, uint.MaxValue, ErrorMessage = "¸ñÊ½´íÎó£¡")]
+    [Required(ErrorMessage = "æœåŠ¡å™¨IDä¸èƒ½ä¸ºç©º")]
+    [Range(1, uint.MaxValue, ErrorMessage = "æ ¼å¼é”™è¯¯ï¼")]
     public uint? ID { get; set; }
 }

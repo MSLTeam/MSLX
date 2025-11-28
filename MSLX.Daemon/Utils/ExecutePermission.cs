@@ -3,15 +3,15 @@ namespace MSLX.Daemon.Utils
     public class ExecutePermission
     {
         /// <summary>
-        /// ¶ÔWinÏµÍ³£¬Ö±½Ó·µ»Øtrue£¬LinuxºÍMacÔò½øĞĞÌáÈ¨
+        /// å¯¹Winç³»ç»Ÿï¼Œç›´æ¥è¿”å›trueï¼ŒLinuxå’ŒMacåˆ™è¿›è¡Œææƒ
         /// </summary>
-        /// <param name="filePath">ĞèÒªÌáÈ¨µÄÎÄ¼ş/Ä¿Â¼</param>
+        /// <param name="filePath">éœ€è¦ææƒçš„æ–‡ä»¶/ç›®å½•</param>
         /// <returns></returns>
         public static bool GrantExecutePermission(string filePath)
         {
             if (OperatingSystem.IsWindows())
             {
-                return true; // WindowsÏµÍ³²»ĞèÒªĞŞ¸ÄÈ¨ÏŞ
+                return true; // Windowsç³»ç»Ÿä¸éœ€è¦ä¿®æ”¹æƒé™
             }
             else if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
             {
@@ -35,7 +35,7 @@ namespace MSLX.Daemon.Utils
                 }
                 catch (Exception ex)
                 {
-                    // ¼ÇÂ¼ÈÕÖ¾»ò´¦ÀíÒì³£
+                    // è®°å½•æ—¥å¿—æˆ–å¤„ç†å¼‚å¸¸
                     Console.WriteLine($"Error granting execute permission: {ex.Message}");
                     return false;
                 }
