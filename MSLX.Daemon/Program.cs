@@ -1,3 +1,4 @@
+using System.Net;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Hubs;
@@ -119,8 +120,8 @@ app.MapControllers();
 var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
 lifetime.ApplicationStarted.Register(() =>
 {
-    // 打开控制台
-    if((bool?)ConfigServices.Config.ReadConfig()["openWebConsoleOnLaunch"] ?? true)
+    // 打开控制台(仅当本地地址才开)
+    if(((bool?)ConfigServices.Config.ReadConfig()["openWebConsoleOnLaunch"] ?? true) && listenAddr.Contains("localhost") || listenAddr.Contains("127.0.0.1"))
     {
         var address = "https://alpha-mslx.aino.cyou/login";
         PlatFormServices.OpenBrowser($"{address}?auth={StringServices.EncodeToBase64($"{listenAddr}|{ConfigServices.Config.ReadConfigKey("apiKey")}")}");
