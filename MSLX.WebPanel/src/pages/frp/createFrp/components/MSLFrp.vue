@@ -247,7 +247,7 @@ const handleAddTunnel = () => {
 
       <t-space id="app-space" direction="vertical" size="large" style="width: 100%">
 
-        <t-card v-if="userInfo" :bordered="false" title="用户信息" class="info-card">
+        <t-card v-if="userInfo" :bordered="false" title="MSLFrp 用户信息" class="info-card">
           <template #actions>
             <t-tag theme="primary" variant="light">{{ userInfo.user_group_name }}</t-tag>
           </template>
@@ -399,7 +399,6 @@ const handleAddTunnel = () => {
 
 <style scoped lang="less">
 .page-container {
-  padding: 20px;
   margin: 0 auto;
 }
 
