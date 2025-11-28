@@ -21,11 +21,11 @@ namespace MSLX.Daemon.Controllers.InstanceControllers
             {
                 return Ok(ApiResponseService.CreateResponse(400, "服务器ID无效"));
             }
-            var result = await _mcServerService.StartServer(request.ID.Value);
+            var (Result, Msg) = _mcServerService.StartServer(request.ID.Value);
 
-            return result
-                ? Ok(ApiResponseService.Success("Instance started."))
-                : Ok(ApiResponseService.Error("Failed to start instance."));
+            return Result
+                ? Ok(ApiResponseService.Success(Msg))
+                : Ok(ApiResponseService.Error("Failed to start instance." + Msg));
         }
     }
 }
