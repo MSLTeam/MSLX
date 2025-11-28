@@ -65,7 +65,11 @@ defineEmits<{
     </t-card>
 
     <t-card title="隧道概览" class="info-card" :bordered="false">
-      <template #actions><t-button shape="circle" variant="text"><code-icon /></t-button></template>
+      <template #actions>
+        <t-tag v-if="tunnelInfo && tunnelInfo.proxies && tunnelInfo.proxies.length > 0 && tunnelInfo.proxies.some(proxy => proxy.type === 'xtcp')" variant="light-outline" theme="primary">联机房间 - 房主</t-tag>
+        <t-tag v-else-if="tunnelInfo && tunnelInfo.proxies && tunnelInfo.proxies.length > 0 && tunnelInfo.proxies.some(proxy => proxy.type === 'xtcp - Visitors')" variant="light-outline" theme="primary">联机房间 - 访客</t-tag>
+        <t-button v-else shape="circle" variant="text"><code-icon /></t-button>
+      </template>
 
       <div class="info-list">
         <div class="info-item">
@@ -78,8 +82,10 @@ defineEmits<{
             <div v-if="tunnelInfo.proxies.length > 1" class="proxy-header">配置 #{{ index + 1 }}</div>
 
             <div class="info-item">
-              <div class="label"><cloud-icon /> 隧道名称</div>
-              <div class="value">{{ proxy.proxyName }}</div>
+              <div class="label"><cloud-icon /> {{ proxy.type.includes('xtcp') ? '房间号':'隧道名称'}}</div>
+              <t-tooltip :content="proxy.proxyName" placement="top" show-arrow destroy-on-close>
+                <div class="value remote-addr pointer">{{ proxy.proxyName }}</div>
+              </t-tooltip>
             </div>
 
             <div class="info-item">
@@ -88,7 +94,7 @@ defineEmits<{
             </div>
 
             <div class="info-item">
-              <div class="label"><link-icon /> 连接地址</div>
+              <div class="label"><link-icon /> {{ proxy.type.includes('xtcp') ? '房间密钥':'连接地址'}}</div>
               <t-tooltip :content="proxy.remoteAddressMain" placement="top" show-arrow destroy-on-close>
                 <div class="value remote-addr pointer">{{ proxy.remoteAddressMain || '获取中...' }}</div>
               </t-tooltip>
