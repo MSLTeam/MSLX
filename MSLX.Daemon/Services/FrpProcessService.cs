@@ -171,100 +171,142 @@ public class FrpProcessService
     }
     
     // 这里实现下载Frpc逻辑
-    private async Task<bool> DownloadFrpcAsync(int id, FrpContext context)
+private async Task<bool> DownloadFrpcAsync(int id, FrpContext context)
+{
+    try
     {
-        try
+        string os = PlatFormServices.GetOs();
+        string arch = PlatFormServices.GetOsArch();
+        
+        // 不知道为什么还要兼容一下win7
+        bool isWin7 = false;
+        if (os == "Windows")
         {
-            string os = PlatFormServices.GetOs();
-            string arch = PlatFormServices.GetOsArch();
-            
-            RecordLog(id, context, $">>> [MSLX-FrpcService] 正在获取版本信息 (System: {os}, Arch: {arch})...");
-
-            var jsonStr = await _apiClient.GetStringAsync("https://user.mslmc.net/api/frp/download");
-            var apiResp = JObject.Parse(jsonStr);
-
-            var downloadNode = apiResp["data"]?["cli"]?[0]?["download"]?[os]?[arch];
-            
-            if (downloadNode == null)
+            // 内核6.1
+            var winVer = Environment.OSVersion.Version;
+            if (winVer.Major == 6 && winVer.Minor == 1)
             {
-                RecordLog(id, context, ">>> [MSLX-FrpcService] 错误：API 中未找到适配当前系统的下载项。");
-                return false;
+                isWin7 = true;
             }
+        }
 
-            string downloadUrl = downloadNode["url"]?.ToString() ?? "";
-            string version = apiResp["data"]?["cli"]?[0]?["version"]?.ToString() ?? "Unknown";
+        RecordLog(id, context, $">>> [MSLX-FrpcService] 正在获取版本信息 (System: {os}, Arch: {arch}{(isWin7 ? ", Win7 Legacy" : "")})...");
 
-            if (string.IsNullOrEmpty(downloadUrl)) return false;
+        var jsonStr = await _apiClient.GetStringAsync("https://user.mslmc.net/api/frp/download");
+        var apiResp = JObject.Parse(jsonStr);
 
-            RecordLog(id, context, $">>> [MSLX-FrpcService] 获取成功 (Ver: {version})，准备下载...");
+        // 获取 cli 列表数组
+        var cliList = apiResp["data"]?["cli"]?.ToObject<JArray>();
+        if (cliList == null || !cliList.Any())
+        {
+             RecordLog(id, context, ">>> [MSLX-FrpcService] 错误：API 返回的版本列表为空。");
+             return false;
+        }
+        
+        JToken? targetNode = null;
 
-            // 临时文件名
-            string tempFileName = Path.Combine(_toolsDir, $"frpc_temp_{Guid.NewGuid()}");
-            if (downloadUrl.Contains(".zip")) tempFileName += ".zip";
-            else if (downloadUrl.Contains(".tar.gz")) tempFileName += ".tar.gz";
-
-            if (!Directory.Exists(_toolsDir)) Directory.CreateDirectory(_toolsDir);
-
-            // 配置下载器
-            var downloadOpt = new DownloadConfiguration { ChunkCount = 8, ParallelDownload = true };
-            var downloader = new DownloadService(downloadOpt);
+        if (isWin7)
+        {
+            RecordLog(id, context, ">>> [MSLX-FrpcService] 检测到 Windows 7 系统，正在查找 Frpc 兼容版本 (0.51.2)...");
+            RecordLog(id, context, ">>> [MSLX-FrpcService] 此系统已经过时，建议你您升级到 Windows 10或者更高版本使用～");
+            // 查找0.51.2版本
+            targetNode = cliList.FirstOrDefault(x => x["version"]?.ToString() == "0.51.2");
             
-            DateTime lastReportTime = DateTime.MinValue;
-            const int throttleMs = 1000; // 推送延迟
-
-            downloader.DownloadProgressChanged += async (s, e) =>
+            if (targetNode == null)
             {
-                if ((DateTime.UtcNow - lastReportTime).TotalMilliseconds > throttleMs)
-                {
-                    lastReportTime = DateTime.UtcNow;
-                    double percent = Math.Round(e.ProgressPercentage, 1);
-                    // 推送日志
-                    await _hubContext.Clients.Group(id.ToString()).SendAsync("ReceiveLog", $">>> [MSLX-FrpcService] 下载 Frpc 核心中... {percent}% ({ConvertBytes(e.ReceivedBytesSize)}/{ConvertBytes(e.TotalBytesToReceive)})");
-                }
-            };
-
-            bool isDownloadSuccess = false;
-            string downloadError = "";
-
-            downloader.DownloadFileCompleted += (s, e) =>
-            {
-                if (e.Cancelled) downloadError = "下载被取消";
-                else if (e.Error != null) downloadError = e.Error.Message;
-                else isDownloadSuccess = true;
-            };
-
-            // 开始下载
-            await downloader.DownloadFileTaskAsync(downloadUrl, tempFileName);
-
-            if (!isDownloadSuccess)
-            {
-                RecordLog(id, context, $">>> [MSLX-FrpcService] 下载失败: {downloadError}");
-                try { File.Delete(tempFileName); } catch { }
-                return false;
-            }
-
-            RecordLog(id, context, ">>> [MSLX-FrpcService] 下载完成，正在解压...");
-
-            bool extractSuccess = ExtractCoreFile(tempFileName, _toolsDir, os);
-            try { File.Delete(tempFileName); } catch { }
-
-            if (extractSuccess)
-            {
-                RecordLog(id, context, ">>> [MSLX-FrpcService] Frpc 核心文件安装成功！");
-                return true;
-            }
-            else
-            {
-                RecordLog(id, context, ">>> [MSLX-FrpcService] Frpc 安装失败：未在压缩包中找到核心文件。");
+                RecordLog(id, context, ">>> [MSLX-FrpcService] 警告：未找到 0.51.2 兼容版本，启动取消！");
                 return false;
             }
         }
-        catch (Exception ex)
+        else
         {
-            RecordLog(id, context, $">>> [MSLX-FrpcService] 自动下载流程异常: {ex.Message}");
+            // 读取第一个 是最新版
+            targetNode = cliList.First();
+        }
+
+        // 根据系统和架构获取下载节点
+        var downloadNode = targetNode?["download"]?[os]?[arch];
+        
+        if (downloadNode == null)
+        {
+            RecordLog(id, context, $">>> [MSLX-FrpcService] 错误：在版本 {targetNode?["version"]} 中未找到适配当前系统的下载项。");
+            return false;
+        }
+
+        string downloadUrl = downloadNode["url"]?.ToString() ?? "";
+        string version = targetNode?["version"]?.ToString() ?? "Unknown";
+
+        if (string.IsNullOrEmpty(downloadUrl)) return false;
+
+        RecordLog(id, context, $">>> [MSLX-FrpcService] 获取成功 (Ver: {version})，准备下载...");
+
+        // 临时文件名
+        string tempFileName = Path.Combine(_toolsDir, $"frpc_temp_{Guid.NewGuid()}");
+        if (downloadUrl.Contains(".zip")) tempFileName += ".zip";
+        else if (downloadUrl.Contains(".tar.gz")) tempFileName += ".tar.gz";
+
+        if (!Directory.Exists(_toolsDir)) Directory.CreateDirectory(_toolsDir);
+
+        // 配置下载器
+        var downloadOpt = new DownloadConfiguration { ChunkCount = 8, ParallelDownload = true };
+        var downloader = new DownloadService(downloadOpt);
+        
+        DateTime lastReportTime = DateTime.MinValue;
+        const int throttleMs = 1000; // 推送延迟
+
+        downloader.DownloadProgressChanged += async (s, e) =>
+        {
+            if ((DateTime.UtcNow - lastReportTime).TotalMilliseconds > throttleMs)
+            {
+                lastReportTime = DateTime.UtcNow;
+                double percent = Math.Round(e.ProgressPercentage, 1);
+                // 推送日志
+                await _hubContext.Clients.Group(id.ToString()).SendAsync("ReceiveLog", $">>> [MSLX-FrpcService] 下载 Frpc 核心中... {percent}% ({ConvertBytes(e.ReceivedBytesSize)}/{ConvertBytes(e.TotalBytesToReceive)})");
+            }
+        };
+
+        bool isDownloadSuccess = false;
+        string downloadError = "";
+
+        downloader.DownloadFileCompleted += (s, e) =>
+        {
+            if (e.Cancelled) downloadError = "下载被取消";
+            else if (e.Error != null) downloadError = e.Error.Message;
+            else isDownloadSuccess = true;
+        };
+
+        // 开始下载
+        await downloader.DownloadFileTaskAsync(downloadUrl, tempFileName);
+
+        if (!isDownloadSuccess)
+        {
+            RecordLog(id, context, $">>> [MSLX-FrpcService] 下载失败: {downloadError}");
+            try { File.Delete(tempFileName); } catch { }
+            return false;
+        }
+
+        RecordLog(id, context, ">>> [MSLX-FrpcService] 下载完成，正在解压...");
+
+        bool extractSuccess = ExtractCoreFile(tempFileName, _toolsDir, os);
+        try { File.Delete(tempFileName); } catch { }
+
+        if (extractSuccess)
+        {
+            RecordLog(id, context, ">>> [MSLX-FrpcService] Frpc 核心文件安装成功！");
+            return true;
+        }
+        else
+        {
+            RecordLog(id, context, ">>> [MSLX-FrpcService] Frpc 安装失败：未在压缩包中找到核心文件。");
             return false;
         }
     }
+    catch (Exception ex)
+    {
+        RecordLog(id, context, $">>> [MSLX-FrpcService] 自动下载流程异常: {ex.Message}");
+        return false;
+    }
+}
 
     /// <summary>
     /// 解压逻辑：支持 Zip 和 Tar.gz
