@@ -138,8 +138,24 @@ namespace MSLX.Daemon.Services
                     }
                     else
                     {
-                        _logger.LogInformation("服务器 {ServerId} 核心下载完成。", serverId);
-                        finalStatus = new CacheableStatus { Message = "核心下载完成。服务器创建成功！", Progress = 100.0 };
+                        // 在这里校验文件完整性
+                        bool isHashMismatch = !string.IsNullOrEmpty(request.coreSha256) 
+                                              && !await FileUtils.ValidateFileSha256Async(fullPath, request.coreSha256);
+
+                        if (isHashMismatch)
+                        {
+                            // 失败
+                            _logger.LogError("服务器 {ServerId} 核心下载校验失败。", serverId);
+                            finalStatus = new CacheableStatus { Message = "核心下载失败: 校验文件完整性失败！", Progress = -1 };
+                            try { File.Delete(fullPath); } catch { } 
+                        }
+                        else
+                        {
+                            // 成功 / 没传入校验值
+                            _logger.LogInformation("服务器 {ServerId} 核心下载完成。", serverId);
+                            finalStatus = new CacheableStatus { Message = "核心下载完成。服务器创建成功！", Progress = 100.0 };
+                        }
+                        
                     }
                     
                     // 无论下载成功或失败，都写入缓存
