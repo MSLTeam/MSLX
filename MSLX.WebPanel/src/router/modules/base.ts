@@ -15,7 +15,7 @@ export default [
         path: 'base',
         name: 'DashboardBaseIndex',
         component: () => import('@/pages/dashboard/base/index.vue'),
-        meta: { title: '概览直达', hidden: true },
+        meta: { title: '仪表盘', hidden: true },
       },
     ],
   },

@@ -8,6 +8,7 @@ import router from '@/router';
 NProgress.configure({ showSpinner: false });
 
 router.beforeEach(async (to, from, next) => {
+  window.document.title = to.meta.title ? `${to.meta.title} | MSLX 控制台` : 'MSLX 控制台';
   NProgress.start();
 
   const userStore = getUserStore();
