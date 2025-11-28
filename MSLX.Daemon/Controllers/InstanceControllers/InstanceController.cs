@@ -1,4 +1,3 @@
-using Downloader;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models.Instance;
 using MSLX.Daemon.Services;
