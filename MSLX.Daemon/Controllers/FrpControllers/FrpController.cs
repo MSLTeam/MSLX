@@ -172,6 +172,36 @@ public class FrpController : ControllerBase
                     response.Proxies.Add(detail);
                 }
             }
+                            
+            // 获取visitors列表 (联机的访客)
+            if (model.TryGetValue("visitors", out var visitorsObj) && visitorsObj is TomlTableArray visitorsArray)
+            {
+                foreach (var visitorItem in visitorsArray)
+                {
+                    string name = visitorItem.TryGetValue("serverName", out var n) ? n.ToString()! : "Unknown";
+                    string type = visitorItem.TryGetValue("type", out var t) ? t.ToString()! : "xtcp";
+                    string localIp = visitorItem.TryGetValue("bindAddr", out var lip)
+                        ? lip.ToString()!
+                        : "127.0.0.1";
+                    string localPort = visitorItem.TryGetValue("bindPort", out var lp) ? lp.ToString()! : "?";
+                    string remotePort = visitorItem.TryGetValue("remotePort", out var rp) ? rp.ToString()! : "?";
+                    serverAddr = visitorItem.TryGetValue("secretKey", out var sk) ? sk.ToString()! : "Unknown";
+
+                    // 构造地址
+                    string mainHost = !string.IsNullOrEmpty(remoteDomain) ? remoteDomain : serverAddr;
+
+                    var detail = new ProxyDetail
+                    {
+                        ProxyName = name,
+                        Type = $"{type} - Visitors",
+                        LocalAddress = $"{localIp}:{localPort}",
+                        RemoteAddressMain = $"{mainHost}",
+                        RemoteAddressBackup = $"{serverAddr}"
+                    };
+
+                    response.Proxies.Add(detail);
+                }
+            }
         }
         catch (Exception ex)
         {
