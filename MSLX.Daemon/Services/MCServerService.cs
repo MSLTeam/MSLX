@@ -7,7 +7,7 @@ namespace MSLX.Daemon.Services
 
         public async Task<bool> StartServer(uint instanceId)
         {
-            await Task.Delay(1000); // Ä£ÄâÒì²½²Ù×÷
+            await Task.Delay(1000); // æ¨¡æ‹Ÿå¼‚æ­¥æ“ä½œ
             ConfigServices.ServerListConfig config = ConfigServices.ServerList;
             if (config.GetServer(instanceId)!=null)
             {

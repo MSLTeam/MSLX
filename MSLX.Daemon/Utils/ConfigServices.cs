@@ -56,7 +56,7 @@ public static class ConfigServices
                 _logger.LogInformation("正在初始化配置文件...");
                 _logger.LogInformation("您的默认 API Key 是: {ApiKey}", apikey);
 
-                File.WriteAllText(path, $"{{\n    \"api-key\":\"{apikey}\",\n    \"user\":\"MSLX用户\",\n    \"avatar\":\"https://www.mslmc.cn/logo.png\"\n}}");
+                File.WriteAllText(path, $"{{\n    \"apiKey\":\"{apikey}\",\n    \"user\":\"MSLX用户\",\n    \"avatar\":\"https://www.mslmc.cn/logo.png\"\n}}");
             }
         }
 
@@ -367,7 +367,7 @@ public static class ConfigServices
                 if (_frpListCache.Any(s => s["ID"]?.Value<int>() == id))
                     return false;
 
-                string folderPath = Path.Combine(GetAppDataPath(), "Configs", "Frpc", id.ToString());
+                string folderPath = Path.Combine(GetAppDataPath(),"DaemonData", "Configs", "Frpc", id.ToString());
                 string filePath = Path.Combine(folderPath, $"frpc.{configType}");
                 try
                 {
@@ -406,7 +406,7 @@ public static class ConfigServices
 
                 _frpListCache.Remove(target);
                 SaveJson(_frpListPath, _frpListCache);
-                Directory.Delete(Path.Combine(GetAppDataPath(), "Configs", "Frpc", id.ToString()), true);
+                Directory.Delete(Path.Combine(GetAppDataPath(),"DaemonData", "Configs", "Frpc", id.ToString()), true);
                 return true;
             }
             finally

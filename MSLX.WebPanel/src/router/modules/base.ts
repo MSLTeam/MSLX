@@ -24,7 +24,7 @@ export default [
     component: Layout,
     // redirect: '/instance/list',
     name: 'instance',
-    meta: { title: '服务端管理', icon: 'root-list' },
+    meta: { title: '服务端管理', icon: 'server' },
     children: [
       {
         path: 'list',
@@ -37,6 +37,26 @@ export default [
         name: 'InstanceCreate',
         component: () => import('@/pages/instance/createInstance/index.vue'),
         meta: { title: '创建服务端' },
+      },
+    ],
+  },
+  {
+    path: '/frp',
+    component: Layout,
+    name: 'frp',
+    meta: { title: '隧道管理', icon: 'rocket' },
+    children: [
+      {
+        path: 'list',
+        name: 'FrpList',
+        component: () => import('@/pages/frp/list/index.vue'),
+        meta: { title: '隧道列表' },
+      },
+      {
+        path: 'create',
+        name: 'FrpCreate',
+        component: () => import('@/pages/frp/createFrp/index.vue'),
+        meta: { title: '创建隧道' },
       },
     ],
   },

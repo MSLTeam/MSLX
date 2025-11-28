@@ -32,6 +32,9 @@ namespace MSLX.Daemon.Controllers
                 osType = RuntimeInformation.OSDescription; 
             }
 
+            // 获取来访者 IP
+            string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1"; 
+
             // 系统信息
             var systemInfo = new JObject
             {
@@ -49,13 +52,14 @@ namespace MSLX.Daemon.Controllers
                 ["version"] = Assembly.GetEntryAssembly()?.GetName()?.Version?.ToString() ?? "0.0.0.0",
                 ["user"] = ConfigServices.Config.ReadConfigKey("user")?.ToString() ?? "MSLX User",
                 ["avatar"] = ConfigServices.Config.ReadConfigKey("avatar")?.ToString() ?? "https://www.mslmc.cn/logo.png",
+                ["userIp"] = clientIp,
                 ["serverTime"] = DateTime.Now,
                 ["targetFrontendVersion"] = new JObject
                 {
                     ["desktop"] = "1.0.0",
                     ["panel"] = "1.0.0"
                 },
-                ["systemInfo"] = systemInfo // <-- 将新的 JObject 添加到这里
+                ["systemInfo"] = systemInfo 
             };
 
             var response = new ApiResponse<JObject>

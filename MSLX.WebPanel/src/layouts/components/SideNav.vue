@@ -2,10 +2,17 @@
   <div :class="sideNavCls">
     <t-menu :class="menuCls" :theme="theme" :value="active" :collapsed="collapsed" :default-expanded="defaultExpanded">
       <template #logo>
-        <span v-if="showLogo" :class="`${prefix}-side-nav-logo-wrapper`" @click="goHome">
-          <img style="width: 32px;margin-right: 8px;" :src="CustomLogo" :class="`${prefix}-side-nav-logo-img`" alt="logo" />
-          <span v-if="!collapsed" style="font-size: 18px;font-weight: bold;text-overflow: ellipsis;overflow: hidden;white-space: nowrap;" :class="`${prefix}-side-nav-logo-text`"> MSLX 管理中心 </span>
-        </span>
+        <span
+          v-if="showLogo"
+          :class="`${prefix}-side-nav-logo-wrapper`"
+          :style="collapsed
+    ? 'display: flex; justify-content: center; width: 100%;'
+    : 'display: flex; align-items: center; justify-content: flex-start; width: 100%;'"
+          @click="goHome"
+        >
+  <img style="width: 32px; margin-right: 8px;" :src="CustomLogo" :class="`${prefix}-side-nav-logo-img`" alt="logo" />
+  <span v-if="!collapsed" style="font-size: 18px; font-weight: bold; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" :class="`${prefix}-side-nav-logo-text`"> MSLX 管理中心 </span>
+</span>
       </template>
       <menu-content :nav-data="menu" />
       <template #operations>

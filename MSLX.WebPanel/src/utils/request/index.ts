@@ -119,10 +119,10 @@ const transform: AxiosTransform = {
 
     // 动态设置 x-api-key
     if (token && (config as Recordable)?.requestOptions?.withToken !== false) {
-      if (config.headers) {
-        delete config.headers.Authorization;
+      // 如果包含了headers 大概率不是请求到守护进程端的 就不传递apikey了
+      if (!config.headers.hasAuthorization()) {
+        (config as Recordable).headers['x-api-key'] = token;
       }
-      (config as Recordable).headers['x-api-key'] = token;
     }
     return config;
   },
@@ -189,7 +189,7 @@ function createAxios(opt?: Partial<CreateAxiosOptions>) {
           isTransformResponse: true,
           joinParamsToUrl: false,
           formatDate: true,
-          joinTime: false, // 之前已关闭时间戳
+          joinTime: false,
           ignoreRepeatRequest: true,
           withToken: true,
           retry: {

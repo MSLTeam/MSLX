@@ -65,12 +65,23 @@ export const getActive = (maxLevel = 3): string => {
   if (!route.path) {
     return '';
   }
+  if (route.meta?.activeMenu) {
+    return route.meta.activeMenu as string;
+  }
   return route.path
     .split('/')
     .filter((_item: string, index: number) => index <= maxLevel && index > 0)
     .map((item: string) => `/${item}`)
     .join('');
 };
+
+export function changeUrl(url: string) {
+  if(url.includes('http')){
+    window.open(url);
+  }else{
+    router.replace(url);
+  }
+}
 
 const router = createRouter({
   history: createWebHistory(),
