@@ -16,7 +16,9 @@ builder.Services.AddControllers()
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.WebHost.UseUrls("http://localhost:1027");
+
+string listenAddr = "http://localhost:1027";
+builder.WebHost.UseUrls(listenAddr);
 
 builder.Services.AddCors(options =>
 {
@@ -112,6 +114,18 @@ app.UseAuthorization();
 app.MapHub<CreationProgressHub>("/api/hubs/creationProgressHub");
 app.MapHub<FrpConsoleHub>("/api/hubs/frpLogsHub");
 app.MapControllers();
+
+// 注册启动事件
+var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+lifetime.ApplicationStarted.Register(() =>
+{
+    // 打开控制台
+    if((bool?)ConfigServices.Config.ReadConfig()["openWebConsoleOnLaunch"] ?? true)
+    {
+        var address = "https://alpha-mslx.aino.cyou/login";
+        PlatFormServices.OpenBrowser($"{address}?auth={StringServices.EncodeToBase64($"{listenAddr}|{ConfigServices.Config.ReadConfigKey("apiKey")}")}");
+    }
+});
 
 app.Run();
 

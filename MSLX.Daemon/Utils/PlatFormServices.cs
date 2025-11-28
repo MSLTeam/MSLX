@@ -70,5 +70,45 @@ public class PlatFormServices
             return "unknown";
         }
     }
+    
+    // 打开浏览器
+    public static void OpenBrowser(string url)
+    {
+        try
+        {
+            // 检查GUI环境
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux))
+            {
+                if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY")))
+                {
+                    Console.WriteLine(">> Detected headless environment (no GUI). Browser auto-open skipped.");
+                    return;
+                }
+            }
+
+            // 尝试打开浏览器
+            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
+            {
+                // Windows: 使用 shell 打开
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
+            }
+            else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Linux))
+            {
+                // Linux: 使用 xdg-open
+                System.Diagnostics.Process.Start("xdg-open", url);
+            }
+            else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX))
+            {
+                // Mac: 使用 open
+                System.Diagnostics.Process.Start("open", url);
+            }
+        
+            Console.WriteLine($">> 浏览器打开地址: {url}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($">> 无法启动浏览器: {ex.Message}. 你可以手动打开: {url}");
+        }
+    }
 
 }
