@@ -4,6 +4,7 @@ import {
   PlayCircleIcon, RefreshIcon, ServerIcon, StopCircleIcon,
 } from 'tdesign-icons-vue-next';
 import { TunnelInfoModel } from '@/api/model/frp';
+import { copyText } from '@/utils/clipboard';
 
 // 定义 Props
 defineProps<{
@@ -83,8 +84,8 @@ defineEmits<{
 
             <div class="info-item">
               <div class="label"><cloud-icon /> {{ proxy.type.includes('xtcp') ? '房间号':'隧道名称'}}</div>
-              <t-tooltip :content="proxy.proxyName" placement="top" show-arrow destroy-on-close>
-                <div class="value remote-addr pointer">{{ proxy.proxyName }}</div>
+              <t-tooltip :content="proxy.proxyName" placement="top" show-arrow destroy-on-close >
+                <div @click="copyText(proxy.proxyName,true,`${proxy.type.includes('xtcp') ? '房间号':'隧道名称'}已复制！`)" class="value remote-addr pointer">{{ proxy.proxyName }}</div>
               </t-tooltip>
             </div>
 
@@ -95,15 +96,15 @@ defineEmits<{
 
             <div class="info-item">
               <div class="label"><link-icon /> {{ proxy.type.includes('xtcp') ? '房间密钥':'连接地址'}}</div>
-              <t-tooltip :content="proxy.remoteAddressMain" placement="top" show-arrow destroy-on-close>
-                <div class="value remote-addr pointer">{{ proxy.remoteAddressMain || '获取中...' }}</div>
+              <t-tooltip :content="proxy.remoteAddressMain" placement="top" show-arrow destroy-on-close >
+                <div class="value remote-addr pointer" @click="copyText(proxy.remoteAddressMain,true,`${proxy.type.includes('xtcp') ? '房间密钥':'连接地址'}已复制！`)">{{ proxy.remoteAddressMain || '获取中...' }}</div>
               </t-tooltip>
             </div>
 
             <div v-if="proxy.remoteAddressBackup && proxy.remoteAddressBackup !== proxy.remoteAddressMain" class="info-item">
               <div class="label"><link-icon /> 备用地址</div>
               <t-tooltip :content="proxy.remoteAddressBackup" placement="top" show-arrow destroy-on-close>
-                <div class="value remote-addr pointer">{{ proxy.remoteAddressBackup }}</div>
+                <div class="value remote-addr pointer" @click="copyText(proxy.remoteAddressBackup,true,'备用连接地址已复制！')">{{ proxy.remoteAddressBackup }}</div>
               </t-tooltip>
             </div>
 
