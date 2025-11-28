@@ -150,7 +150,13 @@ public class FrpController : ControllerBase
                     string localIp = proxyItem.TryGetValue("localIP", out var lip) ? lip.ToString()! : "127.0.0.1";
                     string localPort = proxyItem.TryGetValue("localPort", out var lp) ? lp.ToString()! : "?";
                     string remotePort = proxyItem.TryGetValue("remotePort", out var rp) ? rp.ToString()! : "?";
-
+                    
+                    // 联机类型隧道特化处理
+                    if (type == "xtcp")
+                    {
+                        serverAddr = proxyItem.TryGetValue("secretKey", out var sk) ? sk.ToString()! : "Unknown";
+                    }
+                    
                     // 构造地址
                     string mainHost = !string.IsNullOrEmpty(remoteDomain) ? remoteDomain : serverAddr;
                     
@@ -159,8 +165,8 @@ public class FrpController : ControllerBase
                         ProxyName = name,
                         Type = type,
                         LocalAddress = $"{localIp}:{localPort}",
-                        RemoteAddressMain = $"{mainHost}:{remotePort}",
-                        RemoteAddressBackup = $"{serverAddr}:{remotePort}"
+                        RemoteAddressMain = type != "xtcp" ? $"{mainHost}:{remotePort}" : $"{mainHost}",
+                        RemoteAddressBackup = type != "xtcp" ? $"{serverAddr}:{remotePort}" : $"{serverAddr}"
                     };
 
                     response.Proxies.Add(detail);
