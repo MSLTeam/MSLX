@@ -122,7 +122,7 @@ public class FrpProcessService
             }
 
             // 给个运行权限
-            GrantExecutePermission(_frpcExecutablePath);
+            ExecutePermission.GrantExecutePermission(_frpcExecutablePath);
 
             // 开始启动！
             var startInfo = new ProcessStartInfo
@@ -381,6 +381,7 @@ public class FrpProcessService
         return $"{bytes / 1024.0 / 1024.0:F1} MB";
     }
 
+    /*
     private void GrantExecutePermission(string filePath)
     {
         string os = PlatFormServices.GetOs();
@@ -393,4 +394,5 @@ public class FrpProcessService
         }
         catch { }
     }
+    */
 }
