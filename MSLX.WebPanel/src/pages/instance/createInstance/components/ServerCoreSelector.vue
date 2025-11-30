@@ -149,7 +149,7 @@ const categoryConfig = [
     key: 'vanilla',
     name: '原版服务端',
     desc: 'Mojang 官方原版核心',
-    icon: 'logo-github',
+    icon: 'tea',
     dataKey: 'vanillaCore' as keyof ServerCoreClassifyModel
   },
   {
