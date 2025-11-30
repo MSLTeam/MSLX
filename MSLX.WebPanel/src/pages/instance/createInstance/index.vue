@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onUnmounted, ref } from 'vue';
+import { onUnmounted, ref, watch, onMounted } from 'vue';
 import { request } from '@/utils/request';
 import { useRouter } from 'vue-router';
 import { type FormRules, MessagePlugin } from 'tdesign-vue-next';
@@ -7,6 +7,7 @@ import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signal
 import { useUserStore } from '@/store';
 
 import ServerCoreSelector from './components/ServerCoreSelector.vue';
+import { getJavaVersionList } from '@/api/mslapi/java';
 
 // 状态管理
 const userStore = useUserStore();
@@ -27,10 +28,34 @@ const createdServerId = ref<string | null>(null);
 const downloadType = ref('online'); // 'online' | 'manual'
 const showCoreSelector = ref(false);
 
+// Java 选择相关状态
+const javaType = ref('online');
+const javaVersions = ref<{ label: string; value: string }[]>([]);
+const selectedJavaVersion = ref('');
+const customJavaPath = ref('');
+
+const fetchJavaVersions = async () => {
+  try {
+    const res = await getJavaVersionList(userStore.userInfo.systemInfo.osType.toLowerCase().replace('os',''),userStore.userInfo.systemInfo.osArchitecture.toLowerCase());
+    if (res && Array.isArray(res)) {
+      javaVersions.value = res.map(v => ({ label: `Java ${v}`, value: v }));
+      if (javaVersions.value.length > 0 && !selectedJavaVersion.value) {
+        selectedJavaVersion.value = javaVersions.value[1].value; // 默认java21
+      }
+    }
+  } catch (e) {
+    MessagePlugin.warning('获取在线Java版本失败' + e.message);
+  }
+};
+
+onMounted(() => {
+  fetchJavaVersions();
+});
+
 const formData = ref({
   name: '',
   path: '',
-  java: 'java',
+  java: '',
   core: '',
   coreUrl: '',
   coreSha256: '',
@@ -39,15 +64,28 @@ const formData = ref({
   args: '',
 });
 
+// 监听选择java的状态变量 修改表单数据
+watch([javaType, selectedJavaVersion, customJavaPath], ([type, ver, path]) => {
+  if (type === 'env') {
+    formData.value.java = 'java';
+  } else if (type === 'custom') {
+    formData.value.java = path;
+  } else if (type === 'online') {
+    formData.value.java = ver ? `MSLX://Java/${ver}` : '';
+  }
+
+  if (formData.value.java) {
+    formRef.value?.validate({ fields: ['java'] });
+  }
+}, { immediate: true });
+
 // 表单校验规则
 const FORM_RULES: FormRules = {
   name: [{ required: true, message: '实例名称不能为空', trigger: 'blur' }],
-  java: [{ required: true, message: 'Java 路径不能为空', trigger: 'blur' }],
-  // Step 2 的校验逻辑稍微复杂一点，需要在 nextStep 额外判断或者依赖这里的 required
+  java: [{ required: true, message: '请配置 Java 环境', trigger: 'change' }],
   core: [{ required: true, message: '必须指定核心名称', trigger: 'change' }],
   coreUrl: [
     {
-      // 只有在在线下载模式下，或者手动输入了 url 时校验
       validator: (val) => {
         if (downloadType.value === 'online' && !val) return { result: false, message: '请选择一个服务端核心', type: 'error' };
         if (val && !/^https?:\/\/.+/.test(val)) return { result: false, message: '下载地址必须以 http(s) 开头', type: 'error' };
@@ -70,7 +108,6 @@ const prevStep = () => {
 };
 
 const nextStep = async () => {
-  // 对核心选择步骤的拦截校验
   if (currentStep.value === 2) {
     if (downloadType.value === 'online') {
       if (!formData.value.coreUrl || !formData.value.core) {
@@ -107,13 +144,11 @@ const nextStep = async () => {
 
 // 处理核心选择组件回调
 const onCoreSelected = (data: { core: string; version: string; url: string; sha256: string; filename: string }) => {
-  // 将选中的数据回填到表单
   formData.value.core = data.filename;
   formData.value.coreUrl = data.url;
   formData.value.coreSha256 = data.sha256;
   MessagePlugin.success(`已选择: ${data.core} (${data.version})`);
 
-  // 触发一次校验消除错误提示
   formRef.value.validate({ fields: ['core', 'coreUrl'] });
 };
 
@@ -246,7 +281,9 @@ const goToHome = () => {
     ...formData.value,
     name: '', core: '', coreUrl: '', coreSha256: '', path: '', args: ''
   };
-  downloadType.value = 'online'; // 重置下载方式
+  downloadType.value = 'online';
+  javaType.value = 'online';
+  customJavaPath.value = '';
 };
 
 const viewDetails = () => {
@@ -290,11 +327,33 @@ const viewDetails = () => {
                     <li>MC 1.13 - 1.16: 需要 Java 11。</li>
                     <li>MC 1.12 及以下: 需要 Java 8。</li>
                   </ul>
-                  <p>你可以输入 'java' 来使用系统默认环境，或提供 java.exe 的完整路径。</p>
                 </template>
               </t-alert>
-              <t-form-item label="Java 路径" name="java">
-                <t-input v-model="formData.java" placeholder="例如: C:\Program Files\Java\jdk-17\bin\java.exe" />
+
+              <t-form-item label="Java 来源" name="java">
+                <div style="width: 100%">
+                  <t-radio-group v-model="javaType" variant="default-filled">
+                    <t-radio-button value="online">在线下载</t-radio-button>
+                    <t-radio-button value="env">环境变量</t-radio-button>
+                    <t-radio-button value="custom">自定义路径</t-radio-button>
+                  </t-radio-group>
+
+                  <div class="java-option-panel">
+                    <div v-if="javaType === 'online'" class="flex-row">
+                      <t-select v-model="selectedJavaVersion" :options="javaVersions" placeholder="请选择 Java 版本" />
+                      <div class="tip">将下载并使用 Java {{ selectedJavaVersion || '?' }} {{ userStore.userInfo.systemInfo.osType.toLowerCase().replace('os','')}} / {{userStore.userInfo.systemInfo.osArchitecture.toLowerCase()}}</div>
+                    </div>
+
+                    <div v-if="javaType === 'env'">
+                      <t-input model-value="java" readonly disabled />
+                      <div class="tip">将使用系统环境变量中的 java 命令</div>
+                    </div>
+
+                    <div v-if="javaType === 'custom'">
+                      <t-input v-model="customJavaPath" placeholder="例如: C:\Program Files\Java\jdk-17\bin\java.exe" />
+                    </div>
+                  </div>
+                </div>
               </t-form-item>
             </div>
 
@@ -399,7 +458,7 @@ const viewDetails = () => {
 </template>
 
 <style scoped lang="less">
-/* --- 布局样式 (保持原样) --- */
+/* --- 布局样式 --- */
 .main-layout-container {
   display: flex;
   gap: 32px;
@@ -436,6 +495,27 @@ const viewDetails = () => {
 
   .t-button {
     margin-right: 16px;
+  }
+}
+
+/* --- Java 面板样式 --- */
+.java-option-panel {
+  margin-top: 16px;
+  padding: 16px;
+  background-color: var(--td-bg-color-secondarycontainer);
+  border-radius: var(--td-radius-medium);
+
+  .flex-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .tip {
+    font-size: 12px;
+    color: var(--td-text-color-secondary);
+    margin-top: 8px;
+    display: block;
   }
 }
 
