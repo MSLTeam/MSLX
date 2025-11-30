@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { onUnmounted, ref } from 'vue';
-import { request } from '@/utils/request'; // 使用你提供的 request 工具
+import { request } from '@/utils/request';
 import { useRouter } from 'vue-router';
 import { type FormRules, MessagePlugin } from 'tdesign-vue-next';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { useUserStore } from '@/store';
 
-// 状态管理
+import ServerCoreSelector from './components/ServerCoreSelector.vue';
 
+// 状态管理
 const userStore = useUserStore();
 const router = useRouter();
 const formRef = ref(null);
@@ -22,6 +23,10 @@ const statusMessages = ref<{ time: string; message: string; progress: number | n
 const hubConnection = ref<HubConnection | null>(null);
 const createdServerId = ref<string | null>(null);
 
+// 核心选择相关状态
+const downloadType = ref('online'); // 'online' | 'manual'
+const showCoreSelector = ref(false);
+
 const formData = ref({
   name: '',
   path: '',
@@ -35,16 +40,20 @@ const formData = ref({
 });
 
 // 表单校验规则
-
 const FORM_RULES: FormRules = {
   name: [{ required: true, message: '实例名称不能为空', trigger: 'blur' }],
   java: [{ required: true, message: 'Java 路径不能为空', trigger: 'blur' }],
-  core: [{ required: true, message: '核心名称不能为空', trigger: 'blur' }],
+  // Step 2 的校验逻辑稍微复杂一点，需要在 nextStep 额外判断或者依赖这里的 required
+  core: [{ required: true, message: '必须指定核心名称', trigger: 'change' }],
   coreUrl: [
     {
-      pattern: /^https?:\/\/.+/,
-      message: '下载地址必须以 http:// 或 https:// 开头',
-      trigger: 'blur',
+      // 只有在在线下载模式下，或者手动输入了 url 时校验
+      validator: (val) => {
+        if (downloadType.value === 'online' && !val) return { result: false, message: '请选择一个服务端核心', type: 'error' };
+        if (val && !/^https?:\/\/.+/.test(val)) return { result: false, message: '下载地址必须以 http(s) 开头', type: 'error' };
+        return true;
+      },
+      trigger: 'change'
     },
   ],
   minM: [{ required: true, min: 1, message: '最小内存必须大于0', trigger: 'blur' }],
@@ -54,7 +63,6 @@ const FORM_RULES: FormRules = {
 const stepValidationFields = [['name', 'path'], ['java'], ['core', 'coreUrl','coreSha256'], ['minM', 'maxM', 'args']];
 
 // 步骤导航
-
 const prevStep = () => {
   if (currentStep.value > 0) {
     currentStep.value -= 1;
@@ -62,8 +70,20 @@ const prevStep = () => {
 };
 
 const nextStep = async () => {
-  const fieldsToValidate = new Set(stepValidationFields[currentStep.value]);
+  // 对核心选择步骤的拦截校验
+  if (currentStep.value === 2) {
+    if (downloadType.value === 'online') {
+      if (!formData.value.coreUrl || !formData.value.core) {
+        MessagePlugin.warning('请点击按钮选择一个服务端核心');
+        return;
+      }
+    } else {
+      MessagePlugin.warning('自行上传功能暂未开放，请使用在线下载');
+      return;
+    }
+  }
 
+  const fieldsToValidate = new Set(stepValidationFields[currentStep.value]);
   const validateResult = await formRef.value.validate();
 
   if (validateResult === true) {
@@ -73,6 +93,7 @@ const nextStep = async () => {
     return;
   }
 
+  // 检查当前步骤是否有错误
   const hasErrorInCurrentStep = Object.keys(validateResult).some((field) => fieldsToValidate.has(field));
 
   if (hasErrorInCurrentStep) {
@@ -84,11 +105,21 @@ const nextStep = async () => {
   }
 };
 
-// 提交 & SignalR 状态
+// 处理核心选择组件回调
+const onCoreSelected = (data: { core: string; version: string; url: string; sha256: string; filename: string }) => {
+  // 将选中的数据回填到表单
+  formData.value.core = data.filename;
+  formData.value.coreUrl = data.url;
+  formData.value.coreSha256 = data.sha256;
+  MessagePlugin.success(`已选择: ${data.core} (${data.version})`);
 
+  // 触发一次校验消除错误提示
+  formRef.value.validate({ fields: ['core', 'coreUrl'] });
+};
+
+// 提交 & SignalR 状态
 const onSubmit = async () => {
   const validateResult = await formRef.value.validate();
-
   const isValid = validateResult === true;
 
   if (!isValid) {
@@ -118,7 +149,7 @@ const onSubmit = async () => {
       throw new Error('服务器未返回 ServerId');
     }
 
-    createdServerId.value = serverId.toString(); // 存储创建的 ServerId
+    createdServerId.value = serverId.toString();
 
     isCreating.value = true;
     currentStep.value = 4;
@@ -132,7 +163,6 @@ const onSubmit = async () => {
 };
 
 // SignalR 主要链接方法
-
 const startSignalRConnection = async (serverId: string) => {
   const { baseUrl, token } = userStore;
 
@@ -172,9 +202,7 @@ const startSignalRConnection = async (serverId: string) => {
     }
 
     if (prog === 100) {
-      // 主动标记成功
       isSuccessHandled = true;
-
       MessagePlugin.success('服务器创建成功！');
       hubConnection.value?.stop();
       isCreating.value = false;
@@ -197,7 +225,6 @@ const startSignalRConnection = async (serverId: string) => {
     await hubConnection.value.invoke('TrackServer', serverId);
     addLog('已订阅任务，等待服务器响应...');
   } catch (err: any) {
-    // 不成功才弹出错误
     if (!isSuccessHandled) {
       addLog(`SignalR 连接失败: ${err.message}`, -1);
       MessagePlugin.error('无法连接到实时进度服务');
@@ -212,11 +239,14 @@ onUnmounted(() => {
   hubConnection.value?.stop();
 });
 
-// 成功页面相关导航
 const goToHome = () => {
   isSuccess.value = false;
   currentStep.value = 0;
-  formData.value = { ...formData.value, name: '', core: '', coreUrl: '',coreSha256: '', path: '', args: '' };
+  formData.value = {
+    ...formData.value,
+    name: '', core: '', coreUrl: '', coreSha256: '', path: '', args: ''
+  };
+  downloadType.value = 'online'; // 重置下载方式
 };
 
 const viewDetails = () => {
@@ -241,6 +271,7 @@ const viewDetails = () => {
       <div class="main-content">
         <div v-if="!isCreating && !isSuccess" class="form-step-container">
           <t-form ref="formRef" :data="formData" :rules="FORM_RULES" label-align="top" class="step-form" @submit="onSubmit">
+
             <div v-show="currentStep === 0" class="step-content">
               <t-form-item label="实例名称" name="name">
                 <t-input v-model="formData.name" placeholder="为你的服务器起个名字" />
@@ -268,15 +299,38 @@ const viewDetails = () => {
             </div>
 
             <div v-show="currentStep === 2" class="step-content">
-              <t-form-item label="核心名称" name="core" help="这是下载后保存的文件名，例如 paper.jar">
-                <t-input v-model="formData.core" placeholder="例如: paper-1.18.2.jar" />
+              <t-form-item label="选择您的Minecraft开服使用的服务端核心">
+                <t-radio-group v-model="downloadType" variant="default-filled">
+                  <t-radio-button value="online">在线下载 (推荐)</t-radio-button>
+                  <t-radio-button value="manual" disabled>自行上传 (暂不可用)</t-radio-button>
+                </t-radio-group>
               </t-form-item>
-              <t-form-item label="核心下载地址 (可选)" name="coreUrl" help="如果留空，将不会自动下载核心文件">
-                <t-input v-model="formData.coreUrl" placeholder="http://.../server.jar" />
-              </t-form-item>
-              <t-form-item label="核心下载文件Sha256" name="coreSha256" help="如果留空，将不会校验下载文件的完整性">
-                <t-input v-model="formData.coreSha256" placeholder="" />
-              </t-form-item>
+
+              <div v-if="downloadType === 'online'" class="online-select-area">
+                <t-form-item label="选择服务端核心" name="coreUrl"> <div class="select-core-wrapper">
+                  <t-button variant="outline" @click="showCoreSelector = true">
+                    <template #icon><t-icon name="cloud-download" /></template>
+                    点击打开服务端核心选择库
+                  </t-button>
+
+                  <div v-if="formData.core" class="selected-core-card">
+                    <div class="core-icon"><t-icon name="check-circle-filled" /></div>
+                    <div class="core-info">
+                      <div class="core-filename">{{ formData.core }}</div>
+                      <div class="core-url" title="MSLX 将在稍后帮您自动下载此文件...">MSLX 将在稍后帮您自动下载此文件...</div>
+                    </div>
+                    <t-button shape="circle" variant="text" theme="danger" @click="formData.core = ''; formData.coreUrl = '';">
+                      <t-icon name="close" />
+                    </t-button>
+                  </div>
+                </div>
+                </t-form-item>
+                <input v-model="formData.coreSha256" type="hidden" />
+              </div>
+
+              <div v-if="downloadType === 'manual'">
+                <t-alert theme="warning" message="该功能尚未实现，请选择在线下载。" />
+              </div>
             </div>
 
             <div v-show="currentStep === 3" class="step-content">
@@ -336,11 +390,16 @@ const viewDetails = () => {
         </div>
       </div>
     </div>
+
+    <server-core-selector
+      v-model:visible="showCoreSelector"
+      @confirm="onCoreSelected"
+    />
   </t-card>
 </template>
 
 <style scoped lang="less">
-/* --- 新增：2 列表单布局 --- */
+/* --- 布局样式 (保持原样) --- */
 .main-layout-container {
   display: flex;
   gap: 32px;
@@ -348,36 +407,30 @@ const viewDetails = () => {
 
 .steps-aside {
   flex-shrink: 0;
-  width: 220px; // 步骤条的宽度
+  width: 220px;
   border-right: 1px solid var(--td-border-level-2-color);
   padding-right: 32px;
 }
 
 .main-content {
   flex-grow: 1;
-  min-width: 0; // 防止 flex 溢出
+  min-width: 0;
 }
 
-/* --- 修改：调整原样式以适应新布局 --- */
-
-// form-step-container
 .form-step-container {
-  padding-top: 0; // 原为 24px，现在由布局控制
+  padding-top: 0;
 }
 
-// step-content
 .step-content {
   max-width: 600px;
-  margin: 0; // 原为 24px auto，移除自动居中
-  padding: 16px 0; // 保留垂直 padding
+  margin: 0;
+  padding: 16px 0;
 }
 
-// java-alert
 .java-alert {
   margin-bottom: 24px;
 }
 
-// step-actions
 .step-actions {
   margin-top: 32px;
 
@@ -386,10 +439,56 @@ const viewDetails = () => {
   }
 }
 
-// creation-progress
+/* --- 核心选择器样式 --- */
+.online-select-area {
+  margin-top: 16px;
+  padding: 16px;
+  background-color: var(--td-bg-color-secondarycontainer);
+  border-radius: var(--td-radius-medium);
+}
+
+.select-core-wrapper {
+  width: 100%;
+}
+
+.selected-core-card {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  background-color: var(--td-bg-color-container);
+  border: 1px solid var(--td-brand-color);
+  border-radius: var(--td-radius-medium);
+  padding: 12px;
+
+  .core-icon {
+    font-size: 24px;
+    color: var(--td-brand-color);
+    margin-right: 12px;
+  }
+
+  .core-info {
+    flex: 1;
+    overflow: hidden;
+
+    .core-filename {
+      font-weight: 600;
+      color: var(--td-text-color-primary);
+    }
+
+    .core-url {
+      font-size: 12px;
+      color: var(--td-text-color-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+}
+
+/* --- 进度条和结果页样式 --- */
 .creation-progress {
   text-align: center;
-  padding: 16px; // 保持内边距
+  padding: 16px;
 
   .progress-title {
     font-size: 18px;
@@ -416,13 +515,12 @@ const viewDetails = () => {
   }
 }
 
-// --- result-success ---
 .result-success {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  min-height: 50vh; // 原为 height: 75vh，改为 min-height 更灵活
+  min-height: 50vh;
   padding: 32px 0;
 
   &-icon {
@@ -447,23 +545,22 @@ const viewDetails = () => {
   }
 }
 
-/* --- 新增：响应式布局 (移动端) --- */
 @media (max-width: 768px) {
   .main-layout-container {
-    flex-direction: column; // 垂直堆叠
+    flex-direction: column;
     gap: 24px;
   }
 
   .steps-aside {
     width: 100%;
-    border-right: none; // 移除右边框
+    border-right: none;
     padding-right: 0;
-    border-bottom: 1px solid var(--td-border-level-2-color); // 添加下边框
+    border-bottom: 1px solid var(--td-border-level-2-color);
     padding-bottom: 24px;
   }
 
   .step-content {
-    max-width: 100%; // 移动端占满宽度
+    max-width: 100%;
   }
 
   .result-success {
