@@ -1,4 +1,4 @@
-using System.Formats.Tar;
+﻿using System.Formats.Tar;
 using System.IO.Compression;
 using Downloader;
 using Microsoft.AspNetCore.SignalR;
@@ -107,7 +107,7 @@ namespace MSLX.Daemon.Services
                     var response = await MSLApi.GetAsync($"/download/jdk/{javaVersion}",
                         new Dictionary<string, string>
                         {
-                            { "arch", PlatFormServices.GetOsArch() },
+                            { "arch", PlatFormServices.GetOsArch().Replace("amd64","x64") },
                             { "os", PlatFormServices.GetOs().ToLower().Replace("os", "") }
                         });
 
