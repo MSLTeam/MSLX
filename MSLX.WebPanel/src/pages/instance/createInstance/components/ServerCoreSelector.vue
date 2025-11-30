@@ -9,7 +9,6 @@
     class="core-selector-dialog"
   >
     <div class="core-selector-layout">
-      <!-- 左侧分类导航 -->
       <div class="sidebar">
         <div class="sidebar-title">服务端分类</div>
         <div class="sidebar-desc">选择您需要的服务端类型</div>
@@ -38,13 +37,11 @@
         </div>
       </div>
 
-      <!-- 右侧核心与版本选择 -->
       <div class="main-panel">
-        <!-- 选择核心 -->
         <div class="panel-section">
           <div class="section-header">
             <div class="section-title">选择服务端核心</div>
-            <t-input v-model="searchText" placeholder="搜索服务端核心..." class="search-input">
+            <t-input v-model="searchText" placeholder="搜索核心..." class="search-input">
               <template #suffix-icon><t-icon name="search" /></template>
             </t-input>
           </div>
@@ -64,7 +61,6 @@
           </div>
         </div>
 
-        <!-- 版本列表 -->
         <div v-if="selectedCore" class="panel-section">
           <t-divider />
           <div class="section-header">
@@ -171,7 +167,6 @@ const categoryConfig = [
     dataKey: 'proxyCore' as keyof ServerCoreClassifyModel
   },
 ];
-
 
 // 获取当前选中分类下的所有核心列表
 const currentCoreList = computed(() => {
@@ -499,5 +494,83 @@ watch(() => props.visible, (val) => {
   text-align: center;
   padding: 24px;
   width: 100%;
+}
+
+@media (max-width: 768px) {
+  :deep(.t-dialog) {
+    width: 95vw !important;
+    max-width: 95vw !important;
+  }
+
+  // 垂直堆叠
+  .core-selector-layout {
+    flex-direction: column;
+    height: 70vh;
+  }
+
+  // 侧边栏改为顶部横向或短列表
+  .sidebar {
+    width: 100%;
+    height: 160px; // 固定一个较小的高度
+    border-right: none;
+    border-bottom: 1px solid var(--td-border-level-2-color);
+    padding: 12px;
+
+    // 隐藏描述文字
+    .cat-desc {
+      display: none;
+    }
+
+    // 缩小标题
+    .sidebar-title {
+      font-size: 16px;
+    }
+    .sidebar-desc {
+      display: none;
+    }
+  }
+
+  .category-item {
+    padding: 8px 12px;
+    .cat-icon {
+      font-size: 18px;
+    }
+    .cat-info .cat-name {
+      font-size: 13px;
+    }
+  }
+
+  .main-panel {
+    width: 100%;
+    padding: 12px;
+  }
+
+  .section-header {
+    flex-direction: column; // 垂直排列标题和搜索/按钮
+    align-items: flex-start;
+    gap: 8px;
+
+    .search-input {
+      width: 100%; // 搜索框占满
+    }
+    .t-button {
+      align-self: flex-end; // 按钮靠右
+    }
+  }
+
+  // 网格更加紧凑
+  .core-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); // 允许更小的卡片
+    gap: 8px;
+
+    .core-card {
+      padding: 10px;
+      font-size: 13px;
+    }
+  }
+
+  .version-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  }
 }
 </style>
