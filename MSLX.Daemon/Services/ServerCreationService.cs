@@ -163,7 +163,40 @@ namespace MSLX.Daemon.Services
 
             // 检查下载
             await UpdateStatusAsync(serverIdStr, "服务器配置创建成功。正在检查核心文件...", null);
+            
+            // 用户上传文件
+            if (!string.IsNullOrEmpty(request.coreFileKey))
+            {
+                await UpdateStatusAsync(serverIdStr, "检测到用户上传的核心文件，正在处理...", 0);
+    
+                string tempFilePath = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Temp", "Uploads", request.coreFileKey + ".tmp");
+                string destPath = Path.Combine(server.Base, server.Core);
 
+                if (File.Exists(tempFilePath))
+                {
+                    try 
+                    {
+                        Directory.CreateDirectory(server.Base);
+                        File.Move(tempFilePath, destPath, true);
+            
+                        _logger.LogInformation("已应用用户上传的核心文件: {Key}", request.coreFileKey);
+                        await UpdateStatusAsync(serverIdStr, "用户核心文件部署完成。", 100.0);
+                    }
+                    catch (Exception ex)
+                    {
+                        await UpdateStatusAsync(serverIdStr, $"部署用户文件失败: {ex.Message}", -1, true, ex);
+                        return; 
+                    }
+                }
+                else
+                {
+                    await UpdateStatusAsync(serverIdStr, "上传的临时文件已过期或不存在！", -1, true);
+                    return;
+                }
+            }
+            
+            // 下载核心
+            // 不存在下载和文件上传同时的情况 在接口已经拦截
             if (!string.IsNullOrEmpty(request.coreUrl))
             {
                 // 下载核心

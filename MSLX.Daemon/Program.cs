@@ -43,8 +43,10 @@ builder.Services.AddSingleton<IBackgroundTaskQueue>(ctx =>
 });
 
 builder.Services.AddHostedService<ServerCreationService>();
+builder.Services.AddHostedService<TempFileCleanupService>();
 builder.Services.AddScoped<MCServerService>();
 builder.Services.AddScoped<JavaScannerService>();
+
 
 // 配置转发头选项
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
