@@ -65,7 +65,7 @@ onMounted(() => {
 });
 
 const formData = ref({
-  name: '',
+  name: '新建服务器',
   path: '',
   java: '',
   core: '',
