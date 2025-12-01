@@ -35,7 +35,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddSignalR();
 
 // 注册单例服务
-builder.Services.AddSingleton<MSLX.Daemon.Services.FrpProcessService>();
+builder.Services.AddSingleton<FrpProcessService>();
 builder.Services.AddSingleton<IBackgroundTaskQueue>(ctx =>
 {
     // 队列容量
@@ -44,6 +44,7 @@ builder.Services.AddSingleton<IBackgroundTaskQueue>(ctx =>
 
 builder.Services.AddHostedService<ServerCreationService>();
 builder.Services.AddScoped<MCServerService>();
+builder.Services.AddScoped<JavaScannerService>();
 
 // 配置转发头选项
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
