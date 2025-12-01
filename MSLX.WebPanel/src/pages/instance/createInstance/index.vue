@@ -8,6 +8,7 @@ import { useUserStore } from '@/store';
 
 import ServerCoreSelector from './components/ServerCoreSelector.vue';
 import { getJavaVersionList } from '@/api/mslapi/java';
+import { getLocalJavaList } from '@/api/localJava';
 
 // 状态管理
 const userStore = useUserStore();
@@ -31,6 +32,7 @@ const showCoreSelector = ref(false);
 // Java 选择相关状态
 const javaType = ref('online');
 const javaVersions = ref<{ label: string; value: string }[]>([]);
+const localJavaVersions = ref<{ label: string; value: string }[]>([]);
 const selectedJavaVersion = ref('');
 const customJavaPath = ref('');
 
@@ -43,6 +45,7 @@ const fetchJavaVersions = async () => {
         selectedJavaVersion.value = javaVersions.value[1].value; // 默认java21
       }
     }
+    localJavaVersions.value = (await getLocalJavaList()).map(v => ({ label: `Java ${v.version}${v.is64Bit?'':' (32位)'} (${v.vendor} | ${v.path})`, value: v.path }));
   } catch (e) {
     MessagePlugin.warning('获取在线Java版本失败' + e.message);
   }
@@ -69,6 +72,8 @@ watch([javaType, selectedJavaVersion, customJavaPath], ([type, ver, path]) => {
   if (type === 'env') {
     formData.value.java = 'java';
   } else if (type === 'custom') {
+    formData.value.java = path;
+  } else if(type === 'local'){
     formData.value.java = path;
   } else if (type === 'online') {
     formData.value.java = ver ? `MSLX://Java/${ver}` : '';
@@ -334,6 +339,7 @@ const viewDetails = () => {
                 <div style="width: 100%">
                   <t-radio-group v-model="javaType" variant="default-filled">
                     <t-radio-button value="online">在线下载</t-radio-button>
+                    <t-radio-button value="local">选择电脑上的 Java</t-radio-button>
                     <t-radio-button value="env">环境变量</t-radio-button>
                     <t-radio-button value="custom">自定义路径</t-radio-button>
                   </t-radio-group>
@@ -342,6 +348,11 @@ const viewDetails = () => {
                     <div v-if="javaType === 'online'" class="flex-row">
                       <t-select v-model="selectedJavaVersion" :options="javaVersions" placeholder="请选择 Java 版本" />
                       <div class="tip">将下载并使用 Java {{ selectedJavaVersion || '?' }} {{ userStore.userInfo.systemInfo.osType.toLowerCase().replace('os','')}} / {{userStore.userInfo.systemInfo.osArchitecture.toLowerCase()}}</div>
+                    </div>
+
+                    <div v-if="javaType === 'local'" class="flex-row">
+                      <t-select v-model="customJavaPath" :options="localJavaVersions" placeholder="请选择 Java 版本" />
+                      <div class="tip">将使用您的本地 Java</div>
                     </div>
 
                     <div v-if="javaType === 'env'">
