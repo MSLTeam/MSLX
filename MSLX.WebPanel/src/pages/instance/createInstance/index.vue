@@ -36,8 +36,11 @@ const localJavaVersions = ref<{ label: string; value: string }[]>([]);
 const selectedJavaVersion = ref('');
 const customJavaPath = ref('');
 
-const fetchJavaVersions = async () => {
+const fetchJavaVersions = async (force: boolean = false) => {
   try {
+    if (force) {
+      MessagePlugin.info('正在刷新Java版本列表(重新扫描耗时较长)...');
+    }
     const res = await getJavaVersionList(userStore.userInfo.systemInfo.osType.toLowerCase().replace('os',''),userStore.userInfo.systemInfo.osArchitecture.toLowerCase());
     if (res && Array.isArray(res)) {
       javaVersions.value = res.map(v => ({ label: `Java ${v}`, value: v }));
@@ -45,7 +48,13 @@ const fetchJavaVersions = async () => {
         selectedJavaVersion.value = javaVersions.value[1].value; // 默认java21
       }
     }
-    localJavaVersions.value = (await getLocalJavaList()).map(v => ({ label: `Java ${v.version}${v.is64Bit?'':' (32位)'} (${v.vendor} | ${v.path})`, value: v.path }));
+    localJavaVersions.value = (await getLocalJavaList(force)).map(v => ({ label: `Java ${v.version}${v.is64Bit?'':' (32位)'} (${v.vendor} | ${v.path})`, value: v.path }));
+    if(localJavaVersions.value.length > 0){
+      customJavaPath.value = localJavaVersions.value[0].value;
+    }
+    if(force){
+      MessagePlugin.success('已刷新Java版本列表');
+    }
   } catch (e) {
     MessagePlugin.warning('获取在线Java版本失败' + e.message);
   }
@@ -352,7 +361,7 @@ const viewDetails = () => {
 
                     <div v-if="javaType === 'local'" class="flex-row">
                       <t-select v-model="customJavaPath" :options="localJavaVersions" placeholder="请选择 Java 版本" />
-                      <div class="tip">将使用您的本地 Java</div>
+                      <t-button variant="outline" theme="primary" @click="fetchJavaVersions(true)">重新扫描</t-button>
                     </div>
 
                     <div v-if="javaType === 'env'">
