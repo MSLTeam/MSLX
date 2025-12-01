@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onUnmounted, ref, watch, onMounted } from 'vue';
+import { onUnmounted, ref, watch, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { type FormRules, MessagePlugin } from 'tdesign-vue-next';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
@@ -9,6 +9,8 @@ import ServerCoreSelector from './ServerCoreSelector.vue';
 import { getJavaVersionList } from '@/api/mslapi/java';
 import { getLocalJavaList } from '@/api/localJava';
 import { postCreateInstanceQucikMode } from '@/api/instance';
+// 引入新建的上传 API
+import { initUpload, uploadChunk, finishUpload, deleteUpload } from '@/api/files';
 
 // 状态管理
 const userStore = useUserStore();
@@ -29,6 +31,13 @@ const createdServerId = ref<string | null>(null);
 const downloadType = ref('online'); // 'online' | 'manual'
 const showCoreSelector = ref(false);
 
+// 上传相关状态
+const uploadInputRef = ref<HTMLInputElement | null>(null);
+const isUploading = ref(false);
+const uploadProgress = ref(0);
+const uploadedFileName = ref('');
+const uploadedFileSize = ref('');
+
 // Java 选择相关状态
 const javaType = ref('online');
 const javaVersions = ref<{ label: string; value: string }[]>([]);
@@ -41,21 +50,27 @@ const fetchJavaVersions = async (force: boolean = false) => {
     if (force) {
       MessagePlugin.info('正在刷新Java版本列表(重新扫描耗时较长)...');
     }
-    const res = await getJavaVersionList(userStore.userInfo.systemInfo.osType.toLowerCase().replace('os',''),userStore.userInfo.systemInfo.osArchitecture.toLowerCase());
+    const res = await getJavaVersionList(
+      userStore.userInfo.systemInfo.osType.toLowerCase().replace('os', ''),
+      userStore.userInfo.systemInfo.osArchitecture.toLowerCase(),
+    );
     if (res && Array.isArray(res)) {
-      javaVersions.value = res.map(v => ({ label: `Java ${v}`, value: v }));
+      javaVersions.value = res.map((v) => ({ label: `Java ${v}`, value: v }));
       if (javaVersions.value.length > 0 && !selectedJavaVersion.value) {
         selectedJavaVersion.value = javaVersions.value[1].value; // 默认java21
       }
     }
-    localJavaVersions.value = (await getLocalJavaList(force)).map(v => ({ label: `Java ${v.version}${v.is64Bit?'':' (32位)'} (${v.vendor} | ${v.path})`, value: v.path }));
-    if(localJavaVersions.value.length > 0){
+    localJavaVersions.value = (await getLocalJavaList(force)).map((v) => ({
+      label: `Java ${v.version}${v.is64Bit ? '' : ' (32位)'} (${v.vendor} | ${v.path})`,
+      value: v.path,
+    }));
+    if (localJavaVersions.value.length > 0) {
       customJavaPath.value = localJavaVersions.value[0].value;
     }
-    if(force){
+    if (force) {
       MessagePlugin.success('已刷新Java版本列表');
     }
-  } catch (e) {
+  } catch (e: any) {
     MessagePlugin.warning('获取在线Java版本失败' + e.message);
   }
 };
@@ -71,48 +86,77 @@ const formData = ref({
   core: '',
   coreUrl: '',
   coreSha256: '',
+  coreFileKey: '', // 上传成功后的 Key
   minM: 1024,
   maxM: 4096,
   args: '',
 });
 
 // 监听选择java的状态变量 修改表单数据
-watch([javaType, selectedJavaVersion, customJavaPath], ([type, ver, path]) => {
-  if (type === 'env') {
-    formData.value.java = 'java';
-  } else if (type === 'custom') {
-    formData.value.java = path;
-  } else if(type === 'local'){
-    formData.value.java = path;
-  } else if (type === 'online') {
-    formData.value.java = ver ? `MSLX://Java/${ver}` : '';
-  }
+watch(
+  [javaType, selectedJavaVersion, customJavaPath],
+  ([type, ver, path]) => {
+    if (type === 'env') {
+      formData.value.java = 'java';
+    } else if (type === 'custom') {
+      formData.value.java = path;
+    } else if (type === 'local') {
+      formData.value.java = path;
+    } else if (type === 'online') {
+      formData.value.java = ver ? `MSLX://Java/${ver}` : '';
+    }
 
-  if (formData.value.java) {
-    formRef.value?.validate({ fields: ['java'] });
-  }
-}, { immediate: true });
+    if (formData.value.java) {
+      formRef.value?.validate({ fields: ['java'] });
+    }
+  },
+  { immediate: true },
+);
 
-// 表单校验规则
-const FORM_RULES: FormRules = {
-  name: [{ required: true, message: '实例名称不能为空', trigger: 'blur' }],
-  java: [{ required: true, message: '请配置 Java 环境', trigger: 'change' }],
-  core: [{ required: true, message: '必须指定核心名称', trigger: 'change' }],
-  coreUrl: [
-    {
-      validator: (val) => {
-        if (downloadType.value === 'online' && !val) return { result: false, message: '请选择一个服务端核心', type: 'error' };
-        if (val && !/^https?:\/\/.+/.test(val)) return { result: false, message: '下载地址必须以 http(s) 开头', type: 'error' };
-        return true;
+// 表单校验规则 (动态校验)
+const FORM_RULES = computed<FormRules>(() => {
+  return {
+    name: [{ required: true, message: '实例名称不能为空', trigger: 'blur' }],
+    java: [{ required: true, message: '请配置 Java 环境', trigger: 'change' }],
+    // core 字段在手动上传时，我们用 coreFileKey 来判断逻辑，但为了表单显示，我们还是要求用户填/选个文件
+    core: [{ required: true, message: '核心名称/文件不能为空', trigger: 'change' }],
+    coreUrl: [
+      {
+        validator: (val) => {
+          // 只有在线下载模式才校验 coreUrl
+          if (downloadType.value === 'online') {
+            if (!val) return { result: false, message: '请选择一个服务端核心', type: 'error' };
+            if (val && !/^https?:\/\/.+/.test(val))
+              return { result: false, message: '下载地址必须以 http(s) 开头', type: 'error' };
+          }
+          return true;
+        },
+        trigger: 'change',
       },
-      trigger: 'change'
-    },
-  ],
-  minM: [{ required: true, min: 1, message: '最小内存必须大于0', trigger: 'blur' }],
-  maxM: [{ required: true, min: 1, message: '最大内存必须大于0', trigger: 'blur' }],
-};
+    ],
+    // 上传文件的key校验
+    coreFileKey: [
+      {
+        validator: (val) => {
+          if (downloadType.value === 'manual' && !val) {
+            return { result: false, message: '请上传核心文件', type: 'error' };
+          }
+          return true;
+        },
+        trigger: 'change',
+      },
+    ],
+    minM: [{ required: true, min: 1, message: '最小内存必须大于0', trigger: 'blur' }],
+    maxM: [{ required: true, min: 1, message: '最大内存必须大于0', trigger: 'blur' }],
+  };
+});
 
-const stepValidationFields = [['name', 'path'], ['java'], ['core', 'coreUrl','coreSha256'], ['minM', 'maxM', 'args']];
+const stepValidationFields = [
+  ['name', 'path'],
+  ['java'],
+  ['core', 'coreUrl', 'coreSha256', 'coreFileKey'],
+  ['minM', 'maxM', 'args'],
+];
 
 // 步骤导航
 const prevStep = () => {
@@ -122,6 +166,7 @@ const prevStep = () => {
 };
 
 const nextStep = async () => {
+  // 步骤2的特殊拦截
   if (currentStep.value === 2) {
     if (downloadType.value === 'online') {
       if (!formData.value.coreUrl || !formData.value.core) {
@@ -129,42 +174,152 @@ const nextStep = async () => {
         return;
       }
     } else {
-      MessagePlugin.warning('自行上传功能暂未开放，请使用在线下载');
-      return;
+      // 自定义文件
+      if (!formData.value.coreFileKey) {
+        MessagePlugin.warning('请先上传核心文件');
+        return;
+      }
     }
   }
 
-  const fieldsToValidate = new Set(stepValidationFields[currentStep.value]);
+  // 执行表单校验
   const validateResult = await formRef.value.validate();
-
   if (validateResult === true) {
-    if (currentStep.value < 3) {
-      currentStep.value += 1;
-    }
+    if (currentStep.value < 3) currentStep.value += 1;
     return;
   }
 
   // 检查当前步骤是否有错误
+  const fieldsToValidate = new Set(stepValidationFields[currentStep.value]);
   const hasErrorInCurrentStep = Object.keys(validateResult).some((field) => fieldsToValidate.has(field));
 
   if (hasErrorInCurrentStep) {
     MessagePlugin.warning('请检查当前步骤的输入');
   } else {
+    // 如果错误不在当前步骤（比如是后面的步骤），允许下一步
     if (currentStep.value < 3) {
       currentStep.value += 1;
     }
   }
 };
 
-// 处理核心选择组件回调
+// 处理核心选择组件回调 (在线下载)
 const onCoreSelected = (data: { core: string; version: string; url: string; sha256: string; filename: string }) => {
   formData.value.core = data.filename;
   formData.value.coreUrl = data.url;
   formData.value.coreSha256 = data.sha256;
+  formData.value.coreFileKey = ''; // 清空上传 Key
   MessagePlugin.success(`已选择: ${data.core} (${data.version})`);
 
   formRef.value.validate({ fields: ['core', 'coreUrl'] });
 };
+
+// --- 上传文件  ---
+
+// 触发文件选择
+const triggerFileSelect = () => {
+  uploadInputRef.value?.click();
+};
+
+const formatFileSize = (bytes: number) => {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
+// 文件选择变动处理
+const onFileChange = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  if (!input.files || input.files.length === 0) return;
+
+  // 删除旧临时文件
+  if (formData.value.coreFileKey) {
+    try {
+      await deleteUpload(formData.value.coreFileKey);
+      console.log('旧临时文件已清理:', formData.value.coreFileKey);
+    } catch (e) {
+      console.warn('清理旧文件失败，可能文件已过期', e);
+    }
+  }
+
+  const file = input.files[0];
+  const fileName = file.name;
+
+  // 重置状态
+  formData.value.core = fileName;
+  formData.value.coreUrl = '';
+  formData.value.coreSha256 = '';
+  formData.value.coreFileKey = '';
+
+  uploadedFileName.value = fileName;
+  uploadedFileSize.value = formatFileSize(file.size);
+
+  // 开始上传
+  await handleUpload(file);
+
+  // 清空 Input 允许重复选择同一文件
+  input.value = '';
+};
+
+// 核心分片上传逻辑
+const handleUpload = async (file: File) => {
+  isUploading.value = true;
+  uploadProgress.value = 0;
+  const chunkSize = 5 * 1024 * 1024; // 5MB
+  const totalChunks = Math.ceil(file.size / chunkSize);
+
+  try {
+    // 获取 Upload ID
+    const initRes = await initUpload();
+    const uploadId = (initRes as any).uploadId;
+
+    if (!uploadId) throw new Error('无法获取上传凭证');
+
+    // 循环上传分片
+    for (let i = 0; i < totalChunks; i++) {
+      const start = i * chunkSize;
+      const end = Math.min(file.size, start + chunkSize);
+      const chunk = file.slice(start, end);
+
+      await uploadChunk(uploadId, i, chunk);
+
+      // 更新进度
+      uploadProgress.value = Math.floor(((i + 1) / totalChunks) * 100);
+    }
+
+    // 完成合并
+    const finishRes = await finishUpload(uploadId, totalChunks);
+    const finalKey = (finishRes as any).uploadId;
+
+    // 赋值给表单
+    formData.value.coreFileKey = finalKey;
+    MessagePlugin.success('核心文件上传成功！');
+
+    // 触发校验清除错误提示
+    formRef.value.validate({ fields: ['core', 'coreFileKey'] });
+  } catch (error: any) {
+    console.error(error);
+    MessagePlugin.error(`上传失败: ${error.message || '未知错误'}`);
+    formData.value.core = '';
+    uploadedFileName.value = '';
+    uploadProgress.value = 0;
+  } finally {
+    isUploading.value = false;
+  }
+};
+
+const removeUploadedFile = async () => {
+  if (formData.value.coreFileKey) {
+    await deleteUpload(formData.value.coreFileKey);
+    formData.value.coreFileKey = '';
+    formData.value.core = '';
+    uploadedFileName.value = '';
+    MessagePlugin.success('文件已移除');
+  }
+}
+// --- 上传相关 结束 ---
 
 // 提交 & SignalR 状态
 const onSubmit = async () => {
@@ -184,8 +339,17 @@ const onSubmit = async () => {
     path: formData.value.path || null,
     coreUrl: formData.value.coreUrl || null,
     coreSha256: formData.value.coreSha256 || null,
+    coreFileKey: formData.value.coreFileKey || null, // 确保传给后端
     args: formData.value.args || null,
   };
+
+  // 再次确保：如果是手动上传模式，清除 Url 避免冲突
+  if (downloadType.value === 'manual') {
+    apiData.coreUrl = null;
+    apiData.coreSha256 = null;
+  } else {
+    apiData.coreFileKey = null;
+  }
 
   try {
     const response = await postCreateInstanceQucikMode(apiData);
@@ -290,8 +454,15 @@ const goToHome = () => {
   currentStep.value = 0;
   formData.value = {
     ...formData.value,
-    name: '', core: '', coreUrl: '', coreSha256: '', path: '', args: ''
+    name: '新建服务器',
+    core: '',
+    coreUrl: '',
+    coreSha256: '',
+    path: '',
+    args: '',
+    coreFileKey: '',
   };
+  uploadedFileName.value = '';
   downloadType.value = 'online';
   javaType.value = 'online';
   customJavaPath.value = '';
@@ -306,7 +477,7 @@ const viewDetails = () => {
   <t-card :bordered="false">
     <div class="main-layout-container">
       <div class="steps-aside">
-        <t-steps layout="vertical" style="margin-top: 16px;" :current="currentStep" status="process" readonly>
+        <t-steps layout="vertical" style="margin-top: 16px" :current="currentStep" status="process" readonly>
           <t-step-item title="基本信息" content="填写实例名称和路径" />
           <t-step-item title="Java 环境" content="配置 Java 运行时" />
           <t-step-item title="核心文件" content="指定核心文件及下载" />
@@ -318,8 +489,14 @@ const viewDetails = () => {
 
       <div class="main-content">
         <div v-if="!isCreating && !isSuccess" class="form-step-container">
-          <t-form ref="formRef" :data="formData" :rules="FORM_RULES" label-align="top" class="step-form" @submit="onSubmit">
-
+          <t-form
+            ref="formRef"
+            :data="formData"
+            :rules="FORM_RULES"
+            label-align="top"
+            class="step-form"
+            @submit="onSubmit"
+          >
             <div v-show="currentStep === 0" class="step-content">
               <t-form-item label="实例名称" name="name">
                 <t-input v-model="formData.name" placeholder="为你的服务器起个名字" />
@@ -356,7 +533,11 @@ const viewDetails = () => {
                   <div class="java-option-panel">
                     <div v-if="javaType === 'online'" class="flex-row">
                       <t-select v-model="selectedJavaVersion" :options="javaVersions" placeholder="请选择 Java 版本" />
-                      <div class="tip">将下载并使用 Java {{ selectedJavaVersion || '?' }} {{ userStore.userInfo.systemInfo.osType.toLowerCase().replace('os','')}} / {{userStore.userInfo.systemInfo.osArchitecture.toLowerCase()}}</div>
+                      <div class="tip">
+                        将下载并使用 Java {{ selectedJavaVersion || '?' }}
+                        {{ userStore.userInfo.systemInfo.osType.toLowerCase().replace('os', '') }} /
+                        {{ userStore.userInfo.systemInfo.osArchitecture.toLowerCase() }}
+                      </div>
                     </div>
 
                     <div v-if="javaType === 'local'" class="flex-row">
@@ -381,34 +562,75 @@ const viewDetails = () => {
               <t-form-item label="选择您的Minecraft开服使用的服务端核心">
                 <t-radio-group v-model="downloadType" variant="default-filled">
                   <t-radio-button value="online">在线下载 (推荐)</t-radio-button>
-                  <t-radio-button value="manual" disabled>自行上传 (暂不可用)</t-radio-button>
+                  <t-radio-button value="manual">选择本地文件</t-radio-button>
                 </t-radio-group>
               </t-form-item>
 
               <div v-if="downloadType === 'online'" class="online-select-area">
-                <t-form-item label="选择服务端核心" name="coreUrl"> <div class="select-core-wrapper">
-                  <t-button variant="outline" @click="showCoreSelector = true">
-                    <template #icon><t-icon name="cloud-download" /></template>
-                    点击打开服务端核心选择库
-                  </t-button>
-
-                  <div v-if="formData.core" class="selected-core-card">
-                    <div class="core-icon"><t-icon name="check-circle-filled" /></div>
-                    <div class="core-info">
-                      <div class="core-filename">{{ formData.core }}</div>
-                      <div class="core-url" title="MSLX 将在稍后帮您自动下载此文件...">MSLX 将在稍后帮您自动下载此文件...</div>
-                    </div>
-                    <t-button shape="circle" variant="text" theme="danger" @click="formData.core = ''; formData.coreUrl = '';">
-                      <t-icon name="close" />
+                <t-form-item label="选择服务端核心" name="coreUrl">
+                  <div class="select-core-wrapper">
+                    <t-button variant="outline" @click="showCoreSelector = true">
+                      <template #icon><t-icon name="cloud-download" /></template>
+                      点击打开服务端核心选择库
                     </t-button>
+
+                    <div v-if="formData.core" class="selected-core-card">
+                      <div class="core-icon"><t-icon name="check-circle-filled" /></div>
+                      <div class="core-info">
+                        <div class="core-filename">{{ formData.core }}</div>
+                        <div class="core-url" title="MSLX 将在稍后帮您自动下载此文件...">
+                          MSLX 将在稍后帮您自动下载此文件...
+                        </div>
+                      </div>
+                      <t-button
+                        shape="circle"
+                        variant="text"
+                        theme="danger"
+                        @click="
+                          formData.core = '';
+                          formData.coreUrl = '';
+                        "
+                      >
+                        <t-icon name="close" />
+                      </t-button>
+                    </div>
                   </div>
-                </div>
                 </t-form-item>
                 <input v-model="formData.coreSha256" type="hidden" />
               </div>
 
-              <div v-if="downloadType === 'manual'">
-                <t-alert theme="warning" message="该功能尚未实现，请选择在线下载。" />
+              <div v-if="downloadType === 'manual'" class="online-select-area">
+                <t-form-item label="上传核心文件" name="coreFileKey">
+                  <div class="select-core-wrapper">
+                    <input ref="uploadInputRef" accept=".jar" type="file" style="display: none" @change="onFileChange" />
+
+                    <t-button v-if="!isUploading && !formData.coreFileKey" variant="outline" @click="triggerFileSelect">
+                      <template #icon><t-icon name="upload" /></template>
+                      点击选择文件并上传
+                    </t-button>
+
+                    <div v-if="isUploading" class="uploading-state">
+                      <div class="core-filename">正在上传: {{ uploadedFileName }} ({{ uploadedFileSize }})</div>
+                      <t-progress theme="line" :percentage="uploadProgress" />
+                      <div class="tip">正在分片上传中 (5MB/片)...</div>
+                    </div>
+
+                    <div v-if="formData.coreFileKey && !isUploading" class="selected-core-card">
+                      <div class="core-icon"><t-icon name="check-circle-filled" /></div>
+                      <div class="core-info">
+                        <div class="core-filename">{{ uploadedFileName }}</div>
+                        <div class="core-url">{{ uploadedFileSize }} | 已上传准备就绪</div>
+                      </div>
+                      <t-button shape="circle" variant="text" theme="primary" @click="triggerFileSelect">
+                        <template #icon><t-icon name="swap" /></template>
+                      </t-button>
+
+                      <t-button shape="circle" variant="text" theme="danger" @click="removeUploadedFile">
+                        <template #icon><t-icon name="delete" /></template>
+                      </t-button>
+                    </div>
+                  </div>
+                </t-form-item>
               </div>
             </div>
 
@@ -433,7 +655,9 @@ const viewDetails = () => {
             <t-form-item class="step-actions">
               <t-button v-if="currentStep > 0" theme="default" @click="prevStep">上一步</t-button>
               <t-button v-if="currentStep < 3" type="button" @click="nextStep">下一步</t-button>
-              <t-button v-if="currentStep === 3" theme="primary" type="submit" :loading="isSubmitting"> 提交创建 </t-button>
+              <t-button v-if="currentStep === 3" theme="primary" type="submit" :loading="isSubmitting">
+                提交创建
+              </t-button>
             </t-form-item>
           </t-form>
         </div>
@@ -470,10 +694,7 @@ const viewDetails = () => {
       </div>
     </div>
 
-    <server-core-selector
-      v-model:visible="showCoreSelector"
-      @confirm="onCoreSelected"
-    />
+    <server-core-selector v-model:visible="showCoreSelector" @confirm="onCoreSelected" />
   </t-card>
 </template>
 
@@ -549,6 +770,19 @@ const viewDetails = () => {
 
 .select-core-wrapper {
   width: 100%;
+}
+
+.uploading-state {
+  width: 100%;
+  .core-filename {
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .tip {
+    font-size: 12px;
+    color: var(--td-text-color-secondary);
+    margin-top: 4px;
+  }
 }
 
 .selected-core-card {
