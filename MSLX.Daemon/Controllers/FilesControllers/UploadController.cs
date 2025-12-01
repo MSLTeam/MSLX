@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory; 
 using MSLX.Daemon.Models;
+using MSLX.Daemon.Models.Files;
 using MSLX.Daemon.Utils;
 using Newtonsoft.Json.Linq;
 
@@ -84,7 +85,7 @@ public class UploadController : ControllerBase
     /// 合并分片
     /// </summary>
     [HttpPost("finish/{uploadId}")]
-    public async Task<IActionResult> MergeChunks(string uploadId, [FromBody] MergeRequest req)
+    public async Task<IActionResult> MergeChunks(string uploadId, [FromBody] FileUploadMergeRequest req)
     {
         // 验证key
         if (!_memoryCache.TryGetValue($"Upload_Session_{uploadId}", out _))
@@ -148,11 +149,6 @@ public class UploadController : ControllerBase
                 ["uploadId"] = uploadId
             }
         });
-    }
-
-    public class MergeRequest
-    {
-        public int TotalChunks { get; set; }
     }
 
     /// <summary>
