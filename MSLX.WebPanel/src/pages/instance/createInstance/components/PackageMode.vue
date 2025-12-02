@@ -445,6 +445,7 @@ const goToHome = () => {
   detectedJars.value = [];
   uploadedFileName.value = '';
   downloadType.value = 'online';
+  javaType.value = 'online';
 };
 
 const viewDetails = () => {

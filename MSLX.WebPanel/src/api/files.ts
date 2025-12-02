@@ -16,6 +16,7 @@ export async function uploadChunk(uploadId: string, index: number, file: Blob) {
     url: `/api/files/upload/chunk/${uploadId}`,
     data: formData,
     headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 120 * 1000, // 120秒够上传5mb了吧
   });
 }
 
