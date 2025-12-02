@@ -87,6 +87,94 @@ namespace MSLX.Daemon.Services
             ConfigServices.ServerList.CreateServer(server);
             _logger.LogInformation("服务器 {ServerId} 配置已创建。", serverId);
 
+            // 创建目录
+            try
+            {
+                Directory.CreateDirectory(server.Base);
+                _logger.LogInformation("服务器 {ServerId} 基础目录已创建。", serverId);
+            }catch(Exception ex)
+            {
+                await UpdateStatusAsync(serverIdStr, $"创建失败: {ex.Message}", -1, isError: true, exception: ex);
+                return;
+            }
+            
+            // 先处理压缩包的解压
+            if (!string.IsNullOrEmpty(request.packageFileKey))
+            {
+                string tempFilePath = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Temp", "Uploads", request.packageFileKey + ".tmp");
+                
+                if (File.Exists(tempFilePath))
+                {
+                    try
+                    {
+                        _logger.LogInformation("开始解压压缩包: {Key}", request.packageFileKey);
+                        await UpdateStatusAsync(serverIdStr, "正在解压服务端整合包...", 10);
+
+                        // 解压
+                        ZipFile.ExtractToDirectory(tempFilePath, server.Base, true);
+
+                        // 去除套娃
+                        var rootDirs = Directory.GetDirectories(server.Base);
+                        var rootFiles = Directory.GetFiles(server.Base);
+
+                        if (rootFiles.Length == 0 && rootDirs.Length == 1)
+                        {
+                            string nestedDir = rootDirs[0]; 
+                            string nestedDirName = Path.GetFileName(nestedDir);
+                            
+                            _logger.LogInformation("检测到单层套娃目录 '{DirName}'，正在将内容移至根目录...", nestedDirName);
+                            await UpdateStatusAsync(serverIdStr, "检测到多余文件夹，正在调整目录结构...", 15);
+
+                            // 移动所有文件
+                            foreach (var file in Directory.GetFiles(nestedDir))
+                            {
+                                string destFile = Path.Combine(server.Base, Path.GetFileName(file));
+                                File.Move(file, destFile, true);
+                            }
+
+                            // 移动所有文件夹
+                            foreach (var dir in Directory.GetDirectories(nestedDir))
+                            {
+                                string dirName = Path.GetFileName(dir);
+                                string destDir = Path.Combine(server.Base, dirName);
+                                
+                                // 如果极小概率撞名了，先删掉旧的
+                                if (Directory.Exists(destDir)) 
+                                    Directory.Delete(destDir, true);
+                                    
+                                Directory.Move(dir, destDir);
+                            }
+
+                            // 删除空的套娃目录
+                            Directory.Delete(nestedDir);
+                        }
+
+                        await UpdateStatusAsync(serverIdStr, "压缩包解压部署完成。", 20);
+                    }
+                    catch (Exception ex)
+                    {
+                        await UpdateStatusAsync(serverIdStr, $"解压整合包失败: {ex.Message}", -1, true, ex);
+                        return; 
+                    }
+                    finally
+                    {
+                        // 咋都要删除临时文件
+                        try 
+                        { 
+                            File.Delete(tempFilePath); 
+                            _logger.LogInformation("已清理临时压缩包文件。");
+                        } 
+                        catch { /* 忽略清理时的错误 */ }
+                    }
+                }
+                else
+                {
+                    await UpdateStatusAsync(serverIdStr, "上传的压缩包文件已过期或不存在！", -1, true);
+                    return;
+                }
+            }
+            
+
             // 这里处理Java的在线下载
             if (!string.IsNullOrEmpty(request.java) && request.java.Contains("MSLX://Java/"))
             {
@@ -176,9 +264,7 @@ namespace MSLX.Daemon.Services
                 {
                     try 
                     {
-                        Directory.CreateDirectory(server.Base);
                         File.Move(tempFilePath, destPath, true);
-            
                         _logger.LogInformation("已应用用户上传的核心文件: {Key}", request.coreFileKey);
                         await UpdateStatusAsync(serverIdStr, "用户核心文件部署完成。", 100.0);
                     }

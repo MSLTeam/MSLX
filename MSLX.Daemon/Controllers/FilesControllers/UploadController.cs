@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory; 
@@ -188,6 +189,100 @@ public class UploadController : ControllerBase
         catch (Exception ex)
         {
             return StatusCode(500, new ApiResponse<string> { Code = 500, Message = $"删除失败: {ex.Message}" });
+        }
+    }
+    
+    // 检查压缩包里面的jar文件 给整合包模式用的
+    [HttpGet("inspect/{uploadId}")]
+    public IActionResult InspectArchive(string uploadId)
+    {
+        // 基础校验
+        if (string.IsNullOrEmpty(uploadId) || !Regex.IsMatch(uploadId, "^[a-fA-F0-9]{32}$"))
+        {
+            return BadRequest(new ApiResponse<string> { Code = 400, Message = "ID 格式错误" });
+        }
+
+        var finalPath = Path.Combine(_tempPath, uploadId + ".tmp");
+        if (!System.IO.File.Exists(finalPath))
+        {
+            return NotFound(new ApiResponse<string> { Code = 404, Message = "找不到指定的上传文件，可能已过期" });
+        }
+
+        try
+        {
+            using var archive = ZipFile.OpenRead(finalPath);
+            
+            // 判定根目录逻辑
+            // 获取所有 Entry 的顶层路径片段
+            var topLevelSegments = archive.Entries
+                .Where(e => !string.IsNullOrEmpty(e.FullName))
+                .Select(e => e.FullName.Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault())
+                .Where(s => s != null)
+                .Distinct()
+                .ToList();
+
+            string basePrefix = "";
+
+            // 如果顶层只有一个片段 那就可能是套了个文件夹
+            if (topLevelSegments.Count == 1)
+            {
+                var potentialRoot = topLevelSegments[0];
+                
+                // 检查这是否真的是个目录：
+                // 逻辑：存在任意文件以 "potentialRoot/" 开头，且长度大于它（说明里面有东西）
+                // 注意：ZipEntry 有时单独存目录项，有时不存，所以靠路径匹配最稳
+                bool isFolderWrapper = archive.Entries.Any(e => 
+                    e.FullName.StartsWith(potentialRoot + "/", StringComparison.OrdinalIgnoreCase));
+
+                if (isFolderWrapper)
+                {
+                    basePrefix = potentialRoot + "/";
+                }
+            }
+
+            // 扫描jar包
+            var jarFiles = archive.Entries
+                .Where(e => 
+                    !e.FullName.EndsWith("/") && // 排除目录本身
+                    e.FullName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase) // 只要 jar
+                )
+                .Select(e =>
+                {
+                    // 如果有 basePrefix 只处理在这个目录下的文件
+                    if (!string.IsNullOrEmpty(basePrefix))
+                    {
+                        if (!e.FullName.StartsWith(basePrefix, StringComparison.OrdinalIgnoreCase))
+                            return null; // 不在根目录下
+                        
+                        // 获取相对路径
+                        return e.FullName.Substring(basePrefix.Length); 
+                    }
+                    return e.FullName;
+                })
+                .Where(name => !string.IsNullOrEmpty(name)) // 过滤掉不符合前缀的
+                .Where(name => !name!.Contains("/")) // 关键：不递归子目录
+                .ToList();
+
+            return Ok(new ApiResponse<JObject>
+            {
+                Code = 200,
+                Message = "解析成功",
+                Data = new JObject
+                {
+                    ["count"] = jarFiles.Count,
+                    ["jars"] = JToken.FromObject(jarFiles),
+                    ["detectedRoot"] = basePrefix
+                }
+            });
+
+        }
+        catch (InvalidDataException)
+        {
+            return BadRequest(new ApiResponse<string> { Code = 400, Message = "文件不是有效的压缩包" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new ApiResponse<string> { Code = 500, Message = $"读取压缩包失败: {ex.Message}" });
         }
     }
 }
