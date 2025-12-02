@@ -9,8 +9,8 @@ import ServerCoreSelector from './ServerCoreSelector.vue';
 import { getJavaVersionList } from '@/api/mslapi/java';
 import { getLocalJavaList } from '@/api/localJava';
 import { postCreateInstanceQucikMode } from '@/api/instance';
-// 引入新建的上传 API
 import { initUpload, uploadChunk, finishUpload, deleteUpload } from '@/api/files';
+import { CreateInstanceQucikModeModel } from '@/api/model/instance';
 
 // 状态管理
 const userStore = useUserStore();
@@ -79,7 +79,7 @@ onMounted(() => {
   fetchJavaVersions();
 });
 
-const formData = ref({
+const formData = ref(<CreateInstanceQucikModeModel>{
   name: '新建服务器',
   path: '',
   java: '',
@@ -87,6 +87,7 @@ const formData = ref({
   coreUrl: '',
   coreSha256: '',
   coreFileKey: '', // 上传成功后的 Key
+  packageFileKey: '',
   minM: 1024,
   maxM: 4096,
   args: '',
@@ -612,7 +613,7 @@ const viewDetails = () => {
                     <div v-if="isUploading" class="uploading-state">
                       <div class="core-filename">正在上传: {{ uploadedFileName }} ({{ uploadedFileSize }})</div>
                       <t-progress theme="line" :percentage="uploadProgress" />
-                      <div class="tip">正在分片上传中 (5MB/片)...</div>
+                      <div class="tip">别着急，喝杯茶🍵...</div>
                     </div>
 
                     <div v-if="formData.coreFileKey && !isUploading" class="selected-core-card">

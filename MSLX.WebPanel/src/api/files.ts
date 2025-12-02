@@ -1,5 +1,5 @@
 import { request } from '@/utils/request';
-import { UploadFinishResponse, UploadInitResponse } from '@/api/model/files';
+import { UploadFinishResponse, UploadInitResponse, UploadPackageCheckJarResponse } from '@/api/model/files';
 
 export async function initUpload() {
   return await request.post<UploadInitResponse>({
@@ -29,5 +29,11 @@ export async function finishUpload(uploadId: string, totalChunks: number) {
 export async function deleteUpload(uploadId: string) {
   return await request.post({
     url: `/api/files/upload/delete/${uploadId}`,
+  });
+}
+
+export async function checkPackageJarList(uploadId: string){
+  return await request.get<UploadPackageCheckJarResponse>({
+    url: `/api/files/upload/inspect/${uploadId}`
   });
 }

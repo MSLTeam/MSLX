@@ -15,6 +15,7 @@ const formData = reactive(<CreateInstanceQucikModeModel>{
   coreUrl: '',
   coreSha256: '',
   coreFileKey: '',
+  packageFileKey: '',
   minM: 1027, // 因为不能不填这两内存 只能用magic number代替咯～
   maxM: 1027,
   args: '',

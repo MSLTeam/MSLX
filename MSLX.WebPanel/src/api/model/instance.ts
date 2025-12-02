@@ -3,6 +3,7 @@ export interface CreateInstanceQucikModeModel {
   path: string;
   java: string;
   core: string;
+  packageFileKey: string;
   coreFileKey: string;
   coreUrl: string;
   coreSha256: string;
