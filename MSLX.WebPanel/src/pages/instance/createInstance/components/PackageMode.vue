@@ -657,10 +657,10 @@ const viewDetails = () => {
                 type="button"
                 :loading="isUploading || isCheckingPackage"
                 @click="nextStep"
-                >下一步</t-button
+              >下一步</t-button
               >
               <t-button v-if="currentStep === 4" theme="primary" type="submit" :loading="isSubmitting"
-                >提交创建</t-button
+              >提交创建</t-button
               >
             </t-form-item>
           </t-form>
@@ -782,6 +782,9 @@ const viewDetails = () => {
   display: block;
   .jar-option-item {
     margin-bottom: 8px;
+    &:last-child {
+      margin-bottom: 0;
+    }
   }
 }
 
@@ -834,6 +837,30 @@ const viewDetails = () => {
   &-describe {
     margin: 8px 0 32px;
     font-size: 14px;
+  }
+}
+
+/* --- 移动端适配 --- */
+@media (max-width: 768px) {
+  .main-layout-container {
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .steps-aside {
+    width: 100%;
+    border-right: none;
+    padding-right: 0;
+    border-bottom: 1px solid var(--td-border-level-2-color);
+    padding-bottom: 24px;
+  }
+
+  .step-content {
+    max-width: 100%;
+  }
+
+  .result-success {
+    min-height: 40vh;
   }
 }
 </style>
