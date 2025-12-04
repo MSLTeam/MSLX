@@ -15,5 +15,8 @@ public class UpdateSettingsRequest
     
     [Required(ErrorMessage = "是否在启动时打开 Web 控制台 (openWebConsoleOnLaunch) 不能为空")]
     public Boolean OpenWebConsoleOnLaunch { get; set; }
+    [AllowedValues("Official", "MSL Mirrors","MSL Mirrors Backup", ErrorMessage = "NeoForge/Forge镜像源参数 (neoForgeInstallerMirrors) 错误")]
+    [Required(ErrorMessage = "NeoForge/Forge安装镜像源 (neoForgeInstallerMirrors) 不能为空")]
+    public string NeoForgeInstallerMirrors { get; set; }
     
 }

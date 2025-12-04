@@ -18,11 +18,19 @@ const formData = reactive<SettingsModel>({
   avatar: '',
   fireWallBanLocalAddr: false,
   openWebConsoleOnLaunch: true,
+  neoForgeInstallerMirrors: 'MSL Mirrors',
 });
 
 // 头像相关
 const avatarMode = ref<'qq' | 'custom'>('qq');
 const qqNumber = ref('');
+
+// 安装镜像源
+const mirrorOptions = [
+  { label: '官方源 (较慢)', value: 'Official' },
+  { label: 'MSL镜像源 (推荐)', value: 'MSL Mirrors' },
+  { label: 'MSL镜像源 - 备用', value: 'MSL Mirrors Backup' }
+];
 
 // 开发者列表
 const developers = [
@@ -183,6 +191,10 @@ onMounted(() => {
               <t-switch v-model="formData.openWebConsoleOnLaunch" />
               <span class="status-text">{{ formData.openWebConsoleOnLaunch ? '已开启' : '已关闭' }}</span>
             </t-space>
+          </t-form-item>
+
+          <t-form-item label="安装镜像源" style="margin-top: 15px;" help="选择在自动安装 NeoForge / Forge 时所使用的镜像源。">
+            <t-select v-model="formData.neoForgeInstallerMirrors" :options="mirrorOptions" placeholder="请选择镜像源" />
           </t-form-item>
 
           <t-form-item>

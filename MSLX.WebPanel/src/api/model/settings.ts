@@ -3,4 +3,5 @@ export interface SettingsModel {
   avatar: string;
   fireWallBanLocalAddr: boolean;
   openWebConsoleOnLaunch: boolean;
+  neoForgeInstallerMirrors: string;
 }

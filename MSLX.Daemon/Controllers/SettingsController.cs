@@ -22,6 +22,7 @@ public class SettingsController: ControllerBase
                     Avatar = ConfigServices.Config.ReadConfig()["avatar"]?? "",
                     FireWallBanLocalAddr = ConfigServices.Config.ReadConfig()["fireWallBanLocalAddr"]?? false,
                     OpenWebConsoleOnLaunch = ConfigServices.Config.ReadConfig()["openWebConsoleOnLaunch"]?? true,
+                    NeoForgeInstallerMirrors = ConfigServices.Config.ReadConfig()["neoForgeInstallerMirrors"]?? "MSL Mirrors",
                 }
             }
         );
@@ -34,6 +35,7 @@ public class SettingsController: ControllerBase
         ConfigServices.Config.WriteConfigKey("avatar", request.Avatar);
         ConfigServices.Config.WriteConfigKey("fireWallBanLocalAddr", request.FireWallBanLocalAddr);
         ConfigServices.Config.WriteConfigKey("openWebConsoleOnLaunch", request.OpenWebConsoleOnLaunch);
+        ConfigServices.Config.WriteConfigKey("neoForgeInstallerMirrors", request.NeoForgeInstallerMirrors);
         return Ok(new ApiResponse<object>
             {
                 Code = 200,
