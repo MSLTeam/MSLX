@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onUnmounted, ref, watch, onMounted, computed } from 'vue';
+import { onUnmounted, ref, watch, onMounted, computed, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { type FormRules, MessagePlugin } from 'tdesign-vue-next';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
@@ -26,6 +26,7 @@ const progress = ref(0);
 const statusMessages = ref<{ time: string; message: string; progress: number | null }[]>([]);
 const hubConnection = ref<HubConnection | null>(null);
 const createdServerId = ref<string | null>(null);
+const logContainerRef = ref<HTMLDivElement | null>(null); // 日志容器dom
 
 // 核心选择相关状态
 const downloadType = ref('online'); // 'online' | 'manual'
@@ -401,6 +402,13 @@ const startSignalRConnection = async (serverId: string) => {
       message,
       progress,
     });
+
+    // 自动滚动底部
+    nextTick(() => {
+      if (logContainerRef.value) {
+        logContainerRef.value.scrollTop = logContainerRef.value.scrollHeight;
+      }
+    });
   };
 
   hubConnection.value.on('StatusUpdate', (id, message, prog) => {
@@ -669,7 +677,7 @@ const viewDetails = () => {
 
           <t-progress theme="plump" :percentage="progress" :label="`${progress.toFixed(2)}%`" />
 
-          <div class="log-container">
+          <div ref="logContainerRef" class="log-container">
             <t-list :split="true">
               <t-list-item v-for="(log, index) in statusMessages" :key="index">
                 <t-list-item-meta>
@@ -723,7 +731,6 @@ const viewDetails = () => {
 }
 
 .step-content {
-  max-width: 600px;
   margin: 0;
   padding: 16px 0;
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onUnmounted, ref, watch, onMounted, computed } from 'vue';
+import { onUnmounted, ref, watch, onMounted, computed, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { type FormRules, MessagePlugin } from 'tdesign-vue-next';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
@@ -26,6 +26,7 @@ const progress = ref(0);
 const statusMessages = ref<{ time: string; message: string; progress: number | null }[]>([]);
 const hubConnection = ref<HubConnection | null>(null);
 const createdServerId = ref<string | null>(null);
+const logContainerRef = ref<HTMLDivElement | null>(null); // 日志容器dom
 
 // 核心选择相关状态
 const downloadType = ref('online'); // 'online' | 'manual' (仅在未检测到Jar时使用)
@@ -396,6 +397,13 @@ const startSignalRConnection = async (serverId: string) => {
       message,
       progress: prog,
     });
+
+    // 自动滚动底部
+    nextTick(() => {
+      if (logContainerRef.value) {
+        logContainerRef.value.scrollTop = logContainerRef.value.scrollHeight;
+      }
+    });
     if (prog !== null && prog >= 0) progress.value = prog;
 
     if (prog === 100) {
@@ -522,7 +530,11 @@ const viewDetails = () => {
                     <div class="core-info">
                       <div class="core-filename">{{ uploadedFileName }}</div>
                       <div class="core-url">
-                        {{ detectedJars.length > 0 ? `发现 ${detectedJars.length} 个服务端核心文件` : '未发现服务端核心文件' }}
+                        {{
+                          detectedJars.length > 0
+                            ? `发现 ${detectedJars.length} 个服务端核心文件`
+                            : '未发现服务端核心文件'
+                        }}
                         {{ detectedRoot ? `| 根目录: /${detectedRoot}` : '' }}
                       </div>
                     </div>
@@ -540,7 +552,9 @@ const viewDetails = () => {
             <div v-show="currentStep === 2" class="step-content">
               <div v-if="detectedJars.length > 0">
                 <t-alert theme="success" class="mb-4">
-                  <template #message>我们在压缩包中发现了以下服务端核心文件，请选择哪一个作为<b>启动核心</b>。</template>
+                  <template #message
+                    >我们在压缩包中发现了以下服务端核心文件，请选择哪一个作为<b>启动核心</b>。</template
+                  >
                 </t-alert>
 
                 <t-form-item label="选择启动核心" name="core">
@@ -657,10 +671,10 @@ const viewDetails = () => {
                 type="button"
                 :loading="isUploading || isCheckingPackage"
                 @click="nextStep"
-              >下一步</t-button
+                >下一步</t-button
               >
               <t-button v-if="currentStep === 4" theme="primary" type="submit" :loading="isSubmitting"
-              >提交创建</t-button
+                >提交创建</t-button
               >
             </t-form-item>
           </t-form>
@@ -670,7 +684,7 @@ const viewDetails = () => {
           <div class="progress-title">正在创建整合包实例 ({{ createdServerId }})</div>
           <p>正在解压文件并配置环境...</p>
           <t-progress theme="plump" :percentage="progress" :label="`${progress.toFixed(2)}%`" />
-          <div class="log-container">
+          <div ref="logContainerRef" class="log-container">
             <t-list :split="true">
               <t-list-item v-for="(log, index) in statusMessages" :key="index">
                 <t-list-item-meta :description="`[${log.time}] ${log.message}`" />
