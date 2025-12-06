@@ -83,16 +83,19 @@ namespace MSLX.Daemon.Services
             try
             {
                 // 检查核心文件是否存在
-                string coreFilePath = Path.Combine(serverInfo.Base, serverInfo.Core);
-                if (!File.Exists(coreFilePath))
+                if (serverInfo.Core != "none" && serverInfo.Core.Contains("@libraries"))
                 {
-                    RecordLog(instanceId, context, $">>> [MSLX-MCServer] 核心文件不存在: {coreFilePath}");
-                    _activeServers.TryRemove(instanceId, out _);
-                    return;
+                    string coreFilePath = Path.Combine(serverInfo.Base, serverInfo.Core);
+                    if (!File.Exists(coreFilePath))
+                    {
+                        RecordLog(instanceId, context, $">>> [MSLX-MCServer] 核心文件不存在: {coreFilePath}");
+                        _activeServers.TryRemove(instanceId, out _);
+                        return;
+                    }
                 }
 
                 // 检查 Java 是否存在
-                if (!File.Exists(serverInfo.Java) && serverInfo.Java != "java")
+                if (!File.Exists(serverInfo.Java) && serverInfo.Java != "java" && serverInfo.Java != "none")
                 {
                     RecordLog(instanceId, context, $">>> [MSLX-MCServer] Java 路径无效: {serverInfo.Java}");
                     _activeServers.TryRemove(instanceId, out _);
@@ -103,12 +106,31 @@ namespace MSLX.Daemon.Services
                 ExecutePermission.GrantExecutePermission(serverInfo.Base);
                 await Task.Delay(100);
 
+                string args = $"-jar {serverInfo.Core} {serverInfo.Args}";
+                string exec = serverInfo.Java;
+
+                // 处理自定义模式参数
+                if (serverInfo.Java == "none")
+                {
+                    if (PlatFormServices.GetOs() == "Windows")
+                    {
+                        args = $"/c {serverInfo.Args}";
+                        exec = "cmd.exe";
+                    }
+                    else
+                    {
+                        args = $"-c \"{serverInfo.Args?.Replace("\"", "\\\"")}\"";
+                        exec = "/bin/bash";
+                    }
+                    
+                }
+
                 // 配置启动参数
                 var startInfo = new ProcessStartInfo
                 {
                     WorkingDirectory = serverInfo.Base,
-                    FileName = serverInfo.Java,
-                    Arguments = $"-jar {serverInfo.Core}",
+                    FileName = exec,
+                    Arguments = args,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     RedirectStandardInput = true, // 允许输入命令

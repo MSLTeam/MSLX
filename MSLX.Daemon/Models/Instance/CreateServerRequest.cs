@@ -55,7 +55,7 @@ public class CreateServerRequest : IValidatableObject
                          || !string.IsNullOrWhiteSpace(packageFileKey) 
                          || !string.IsNullOrWhiteSpace(coreUrl);
                          
-        if (!hasSource)
+        if (!hasSource && java != "none")
         {
             yield return new ValidationResult(
                 "参数缺失：必须至少提供一种来源 (coreUrl, coreFileKey 或 packageFileKey)。",
