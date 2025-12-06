@@ -22,17 +22,20 @@ namespace MSLX.Daemon.Services
         private readonly IBackgroundTaskQueue _taskQueue;
         private readonly IHubContext<CreationProgressHub> _hubContext;
         private readonly IMemoryCache _memoryCache;
+        private readonly IServiceScopeFactory _scopeFactory; // 作用域工厂
 
         public ServerCreationService(
             ILogger<ServerCreationService> logger,
             IBackgroundTaskQueue taskQueue,
             IHubContext<CreationProgressHub> hubContext,
-            IMemoryCache memoryCache)
+            IMemoryCache memoryCache,
+            IServiceScopeFactory scopeFactory)
         {
             _logger = logger;
             _taskQueue = taskQueue;
             _hubContext = hubContext;
             _memoryCache = memoryCache;
+            _scopeFactory = scopeFactory;
         }
 
         /// <summary>
@@ -76,7 +79,8 @@ namespace MSLX.Daemon.Services
             {
                 ID = serverId,
                 Name = request.name,
-                Base = request.path ?? Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Servers", serverIdStr),
+                Base = request.path ??
+                       Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Servers", serverIdStr),
                 Java = request.java ?? "java",
                 Core = request.core,
                 MinM = request.minM,
@@ -92,17 +96,19 @@ namespace MSLX.Daemon.Services
             {
                 Directory.CreateDirectory(server.Base);
                 _logger.LogInformation("服务器 {ServerId} 基础目录已创建。", serverId);
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 await UpdateStatusAsync(serverIdStr, $"创建失败: {ex.Message}", -1, isError: true, exception: ex);
                 return;
             }
-            
+
             // 先处理压缩包的解压
             if (!string.IsNullOrEmpty(request.packageFileKey))
             {
-                string tempFilePath = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Temp", "Uploads", request.packageFileKey + ".tmp");
-                
+                string tempFilePath = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Temp", "Uploads",
+                    request.packageFileKey + ".tmp");
+
                 if (File.Exists(tempFilePath))
                 {
                     try
@@ -119,9 +125,9 @@ namespace MSLX.Daemon.Services
 
                         if (rootFiles.Length == 0 && rootDirs.Length == 1)
                         {
-                            string nestedDir = rootDirs[0]; 
+                            string nestedDir = rootDirs[0];
                             string nestedDirName = Path.GetFileName(nestedDir);
-                            
+
                             _logger.LogInformation("检测到单层套娃目录 '{DirName}'，正在将内容移至根目录...", nestedDirName);
                             await UpdateStatusAsync(serverIdStr, "检测到多余文件夹，正在调整目录结构...", 15);
 
@@ -137,11 +143,11 @@ namespace MSLX.Daemon.Services
                             {
                                 string dirName = Path.GetFileName(dir);
                                 string destDir = Path.Combine(server.Base, dirName);
-                                
+
                                 // 如果极小概率撞名了，先删掉旧的
-                                if (Directory.Exists(destDir)) 
+                                if (Directory.Exists(destDir))
                                     Directory.Delete(destDir, true);
-                                    
+
                                 Directory.Move(dir, destDir);
                             }
 
@@ -154,17 +160,20 @@ namespace MSLX.Daemon.Services
                     catch (Exception ex)
                     {
                         await UpdateStatusAsync(serverIdStr, $"解压整合包失败: {ex.Message}", -1, true, ex);
-                        return; 
+                        return;
                     }
                     finally
                     {
                         // 咋都要删除临时文件
-                        try 
-                        { 
-                            File.Delete(tempFilePath); 
+                        try
+                        {
+                            File.Delete(tempFilePath);
                             _logger.LogInformation("已清理临时压缩包文件。");
-                        } 
-                        catch { /* 忽略清理时的错误 */ }
+                        }
+                        catch
+                        {
+                            /* 忽略清理时的错误 */
+                        }
                     }
                 }
                 else
@@ -173,7 +182,7 @@ namespace MSLX.Daemon.Services
                     return;
                 }
             }
-            
+
 
             // 这里处理Java的在线下载
             if (!string.IsNullOrEmpty(request.java) && request.java.Contains("MSLX://Java/"))
@@ -181,7 +190,8 @@ namespace MSLX.Daemon.Services
                 await UpdateStatusAsync(serverIdStr, "正在处理Java环境···", 0);
                 string javaVersion = request.java.Replace("MSLX://Java/", "");
                 string javaBaseDir = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Tools", "Java");
-                string javaPath = Path.Combine(javaBaseDir, javaVersion, "bin", PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java");
+                string javaPath = Path.Combine(javaBaseDir, javaVersion, "bin",
+                    PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java");
 
                 if (File.Exists(javaPath))
                 {
@@ -191,20 +201,24 @@ namespace MSLX.Daemon.Services
                 {
                     // 真得下载Java了
                     await UpdateStatusAsync(serverIdStr, $"准备开始下载Java {javaVersion}...", 0);
-                    
+
                     var response = await MSLApi.GetAsync($"/download/jdk/{javaVersion}",
                         new Dictionary<string, string>
                         {
-                            { "arch", PlatFormServices.GetOsArch().Replace("amd64","x64") },
+                            { "arch", PlatFormServices.GetOsArch().Replace("amd64", "x64") },
                             { "os", PlatFormServices.GetOs().ToLower().Replace("os", "") }
                         });
 
                     if (response.IsSuccessStatusCode)
                     {
                         JObject downloadInfo = JObject.Parse(response.Content);
-                        await UpdateStatusAsync(serverIdStr, $"成功获取到 Java {javaVersion} ({PlatFormServices.GetOsArch()} / {PlatFormServices.GetOs()}) 下载资源", 0);
-                        
-                        string fileName = PlatFormServices.GetOs() == "Windows" ? $"{javaVersion}.zip" : $"{javaVersion}.tar.gz";
+                        await UpdateStatusAsync(serverIdStr,
+                            $"成功获取到 Java {javaVersion} ({PlatFormServices.GetOsArch()} / {PlatFormServices.GetOs()}) 下载资源",
+                            0);
+
+                        string fileName = PlatFormServices.GetOs() == "Windows"
+                            ? $"{javaVersion}.zip"
+                            : $"{javaVersion}.tar.gz";
                         string fullPath = Path.Combine(javaBaseDir, fileName);
                         Directory.CreateDirectory(javaBaseDir);
 
@@ -213,22 +227,22 @@ namespace MSLX.Daemon.Services
 
                         // 通用下载
                         bool downloadSuccess = await DownloadAndValidateAsync(
-                            serverIdStr, 
-                            downloadUrl, 
-                            fullPath, 
-                            $"Java {javaVersion}", 
+                            serverIdStr,
+                            downloadUrl,
+                            fullPath,
+                            $"Java {javaVersion}",
                             sha256);
 
                         if (downloadSuccess)
                         {
                             // 下载校验成功，开始处理解压
-                            try 
+                            try
                             {
                                 _logger.LogInformation("Java {javaVersion} 下载完成，开始智能解压...", javaVersion);
                                 await UpdateStatusAsync(serverIdStr, $"正在配置 Java {javaVersion} 环境...", 99.99);
-                                
+
                                 await ExtractJavaSmartAsync(fullPath, javaVersion, javaBaseDir);
-                                
+
                                 await UpdateStatusAsync(serverIdStr, $"Java {javaVersion} 部署成功！", 99.9);
                             }
                             catch (Exception ex)
@@ -238,12 +252,13 @@ namespace MSLX.Daemon.Services
                         }
                         else
                         {
-                            return; 
+                            return;
                         }
                     }
                     else
                     {
-                        await UpdateStatusAsync(serverIdStr, $"下载 Java {javaVersion} 失败: {response.ResponseException}", -1, true);
+                        await UpdateStatusAsync(serverIdStr, $"下载 Java {javaVersion} 失败: {response.ResponseException}",
+                            -1, true);
                         return;
                     }
                 }
@@ -251,27 +266,28 @@ namespace MSLX.Daemon.Services
 
             // 检查下载
             await UpdateStatusAsync(serverIdStr, "服务器配置创建成功。正在检查核心文件...", null);
-            
+
             // 用户上传文件
             if (!string.IsNullOrEmpty(request.coreFileKey))
             {
                 await UpdateStatusAsync(serverIdStr, "检测到用户上传的核心文件，正在处理...", 0);
-    
-                string tempFilePath = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Temp", "Uploads", request.coreFileKey + ".tmp");
+
+                string tempFilePath = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Temp", "Uploads",
+                    request.coreFileKey + ".tmp");
                 string destPath = Path.Combine(server.Base, server.Core);
 
                 if (File.Exists(tempFilePath))
                 {
-                    try 
+                    try
                     {
                         File.Move(tempFilePath, destPath, true);
                         _logger.LogInformation("已应用用户上传的核心文件: {Key}", request.coreFileKey);
-                        await UpdateStatusAsync(serverIdStr, "用户核心文件部署完成。", 100.0);
+                        await UpdateStatusAsync(serverIdStr, "用户核心文件部署完成。", 99.9);
                     }
                     catch (Exception ex)
                     {
                         await UpdateStatusAsync(serverIdStr, $"部署用户文件失败: {ex.Message}", -1, true, ex);
-                        return; 
+                        return;
                     }
                 }
                 else
@@ -280,7 +296,7 @@ namespace MSLX.Daemon.Services
                     return;
                 }
             }
-            
+
             // 下载核心
             // 不存在下载和文件上传同时的情况 在接口已经拦截
             if (!string.IsNullOrEmpty(request.coreUrl))
@@ -293,24 +309,76 @@ namespace MSLX.Daemon.Services
                 Directory.CreateDirectory(server.Base);
 
                 bool coreSuccess = await DownloadAndValidateAsync(
-                    serverIdStr, 
-                    request.coreUrl, 
-                    fullPath, 
-                    "服务端核心", 
+                    serverIdStr,
+                    request.coreUrl,
+                    fullPath,
+                    "服务端核心",
                     request.coreSha256);
 
                 if (coreSuccess)
                 {
                     _logger.LogInformation("服务器 {ServerId} 核心下载完成。", serverId);
-                    await UpdateStatusAsync(serverIdStr, "核心下载完成。服务器创建成功！", 100.0);
+                    await UpdateStatusAsync(serverIdStr, "核心下载完成。服务器创建成功！", 99.9);
                 }
                 // 如果失败，通用方法里已经记录了 Log 和 Cache，这里无需额外操作
             }
+            
+            // 完成NeoForge/Forge的安装
+            // 兜底逻辑 在这里完成100进度回传
+            if (request.core.Contains("forge") && request.core.EndsWith(".jar") && !request.core.Contains("arclight"))
+            {
+                _logger.LogInformation("检测到 NeoForge/Forge 安装器，准备开始安装流程...");
+                await UpdateStatusAsync(task.ServerId, "准备运行 NeoForge/Forge 安装程序...", 0);
+                
+                try
+                {
+                    // 创建一个新的作用域
+                    using (var scope = _scopeFactory.CreateScope())
+                    {
+                        // 从这个作用域里拿到一个全新的 Installer 实例
+                        var installer = scope.ServiceProvider.GetRequiredService<NeoForgeInstallerService>();
+
+                        // 订阅日志事
+                        EventHandler<NeoForgeInstallerService.InstallLogEventArgs> logHandler = async (sender, args) =>
+                        {
+                            await UpdateStatusAsync(task.ServerId, args.Message, args.Progress);
+                        };
+                        installer.OnLog += logHandler;
+                        
+
+                        // 拼接java地址
+                        string javaPath = request.java.Contains("MSLX://Java/") ? Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Tools", "Java",
+                            request.java.Replace("MSLX://Java/", ""), "bin",
+                            PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java") : request.java;
+
+                        // 执行安装！
+                        bool installSuccess = await installer.InstallNeoForge(server.Base, server.Core, javaPath);
+
+                        // 取消订阅
+                        installer.OnLog -= logHandler;
+
+                        if (installSuccess)
+                        {
+                            // 安装成功
+                            _logger.LogInformation("NeoForge/Forge 安装完成。");
+                            await UpdateStatusAsync(task.ServerId, "NeoForge/Forge 安装程序执行完毕！", 100);
+                        }
+                        else
+                        {
+                            // 安装失败
+                            throw new Exception("NeoForge 安装器返回失败状态。");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "NeoForge/Forge 安装过程中发生异常。");
+                    throw;
+                }
+            }
             else
             {
-                // 无需下载
-                _logger.LogInformation("服务器 {ServerId} 无需下载，任务完成。", serverId);
-                await UpdateStatusAsync(serverIdStr, "创建成功 (无需下载核心文件)。", 100);
+                await UpdateStatusAsync(task.ServerId, "服务器创建成功！", 100);
             }
         }
 
@@ -358,6 +426,7 @@ namespace MSLX.Daemon.Services
                 {
                     Directory.CreateDirectory(dirPath.Replace(validJavaHome, finalDestDir));
                 }
+
                 foreach (string newPath in Directory.GetFiles(validJavaHome, "*.*", SearchOption.AllDirectories))
                 {
                     File.Copy(newPath, newPath.Replace(validJavaHome, finalDestDir), true);
@@ -383,15 +452,29 @@ namespace MSLX.Daemon.Services
             finally
             {
                 // 清理
-                try { Directory.Delete(tempExtractPath, true); } catch { }
-                try { File.Delete(archivePath); } catch { }
+                try
+                {
+                    Directory.Delete(tempExtractPath, true);
+                }
+                catch
+                {
+                }
+
+                try
+                {
+                    File.Delete(archivePath);
+                }
+                catch
+                {
+                }
             }
         }
 
         /// <summary>
         /// 通用下载与校验
         /// </summary>
-        private async Task<bool> DownloadAndValidateAsync(string serverId, string? url, string savePath, string itemName, string? sha256)
+        private async Task<bool> DownloadAndValidateAsync(string serverId, string? url, string savePath,
+            string itemName, string? sha256)
         {
             if (string.IsNullOrEmpty(url)) return false;
 
@@ -404,7 +487,7 @@ namespace MSLX.Daemon.Services
             var downloader = new DownloadService(downloadOpt);
             DateTime lastReportTime = DateTime.MinValue;
             const int throttleMilliseconds = 1000;
-            
+
             // 使用 TaskCompletionSource 来桥接事件和异步流
             var tcs = new TaskCompletionSource<bool>();
 
@@ -415,7 +498,7 @@ namespace MSLX.Daemon.Services
                     lastReportTime = DateTime.UtcNow;
                     double roundedProgress = Math.Round(e.ProgressPercentage, 2);
                     // 仅推送状态，不记录大量日志防止刷屏
-                    await UpdateStatusAsync(serverId, $"下载 {itemName} 中... {roundedProgress}%", 
+                    await UpdateStatusAsync(serverId, $"下载 {itemName} 中... {roundedProgress}%",
                         roundedProgress == 100 ? 99.9 : roundedProgress, logToConsole: false);
                 }
             };
@@ -429,7 +512,8 @@ namespace MSLX.Daemon.Services
                 }
                 else if (e.Error != null)
                 {
-                    await UpdateStatusAsync(serverId, $"{itemName} 下载失败: {e.Error.Message}", -1, isError: true, exception: e.Error);
+                    await UpdateStatusAsync(serverId, $"{itemName} 下载失败: {e.Error.Message}", -1, isError: true,
+                        exception: e.Error);
                     tcs.TrySetResult(false);
                 }
                 else
@@ -441,7 +525,14 @@ namespace MSLX.Daemon.Services
                     if (isHashMismatch)
                     {
                         await UpdateStatusAsync(serverId, $"{itemName} 下载失败: 校验文件完整性失败！", -1, isError: true);
-                        try { File.Delete(savePath); } catch { }
+                        try
+                        {
+                            File.Delete(savePath);
+                        }
+                        catch
+                        {
+                        }
+
                         tcs.TrySetResult(false);
                     }
                     else
@@ -473,7 +564,8 @@ namespace MSLX.Daemon.Services
         /// <param name="isError">是否为错误状态</param>
         /// <param name="exception">可选的异常信息</param>
         /// <param name="logToConsole">是否输出到控制台日志(默认True)</param>
-        private async Task UpdateStatusAsync(string serverId, string message, double? progress, bool isError = false, Exception? exception = null, bool logToConsole = true)
+        private async Task UpdateStatusAsync(string serverId, string message, double? progress, bool isError = false,
+            Exception? exception = null, bool logToConsole = true)
         {
             // 处理日志
             if (logToConsole)
@@ -484,17 +576,18 @@ namespace MSLX.Daemon.Services
                 }
                 else
                 {
-                    _logger.LogInformation("[{ServerId}] Status: {Message} (Progress: {Progress})", serverId, message, progress);
+                    _logger.LogInformation("[{ServerId}] Status: {Message} (Progress: {Progress})", serverId, message,
+                        progress);
                 }
             }
 
             // 处理缓存 (错误状态和普通状态都缓存)
-            var status = new CacheableStatus 
-            { 
-                Message = message, 
-                Progress = progress ?? 0 
+            var status = new CacheableStatus
+            {
+                Message = message,
+                Progress = progress ?? 0
             };
-            
+
             // 默认缓存10分钟
             _memoryCache.Set(serverId, status, TimeSpan.FromMinutes(10));
 

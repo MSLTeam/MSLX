@@ -46,6 +46,7 @@ builder.Services.AddHostedService<ServerCreationService>();
 builder.Services.AddHostedService<TempFileCleanupService>();
 builder.Services.AddScoped<MCServerService>();
 builder.Services.AddScoped<JavaScannerService>();
+builder.Services.AddTransient<NeoForgeInstallerService>();
 
 
 // 配置转发头选项
