@@ -5,17 +5,11 @@ using System.Text.Json;
 using static MSLX.Daemon.Utils.HttpService;
 
 namespace MSLX.Daemon.Utils;
+    // MSLAPI3
     public class MSLApi
     {
         public static string ApiUrl { get; } = "https://api.mslmc.cn/v3";
 
-        /// <summary>
-        /// 快速获取API返回Json里的数据内容
-        /// </summary>
-        /// <param name="path">路径，如“/notice”</param>
-        /// <param name="dataKey">数据键名称，默认通常为“data”</param>
-        /// <param name="queryParameters">query参数，可直接加在路径后面“?query=md”，也可在此通过Dictionary进行设置</param>
-        /// <returns>Success：请求是否成功，包括检测StatusCode和Json里的code，二者必须同时为200，才会返回true；Data：数据内容；Msg：Api返回Json里的message内容</returns>
         public async static Task<(bool Success, object? Data, string? Msg)> GetDataAsync(string path, string dataKey = "data", Dictionary<string, string>? queryParameters = null)
         {
             var getResponse = await GetAsync(path, queryParameters);
@@ -35,16 +29,9 @@ namespace MSLX.Daemon.Utils;
             }
         }
 
-        /// <summary>
-        /// 普通ApiGet请求
-        /// </summary>
-        /// <param name="path">路径，如“/notice”</param>
-        /// <param name="queryParameters">query参数，可直接加在路径后面“?query=md”，也可在此通过Dictionary进行设置</param>
-        /// <returns>Httpservice.HttpResponse</returns>
         public async static Task<HttpService.HttpResponse> GetAsync(string path, Dictionary<string, string>? queryParameters)
         {
             using var service = new HttpService();
-            // UA可以这样设置，也可以按照下面getRequest里注释掉的方式设置
             service.SetDefaultHeadersUA(UAManager.GetUA(UAManager.UAType.MSLX));
             string url = ApiUrl + path;
             if (queryParameters != null && queryParameters.Count > 0)
@@ -60,20 +47,12 @@ namespace MSLX.Daemon.Utils;
                 {
                     ["deviceID"] = PlatFormServices.GetDeviceId()
                 }
-                
             };
             var getResponse = await service.SendAsync(getRequest);
             service.Dispose();
             return getResponse;
         }
 
-        /// <summary>
-        /// 普通ApiPost请求
-        /// </summary>
-        /// <param name="path">路径，如“/notice”</param>
-        /// <param name="postContentType">发送数据类型，如：HttpMethod.Post</param>
-        /// <param name="data">发送数据</param>
-        /// <returns>Httpservice.HttpResponse</returns>
         public async static Task<HttpService.HttpResponse> PostAsync(string path, PostContentType postContentType, object data)
         {
             using var service = new HttpService();
@@ -87,39 +66,6 @@ namespace MSLX.Daemon.Utils;
                     ["deviceID"] = PlatFormServices.GetDeviceId()
                 }
             };
-            /*
-            // POST JSON示例
-            var postRequest = new HttpService.HttpRequest
-            {
-                ContentType=PostContentType.Json,
-                Data = new { Name = "Test", Value = 123 }
-            };
-
-            // POST 表单示例
-            var formRequest = new HttpService.HttpRequest
-            {
-                ContentType = PostContentType.FormUrlEncoded,
-                Data = new Dictionary<string, string>
-                {
-                    ["username"] = "test",
-                    ["password"] = "123456"
-                }
-            };
-
-            // POST TEXT示例
-            var textRequest = new HttpService.HttpRequest
-            {
-                ContentType = PostContentType.Text,
-                Data = "123123"
-            };
-
-            // POST OCTET示例
-            var octetRequest = new HttpService.HttpRequest
-            {
-                ContentType = PostContentType.Octet,
-                Data = new byte[] { 0x01, 0x02, 0x03 }
-            };
-            */
             postRequest.ContentType = postContentType;
             postRequest.Data = data;
             var postResponse = await service.SendAsync(postRequest);
@@ -127,21 +73,15 @@ namespace MSLX.Daemon.Utils;
             return postResponse;
         }
     }
-    
+
+    // MSL用户中心API
     public class MSLUser
     {
         public static string ApiUrl { get; } = "https://user.mslmc.net/api";
         
-        /// <summary>
-        /// 普通ApiGet请求
-        /// </summary>
-        /// <param name="path">路径，如“/notice”</param>
-        /// <param name="queryParameters">query参数，可直接加在路径后面“?query=md”，也可在此通过Dictionary进行设置</param>
-        /// <returns>Httpservice.HttpResponse</returns>
         public async static Task<HttpService.HttpResponse> GetAsync(string path, Dictionary<string, string>? queryParameters, Dictionary<string, string>? headers = null)
         {
             using var service = new HttpService();
-            // UA可以这样设置，也可以按照下面getRequest里注释掉的方式设置
             service.SetDefaultHeadersUA(UAManager.GetUA(UAManager.UAType.MSLX));
             string url = ApiUrl + path;
             if (queryParameters != null && queryParameters.Count > 0)
@@ -153,12 +93,6 @@ namespace MSLX.Daemon.Utils;
             {
                 Url = url,
                 Method = HttpMethod.Get,
-                /*
-                Headers = new Dictionary<string, string>
-                {
-                    ["User-Agent"] = UAManager.GetUA(UAManager.UAType.MSLX)
-                }
-                */
             };
             if (headers != null)
             {
@@ -169,14 +103,6 @@ namespace MSLX.Daemon.Utils;
             return getResponse;
         }
 
-        /// <summary>
-        /// 普通ApiPost请求
-        /// </summary>
-        /// <param name="path">路径，如“/notice”</param>
-        /// <param name="postContentType">发送数据类型，如：HttpMethod.Post</param>
-        /// <param name="data">发送数据</param>
-        /// <param name="headers">请求头</param>
-        /// <returns>Httpservice.HttpResponse</returns>
         public async static Task<HttpService.HttpResponse> PostAsync(string path, PostContentType postContentType, object data, Dictionary<string, string>? headers = null)
         {
             using var service = new HttpService();
@@ -186,39 +112,6 @@ namespace MSLX.Daemon.Utils;
                 Url = ApiUrl + path,
                 Method = HttpMethod.Post
             };
-            /*
-            // POST JSON示例
-            var postRequest = new HttpService.HttpRequest
-            {
-                ContentType=PostContentType.Json,
-                Data = new { Name = "Test", Value = 123 }
-            };
-
-            // POST 表单示例
-            var formRequest = new HttpService.HttpRequest
-            {
-                ContentType = PostContentType.FormUrlEncoded,
-                Data = new Dictionary<string, string>
-                {
-                    ["username"] = "test",
-                    ["password"] = "123456"
-                }
-            };
-
-            // POST TEXT示例
-            var textRequest = new HttpService.HttpRequest
-            {
-                ContentType = PostContentType.Text,
-                Data = "123123"
-            };
-
-            // POST OCTET示例
-            var octetRequest = new HttpService.HttpRequest
-            {
-                ContentType = PostContentType.Octet,
-                Data = new byte[] { 0x01, 0x02, 0x03 }
-            };
-            */
             postRequest.ContentType = postContentType;
             postRequest.Data = data;
             if (headers != null)
@@ -231,6 +124,76 @@ namespace MSLX.Daemon.Utils;
         }
     }
 
+    // 通用API
+    public class GeneralApi
+    {
+        /// <summary>
+        /// 通用 Get 请求
+        /// </summary>
+        public async static Task<HttpService.HttpResponse> GetAsync(
+            string url, 
+            Dictionary<string, string>? queryParameters = null, 
+            Dictionary<string, string>? headers = null,
+            TimeSpan? timeout = null)
+        {
+            using var service = new HttpService(timeout: timeout);
+            
+            // 默认设置 UA，防止被拦截
+            service.SetDefaultHeadersUA(UAManager.GetUA(UAManager.UAType.MSLX));
+
+            // 智能拼接 Query 参数
+            if (queryParameters != null && queryParameters.Count > 0)
+            {
+                string separator = url.Contains("?") ? "&" : "?";
+                string queryString = string.Join("&", queryParameters.Select(p => $"{WebUtility.UrlEncode(p.Key)}={WebUtility.UrlEncode(p.Value)}"));
+                url = $"{url}{separator}{queryString}";
+            }
+
+            var getRequest = new HttpService.HttpRequest
+            {
+                Url = url,
+                Method = HttpMethod.Get
+            };
+
+            if (headers != null)
+            {
+                getRequest.Headers = headers;
+            }
+
+            return await service.SendAsync(getRequest);
+        }
+
+        /// <summary>
+        /// 通用 Post 请求
+        /// </summary>
+        public async static Task<HttpService.HttpResponse> PostAsync(
+            string url, 
+            PostContentType postContentType, 
+            object data, 
+            Dictionary<string, string>? headers = null,
+            TimeSpan? timeout = null)
+        {
+            using var service = new HttpService(timeout: timeout);
+            service.SetDefaultHeadersUA(UAManager.GetUA(UAManager.UAType.MSLX));
+
+            var postRequest = new HttpService.HttpRequest
+            {
+                Url = url,
+                Method = HttpMethod.Post,
+                ContentType = postContentType,
+                Data = data
+            };
+
+            if (headers != null)
+            {
+                postRequest.Headers = headers;
+            }
+
+            return await service.SendAsync(postRequest);
+        }
+    }
+
+    // 底层封装
     public class HttpService : IDisposable
     {
         private readonly HttpClient _httpClient;
@@ -285,13 +248,11 @@ namespace MSLX.Daemon.Utils;
         {
             using var message = new HttpRequestMessage(request.Method, request.Url);
 
-            // 添加请求头
             foreach (var header in request.Headers)
             {
                 message.Headers.TryAddWithoutValidation(header.Key, header.Value);
             }
 
-            // 处理Post请求内容
             if (request.Method != HttpMethod.Get && request.Data != null)
             {
                 _httpClient.DefaultRequestHeaders.Accept.TryParseAdd(HttpAcceptType(request.ContentType));
@@ -371,7 +332,13 @@ namespace MSLX.Daemon.Utils;
 
         public void SetDefaultHeadersUA(string ua)
         {
-            _httpClient.DefaultRequestHeaders.UserAgent.TryParseAdd(ua);
+            if (_httpClient.DefaultRequestHeaders.Contains("User-Agent"))
+            {
+                _httpClient.DefaultRequestHeaders.Remove("User-Agent");
+            }
+
+            // 管你呢！直接塞！咩规范啊？我唔知啊～
+            _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", ua);
         }
 
         public void ClearCookies()
@@ -389,17 +356,17 @@ namespace MSLX.Daemon.Utils;
         }
     }
 
-    // UA管理器
+    // ==========================================
+    // 5. UA 管理器 (保持不变)
+    // ==========================================
     public class UAManager
     {
-        public enum UAType { MSLX, Win, Linux, Mac, Android, IOS }
+        public enum UAType { MSLX, Win, Linux, Mac }
 
         private static readonly string _mslxUA = "MSLTeam-MSLX(Daemon)/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
         private static readonly string _winUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36";
         private static readonly string _linuxUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36";
         private static readonly string _macUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36";
-        private static readonly string _androidUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36";
-        private static readonly string _iosUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36";
 
         public static string GetUA(UAType type = UAType.MSLX)
         {
@@ -409,8 +376,6 @@ namespace MSLX.Daemon.Utils;
                 UAType.Win => _winUA,
                 UAType.Linux => _linuxUA,
                 UAType.Mac => _macUA,
-                UAType.Android => _androidUA,
-                UAType.IOS => _iosUA,
                 _ => throw new ArgumentOutOfRangeException()
             };
         }
