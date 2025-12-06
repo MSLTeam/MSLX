@@ -118,6 +118,7 @@ app.UseAuthorization();
 // 注册SignalR实时通信服务
 app.MapHub<CreationProgressHub>("/api/hubs/creationProgressHub");
 app.MapHub<FrpConsoleHub>("/api/hubs/frpLogsHub");
+app.MapHub<InstanceConsoleHub>("/api/hubs/instanceControlHub");
 app.MapControllers();
 
 // 注册启动事件
