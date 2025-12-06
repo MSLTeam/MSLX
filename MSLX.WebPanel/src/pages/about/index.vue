@@ -149,17 +149,6 @@ onMounted(() => {
 
           <t-divider dashed />
 
-          <div class="section-title"><t-icon name="secured" /> 安全设置</div>
-
-          <t-form-item label="禁止本地访问" help="开启后将禁止本地回环地址访问，增强安全性。">
-            <t-space align="center">
-              <t-switch v-model="formData.fireWallBanLocalAddr" />
-              <span class="status-text">{{ formData.fireWallBanLocalAddr ? '已开启' : '已关闭' }}</span>
-            </t-space>
-          </t-form-item>
-
-          <t-divider dashed />
-
           <div class="section-title"><t-icon name="desktop" /> MSLX 守护进程端设置</div>
 
           <t-form-item label="自动打开控制台" help="MSLX 守护进程启动成功后，是否自动登录网页端控制台。">
@@ -177,6 +166,24 @@ onMounted(() => {
             <t-select v-model="formData.neoForgeInstallerMirrors" :options="mirrorOptions" placeholder="请选择镜像源" />
           </t-form-item>
 
+          <t-form-item>
+            <t-button theme="primary" type="submit" :loading="submitLoading" block class="save-btn">
+              <template #icon><t-icon name="save" /></template>
+              保存设置
+            </t-button>
+          </t-form-item>
+
+          <t-divider dashed />
+
+          <div class="section-title"><t-icon name="secured" /> 安全设置</div>
+
+          <t-form-item label="禁止本地访问" help="开启后将禁止本地回环地址访问，增强安全性。">
+            <t-space align="center">
+              <t-switch v-model="formData.fireWallBanLocalAddr" />
+              <span class="status-text">{{ formData.fireWallBanLocalAddr ? '已开启' : '已关闭' }}</span>
+            </t-space>
+          </t-form-item>
+
           <t-form-item
             label="监听地址设置"
             style="margin-top: 15px"
@@ -192,13 +199,6 @@ onMounted(() => {
                 <t-input v-model="formData.listenPort" />
               </t-space>
             </t-space>
-          </t-form-item>
-
-          <t-form-item>
-            <t-button theme="primary" type="submit" :loading="submitLoading" block class="save-btn">
-              <template #icon><t-icon name="save" /></template>
-              保存设置
-            </t-button>
           </t-form-item>
         </t-form>
       </t-card>
