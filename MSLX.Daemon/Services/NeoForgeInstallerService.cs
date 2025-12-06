@@ -190,7 +190,7 @@ public class NeoForgeInstallerService
                 // 进度回调
                 async (progress, speed) =>
                 {
-                    ReportLog($"正在下载 {InstallMcVersion} 原版服务端 进度: {progress} | 下载速度: {speed}");
+                    ReportLog($"正在下载 {InstallMcVersion} 原版服务端 进度: {progress:0.00}% | 下载速度: {speed}");
                 }
             );
 
@@ -285,7 +285,7 @@ public class NeoForgeInstallerService
                         Path.Combine(InstallBasePath, "libraries", lib["downloads"]["artifact"]["path"].ToString()),
                         async (progress, speed) =>
                         {
-                            ReportLog($"正在下载 {lib["downloads"]["artifact"]["path"].ToString()} 进度: {progress} | 下载速度: {speed}");
+                            ReportLog($"正在下载 {lib["downloads"]["artifact"]["path"].ToString()} 进度: {progress:0.00}% | 下载速度: {speed}");
                         }
                     );
                     tasks.Add(taskLib);
@@ -312,7 +312,7 @@ public class NeoForgeInstallerService
                         Path.Combine(InstallBasePath, "libraries", lib["downloads"]["artifact"]["path"].ToString()),
                         async (progress, speed) =>
                         {
-                            ReportLog($"正在下载 {lib["downloads"]["artifact"]["path"].ToString()} 进度: {progress} | 下载速度: {speed}");
+                            ReportLog($"正在下载 {lib["downloads"]["artifact"]["path"].ToString()} 进度: {progress:0.00}% | 下载速度: {speed}");
                         }
                     );
                     tasks.Add(taskLib);
@@ -348,7 +348,7 @@ public class NeoForgeInstallerService
                         Path.Combine(InstallBasePath, "libraries", lib["name"]?.ToString() ?? ""),
                         async (progress, speed) =>
                         {
-                            ReportLog($"正在下载 {lib["downloads"]["artifact"]["path"].ToString()} 进度: {progress:.0%} | 下载速度: {speed}");
+                            ReportLog($"正在下载 {lib["downloads"]["artifact"]["path"].ToString()} 进度: {progress:0.00}% | 下载速度: {speed}");
                         }
                     );
                     tasks.Add(taskLib);
@@ -592,6 +592,14 @@ public class NeoForgeInstallerService
             
             // 编译完成 安装结束
             ReportLog($"{InstallName} 安装完成！");
+            
+            // 清理临时文件
+            ReportLog("正在清理安装产生的临时文件···");
+            try
+            {
+                Directory.Delete(Path.Combine(InstallBasePath, "temp"), true);
+                File.Delete(InstallerPath);
+            }catch {}
 
             return true;
         }
