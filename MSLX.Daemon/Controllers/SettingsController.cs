@@ -23,6 +23,8 @@ public class SettingsController: ControllerBase
                     FireWallBanLocalAddr = ConfigServices.Config.ReadConfig()["fireWallBanLocalAddr"]?? false,
                     OpenWebConsoleOnLaunch = ConfigServices.Config.ReadConfig()["openWebConsoleOnLaunch"]?? true,
                     NeoForgeInstallerMirrors = ConfigServices.Config.ReadConfig()["neoForgeInstallerMirrors"]?? "MSL Mirrors",
+                    ListenHost = ConfigServices.Config.ReadConfig()["listenHost"]?? "localhost",
+                    ListenPort = ConfigServices.Config.ReadConfig()["listenPort"]?? 1027,
                 }
             }
         );
@@ -36,6 +38,8 @@ public class SettingsController: ControllerBase
         ConfigServices.Config.WriteConfigKey("fireWallBanLocalAddr", request.FireWallBanLocalAddr);
         ConfigServices.Config.WriteConfigKey("openWebConsoleOnLaunch", request.OpenWebConsoleOnLaunch);
         ConfigServices.Config.WriteConfigKey("neoForgeInstallerMirrors", request.NeoForgeInstallerMirrors);
+        ConfigServices.Config.WriteConfigKey("listenHost", request.ListenHost);
+        ConfigServices.Config.WriteConfigKey("listenPort", request.ListenPort);
         return Ok(new ApiResponse<object>
             {
                 Code = 200,

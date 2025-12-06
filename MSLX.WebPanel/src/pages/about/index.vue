@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue';
+import { onMounted, reactive, ref, watch } from 'vue';
 import { MessagePlugin } from 'tdesign-vue-next';
 
 import { getSettings, updateSettings } from '@/api/settings';
@@ -7,7 +7,6 @@ import type { SettingsModel } from '@/api/model/settings';
 import { useUserStore } from '@/store';
 
 const userStore = useUserStore();
-
 
 const loading = ref(false);
 const submitLoading = ref(false);
@@ -19,6 +18,8 @@ const formData = reactive<SettingsModel>({
   fireWallBanLocalAddr: false,
   openWebConsoleOnLaunch: true,
   neoForgeInstallerMirrors: 'MSL Mirrors',
+  listenHost: 'localhost',
+  listenPort: 1027,
 });
 
 // 头像相关
@@ -29,7 +30,7 @@ const qqNumber = ref('');
 const mirrorOptions = [
   { label: '官方源 (较慢)', value: 'Official' },
   { label: 'MSL镜像源 (推荐)', value: 'MSL Mirrors' },
-  { label: 'MSL镜像源 - 备用', value: 'MSL Mirrors Backup' }
+  { label: 'MSL镜像源 - 备用', value: 'MSL Mirrors Backup' },
 ];
 
 // 开发者列表
@@ -38,16 +39,15 @@ const developers = [
     name: 'xiaoyu',
     role: 'Core Developer',
     avatar: 'https://q.qlogo.cn/headimg_dl?dst_uin=1791123970&spec=640&img_type=jpg',
-    desc: '核心开发者'
+    desc: '核心开发者',
   },
   {
     name: 'Weheal',
     role: 'Core Developer',
     avatar: 'https://q.qlogo.cn/headimg_dl?dst_uin=2035582067&spec=640&img_type=jpg',
-    desc: '核心开发者'
-  }
+    desc: '核心开发者',
+  },
 ];
-
 
 // 初始化加载
 const initData = async () => {
@@ -110,22 +110,13 @@ onMounted(() => {
 <template>
   <div class="settings-page">
     <t-space direction="vertical" size="large" style="width: 100%">
-
       <t-card :bordered="false" title="系统设置" :loading="loading">
         <template #actions>
           <t-button theme="primary" variant="text" @click="initData">刷新</t-button>
         </template>
 
-        <t-form
-          ref="form"
-          :data="formData"
-          :label-width="120"
-          label-align="left"
-          @submit="onSubmit"
-        >
-          <div class="section-title">
-            <t-icon name="user" /> 用户设置
-          </div>
+        <t-form ref="form" :data="formData" :label-width="120" label-align="left" @submit="onSubmit">
+          <div class="section-title"><t-icon name="user" /> 用户设置</div>
 
           <t-form-item label="用户名" name="user">
             <t-input v-model="formData.user" placeholder="请输入显示的用户名" />
@@ -143,17 +134,8 @@ onMounted(() => {
           </t-form-item>
 
           <t-form-item :label="avatarMode === 'qq' ? 'QQ号码' : '图片链接'">
-            <t-input
-              v-if="avatarMode === 'qq'"
-              v-model="qqNumber"
-              placeholder="请输入QQ号自动获取头像"
-              type="number"
-            />
-            <t-input
-              v-else
-              v-model="formData.avatar"
-              placeholder="请输入头像图片 URL"
-            />
+            <t-input v-if="avatarMode === 'qq'" v-model="qqNumber" placeholder="请输入QQ号自动获取头像" type="number" />
+            <t-input v-else v-model="formData.avatar" placeholder="请输入头像图片 URL" />
           </t-form-item>
 
           <t-form-item label="头像预览">
@@ -161,17 +143,13 @@ onMounted(() => {
               <t-avatar :image="formData.avatar" size="80px" shape="round">
                 {{ formData.user ? formData.user.slice(0, 1).toUpperCase() : 'User' }}
               </t-avatar>
-              <div v-if="avatarMode === 'qq' && !qqNumber" class="preview-tips">
-                请输入QQ号以预览
-              </div>
+              <div v-if="avatarMode === 'qq' && !qqNumber" class="preview-tips">请输入QQ号以预览</div>
             </div>
           </t-form-item>
 
           <t-divider dashed />
 
-          <div class="section-title">
-            <t-icon name="secured" /> 安全设置
-          </div>
+          <div class="section-title"><t-icon name="secured" /> 安全设置</div>
 
           <t-form-item label="禁止本地访问" help="开启后将禁止本地回环地址访问，增强安全性。">
             <t-space align="center">
@@ -182,9 +160,7 @@ onMounted(() => {
 
           <t-divider dashed />
 
-          <div class="section-title">
-            <t-icon name="desktop" /> MSLX 守护进程端设置
-          </div>
+          <div class="section-title"><t-icon name="desktop" /> MSLX 守护进程端设置</div>
 
           <t-form-item label="自动打开控制台" help="MSLX 守护进程启动成功后，是否自动登录网页端控制台。">
             <t-space align="center">
@@ -193,8 +169,29 @@ onMounted(() => {
             </t-space>
           </t-form-item>
 
-          <t-form-item label="安装镜像源" style="margin-top: 15px;" help="选择在自动安装 NeoForge / Forge 时所使用的镜像源。">
+          <t-form-item
+            label="安装镜像源"
+            style="margin-top: 15px"
+            help="选择在自动安装 NeoForge / Forge 时所使用的镜像源。"
+          >
             <t-select v-model="formData.neoForgeInstallerMirrors" :options="mirrorOptions" placeholder="请选择镜像源" />
+          </t-form-item>
+
+          <t-form-item
+            label="监听地址设置"
+            style="margin-top: 15px"
+            help="设置MSLX守护进程的监听地址。(需要重启守护进程生效,若不明白这是干什么的请一定不要修改！)"
+          >
+            <t-space break-line align="center">
+              <t-space align="center">
+                <span class="status-text">监听地址</span>
+                <t-input v-model="formData.listenHost" />
+              </t-space>
+              <t-space align="center">
+                <span class="status-text">监听端口</span>
+                <t-input v-model="formData.listenPort" />
+              </t-space>
+            </t-space>
           </t-form-item>
 
           <t-form-item>
@@ -222,95 +219,94 @@ onMounted(() => {
           </t-row>
         </div>
       </t-card>
-
     </t-space>
   </div>
 </template>
 
 <style scoped lang="less">
-  .settings-page {
-    margin: 0 auto;
+.settings-page {
+  margin: 0 auto;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--td-text-color-primary);
+  margin-bottom: 24px;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .t-icon {
+    font-size: 18px;
+    color: var(--td-brand-color);
+  }
+}
+
+.avatar-preview {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  .preview-tips {
+    font-size: 12px;
+    color: var(--td-text-color-placeholder);
+  }
+}
+
+.status-text {
+  font-size: 14px;
+  color: var(--td-text-color-secondary);
+}
+
+.save-btn {
+  margin-top: 16px;
+
+  /* 移动端按钮加高 */
+  @media screen and (max-width: 768px) {
+    height: 44px;
+  }
+}
+
+/* 关于模块样式 */
+.about-content {
+  .about-desc {
+    color: var(--td-text-color-secondary);
+    margin-bottom: 20px;
+    font-size: 14px;
+  }
+}
+
+.dev-card {
+  display: flex;
+  align-items: center;
+  background-color: var(--td-bg-color-container-hover);
+  padding: 16px;
+  border-radius: var(--td-radius-medium);
+  transition: all 0.3s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--td-shadow-1);
   }
 
-  .section-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--td-text-color-primary);
-    margin-bottom: 24px;
-    margin-top: 8px;
+  .dev-info {
+    margin-left: 12px;
     display: flex;
-    align-items: center;
-    gap: 8px;
+    flex-direction: column;
 
-    .t-icon {
-      font-size: 18px;
-      color: var(--td-brand-color);
+    .dev-name {
+      font-weight: 600;
+      font-size: 16px;
+      color: var(--td-text-color-primary);
     }
-  }
 
-  .avatar-preview {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-
-    .preview-tips {
+    .dev-role {
       font-size: 12px;
       color: var(--td-text-color-placeholder);
+      margin-top: 2px;
     }
   }
-
-  .status-text {
-    font-size: 14px;
-    color: var(--td-text-color-secondary);
-  }
-
-  .save-btn {
-    margin-top: 16px;
-
-    /* 移动端按钮加高 */
-    @media screen and (max-width: 768px) {
-      height: 44px;
-    }
-  }
-
-  /* 关于模块样式 */
-  .about-content {
-    .about-desc {
-      color: var(--td-text-color-secondary);
-      margin-bottom: 20px;
-      font-size: 14px;
-    }
-  }
-
-  .dev-card {
-    display: flex;
-    align-items: center;
-    background-color: var(--td-bg-color-container-hover);
-    padding: 16px;
-    border-radius: var(--td-radius-medium);
-    transition: all 0.3s;
-
-    &:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--td-shadow-1);
-    }
-
-    .dev-info {
-      margin-left: 12px;
-      display: flex;
-      flex-direction: column;
-
-      .dev-name {
-        font-weight: 600;
-        font-size: 16px;
-        color: var(--td-text-color-primary);
-      }
-
-      .dev-role {
-        font-size: 12px;
-        color: var(--td-text-color-placeholder);
-        margin-top: 2px;
-      }
-    }
-  }
+}
 </style>
