@@ -13,16 +13,16 @@ namespace MSLX.Daemon.Hubs
         }
 
         /// <summary>
-        /// ¼ÓÈë·şÎñÆ÷¿ØÖÆÌ¨×é
+        /// åŠ å…¥æœåŠ¡å™¨æ§åˆ¶å°ç»„
         /// </summary>
         public async Task JoinGroup(uint instanceId)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, instanceId.ToString());
 
-            // »ñÈ¡ÀúÊ·ÈÕÖ¾
+            // è·å–å†å²æ—¥å¿—
             var historyLogs = _mcServerService.GetLogs(instanceId);
 
-            // ÍÆËÍÀúÊ·ÈÕÖ¾¸øµ±Ç°¿Í»§¶Ë
+            // æ¨é€å†å²æ—¥å¿—ç»™å½“å‰å®¢æˆ·ç«¯
             if (historyLogs.Any())
             {
                 foreach (var log in historyLogs)
@@ -33,7 +33,7 @@ namespace MSLX.Daemon.Hubs
         }
 
         /// <summary>
-        /// Àë¿ª·şÎñÆ÷¿ØÖÆÌ¨×é
+        /// ç¦»å¼€æœåŠ¡å™¨æ§åˆ¶å°ç»„
         /// </summary>
         public async Task LeaveGroup(uint instanceId)
         {
@@ -41,18 +41,18 @@ namespace MSLX.Daemon.Hubs
         }
 
         /// <summary>
-        /// ·¢ËÍÃüÁîµ½·şÎñÆ÷
+        /// å‘é€å‘½ä»¤åˆ°æœåŠ¡å™¨
         /// </summary>
         public async Task SendCommand(uint instanceId, string command)
         {
             if (string.IsNullOrWhiteSpace(command))
             {
-                await Clients.Caller.SendAsync("CommandResult", new { success = false, message = "ÃüÁî²»ÄÜÎª¿Õ" });
+                await Clients.Caller.SendAsync("CommandResult", new { success = false, message = "å‘½ä»¤ä¸èƒ½ä¸ºç©º" });
                 return;
             }
 
             bool success = _mcServerService.SendCommand(instanceId, command);
-            await Clients.Caller.SendAsync("CommandResult", new { success, message = success ? "ÃüÁîÒÑ·¢ËÍ" : "·¢ËÍÊ§°Ü£¬·şÎñÆ÷¿ÉÄÜÎ´ÔËĞĞ" });
+            await Clients.Caller.SendAsync("CommandResult", new { success, message = success ? "å‘½ä»¤å·²å‘é€" : "å‘é€å¤±è´¥ï¼ŒæœåŠ¡å™¨å¯èƒ½æœªè¿è¡Œ" });
         }
     }
 }
