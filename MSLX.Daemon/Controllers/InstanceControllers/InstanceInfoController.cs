@@ -3,33 +3,31 @@ using MSLX.Daemon.Models;
 using MSLX.Daemon.Utils;
 using Newtonsoft.Json.Linq;
 
-namespace MSLX.Daemon.Controllers.InstanceControllers
+namespace MSLX.Daemon.Controllers.InstanceControllers;
+
+[Route("api/instance")]
+[ApiController]
+public class InstanceInfoController : ControllerBase
 {
-    [ApiController]
-    public class InstanceInfoController : ControllerBase
+    [HttpGet("list")]
+    public IActionResult GetInstanceList()
     {
-
-        [HttpGet("api/instance/list")]
-        public IActionResult GetInstanceList()
+        ConfigServices.ServerListConfig config = ConfigServices.ServerList;
+        var serverList = config.ReadServerList();
+        if (serverList != null)
         {
-            ConfigServices.ServerListConfig config = ConfigServices.ServerList;
-            var serverList = config.ReadServerList();
-            if (serverList!=null)
+            var response = new ApiResponse<JObject>
             {
-                var response = new ApiResponse<JObject>
-                {
-                    Code = 200,
-                    Message = "ok",
-                    Data = JObject.FromObject(new { list = serverList })
-                };
+                Code = 200,
+                Message = "ok",
+                Data = JObject.FromObject(new { list = serverList })
+            };
 
-                return Ok(response);
-            }
-            else
-            {
-                return BadRequest(new { message = "Failed!" });
-            }
+            return Ok(response);
         }
-
+        else
+        {
+            return BadRequest(new { message = "Failed!" });
+        }
     }
 }
