@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router';
 import { MessagePlugin } from 'tdesign-vue-next';
 
 // 子组件
-import ConsoleTerminal from './components/ConsoleTerminal.vue'; // 假设放在 ./components 下
+import ConsoleTerminal from './components/ConsoleTerminal.vue';
 import ControlPanel from './components/ControlPanel.vue';
 
 import { getTunnelInfo, postFrpAction } from '@/api/frp';

@@ -19,4 +19,21 @@ export default [
       },
     ],
   },
+  {
+    path: '/instance/console',
+    component: Layout,
+    meta: { hidden: true },
+    children: [
+      {
+        path: ':id',
+        name: 'InstanceConsole',
+        component: () => import('@/pages/instance/console/index.vue'),
+        meta: {
+          title: '服务器控制台',
+          hidden: true,
+          activeMenu: '/instance/list'
+        },
+      },
+    ],
+  },
 ]
