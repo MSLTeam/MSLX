@@ -6,6 +6,7 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import c from 'ansi-colors';
 import '@xterm/xterm/css/xterm.css';
+import colorizeServerLog from '@/utils/colorizeLog';
 
 const props = defineProps<{
   serverId: number;
@@ -51,14 +52,7 @@ const termThemes = {
 // 日志染色
 c.enabled = true;
 const colorizeLog = (log: string): string => {
-  if (!log) return '';
-  // 时间戳变灰
-  log = log.replace(/^(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2})/, (match) => c.gray(match));
-  // 常见日志等级
-  log = log.replace(/\b(INFO|Info)\b/g, c.green('INFO'));
-  log = log.replace(/\b(WARN|Warn|WARNING)\b/g, c.yellow('WARN'));
-  log = log.replace(/\b(ERROR|Error|FAIL|Exception)\b/g, c.red('ERROR'));
-  return log;
+  return colorizeServerLog(log);
 };
 
 // 初始化终端
@@ -197,7 +191,7 @@ const startSignalR = async () => {
   });
 
   hubConnection.onreconnecting(() => {
-    term?.writeln('\x1b[1;33m[System] 连接中断，尝试重连...\x1b[0m');
+    term?.writeln('\x1b[1;31m[System] 连接中断，尝试重连...\x1b[0m');
   });
 
   hubConnection.onreconnected(async () => {
