@@ -123,7 +123,7 @@ const handleDelete = (e: MouseEvent, item: InstanceListModel) => {
             <div class="server-info">
               <div class="info-item">
                 <cpu-icon class="info-icon" />
-                <span>Core: {{ formatCore(item.core) }}</span>
+                <span>{{ formatCore(item.core) }}</span>
               </div>
               <div class="info-item id-tag">
                 <span>#{{ item.id }}</span>
