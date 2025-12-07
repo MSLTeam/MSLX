@@ -120,7 +120,7 @@ namespace MSLX.Daemon.Services
                 ExecutePermission.GrantExecutePermission(serverInfo.Base);
                 await Task.Delay(100);
 
-                string args = $"-jar {serverInfo.Core} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args} nogui";
+                string args = $"-Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args} -jar {serverInfo.Core} nogui";
                 string exec = serverInfo.Java;
 
                 // 处理自定义模式参数
@@ -150,7 +150,7 @@ namespace MSLX.Daemon.Services
                 // 处理NeoForge类型参数
                 if (serverInfo.Core.Contains("@libraries"))
                 {
-                    args = $"-Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Core} {serverInfo.Args} nogui";
+                    args = $"-Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args} {serverInfo.Core} nogui";
                 }
 
                 // 配置启动参数
