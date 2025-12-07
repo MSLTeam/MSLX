@@ -2,7 +2,7 @@
 import { reactive, ref } from 'vue';
 import { CreateInstanceQucikModeModel } from '@/api/model/instance';
 import { type FormProps, FormRules, MessagePlugin } from 'tdesign-vue-next';
-import { postCreateInstanceQucikMode } from '@/api/instance';
+import { postCreateInstanceQuickMode } from '@/api/instance';
 
 const isSuccess = ref(false);
 const createdServerId = ref(0);
@@ -29,7 +29,7 @@ const rules: FormRules<CreateInstanceQucikModeModel> = {
 const onSubmit: FormProps['onSubmit'] = async ({ validateResult }) => {
   if (validateResult === true) {
     try{
-      const res = await postCreateInstanceQucikMode(formData);
+      const res = await postCreateInstanceQuickMode(formData);
       createdServerId.value = res.serverId;
       MessagePlugin.success('创建成功');
       isSuccess.value = true;

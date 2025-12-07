@@ -8,7 +8,7 @@ import { useUserStore } from '@/store';
 import ServerCoreSelector from './ServerCoreSelector.vue';
 import { getJavaVersionList } from '@/api/mslapi/java';
 import { getLocalJavaList } from '@/api/localJava';
-import { postCreateInstanceQucikMode } from '@/api/instance';
+import { postCreateInstanceQuickMode } from '@/api/instance';
 import { initUpload, uploadChunk, finishUpload, deleteUpload, checkPackageJarList } from '@/api/files';
 import { CreateInstanceQucikModeModel } from '@/api/model/instance';
 
@@ -363,7 +363,7 @@ const onSubmit = async () => {
   }
 
   try {
-    const response = await postCreateInstanceQucikMode(apiData);
+    const response = await postCreateInstanceQuickMode(apiData);
     const serverId = response.serverId;
     if (!serverId) throw new Error('服务器未返回 ServerId');
 
