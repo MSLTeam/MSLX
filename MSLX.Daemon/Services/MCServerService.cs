@@ -147,8 +147,17 @@ namespace MSLX.Daemon.Services
                 };
 
                 var process = new Process { StartInfo = startInfo };
+                
+                process.EnableRaisingEvents = true;
 
                 // 绑定事件
+                process.Exited += (sender, e) => 
+                {
+                    if (sender is Process p)
+                    {
+                        HandleServerExit(instanceId, p.ExitCode);
+                    }
+                };
                 process.OutputDataReceived += (sender, e) => RecordLog(instanceId, context, e.Data);
                 process.ErrorDataReceived += (sender, e) => RecordLog(instanceId, context, e.Data);
 
@@ -301,6 +310,34 @@ namespace MSLX.Daemon.Services
                 }
             }
             _activeServers.Clear();
+        }
+        
+        /// <summary>
+        /// 统一处理服务器退出后的逻辑
+        /// </summary>
+        private void HandleServerExit(uint instanceId, int exitCode)
+        {
+            if (!_activeServers.TryGetValue(instanceId, out var context))
+            {
+                return;
+            }
+            
+            if (_activeServers.TryRemove(instanceId, out var removedContext))
+            {
+                // 退出日志
+                string exitMsg = $"[MSLX] 服务器进程已停止，退出代码: {exitCode}";
+                if (exitCode != 0)
+                {
+                    exitMsg += " (异常退出)";
+                }
+                else
+                {
+                    exitMsg += " (正常关闭)";
+                }
+                
+                RecordLog(instanceId, removedContext, exitMsg);
+                _logger.LogInformation($"MC 服务器 [{instanceId}] 停止处理完成 (Code: {exitCode})");
+            }
         }
 
         /// <summary>
