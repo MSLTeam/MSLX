@@ -95,18 +95,32 @@ namespace MSLX.Daemon.Services
                 }
 
                 // 检查 Java 是否存在
-                if (!File.Exists(serverInfo.Java) && serverInfo.Java != "java" && serverInfo.Java != "none")
+                if (!File.Exists(serverInfo.Java) && serverInfo.Java != "java" && serverInfo.Java != "none" && !serverInfo.Java.StartsWith("MSLX://Java/"))
                 {
                     RecordLog(instanceId, context, $">>> [MSLX-MCServer] Java 路径无效: {serverInfo.Java}");
                     _activeServers.TryRemove(instanceId, out _);
                     return;
+                }
+                
+                if (serverInfo.Java.StartsWith("MSLX://Java/"))
+                {
+                    string javaVersion = serverInfo.Java.Replace("MSLX://Java/", "");
+                    string javaBaseDir = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Tools", "Java");
+                    string javaPath = Path.Combine(javaBaseDir, javaVersion, "bin",
+                        PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java");
+                    if (!File.Exists(javaPath))
+                    {
+                        RecordLog(instanceId, context, $">>> [MSLX-MCServer] Java 无效！请尝试重新设置 Java 环境！");
+                        _activeServers.TryRemove(instanceId, out _);
+                        return;
+                    }
                 }
 
                 // 给予执行权限
                 ExecutePermission.GrantExecutePermission(serverInfo.Base);
                 await Task.Delay(100);
 
-                string args = $"-jar {serverInfo.Core} {serverInfo.Args} nogui";
+                string args = $"-jar {serverInfo.Core} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args} nogui";
                 string exec = serverInfo.Java;
 
                 // 处理自定义模式参数
@@ -124,11 +138,19 @@ namespace MSLX.Daemon.Services
                     }
                     
                 }
+
+                if (serverInfo.Java.StartsWith("MSLX://Java/"))
+                {
+                    string javaVersion = serverInfo.Java.Replace("MSLX://Java/", "");
+                    string javaBaseDir = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Tools", "Java");
+                    exec = Path.Combine(javaBaseDir, javaVersion, "bin",
+                        PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java");
+                }
                 
                 // 处理NeoForge类型参数
                 if (serverInfo.Core.Contains("@libraries"))
                 {
-                    args = $"{serverInfo.Core} {serverInfo.Args} nogui";
+                    args = $"{serverInfo.Core} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args} nogui";
                 }
 
                 // 配置启动参数
