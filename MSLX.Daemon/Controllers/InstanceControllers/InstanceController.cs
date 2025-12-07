@@ -16,18 +16,30 @@ public class InstanceController : ControllerBase
         _mcServerService = mcServerService;
     }
 
-    [HttpPost("start")]
-    public async Task<IActionResult> StartInstance([FromBody] LaunchServerRequest request)
+    [HttpPost("action")]
+    public async Task<IActionResult> StartInstance([FromBody] ServerActionRequest request)
     {
+        /* 参数已经在模型完成验证 无需再验证一次
         if (!request.ID.HasValue)
         {
             return Ok(ApiResponseService.CreateResponse(400, "服务器ID无效"));
+        } */
+        if (request.Action == "start")
+        {
+            var (Result, Msg) = _mcServerService.StartServer(request.ID.Value);
+
+            return Result
+                ? Ok(ApiResponseService.Success(Msg))
+                : Ok(ApiResponseService.Error("服务器开启失败：" + Msg));
+        }
+        else
+        {
+            bool suc = _mcServerService.StopServer(request.ID.Value);
+            return suc
+                ? Ok(ApiResponseService.Success("已发送停止服务器指令"))
+                : Ok(ApiResponseService.Error("服务器停止失败"));
         }
 
-        var (Result, Msg) = _mcServerService.StartServer(request.ID.Value);
-
-        return Result
-            ? Ok(ApiResponseService.Success(Msg))
-            : Ok(ApiResponseService.Error("Failed to start instance." + Msg));
+        
     }
 }
