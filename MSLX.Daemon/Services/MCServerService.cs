@@ -150,7 +150,7 @@ namespace MSLX.Daemon.Services
                 // 处理NeoForge类型参数
                 if (serverInfo.Core.Contains("@libraries"))
                 {
-                    args = $"{serverInfo.Core} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args} nogui";
+                    args = $"-Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Core} {serverInfo.Args} nogui";
                 }
 
                 // 配置启动参数
