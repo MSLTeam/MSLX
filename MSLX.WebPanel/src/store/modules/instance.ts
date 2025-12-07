@@ -6,10 +6,14 @@ import { MessagePlugin } from 'tdesign-vue-next';
 
 export const useInstanceListstore = defineStore('instanceList',()=> {
   const instanceList = ref<InstanceListModel[]>([]);
+  const totalInstanceCount = ref(0);
+  const onlineInstanceCount = ref(0);
 
   async function refreshInstanceList() {
     try{
       instanceList.value = await getInstanceList();
+      totalInstanceCount.value = instanceList.value.length;
+      onlineInstanceCount.value = instanceList.value.filter(item=>item.status).length;
     }catch (e){
       MessagePlugin.error('获取实例列表失败:'+e.message);
     }
@@ -18,7 +22,9 @@ export const useInstanceListstore = defineStore('instanceList',()=> {
 
   return {
     instanceList,
-    refreshInstanceList
+    refreshInstanceList,
+    totalInstanceCount,
+    onlineInstanceCount
   }
 });
 

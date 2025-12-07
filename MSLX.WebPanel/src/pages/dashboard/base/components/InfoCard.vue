@@ -2,7 +2,14 @@
 import { Card as TCard, Tag as TTag, Icon as TIcon, Tooltip as TTooltip } from 'tdesign-vue-next';
 import { useUserStore } from '@/store';
 import pkg from '@/../package.json';
+import { useInstanceListstore } from '@/store/modules/instance';
+import { onMounted } from 'vue';
 const userStore = useUserStore();
+const instanceListStore = useInstanceListstore();
+
+onMounted(() => {
+  instanceListStore.refreshInstanceList();
+})
 </script>
 
 <template>
@@ -11,9 +18,9 @@ const userStore = useUserStore();
       <div class="info-item">
         <span class="info-label">
           <t-icon name="server" />
-          <span>实例数量：</span>
+          <span>在线实例：</span>
         </span>
-        <span class="info-value">不知道哦！</span>
+        <span class="info-value">{{ instanceListStore.onlineInstanceCount }} / {{ instanceListStore.totalInstanceCount }}</span>
       </div>
 
       <div class="info-item">
