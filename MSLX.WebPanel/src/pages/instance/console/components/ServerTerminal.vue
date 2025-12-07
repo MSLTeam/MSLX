@@ -12,7 +12,7 @@ const props = defineProps<{
   serverId: number;
 }>();
 
-defineEmits<{
+const emits = defineEmits<{
   update: []
 }>();
 
@@ -181,6 +181,9 @@ const startSignalR = async () => {
   // 监听日志接收
   hubConnection.on('ReceiveLog', (message: string) => {
     term?.writeln(colorizeLog(message));
+    if(message.startsWith('[MSLX]')){
+      emits('update');
+    }
   });
 
   // 监听指令结果 (不显示在终端，或者只显示错误)

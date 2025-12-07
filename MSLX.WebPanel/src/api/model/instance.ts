@@ -21,3 +21,15 @@ export interface InstanceListModel{
   icon:string;
   status:boolean;
 }
+
+export interface InstanceInfoModel{
+  id:number;
+  name:string;
+  basePath:string;
+  java:string;
+  core:string;
+  minM: number;
+  maxM: number;
+  status:boolean;
+  uptime:string;
+}

@@ -1,28 +1,83 @@
 <script setup lang="ts">
+import { ref, computed, watch, onUnmounted } from 'vue';
 import {
-  CpuIcon, DashboardIcon, DesktopIcon,
+  DashboardIcon, DesktopIcon,
   PlayCircleIcon, RefreshIcon, StopCircleIcon,
-  TimeIcon
+  TimeIcon, SettingIcon
 } from 'tdesign-icons-vue-next';
-import { copyText } from '@/utils/clipboard';
+import { InstanceInfoModel } from '@/api/model/instance';
 
-defineProps<{
+import InstanceSettings from './InstanceSettings.vue';
+
+// --- Props & Emits ---
+const props = defineProps<{
   serverId: number;
   isRunning: boolean;
   loading: boolean;
-  serverInfo: any | null;
+  serverInfo: InstanceInfoModel;
 }>();
 
-// 定义 Emits
-defineEmits<{
+const emits = defineEmits<{
   start: [],
   stop: [],
-  'clear-log': []
+  'clear-log': [],
+  'refresh-info': [] // 子组件刷新
 }>();
+
+const settingsRef = ref<InstanceType<typeof InstanceSettings> | null>(null);
+
+// 设置按钮
+const handleOpenSettings = () => {
+  if (settingsRef.value) {
+    settingsRef.value.open(props.serverInfo);
+  }
+};
+
+// 子组件保存成功后的回调
+const handleSettingsSaved = () => {
+  emits('refresh-info');
+};
+
+const runSeconds = ref(0);
+let timer: number | null = null;
+
+const parseTimeSpanToSeconds = (timeStr?: string) => {
+  if (!timeStr) return 0;
+  const match = timeStr.match(/^(?:(\d+)\.)?(\d{1,2}):(\d{2}):(\d{2})(?:\.\d+)?$/);
+  if (match) {
+    const days = parseInt(match[1] || '0', 10);
+    return (days * 86400) + (parseInt(match[2]) * 3600) + (parseInt(match[3]) * 60) + parseInt(match[4]);
+  }
+  return 0;
+};
+
+const formattedUptime = computed(() => {
+  if (runSeconds.value <= 0) return '00:00:00';
+  const days = Math.floor(runSeconds.value / 86400);
+  const hours = Math.floor((runSeconds.value % 86400) / 3600);
+  const minutes = Math.floor((runSeconds.value % 3600) / 60);
+  const seconds = Math.floor(runSeconds.value % 60);
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const t = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+  return days > 0 ? `${days}天 ${t}` : t;
+});
+
+const startTimer = () => {
+  if (timer) clearInterval(timer);
+  timer = window.setInterval(() => runSeconds.value++, 1000);
+};
+const stopTimer = () => {
+  if (timer) { clearInterval(timer); timer = null; }
+};
+
+watch(() => props.serverInfo?.uptime, (v) => v && (runSeconds.value = parseTimeSpanToSeconds(v)), { immediate: true });
+watch(() => props.isRunning, (v) => v ? (!timer && startTimer()) : stopTimer(), { immediate: true });
+onUnmounted(() => stopTimer());
 </script>
 
 <template>
   <div class="sidebar-content">
+
     <t-card class="control-card" :bordered="false">
       <div class="control-header">
         <div class="status-indicator" :class="{ running: isRunning }">
@@ -32,100 +87,75 @@ defineEmits<{
           {{ isRunning ? '运行中' : '已停止' }}
         </t-tag>
       </div>
+
       <div class="control-actions">
         <t-button
           v-if="!isRunning"
-          theme="primary"
-          size="large"
-          block
-          :loading="loading"
+          theme="primary" size="large" block :loading="loading"
           @click="$emit('start')"
         >
           <template #icon><play-circle-icon /></template>启动实例
         </t-button>
         <t-button
           v-else
-          theme="danger"
-          size="large"
-          block
-          :loading="loading"
+          theme="danger" size="large" block :loading="loading"
           @click="$emit('stop')"
         >
           <template #icon><stop-circle-icon /></template>停止实例
         </t-button>
-        <t-button
-          style="margin: 0"
-          variant="dashed"
-          block
-          @click="$emit('clear-log')"
-        >
-          <template #icon><refresh-icon /></template>清空控制台
-        </t-button>
+
+        <div class="action-row">
+          <t-button variant="outline" theme="warning" block @click="$emit('clear-log')">
+            <template #icon><refresh-icon /></template>清空
+          </t-button>
+
+          <t-button variant="outline" theme="primary" block @click="handleOpenSettings">
+            <template #icon><setting-icon /></template>设置
+          </t-button>
+        </div>
       </div>
     </t-card>
 
     <t-card title="实例详情" class="info-card" :bordered="false">
-      <template #actions>
-        <t-button shape="circle" variant="text"><dashboard-icon /></t-button>
-      </template>
-
       <div class="info-list">
         <div class="info-item">
           <div class="label"><desktop-icon /> 实例名称</div>
-          <div class="value">{{ serverInfo?.name || 'Minecraft Survival' }}</div>
+          <div class="value">{{ serverInfo?.name || 'Minecraft Server' }}</div>
         </div>
-
         <div class="info-item">
-          <div class="label"><cpu-icon /> CPU 核心限制</div>
-          <div class="value">{{ serverInfo?.cpuLimit || '2.0' }} Cores</div>
+          <div class="label"><dashboard-icon /> 内存限制</div>
+          <div class="value">{{ serverInfo?.maxM || '?' }} MB</div>
         </div>
-
-        <div class="info-item">
-          <div class="label"><dashboard-icon /> 内存分配</div>
-          <div class="value">{{ serverInfo?.memoryLimit || '4096' }} MB</div>
-        </div>
-
         <div class="proxy-group">
-          <div class="proxy-header">网络信息</div>
           <div class="info-item">
-            <div class="label">公网 IP</div>
-            <t-tooltip content="点击复制" placement="top">
-              <div class="value remote-addr pointer" @click="copyText('123.45.67.89', true)">
-                {{ serverInfo?.publicIp || '123.45.67.89' }}
-              </div>
-            </t-tooltip>
-          </div>
-          <div class="info-item">
-            <div class="label">暴露端口</div>
-            <div class="value highlight">{{ serverInfo?.port || '25565' }}</div>
+            <div class="label"><time-icon /> 运行时长</div>
+            <div class="value">{{ isRunning ? formattedUptime : '--:--:--' }}</div>
           </div>
         </div>
-
-        <div class="proxy-group">
-          <div class="proxy-header">运行状态</div>
-          <div class="info-item">
-            <div class="label"><time-icon /> 运行时间</div>
-            <div class="value">{{ isRunning ? '2h 15m' : '-' }}</div>
-          </div>
-        </div>
-
       </div>
     </t-card>
+
+    <InstanceSettings
+      ref="settingsRef"
+      :server-id="serverId"
+      @success="handleSettingsSaved"
+    />
+
   </div>
 </template>
 
 <style scoped lang="less">
 .sidebar-content {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  display: flex; flex-direction: column; gap: 20px;
 }
 
-.control-card {
+.control-card, .info-card {
   border-radius: 12px;
   box-shadow: var(--td-shadow-1);
   background: var(--td-bg-color-container);
+}
 
+.control-card {
   .control-header {
     display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;
     .status-indicator {
@@ -142,35 +172,24 @@ defineEmits<{
     }
   }
   .control-actions {
-    display: flex; flex-direction: column; width: 100%; gap: 16px;
+    display: flex; flex-direction: column; gap: 16px;
+    .action-row {
+      display: flex; gap: 12px;
+      .t-button { flex: 1; margin: 0; }
+    }
   }
 }
 
 .info-card {
-  border-radius: 12px;
-  box-shadow: var(--td-shadow-1);
-  background: var(--td-bg-color-container);
-
   .info-list {
     display: flex; flex-direction: column; gap: 12px;
-
     .proxy-group {
-      display: flex; flex-direction: column; gap: 12px; padding-top: 12px;
-      border-top: 1px dashed var(--td-component-stroke);
-      margin-top: 4px;
+      padding-top: 12px; border-top: 1px dashed var(--td-component-stroke); margin-top: 4px;
     }
-    .proxy-header { font-size: 12px; font-weight: bold; color: var(--td-text-color-secondary); }
-
     .info-item {
       display: flex; justify-content: space-between; align-items: center;
       .label { display: flex; align-items: center; gap: 8px; color: var(--td-text-color-placeholder); font-size: 13px; }
-      .value {
-        font-family: var(--td-font-family-number); font-weight: 500;
-        color: var(--td-text-color-primary); font-size: 13px;
-        &.highlight { color: var(--td-brand-color); background: var(--td-brand-color-light); padding: 2px 8px; border-radius: 4px; font-size: 12px; }
-        &.remote-addr { cursor: pointer; &:hover { color: var(--td-brand-color); } }
-        &.pointer { cursor: pointer; }
-      }
+      .value { font-family: var(--td-font-family-number); font-weight: 500; font-size: 13px; }
     }
   }
 }
