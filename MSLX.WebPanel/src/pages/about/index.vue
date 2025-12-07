@@ -166,13 +166,6 @@ onMounted(() => {
             <t-select v-model="formData.neoForgeInstallerMirrors" :options="mirrorOptions" placeholder="请选择镜像源" />
           </t-form-item>
 
-          <t-form-item>
-            <t-button theme="primary" type="submit" :loading="submitLoading" block class="save-btn">
-              <template #icon><t-icon name="save" /></template>
-              保存设置
-            </t-button>
-          </t-form-item>
-
           <t-divider dashed />
 
           <div class="section-title"><t-icon name="secured" /> 安全设置</div>
@@ -199,6 +192,13 @@ onMounted(() => {
                 <t-input v-model="formData.listenPort" />
               </t-space>
             </t-space>
+          </t-form-item>
+
+          <t-form-item>
+            <t-button theme="primary" type="submit" :loading="submitLoading" block class="save-btn">
+              <template #icon><t-icon name="save" /></template>
+              保存设置
+            </t-button>
           </t-form-item>
         </t-form>
       </t-card>
