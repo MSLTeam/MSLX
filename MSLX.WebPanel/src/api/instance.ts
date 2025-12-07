@@ -29,7 +29,8 @@ export async function postInstanceAction(id:number, action:string){
     data:{
       id: id,
       action: action
-    }
+    },
+    timeout: 60 * 1000, // 可能存在小聪明开了又关 导致关闭操作耗时。
   });
 }
 
@@ -38,7 +39,6 @@ export async function getInstanceInfo(id:number){
     url: '/api/instance/info',
     params:{
       id: id
-    },
-    timeout: 60 * 1000, // 可能存在小聪明开了又关 导致关闭操作耗时。
+    }
   });
 }
