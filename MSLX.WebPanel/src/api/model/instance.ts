@@ -11,3 +11,13 @@ export interface CreateInstanceQucikModeModel {
   maxM: number;
   args: string;
 }
+
+export interface InstanceListModel{
+  id:number;
+  name:string;
+  basePath:string;
+  java:string;
+  core:string;
+  icon:string;
+  status:boolean;
+}
