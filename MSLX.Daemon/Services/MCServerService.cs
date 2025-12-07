@@ -83,7 +83,7 @@ namespace MSLX.Daemon.Services
             try
             {
                 // 检查核心文件是否存在
-                if (serverInfo.Core != "none" && serverInfo.Core.Contains("@libraries"))
+                if (serverInfo.Core != "none" && !serverInfo.Core.Contains("@libraries"))
                 {
                     string coreFilePath = Path.Combine(serverInfo.Base, serverInfo.Core);
                     if (!File.Exists(coreFilePath))
@@ -106,7 +106,7 @@ namespace MSLX.Daemon.Services
                 ExecutePermission.GrantExecutePermission(serverInfo.Base);
                 await Task.Delay(100);
 
-                string args = $"-jar {serverInfo.Core} {serverInfo.Args}";
+                string args = $"-jar {serverInfo.Core} {serverInfo.Args} nogui";
                 string exec = serverInfo.Java;
 
                 // 处理自定义模式参数
@@ -123,6 +123,12 @@ namespace MSLX.Daemon.Services
                         exec = "/bin/bash";
                     }
                     
+                }
+                
+                // 处理NeoForge类型参数
+                if (serverInfo.Core.Contains("@libraries"))
+                {
+                    args = $"{serverInfo.Core} {serverInfo.Args} nogui";
                 }
 
                 // 配置启动参数
