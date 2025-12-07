@@ -339,6 +339,28 @@ namespace MSLX.Daemon.Services
                 _logger.LogInformation($"MC 服务器 [{instanceId}] 停止处理完成 (Code: {exitCode})");
             }
         }
+        
+        /// <summary>
+        /// 获取服务器已运行的时间
+        /// </summary>
+        public TimeSpan GetServerUptime(uint instanceId)
+        {
+            if (_activeServers.TryGetValue(instanceId, out var context))
+            {
+                if (context.Process != null && !context.IsInitializing && !context.Process.HasExited)
+                {
+                    try
+                    {
+                        return DateTime.Now - context.Process.StartTime;
+                    }
+                    catch
+                    {
+                        return TimeSpan.Zero;
+                    }
+                }
+            }
+            return TimeSpan.Zero;
+        }
 
         /// <summary>
         /// 记录日志

@@ -67,6 +67,7 @@ public class InstanceInfoController : ControllerBase
                     maxM = server.MaxM,
                     core = server.Core,
                     status = _mcServerService.IsServerRunning(id),
+                    uptime = _mcServerService.GetServerUptime(id),
                 }
             });
         }catch (Exception e)
