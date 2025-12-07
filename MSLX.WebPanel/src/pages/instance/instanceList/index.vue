@@ -12,6 +12,12 @@ import type { InstanceListModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
 import { postDeleteInstance } from '@/api/instance';
 
+// 导入logo资源
+import neoforgedImg from '@/assets/serverLogos/neoforged.png';
+import forgeImg from '@/assets/serverLogos/150px-Anvil.png';
+import customImg from '@/assets/serverLogos/150px-MinecartWithCommandBlock.png';
+import defaultImg from '@/assets/serverLogos/150px-Allium.png';
+
 const store = useInstanceListstore();
 
 onMounted(() => {
@@ -23,6 +29,22 @@ const handleCardClick = (item: InstanceListModel) => {
   // 跳转服务器控制台
   changeUrl(`/instance/console/${item.id}`)
 };
+
+const getImageUrl = (name: string) => {
+  if(name.includes('http')) return name;
+  switch (name) {
+    case 'neoforge':
+      return neoforgedImg;
+    case 'forge':
+      return forgeImg;
+    case 'custom':
+      return customImg;
+    case 'server-icon':
+      return new URL(`https://bbs-static.miyoushe.com/static/2024/12/05/0e139c6c04de1a23ea1400819574b59c_3322869863064933822.gif`, import.meta.url).href;
+    default:
+      return defaultImg;
+  }
+}
 
 const formatCore = (core: string)=> {
   if(core === "none"){
@@ -91,12 +113,7 @@ const handleDelete = (e: MouseEvent, item: InstanceListModel) => {
         >
           <div class="card-header">
             <div class="icon-wrapper" :class="{ 'is-running': item.status }">
-              <t-avatar
-                :image="item.icon"
-                size="large"
-                shape="round"
-                class="server-icon"
-              />
+              <t-avatar :image="getImageUrl(item.icon)" size="large" shape="round" class="server-icon" />
             </div>
 
             <div class="status-badge">

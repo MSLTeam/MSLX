@@ -25,6 +25,28 @@ public class InstanceInfoController : ControllerBase
         {
             uint id = item["ID"]?.Value<uint>() ?? 0;
             bool isRunning = _mcServerService.IsServerRunning(id);
+            string icon = "default";
+
+            if ((item["Core"]?.Value<string>() ?? "").Contains("neoforge"))
+            {
+                icon = "neoforge";
+            }else if ((item["Core"]?.Value<string>() ?? "").Contains("forge"))
+            {
+                icon = "forge";
+            }else if((item["Core"]?.Value<string>() ?? "") == "none")
+            {
+                icon = "custom";
+            }
+            try
+            {
+                if (Directory.Exists(item["Base"]?.Value<string>()))
+                {
+                    if (System.IO.File.Exists(Path.Combine(item["Base"]?.Value<string>() ?? "", "server-icon.png")))
+                    {
+                        icon = "server-icon";
+                    }
+                }
+            }catch{}
 
             return new 
             {
@@ -33,7 +55,7 @@ public class InstanceInfoController : ControllerBase
                 basePath = item["Base"]?.Value<string>(),
                 java = item["Java"]?.Value<string>(),
                 core = item["Core"]?.Value<string>(),
-                icon = "https://bbs-static.miyoushe.com/static/2024/12/05/0e139c6c04de1a23ea1400819574b59c_3322869863064933822.gif", // icon 暂时写死 日后再改
+                icon,
                 status = isRunning,
             };
         }).OrderByDescending(x => x.id).ToList();
