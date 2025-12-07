@@ -8,7 +8,7 @@ export async function postCreateInstanceQuickMode(data:CreateInstanceQucikModeMo
   });
 }
 
-export async function deleteInstance(id:number) {
+export async function postDeleteInstance(id:number) {
   return await request.post({
     url: '/api/instance/delete',
     data:{

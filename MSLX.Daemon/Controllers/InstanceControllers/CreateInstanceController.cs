@@ -54,7 +54,7 @@ public class CreateInstanceController : ControllerBase
         var response = new ApiResponse<object>
         {
             Code = suc ? 200 : 400,
-            Message = suc ? "删除成功！" : "删除失败！", 
+            Message = suc ? $"服务器实例 {request.Id} 删除成功！" : $"服务器实例 {request.Id} 删除失败！", 
         };
 
         return suc ? Ok(response) : BadRequest(response);

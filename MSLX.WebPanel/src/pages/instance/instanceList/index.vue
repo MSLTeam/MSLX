@@ -10,7 +10,7 @@ import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next';
 import { useInstanceListstore } from '@/store/modules/instance'; // 假设您的store文件路径，请根据实际调整
 import type { InstanceListModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
-import { postDeleteFrpTunnel } from '@/api/frp';
+import { postDeleteInstance } from '@/api/instance';
 
 const store = useInstanceListstore();
 
@@ -49,7 +49,7 @@ const handleDelete = (e: MouseEvent, item: InstanceListModel) => {
     theme: 'danger',
     onConfirm: async () => {
       try{
-        await postDeleteFrpTunnel(item.id);
+        await postDeleteInstance(item.id);
         MessagePlugin.success('删除成功');
 
         await store.refreshInstanceList();
