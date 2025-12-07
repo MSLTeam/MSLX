@@ -8,8 +8,11 @@ import ServerTerminal from './components/ServerTerminal.vue';
 import ServerControlPanel from './components/ServerControlPanel.vue';
 import { getInstanceInfo, postInstanceAction } from '@/api/instance';
 import { InstanceInfoModel } from '@/api/model/instance';
+import { useInstanceListstore } from '@/store/modules/instance';
 
 const route = useRoute();
+
+const instanceListStore = useInstanceListstore();
 
 // 状态
 const serverId = ref(parseInt(route.params.id as string) || 0);
@@ -26,6 +29,7 @@ async function fetchServerInfo() {
   try {
     loading.value = true;
     const res = await getInstanceInfo(serverId.value);
+    await instanceListStore.refreshInstanceList();
     isRunning.value = res.status;
     serverInfo.value = res;
     loading.value = false;
