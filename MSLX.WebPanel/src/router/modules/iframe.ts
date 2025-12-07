@@ -15,13 +15,23 @@ export default [
 
     children: [
       {
-        path: 'MSL',
-        name: 'MSL',
+        path: 'MSLX',
+        name: 'MSLX',
         component: IFrame,
         meta: {
-          frameSrc: 'https://www.mslmc.cn',
+          frameSrc: 'https://mslx.mslmc.cn',
           frameBlank: true,
-          title: 'MSL官网',
+          title: 'MSLX 文档',
+        },
+      },
+      {
+        path: 'MSLUser',
+        name: 'MSLUser',
+        component: IFrame,
+        meta: {
+          frameSrc: 'https://user.mslmc.net',
+          frameBlank: true,
+          title: 'MSL 用户中心',
         },
       },
     ],
