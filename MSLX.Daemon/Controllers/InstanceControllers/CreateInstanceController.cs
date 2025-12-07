@@ -9,6 +9,7 @@ using MSLX.Daemon.Utils.BackgroundTasks;
 namespace MSLX.Daemon.Controllers.InstanceControllers;
 
 [ApiController]
+[Route("api/instance")]
 public class CreateInstanceController : ControllerBase
 {
     private readonly IBackgroundTaskQueue _taskQueue; // 注入后台队列
@@ -19,7 +20,7 @@ public class CreateInstanceController : ControllerBase
         _taskQueue = taskQueue;
     }
 
-    [HttpPost("api/instance/createServer")]
+    [HttpPost("createServer")]
     public async Task<IActionResult> CreateServer([FromBody] CreateServerRequest request)
     {
         var serverId = ConfigServices.ServerList.GenerateServerId();
@@ -44,5 +45,18 @@ public class CreateInstanceController : ControllerBase
         };
 
         return Ok(response);
+    }
+    
+    [HttpPost("delete")]
+    public IActionResult DeleteServer([FromBody] DeleteServerRequest request)
+    {
+        bool suc = ConfigServices.ServerList.DeleteServer(request.Id);
+        var response = new ApiResponse<object>
+        {
+            Code = suc ? 200 : 400,
+            Message = suc ? "删除成功！" : "删除失败！", 
+        };
+
+        return suc ? Ok(response) : BadRequest(response);
     }
 }

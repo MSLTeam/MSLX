@@ -10,6 +10,7 @@ import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next';
 import { useInstanceListstore } from '@/store/modules/instance'; // 假设您的store文件路径，请根据实际调整
 import type { InstanceListModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
+import { postDeleteFrpTunnel } from '@/api/frp';
 
 const store = useInstanceListstore();
 
@@ -46,12 +47,15 @@ const handleDelete = (e: MouseEvent, item: InstanceListModel) => {
     header: '确认删除',
     body: `您确定要删除服务端 "${item.name}" (ID: ${item.id}) 吗？此操作不可恢复。`,
     theme: 'danger',
-    onConfirm: () => {
-      // TODO: 调用删除 API
-      MessagePlugin.success('删除成功');
+    onConfirm: async () => {
+      try{
+        await postDeleteFrpTunnel(item.id);
+        MessagePlugin.success('删除成功');
 
-      // 模拟删除后刷新列表
-      store.refreshInstanceList();
+        await store.refreshInstanceList();
+      }catch (e){
+        MessagePlugin.error('删除失败:' + e.message);
+      }
 
       confirmDialog.hide();
     }

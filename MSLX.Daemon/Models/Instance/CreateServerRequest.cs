@@ -64,3 +64,8 @@ public class CreateServerRequest : IValidatableObject
         }
     }
 }
+
+public class DeleteServerRequest
+{
+    public uint Id { get; set; }
+}

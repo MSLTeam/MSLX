@@ -1,10 +1,19 @@
 import { request } from '@/utils/request';
 import { CreateInstanceQucikModeModel, InstanceInfoModel, InstanceListModel } from '@/api/model/instance';
 
-export async function postCreateInstanceQucikMode(data:CreateInstanceQucikModeModel){
+export async function postCreateInstanceQuickMode(data:CreateInstanceQucikModeModel){
   return await request.post({
     url: '/api/instance/createServer',
     data: data,
+  });
+}
+
+export async function deleteInstance(id:number) {
+  return await request.post({
+    url: '/api/instance/delete',
+    data:{
+      id: id
+    }
   });
 }
 
