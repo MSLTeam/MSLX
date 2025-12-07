@@ -36,7 +36,7 @@ public class InstanceInfoController : ControllerBase
                 icon = "https://bbs-static.miyoushe.com/static/2024/12/05/0e139c6c04de1a23ea1400819574b59c_3322869863064933822.gif", // icon 暂时写死 日后再改
                 status = isRunning,
             };
-        }).ToList();
+        }).OrderByDescending(x => x.id).ToList();
         
         return Ok(new ApiResponse<object>
         {
