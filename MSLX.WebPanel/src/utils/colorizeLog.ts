@@ -5,59 +5,77 @@ c.enabled = true;
 const colorizeServerLog = (log: string): string => {
   if (!log) return '';
 
-  // 时间
-  log = log.replace(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z?)/, (match) => c.gray(match));
-
-  // MC 短时间
-  log = log.replace(/^\[(\d{2}:\d{2}:\d{2})\]/, (_, time) =>
-    `[${c.gray(time)}${c.blue(']')}`
-  );
-
-  // 特殊前缀 (MSLX)
-  if (log.startsWith('[MSLX]')) {
-    log = log.replace(/^\[MSLX\]/, ` [${c.magenta.bold('MSLX')}]`);
+  // 优先处理特殊句式 (Done)
+  if (log.includes('Done') && log.includes('!')) {
+    log = log.replace(/Done \((.*?)\)!/g, (match, time) =>
+      `${c.green.bold('Done')} (${c.blue(time)})!`
+    );
   }
 
-  // 核心结构: [线程/等级]
-  log = log.replace(/\[([^/]+)\/(INFO|WARN|WARNING|ERROR|FATAL|DEBUG)\]/g, (_, thread, level) => {
-    const threadColor = c.magenta(thread); // 线程名保持品红
-    let levelColor = level;
+  // 启动器/系统前缀处理
+  if (log.startsWith('[System]')) log = log.replace(/^\[System\]/, `[${c.blue.bold('System')}]`);
+  if (log.includes('[MSLX]')) log = log.replace(/\[MSLX\]/g, `[${c.magenta.bold('MSLX')}]`);
+  if (log.startsWith('>>>')) log = log.replace(/^>>>/, c.red.bold('>>>'));
 
+  // 核心格式 [Time Level]:
+  log = log.replace(/^\[(\d{2}:\d{2}:\d{2})\s+(INFO|WARN|WARNING|ERROR|FATAL|DEBUG)\]:/, (_, time, level) => {
+    let levelColor = level;
     switch (level) {
       case 'INFO': levelColor = c.green('INFO'); break;
       case 'WARN':
-      case 'WARNING': levelColor = c.yellow('WARN'); break;
+      case 'WARNING': levelColor = c.magenta.bold('WARN'); break;
       case 'ERROR':
-      case 'FAIL':
       case 'FATAL': levelColor = c.red.bold(level); break;
-      case 'DEBUG': levelColor = c.cyan('DEBUG'); break;
+      case 'DEBUG': levelColor = c.blue('DEBUG'); break;
     }
-    return `${c.blue('[')}${threadColor}${c.gray('/')}${levelColor}${c.blue(']')}`;
+    return `[${c.gray(time)} ${levelColor}]:`;
   });
 
-  // 类名/来源
-  log = log.replace(/ \[([^\]/]+\/[^\]]+)\]:?/, (match, source) => {
-    const hasColon = match.endsWith(':');
-    return ` ${c.blue('[')}${c.gray(source)}${c.blue(']')}${hasColon ? ': ' : ' '}`;
-  });
-
-  // 关键字高亮
-  log = log.replace(/\b\d+(\.\d+)?(ms|s|%)\b/g, (match) => c.blue(match)); // 单位改成蓝色，更清楚
-  log = log.replace(/(?<=PID:\s)\d+/g, (match) => c.blue(match));
-
-  if (log.includes('Done')) {
-    log = log.replace(/Done \((.*?)\)!/, `${c.green.bold('Done')} (${c.blue('$1')})!`);
+  // 原版格式兼容
+  if (/^\[\d{2}:\d{2}:\d{2}\]/.test(log)) {
+    log = log.replace(/^\[(\d{2}:\d{2}:\d{2})\]/, (match, time) => `[${c.gray(time)}]`);
   }
+  log = log.replace(/\[([^/]+)\/(INFO|WARN|WARNING|ERROR|FATAL|DEBUG)\]/g, (_, thread, level) => {
+    const threadColor = c.blue(thread);
+    let levelColor = level;
+    switch (level) {
+      case 'INFO': levelColor = c.green('INFO'); break;
+      case 'WARN': levelColor = c.magenta('WARN'); break;
+      case 'ERROR': levelColor = c.red.bold('ERROR'); break;
+    }
+    return `[${threadColor}/${levelColor}]`;
+  });
 
-  log = log.replace(/\b(Starting)\b/g, c.blue('Starting')); // 动作词改深蓝
-  log = log.replace(/\b(Stopping)\b/g, c.red('Stopping'));
-  log = log.replace(/\b(Saved)\b/g, c.green('Saved'));
-  log = log.replace(/\b(Saving)\b/g, c.magenta('Saving'));
-  log = log.replace(/\b(Loaded)\b/g, c.green('Loaded'));
-  log = log.replace(/\b(Failed)\b/g, c.red.bold('Failed'));
-  log = log.replace(/\b(Exception)\b/g, c.red.bgBlack('Exception'));
-  log = log.replace(/(\*:\d{1,5})/, c.underline.blue('$1')); // 端口号深蓝
+  // 组件名称 [Component]
+  log = log.replace(/(?<=:\s|^)\s*\[([a-zA-Z0-9_\-.\s]+)\](?=\s)/g, (match, content) => {
+    if (content === 'System' || content.includes('MSLX')) return match;
+    return ` [${c.bold.black(content)}]`;
+  });
 
+  // 数据类型高亮 (URL/版本/单位/数字/端口)
+  log = log.replace(/(https?:\/\/[^\s]+)/g, (match) => c.blue.underline(match));
+  log = log.replace(/\b\d+\.\d+(\.\d+)?(-[a-zA-Z0-9]+)?\b/g, (match) => c.magenta(match));
+
+  // 单位与数字
+  log = log.replace(/\b\d+(\.\d+)?\s?(ms|s|%|MB|GB|KB)\b/gi, (match) => c.blue(match));
+  log = log.replace(/(?<!\d:\d)\b\d+\b(?!\s*:\s*\d)/g, (match) => {
+    if (match.length >= 4 && match.length <= 6) return c.blue(match); // 端口/PID
+    if (match.length <= 3) return c.blue(match); // 数量
+    return match;
+  });
+  log = log.replace(/(\*:\d{1,5})/, (match) => c.blue.bold(match));
+
+  // 关键词状态高亮
+  log = log.replace(/\b(Loaded|Saved|Starting|Started|Connected)\b/g, (match) => c.green(match));
+  log = log.replace(/\bDone\b(?!\u001b)/g, c.green.bold('Done')); // eslint-disable-line no-control-regex
+
+  log = log.replace(/\b(Failed|Exception|Error|Caused by|Stopping|Closed)\b/g, (match) => c.red.bold(match));
+  log = log.replace(/\b(Loading|Preparing|Generating|Saving|Using|Running)\b/g, (match) => c.magenta(match));
+
+  log = log.replace(/\b(Minecraft|Paper|Velocity|Java)\b/gi, (match) => c.bold.black(match));
+  log = log.replace(/'minecraft:[a-z_]+'/g, (match) => c.magenta(match));
+
+  // 换行符标准化
   log = log.replace(/\n/g, '\r\n');
 
   return log;

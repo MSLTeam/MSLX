@@ -262,7 +262,7 @@ onUnmounted(async () => {
       <div class="dots">
         <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
       </div>
-      <div class="tab-title">Server Console | Instance #{{ serverId }}</div>
+      <div class="tab-title">MSLX 服务端控制台 | #{{ serverId }}</div>
     </div>
     <div ref="terminalBody" class="terminal-body"></div>
   </div>
