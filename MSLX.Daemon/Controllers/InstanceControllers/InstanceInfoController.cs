@@ -101,4 +101,33 @@ public class InstanceInfoController : ControllerBase
             });
         }
     }
+    
+    [HttpGet("icon/{id}.png")]
+    public IActionResult GetInstanceIcon(uint id)
+    { 
+        try
+        {
+            McServerInfo.ServerInfo server =
+                ConfigServices.ServerList.GetServer(id) ?? throw new Exception("找不到指定的服务器");
+            string iconPath = Path.Combine(server.Base, "server-icon.png");
+            if (!System.IO.File.Exists(iconPath))
+            {
+                return NotFound(new ApiResponse<object>()
+                {
+                    Code = 404,
+                    Message = "该服务器没有图标"
+                });
+            }
+            Response.Headers.Append("Cache-Control", "public, max-age=3600");
+            return PhysicalFile(iconPath, "image/png");
+        }
+        catch (Exception e)
+        {
+            return BadRequest(new ApiResponse<object>()
+            {
+                Code = 400,
+                Message = e.Message
+            });
+        }
+    }
 }

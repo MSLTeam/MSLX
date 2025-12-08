@@ -12,6 +12,7 @@ import neoforgedImg from '@/assets/serverLogos/neoforged.png';
 import forgeImg from '@/assets/serverLogos/150px-Anvil.png';
 import customImg from '@/assets/serverLogos/150px-MinecartWithCommandBlock.png';
 import defaultImg from '@/assets/serverLogos/150px-Allium.png';
+import { BASE_URL_NAME, TOKEN_NAME } from '@/config/global';
 
 const store = useInstanceListStore();
 
@@ -24,7 +25,7 @@ const handleCardClick = (item: InstanceListModel) => {
   changeUrl(`/instance/console/${item.id}`);
 };
 
-const getImageUrl = (name: string) => {
+const getImageUrl = (name: string, id: number) => {
   if (name.includes('http')) return name;
   switch (name) {
     case 'neoforge':
@@ -35,7 +36,7 @@ const getImageUrl = (name: string) => {
       return customImg;
     case 'server-icon':
       return new URL(
-        `https://bbs-static.miyoushe.com/static/2024/12/05/0e139c6c04de1a23ea1400819574b59c_3322869863064933822.gif`,
+        `${localStorage.getItem(BASE_URL_NAME)}/api/instance/icon/${id}.png?x-api-key=${localStorage.getItem(TOKEN_NAME)}`,
         import.meta.url,
       ).href;
     default:
@@ -112,7 +113,7 @@ const handleConfirmDelete = async () => {
         <t-card class="server-card" :bordered="false" @click="handleCardClick(item)">
           <div class="card-header">
             <div class="icon-wrapper" :class="{ 'is-running': item.status }">
-              <t-avatar :image="getImageUrl(item.icon)" size="large" shape="round" class="server-icon" />
+              <t-avatar :image="getImageUrl(item.icon, item.id)" size="large" shape="round" class="server-icon" />
             </div>
 
             <div class="status-badge">
