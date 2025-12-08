@@ -269,6 +269,8 @@ onUnmounted(async () => {
 </template>
 
 <style scoped lang="less">
+@import '@/style/scrollbar.less';
+
 .terminal-wrapper {
   flex: 1;
   display: flex;
@@ -313,24 +315,9 @@ onUnmounted(async () => {
     padding: 6px 0 6px 10px; // 底部留白略微增加
     z-index: 1;
 
-    :deep(.xterm-screen) {
-      width: 100% !important; height: 100% !important;
-    }
-
-    /* 滚动条美化 */
+    /* 针对 xterm 的滚动条应用 Mixin */
     :deep(.xterm-viewport) {
-      scrollbar-width: thin;
-      scrollbar-color: rgba(121, 121, 121, 0.4) transparent;
-      &::-webkit-scrollbar { width: 10px; height: 10px; }
-      &::-webkit-scrollbar-track { background: transparent; }
-      &::-webkit-scrollbar-thumb {
-        background-color: rgba(121, 121, 121, 0.4);
-        border-radius: 6px;
-        border: 2px solid transparent;
-        background-clip: content-box;
-        &:hover { background-color: rgba(121, 121, 121, 0.7); }
-      }
-      &::-webkit-scrollbar-corner { background: transparent; }
+      .scrollbar-mixin();
     }
   }
 }

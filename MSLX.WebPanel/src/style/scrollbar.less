@@ -1,0 +1,35 @@
+.scrollbar-mixin() {
+  /* 基础定位与显示设置 */
+  background-color: transparent;
+  overflow-y: scroll; /* 强制显示滚动条轨道 */
+  cursor: default;
+  position: absolute;
+  right: 0;
+  left: 0;
+  top: 0;
+  bottom: 0;
+
+  /* Firefox */
+  scrollbar-color: rgba(121, 121, 121, 0.5) transparent;
+  scrollbar-width: thin;
+
+  /* Webkit (Chrome/Edge/Safari) */
+  &::-webkit-scrollbar {
+    background-color: transparent; /* var(--dark) */
+    width: 6px; /* 稍微宽一点点方便鼠标抓取，或者用你喜欢的 5px */
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(121, 121, 121, 0.5); /* var(--highlight) */
+    border-radius: 3px;
+
+    &:hover {
+      background: rgba(121, 121, 121, 0.8);
+    }
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}

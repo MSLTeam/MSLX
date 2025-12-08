@@ -78,6 +78,7 @@ const initTerminal = () => {
     fontFamily: 'Menlo, Monaco, "Courier New", monospace',
     lineHeight: 1.4,
     theme: isDark ? termThemes.dark : termThemes.light,
+    allowTransparency: true,
     disableStdin: true,
     convertEol: true,
   });
@@ -227,6 +228,8 @@ onUnmounted(async () => {
 </template>
 
 <style scoped lang="less">
+@import '@/style/scrollbar.less';
+
 .terminal-wrapper {
   flex: 1;
   display: flex;
@@ -270,41 +273,11 @@ onUnmounted(async () => {
     padding: 6px 0 0 10px;
     z-index: 1;
 
-    :deep(.xterm-screen) {
-      width: 100% !important; height: 100% !important;
-    }
-
-    /* 滚动条美化核心代码 */
+    /* 针对 xterm 的滚动条应用 Mixin */
     :deep(.xterm-viewport) {
-      // 兼容 Firefox
-      scrollbar-width: thin;
-      scrollbar-color: rgba(121, 121, 121, 0.4) transparent;
-
-      // Webkit (Chrome, Edge, Safari)
-      &::-webkit-scrollbar {
-        width: 10px;  // 纵向滚动条宽度
-        height: 10px; // 横向滚动条高度
-      }
-
-      &::-webkit-scrollbar-track {
-        background: transparent; // 轨道透明
-      }
-
-      &::-webkit-scrollbar-thumb {
-        background-color: rgba(121, 121, 121, 0.4); // 滑块颜色，半透明灰色
-        border-radius: 6px; // 圆角
-        border: 2px solid transparent; // 留出边缘间隙，让滑块看起来是悬浮的
-        background-clip: content-box; // 内容裁剪
-
-        &:hover {
-          background-color: rgba(121, 121, 121, 0.7); // 悬停加深
-        }
-      }
-
-      &::-webkit-scrollbar-corner {
-        background: transparent;
-      }
+      .scrollbar-mixin();
     }
   }
 }
+
 </style>
