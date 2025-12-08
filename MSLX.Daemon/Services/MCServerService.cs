@@ -115,6 +115,52 @@ namespace MSLX.Daemon.Services
                         return;
                     }
                 }
+                
+                // 自动同意EULA
+                if (serverInfo.Java != "none")
+                {
+                    string eulaPath = Path.Combine(serverInfo.Base, "eula.txt");
+                    bool needAgree = false;
+
+                    // 检测文件是否存在或未同意
+                    if (!File.Exists(eulaPath))
+                    {
+                        needAgree = true;
+                    }
+                    else
+                    {
+                        string content = await File.ReadAllTextAsync(eulaPath);
+                        if (!content.Contains("eula=true"))
+                        {
+                            needAgree = true;
+                        }
+                    }
+
+                    if (needAgree)
+                    {
+                        // 写入同意后的文件内容
+                        string eulaFileContent = $"#By changing the setting below to TRUE you are indicating your agreement to our EULA (https://aka.ms/MinecraftEULA).\n#{DateTime.Now}\neula=true";
+                        await File.WriteAllTextAsync(eulaPath, eulaFileContent);
+
+                        // 发送正式的提示信息
+                        RecordLog(instanceId, context, ">>> [MSLX] 检测到 EULA 协议尚未签署，正在自动处理...");
+                        RecordLog(instanceId, context, "=======================================================================");
+                        RecordLog(instanceId, context, "                       Minecraft 最终用户许可协议声明                   ");
+                        RecordLog(instanceId, context, "=======================================================================");
+                        RecordLog(instanceId, context, "  原文提示: \"By changing the setting below to TRUE you are indicating");
+                        RecordLog(instanceId, context, "  your agreement to our EULA (https://aka.ms/MinecraftEULA).\"");
+                        RecordLog(instanceId, context, "");
+                        RecordLog(instanceId, context, "  [重要提示]");
+                        RecordLog(instanceId, context, "  为了启动服务器，系统已自动将 eula 设置为 true。");
+                        RecordLog(instanceId, context, "  此操作即代表您已阅读、知悉并同意《Minecraft 最终用户许可协议》。");
+                        RecordLog(instanceId, context, "  协议地址: https://aka.ms/MinecraftEULA");
+                        RecordLog(instanceId, context, "=======================================================================");
+                        
+                        // 强制看5秒
+                        RecordLog(instanceId, context, ">>> 协议签署完成，将在 5 秒后继续启动服务器...");
+                        await Task.Delay(5000);
+                    }
+                }
 
                 // 给予执行权限
                 ExecutePermission.GrantExecutePermission(serverInfo.Base);
