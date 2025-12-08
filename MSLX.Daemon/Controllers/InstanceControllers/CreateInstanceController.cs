@@ -4,6 +4,7 @@ using MSLX.Daemon.Utils;
 using Newtonsoft.Json.Linq;
 using MSLX.Daemon.Models.Instance; 
 using MSLX.Daemon.Models.Tasks;
+using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils.BackgroundTasks; 
 
 namespace MSLX.Daemon.Controllers.InstanceControllers;
@@ -13,11 +14,13 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
 public class CreateInstanceController : ControllerBase
 {
     private readonly IBackgroundTaskQueue _taskQueue; // 注入后台队列
+    private readonly MCServerService _mcServerService;
 
     // 注入队列
-    public CreateInstanceController(IBackgroundTaskQueue taskQueue)
+    public CreateInstanceController(IBackgroundTaskQueue taskQueue,MCServerService mcServerService)
     {
         _taskQueue = taskQueue;
+        _mcServerService = mcServerService;
     }
 
     [HttpPost("createServer")]
@@ -50,6 +53,14 @@ public class CreateInstanceController : ControllerBase
     [HttpPost("delete")]
     public IActionResult DeleteServer([FromBody] DeleteServerRequest request)
     {
+        if (_mcServerService.IsServerRunning(request.Id))
+        {
+            return BadRequest(new ApiResponse<object>
+            {
+                Code = 400,
+                Message = "服务器实例正在运行，请先停止再删除！",
+            });
+        }
         bool suc = ConfigServices.ServerList.DeleteServer(request.Id);
         var response = new ApiResponse<object>
         {
