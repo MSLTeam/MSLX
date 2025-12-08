@@ -82,6 +82,7 @@ namespace MSLX.Daemon.Services
         {
             try
             {
+                RecordLog(instanceId, context, "[MSLX] 正在初始化服务...");
                 // 检查核心文件是否存在
                 if (serverInfo.Core != "none" && !serverInfo.Core.Contains("@libraries"))
                 {
