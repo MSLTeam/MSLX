@@ -92,7 +92,7 @@ onUnmounted(() => stopTimer());
         <t-button
           v-if="!isRunning"
           theme="primary" size="large" block :loading="loading"
-          @click="$emit('start')"
+          @click="$emit('clear-log');$emit('start');"
         >
           <template #icon><play-circle-icon /></template>启动实例
         </t-button>
