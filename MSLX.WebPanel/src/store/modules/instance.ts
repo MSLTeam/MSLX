@@ -4,7 +4,7 @@ import { ref } from 'vue';
 import { getInstanceList } from '@/api/instance';
 import { MessagePlugin } from 'tdesign-vue-next';
 
-export const useInstanceListstore = defineStore('instanceList',()=> {
+export const useInstanceListStore = defineStore('instanceList',()=> {
   const instanceList = ref<InstanceListModel[]>([]);
   const totalInstanceCount = ref(0);
   const onlineInstanceCount = ref(0);

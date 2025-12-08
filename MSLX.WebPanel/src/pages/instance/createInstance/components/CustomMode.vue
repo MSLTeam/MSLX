@@ -3,6 +3,7 @@ import { reactive, ref } from 'vue';
 import { CreateInstanceQucikModeModel } from '@/api/model/instance';
 import { type FormProps, FormRules, MessagePlugin } from 'tdesign-vue-next';
 import { postCreateInstanceQuickMode } from '@/api/instance';
+import { changeUrl } from '@/router';
 
 const isSuccess = ref(false);
 const createdServerId = ref(0);
@@ -80,8 +81,8 @@ const onSubmit: FormProps['onSubmit'] = async ({ validateResult }) => {
       <div class="result-success-title">服务器 ({{ createdServerId }}) 已创建成功</div>
       <div class="result-success-describe">你现在可以去服务器列表启动它了</div>
       <div>
-        <t-button @click="isSuccess = false"> 返回 (创建新实例) </t-button>
-        <t-button theme="default"> 查看详情 (假) </t-button>
+        <t-button @click="changeUrl('/instance/list')"> 返回服务端列表 </t-button>
+        <t-button theme="default" @click="changeUrl(`/instance/console/${createdServerId}`)"> 前往控制台 </t-button>
       </div>
     </div>
   </div>

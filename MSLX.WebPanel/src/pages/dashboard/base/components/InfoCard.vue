@@ -2,10 +2,10 @@
 import { Card as TCard, Tag as TTag, Icon as TIcon, Tooltip as TTooltip } from 'tdesign-vue-next';
 import { useUserStore } from '@/store';
 import pkg from '@/../package.json';
-import { useInstanceListstore } from '@/store/modules/instance';
+import { useInstanceListStore } from '@/store/modules/instance';
 import { onMounted } from 'vue';
 const userStore = useUserStore();
-const instanceListStore = useInstanceListstore();
+const instanceListStore = useInstanceListStore();
 
 onMounted(() => {
   instanceListStore.refreshInstanceList();

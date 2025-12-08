@@ -2,7 +2,7 @@
 import { onMounted, reactive } from 'vue';
 import { DeleteIcon, CheckCircleFilledIcon, CloseCircleFilledIcon, CpuIcon } from 'tdesign-icons-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { useInstanceListstore } from '@/store/modules/instance'; // 假设您的store文件路径，请根据实际调整
+import { useInstanceListStore } from '@/store/modules/instance';
 import type { InstanceListModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
 import { postDeleteInstance } from '@/api/instance';
@@ -13,7 +13,7 @@ import forgeImg from '@/assets/serverLogos/150px-Anvil.png';
 import customImg from '@/assets/serverLogos/150px-MinecartWithCommandBlock.png';
 import defaultImg from '@/assets/serverLogos/150px-Allium.png';
 
-const store = useInstanceListstore();
+const store = useInstanceListStore();
 
 onMounted(() => {
   store.refreshInstanceList();

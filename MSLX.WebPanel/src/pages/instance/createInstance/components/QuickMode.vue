@@ -11,11 +11,14 @@ import { getLocalJavaList } from '@/api/localJava';
 import { postCreateInstanceQuickMode } from '@/api/instance';
 import { initUpload, uploadChunk, finishUpload, deleteUpload } from '@/api/files';
 import { CreateInstanceQucikModeModel } from '@/api/model/instance';
+import { changeUrl } from '@/router';
+import { useInstanceListStore } from '@/store/modules/instance';
 
 // 状态管理
 const userStore = useUserStore();
-const router = useRouter();
 const formRef = ref(null);
+
+const instanceListstore = useInstanceListStore();
 
 const currentStep = ref(0);
 const isSubmitting = ref(false);
@@ -428,6 +431,7 @@ const startSignalRConnection = async (serverId: string) => {
       isSuccess.value = true;
       currentStep.value = 5;
       isSubmitting.value = false;
+      instanceListstore.refreshInstanceList();
     } else if (prog === -1) {
       MessagePlugin.error(message || '创建过程中发生未知错误');
       hubConnection.value?.stop();
@@ -458,6 +462,7 @@ onUnmounted(() => {
   hubConnection.value?.stop();
 });
 
+/*
 const goToHome = () => {
   isSuccess.value = false;
   currentStep.value = 0;
@@ -475,10 +480,10 @@ const goToHome = () => {
   downloadType.value = 'online';
   javaType.value = 'online';
   customJavaPath.value = '';
-};
+}; */
 
 const viewDetails = () => {
-  router.push('/detail/advanced');
+  changeUrl(`/instance/console/${createdServerId.value}`);
 };
 </script>
 
@@ -696,8 +701,8 @@ const viewDetails = () => {
           <div class="result-success-title">服务器 ({{ createdServerId }}) 已创建成功</div>
           <div class="result-success-describe">你现在可以去服务器列表启动它了</div>
           <div>
-            <t-button @click="goToHome"> 返回 (创建新实例) </t-button>
-            <t-button theme="default" @click="viewDetails"> 查看详情 (假) </t-button>
+            <t-button @click="changeUrl('/instance/list')"> 返回服务端列表 </t-button>
+            <t-button theme="default" @click="changeUrl(`/instance/console/${createdServerId}`)"> 前往控制台 </t-button>
           </div>
         </div>
       </div>

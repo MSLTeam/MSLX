@@ -8,11 +8,11 @@ import ServerTerminal from './components/ServerTerminal.vue';
 import ServerControlPanel from './components/ServerControlPanel.vue';
 import { getInstanceInfo, postInstanceAction } from '@/api/instance';
 import { InstanceInfoModel } from '@/api/model/instance';
-import { useInstanceListstore } from '@/store/modules/instance';
+import { useInstanceListStore } from '@/store/modules/instance';
 
 const route = useRoute();
 
-const instanceListStore = useInstanceListstore();
+const instanceListStore = useInstanceListStore();
 
 // 状态
 const serverId = ref(parseInt(route.params.id as string) || 0);

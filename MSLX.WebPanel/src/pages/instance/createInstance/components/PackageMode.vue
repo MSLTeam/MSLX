@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onUnmounted, ref, watch, onMounted, computed, nextTick } from 'vue';
-import { useRouter } from 'vue-router';
 import { type FormRules, MessagePlugin } from 'tdesign-vue-next';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { useUserStore } from '@/store';
@@ -11,11 +10,13 @@ import { getLocalJavaList } from '@/api/localJava';
 import { postCreateInstanceQuickMode } from '@/api/instance';
 import { initUpload, uploadChunk, finishUpload, deleteUpload, checkPackageJarList } from '@/api/files';
 import { CreateInstanceQucikModeModel } from '@/api/model/instance';
+import { changeUrl } from '@/router';
 
 // 状态管理
 const userStore = useUserStore();
-const router = useRouter();
 const formRef = ref(null);
+
+const instanceListStore = useInstanceListStore();
 
 const currentStep = ref(0);
 const isSubmitting = ref(false);
@@ -413,6 +414,7 @@ const startSignalRConnection = async (serverId: string) => {
       isSuccess.value = true;
       currentStep.value = 6;
       isSubmitting.value = false;
+      instanceListStore.refreshInstanceList();
     } else if (prog === -1) {
       MessagePlugin.error(message || '错误');
       hubConnection.value?.stop();
@@ -434,6 +436,7 @@ onUnmounted(() => {
   hubConnection.value?.stop();
 });
 
+/*
 const goToHome = () => {
   isSuccess.value = false;
   currentStep.value = 0;
@@ -458,7 +461,7 @@ const goToHome = () => {
 
 const viewDetails = () => {
   router.push('/detail/advanced');
-};
+}; */
 </script>
 
 <template>
@@ -698,8 +701,8 @@ const viewDetails = () => {
           <div class="result-success-title">整合包服务器已部署成功</div>
           <div class="result-success-describe">文件已解压，环境已配置就绪</div>
           <div>
-            <t-button @click="goToHome">继续创建</t-button>
-            <t-button theme="default" @click="viewDetails">管理实例</t-button>
+            <t-button @click="changeUrl('/instance/list')"> 返回服务端列表 </t-button>
+            <t-button theme="default" @click="changeUrl(`/instance/console/${createdServerId}`)"> 前往控制台 </t-button>
           </div>
         </div>
       </div>
