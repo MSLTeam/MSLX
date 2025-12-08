@@ -11,6 +11,7 @@ import { postCreateInstanceQuickMode } from '@/api/instance';
 import { initUpload, uploadChunk, finishUpload, deleteUpload, checkPackageJarList } from '@/api/files';
 import { CreateInstanceQucikModeModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
+import { useInstanceListStore } from '@/store/modules/instance';
 
 // 状态管理
 const userStore = useUserStore();
