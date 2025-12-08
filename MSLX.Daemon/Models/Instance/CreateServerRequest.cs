@@ -67,5 +67,9 @@ public class CreateServerRequest : IValidatableObject
 
 public class DeleteServerRequest
 {
+    [Required(ErrorMessage = "实例ID (id) 不能为空")]
+    [Range(1, int.MaxValue, ErrorMessage = "实例ID (id) 必须大于 0")]
     public uint Id { get; set; }
+    
+    public bool? DeleteFiles { get; set; } = false;
 }

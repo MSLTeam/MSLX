@@ -219,7 +219,7 @@ public static class ConfigServices
             }
         }
 
-        public bool DeleteServer(uint serverId)
+        public bool DeleteServer(uint serverId,bool deleteFiles = false)
         {
             _serverListLock.EnterWriteLock();
             try
@@ -231,6 +231,17 @@ public static class ConfigServices
 
                 _serverListCache.Remove(target);
                 SaveJson(_serverListPath, _serverListCache);
+                if (deleteFiles)
+                {
+                    if (Directory.Exists(target["Base"]?.Value<string>()))
+                    {
+                        try
+                        {
+                            Directory.Delete(target["Base"]?.Value<string>(), true);
+                        }
+                        catch{}
+                    }
+                }
                 return true;
             }
             finally

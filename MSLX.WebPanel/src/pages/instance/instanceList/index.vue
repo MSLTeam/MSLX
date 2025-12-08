@@ -1,12 +1,7 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
-import {
-  DeleteIcon,
-  CheckCircleFilledIcon,
-  CloseCircleFilledIcon,
-  CpuIcon
-} from 'tdesign-icons-vue-next';
-import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next';
+import { onMounted, reactive } from 'vue';
+import { DeleteIcon, CheckCircleFilledIcon, CloseCircleFilledIcon, CpuIcon } from 'tdesign-icons-vue-next';
+import { MessagePlugin } from 'tdesign-vue-next';
 import { useInstanceListstore } from '@/store/modules/instance'; // 假设您的store文件路径，请根据实际调整
 import type { InstanceListModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
@@ -24,14 +19,13 @@ onMounted(() => {
   store.refreshInstanceList();
 });
 
-
 const handleCardClick = (item: InstanceListModel) => {
   // 跳转服务器控制台
-  changeUrl(`/instance/console/${item.id}`)
+  changeUrl(`/instance/console/${item.id}`);
 };
 
 const getImageUrl = (name: string) => {
-  if(name.includes('http')) return name;
+  if (name.includes('http')) return name;
   switch (name) {
     case 'neoforge':
       return neoforgedImg;
@@ -40,48 +34,64 @@ const getImageUrl = (name: string) => {
     case 'custom':
       return customImg;
     case 'server-icon':
-      return new URL(`https://bbs-static.miyoushe.com/static/2024/12/05/0e139c6c04de1a23ea1400819574b59c_3322869863064933822.gif`, import.meta.url).href;
+      return new URL(
+        `https://bbs-static.miyoushe.com/static/2024/12/05/0e139c6c04de1a23ea1400819574b59c_3322869863064933822.gif`,
+        import.meta.url,
+      ).href;
     default:
       return defaultImg;
   }
-}
+};
 
-const formatCore = (core: string)=> {
-  if(core === "none"){
-    return "自定义模式";
+const formatCore = (core: string) => {
+  if (core === 'none') {
+    return '自定义模式';
   }
-  if(core.startsWith('@')){
-    if(core.includes('neoforge')){
-      return "NeoForge";
-    }else{
-      return "Forge";
+  if (core.startsWith('@')) {
+    if (core.includes('neoforge')) {
+      return 'NeoForge';
+    } else {
+      return 'Forge';
     }
-  }else{
-    return core.replace('.jar','');
+  } else {
+    return core.replace('.jar', '');
   }
-}
+};
 
-// 删除逻辑
+const deleteState = reactive({
+  visible: false,
+  loading: false,
+  deleteFile: false,
+  item: null as InstanceListModel | null,
+});
+
 const handleDelete = (e: MouseEvent, item: InstanceListModel) => {
   e.stopPropagation();
 
-  const confirmDialog = DialogPlugin.confirm({
-    header: '确认删除',
-    body: `您确定要删除服务端 "${item.name}" (ID: ${item.id}) 吗？此操作不可恢复。`,
-    theme: 'danger',
-    onConfirm: async () => {
-      try{
-        await postDeleteInstance(item.id);
-        MessagePlugin.success('删除成功');
+  deleteState.item = item;
+  deleteState.deleteFile = false; // 默认不勾选，防止误删文件
+  deleteState.loading = false;
 
-        await store.refreshInstanceList();
-      }catch (e){
-        MessagePlugin.error('删除失败:' + e.message);
-      }
+  deleteState.visible = true;
+};
 
-      confirmDialog.hide();
-    }
-  });
+const handleConfirmDelete = async () => {
+  if (!deleteState.item) return;
+
+  deleteState.loading = true; // 显示按钮加载圈
+
+  try {
+    await postDeleteInstance(deleteState.item.id, deleteState.deleteFile);
+
+    MessagePlugin.success('删除成功');
+    deleteState.visible = false;
+
+    await store.refreshInstanceList();
+  } catch (e: any) {
+    MessagePlugin.error('删除失败: ' + e.message);
+  } finally {
+    deleteState.loading = false;
+  }
 };
 </script>
 
@@ -90,48 +100,27 @@ const handleDelete = (e: MouseEvent, item: InstanceListModel) => {
     <div class="page-header">
       <h2 class="title">服务端列表</h2>
       <t-space>
-      <t-button theme="primary" variant="dashed" @click="store.refreshInstanceList">
-        刷新列表
-      </t-button>
-      <t-button theme="primary"  @click="changeUrl('/instance/create')">
-        添加服务端
-      </t-button></t-space>
+        <t-button theme="primary" variant="dashed" @click="store.refreshInstanceList"> 刷新列表 </t-button>
+        <t-button theme="primary" @click="changeUrl('/instance/create')"> 添加服务端 </t-button></t-space
+      >
     </div>
 
     <t-loading :loading="false" text="加载中..." fullscreen />
 
     <t-row :gutter="[24, 24]">
-      <t-col
-        v-for="item in store.instanceList"
-        :key="item.id"
-        :xs="12" :sm="6" :md="4" :lg="3" :xl="3"
-      >
-        <t-card
-          class="server-card"
-          :bordered="false"
-          @click="handleCardClick(item)"
-        >
+      <t-col v-for="item in store.instanceList" :key="item.id" :xs="12" :sm="6" :md="4" :lg="3" :xl="3">
+        <t-card class="server-card" :bordered="false" @click="handleCardClick(item)">
           <div class="card-header">
             <div class="icon-wrapper" :class="{ 'is-running': item.status }">
               <t-avatar :image="getImageUrl(item.icon)" size="large" shape="round" class="server-icon" />
             </div>
 
             <div class="status-badge">
-              <t-tag
-                v-if="item.status"
-                theme="success"
-                variant="light"
-                shape="round"
-              >
+              <t-tag v-if="item.status" theme="success" variant="light" shape="round">
                 <template #icon><check-circle-filled-icon /></template>
                 运行中
               </t-tag>
-              <t-tag
-                v-else
-                theme="default"
-                variant="light"
-                shape="round"
-              >
+              <t-tag v-else theme="default" variant="light" shape="round">
                 <template #icon><close-circle-filled-icon /></template>
                 未启动
               </t-tag>
@@ -172,6 +161,25 @@ const handleDelete = (e: MouseEvent, item: InstanceListModel) => {
     <div v-if="store.instanceList.length === 0" class="empty-state">
       <t-empty description="暂无服务端实例" />
     </div>
+
+    <t-dialog
+      v-model:visible="deleteState.visible"
+      header="确认删除"
+      theme="danger"
+      :confirm-btn="{ content: '确认删除', loading: deleteState.loading }"
+      @confirm="handleConfirmDelete"
+    >
+      <div class="delete-dialog-body">
+        <p>
+          您确定要删除服务端 <strong>{{ deleteState.item?.name }}</strong> (ID: {{ deleteState.item?.id }}) 吗？
+        </p>
+        <p class="warning-text">此操作不可恢复！</p>
+
+        <div class="checkbox-area">
+          <t-checkbox v-model="deleteState.deleteFile">同时删除服务端文件数据</t-checkbox>
+        </div>
+      </div>
+    </t-dialog>
   </div>
 </template>
 
@@ -346,5 +354,17 @@ const handleDelete = (e: MouseEvent, item: InstanceListModel) => {
 
 .empty-state {
   padding: 60px 0;
+}
+
+// 弹窗
+.warning-text {
+  color: var(--td-error-color);
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+.checkbox-area {
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--td-component-stroke);
 }
 </style>

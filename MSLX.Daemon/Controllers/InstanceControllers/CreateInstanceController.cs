@@ -61,7 +61,7 @@ public class CreateInstanceController : ControllerBase
                 Message = "服务器实例正在运行，请先停止再删除！",
             });
         }
-        bool suc = ConfigServices.ServerList.DeleteServer(request.Id);
+        bool suc = ConfigServices.ServerList.DeleteServer(request.Id,request.DeleteFiles ?? false);
         var response = new ApiResponse<object>
         {
             Code = suc ? 200 : 400,
