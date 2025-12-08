@@ -190,9 +190,11 @@ async function initDashboardData() {
   }
 }
 
+const isAddingTunnel = ref(false);
 // 获取隧道配置并添加
 async function handleUseTunnel() {
   if (!currentTunnel.value) return;
+  isAddingTunnel.value = true;
 
   try {
     const res = await request.get({
@@ -210,6 +212,7 @@ async function handleUseTunnel() {
   } catch (e: any) {
     MessagePlugin.error('获取配置失败: ' + e.message);
   }
+  isAddingTunnel.value = false;
 }
 
 const handleAddTunnel = () => {
@@ -377,7 +380,7 @@ const handleAddTunnel = () => {
                 <t-divider />
 
                 <div class="action-area">
-                  <t-button theme="primary" size="large" block @click="handleUseTunnel">
+                  <t-button theme="primary" size="large" :loading="isAddingTunnel" block @click="handleUseTunnel">
                     <template #icon><play-circle-icon /></template>
                     使用此隧道
                   </t-button>
