@@ -1,0 +1,370 @@
+using System.Formats.Tar;
+using System.IO.Compression;
+using System.Text.RegularExpressions;
+using Downloader;
+using MSLX.Daemon.Utils;
+using Newtonsoft.Json.Linq;
+
+namespace MSLX.Daemon.Services;
+
+/// <summary>
+/// 核心部署服务：负责下载、解压、文件移动、Forge安装等具体子操作
+/// </summary>
+public class ServerDeploymentService
+{
+    private readonly ILogger<ServerDeploymentService> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
+
+    // 定义进度回调委托
+    public delegate Task ReportProgress(string message, double? progress, bool isError = false, Exception? ex = null);
+
+    public ServerDeploymentService(ILogger<ServerDeploymentService> logger, IServiceScopeFactory scopeFactory)
+    {
+        _logger = logger;
+        _scopeFactory = scopeFactory;
+    }
+
+    /// <summary>
+    /// 处理整合包解压与目录调整
+    /// </summary>
+    public async Task DeployPackageAsync(string serverId, string packageFileKey, string targetDir, ReportProgress report)
+    {
+        if (string.IsNullOrEmpty(packageFileKey)) return;
+
+        string tempFilePath = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Temp", "Uploads", packageFileKey + ".tmp");
+
+        if (!File.Exists(tempFilePath))
+        {
+            await report("上传的压缩包文件已过期或不存在！", -1, true);
+            return;
+        }
+
+        try
+        {
+            _logger.LogInformation("开始解压整合包: {Key}", packageFileKey);
+            await report("正在解压服务端整合包...", 10);
+
+            // 解压
+            ZipFile.ExtractToDirectory(tempFilePath, targetDir, true);
+
+            // 去除套娃逻辑
+            var rootDirs = Directory.GetDirectories(targetDir);
+            var rootFiles = Directory.GetFiles(targetDir);
+
+            if (rootFiles.Length == 0 && rootDirs.Length == 1)
+            {
+                string nestedDir = rootDirs[0];
+                await report("检测到多余文件夹，正在调整目录结构...", 15);
+
+                // 移动文件
+                foreach (var file in Directory.GetFiles(nestedDir))
+                {
+                    string destFile = Path.Combine(targetDir, Path.GetFileName(file));
+                    File.Move(file, destFile, true);
+                }
+                // 移动文件夹
+                foreach (var dir in Directory.GetDirectories(nestedDir))
+                {
+                    string destDir = Path.Combine(targetDir, Path.GetFileName(dir));
+                    if (Directory.Exists(destDir)) Directory.Delete(destDir, true);
+                    Directory.Move(dir, destDir);
+                }
+                Directory.Delete(nestedDir);
+            }
+
+            await report("压缩包解压部署完成。", 20);
+        }
+        catch (Exception ex)
+        {
+            await report($"解压整合包失败: {ex.Message}", -1, true, ex);
+            throw;
+        }
+        finally
+        {
+            try { File.Delete(tempFilePath); } catch { }
+        }
+    }
+
+    /// <summary>
+    /// 处理 Java 环境
+    /// </summary>
+    public async Task EnsureJavaAsync(string serverId, string javaConfig, ReportProgress report)
+    {
+        if (string.IsNullOrEmpty(javaConfig) || !javaConfig.Contains("MSLX://Java/")) return;
+
+        string javaVersion = javaConfig.Replace("MSLX://Java/", "");
+        string javaBaseDir = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Tools", "Java");
+        string finalJavaDir = Path.Combine(javaBaseDir, javaVersion);
+        string javaExec = PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java";
+        string javaPath = Path.Combine(finalJavaDir, "bin", javaExec);
+
+        if (File.Exists(javaPath))
+        {
+            await report($"Java {javaVersion} 已存在，无需下载。", 0);
+            return;
+        }
+
+        // 需要下载
+        await report($"正在获取 Java {javaVersion} 下载信息...", 0);
+        
+        // 调用API获取下载地址
+        var response = await MSLApi.GetAsync($"/download/jdk/{javaVersion}",
+            new Dictionary<string, string>
+            {
+                { "arch", PlatFormServices.GetOsArch().Replace("amd64", "x64") },
+                { "os", PlatFormServices.GetOs().ToLower().Replace("os", "") }
+            });
+
+        if (!response.IsSuccessStatusCode)
+        {
+            await report($"获取 Java 信息失败: {response.ResponseException}", -1, true);
+            throw new Exception("Java download info fetch failed");
+        }
+
+        JObject downloadInfo = JObject.Parse(response.Content);
+        string? url = downloadInfo["data"]?["url"]?.ToString();
+        string? sha256 = downloadInfo["data"]?["sha256"]?.ToString();
+        string fileName = PlatFormServices.GetOs() == "Windows" ? $"{javaVersion}.zip" : $"{javaVersion}.tar.gz";
+        string savePath = Path.Combine(javaBaseDir, fileName);
+
+        Directory.CreateDirectory(javaBaseDir);
+
+        // 下载
+        bool success = await DownloadAndValidateAsync(url, savePath, $"Java {javaVersion}", sha256, report);
+        if (!success) throw new Exception("Java download failed");
+
+        // 解压
+        try
+        {
+            await report($"正在配置 Java {javaVersion} 环境...", 99.99);
+            await ExtractJavaSmartAsync(savePath, javaVersion, javaBaseDir);
+            await report($"Java {javaVersion} 部署成功！", 99.9);
+        }
+        catch (Exception ex)
+        {
+            await report($"Java 解压失败: {ex.Message}", -1, true, ex);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// 部署核心文件 (支持用户上传 或 远程下载)
+    /// </summary>
+    public async Task DeployCoreAsync(string serverId, string baseDir, string coreName, string? userUploadKey, string? downloadUrl, string? sha256, ReportProgress report)
+    {
+        string destPath = Path.Combine(baseDir, coreName);
+        Directory.CreateDirectory(baseDir);
+
+        // 用户上传
+        if (!string.IsNullOrEmpty(userUploadKey))
+        {
+            string tempFilePath = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Temp", "Uploads", userUploadKey + ".tmp");
+            if (File.Exists(tempFilePath))
+            {
+                try
+                {
+                    File.Move(tempFilePath, destPath, true);
+                    await report("用户核心文件部署完成。", 99.9);
+                    return; 
+                }
+                catch (Exception ex)
+                {
+                    await report($"部署用户文件失败: {ex.Message}", -1, true, ex);
+                    throw;
+                }
+            }
+            else
+            {
+                await report("上传的核心文件已过期！", -1, true);
+                throw new FileNotFoundException("User uploaded core not found");
+            }
+        }
+
+        // 下载核心
+        if (!string.IsNullOrEmpty(downloadUrl))
+        {
+            bool success = await DownloadAndValidateAsync(downloadUrl, destPath, "服务端核心", sha256, report);
+            if (!success) throw new Exception("Core download failed");
+            await report("核心下载完成。", 99.9);
+        }
+    }
+
+    /// <summary>
+    /// 安装 NeoForge/Forge
+    /// 返回值: 如果安装成功并需要修改启动命令，返回新的启动参数(args)；否则返回 null
+    /// </summary>
+    public async Task<string?> InstallForgeIfNeededAsync(string serverId, string baseDir, string coreName, string javaConfig, ReportProgress report)
+    {
+        // 简单判断逻辑
+        if (!coreName.Contains("forge") || !coreName.EndsWith(".jar") || coreName.Contains("arclight"))
+        {
+            return null;
+        }
+
+        _logger.LogInformation("开始 NeoForge/Forge 安装流程...");
+        await report("准备运行 NeoForge/Forge 安装程序...", 0);
+
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var installer = scope.ServiceProvider.GetRequiredService<NeoForgeInstallerService>();
+
+            // 桥接日志
+            EventHandler<NeoForgeInstallerService.InstallLogEventArgs> logHandler = async (s, e) =>
+            {
+                await report(e.Message, e.Progress);
+            };
+            installer.OnLog += logHandler;
+
+            // 解析真实的 Java 路径
+            string javaPath = javaConfig;
+            if (javaConfig.Contains("MSLX://Java/"))
+            {
+                string version = javaConfig.Replace("MSLX://Java/", "");
+                javaPath = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Tools", "Java", version, "bin", 
+                    PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java");
+            }
+
+            bool success = await installer.InstallNeoForge(baseDir, coreName, javaPath);
+            installer.OnLog -= logHandler;
+
+            if (success)
+            {
+                await report("NeoForge/Forge 安装程序执行完毕！", 100);
+                
+                // 提取启动参数
+                string runScript = Path.Combine(baseDir, PlatFormServices.GetOs() == "Windows" ? "run.bat" : "run.sh");
+                string launchArgs = ExtractNeoForgeArgsPath(runScript);
+                
+                if (string.IsNullOrEmpty(launchArgs)) 
+                    throw new Exception("安装成功但未找到启动文件参数！");
+
+                return launchArgs;
+            }
+            else
+            {
+                throw new Exception("NeoForge 安装器返回失败状态。");
+            }
+        }
+        catch (Exception ex)
+        {
+            await report($"Forge 安装失败: {ex.Message}", -1, true, ex);
+            throw;
+        }
+    }
+
+    // 辅助方法
+
+    public async Task<bool> DownloadAndValidateAsync(string? url, string savePath, string itemName, string? sha256, ReportProgress report)
+    {
+        if (string.IsNullOrEmpty(url)) return false;
+
+        var downloadOpt = new DownloadConfiguration() { ChunkCount = 8, ParallelDownload = true };
+        var downloader = new DownloadService(downloadOpt);
+        
+        var tcs = new TaskCompletionSource<bool>();
+        DateTime lastReport = DateTime.MinValue;
+
+        downloader.DownloadProgressChanged += async (s, e) =>
+        {
+            if ((DateTime.UtcNow - lastReport).TotalMilliseconds > 1000)
+            {
+                lastReport = DateTime.UtcNow;
+                await report($"下载 {itemName} 中... {Math.Round(e.ProgressPercentage, 2)}%", e.ProgressPercentage == 100 ? 99.9 : e.ProgressPercentage);
+            }
+        };
+
+        downloader.DownloadFileCompleted += async (s, e) =>
+        {
+            if (e.Cancelled || e.Error != null)
+            {
+                await report($"{itemName} 下载失败: {e.Error?.Message ?? "被取消"}", -1, true, e.Error);
+                tcs.TrySetResult(false);
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(sha256) && !await FileUtils.ValidateFileSha256Async(savePath, sha256))
+                {
+                    await report($"{itemName} 校验失败！", -1, true);
+                    try { File.Delete(savePath); } catch { }
+                    tcs.TrySetResult(false);
+                }
+                else
+                {
+                    tcs.TrySetResult(true);
+                }
+            }
+        };
+
+        await downloader.DownloadFileTaskAsync(url, savePath);
+        return await tcs.Task;
+    }
+
+    private async Task ExtractJavaSmartAsync(string archivePath, string version, string baseDir)
+    {
+        string finalDestDir = Path.Combine(baseDir, version);
+        string tempExtractPath = Path.Combine(Path.GetTempPath(), $"MSLX_Java_{Guid.NewGuid()}");
+
+        try
+        {
+            Directory.CreateDirectory(tempExtractPath);
+
+            if (archivePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                ZipFile.ExtractToDirectory(archivePath, tempExtractPath);
+            else if (archivePath.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase))
+            {
+                using var fs = File.OpenRead(archivePath);
+                using var gzip = new GZipStream(fs, CompressionMode.Decompress);
+                TarFile.ExtractToDirectory(gzip, tempExtractPath, true);
+            }
+
+            string javaExec = PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java";
+            string? validJavaHome = Directory.GetFiles(tempExtractPath, javaExec, SearchOption.AllDirectories)
+                .Select(f => Directory.GetParent(Path.GetDirectoryName(f)!)?.FullName)
+                .FirstOrDefault();
+
+            if (string.IsNullOrEmpty(validJavaHome))
+                throw new DirectoryNotFoundException($"无法在压缩包中定位到包含 {javaExec} 的 bin 目录。");
+
+            if (Directory.Exists(finalDestDir)) Directory.Delete(finalDestDir, true);
+            Directory.CreateDirectory(finalDestDir);
+            
+             foreach (string dirPath in Directory.GetDirectories(validJavaHome, "*", SearchOption.AllDirectories))
+            {
+                Directory.CreateDirectory(dirPath.Replace(validJavaHome, finalDestDir));
+            }
+            foreach (string newPath in Directory.GetFiles(validJavaHome, "*.*", SearchOption.AllDirectories))
+            {
+                File.Copy(newPath, newPath.Replace(validJavaHome, finalDestDir), true);
+            }
+
+            if (PlatFormServices.GetOs() != "Windows")
+            {
+                try
+                {
+                    string javaBinPath = Path.Combine(finalDestDir, "bin", "java");
+                    if (File.Exists(javaBinPath))
+                        System.Diagnostics.Process.Start("chmod", $"+x \"{javaBinPath}\"").WaitForExit();
+                }
+                catch { }
+            }
+        }
+        finally
+        {
+            try { Directory.Delete(tempExtractPath, true); } catch { }
+            try { File.Delete(archivePath); } catch { }
+        }
+    }
+
+    public static string? ExtractNeoForgeArgsPath(string batFilePath)
+    {
+         if (string.IsNullOrEmpty(batFilePath) || !File.Exists(batFilePath)) return null;
+        try
+        {
+            string batFileContent = File.ReadAllText(batFilePath);
+            Match match = Regex.Match(batFileContent, @"java\s+@user_jvm_args\.txt\s+(@\S+)");
+            return match.Success ? match.Groups[1].Value : null;
+        }
+        catch { return null; }
+    }
+}

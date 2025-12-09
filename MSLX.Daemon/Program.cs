@@ -82,6 +82,7 @@ builder.Services.AddHostedService<ServerCreationService>();
 builder.Services.AddHostedService<TempFileCleanupService>();
 builder.Services.AddScoped<JavaScannerService>();
 builder.Services.AddTransient<NeoForgeInstallerService>();
+builder.Services.AddTransient<ServerDeploymentService>();
 
 // 配置真实IP回传协议
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
