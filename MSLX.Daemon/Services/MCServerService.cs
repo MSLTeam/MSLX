@@ -34,6 +34,9 @@ namespace MSLX.Daemon.Services
             _appLifetime = appLifetime;
 
             _appLifetime.ApplicationStopping.Register(StopAllServers);
+
+            // 注册编码提供程序，以支持 GBK 等非 Unicode 编码
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
         }
 
         /// <summary>
@@ -73,6 +76,26 @@ namespace MSLX.Daemon.Services
             _ = Task.Run(async () => await InternalStartServerAsync(instanceId, context, serverInfo));
 
             return (true, "正在启动服务器...");
+        }
+
+        /// <summary>
+        /// 辅助方法：根据字符串获取 Encoding
+        /// </summary>
+        private Encoding GetEncoding(string? encodingName)
+        {
+            if (string.IsNullOrWhiteSpace(encodingName)) return Encoding.UTF8;
+
+            try
+            {
+                // 大小写不敏感，支持 "gbk", "utf-8", "big5" 等
+                return Encoding.GetEncoding(encodingName);
+            }
+            catch (Exception)
+            {
+                // 如果编码名称无效，回退到 UTF-8
+                _logger.LogWarning($"无法识别编码: {encodingName}，已回退到 UTF-8");
+                return Encoding.UTF8;
+            }
         }
 
         /// <summary>
@@ -200,6 +223,11 @@ namespace MSLX.Daemon.Services
                     args = $"-Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args} {serverInfo.Core} nogui";
                 }
 
+                // 处理编码
+                Encoding inputEncoding = GetEncoding(serverInfo.InputEncoding);
+                Encoding outputEncoding = GetEncoding(serverInfo.OutputEncoding);
+                _logger.LogDebug($"实例 {instanceId} 编码设置 - 输入: {inputEncoding.EncodingName}, 输出: {outputEncoding.EncodingName}");
+
                 // 配置启动参数
                 var startInfo = new ProcessStartInfo
                 {
@@ -211,8 +239,10 @@ namespace MSLX.Daemon.Services
                     RedirectStandardInput = true, // 允许输入命令
                     UseShellExecute = false,
                     CreateNoWindow = true,
-                    StandardOutputEncoding = Encoding.UTF8,
-                    StandardErrorEncoding = Encoding.UTF8
+                    // 应用编码配置
+                    StandardOutputEncoding = outputEncoding,
+                    StandardErrorEncoding = outputEncoding,
+                    StandardInputEncoding = inputEncoding
                 };
 
                 var process = new Process { StartInfo = startInfo };
