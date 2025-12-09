@@ -6,7 +6,7 @@ import {
   TimeIcon
 } from 'tdesign-icons-vue-next';
 
-import GerneralSettings from '@/pages/instance/console/components/settingsComponents/GeneralSettings.vue'
+import GeneralSettings from '@/pages/instance/console/components/settingsComponents/GeneralSettings.vue'
 
 const visible = ref(false);
 const currentTab = ref(0);
@@ -61,7 +61,7 @@ defineExpose({ open });
         </div>
 
         <div v-if="currentTab === 1" class="panel-wrapper">
-          <gerneral-settings />
+          <general-settings />
         </div>
 
         <div v-if="currentTab === 2" class="panel-wrapper">
