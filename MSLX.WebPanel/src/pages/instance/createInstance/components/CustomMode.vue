@@ -10,7 +10,7 @@ const createdServerId = ref(0);
 const formRef = ref(null);
 const formData = reactive(<CreateInstanceQucikModeModel>{
   name: '',
-  path: '',
+  path: null,
   java: 'none',
   core: 'none',
   coreUrl: '',
