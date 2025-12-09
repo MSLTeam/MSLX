@@ -1,113 +1,231 @@
 <script setup lang="ts">
-import { ref, reactive } from 'vue';
-import { MessagePlugin } from 'tdesign-vue-next';
-import { InstanceInfoModel } from '@/api/model/instance';
+import { ref } from 'vue';
+import {
+  StoreIcon,
+  SettingIcon,
+  TimeIcon
+} from 'tdesign-icons-vue-next';
 
-const props = defineProps<{
-  serverId: number; // 接收 ID
-}>();
-
-// 定义向父组件发送的事件
-const emit = defineEmits<{
-  'success': []
-}>();
-
-// 状态管理
 const visible = ref(false);
-const loading = ref(false); // 保存按钮的 loading 状态
-const formRef = ref(null);
+const currentTab = ref(0);
 
-// 表单数据
-const formData = reactive({
-  name: '',
-  maxM: 1024,
-  autoStart: false
-});
+const menuItems = [
+  { label: '插件/模组', icon: StoreIcon },
+  { label: '实例设置', icon: SettingIcon },
+  { label: '定时任务', icon: TimeIcon },
+];
 
-
-const open = (currentData: InstanceInfoModel) => {
-  formData.name = currentData?.name || '';
-  formData.maxM = currentData?.maxM || 1024;
-  formData.autoStart = false;
-
+const open = () => {
   visible.value = true;
 };
 
-// 提交保存
-const onConfirm = async () => {
-  // 简单校验
-  if (!formData.name) {
-    MessagePlugin.warning('请输入实例名称');
-    return;
-  }
 
-  loading.value = true;
-
-  try {
-    // TODO: 服务器设置
-    console.log(`[API] 提交设置 ServerID:${props.serverId}`, formData);
-
-    await new Promise(resolve => setTimeout(resolve, 800)); // 模拟网络延迟
-
-    MessagePlugin.success('配置保存成功');
-    visible.value = false; // 关闭弹窗
-    emit('success'); // 通知父组件刷新
-  } catch (error) {
-    MessagePlugin.error('保存失败，请重试' + error.message);
-  } finally {
-    loading.value = false;
-  }
-};
-
-// 暴露方法给父组件
-defineExpose({
-  open
-});
+defineExpose({ open });
 </script>
 
 <template>
   <t-dialog
     v-model:visible="visible"
     header="实例配置"
+    width="90%"
+    top="3vh"
     attach="body"
-    :confirm-btn="{ content: '保存修改', loading: loading }"
+    :footer="false"
     destroy-on-close
-    @confirm="onConfirm"
+    class="settings-dialog"
   >
-    <t-form ref="formRef" :data="formData" label-align="top">
-      <t-form-item label="实例名称" name="name">
-        <t-input v-model="formData.name" placeholder="给服务器起个名字" clearable />
-      </t-form-item>
+    <div class="layout-container">
 
-      <t-form-item label="最大内存分配 (Max RAM)" name="maxM">
-        <t-input-number
-          v-model="formData.maxM"
-          :step="1024"
-          :min="1024"
-          suffix="MB"
-          style="width: 100%"
-          theme="column"
-        />
-        <div class="tips">建议分配物理内存的 70% 以下</div>
-      </t-form-item>
-
-      <t-form-item label="高级选项" name="autoStart">
-        <div class="switch-row">
-          <span>开机自启</span>
-          <t-switch v-model="formData.autoStart" />
+      <div class="sidebar">
+        <div
+          v-for="(item, index) in menuItems"
+          :key="index"
+          class="nav-item"
+          :class="{ active: currentTab === index }"
+          @click="currentTab = index"
+        >
+          <component :is="item.icon" class="nav-icon" />
+          <span class="nav-text">{{ item.label }}</span>
         </div>
-      </t-form-item>
-    </t-form>
+      </div>
+
+      <div class="main-content">
+
+        <div v-if="currentTab === 0" class="panel-wrapper">
+          <h3 class="panel-title">已安装插件</h3>
+          <div class="card-content">
+            <p v-for="i in 20" :key="i">自适应内容行 {{ i }}...</p>
+          </div>
+        </div>
+
+        <div v-if="currentTab === 1" class="panel-wrapper">
+          <h3 class="panel-title">基本参数</h3>
+          <div class="card-content">
+            <t-input placeholder="实例名称(宽度会自动拉伸)" />
+            <div style="margin-top: 20px; background: #f0f0f0; height: 200px; display: flex; align-items: center; justify-content: center;">
+              图表或大宽度的配置项
+            </div>
+          </div>
+        </div>
+
+        <div v-if="currentTab === 2" class="panel-wrapper">
+          <h3 class="panel-title">任务列表</h3>
+          <div class="card-content">任务配置...</div>
+        </div>
+
+      </div>
+
+    </div>
   </t-dialog>
 </template>
 
 <style scoped lang="less">
-.tips {
-  font-size: 12px;
-  color: var(--td-text-color-placeholder);
-  margin-top: 4px;
+:deep(.t-dialog__body) {
+  padding: 0 !important;
 }
-.switch-row {
-  display: flex; justify-content: space-between; align-items: center; width: 100%;
+
+.layout-container {
+  height: 72vh;
+  display: flex;
+  flex-direction: row;
+  position: relative;
+  overflow: hidden;
+  background-color: var(--td-bg-color-secondarycontainer);
+}
+
+// 侧边栏
+.sidebar {
+  width: 160px;
+  height: 100%;
+  background-color: var(--td-bg-color-secondarycontainer);
+  border-right: 1px solid var(--td-component-border);
+  display: flex;
+  flex-direction: column;
+  padding-top: 12px;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.nav-item {
+  height: 50px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  cursor: pointer;
+  color: var(--td-text-color-secondary);
+  font-size: 14px;
+  transition: all 0.2s;
+  position: relative;
+
+  .nav-icon {
+    font-size: 18px;
+    margin-right: 10px;
+    flex-shrink: 0;
+  }
+
+  .nav-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &:hover:not(.active) {
+    background-color: var(--td-bg-color-container-hover);
+  }
+
+  &.active {
+    background-color: var(--td-bg-color-container);
+    color: var(--td-brand-color);
+    font-weight: 600;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 24px;
+      background-color: var(--td-brand-color);
+      border-radius: 0 2px 2px 0;
+    }
+  }
+}
+
+// 内容区
+.main-content {
+  flex: 1;
+  background-color: var(--td-bg-color-container);
+  height: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.panel-wrapper {
+  flex: 1;
+  padding: 32px;
+  padding-bottom: 90px;
+  overflow-y: auto;
+}
+
+.panel-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: var(--td-text-color-primary);
+}
+
+
+// 移动端适配
+@media (max-width: 768px) {
+
+  // 变成上下布局
+  .layout-container {
+    flex-direction: column;
+    height: 75vh;
+  }
+
+  // 横向导航
+  .sidebar {
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    border-right: none;
+    border-bottom: 1px solid var(--td-component-border);
+    padding: 0;
+  }
+
+  .nav-item {
+    flex: 1;
+    justify-content: center;
+    padding: 12px 0;
+    flex-direction: column;
+    height: auto;
+    font-size: 12px;
+    gap: 4px;
+
+    .nav-icon { margin-right: 0; font-size: 20px; }
+
+    &.active {
+      background-color: transparent;
+
+      &::before {
+        left: 50%;
+        top: auto;
+        bottom: 0;
+        transform: translateX(-50%);
+        width: 24px;
+        height: 3px;
+        border-radius: 2px 2px 0 0;
+      }
+    }
+  }
+
+  .panel-wrapper {
+    padding: 16px;
+    padding-bottom: 80px;
+  }
 }
 </style>
