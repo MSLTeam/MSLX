@@ -1,16 +1,10 @@
-using MSLX.Daemon.Models.Tasks;
-
 namespace MSLX.Daemon.Utils.BackgroundTasks;
 
-public interface IBackgroundTaskQueue
+// 注意这里的 <T>，表示这个队列是“通用”的
+public interface IBackgroundTaskQueue<T>
 {
-    /// <summary>
-    /// 将任务加入队列
-    /// </summary>
-    ValueTask QueueTaskAsync(CreateServerTask task);
-
-    /// <summary>
-    /// 从队列中取出任务
-    /// </summary>
-    ValueTask<CreateServerTask> DequeueTaskAsync(CancellationToken cancellationToken);
+    // 添加一个任务
+    ValueTask QueueTaskAsync(T task);
+    // 把任务从队列取出来
+    ValueTask<T> DequeueTaskAsync(CancellationToken cancellationToken);
 }

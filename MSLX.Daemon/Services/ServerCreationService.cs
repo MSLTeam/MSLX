@@ -11,14 +11,14 @@ namespace MSLX.Daemon.Services;
 public class ServerCreationService : BackgroundService
 {
     private readonly ILogger<ServerCreationService> _logger;
-    private readonly IBackgroundTaskQueue _taskQueue;
+    private readonly IBackgroundTaskQueue<CreateServerTask> _taskQueue;
     private readonly IHubContext<CreationProgressHub> _hubContext;
     private readonly IMemoryCache _memoryCache;
     private readonly ServerDeploymentService _deploymentService; // 注入服务端部署服务
 
     public ServerCreationService(
         ILogger<ServerCreationService> logger,
-        IBackgroundTaskQueue taskQueue,
+        IBackgroundTaskQueue<CreateServerTask> taskQueue,
         IHubContext<CreationProgressHub> hubContext,
         IMemoryCache memoryCache,
         ServerDeploymentService deploymentService) 

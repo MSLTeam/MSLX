@@ -13,11 +13,11 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
 [Route("api/instance")]
 public class CreateInstanceController : ControllerBase
 {
-    private readonly IBackgroundTaskQueue _taskQueue; // 注入后台队列
+    private readonly IBackgroundTaskQueue<CreateServerTask> _taskQueue; // 注入后台队列
     private readonly MCServerService _mcServerService;
 
     // 注入队列
-    public CreateInstanceController(IBackgroundTaskQueue taskQueue,MCServerService mcServerService)
+    public CreateInstanceController(IBackgroundTaskQueue<CreateServerTask> taskQueue,MCServerService mcServerService)
     {
         _taskQueue = taskQueue;
         _mcServerService = mcServerService;

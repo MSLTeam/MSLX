@@ -6,7 +6,6 @@ using MSLX.Daemon.Middleware;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils.BackgroundTasks;
-using MSLX.Daemon.Utils.BackgroundTasks.BackgroundTasks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -74,11 +73,12 @@ builder.Services.AddSignalR();
 
 // 注册单例服务
 builder.Services.AddSingleton<FrpProcessService>();
-builder.Services.AddSingleton<IBackgroundTaskQueue>(ctx => new BackgroundTaskQueue(100));
+builder.Services.AddSingleton(typeof(IBackgroundTaskQueue<>), typeof(BackgroundTaskQueue<>));
 builder.Services.AddSingleton<MCServerService>();
 
 // 需要依赖注入的服务注册
 builder.Services.AddHostedService<ServerCreationService>();
+builder.Services.AddHostedService<ServerUpdateService>();
 builder.Services.AddHostedService<TempFileCleanupService>();
 builder.Services.AddScoped<JavaScannerService>();
 builder.Services.AddTransient<NeoForgeInstallerService>();
@@ -142,6 +142,7 @@ app.UseAuthorization();
 
 // 注册SignalR实时通讯
 app.MapHub<CreationProgressHub>("/api/hubs/creationProgressHub");
+app.MapHub<UpdateProgressHub>("/api/hubs/updateProgressHub");
 app.MapHub<FrpConsoleHub>("/api/hubs/frpLogsHub");
 app.MapHub<InstanceConsoleHub>("/api/hubs/instanceControlHub");
 app.MapControllers();

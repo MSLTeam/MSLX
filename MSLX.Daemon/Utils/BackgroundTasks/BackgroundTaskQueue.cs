@@ -1,37 +1,29 @@
 using System.Threading.Channels;
-using MSLX.Daemon.Models.Tasks;
 
-namespace MSLX.Daemon.Utils.BackgroundTasks.BackgroundTasks;
+namespace MSLX.Daemon.Utils.BackgroundTasks;
 
-/// <summary>
-/// 基于 Channel 的内存后台任务队列
-/// </summary>
-public class BackgroundTaskQueue : IBackgroundTaskQueue
+public class BackgroundTaskQueue<T> : IBackgroundTaskQueue<T>
 {
-    private readonly Channel<CreateServerTask> _queue;
+    private readonly Channel<T> _queue;
 
-    public BackgroundTaskQueue(int capacity)
+    public BackgroundTaskQueue(int capacity = 100)
     {
-        // 配置队列容量和当队列满时的行为（等待）
+        // 配置通道
         var options = new BoundedChannelOptions(capacity)
         {
             FullMode = BoundedChannelFullMode.Wait
         };
-        _queue = Channel.CreateBounded<CreateServerTask>(options);
+        _queue = Channel.CreateBounded<T>(options);
     }
 
-    public async ValueTask QueueTaskAsync(CreateServerTask task)
+    public async ValueTask QueueTaskAsync(T task)
     {
-        if (task == null)
-        {
-            throw new ArgumentNullException(nameof(task));
-        }
+        if (task == null) throw new ArgumentNullException(nameof(task));
         await _queue.Writer.WriteAsync(task);
     }
 
-    public async ValueTask<CreateServerTask> DequeueTaskAsync(CancellationToken cancellationToken)
+    public async ValueTask<T> DequeueTaskAsync(CancellationToken cancellationToken)
     {
-        var task = await _queue.Reader.ReadAsync(cancellationToken);
-        return task;
+        return await _queue.Reader.ReadAsync(cancellationToken);
     }
 }
