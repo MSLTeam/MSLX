@@ -301,8 +301,16 @@ namespace MSLX.Daemon.Services
                     {
                         try
                         {
-                            context.Process.StandardInput.WriteLine("stop");
-                            context.Process.StandardInput.Flush();
+                            var server = ConfigServices.ServerList.GetServer(instanceId);
+                            if ((server != null && server.Java == "none") && !(server.Args ?? "").Contains("bedrock"))
+                            {
+                                context.Process.StandardInput.Close(); // 关闭输入流 不结束就等10s吧
+                            }
+                            else
+                            {
+                                context.Process.StandardInput.WriteLine("stop");
+                                context.Process.StandardInput.Flush();
+                            }
 
                             // 等待 10 秒
                             if (!context.Process.WaitForExit(10000))
