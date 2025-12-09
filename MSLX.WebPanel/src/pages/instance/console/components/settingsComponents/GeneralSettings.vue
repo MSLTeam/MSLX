@@ -752,7 +752,7 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 16px 0;
+  padding: 16px 32px 16px 0;
   flex-wrap: wrap; /* 允许在手机端换行 */
 
   .setting-info {
