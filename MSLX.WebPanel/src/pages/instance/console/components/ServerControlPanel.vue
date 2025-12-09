@@ -29,7 +29,7 @@ const settingsRef = ref<InstanceType<typeof InstanceSettings> | null>(null);
 // 设置按钮
 const handleOpenSettings = () => {
   if (settingsRef.value) {
-    settingsRef.value.open(props.serverInfo);
+    settingsRef.value.open();
   }
 };
 
@@ -135,7 +135,7 @@ onUnmounted(() => stopTimer());
       </div>
     </t-card>
 
-    <InstanceSettings
+    <instance-settings
       ref="settingsRef"
       :server-id="serverId"
       @success="handleSettingsSaved"

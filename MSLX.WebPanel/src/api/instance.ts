@@ -1,5 +1,11 @@
 import { request } from '@/utils/request';
-import { CreateInstanceQucikModeModel, InstanceInfoModel, InstanceListModel } from '@/api/model/instance';
+import {
+  CreateInstanceQucikModeModel,
+  InstanceInfoModel,
+  InstanceListModel,
+  InstanceSettingsModel,
+  UpdateInstanceResponseModel,
+} from '@/api/model/instance';
 
 export async function postCreateInstanceQuickMode(data:CreateInstanceQucikModeModel){
   return await request.post({
@@ -41,5 +47,18 @@ export async function getInstanceInfo(id:number){
     params:{
       id: id
     }
+  });
+}
+
+export async function getInstanceSettings(id:number){
+  return await request.get<InstanceSettingsModel>({
+    url: `/api/instance/settings/general/${id}`,
+  });
+}
+
+export async function postInstanceSettings(data:InstanceSettingsModel){
+  return await request.post<UpdateInstanceResponseModel>({
+    url: `/api/instance/settings/general/${data.id}`,
+    data: data
   });
 }

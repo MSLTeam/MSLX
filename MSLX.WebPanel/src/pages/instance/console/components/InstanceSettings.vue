@@ -6,6 +6,8 @@ import {
   TimeIcon
 } from 'tdesign-icons-vue-next';
 
+import GerneralSettings from '@/pages/instance/console/components/settingsComponents/GeneralSettings.vue'
+
 const visible = ref(false);
 const currentTab = ref(0);
 
@@ -59,13 +61,7 @@ defineExpose({ open });
         </div>
 
         <div v-if="currentTab === 1" class="panel-wrapper">
-          <h3 class="panel-title">基本参数</h3>
-          <div class="card-content">
-            <t-input placeholder="实例名称(宽度会自动拉伸)" />
-            <div style="margin-top: 20px; background: #f0f0f0; height: 200px; display: flex; align-items: center; justify-content: center;">
-              图表或大宽度的配置项
-            </div>
-          </div>
+          <gerneral-settings />
         </div>
 
         <div v-if="currentTab === 2" class="panel-wrapper">
@@ -165,8 +161,8 @@ defineExpose({ open });
 
 .panel-wrapper {
   flex: 1;
-  padding: 32px;
-  padding-bottom: 90px;
+  padding-left: 32px;
+  padding-bottom: 50px;
   overflow-y: auto;
 }
 
