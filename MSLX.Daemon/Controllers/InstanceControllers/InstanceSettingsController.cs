@@ -72,9 +72,17 @@ public class InstanceSettingsController : ControllerBase
 
         if (needsBackgroundProcessing)
         {
+            if (_mcServerService.IsServerRunning(id))
+            {
+                return BadRequest(new ApiResponse<object>
+                {
+                    Code = 400,
+                    Message = "涉及修改运行核心内容，请先关闭服务器再操作！",
+                });
+            }
+            
             // 丢后台
             await _updateQueue.QueueTaskAsync(new UpdateServerTask { Request = request });
-
             return Ok(new ApiResponse<object>
             {
                 Code = 200,
