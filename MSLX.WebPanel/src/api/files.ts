@@ -1,5 +1,10 @@
 import { request } from '@/utils/request';
-import { UploadFinishResponse, UploadInitResponse, UploadPackageCheckJarResponse } from '@/api/model/files';
+import {
+  FilesListModel,
+  UploadFinishResponse,
+  UploadInitResponse,
+  UploadPackageCheckJarResponse,
+} from '@/api/model/files';
 
 export async function initUpload() {
   return await request.post<UploadInitResponse>({
@@ -36,5 +41,13 @@ export async function deleteUpload(uploadId: string) {
 export async function checkPackageJarList(uploadId: string){
   return await request.get<UploadPackageCheckJarResponse>({
     url: `/api/files/upload/inspect/${uploadId}`
+  });
+}
+
+// 文件管理系统
+export async function getInstanceFilesList(instanceId: number,path: string = ''){
+  return await request.get<FilesListModel[]>({
+    url: `/api/files/instance/${instanceId}/lists`,
+    params: { path }
   });
 }

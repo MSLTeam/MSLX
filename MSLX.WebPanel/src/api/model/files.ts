@@ -11,3 +11,11 @@ export interface UploadPackageCheckJarResponse {
   jars: string[];
   detectedRoot: string;
 }
+
+export interface FilesListModel{
+  name: string;
+  size: number;
+  type: string;
+  lastModified: string;
+  permission: string;
+}

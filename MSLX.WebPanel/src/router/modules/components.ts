@@ -36,4 +36,21 @@ export default [
       },
     ],
   },
+  {
+    path: '/instance/files',
+    component: Layout,
+    meta: { hidden: true },
+    children: [
+      {
+        path: ':id',
+        name: 'InstanceFiles',
+        component: () => import('@/pages/instance/files/index.vue'),
+        meta: {
+          title: '文件管理',
+          hidden: true,
+          activeMenu: '/instance/list'
+        },
+      },
+    ],
+  },
 ]
