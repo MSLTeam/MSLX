@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, nextTick, onUnmounted } from 'vue';
+import { ref, onMounted, watch, nextTick, onUnmounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import {
   MessagePlugin,
@@ -95,10 +95,12 @@ const fetchJavaVersions = async (force = false) => {
   }
 };
 
+// 监听 Java 类型变化
 watch(
   [javaType, selectedJavaVersion, customJavaPath],
   ([type, ver, path]) => {
-    if (type === 'env') formData.value.java = 'java';
+    if (type === 'none') formData.value.java = 'none';
+    else if (type === 'env') formData.value.java = 'java';
     else if (type === 'custom' || type === 'local') formData.value.java = path;
     else if (type === 'online') formData.value.java = ver ? `MSLX://Java/${ver}` : '';
   }
@@ -117,7 +119,7 @@ watch([backupLocationType, customBackupPath], ([type, customVal]) => {
 });
 
 // --- 外置登录逻辑 ---
-const authSelectType = ref(''); // none, msl, littleskin, custom
+const authSelectType = ref('');
 const customAuthUrl = ref('');
 const authOptions = [
   { label: '官方/离线模式 (无)', value: 'none' },
@@ -160,7 +162,9 @@ const onFileChange = async (event: Event) => {
   const file = input.files[0];
 
   if (formData.value.coreFileKey) {
-    try { await deleteUpload(formData.value.coreFileKey); } catch {}
+    try { await deleteUpload(formData.value.coreFileKey); } catch {
+      console.error('删除上传失败');
+    }
   }
 
   uploadedFileName.value = file.name;
@@ -212,14 +216,26 @@ const progressPercent = ref(0);
 const progressLogs = ref<{ time: string; msg: string }[]>([]);
 const hubConnection = ref<HubConnection | null>(null);
 
-const rules: FormRules = {
-  name: [{ required: true, message: '服务器名称不能为空', trigger: 'blur' }],
-  base: [{ required: true, message: '基础路径不能为空', trigger: 'blur' }],
-  java: [{ required: true, message: 'Java 环境不能为空', trigger: 'change' }],
-  core: [{ required: true, message: '核心文件名不能为空', trigger: 'change' }],
-  minM: [{ required: true, message: '必填', trigger: 'blur' }],
-  maxM: [{ required: true, message: '必填', trigger: 'blur' }],
-};
+// 动态计算校验规则
+const rules = computed<FormRules>(() => {
+  // 如果是自定义模式，跳过核心和内存的校验
+  if (javaType.value === 'none') {
+    return {
+      name: [{ required: true, message: '服务器名称不能为空', trigger: 'blur' }],
+      base: [{ required: true, message: '基础路径不能为空', trigger: 'blur' }],
+      args: [{ required: true, message: '自定义模式必须填写启动命令', trigger: 'blur' }],
+    };
+  }
+
+  return {
+    name: [{ required: true, message: '服务器名称不能为空', trigger: 'blur' }],
+    base: [{ required: true, message: '基础路径不能为空', trigger: 'blur' }],
+    java: [{ required: true, message: 'Java 环境不能为空', trigger: 'change' }],
+    core: [{ required: true, message: '核心文件名不能为空', trigger: 'change' }],
+    minM: [{ required: true, message: '必填', trigger: 'blur' }],
+    maxM: [{ required: true, message: '必填', trigger: 'blur' }],
+  };
+});
 
 const initData = async () => {
   loading.value = true;
@@ -236,8 +252,10 @@ const initData = async () => {
 
     isPathEditable.value = false;
 
-    // 解析 Java
-    if (res.java === 'java') {
+    // 解析 Java 类型
+    if (res.java === 'none') {
+      javaType.value = 'none';
+    } else if (res.java === 'java') {
       javaType.value = 'env';
     } else if (res.java.startsWith('MSLX://Java/')) {
       javaType.value = 'online';
@@ -283,24 +301,38 @@ const onSubmit = async () => {
   const result = await formRef.value?.validate();
   if (result !== true) return;
 
-  const isChangingCore = !!formData.value.coreUrl || !!formData.value.coreFileKey;
-  if (isChangingCore) {
-    const confirm = await new Promise((resolve) => {
-      const dialog = DialogPlugin.confirm({
-        header: '确认变更核心文件?',
-        body: '检测到您上传或选择了新的核心文件，这将覆盖服务器现有的部署。',
-        theme: 'warning',
-        onConfirm: () => { dialog.hide(); resolve(true); },
-        onClose: () => { dialog.hide(); resolve(false); },
+  // 自定义模式下，不需要检查核心变更
+  if (javaType.value !== 'none') {
+    const isChangingCore = !!formData.value.coreUrl || !!formData.value.coreFileKey;
+    if (isChangingCore) {
+      const confirm = await new Promise((resolve) => {
+        const dialog = DialogPlugin.confirm({
+          header: '确认变更核心文件?',
+          body: '检测到您上传或选择了新的核心文件，这将覆盖服务器现有的部署。',
+          theme: 'warning',
+          onConfirm: () => { dialog.hide(); resolve(true); },
+          onClose: () => { dialog.hide(); resolve(false); },
+        });
       });
-    });
-    if (!confirm) return;
+      if (!confirm) return;
+    }
+  }
+
+  // 处理自定义模式的写死参数
+  if (javaType.value === 'none') {
+    formData.value.core = 'none';
+    formData.value.minM = 1027; // 按要求写死
+    formData.value.maxM = 1102; // 按要求写死
+    formData.value.java = 'none';
+    // 清空下载参数以防冲突
+    formData.value.coreUrl = '';
+    formData.value.coreFileKey = '';
+    formData.value.coreSha256 = '';
   }
 
   submitting.value = true;
   try {
     const res = await postInstanceSettings(formData.value);
-    // 适配后端返回
     const needListen = (res as any).data?.needListen ?? (res as any).needListen;
 
     if (needListen) {
@@ -322,7 +354,7 @@ const startSignalRListening = async () => {
   progressLogs.value = [];
 
   const { baseUrl, token } = userStore;
-  const hubUrl = new URL('/api/hubs/update', baseUrl);
+  const hubUrl = new URL('/api/hubs/updateProgressHub', baseUrl);
   hubUrl.searchParams.append('x-api-key', token);
 
   hubConnection.value = new HubConnectionBuilder()
@@ -336,18 +368,19 @@ const startSignalRListening = async () => {
       const div = document.getElementById('update-log-box');
       if(div) div.scrollTop = div.scrollHeight;
     });
-    if (prog >= 0) progressPercent.value = prog;
+    if (prog >= 0) progressPercent.value = Number(prog.toFixed(1));
     if (prog === 100) {
       MessagePlugin.success('更新完成');
       closeSignalR(true);
     } else if (isErr || prog === -1) {
+      // 错误不自动关闭
     }
   });
 
   try {
     await hubConnection.value.start();
     await hubConnection.value.invoke('JoinGroup', instanceId.toString());
-  } catch (e) {
+  } catch {
     progressLogs.value.push({ time: '-', msg: '连接失败' });
   }
 };
@@ -412,22 +445,23 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="setting-group-title">运行环境</div>
+      <div class="setting-group-title">运行模式</div>
 
       <div class="setting-item">
         <div class="setting-info">
-          <div class="title">Java 运行时</div>
-          <div class="desc">Minecraft 运行所依赖的 Java 版本</div>
+          <div class="title">启动方式</div>
+          <div class="desc">选择使用 Java 启动 Minecraft，或使用自定义命令启动其他程序 (如 Bedrock, Python 等)</div>
         </div>
         <div class="setting-control">
           <t-select v-model="javaType" :options="[
-            { label: 'MSLX 在线下载', value: 'online' },
-            { label: '使用本地版本', value: 'local' },
-            { label: '自定义路径', value: 'custom' },
-            { label: '环境变量', value: 'env' }
+            { label: 'MSLX 在线下载 (Java)', value: 'online' },
+            { label: '使用本地版本 (Java)', value: 'local' },
+            { label: '自定义路径 (Java)', value: 'custom' },
+            { label: '环境变量 (Java)', value: 'env' },
+            { label: '自定义命令 (无Java)', value: 'none' }
           ]" />
 
-          <div style="margin-top: 8px">
+          <div v-if="javaType !== 'none'" style="margin-top: 8px">
             <t-select
               v-if="javaType === 'online'"
               v-model="selectedJavaVersion"
@@ -452,94 +486,103 @@ onUnmounted(() => {
 
       <div class="setting-item">
         <div class="setting-info">
-          <div class="title">启动参数 (JVM Args)</div>
-          <div class="desc">传递给 Java 的启动参数，如 GC 策略 (例如 -XX:+UseG1GC)</div>
+          <div class="title">{{ javaType === 'none' ? '启动命令 (Command)' : '启动参数 (JVM Args)' }}</div>
+          <div class="desc">
+            {{ javaType === 'none'
+            ? '完全自定义的启动命令。程序将直接执行此段内容，不依赖 Java 环境。'
+            : '传递给 Java 的启动参数，如 GC 策略 (例如 -XX:+UseG1GC)'
+            }}
+          </div>
         </div>
         <div class="setting-control">
           <t-textarea
             v-model="formData.args"
             :autosize="{ minRows: 2, maxRows: 4 }"
-            placeholder="无特殊需求请留空"
+            :placeholder="javaType === 'none' ? '例如: ./bedrock_server_x64' : '无特殊需求请留空'"
           />
         </div>
       </div>
 
-      <div class="setting-group-title">核心管理</div>
+      <template v-if="javaType !== 'none'">
+        <div class="setting-group-title">核心管理</div>
 
-      <div class="setting-item">
-        <div class="setting-info">
-          <div class="title">服务端核心文件</div>
-          <div class="desc">
-            指定启动的 Jar 文件名。如果文件已存在于目录中，直接输入文件名即可。
-            <br/>需要更新核心？点击下方“文件工具”
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="title">服务端核心文件</div>
+            <div class="desc">
+              指定启动的 Jar 文件名。如果文件已存在于目录中，直接输入文件名即可。
+              <br/>需要更新核心？点击下方“文件工具”
+            </div>
+          </div>
+          <div class="setting-control">
+            <t-input v-model="formData.core" placeholder="例如 server.jar">
+              <template #suffix>
+                <t-button variant="text" theme="primary" size="small" @click="showCoreTools = !showCoreTools">
+                  {{ showCoreTools ? '收起工具' : '文件工具' }}
+                </t-button>
+              </template>
+            </t-input>
+
+            <div v-if="showCoreTools" class="core-tools-panel">
+              <t-space direction="vertical" style="width: 100%">
+                <t-alert theme="info" message="在此处操作会自动下载/上传文件，并填入上方的文件名。" />
+
+                <t-row :gutter="12">
+                  <t-col :span="6">
+                    <t-button block variant="outline" @click="showCoreSelector = true">
+                      <template #icon><t-icon name="cloud-download" /></template>
+                      从版本库下载
+                    </t-button>
+                  </t-col>
+                  <t-col :span="6">
+                    <t-button block variant="outline" :loading="isUploading" @click="triggerFileSelect">
+                      <template #icon><t-icon name="upload" /></template>
+                      上传本地文件
+                    </t-button>
+                  </t-col>
+                </t-row>
+
+                <input ref="uploadInputRef" type="file" accept=".jar" hidden @change="onFileChange" />
+
+                <div v-if="isUploading" class="upload-progress">
+                  <span>正在上传: {{ uploadedFileName }}</span>
+                  <t-progress theme="line" :percentage="uploadProgress" />
+                </div>
+              </t-space>
+            </div>
           </div>
         </div>
-        <div class="setting-control">
-          <t-input v-model="formData.core" placeholder="例如 server.jar">
-            <template #suffix>
-              <t-button variant="text" theme="primary" size="small" @click="showCoreTools = !showCoreTools">
-                {{ showCoreTools ? '收起工具' : '文件工具' }}
-              </t-button>
-            </template>
-          </t-input>
+      </template>
 
-          <div v-if="showCoreTools" class="core-tools-panel">
-            <t-space direction="vertical" style="width: 100%">
-              <t-alert theme="info" message="在此处操作会自动下载/上传文件，并填入上方的文件名。" />
+      <template v-if="javaType !== 'none'">
+        <div class="setting-group-title">资源限制</div>
 
-              <t-row :gutter="12">
-                <t-col :span="6">
-                  <t-button block variant="outline" @click="showCoreSelector = true">
-                    <template #icon><t-icon name="cloud-download" /></template>
-                    从版本库下载
-                  </t-button>
-                </t-col>
-                <t-col :span="6">
-                  <t-button block variant="outline" :loading="isUploading" @click="triggerFileSelect">
-                    <template #icon><t-icon name="upload" /></template>
-                    上传本地文件
-                  </t-button>
-                </t-col>
-              </t-row>
-
-              <input ref="uploadInputRef" type="file" accept=".jar" hidden @change="onFileChange" />
-
-              <div v-if="isUploading" class="upload-progress">
-                <span>正在上传: {{ uploadedFileName }}</span>
-                <t-progress theme="line" :percentage="uploadProgress" />
-              </div>
-            </t-space>
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="title">内存分配 (MB)</div>
+            <div class="desc">设置 Java 堆内存大小 (Xms / Xmx)</div>
+          </div>
+          <div class="setting-control flex-row">
+            <t-input-number
+              v-model="formData.minM"
+              :min="0"
+              placeholder="最小(Xms)"
+              theme="column"
+              style="width: 140px"
+              suffix="MB"
+            />
+            <span class="separator">-</span>
+            <t-input-number
+              v-model="formData.maxM"
+              :min="0"
+              placeholder="最大(Xmx)"
+              theme="column"
+              style="width: 140px"
+              suffix="MB"
+            />
           </div>
         </div>
-      </div>
-
-      <div class="setting-group-title">资源限制</div>
-
-      <div class="setting-item">
-        <div class="setting-info">
-          <div class="title">内存分配 (MB)</div>
-          <div class="desc">设置 Java 堆内存大小 (Xms / Xmx)</div>
-        </div>
-        <div class="setting-control flex-row">
-          <t-input-number
-            v-model="formData.minM"
-            :min="0"
-            placeholder="最小(Xms)"
-            theme="column"
-            style="width: 140px"
-            suffix="MB"
-          />
-          <span class="separator">-</span>
-          <t-input-number
-            v-model="formData.maxM"
-            :min="0"
-            placeholder="最大(Xmx)"
-            theme="column"
-            style="width: 140px"
-            suffix="MB"
-          />
-        </div>
-      </div>
+      </template>
 
       <div class="setting-group-title">自动备份</div>
 
@@ -595,9 +638,9 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="setting-group-title">外置登录</div>
+      <div v-if="javaType !== 'none'" class="setting-group-title">外置登录</div>
 
-      <div class="setting-item">
+      <div v-if="javaType !== 'none'" class="setting-item">
         <div class="setting-info">
           <div class="title">Yggdrasil API</div>
           <div class="desc">
