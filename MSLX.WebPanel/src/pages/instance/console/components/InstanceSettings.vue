@@ -76,6 +76,8 @@ defineExpose({ open });
 </template>
 
 <style scoped lang="less">
+@import '@/style/scrollbar.less';
+
 :deep(.t-dialog__body) {
   padding: 0 !important;
 }
@@ -220,6 +222,7 @@ defineExpose({ open });
   }
 
   .panel-wrapper {
+    .scrollbar-mixin();
     padding: 16px;
     padding-bottom: 80px;
   }
