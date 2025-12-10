@@ -1,39 +1,19 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, ref } from 'vue';
+import {
+  CheckCircleIcon,
+  CodeIcon,
+  GitCommitIcon,
+  HistoryIcon,
+  ServerIcon,
+  TimeIcon,
+  UserCircleIcon,
+} from 'tdesign-icons-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 
-import { getSettings, updateSettings } from '@/api/settings';
-import type { SettingsModel } from '@/api/model/settings';
-import { useUserStore } from '@/store';
+import type { BuildInfoModel } from '@/api/model/buildInfo';
+import { getBuildInfo } from '@/api/buildInfo';
 
-const userStore = useUserStore();
-
-const loading = ref(false);
-const submitLoading = ref(false);
-
-// 表单数据
-const formData = reactive<SettingsModel>({
-  user: '',
-  avatar: '',
-  fireWallBanLocalAddr: false,
-  openWebConsoleOnLaunch: true,
-  neoForgeInstallerMirrors: 'MSL Mirrors',
-  listenHost: 'localhost',
-  listenPort: 1027,
-});
-
-// 头像相关
-const avatarMode = ref<'qq' | 'custom'>('qq');
-const qqNumber = ref('');
-
-// 安装镜像源
-const mirrorOptions = [
-  { label: '官方源 (较慢)', value: 'Official' },
-  { label: 'MSL镜像源 (推荐)', value: 'MSL Mirrors' },
-  { label: 'MSL镜像源 - 备用', value: 'MSL Mirrors Backup' },
-];
-
-// 开发者列表
 const developers = [
   {
     name: 'xiaoyu',
@@ -49,174 +29,160 @@ const developers = [
   },
 ];
 
-// 初始化加载
-const initData = async () => {
-  loading.value = true;
-  try {
-    const res = await getSettings();
-    // 赋值给表单
-    Object.assign(formData, res);
+const loading = ref(true);
+const buildInfo = ref<BuildInfoModel | null>(null);
 
-    // 这头像是qq嘛？
-    const qqMatch = res.avatar && res.avatar.match(/nk=(\d+)/);
-    if (qqMatch && qqMatch[1]) {
-      avatarMode.value = 'qq';
-      qqNumber.value = qqMatch[1];
-    } else {
-      avatarMode.value = 'custom';
-    }
+const fetchBuildInfo = async () => {
+  try {
+    loading.value = true;
+    buildInfo.value = await getBuildInfo();
   } catch (e) {
-    MessagePlugin.error(e.message);
+    console.error(e);
+    if (process.env.NODE_ENV !== 'development') {
+      MessagePlugin.warning('无法加载构建信息');
+    }
   } finally {
     loading.value = false;
   }
 };
 
-// 生成qq头像地址
-watch(qqNumber, (val) => {
-  if (avatarMode.value === 'qq' && val) {
-    formData.avatar = `https://q.qlogo.cn/g?b=qq&nk=${val}&s=640`;
-  }
+const dependenciesList = computed(() => {
+  if (!buildInfo.value?.dependencies) return [];
+  return Object.entries(buildInfo.value.dependencies).map(([k, v]) => ({ name: k, version: v }));
 });
 
-// 监听模式切换
-const handleModeChange = (val: any) => {
-  if (val === 'qq' && qqNumber.value) {
-    formData.avatar = `https://q.qlogo.cn/g?b=qq&nk=${qqNumber.value}&s=640`;
-  } else if (val === 'custom') {
-    // 不清空
-  }
-};
-
-// 提交保存
-const onSubmit = async () => {
-  submitLoading.value = true;
-  try {
-    await updateSettings(formData);
-    userStore.getUserInfo(); // 刷新一下用户信息
-    MessagePlugin.success('设置保存成功');
-  } catch (error) {
-    MessagePlugin.error(error.message);
-  } finally {
-    submitLoading.value = false;
-  }
-};
-
 onMounted(() => {
-  initData();
+  fetchBuildInfo();
 });
 </script>
 
 <template>
-  <div class="settings-page">
+  <div class="about-page">
     <t-space direction="vertical" size="large" style="width: 100%">
-      <t-card :bordered="false" title="系统设置" :loading="loading">
-        <template #actions>
-          <t-button theme="primary" variant="text" @click="initData">刷新</t-button>
-        </template>
+      <t-card :bordered="false" class="intro-card">
+        <div class="intro-header">
+          <div class="logo-area">
+            <server-icon class="logo-icon" />
+            <h1 class="project-title">关于 MSLX</h1>
+          </div>
+        </div>
 
-        <t-form ref="form" :data="formData" :label-width="120" label-align="left" @submit="onSubmit">
-          <div class="section-title"><t-icon name="user" /> 用户设置</div>
-
-          <t-form-item label="用户名" name="user">
-            <t-input v-model="formData.user" placeholder="请输入显示的用户名" />
-          </t-form-item>
-
-          <t-form-item label="头像来源">
-            <t-radio-group v-model="avatarMode" variant="default-filled" @change="handleModeChange">
-              <t-radio-button value="qq">
-                <template #default><t-icon name="logo-qq" /> QQ头像</template>
-              </t-radio-button>
-              <t-radio-button value="custom">
-                <template #default><t-icon name="link" /> 自定义链接</template>
-              </t-radio-button>
-            </t-radio-group>
-          </t-form-item>
-
-          <t-form-item :label="avatarMode === 'qq' ? 'QQ号码' : '图片链接'">
-            <t-input v-if="avatarMode === 'qq'" v-model="qqNumber" placeholder="请输入QQ号自动获取头像" type="number" />
-            <t-input v-else v-model="formData.avatar" placeholder="请输入头像图片 URL" />
-          </t-form-item>
-
-          <t-form-item label="头像预览">
-            <div class="avatar-preview">
-              <t-avatar :image="formData.avatar" size="80px" shape="round">
-                {{ formData.user ? formData.user.slice(0, 1).toUpperCase() : 'User' }}
-              </t-avatar>
-              <div v-if="avatarMode === 'qq' && !qqNumber" class="preview-tips">请输入QQ号以预览</div>
-            </div>
-          </t-form-item>
-
-          <t-divider dashed />
-
-          <div class="section-title"><t-icon name="desktop" /> MSLX 守护进程端设置</div>
-
-          <t-form-item label="自动打开控制台" help="MSLX 守护进程启动成功后，是否自动登录网页端控制台。">
-            <t-space align="center">
-              <t-switch v-model="formData.openWebConsoleOnLaunch" />
-              <span class="status-text">{{ formData.openWebConsoleOnLaunch ? '已开启' : '已关闭' }}</span>
-            </t-space>
-          </t-form-item>
-
-          <t-form-item
-            label="安装镜像源"
-            style="margin-top: 15px"
-            help="选择在自动安装 NeoForge / Forge 时所使用的镜像源。"
-          >
-            <t-select v-model="formData.neoForgeInstallerMirrors" :options="mirrorOptions" placeholder="请选择镜像源" />
-          </t-form-item>
-
-          <t-divider dashed />
-
-          <div class="section-title"><t-icon name="secured" /> 安全设置</div>
-
-          <t-form-item label="禁止本地访问" help="开启后将禁止本地回环地址访问，增强安全性。">
-            <t-space align="center">
-              <t-switch v-model="formData.fireWallBanLocalAddr" />
-              <span class="status-text">{{ formData.fireWallBanLocalAddr ? '已开启' : '已关闭' }}</span>
-            </t-space>
-          </t-form-item>
-
-          <t-form-item
-            label="监听地址设置"
-            style="margin-top: 15px"
-            help="设置MSLX守护进程的监听地址。(需要重启守护进程生效,若不明白这是干什么的请一定不要修改！)"
-          >
-            <t-space break-line align="center">
-              <t-space align="center">
-                <span class="status-text">监听地址</span>
-                <t-input v-model="formData.listenHost" />
-              </t-space>
-              <t-space align="center">
-                <span class="status-text">监听端口</span>
-                <t-input v-model="formData.listenPort" />
-              </t-space>
-            </t-space>
-          </t-form-item>
-
-          <t-form-item>
-            <t-button theme="primary" type="submit" :loading="submitLoading" block class="save-btn">
-              <template #icon><t-icon name="save" /></template>
-              保存设置
-            </t-button>
-          </t-form-item>
-        </t-form>
+        <div class="intro-text">
+          <p>
+            <strong>MSLX</strong> 是由 <strong>MSL 原班团队 MSLTeam</strong> 倾力打造的全新一代开服工具。 基于
+            <strong>.NET Core 8.0</strong> 环境。
+          </p>
+          <p>
+            它传承了 MSL 经典的 UI 设计语言，旨在让操作零门槛——无论是老用户还是新伙伴，都能即刻上手，极速部署您的 MC
+            服务器。 MSLX 不仅 <strong>完美支持跨平台</strong> (Windows / macOS / Linux) 运行，相比前代，更引入了强大的
+            <strong>远程访问</strong> 功能，让管理更自由。
+          </p>
+        </div>
       </t-card>
 
-      <t-card :bordered="false" title="关于项目">
-        <div class="about-content">
-          <p class="about-desc">感谢以下开发者对本项目的杰出贡献：</p>
-          <t-row :gutter="[16, 16]">
-            <t-col v-for="dev in developers" :key="dev.name" :span="6" :xs="12">
-              <div class="dev-card">
-                <t-avatar :image="dev.avatar" size="60px" shape="circle" />
-                <div class="dev-info">
-                  <div class="dev-name">{{ dev.name }}</div>
-                  <div class="dev-role">{{ dev.role }}</div>
+      <t-card :bordered="false" title="开发团队">
+        <p class="about-desc">感谢以下开发者对本项目的杰出贡献：</p>
+        <t-row :gutter="[16, 16]">
+          <t-col v-for="dev in developers" :key="dev.name" :span="3" :xs="12" :sm="6">
+            <div class="dev-card">
+              <t-avatar :image="dev.avatar" size="56px" shape="circle" class="dev-avatar" />
+              <div class="dev-info">
+                <div class="dev-name">{{ dev.name }}</div>
+                <div class="dev-role">{{ dev.role }}</div>
+                <div class="dev-desc" :title="dev.desc">{{ dev.desc }}</div>
+              </div>
+            </div>
+          </t-col>
+        </t-row>
+      </t-card>
+
+      <t-card :bordered="false" title="构建信息" :loading="loading">
+        <template #actions>
+          <t-tag v-if="buildInfo" theme="success" variant="light">
+            <template #icon><check-circle-icon /></template>
+            构建成功
+          </t-tag>
+        </template>
+
+        <div v-if="buildInfo" class="build-summary">
+          <t-row :gutter="[16, 16]" style="align-items: stretch">
+            <t-col :span="3" :xs="12" :sm="6">
+              <div class="info-block">
+                <div class="label">当前版本</div>
+                <div class="value version">{{ buildInfo.version }}</div>
+              </div>
+            </t-col>
+            <t-col :span="3" :xs="12" :sm="6">
+              <div class="info-block">
+                <div class="label">构建时间</div>
+                <div class="value time"><time-icon /> {{ buildInfo.buildTime }}</div>
+              </div>
+            </t-col>
+            <t-col :span="3" :xs="12" :sm="6">
+              <div class="info-block">
+                <div class="label">最新提交</div>
+                <div class="value commit" :title="buildInfo.commitMsg">
+                  <git-commit-icon /> {{ buildInfo.commitId.substring(0, 7) }}
+                </div>
+                <div class="sub-value">by {{ buildInfo.commitAuthor }}</div>
+              </div>
+            </t-col>
+            <t-col :span="3" :xs="12" :sm="6">
+              <div class="info-block">
+                <div class="label">核心框架</div>
+                <div class="value framework">
+                  <span class="dotnet">.NET 8.0</span>
+                  <t-divider layout="vertical" />
+                  <span class="vue">Vue 3.x</span>
                 </div>
               </div>
             </t-col>
           </t-row>
+        </div>
+
+        <div v-if="buildInfo" class="details-collapse">
+          <t-collapse :borderless="true">
+            <t-collapse-panel value="history">
+              <template #header>
+                <div class="panel-header"><history-icon /> 更新日志 (Commit History)</div>
+              </template>
+
+              <div class="history-timeline">
+                <t-timeline>
+                  <t-timeline-item v-for="item in buildInfo.history" :key="item.commitId" dot-color="primary">
+                    <div class="timeline-content">
+                      <div class="commit-time">{{ item.commitTime }}</div>
+
+                      <div class="msg">{{ item.commitMsg }}</div>
+
+                      <div class="meta">
+                        <t-tag size="small" style="padding: 0">
+                          <user-circle-icon /> {{ item.commitAuthor }}
+                        </t-tag>
+                        <span class="hash">#{{ item.commitId.substring(0, 7) }}</span>
+                      </div>
+                    </div>
+                  </t-timeline-item>
+                </t-timeline>
+              </div>
+            </t-collapse-panel>
+
+            <t-collapse-panel value="dependencies">
+              <template #header>
+                <div class="panel-header"><code-icon /> 核心依赖 (Dependencies)</div>
+              </template>
+              <div class="deps-grid">
+                <t-row :gutter="[12, 12]">
+                  <t-col v-for="dep in dependenciesList" :key="dep.name" :span="3" :xs="12" :sm="6" :md="4">
+                    <div class="dep-item">
+                      <span class="dep-name" :title="dep.name">{{ dep.name }}</span>
+                      <t-tag size="small" variant="light-outline">{{ dep.version }}</t-tag>
+                    </div>
+                  </t-col>
+                </t-row>
+              </div>
+            </t-collapse-panel>
+          </t-collapse>
         </div>
       </t-card>
     </t-space>
@@ -224,88 +190,260 @@ onMounted(() => {
 </template>
 
 <style scoped lang="less">
-.settings-page {
+.about-page {
   margin: 0 auto;
+  padding-bottom: 24px;
 }
 
-.section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--td-text-color-primary);
-  margin-bottom: 24px;
-  margin-top: 8px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  .t-icon {
-    font-size: 18px;
-    color: var(--td-brand-color);
-  }
-}
-
-.avatar-preview {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-
-  .preview-tips {
-    font-size: 12px;
-    color: var(--td-text-color-placeholder);
-  }
-}
-
-.status-text {
-  font-size: 14px;
-  color: var(--td-text-color-secondary);
-}
-
-.save-btn {
-  margin-top: 16px;
-
-  /* 移动端按钮加高 */
-  @media screen and (max-width: 768px) {
-    height: 44px;
-  }
-}
-
-/* 关于模块样式 */
-.about-content {
-  .about-desc {
-    color: var(--td-text-color-secondary);
+.intro-card {
+  .intro-header {
+    display: flex;
+    align-items: center;
     margin-bottom: 20px;
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      .logo-icon {
+        font-size: 36px;
+        color: var(--td-brand-color);
+      }
+      .project-title {
+        font-size: 24px;
+        font-weight: 700;
+        margin: 0;
+        line-height: 1;
+        color: var(--td-text-color-primary);
+      }
+    }
+  }
+  .intro-text {
     font-size: 14px;
+    line-height: 1.8;
+    color: var(--td-text-color-primary);
+    background: var(--td-bg-color-secondarycontainer);
+    padding: 20px;
+    border-radius: var(--td-radius-medium);
+    border-left: 4px solid var(--td-brand-color);
+    p {
+      margin-bottom: 12px;
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+    strong {
+      color: var(--td-brand-color);
+      font-weight: 600;
+    }
   }
 }
 
+.build-summary {
+  margin-bottom: 24px;
+  .info-block {
+    background: var(--td-bg-color-container-hover);
+    padding: 16px;
+    border-radius: var(--td-radius-medium);
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    .label {
+      font-size: 12px;
+      color: var(--td-text-color-secondary);
+      margin-bottom: 8px;
+    }
+    .value {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--td-text-color-primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      word-break: break-all;
+      flex-wrap: wrap;
+      &.version {
+        font-size: 20px;
+        color: var(--td-brand-color);
+      }
+      &.time {
+        font-size: 15px;
+      }
+      &.framework {
+        .dotnet {
+          color: #512bd4;
+        }
+        .vue {
+          color: #42b883;
+        }
+      }
+    }
+    .sub-value {
+      font-size: 12px;
+      color: var(--td-text-color-placeholder);
+      margin-top: 4px;
+    }
+  }
+}
+
+.details-collapse {
+  margin-top: 16px;
+  border-top: 1px solid var(--td-component-stroke);
+  :deep(.t-collapse-panel__header) {
+    background-color: transparent;
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+  }
+}
+
+.history-timeline {
+  padding: 12px 0;
+  max-height: 400px;
+  overflow-y: auto;
+
+  // 隐藏左边留空
+  :deep(.t-timeline-item__wrapper) {
+    margin-left: 0 !important;
+  }
+
+  :deep(.t-timeline-item__label) {
+    display: none !important;
+  }
+
+  .timeline-content {
+    background: var(--td-bg-color-secondarycontainer);
+    padding: 10px 14px;
+    border-radius: 6px;
+
+    .commit-time {
+      font-size: 12px;
+      color: var(--td-text-color-placeholder);
+      margin-bottom: 4px;
+      font-family: monospace;
+    }
+
+    .msg {
+      font-size: 14px;
+      color: var(--td-text-color-primary);
+      margin-bottom: 8px;
+      word-break: break-word;
+      line-height: 1.5;
+      font-weight: 500;
+    }
+    .meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      .hash {
+        font-family: monospace;
+        color: var(--td-text-color-placeholder);
+        font-size: 12px;
+      }
+    }
+  }
+}
+
+.deps-grid {
+  .dep-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--td-bg-color-component);
+    border: 1px solid var(--td-component-border);
+    border-radius: 4px;
+    .dep-name {
+      font-size: 13px;
+      color: var(--td-text-color-primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-right: 8px;
+      flex: 1;
+    }
+  }
+}
+
+.about-desc {
+  color: var(--td-text-color-secondary);
+  margin-bottom: 16px;
+  font-size: 14px;
+}
 .dev-card {
   display: flex;
   align-items: center;
   background-color: var(--td-bg-color-container-hover);
   padding: 16px;
   border-radius: var(--td-radius-medium);
-  transition: all 0.3s;
+  transition: all 0.3s cubic-bezier(0.38, 0, 0.24, 1);
+  border: 1px solid transparent;
 
   &:hover {
-    transform: translateY(-2px);
+    transform: translateY(-4px);
+    box-shadow: var(--td-shadow-2);
+    border-color: var(--td-brand-color-light);
+    background-color: var(--td-bg-color-container);
+  }
+  .dev-avatar {
+    flex-shrink: 0;
+    border: 2px solid var(--td-bg-color-container);
     box-shadow: var(--td-shadow-1);
   }
-
   .dev-info {
-    margin-left: 12px;
-    display: flex;
-    flex-direction: column;
-
+    margin-left: 16px;
+    overflow: hidden;
+    flex: 1;
     .dev-name {
-      font-weight: 600;
+      font-weight: 700;
       font-size: 16px;
       color: var(--td-text-color-primary);
+      line-height: 1.4;
     }
-
     .dev-role {
       font-size: 12px;
+      color: var(--td-brand-color);
+      font-weight: 500;
+      background: var(--td-brand-color-light-hover);
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin: 4px 0;
+    }
+    .dev-desc {
+      font-size: 12px;
       color: var(--td-text-color-placeholder);
-      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .intro-card .intro-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .intro-text {
+    padding: 16px;
+    font-size: 13px;
+  }
+  .build-summary .info-block {
+    height: auto;
+    min-height: 80px;
+  }
+  .dev-card {
+    padding: 12px;
+    .dev-avatar {
+      width: 48px;
+      height: 48px;
+    }
+    .dev-info {
+      margin-left: 12px;
     }
   }
 }
