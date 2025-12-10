@@ -8,3 +8,9 @@ public class FileItem
     public DateTime LastModified { get; set; }
     public string Permission { get; set; } = ""; 
 }
+
+public class SaveFileRequest
+{
+    public string Path { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+}
