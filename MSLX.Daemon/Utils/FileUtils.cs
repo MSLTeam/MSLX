@@ -29,4 +29,32 @@ public class FileUtils
             return false;
         }
     }
+    
+    // 路径安全检查工具
+    public static (bool IsSafe, string FullPath, string Message) GetSafePath(string rootBase, string? relativePath)
+    {
+        if (string.IsNullOrEmpty(rootBase) || !Directory.Exists(rootBase))
+        {
+            return (false, string.Empty, "服务端根目录未配置或不存在");
+        }
+
+        try
+        {
+            string rootPath = Path.GetFullPath(rootBase);
+            string reqPath = relativePath ?? "";
+            string targetPath = Path.GetFullPath(Path.Combine(rootPath, reqPath));
+
+            // 目标路径必须以根路径开头
+            if (!targetPath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return (false, string.Empty, "禁止访问实例目录以外的资源");
+            }
+
+            return (true, targetPath, string.Empty);
+        }
+        catch (Exception ex)
+        {
+            return (false, string.Empty, $"路径解析错误: {ex.Message}");
+        }
+    }
 }

@@ -11,6 +11,7 @@ namespace MSLX.Daemon.Controllers.FilesControllers;
 [Route("api/files")]
 public class FilesListController : ControllerBase
 {
+    // 获取文件列表
     [HttpGet("instance/{id}/lists")]
     public IActionResult GetFilesList(uint id, [FromQuery] string? path = "")
     {
@@ -37,18 +38,19 @@ public class FilesListController : ControllerBase
 
         try
         {
-            string rootPath = Path.GetFullPath(server.Base);
-            string requestPath = path ?? "";
-            string targetPath = Path.GetFullPath(Path.Combine(rootPath, requestPath));
-            
-            // 确保目标路径必须以根路径开头
-            if (!targetPath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase))
+            var check = FileUtils.GetSafePath(server.Base, path);
+        
+            if (!check.IsSafe)
             {
-                return BadRequest(new ApiResponse<object>
-                {
-                    Code = 403,
-                    Message = "禁止访问非实例资源目录"
-                });
+                // 返回具体的错误信息
+                return BadRequest(new ApiResponse<object> { Code = 403, Message = check.Message });
+            }
+        
+            string targetPath = check.FullPath;
+
+            if (!Directory.Exists(targetPath))
+            {
+                return NotFound(new ApiResponse<object> { Code = 404, Message = "目录不存在" });
             }
 
             // 检查目标目录是否存在
