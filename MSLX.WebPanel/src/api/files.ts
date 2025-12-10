@@ -51,3 +51,17 @@ export async function getInstanceFilesList(instanceId: number,path: string = '')
     params: { path }
   });
 }
+
+export async function getFileContent(instanceId: number, path: string){
+  return await request.get<string>({
+    url: `/api/files/instance/${instanceId}/content`,
+    params: { path }
+  });
+}
+
+export function saveFileContent(instanceId: number, path: string, content: string) {
+  return request.post({
+    url: `/api/files/instance/${instanceId}/content`,
+    data: { path, content }
+  });
+}

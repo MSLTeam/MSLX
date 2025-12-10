@@ -2,36 +2,105 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
-  HomeIcon, RefreshIcon,
-  CloudUploadIcon, DeleteIcon, DownloadIcon, MoreIcon
+  HomeIcon, RefreshIcon, CloudUploadIcon, DeleteIcon, DownloadIcon, MoreIcon, FileAddIcon,
+  // 基础图标
+  FolderIcon, FileIcon,
+  // 特殊文件夹图标
+  SettingIcon, EarthIcon, AppIcon,
+  // 特殊文件图标
+  FileImageIcon, FilePasteIcon, CodeIcon, FileZipIcon, ServiceIcon
 } from 'tdesign-icons-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { getInstanceFilesList } from '@/api/files';
+import { getInstanceFilesList, getFileContent, saveFileContent } from '@/api/files';
 import type { FilesListModel } from '@/api/model/files';
+import FileEditor from './components/FileEditor.vue';
 
 const route = useRoute();
 const router = useRouter();
 const instanceId = Number(route.params.id);
 
+// --- 状态定义 ---
 const loading = ref(false);
 const fileList = ref<FilesListModel[]>([]);
 const currentPath = ref('');
 const selectedRowKeys = ref<string[]>([]);
 
-// 表格列定义
+// 编辑器状态
+const showEditor = ref(false);
+const editorFileName = ref('');
+const editorContent = ref('');
+const isSaving = ref(false);
+
+// 新建文件状态
+const showCreateDialog = ref(false);
+const newFileName = ref('');
+
+// --- 图标映射逻辑 ---
+const getFileIcon = (row: FilesListModel) => {
+  // 文件夹处理
+  if (row.type === 'folder') {
+    const name = row.name.toLowerCase();
+    // Config 文件夹
+    if (name === 'config' || name === 'settings') {
+      return { icon: SettingIcon, color: 'var(--td-warning-color)' }; // 橙色设置
+    }
+    // 世界存档
+    if (name.startsWith('world') || name === 'level') {
+      return { icon: EarthIcon, color: 'var(--td-success-color)' }; // 绿色地球
+    }
+    // 插件/模组
+    if (name === 'plugins' || name === 'mods' || name === 'libraries') {
+      return { icon: AppIcon, color: 'var(--td-brand-color)' }; // 蓝色应用
+    }
+    // 日志/临时
+    if (name === 'logs' || name === 'crash-reports' || name === 'cache' || name === 'temp') {
+      return { icon: FolderIcon, color: 'var(--td-gray-color-6)' }; // 灰色
+    }
+    // 默认文件夹
+    return { icon: FolderIcon, color: 'var(--td-brand-color)' }; // 默认蓝
+  }
+
+  // 文件处理
+  const ext = row.name.split('.').pop()?.toLowerCase();
+
+  // 图片
+  if (['png', 'jpg', 'jpeg', 'gif', 'ico', 'webp'].includes(ext || '')) {
+    return { icon: FileImageIcon, color: 'var(--td-success-color)' };
+  }
+  // 压缩包/核心Jar
+  if (['jar', 'zip', 'rar', '7z', 'tar', 'gz'].includes(ext || '')) {
+    return { icon: FileZipIcon, color: '#722ed1' }; // 紫色
+  }
+  // 配置文件/代码
+  if (['yml', 'yaml', 'json', 'properties', 'toml', 'xml', 'conf', 'sh', 'bat', 'cmd'].includes(ext || '')) {
+    return { icon: CodeIcon, color: 'var(--td-warning-color)' }; // 橙色
+  }
+  // 日志/文本
+  if (['log', 'txt', 'md', 'lock'].includes(ext || '')) {
+    return { icon: FilePasteIcon, color: 'var(--td-gray-color-6)' };
+  }
+  // 数据库文件
+  if (['db', 'db-wal', 'db-shm', 'dat'].includes(ext || '')) {
+    return { icon: ServiceIcon, color: 'var(--td-gray-color-8)' };
+  }
+
+  // 默认文件
+  return { icon: FileIcon, color: 'var(--td-text-color-secondary)' };
+};
+
 const columns = [
   { colKey: 'row-select', type: 'multiple', width: 40 },
-  { colKey: 'name', title: '文件名', ellipsis: true, width: 'auto' }, // 这里的 width auto 让它自适应
+  { colKey: 'name', title: '文件名', ellipsis: true, width: 'auto' },
   { colKey: 'size', title: '大小', width: 100, align: 'right' },
   { colKey: 'lastModified', title: '修改时间', width: 180, align: 'center' },
-  { colKey: 'operation', title: '操作', width: 80, align: 'center' }
+  { colKey: 'operation', title: '操作', width: 80, align: 'center' },
 ];
 
 const breadcrumbs = computed(() => {
-  const parts = currentPath.value.split('/').filter(p => p);
+  const parts = currentPath.value.split('/').filter((p) => p);
   const crumbs = [{ name: '根目录', path: '' }];
   let accumPath = '';
-  parts.forEach(part => {
+  parts.forEach((part) => {
     accumPath = accumPath ? `${accumPath}/${part}` : part;
     crumbs.push({ name: part, path: accumPath });
   });
@@ -44,7 +113,10 @@ const formatSize = (size: number) => {
   if (size === 0) return '-';
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
   let i = 0;
-  while (size >= 1024 && i < units.length - 1) { size /= 1024; i++; }
+  while (size >= 1024 && i < units.length - 1) {
+    size /= 1024;
+    i++;
+  }
   return `${size.toFixed(1)} ${units[i]}`;
 };
 
@@ -66,18 +138,71 @@ const fetchData = async () => {
   }
 };
 
+const openEditor = async (fileName: string, isNewFile = false) => {
+  if (isNewFile) {
+    editorFileName.value = fileName;
+    editorContent.value = '';
+    showEditor.value = true;
+    return;
+  }
+  const fullPath = currentPath.value ? `${currentPath.value}/${fileName}` : fileName;
+  const msg = MessagePlugin.loading('正在读取文件...');
+  try {
+    const content = await getFileContent(instanceId, fullPath);
+    editorFileName.value = fileName;
+    editorContent.value = content;
+    showEditor.value = true;
+    MessagePlugin.close(msg);
+  } catch (err) {
+    MessagePlugin.close(msg);
+    MessagePlugin.error('无法读取文件内容' + err.message);
+  }
+};
+
+const handleOpenCreateDialog = () => {
+  newFileName.value = '';
+  showCreateDialog.value = true;
+};
+
+const handleConfirmCreate = () => {
+  if (!newFileName.value.trim()) {
+    MessagePlugin.warning('请输入文件名');
+    return;
+  }
+  showCreateDialog.value = false;
+  openEditor(newFileName.value, true);
+};
+
+const handleSaveFile = async (newContent: string) => {
+  isSaving.value = true;
+  try {
+    const fullPath = currentPath.value ? `${currentPath.value}/${editorFileName.value}` : editorFileName.value;
+    await saveFileContent(instanceId, fullPath, newContent);
+    MessagePlugin.success('保存成功');
+    showEditor.value = false;
+    handleRefresh();
+  } catch (err: any) {
+    const msg = err.message || '保存失败';
+    MessagePlugin.error(msg);
+  } finally {
+    isSaving.value = false;
+  }
+};
+
 const handleRowClick = (row: any) => {
   if (row.type === 'folder') {
     const separator = currentPath.value === '' ? '' : '/';
     currentPath.value = `${currentPath.value}${separator}${row.name}`;
+  } else {
+    openEditor(row.name);
   }
 };
 
 const navigateTo = (path: string) => { currentPath.value = path; };
 const handleRefresh = () => fetchData();
 const handleUpload = () => MessagePlugin.info('点击上传');
-const handleDownload = (row?: any) => MessagePlugin.success('下载' + (row ? row.name : '选中项'));
-const handleDelete = (row?: any) => MessagePlugin.warning('删除' + (row ? row.name : '选中项'));
+const handleDownload = (row?: any) => MessagePlugin.success('下载 ' + row?.name);
+const handleDelete = (row?: any) => MessagePlugin.warning('删除 ' + row?.name);
 
 watch(currentPath, (newPath) => {
   router.replace({ query: { ...route.query, path: newPath || undefined } });
@@ -93,7 +218,6 @@ onMounted(() => {
 
 <template>
   <div class="file-manager-container">
-
     <div class="toolbar">
       <div class="breadcrumb-area">
         <t-breadcrumb :max-item-width="'150px'">
@@ -108,8 +232,11 @@ onMounted(() => {
           </t-breadcrumb-item>
         </t-breadcrumb>
       </div>
-
       <div class="actions-area">
+        <t-button variant="outline" size="medium" @click="handleOpenCreateDialog">
+          <template #icon><file-add-icon /></template>
+          新建文件
+        </t-button>
         <t-button theme="primary" size="medium" @click="handleUpload">
           <template #icon><cloud-upload-icon /></template>
           <span class="btn-text">上传</span>
@@ -134,10 +261,10 @@ onMounted(() => {
         >
           <template #name="{ row }">
             <div class="file-name-cell" @click.stop="handleRowClick(row)">
-              <t-icon
+              <component
+                :is="getFileIcon(row).icon"
                 class="file-icon"
-                :name="row.type === 'folder' ? 'folder' : 'file'"
-                :style="{ color: row.type === 'folder' ? 'var(--td-brand-color)' : 'var(--td-text-color-secondary)' }"
+                :style="{ color: getFileIcon(row).color }"
               />
               <span class="name-text">{{ row.name }}</span>
             </div>
@@ -146,11 +273,14 @@ onMounted(() => {
           <template #lastModified="{ row }">{{ formatTime(row.lastModified) }}</template>
           <template #operation="{ row }">
             <div class="op-actions">
-              <t-dropdown :options="[
+              <t-dropdown
+                :options="[
+                  { content: '编辑', value: 'edit', onClick: () => openEditor(row.name), disabled: row.type === 'folder' },
                   { content: '下载', value: 'download', onClick: () => handleDownload(row) },
                   { content: '重命名', value: 'rename' },
-                  { content: '删除', value: 'delete', theme: 'error', onClick: () => handleDelete(row) }
-                ]">
+                  { content: '删除', value: 'delete', theme: 'error', onClick: () => handleDelete(row) },
+                ]"
+              >
                 <t-button variant="text" shape="square"><more-icon /></t-button>
               </t-dropdown>
             </div>
@@ -162,65 +292,83 @@ onMounted(() => {
 
     <transition name="slide-up">
       <div v-if="hasSelection" class="selection-bar">
-        <div class="selection-info">已选 <span>{{ selectedRowKeys.length }}</span> 项</div>
+        <div class="selection-info">
+          已选 <span>{{ selectedRowKeys.length }}</span> 项
+        </div>
         <div class="selection-actions">
-          <t-button size="small" variant="text" theme="primary" @click="handleDownload()"><template #icon><download-icon /></template></t-button>
-          <t-button size="small" variant="text" theme="danger" @click="handleDelete()"><template #icon><delete-icon /></template></t-button>
+          <t-button size="small" variant="text" theme="primary" @click="handleDownload()"
+          ><template #icon><download-icon /></template
+          ></t-button>
+          <t-button size="small" variant="text" theme="danger" @click="handleDelete()"
+          ><template #icon><delete-icon /></template
+          ></t-button>
           <t-button size="small" variant="text" @click="selectedRowKeys = []">取消</t-button>
         </div>
       </div>
     </transition>
+
+    <file-editor
+      v-model:visible="showEditor"
+      :file-name="editorFileName"
+      :content="editorContent"
+      :loading="isSaving"
+      @save="handleSaveFile"
+    />
+
+    <t-dialog
+      v-model:visible="showCreateDialog"
+      header="新建文件"
+      :on-confirm="handleConfirmCreate"
+    >
+      <t-input
+        v-model="newFileName"
+        placeholder="请输入文件名（例如 config.yml）"
+        :autofocus="true"
+        @enter="handleConfirmCreate"
+      />
+    </t-dialog>
   </div>
 </template>
 
 <style scoped lang="less">
-/* --- 布局容器 --- */
 .file-manager-container {
-  /* 【改动】去掉 height: 100% 和 overflow: hidden */
-  /* 让容器随内容自然生长，使用浏览器原生滚动条 */
   min-height: 100%;
   background-color: var(--td-bg-color-container);
   border-radius: var(--td-radius-large);
   position: relative;
 }
 
-/* --- 顶部工具栏 (吸顶核心) --- */
 .toolbar {
-  /* 【核心】Sticky 吸顶 */
   position: sticky;
   top: 0;
-  z-index: 100; /* 保证在表格上面 */
-
+  z-index: 100;
   padding: 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--td-component-stroke);
-
-  /* 【关键】必须给背景色，否则透明的话表格内容会从下面透出来 */
   background: var(--td-bg-color-container);
-
   flex-wrap: nowrap;
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
   gap: 16px;
-
-  &::-webkit-scrollbar { display: none; }
-  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 
   .breadcrumb-area {
     flex: 1;
     display: flex;
     align-items: center;
     min-width: max-content;
-    .crumb-item {
-      cursor: pointer;
-      white-space: nowrap;
-      transition: color 0.2s;
-      &:hover { color: var(--td-brand-color); }
-    }
   }
-
+  .breadcrumb-area .crumb-item {
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.2s;
+  }
+  .breadcrumb-area .crumb-item:hover {
+    color: var(--td-brand-color);
+  }
   .actions-area {
     display: flex;
     gap: 12px;
@@ -230,39 +378,50 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  .toolbar { padding: 12px; }
-  .actions-area .btn-text { display: none; }
-}
-
-/* --- 表格区域 --- */
-.table-wrapper {
-  /* 去掉 overflow: auto，让表格撑开页面 */
-  width: 100%;
-}
-
-.table-card {
-  border-radius: 0;
-  :deep(.t-card__body) { padding: 0; }
-}
-
-.file-table {
-  /* 让 TDesign 表格自适应 */
-  .file-name-cell {
-    display: flex; align-items: center; padding: 4px 0;
-    .file-icon { font-size: 20px; margin-right: 8px; flex-shrink: 0; }
-    .name-text { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .toolbar {
+    padding: 12px;
+  }
+  .actions-area .btn-text {
+    display: none;
   }
 }
 
-/* --- 底部浮动栏 (胶囊悬浮) --- */
+.table-wrapper {
+  width: 100%;
+}
+.table-card {
+  border-radius: 0;
+  :deep(.t-card__body) {
+    padding: 0;
+  }
+}
+
+.file-table .file-name-cell {
+  display: flex;
+  align-items: center;
+  padding: 4px 0;
+  cursor: pointer;
+}
+.file-table .file-icon {
+  font-size: 20px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+.file-table .name-text {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-table .name-text:hover {
+  color: var(--td-brand-color);
+}
+
 .selection-bar {
-  /* 【核心】Fixed 固定定位 */
-  position: fixed; /* 改为 fixed，相对于屏幕定位 */
-  bottom: 40px;    /* 距离屏幕底部 40px */
+  position: fixed;
+  bottom: 40px;
   left: 50%;
   transform: translateX(-50%);
-
-  /* 胶囊样式 */
   width: max-content;
   min-width: 280px;
   max-width: 90%;
@@ -271,15 +430,32 @@ onMounted(() => {
   box-shadow: var(--td-shadow-3);
   border-radius: 48px;
   padding: 8px 24px;
-
-  display: flex; justify-content: space-between; align-items: center;
-  z-index: 500; /* 层级极高，保证在最上层 */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 500;
   gap: 24px;
 
-  .selection-info span { color: var(--td-brand-color); font-weight: bold; margin: 0 4px; font-size: 16px; }
-  .selection-actions { display: flex; gap: 12px; }
+  .selection-info span {
+    color: var(--td-brand-color);
+    font-weight: bold;
+    margin: 0 4px;
+    font-size: 16px;
+  }
+  .selection-actions {
+    display: flex;
+    gap: 12px;
+  }
 }
-
-.slide-up-enter-active, .slide-up-leave-active { transition: transform 0.3s ease, opacity 0.3s ease; }
-.slide-up-enter-from, .slide-up-leave-to { transform: translateY(100%); opacity: 0; }
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition:
+    transform 0.3s ease,
+    opacity 0.3s ease;
+}
+.slide-up-enter-from,
+.slide-up-leave-to {
+  transform: translateY(100%);
+  opacity: 0;
+}
 </style>
