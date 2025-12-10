@@ -3,11 +3,12 @@ import { ref, computed, watch, onUnmounted } from 'vue';
 import {
   DashboardIcon, DesktopIcon,
   PlayCircleIcon, RefreshIcon, StopCircleIcon,
-  TimeIcon, SettingIcon
+  TimeIcon, SettingIcon, FolderIcon
 } from 'tdesign-icons-vue-next';
 import { InstanceInfoModel } from '@/api/model/instance';
 
 import InstanceSettings from './InstanceSettings.vue';
+import { changeUrl } from '@/router';
 
 // --- Props & Emits ---
 const props = defineProps<{
@@ -21,7 +22,7 @@ const emits = defineEmits<{
   start: [],
   stop: [],
   'clear-log': [],
-  'refresh-info': [] // 子组件刷新
+  'refresh-info': []
 }>();
 
 const settingsRef = ref<InstanceType<typeof InstanceSettings> | null>(null);
@@ -104,6 +105,10 @@ onUnmounted(() => stopTimer());
           <template #icon><stop-circle-icon /></template>停止实例
         </t-button>
 
+        <t-button variant="outline" style="margin:0;" block @click="changeUrl(`/instance/files/${serverId}`)">
+          <template #icon><folder-icon /></template>文件管理
+        </t-button>
+
         <div class="action-row">
           <t-button variant="outline" theme="warning" block @click="$emit('clear-log')">
             <template #icon><refresh-icon /></template>清空
@@ -172,7 +177,7 @@ onUnmounted(() => stopTimer());
     }
   }
   .control-actions {
-    display: flex; flex-direction: column; gap: 16px;
+    display: flex; flex-direction: column; gap: 16px; /* 调整了间距，让按钮排列更舒服 */
     .action-row {
       display: flex; gap: 12px;
       .t-button { flex: 1; margin: 0; }

@@ -123,4 +123,95 @@ public class FilesListController : ControllerBase
             });
         }
     }
+    
+    // 重命名文件或文件夹
+    [HttpPost("instance/{id}/rename")]
+    public IActionResult RenameFile(uint id, [FromBody] RenameFileRequest request)
+    {
+        var server = ConfigServices.ServerList.GetServer(id);
+        if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
+        
+        var checkSource = FileUtils.GetSafePath(server.Base, request.OldPath);
+        if (!checkSource.IsSafe) return BadRequest(new ApiResponse<object> { Code = 403, Message = checkSource.Message });
+
+        // 完整相对路径
+        var checkDest = FileUtils.GetSafePath(server.Base, request.NewPath);
+        if (!checkDest.IsSafe) return BadRequest(new ApiResponse<object> { Code = 403, Message = checkDest.Message });
+
+        try
+        {
+            if (Directory.Exists(checkSource.FullPath))
+            {
+                // 文件夹
+                Directory.Move(checkSource.FullPath, checkDest.FullPath);
+            }
+            else if (System.IO.File.Exists(checkSource.FullPath))
+            {
+                // 文件
+                System.IO.File.Move(checkSource.FullPath, checkDest.FullPath);
+            }
+            else
+            {
+                return NotFound(new ApiResponse<object> { Code = 404, Message = "源文件或目录不存在" });
+            }
+
+            return Ok(new ApiResponse<object> { Code = 200, Message = "重命名成功" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new ApiResponse<object> { Code = 500, Message = $"重命名失败: {ex.Message}" });
+        }
+    }
+
+    // 删除文件或文件夹
+    [HttpPost("instance/{id}/delete")]
+    public IActionResult DeleteFiles(uint id, [FromBody] DeleteFileRequest request)
+    {
+        var server = ConfigServices.ServerList.GetServer(id);
+        if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
+
+        int successCount = 0;
+        int failCount = 0;
+
+        // 支持批量删除
+        foreach (var relativePath in request.Paths)
+        {
+            var check = FileUtils.GetSafePath(server.Base, relativePath);
+            if (!check.IsSafe) 
+            {
+                failCount++;
+                continue; 
+            }
+
+            try
+            {
+                if (Directory.Exists(check.FullPath))
+                {
+                    // 递归删除文件夹
+                    Directory.Delete(check.FullPath, true);
+                    successCount++;
+                }
+                else if (System.IO.File.Exists(check.FullPath))
+                {
+                    System.IO.File.Delete(check.FullPath);
+                    successCount++;
+                }
+                else
+                {
+                    // 文件本来就不存在，也算成功
+                    successCount++; 
+                }
+            }
+            catch
+            {
+                failCount++;
+            }
+        }
+
+        return Ok(new ApiResponse<object> 
+        { 
+            Code = 200, 
+            Message = $"删除完成: 成功 {successCount} 个，失败 {failCount} 个" 
+        });
+    }
 }

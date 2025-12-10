@@ -14,3 +14,14 @@ public class SaveFileRequest
     public string Path { get; set; } = string.Empty;
     public string Content { get; set; } = string.Empty;
 }
+
+public class RenameFileRequest
+{
+    public string OldPath { get; set; } = string.Empty;
+    public string NewPath { get; set; } = string.Empty;
+}
+
+public class DeleteFileRequest
+{
+    public List<string> Paths { get; set; } = new();
+}

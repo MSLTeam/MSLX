@@ -65,3 +65,17 @@ export function saveFileContent(instanceId: number, path: string, content: strin
     data: { path, content }
   });
 }
+
+export function renameFile(instanceId: number, oldPath: string, newPath: string) {
+  return request.post({
+    url: `/api/files/instance/${instanceId}/rename`,
+    data: { oldPath, newPath }
+  });
+}
+
+export function deleteFiles(instanceId: number, paths: string[]) {
+  return request.post({
+    url: `/api/files/instance/${instanceId}/delete`,
+    data: { paths }
+  });
+}

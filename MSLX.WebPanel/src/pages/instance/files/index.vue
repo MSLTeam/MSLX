@@ -3,15 +3,17 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
   HomeIcon, RefreshIcon, CloudUploadIcon, DeleteIcon, DownloadIcon, MoreIcon, FileAddIcon,
-  // 基础图标
-  FolderIcon, FileIcon,
-  // 特殊文件夹图标
-  SettingIcon, EarthIcon, AppIcon,
-  // 特殊文件图标
+  FolderIcon, FileIcon, SettingIcon, EarthIcon, AppIcon,
   FileImageIcon, FilePasteIcon, CodeIcon, FileZipIcon, ServiceIcon
 } from 'tdesign-icons-vue-next';
-import { MessagePlugin } from 'tdesign-vue-next';
-import { getInstanceFilesList, getFileContent, saveFileContent } from '@/api/files';
+import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next';
+import {
+  getInstanceFilesList,
+  getFileContent,
+  saveFileContent,
+  renameFile,
+  deleteFiles
+} from '@/api/files';
 import type { FilesListModel } from '@/api/model/files';
 import FileEditor from './components/FileEditor.vue';
 
@@ -19,72 +21,40 @@ const route = useRoute();
 const router = useRouter();
 const instanceId = Number(route.params.id);
 
-// --- 状态定义 ---
 const loading = ref(false);
 const fileList = ref<FilesListModel[]>([]);
 const currentPath = ref('');
 const selectedRowKeys = ref<string[]>([]);
 
-// 编辑器状态
 const showEditor = ref(false);
 const editorFileName = ref('');
 const editorContent = ref('');
 const isSaving = ref(false);
 
-// 新建文件状态
 const showCreateDialog = ref(false);
 const newFileName = ref('');
 
-// --- 图标映射逻辑 ---
+const showRenameDialog = ref(false);
+const renameNewName = ref('');
+const renameTargetObj = ref<{ name: string; fullPath: string } | null>(null);
+
 const getFileIcon = (row: FilesListModel) => {
-  // 文件夹处理
   if (row.type === 'folder') {
     const name = row.name.toLowerCase();
-    // Config 文件夹
-    if (name === 'config' || name === 'settings') {
-      return { icon: SettingIcon, color: 'var(--td-warning-color)' }; // 橙色设置
-    }
-    // 世界存档
-    if (name.startsWith('world') || name === 'level') {
-      return { icon: EarthIcon, color: 'var(--td-success-color)' }; // 绿色地球
-    }
-    // 插件/模组
-    if (name === 'plugins' || name === 'mods' || name === 'libraries') {
-      return { icon: AppIcon, color: 'var(--td-brand-color)' }; // 蓝色应用
-    }
-    // 日志/临时
-    if (name === 'logs' || name === 'crash-reports' || name === 'cache' || name === 'temp') {
-      return { icon: FolderIcon, color: 'var(--td-gray-color-6)' }; // 灰色
-    }
-    // 默认文件夹
-    return { icon: FolderIcon, color: 'var(--td-brand-color)' }; // 默认蓝
+    if (name === 'config' || name === 'settings') return { icon: SettingIcon, color: 'var(--td-warning-color)' };
+    if (name.startsWith('world') || name === 'level') return { icon: EarthIcon, color: 'var(--td-success-color)' };
+    if (name === 'plugins' || name === 'mods' || name === 'libraries') return { icon: AppIcon, color: 'var(--td-brand-color)' };
+    if (['logs', 'crash-reports', 'cache', 'temp'].includes(name)) return { icon: FolderIcon, color: 'var(--td-gray-color-6)' };
+    return { icon: FolderIcon, color: 'var(--td-brand-color)' };
   }
 
-  // 文件处理
   const ext = row.name.split('.').pop()?.toLowerCase();
+  if (['png', 'jpg', 'jpeg', 'gif', 'ico', 'webp'].includes(ext || '')) return { icon: FileImageIcon, color: 'var(--td-success-color)' };
+  if (['jar', 'zip', 'rar', '7z', 'tar', 'gz'].includes(ext || '')) return { icon: FileZipIcon, color: '#722ed1' };
+  if (['yml', 'yaml', 'json', 'properties', 'toml', 'xml', 'conf', 'sh', 'bat', 'cmd'].includes(ext || '')) return { icon: CodeIcon, color: 'var(--td-warning-color)' };
+  if (['log', 'txt', 'md', 'lock'].includes(ext || '')) return { icon: FilePasteIcon, color: 'var(--td-gray-color-6)' };
+  if (['db', 'db-wal', 'db-shm', 'dat'].includes(ext || '')) return { icon: ServiceIcon, color: 'var(--td-gray-color-8)' };
 
-  // 图片
-  if (['png', 'jpg', 'jpeg', 'gif', 'ico', 'webp'].includes(ext || '')) {
-    return { icon: FileImageIcon, color: 'var(--td-success-color)' };
-  }
-  // 压缩包/核心Jar
-  if (['jar', 'zip', 'rar', '7z', 'tar', 'gz'].includes(ext || '')) {
-    return { icon: FileZipIcon, color: '#722ed1' }; // 紫色
-  }
-  // 配置文件/代码
-  if (['yml', 'yaml', 'json', 'properties', 'toml', 'xml', 'conf', 'sh', 'bat', 'cmd'].includes(ext || '')) {
-    return { icon: CodeIcon, color: 'var(--td-warning-color)' }; // 橙色
-  }
-  // 日志/文本
-  if (['log', 'txt', 'md', 'lock'].includes(ext || '')) {
-    return { icon: FilePasteIcon, color: 'var(--td-gray-color-6)' };
-  }
-  // 数据库文件
-  if (['db', 'db-wal', 'db-shm', 'dat'].includes(ext || '')) {
-    return { icon: ServiceIcon, color: 'var(--td-gray-color-8)' };
-  }
-
-  // 默认文件
   return { icon: FileIcon, color: 'var(--td-text-color-secondary)' };
 };
 
@@ -153,9 +123,9 @@ const openEditor = async (fileName: string, isNewFile = false) => {
     editorContent.value = content;
     showEditor.value = true;
     MessagePlugin.close(msg);
-  } catch (err) {
+  } catch (err: any) {
     MessagePlugin.close(msg);
-    MessagePlugin.error('无法读取文件内容' + err.message);
+    MessagePlugin.error('无法读取文件内容: ' + err.message);
   }
 };
 
@@ -189,6 +159,65 @@ const handleSaveFile = async (newContent: string) => {
   }
 };
 
+const handleOpenRename = (row: any) => {
+  renameTargetObj.value = {
+    name: row.name,
+    fullPath: currentPath.value ? `${currentPath.value}/${row.name}` : row.name
+  };
+  renameNewName.value = row.name;
+  showRenameDialog.value = true;
+};
+
+const handleConfirmRename = async () => {
+  if (!renameNewName.value || !renameTargetObj.value) return;
+
+  const newPath = currentPath.value
+    ? `${currentPath.value}/${renameNewName.value}`
+    : renameNewName.value;
+
+  try {
+    await renameFile(instanceId, renameTargetObj.value.fullPath, newPath);
+    MessagePlugin.success('重命名成功');
+    showRenameDialog.value = false;
+    handleRefresh();
+  } catch (err: any) {
+    MessagePlugin.error(err.message || '重命名失败');
+  }
+};
+
+const handleDelete = (row?: any) => {
+  let targets: string[] = [];
+  if (row) {
+    targets = [row.name];
+  } else {
+    targets = [...selectedRowKeys.value];
+  }
+
+  if (targets.length === 0) return;
+
+  const confirmDialog = DialogPlugin.confirm({
+    header: '确认删除',
+    body: `确定要永久删除这 ${targets.length} 项吗？此操作不可恢复。`,
+    theme: 'danger',
+    onConfirm: async () => {
+      try {
+        const fullPaths = targets.map(name =>
+          currentPath.value ? `${currentPath.value}/${name}` : name
+        );
+
+        await deleteFiles(instanceId, fullPaths);
+
+        MessagePlugin.success('删除成功');
+        selectedRowKeys.value = [];
+        handleRefresh();
+        confirmDialog.hide();
+      } catch (err: any) {
+        MessagePlugin.error(err.message || '删除失败');
+      }
+    }
+  });
+};
+
 const handleRowClick = (row: any) => {
   if (row.type === 'folder') {
     const separator = currentPath.value === '' ? '' : '/';
@@ -202,7 +231,6 @@ const navigateTo = (path: string) => { currentPath.value = path; };
 const handleRefresh = () => fetchData();
 const handleUpload = () => MessagePlugin.info('点击上传');
 const handleDownload = (row?: any) => MessagePlugin.success('下载 ' + row?.name);
-const handleDelete = (row?: any) => MessagePlugin.warning('删除 ' + row?.name);
 
 watch(currentPath, (newPath) => {
   router.replace({ query: { ...route.query, path: newPath || undefined } });
@@ -217,38 +245,40 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="file-manager-container">
-    <div class="toolbar">
-      <div class="breadcrumb-area">
-        <t-breadcrumb :max-item-width="'150px'">
-          <t-breadcrumb-item
-            v-for="(crumb, index) in breadcrumbs"
-            :key="index"
-            class="crumb-item"
-            @click="navigateTo(crumb.path)"
-          >
-            <template v-if="index === 0" #icon><home-icon /></template>
-            {{ crumb.name }}
-          </t-breadcrumb-item>
-        </t-breadcrumb>
-      </div>
-      <div class="actions-area">
-        <t-button variant="outline" size="medium" @click="handleOpenCreateDialog">
-          <template #icon><file-add-icon /></template>
-          新建文件
-        </t-button>
-        <t-button theme="primary" size="medium" @click="handleUpload">
-          <template #icon><cloud-upload-icon /></template>
-          <span class="btn-text">上传</span>
-        </t-button>
-        <t-button variant="outline" size="medium" @click="handleRefresh">
-          <template #icon><refresh-icon /></template>
-        </t-button>
-      </div>
-    </div>
+  <div class="file-manager-wrapper">
 
-    <div class="table-wrapper">
-      <t-card :bordered="false" class="table-card">
+    <t-card :bordered="false" class="file-manager-card">
+
+      <div class="toolbar">
+        <div class="breadcrumb-area">
+          <t-breadcrumb :max-item-width="'150px'">
+            <t-breadcrumb-item
+              v-for="(crumb, index) in breadcrumbs"
+              :key="index"
+              class="crumb-item"
+              @click="navigateTo(crumb.path)"
+            >
+              <template v-if="index === 0" #icon><home-icon /></template>
+              {{ crumb.name }}
+            </t-breadcrumb-item>
+          </t-breadcrumb>
+        </div>
+        <div class="actions-area">
+          <t-button variant="outline" size="medium" @click="handleOpenCreateDialog">
+            <template #icon><file-add-icon /></template>
+            新建文件
+          </t-button>
+          <t-button theme="primary" size="medium" @click="handleUpload">
+            <template #icon><cloud-upload-icon /></template>
+            <span class="btn-text">上传</span>
+          </t-button>
+          <t-button variant="outline" size="medium" @click="handleRefresh">
+            <template #icon><refresh-icon /></template>
+          </t-button>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
         <t-table
           v-model:selected-row-keys="selectedRowKeys"
           :data="fileList"
@@ -277,7 +307,7 @@ onMounted(() => {
                 :options="[
                   { content: '编辑', value: 'edit', onClick: () => openEditor(row.name), disabled: row.type === 'folder' },
                   { content: '下载', value: 'download', onClick: () => handleDownload(row) },
-                  { content: '重命名', value: 'rename' },
+                  { content: '重命名', value: 'rename', onClick: () => handleOpenRename(row) },
                   { content: '删除', value: 'delete', theme: 'error', onClick: () => handleDelete(row) },
                 ]"
               >
@@ -287,8 +317,9 @@ onMounted(() => {
           </template>
           <template #empty><div class="empty-state">暂无文件</div></template>
         </t-table>
-      </t-card>
-    </div>
+      </div>
+
+    </t-card>
 
     <transition name="slide-up">
       <div v-if="hasSelection" class="selection-bar">
@@ -327,28 +358,54 @@ onMounted(() => {
         @enter="handleConfirmCreate"
       />
     </t-dialog>
+
+    <t-dialog
+      v-model:visible="showRenameDialog"
+      header="重命名"
+      :on-confirm="handleConfirmRename"
+    >
+      <t-input
+        v-model="renameNewName"
+        placeholder="请输入新名称"
+        :autofocus="true"
+        @enter="handleConfirmRename"
+      />
+    </t-dialog>
   </div>
 </template>
 
 <style scoped lang="less">
-.file-manager-container {
-  min-height: 100%;
-  background-color: var(--td-bg-color-container);
+.file-manager-wrapper {
+  /* 外部容器可以留一点 padding，让卡片看起来是悬浮的 */
+  padding-bottom: 20px;
+}
+
+.file-manager-card {
+  min-height: 600px;
+  overflow: hidden; /* 保证圆角不被内部元素遮挡 */
   border-radius: var(--td-radius-large);
-  position: relative;
+
+  /* 去除 t-card 默认 body padding，实现全宽工具栏 */
+  :deep(.t-card__body) {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 .toolbar {
   position: sticky;
   top: 0;
   z-index: 100;
-  padding: 16px;
+  padding: 16px 24px; /* 增加一点左右内边距 */
   display: flex;
-  align-items: center;
+  align-items: center; /* 关键：垂直居中 */
   justify-content: space-between;
   border-bottom: 1px solid var(--td-component-stroke);
   background: var(--td-bg-color-container);
-  flex-wrap: nowrap;
+
+  flex-wrap: nowrap; /* 关键：禁止换行 */
+
   overflow-x: auto;
   gap: 16px;
   &::-webkit-scrollbar {
@@ -374,12 +431,13 @@ onMounted(() => {
     gap: 12px;
     flex-shrink: 0;
     min-width: max-content;
+    align-items: center; /* 确保按钮垂直对齐 */
   }
 }
 
 @media (max-width: 768px) {
   .toolbar {
-    padding: 12px;
+    padding: 12px 16px;
   }
   .actions-area .btn-text {
     display: none;
@@ -388,12 +446,7 @@ onMounted(() => {
 
 .table-wrapper {
   width: 100%;
-}
-.table-card {
-  border-radius: 0;
-  :deep(.t-card__body) {
-    padding: 0;
-  }
+  flex: 1;
 }
 
 .file-table .file-name-cell {
