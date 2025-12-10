@@ -79,3 +79,10 @@ export function deleteFiles(instanceId: number, paths: string[]) {
     data: { paths }
   });
 }
+
+export function saveUploadedFile(instanceId: number, uploadId: string, fileName: string, currentPath: string) {
+  return request.post({
+    url: `/api/files/instance/${instanceId}/upload`,
+    data: { uploadId, fileName, currentPath }
+  });
+}

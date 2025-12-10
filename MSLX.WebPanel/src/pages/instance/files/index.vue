@@ -16,6 +16,7 @@ import {
 } from '@/api/files';
 import type { FilesListModel } from '@/api/model/files';
 import FileEditor from './components/FileEditor.vue';
+import FileUploader from './components/FileUploader.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -26,18 +27,22 @@ const fileList = ref<FilesListModel[]>([]);
 const currentPath = ref('');
 const selectedRowKeys = ref<string[]>([]);
 
+// 编辑器状态
 const showEditor = ref(false);
 const editorFileName = ref('');
 const editorContent = ref('');
 const isSaving = ref(false);
 
+// 弹窗状态
 const showCreateDialog = ref(false);
-const newFileName = ref('');
-
 const showRenameDialog = ref(false);
+const showBatchUploader = ref(false); // 上传弹窗控制
+
+const newFileName = ref('');
 const renameNewName = ref('');
 const renameTargetObj = ref<{ name: string; fullPath: string } | null>(null);
 
+// 图标映射
 const getFileIcon = (row: FilesListModel) => {
   if (row.type === 'folder') {
     const name = row.name.toLowerCase();
@@ -47,14 +52,12 @@ const getFileIcon = (row: FilesListModel) => {
     if (['logs', 'crash-reports', 'cache', 'temp'].includes(name)) return { icon: FolderIcon, color: 'var(--td-gray-color-6)' };
     return { icon: FolderIcon, color: 'var(--td-brand-color)' };
   }
-
   const ext = row.name.split('.').pop()?.toLowerCase();
   if (['png', 'jpg', 'jpeg', 'gif', 'ico', 'webp'].includes(ext || '')) return { icon: FileImageIcon, color: 'var(--td-success-color)' };
   if (['jar', 'zip', 'rar', '7z', 'tar', 'gz'].includes(ext || '')) return { icon: FileZipIcon, color: '#722ed1' };
   if (['yml', 'yaml', 'json', 'properties', 'toml', 'xml', 'conf', 'sh', 'bat', 'cmd'].includes(ext || '')) return { icon: CodeIcon, color: 'var(--td-warning-color)' };
   if (['log', 'txt', 'md', 'lock'].includes(ext || '')) return { icon: FilePasteIcon, color: 'var(--td-gray-color-6)' };
   if (['db', 'db-wal', 'db-shm', 'dat'].includes(ext || '')) return { icon: ServiceIcon, color: 'var(--td-gray-color-8)' };
-
   return { icon: FileIcon, color: 'var(--td-text-color-secondary)' };
 };
 
@@ -83,10 +86,7 @@ const formatSize = (size: number) => {
   if (size === 0) return '-';
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
   let i = 0;
-  while (size >= 1024 && i < units.length - 1) {
-    size /= 1024;
-    i++;
-  }
+  while (size >= 1024 && i < units.length - 1) { size /= 1024; i++; }
   return `${size.toFixed(1)} ${units[i]}`;
 };
 
@@ -101,12 +101,11 @@ const fetchData = async () => {
   try {
     const res = await getInstanceFilesList(instanceId, currentPath.value);
     fileList.value = res || [];
-  } catch (error) {
-    console.error(error);
-  } finally {
-    loading.value = false;
-  }
+  } catch (error) { console.error(error); }
+  finally { loading.value = false; }
 };
+
+// --- 动作逻辑 ---
 
 const openEditor = async (fileName: string, isNewFile = false) => {
   if (isNewFile) {
@@ -129,18 +128,10 @@ const openEditor = async (fileName: string, isNewFile = false) => {
   }
 };
 
-const handleOpenCreateDialog = () => {
-  newFileName.value = '';
-  showCreateDialog.value = true;
-};
-
+const handleOpenCreateDialog = () => { newFileName.value = ''; showCreateDialog.value = true; };
 const handleConfirmCreate = () => {
-  if (!newFileName.value.trim()) {
-    MessagePlugin.warning('请输入文件名');
-    return;
-  }
-  showCreateDialog.value = false;
-  openEditor(newFileName.value, true);
+  if (!newFileName.value.trim()) { MessagePlugin.warning('请输入文件名'); return; }
+  showCreateDialog.value = false; openEditor(newFileName.value, true);
 };
 
 const handleSaveFile = async (newContent: string) => {
@@ -148,72 +139,39 @@ const handleSaveFile = async (newContent: string) => {
   try {
     const fullPath = currentPath.value ? `${currentPath.value}/${editorFileName.value}` : editorFileName.value;
     await saveFileContent(instanceId, fullPath, newContent);
-    MessagePlugin.success('保存成功');
-    showEditor.value = false;
-    handleRefresh();
-  } catch (err: any) {
-    const msg = err.message || '保存失败';
-    MessagePlugin.error(msg);
-  } finally {
-    isSaving.value = false;
-  }
+    MessagePlugin.success('保存成功'); showEditor.value = false; handleRefresh();
+  } catch (err: any) { MessagePlugin.error(err.message || '保存失败'); }
+  finally { isSaving.value = false; }
 };
 
 const handleOpenRename = (row: any) => {
-  renameTargetObj.value = {
-    name: row.name,
-    fullPath: currentPath.value ? `${currentPath.value}/${row.name}` : row.name
-  };
-  renameNewName.value = row.name;
-  showRenameDialog.value = true;
+  renameTargetObj.value = { name: row.name, fullPath: currentPath.value ? `${currentPath.value}/${row.name}` : row.name };
+  renameNewName.value = row.name; showRenameDialog.value = true;
 };
 
 const handleConfirmRename = async () => {
   if (!renameNewName.value || !renameTargetObj.value) return;
-
-  const newPath = currentPath.value
-    ? `${currentPath.value}/${renameNewName.value}`
-    : renameNewName.value;
-
+  const newPath = currentPath.value ? `${currentPath.value}/${renameNewName.value}` : renameNewName.value;
   try {
     await renameFile(instanceId, renameTargetObj.value.fullPath, newPath);
-    MessagePlugin.success('重命名成功');
-    showRenameDialog.value = false;
-    handleRefresh();
-  } catch (err: any) {
-    MessagePlugin.error(err.message || '重命名失败');
-  }
+    MessagePlugin.success('重命名成功'); showRenameDialog.value = false; handleRefresh();
+  } catch (err: any) { MessagePlugin.error(err.message || '重命名失败'); }
 };
 
 const handleDelete = (row?: any) => {
   let targets: string[] = [];
-  if (row) {
-    targets = [row.name];
-  } else {
-    targets = [...selectedRowKeys.value];
-  }
-
+  if (row) { targets = [row.name]; } else { targets = [...selectedRowKeys.value]; }
   if (targets.length === 0) return;
-
   const confirmDialog = DialogPlugin.confirm({
     header: '确认删除',
     body: `确定要永久删除这 ${targets.length} 项吗？此操作不可恢复。`,
     theme: 'danger',
     onConfirm: async () => {
       try {
-        const fullPaths = targets.map(name =>
-          currentPath.value ? `${currentPath.value}/${name}` : name
-        );
-
+        const fullPaths = targets.map(name => currentPath.value ? `${currentPath.value}/${name}` : name);
         await deleteFiles(instanceId, fullPaths);
-
-        MessagePlugin.success('删除成功');
-        selectedRowKeys.value = [];
-        handleRefresh();
-        confirmDialog.hide();
-      } catch (err: any) {
-        MessagePlugin.error(err.message || '删除失败');
-      }
+        MessagePlugin.success('删除成功'); selectedRowKeys.value = []; handleRefresh(); confirmDialog.hide();
+      } catch (err: any) { MessagePlugin.error(err.message || '删除失败'); }
     }
   });
 };
@@ -222,15 +180,16 @@ const handleRowClick = (row: any) => {
   if (row.type === 'folder') {
     const separator = currentPath.value === '' ? '' : '/';
     currentPath.value = `${currentPath.value}${separator}${row.name}`;
-  } else {
-    openEditor(row.name);
-  }
+  } else { openEditor(row.name); }
 };
 
 const navigateTo = (path: string) => { currentPath.value = path; };
 const handleRefresh = () => fetchData();
-const handleUpload = () => MessagePlugin.info('点击上传');
 const handleDownload = (row?: any) => MessagePlugin.success('下载 ' + row?.name);
+
+const handleUploadSuccess = () => {
+  handleRefresh();
+};
 
 watch(currentPath, (newPath) => {
   router.replace({ query: { ...route.query, path: newPath || undefined } });
@@ -248,7 +207,6 @@ onMounted(() => {
   <div class="file-manager-wrapper">
 
     <t-card :bordered="false" class="file-manager-card">
-
       <div class="toolbar">
         <div class="breadcrumb-area">
           <t-breadcrumb :max-item-width="'150px'">
@@ -268,10 +226,12 @@ onMounted(() => {
             <template #icon><file-add-icon /></template>
             新建文件
           </t-button>
-          <t-button theme="primary" size="medium" @click="handleUpload">
+
+          <t-button theme="primary" size="medium" @click="showBatchUploader = true">
             <template #icon><cloud-upload-icon /></template>
-            <span class="btn-text">上传</span>
+            <span class="btn-text">上传文件</span>
           </t-button>
+
           <t-button variant="outline" size="medium" @click="handleRefresh">
             <template #icon><refresh-icon /></template>
           </t-button>
@@ -318,7 +278,6 @@ onMounted(() => {
           <template #empty><div class="empty-state">暂无文件</div></template>
         </t-table>
       </div>
-
     </t-card>
 
     <transition name="slide-up">
@@ -371,21 +330,25 @@ onMounted(() => {
         @enter="handleConfirmRename"
       />
     </t-dialog>
+
+    <file-uploader
+      v-model:visible="showBatchUploader"
+      :instance-id="instanceId"
+      :current-path="currentPath"
+      @success="handleUploadSuccess"
+    />
   </div>
 </template>
 
 <style scoped lang="less">
 .file-manager-wrapper {
-  /* 外部容器可以留一点 padding，让卡片看起来是悬浮的 */
   padding-bottom: 20px;
 }
 
 .file-manager-card {
   min-height: 600px;
-  overflow: hidden; /* 保证圆角不被内部元素遮挡 */
+  overflow: hidden;
   border-radius: var(--td-radius-large);
-
-  /* 去除 t-card 默认 body padding，实现全宽工具栏 */
   :deep(.t-card__body) {
     padding: 0;
     display: flex;
@@ -397,20 +360,18 @@ onMounted(() => {
   position: sticky;
   top: 0;
   z-index: 100;
-  padding: 16px 24px; /* 增加一点左右内边距 */
+  padding: 16px 24px;
   display: flex;
-  align-items: center; /* 关键：垂直居中 */
+  align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--td-component-stroke);
   background: var(--td-bg-color-container);
 
-  flex-wrap: nowrap; /* 关键：禁止换行 */
+  flex-wrap: nowrap;
 
   overflow-x: auto;
   gap: 16px;
-  &::-webkit-scrollbar {
-    display: none;
-  }
+  &::-webkit-scrollbar { display: none; }
 
   .breadcrumb-area {
     flex: 1;
@@ -423,31 +384,23 @@ onMounted(() => {
     white-space: nowrap;
     transition: color 0.2s;
   }
-  .breadcrumb-area .crumb-item:hover {
-    color: var(--td-brand-color);
-  }
+  .breadcrumb-area .crumb-item:hover { color: var(--td-brand-color); }
+
   .actions-area {
     display: flex;
     gap: 12px;
     flex-shrink: 0;
     min-width: max-content;
-    align-items: center; /* 确保按钮垂直对齐 */
+    align-items: center;
   }
 }
 
 @media (max-width: 768px) {
-  .toolbar {
-    padding: 12px 16px;
-  }
-  .actions-area .btn-text {
-    display: none;
-  }
+  .toolbar { padding: 12px 16px; }
+  .actions-area .btn-text { display: none; }
 }
 
-.table-wrapper {
-  width: 100%;
-  flex: 1;
-}
+.table-wrapper { width: 100%; flex: 1; }
 
 .file-table .file-name-cell {
   display: flex;
@@ -455,60 +408,24 @@ onMounted(() => {
   padding: 4px 0;
   cursor: pointer;
 }
-.file-table .file-icon {
-  font-size: 20px;
-  margin-right: 8px;
-  flex-shrink: 0;
-}
-.file-table .name-text {
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.file-table .name-text:hover {
-  color: var(--td-brand-color);
-}
+.file-table .file-icon { font-size: 20px; margin-right: 8px; flex-shrink: 0; }
+.file-table .name-text { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-table .name-text:hover { color: var(--td-brand-color); }
 
 .selection-bar {
-  position: fixed;
-  bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: max-content;
-  min-width: 280px;
-  max-width: 90%;
+  position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+  width: max-content; min-width: 280px; max-width: 90%;
   background: var(--td-bg-color-container);
   border: 1px solid var(--td-component-stroke);
   box-shadow: var(--td-shadow-3);
   border-radius: 48px;
   padding: 8px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  z-index: 500;
-  gap: 24px;
+  display: flex; justify-content: space-between; align-items: center;
+  z-index: 500; gap: 24px;
 
-  .selection-info span {
-    color: var(--td-brand-color);
-    font-weight: bold;
-    margin: 0 4px;
-    font-size: 16px;
-  }
-  .selection-actions {
-    display: flex;
-    gap: 12px;
-  }
+  .selection-info span { color: var(--td-brand-color); font-weight: bold; margin: 0 4px; font-size: 16px; }
+  .selection-actions { display: flex; gap: 12px; }
 }
-.slide-up-enter-active,
-.slide-up-leave-active {
-  transition:
-    transform 0.3s ease,
-    opacity 0.3s ease;
-}
-.slide-up-enter-from,
-.slide-up-leave-to {
-  transform: translateY(100%);
-  opacity: 0;
-}
+.slide-up-enter-active, .slide-up-leave-active { transition: transform 0.3s ease, opacity 0.3s ease; }
+.slide-up-enter-from, .slide-up-leave-to { transform: translateY(100%); opacity: 0; }
 </style>

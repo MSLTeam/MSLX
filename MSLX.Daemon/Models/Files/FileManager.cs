@@ -25,3 +25,10 @@ public class DeleteFileRequest
 {
     public List<string> Paths { get; set; } = new();
 }
+
+public class SaveUploadRequest
+{
+    public string UploadId { get; set; } = string.Empty;
+    public string FileName { get; set; } = string.Empty;
+    public string CurrentPath { get; set; } = string.Empty;
+}

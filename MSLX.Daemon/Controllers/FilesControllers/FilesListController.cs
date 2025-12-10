@@ -214,4 +214,67 @@ public class FilesListController : ControllerBase
             Message = $"删除完成: 成功 {successCount} 个，失败 {failCount} 个" 
         });
     }
+    
+    [HttpPost("instance/{id}/upload")]
+    public IActionResult SaveUploadedFile(uint id, [FromBody] SaveUploadRequest request)
+    {
+        var server = ConfigServices.ServerList.GetServer(id);
+        if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
+
+        // 临时文件存在？
+        string tempBasePath = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Temp", "Uploads");
+        string tempFilePath = Path.Combine(tempBasePath, request.UploadId + ".tmp");
+
+        if (!System.IO.File.Exists(tempFilePath))
+        {
+            return NotFound(new ApiResponse<object> { Code = 404, Message = "上传会话已过期或文件不存在" });
+        }
+
+        // check
+        string relativePath = string.IsNullOrEmpty(request.CurrentPath) 
+            ? request.FileName 
+            : Path.Combine(request.CurrentPath, request.FileName);
+
+        var check = FileUtils.GetSafePath(server.Base, relativePath);
+        if (!check.IsSafe)
+        {
+            // 安全拦截后 顺手清理临时文件
+            try { System.IO.File.Delete(tempFilePath); } catch { }
+            return BadRequest(new ApiResponse<object> { Code = 403, Message = check.Message });
+        }
+
+        string targetPath = check.FullPath;
+
+        try
+        {
+            string? targetDir = Path.GetDirectoryName(targetPath);
+            if (!string.IsNullOrEmpty(targetDir) && !Directory.Exists(targetDir))
+            {
+                Directory.CreateDirectory(targetDir);
+            }
+            
+            // 移动文件
+            if (System.IO.File.Exists(targetPath))
+            {
+                System.IO.File.Delete(targetPath);
+            }
+
+            // 移动
+            System.IO.File.Move(tempFilePath, targetPath);
+
+            return Ok(new ApiResponse<object> 
+            { 
+                Code = 200, 
+                Message = "文件保存成功" 
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new ApiResponse<object> 
+            { 
+                Code = 500, 
+                Message = $"文件移动失败: {ex.Message}" 
+            });
+        }
+    }
 }
