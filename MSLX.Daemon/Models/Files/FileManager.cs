@@ -54,3 +54,9 @@ public class DecompressRequest
     public string Encoding { get; set; } = "auto";
     public bool CreateSubFolder { get; set; } = false;
 }
+
+public class ChmodRequest
+{
+    public string Path { get; set; } = string.Empty;
+    public string Mode { get; set; } = "755";
+}

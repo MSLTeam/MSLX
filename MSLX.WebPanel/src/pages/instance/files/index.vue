@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import {
   HomeIcon, RefreshIcon, CloudUploadIcon, DeleteIcon, DownloadIcon, MoreIcon, FileAddIcon,
   FolderIcon, FileIcon, SettingIcon, EarthIcon, AppIcon,
-  FileImageIcon, FilePasteIcon, CodeIcon, FileZipIcon, ServiceIcon, RollbackIcon
+  FileImageIcon, FilePasteIcon, CodeIcon, FileZipIcon, RollbackIcon, LockOnIcon
 } from 'tdesign-icons-vue-next';
 import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next';
 import {
@@ -21,6 +21,7 @@ import FileUploader from './components/FileUploader.vue';
 import ImagePreview from './components/ImagePreview.vue';
 import FileCompressor from './components/FileCompressor.vue';
 import FileDecompress from './components/FileDecompress.vue';
+import FilePermission from './components/FilePermission.vue';
 import { changeUrl } from '@/router';
 
 const route = useRoute();
@@ -40,6 +41,7 @@ const showRenameDialog = ref(false);
 const showBatchUploader = ref(false);
 const showCompressor = ref(false);
 const showDecompressor = ref(false);
+const showPermissionDialog = ref(false); // 权限弹窗
 
 // 临时数据
 const editorFileName = ref('');
@@ -51,7 +53,8 @@ const newFileName = ref('');
 const renameNewName = ref('');
 const renameTargetObj = ref<{ name: string; fullPath: string } | null>(null);
 const compressTargets = ref<string[]>([]);
-const decompressTargetFile = ref(''); // 待解压文件
+const decompressTargetFile = ref('');
+const permissionTargets = ref<Array<{ name: string; fullPath: string; mode: string }>>([]);
 
 const isImage = (name: string) => {
   const ext = name.split('.').pop()?.toLowerCase();
@@ -60,8 +63,7 @@ const isImage = (name: string) => {
 
 const isArchive = (name: string) => {
   const ext = name.split('.').pop()?.toLowerCase();
-  // return ['zip', 'jar', 'rar', '7z', 'tar', 'gz'].includes(ext || '');
-  return ['zip','jar'].includes(ext || '');
+  return ['zip', 'jar'].includes(ext || '');
 };
 
 const getFileIcon = (row: FilesListModel) => {
@@ -78,17 +80,26 @@ const getFileIcon = (row: FilesListModel) => {
   if (['jar', 'zip', 'rar', '7z', 'tar', 'gz'].includes(ext || '')) return { icon: FileZipIcon, color: '#722ed1' };
   if (['yml', 'yaml', 'json', 'properties', 'toml', 'xml', 'conf', 'sh', 'bat', 'cmd'].includes(ext || '')) return { icon: CodeIcon, color: 'var(--td-warning-color)' };
   if (['log', 'txt', 'md', 'lock'].includes(ext || '')) return { icon: FilePasteIcon, color: 'var(--td-gray-color-6)' };
-  if (['db', 'db-wal', 'db-shm', 'dat'].includes(ext || '')) return { icon: ServiceIcon, color: 'var(--td-gray-color-8)' };
   return { icon: FileIcon, color: 'var(--td-text-color-secondary)' };
 };
 
-const columns = [
-  { colKey: 'row-select', type: 'multiple', width: 40 },
-  { colKey: 'name', title: '文件名', ellipsis: true, width: 'auto' },
-  { colKey: 'size', title: '大小', width: 100, align: 'right' },
-  { colKey: 'lastModified', title: '修改时间', width: 180, align: 'center' },
-  { colKey: 'operation', title: '操作', width: 80, align: 'center' },
-];
+// 检查是否有权限字段支持
+const hasPermissionSupport = computed(() => {
+  return fileList.value.some(item => item.permission && item.permission !== '');
+});
+
+const columns = computed(() => {
+  const baseCols = [
+    { colKey: 'row-select', type: 'multiple', width: 40 },
+    { colKey: 'name', title: '文件名', ellipsis: true, width: 'auto' },
+    { colKey: 'size', title: '大小', width: 100, align: 'right' },
+    // 动态加入权限列
+    ...(hasPermissionSupport.value ? [{ colKey: 'permission', title: '权限', width: 80, align: 'center' }] : []),
+    { colKey: 'lastModified', title: '修改时间', width: 180, align: 'center' },
+    { colKey: 'operation', title: '操作', width: 80, align: 'center' },
+  ];
+  return baseCols;
+});
 
 const breadcrumbs = computed(() => {
   const parts = currentPath.value.split('/').filter((p) => p);
@@ -126,6 +137,7 @@ const fetchData = async () => {
   finally { loading.value = false; }
 };
 
+// ... (预览、编辑、新建、保存逻辑保持不变) ...
 const openPreview = async (fileName: string) => {
   if (previewUrl.value) { window.URL.revokeObjectURL(previewUrl.value); previewUrl.value = ''; }
   const fullPath = currentPath.value ? `${currentPath.value}/${fileName}` : fileName;
@@ -168,6 +180,8 @@ const handleSaveFile = async (newContent: string) => {
   } catch { MessagePlugin.error('保存失败'); }
   finally { isSaving.value = false; }
 };
+
+// 重命名逻辑
 const handleOpenRename = (row: any) => {
   renameTargetObj.value = { name: row.name, fullPath: currentPath.value ? `${currentPath.value}/${row.name}` : row.name };
   renameNewName.value = row.name; showRenameDialog.value = true;
@@ -180,6 +194,8 @@ const handleConfirmRename = async () => {
     MessagePlugin.success('重命名成功'); showRenameDialog.value = false; handleRefresh();
   } catch { MessagePlugin.error('重命名失败'); }
 };
+
+// 删除逻辑
 const handleDelete = (row?: any) => {
   let targets: string[] = [];
   if (row) { targets = [row.name]; } else { targets = [...selectedRowKeys.value]; }
@@ -197,6 +213,7 @@ const handleDelete = (row?: any) => {
     },
   });
 };
+
 const handleRowClick = (row: any) => {
   if (row.type === 'folder') {
     const separator = currentPath.value === '' ? '' : '/';
@@ -206,6 +223,7 @@ const handleRowClick = (row: any) => {
 const navigateTo = (path: string) => { currentPath.value = path; };
 const handleRefresh = () => fetchData();
 
+// 下载逻辑
 const handleDownload = async (row?: any) => {
   let targets: string[] = [];
   if (row) { targets = [row.name]; } else { targets = [...selectedRowKeys.value]; }
@@ -240,12 +258,42 @@ const handleCompress = () => {
 };
 const handleCompressSuccess = () => { selectedRowKeys.value = []; handleRefresh(); };
 
-// 解压入口
 const handleOpenDecompress = (row: any) => {
   decompressTargetFile.value = row.name;
   showDecompressor.value = true;
 };
 const handleDecompressSuccess = () => { handleRefresh(); };
+
+// --- 权限管理入口 ---
+const handleOpenPermission = (row?: any) => {
+  permissionTargets.value = [];
+  if (row) {
+    // 单个文件
+    permissionTargets.value.push({
+      name: row.name,
+      fullPath: currentPath.value ? `${currentPath.value}/${row.name}` : row.name,
+      mode: row.permission || '755'
+    });
+  } else {
+    // 批量
+    if (selectedRowKeys.value.length === 0) return;
+    selectedRowKeys.value.forEach(key => {
+      const item = fileList.value.find(f => f.name === key);
+      if (item) {
+        permissionTargets.value.push({
+          name: item.name,
+          fullPath: currentPath.value ? `${currentPath.value}/${item.name}` : item.name,
+          mode: item.permission || '755'
+        });
+      }
+    });
+  }
+  showPermissionDialog.value = true;
+};
+const handlePermissionSuccess = () => {
+  selectedRowKeys.value = [];
+  handleRefresh();
+};
 
 const handleUploadSuccess = () => handleRefresh();
 
@@ -312,6 +360,9 @@ onMounted(() => {
             </div>
           </template>
           <template #size="{ row }">{{ formatSize(row.size) }}</template>
+          <template #permission="{ row }">
+            <t-tag v-if="row.permission" variant="light" size="small">{{ row.permission }}</t-tag>
+          </template>
           <template #lastModified="{ row }">{{ formatTime(row.lastModified) }}</template>
           <template #operation="{ row }">
             <div class="op-actions">
@@ -321,7 +372,6 @@ onMounted(() => {
                     content: '解压',
                     value: 'decompress',
                     onClick: () => handleOpenDecompress(row),
-                    // 仅压缩包显示解压
                     show: isArchive(row.name) && row.type !== 'folder'
                   },
                   {
@@ -330,6 +380,7 @@ onMounted(() => {
                     onClick: () => isImage(row.name) ? openPreview(row.name) : openEditor(row.name),
                     disabled: row.type === 'folder' || isArchive(row.name)
                   },
+                  { content: '权限', value: 'permission', onClick: () => handleOpenPermission(row), show: hasPermissionSupport },
                   { content: '下载', value: 'download', onClick: () => handleDownload(row) },
                   { content: '重命名', value: 'rename', onClick: () => handleOpenRename(row) },
                   { content: '删除', value: 'delete', theme: 'error', onClick: () => handleDelete(row) },
@@ -355,6 +406,9 @@ onMounted(() => {
           </t-button>
           <t-button size="small" variant="text" theme="primary" @click="handleDownload()">
             <template #icon><download-icon /></template>下载
+          </t-button>
+          <t-button v-if="hasPermissionSupport" size="small" variant="text" theme="primary" @click="handleOpenPermission()">
+            <template #icon><lock-on-icon /></template>权限
           </t-button>
           <t-button size="small" variant="text" theme="danger" @click="handleDelete()">
             <template #icon><delete-icon /></template>删除
@@ -407,6 +461,14 @@ onMounted(() => {
       :current-path="currentPath"
       :file-name="decompressTargetFile"
       @success="handleDecompressSuccess"
+    />
+
+    <file-permission
+      v-model:visible="showPermissionDialog"
+      :instance-id="instanceId"
+      :current-path="currentPath"
+      :targets="permissionTargets"
+      @success="handlePermissionSuccess"
     />
   </div>
 </template>

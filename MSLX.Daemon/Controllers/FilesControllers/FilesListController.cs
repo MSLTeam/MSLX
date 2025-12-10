@@ -5,8 +5,6 @@ using MSLX.Daemon.Utils;
 
 namespace MSLX.Daemon.Controllers.FilesControllers;
 
-
-
 [ApiController]
 [Route("api/files")]
 public class FilesListController : ControllerBase
@@ -15,7 +13,6 @@ public class FilesListController : ControllerBase
     [HttpGet("instance/{id}/lists")]
     public IActionResult GetFilesList(uint id, [FromQuery] string? path = "")
     {
-        // 获取服务器配置
         var server = ConfigServices.ServerList.GetServer(id);
         if (server == null)
         {
@@ -26,7 +23,6 @@ public class FilesListController : ControllerBase
             });
         }
 
-        // 检查目录是否存在
         if (string.IsNullOrEmpty(server.Base) || !Directory.Exists(server.Base))
         {
             return NotFound(new ApiResponse<object>
@@ -42,7 +38,6 @@ public class FilesListController : ControllerBase
         
             if (!check.IsSafe)
             {
-                // 返回具体的错误信息
                 return BadRequest(new ApiResponse<object> { Code = 403, Message = check.Message });
             }
         
@@ -53,21 +48,9 @@ public class FilesListController : ControllerBase
                 return NotFound(new ApiResponse<object> { Code = 404, Message = "目录不存在" });
             }
 
-            // 检查目标目录是否存在
-            if (!Directory.Exists(targetPath))
-            {
-                return NotFound(new ApiResponse<object>
-                {
-                    Code = 404,
-                    Message = "请求的目录不存在"
-                });
-            }
-
-            // 读取文件和目录信息
             var directoryInfo = new DirectoryInfo(targetPath);
             var resultList = new List<FileItem>();
 
-            // 获取所有文件夹
             var dirs = directoryInfo.GetDirectories();
             foreach (var dir in dirs)
             {
@@ -75,12 +58,12 @@ public class FilesListController : ControllerBase
                 {
                     Name = dir.Name,
                     Type = "folder",
-                    Size = 0, // 不算
-                    LastModified = dir.LastWriteTime
+                    Size = 0, 
+                    LastModified = dir.LastWriteTime,
+                    Permission = GetUnixPermissionSafe(dir)
                 });
             }
 
-            // 获取所有文件
             var files = directoryInfo.GetFiles();
             foreach (var file in files)
             {
@@ -89,14 +72,14 @@ public class FilesListController : ControllerBase
                     Name = file.Name,
                     Type = "file",
                     Size = file.Length,
-                    LastModified = file.LastWriteTime
+                    LastModified = file.LastWriteTime,
+                    Permission = GetUnixPermissionSafe(file)
                 });
             }
 
-            // 排序：文件夹在上方，文件在下方，按名称排序
             var sortedList = resultList
-                .OrderByDescending(x => x.Type == "folder") // 文件夹排前面
-                .ThenBy(x => x.Name) // 然后按名字排
+                .OrderByDescending(x => x.Type == "folder") 
+                .ThenBy(x => x.Name) 
                 .ToList();
 
             return Ok(new ApiResponse<List<FileItem>>
@@ -124,6 +107,74 @@ public class FilesListController : ControllerBase
         }
     }
     
+    // 修改文件权限
+    [HttpPost("instance/{id}/chmod")]
+    public IActionResult ChangeFileMode(uint id, [FromBody] ChmodRequest request)
+    {
+        if (PlatFormServices.GetOs() == "Windows")
+        {
+            return BadRequest(new ApiResponse<object> { Code = 400, Message = "当前操作系统不支持修改文件权限" });
+        }
+
+        var server = ConfigServices.ServerList.GetServer(id);
+        if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
+
+        var check = FileUtils.GetSafePath(server.Base, request.Path);
+        if (!check.IsSafe) return BadRequest(new ApiResponse<object> { Code = 403, Message = check.Message });
+
+        try
+        {
+            string fullPath = check.FullPath;
+            
+            if (!Directory.Exists(fullPath) && !System.IO.File.Exists(fullPath))
+            {
+                return NotFound(new ApiResponse<object> { Code = 404, Message = "文件或目录不存在" });
+            }
+
+            int modeInt = Convert.ToInt32(request.Mode, 8);
+            UnixFileMode modeEnum = (UnixFileMode)modeInt;
+
+            if (Directory.Exists(fullPath))
+            {
+                // 递归修改文件夹权限
+                SetUnixFileModeRecursive(fullPath, modeEnum);
+            }
+            else
+            {
+                System.IO.File.SetUnixFileMode(fullPath, modeEnum);
+            }
+
+            return Ok(new ApiResponse<object> { Code = 200, Message = "权限修改成功" });
+        }
+        catch (FormatException)
+        {
+            return BadRequest(new ApiResponse<object> { Code = 400, Message = "权限格式错误" });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new ApiResponse<object> { Code = 500, Message = $"修改权限失败: {ex.Message}" });
+        }
+    }
+
+    // 递归设置权限辅助方法
+    private void SetUnixFileModeRecursive(string path, UnixFileMode mode)
+    {
+        // 设置当前目录权限
+        System.IO.File.SetUnixFileMode(path, mode);
+
+        // 遍历所有文件
+        foreach (var file in Directory.GetFiles(path))
+        {
+            System.IO.File.SetUnixFileMode(file, mode);
+        }
+
+        // 递归遍历子目录
+        foreach (var dir in Directory.GetDirectories(path))
+        {
+            SetUnixFileModeRecursive(dir, mode);
+        }
+    }
+
     // 重命名文件或文件夹
     [HttpPost("instance/{id}/rename")]
     public IActionResult RenameFile(uint id, [FromBody] RenameFileRequest request)
@@ -134,7 +185,6 @@ public class FilesListController : ControllerBase
         var checkSource = FileUtils.GetSafePath(server.Base, request.OldPath);
         if (!checkSource.IsSafe) return BadRequest(new ApiResponse<object> { Code = 403, Message = checkSource.Message });
 
-        // 完整相对路径
         var checkDest = FileUtils.GetSafePath(server.Base, request.NewPath);
         if (!checkDest.IsSafe) return BadRequest(new ApiResponse<object> { Code = 403, Message = checkDest.Message });
 
@@ -142,12 +192,10 @@ public class FilesListController : ControllerBase
         {
             if (Directory.Exists(checkSource.FullPath))
             {
-                // 文件夹
                 Directory.Move(checkSource.FullPath, checkDest.FullPath);
             }
             else if (System.IO.File.Exists(checkSource.FullPath))
             {
-                // 文件
                 System.IO.File.Move(checkSource.FullPath, checkDest.FullPath);
             }
             else
@@ -173,7 +221,6 @@ public class FilesListController : ControllerBase
         int successCount = 0;
         int failCount = 0;
 
-        // 支持批量删除
         foreach (var relativePath in request.Paths)
         {
             var check = FileUtils.GetSafePath(server.Base, relativePath);
@@ -187,7 +234,6 @@ public class FilesListController : ControllerBase
             {
                 if (Directory.Exists(check.FullPath))
                 {
-                    // 递归删除文件夹
                     Directory.Delete(check.FullPath, true);
                     successCount++;
                 }
@@ -198,7 +244,6 @@ public class FilesListController : ControllerBase
                 }
                 else
                 {
-                    // 文件本来就不存在，也算成功
                     successCount++; 
                 }
             }
@@ -221,7 +266,6 @@ public class FilesListController : ControllerBase
         var server = ConfigServices.ServerList.GetServer(id);
         if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
 
-        // 临时文件存在？
         string tempBasePath = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Temp", "Uploads");
         string tempFilePath = Path.Combine(tempBasePath, request.UploadId + ".tmp");
 
@@ -230,7 +274,6 @@ public class FilesListController : ControllerBase
             return NotFound(new ApiResponse<object> { Code = 404, Message = "上传会话已过期或文件不存在" });
         }
 
-        // check
         string relativePath = string.IsNullOrEmpty(request.CurrentPath) 
             ? request.FileName 
             : Path.Combine(request.CurrentPath, request.FileName);
@@ -238,7 +281,6 @@ public class FilesListController : ControllerBase
         var check = FileUtils.GetSafePath(server.Base, relativePath);
         if (!check.IsSafe)
         {
-            // 安全拦截后 顺手清理临时文件
             try { System.IO.File.Delete(tempFilePath); } catch { }
             return BadRequest(new ApiResponse<object> { Code = 403, Message = check.Message });
         }
@@ -253,13 +295,11 @@ public class FilesListController : ControllerBase
                 Directory.CreateDirectory(targetDir);
             }
             
-            // 移动文件
             if (System.IO.File.Exists(targetPath))
             {
                 System.IO.File.Delete(targetPath);
             }
 
-            // 移动
             System.IO.File.Move(tempFilePath, targetPath);
 
             return Ok(new ApiResponse<object> 
@@ -278,7 +318,7 @@ public class FilesListController : ControllerBase
         }
     }
     
-    // 下崽文件
+    // 下载文件
     [HttpGet("instance/{id}/download")]
     public IActionResult DownloadFile(uint id, [FromQuery] string path)
     {
@@ -291,23 +331,35 @@ public class FilesListController : ControllerBase
         string targetPath = check.FullPath;
         if (!System.IO.File.Exists(targetPath)) return NotFound("文件不存在");
         
-        // 不支持下崽文件夹
         if (Directory.Exists(targetPath)) return BadRequest("无法直接下载文件夹");
 
         try
         {
-            // 返回文件流
             var stream = new FileStream(targetPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             
-            // 获取文件名
             string fileName = Path.GetFileName(targetPath);
 
-            // 返回 FileStreamResult
             return File(stream, "application/octet-stream", fileName);
         }
         catch (Exception ex)
         {
             return StatusCode(500, $"读取文件失败: {ex.Message}");
         }
+    }
+
+    private string GetUnixPermissionSafe(FileSystemInfo info)
+    {
+        if (PlatFormServices.GetOs() != "Windows")
+        {
+            try
+            {
+                return Convert.ToString((int)info.UnixFileMode, 8);
+            }
+            catch
+            {
+                return "Unknown";
+            }
+        }
+        return "";
     }
 }

@@ -120,3 +120,11 @@ export function getDeompressStatus(taskId: string) {
     url: `/api/files/task/decompress/${taskId}`
   });
 }
+
+
+export async function changeFileMode(instanceId: number, path: string, mode: string) {
+  return await request.post({
+    url: `/api/files/instance/${instanceId}/chmod`,
+    data: { path, mode }
+  });
+}
