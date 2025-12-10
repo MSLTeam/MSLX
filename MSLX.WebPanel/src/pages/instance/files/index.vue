@@ -2,23 +2,9 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
-  HomeIcon,
-  RefreshIcon,
-  CloudUploadIcon,
-  DeleteIcon,
-  DownloadIcon,
-  MoreIcon,
-  FileAddIcon,
-  FolderIcon,
-  FileIcon,
-  SettingIcon,
-  EarthIcon,
-  AppIcon,
-  FileImageIcon,
-  FilePasteIcon,
-  CodeIcon,
-  FileZipIcon,
-  ServiceIcon,
+  HomeIcon, RefreshIcon, CloudUploadIcon, DeleteIcon, DownloadIcon, MoreIcon, FileAddIcon,
+  FolderIcon, FileIcon, SettingIcon, EarthIcon, AppIcon,
+  FileImageIcon, FilePasteIcon, CodeIcon, FileZipIcon, ServiceIcon,
 } from 'tdesign-icons-vue-next';
 import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next';
 import {
@@ -32,6 +18,7 @@ import {
 import type { FilesListModel } from '@/api/model/files';
 import FileEditor from './components/FileEditor.vue';
 import FileUploader from './components/FileUploader.vue';
+import ImagePreview from './components/ImagePreview.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -48,16 +35,25 @@ const editorFileName = ref('');
 const editorContent = ref('');
 const isSaving = ref(false);
 
+// 图片预览状态
+const showImagePreview = ref(false);
+const previewFileName = ref('');
+const previewUrl = ref('');
+
 // 弹窗状态
 const showCreateDialog = ref(false);
 const showRenameDialog = ref(false);
-const showBatchUploader = ref(false); // 上传弹窗控制
+const showBatchUploader = ref(false);
 
 const newFileName = ref('');
 const renameNewName = ref('');
 const renameTargetObj = ref<{ name: string; fullPath: string } | null>(null);
 
-// 图标映射
+const isImage = (name: string) => {
+  const ext = name.split('.').pop()?.toLowerCase();
+  return ['png', 'jpg', 'jpeg', 'gif', 'ico', 'webp', 'bmp', 'svg'].includes(ext || '');
+};
+
 const getFileIcon = (row: FilesListModel) => {
   if (row.type === 'folder') {
     const name = row.name.toLowerCase();
@@ -131,8 +127,31 @@ const fetchData = async () => {
   }
 };
 
-// --- 动作逻辑 ---
+// --- 图片预览逻辑 ---
+const openPreview = async (fileName: string) => {
+  if (previewUrl.value) {
+    window.URL.revokeObjectURL(previewUrl.value);
+    previewUrl.value = '';
+  }
 
+  const fullPath = currentPath.value ? `${currentPath.value}/${fileName}` : fileName;
+  const msg = MessagePlugin.loading('正在加载图片...');
+
+  try {
+    const blobData = await downloadFileStream(instanceId, fullPath);
+    if (!(blobData instanceof Blob)) throw new Error('无效的图片数据');
+
+    previewUrl.value = window.URL.createObjectURL(blobData);
+    previewFileName.value = fileName;
+    showImagePreview.value = true;
+    MessagePlugin.close(msg);
+  } catch (err) {
+    MessagePlugin.close(msg);
+    MessagePlugin.error('图片加载失败');
+  }
+};
+
+// --- 文本编辑逻辑 ---
 const openEditor = async (fileName: string, isNewFile = false) => {
   if (isNewFile) {
     editorFileName.value = fileName;
@@ -140,6 +159,13 @@ const openEditor = async (fileName: string, isNewFile = false) => {
     showEditor.value = true;
     return;
   }
+
+  // 如果是图片，拦截并转到预览
+  if (isImage(fileName)) {
+    openPreview(fileName);
+    return;
+  }
+
   const fullPath = currentPath.value ? `${currentPath.value}/${fileName}` : fileName;
   const msg = MessagePlugin.loading('正在读取文件...');
   try {
@@ -235,6 +261,8 @@ const handleRowClick = (row: any) => {
   if (row.type === 'folder') {
     const separator = currentPath.value === '' ? '' : '/';
     currentPath.value = `${currentPath.value}${separator}${row.name}`;
+  } else if (isImage(row.name)) {
+    openPreview(row.name);
   } else {
     openEditor(row.name);
   }
@@ -245,9 +273,7 @@ const navigateTo = (path: string) => {
 };
 const handleRefresh = () => fetchData();
 
-// 下崽崽
 const handleDownload = async (row?: any) => {
-  // 下载列表
   let targets: string[] = [];
   if (row) {
     targets = [row.name];
@@ -257,9 +283,7 @@ const handleDownload = async (row?: any) => {
 
   if (targets.length === 0) return;
 
-  // 遍历下载
   for (const name of targets) {
-    // 不支持文件夹下载
     const targetFile = fileList.value.find((f) => f.name === name);
     if (targetFile && targetFile.type === 'folder') {
       MessagePlugin.warning(`文件夹 "${name}" 暂不支持直接下载`);
@@ -271,22 +295,15 @@ const handleDownload = async (row?: any) => {
 
     try {
       const res = await downloadFileStream(instanceId, fullPath);
-
-      // 创建下载链接
       const blob = new Blob([res as any]);
-
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
-      link.download = name; // 设置下载文件名
+      link.download = name;
       link.style.display = 'none';
       document.body.appendChild(link);
-
-      link.click(); // 触发下载
-
-      // 清理
+      link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(link.href);
-
       MessagePlugin.close(msg);
       MessagePlugin.success(`已开始下载: ${name}`);
     } catch (err: any) {
@@ -295,8 +312,6 @@ const handleDownload = async (row?: any) => {
       MessagePlugin.error(`下载 ${name} 失败`);
     }
   }
-
-  // 下载后清空选择
   if (!row) selectedRowKeys.value = [];
 };
 
@@ -374,10 +389,10 @@ onMounted(() => {
               <t-dropdown
                 :options="[
                   {
-                    content: '编辑',
+                    content: isImage(row.name) ? '预览' : '编辑',
                     value: 'edit',
-                    onClick: () => openEditor(row.name),
-                    disabled: row.type === 'folder',
+                    onClick: () => isImage(row.name) ? openPreview(row.name) : openEditor(row.name),
+                    disabled: row.type === 'folder'
                   },
                   { content: '下载', value: 'download', onClick: () => handleDownload(row) },
                   { content: '重命名', value: 'rename', onClick: () => handleOpenRename(row) },
@@ -400,10 +415,10 @@ onMounted(() => {
         </div>
         <div class="selection-actions">
           <t-button size="small" variant="text" theme="primary" @click="handleDownload()"
-            ><template #icon><download-icon /></template
+          ><template #icon><download-icon /></template
           ></t-button>
           <t-button size="small" variant="text" theme="danger" @click="handleDelete()"
-            ><template #icon><delete-icon /></template
+          ><template #icon><delete-icon /></template
           ></t-button>
           <t-button size="small" variant="text" @click="selectedRowKeys = []">取消</t-button>
         </div>
@@ -436,6 +451,12 @@ onMounted(() => {
       :instance-id="instanceId"
       :current-path="currentPath"
       @success="handleUploadSuccess"
+    />
+
+    <image-preview
+      v-model:visible="showImagePreview"
+      :file-name="previewFileName"
+      :image-blob-url="previewUrl"
     />
   </div>
 </template>
