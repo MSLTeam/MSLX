@@ -86,3 +86,11 @@ export function saveUploadedFile(instanceId: number, uploadId: string, fileName:
     data: { uploadId, fileName, currentPath }
   });
 }
+
+export function downloadFileStream(instanceId: number, path: string) {
+  return request.get({
+    url: `/api/files/instance/${instanceId}/download`,
+    params: { path },
+    responseType: 'blob',
+  });
+}

@@ -277,4 +277,37 @@ public class FilesListController : ControllerBase
             });
         }
     }
+    
+    // 下崽文件
+    [HttpGet("instance/{id}/download")]
+    public IActionResult DownloadFile(uint id, [FromQuery] string path)
+    {
+        var server = ConfigServices.ServerList.GetServer(id);
+        if (server == null) return NotFound("实例不存在");
+        
+        var check = FileUtils.GetSafePath(server.Base, path);
+        if (!check.IsSafe) return BadRequest("非法路径");
+
+        string targetPath = check.FullPath;
+        if (!System.IO.File.Exists(targetPath)) return NotFound("文件不存在");
+        
+        // 不支持下崽文件夹
+        if (Directory.Exists(targetPath)) return BadRequest("无法直接下载文件夹");
+
+        try
+        {
+            // 返回文件流
+            var stream = new FileStream(targetPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            
+            // 获取文件名
+            string fileName = Path.GetFileName(targetPath);
+
+            // 返回 FileStreamResult
+            return File(stream, "application/octet-stream", fileName);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"读取文件失败: {ex.Message}");
+        }
+    }
 }
