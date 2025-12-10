@@ -94,3 +94,29 @@ export function downloadFileStream(instanceId: number, path: string) {
     responseType: 'blob',
   });
 }
+
+export function startCompress(instanceId: number, sources: string[], targetName: string, currentPath: string) {
+  return request.post({
+    url: `/api/files/instance/${instanceId}/compress`,
+    data: { sources, targetName, currentPath }
+  });
+}
+
+export function getCompressStatus(taskId: string) {
+  return request.get<{ status: string; progress: number; message: string }>({
+    url: `/api/files/task/compress/${taskId}`
+  });
+}
+
+export function startDecompress(instanceId: number, fileName: string, currentPath: string,encoding = 'utf-8',createSubFolder: boolean =  true) {
+  return request.post({
+    url: `/api/files/instance/${instanceId}/decompress`,
+    data: {  fileName, currentPath,encoding,createSubFolder }
+  });
+}
+
+export function getDeompressStatus(taskId: string) {
+  return request.get<{ status: string; progress: number; message: string }>({
+    url: `/api/files/task/decompress/${taskId}`
+  });
+}

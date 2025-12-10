@@ -32,3 +32,25 @@ public class SaveUploadRequest
     public string FileName { get; set; } = string.Empty;
     public string CurrentPath { get; set; } = string.Empty;
 }
+
+public class CompressRequest
+{
+    public List<string> Sources { get; set; } = new(); 
+    public string TargetName { get; set; } = string.Empty; 
+    public string CurrentPath { get; set; } = string.Empty;
+}
+
+public class TaskStatusResponse
+{
+    public string Status { get; set; } = "pending"; // pending, processing, success, error
+    public int Progress { get; set; } // 0 - 100
+    public string Message { get; set; } = "";
+}
+
+public class DecompressRequest
+{
+    public string FileName { get; set; } 
+    public string CurrentPath { get; set; } 
+    public string Encoding { get; set; } = "auto";
+    public bool CreateSubFolder { get; set; } = false;
+}
