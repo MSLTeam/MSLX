@@ -26,7 +26,7 @@ import { changeUrl } from '@/router';
 
 const route = useRoute();
 const router = useRouter();
-const instanceId = Number(route.params.id);
+const instanceId = computed(() => Number(route.params.id));
 
 const loading = ref(false);
 const fileList = ref<FilesListModel[]>([]);
@@ -131,7 +131,7 @@ const fetchData = async () => {
   loading.value = true;
   selectedRowKeys.value = [];
   try {
-    const res = await getInstanceFilesList(instanceId, currentPath.value);
+    const res = await getInstanceFilesList(instanceId.value, currentPath.value);
     fileList.value = res || [];
   } catch (error) { console.error(error); }
   finally { loading.value = false; }
@@ -143,7 +143,7 @@ const openPreview = async (fileName: string) => {
   const fullPath = currentPath.value ? `${currentPath.value}/${fileName}` : fileName;
   const msg = MessagePlugin.loading('正在加载图片...');
   try {
-    const blobData = await downloadFileStream(instanceId, fullPath);
+    const blobData = await downloadFileStream(instanceId.value, fullPath);
     if (!(blobData instanceof Blob)) throw new Error('无效数据');
     previewUrl.value = window.URL.createObjectURL(blobData);
     previewFileName.value = fileName;
@@ -160,7 +160,7 @@ const openEditor = async (fileName: string, isNewFile = false) => {
   const fullPath = currentPath.value ? `${currentPath.value}/${fileName}` : fileName;
   const msg = MessagePlugin.loading('正在读取文件...');
   try {
-    const content = await getFileContent(instanceId, fullPath);
+    const content = await getFileContent(instanceId.value, fullPath);
     editorFileName.value = fileName; editorContent.value = content; showEditor.value = true;
     MessagePlugin.close(msg);
   } catch (err: any) { MessagePlugin.close(msg); MessagePlugin.error('读取失败: ' + err.message); }
@@ -175,7 +175,7 @@ const handleSaveFile = async (newContent: string) => {
   isSaving.value = true;
   try {
     const fullPath = currentPath.value ? `${currentPath.value}/${editorFileName.value}` : editorFileName.value;
-    await saveFileContent(instanceId, fullPath, newContent);
+    await saveFileContent(instanceId.value, fullPath, newContent);
     MessagePlugin.success('保存成功'); showEditor.value = false; handleRefresh();
   } catch { MessagePlugin.error('保存失败'); }
   finally { isSaving.value = false; }
@@ -190,7 +190,7 @@ const handleConfirmRename = async () => {
   if (!renameNewName.value || !renameTargetObj.value) return;
   const newPath = currentPath.value ? `${currentPath.value}/${renameNewName.value}` : renameNewName.value;
   try {
-    await renameFile(instanceId, renameTargetObj.value.fullPath, newPath);
+    await renameFile(instanceId.value, renameTargetObj.value.fullPath, newPath);
     MessagePlugin.success('重命名成功'); showRenameDialog.value = false; handleRefresh();
   } catch { MessagePlugin.error('重命名失败'); }
 };
@@ -207,7 +207,7 @@ const handleDelete = (row?: any) => {
     onConfirm: async () => {
       try {
         const fullPaths = targets.map((name) => (currentPath.value ? `${currentPath.value}/${name}` : name));
-        await deleteFiles(instanceId, fullPaths);
+        await deleteFiles(instanceId.value, fullPaths);
         MessagePlugin.success('删除成功'); selectedRowKeys.value = []; handleRefresh(); confirmDialog.hide();
       } catch { MessagePlugin.error('删除失败'); }
     },
@@ -235,7 +235,7 @@ const handleDownload = async (row?: any) => {
     const fullPath = currentPath.value ? `${currentPath.value}/${name}` : name;
     const msg = MessagePlugin.loading(`准备下载: ${name}...`);
     try {
-      const res = await downloadFileStream(instanceId, fullPath);
+      const res = await downloadFileStream(instanceId.value, fullPath);
       const blob = new Blob([res as any]);
       const link = document.createElement('a');
       link.href = window.URL.createObjectURL(blob);
@@ -299,6 +299,12 @@ const handleUploadSuccess = () => handleRefresh();
 
 watch(currentPath, (newPath) => {
   router.replace({ query: { ...route.query, path: newPath || undefined } });
+  fetchData();
+});
+
+watch(instanceId, () => {
+  currentPath.value = '';
+  selectedRowKeys.value = [];
   fetchData();
 });
 
