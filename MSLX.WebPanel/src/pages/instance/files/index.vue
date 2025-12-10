@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import {
   HomeIcon, RefreshIcon, CloudUploadIcon, DeleteIcon, DownloadIcon, MoreIcon, FileAddIcon,
   FolderIcon, FileIcon, SettingIcon, EarthIcon, AppIcon,
-  FileImageIcon, FilePasteIcon, CodeIcon, FileZipIcon, ServiceIcon,
+  FileImageIcon, FilePasteIcon, CodeIcon, FileZipIcon, ServiceIcon,RollbackIcon
 } from 'tdesign-icons-vue-next';
 import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next';
 import {
@@ -19,6 +19,7 @@ import type { FilesListModel } from '@/api/model/files';
 import FileEditor from './components/FileEditor.vue';
 import FileUploader from './components/FileUploader.vue';
 import ImagePreview from './components/ImagePreview.vue';
+import { changeUrl } from '@/router';
 
 const route = useRoute();
 const router = useRouter();
@@ -147,7 +148,7 @@ const openPreview = async (fileName: string) => {
     MessagePlugin.close(msg);
   } catch (err) {
     MessagePlugin.close(msg);
-    MessagePlugin.error('图片加载失败');
+    MessagePlugin.error('图片加载失败' + err.message);
   }
 };
 
@@ -349,6 +350,11 @@ onMounted(() => {
           </t-breadcrumb>
         </div>
         <div class="actions-area">
+          <t-button variant="outline" size="medium" @click="changeUrl(`/instance/console/${instanceId}`)">
+            <template #icon><rollback-icon /></template>
+            返回控制台
+          </t-button>
+
           <t-button variant="outline" size="medium" @click="handleOpenCreateDialog">
             <template #icon><file-add-icon /></template>
             新建文件
