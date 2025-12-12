@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
@@ -69,6 +70,24 @@ public class PlatFormServices
         {
             return "unknown";
         }
+    }
+    
+    public static string GetFormattedVersion()
+    {
+        var rawVersion = System.Reflection.Assembly.GetEntryAssembly()?
+            .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion;
+
+        if (string.IsNullOrEmpty(rawVersion)) return "0.0.0";
+        
+        var parts = rawVersion.Split('+');
+        
+        if (parts.Length > 1 && parts[1].Length >= 7)
+        {
+            return $"{parts[0]}-{parts[1].Substring(0, 7)}";
+        }
+        
+        return rawVersion;
     }
     
     // 打开浏览器

@@ -5,7 +5,19 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ApplicationIcon>icon.ico</ApplicationIcon>
+    <Version>0.1.0-alpha</Version>
+    <FileVersion>0.1.0.0</FileVersion>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <Copyright>Copyright © 2021 - 2025 MSLTeam</Copyright>
+    <AssemblyTitle>MSLX.Daemon</AssemblyTitle>
+    <AssemblyDescription>MSLX Daemon</AssemblyDescription>
+    <AssemblyCompany>MSLTeam</AssemblyCompany>
+    <AssemblyCopyright>Copyright © 2021 - 2025 MSLTeam</AssemblyCopyright>
+    <AssemblyTrademark>MSLTeam</AssemblyTrademark>
+    <AssemblyCulture>zh-CN</AssemblyCulture>
+    <NeutralLanguage>zh-CN</NeutralLanguage>
   </PropertyGroup>
+  
 
   <ItemGroup>
     <PackageReference Include="Downloader" Version="4.0.3" />

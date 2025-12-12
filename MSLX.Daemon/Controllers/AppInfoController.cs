@@ -49,15 +49,16 @@ namespace MSLX.Daemon.Controllers
             var statusData = new JObject
             {
                 ["clientName"] = "MSLX Daemon",
-                ["version"] = Assembly.GetEntryAssembly()?.GetName()?.Version?.ToString() ?? "0.0.0.0",
+                ["version"] = PlatFormServices.GetFormattedVersion(),
+                //["version"] = Assembly.GetEntryAssembly()?.GetName()?.Version?.ToString() ?? "0.0.0.0",
                 ["user"] = ConfigServices.Config.ReadConfigKey("user")?.ToString() ?? "MSLX User",
                 ["avatar"] = ConfigServices.Config.ReadConfigKey("avatar")?.ToString() ?? "https://www.mslmc.cn/logo.png",
                 ["userIp"] = clientIp,
                 ["serverTime"] = DateTime.Now,
                 ["targetFrontendVersion"] = new JObject
                 {
-                    ["desktop"] = "1.0.0",
-                    ["panel"] = "1.0.0"
+                    ["desktop"] = "0.0.0",
+                    ["panel"] = "0.1.0"
                 },
                 ["systemInfo"] = systemInfo 
             };
