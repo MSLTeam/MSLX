@@ -36,7 +36,11 @@ onMounted(() => {
           <t-icon name="dashboard" />
           <span>面板版本：</span>
         </span>
-        <span class="info-value">v{{ pkg.version }}</span>
+        <t-tooltip :content="pkg.version" :max-width="'400px'">
+          <span class="info-value truncate-value">
+            {{ pkg.version }}
+          </span>
+        </t-tooltip>
       </div>
 
       <div class="info-item">
@@ -44,7 +48,11 @@ onMounted(() => {
           <t-icon name="cloud" />
           <span>节点版本：</span>
         </span>
-        <span class="info-value">v{{ userStore.userInfo.version }}</span>
+        <t-tooltip :content="`v${userStore.userInfo.version}`" :max-width="'400px'">
+          <span class="info-value truncate-value">
+            v{{ userStore.userInfo.version }}
+          </span>
+        </t-tooltip>
       </div>
 
       <div class="info-item">
