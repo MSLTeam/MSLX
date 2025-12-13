@@ -58,7 +58,7 @@ namespace MSLX.Daemon.Controllers
                 ["targetFrontendVersion"] = new JObject
                 {
                     ["desktop"] = "0.0.0",
-                    ["panel"] = "0.1.0"
+                    ["panel"] = "0.1.1"
                 },
                 ["systemInfo"] = systemInfo 
             };
