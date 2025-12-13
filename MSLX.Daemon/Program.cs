@@ -76,10 +76,13 @@ builder.Services.AddSingleton<FrpProcessService>();
 builder.Services.AddSingleton(typeof(IBackgroundTaskQueue<>), typeof(BackgroundTaskQueue<>));
 builder.Services.AddSingleton<MCServerService>();
 
-// 需要依赖注入的服务注册
+// 后台服务注册
 builder.Services.AddHostedService<ServerCreationService>();
 builder.Services.AddHostedService<ServerUpdateService>();
 builder.Services.AddHostedService<TempFileCleanupService>();
+builder.Services.AddHostedService<TaskSchedulerService>();
+
+// 瞬时服务注册
 builder.Services.AddScoped<JavaScannerService>();
 builder.Services.AddTransient<NeoForgeInstallerService>();
 builder.Services.AddTransient<ServerDeploymentService>();
