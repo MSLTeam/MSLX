@@ -39,7 +39,7 @@ const parseProperties = (content: string) => {
   return map;
 };
 
- // 将 Map > server.properties 字符串
+// 将 Map > server.properties 字符串
 const stringifyProperties = (map: Record<string, string>) => {
   let content = `#Minecraft server properties\n#${new Date().toString()}\n`;
 
@@ -177,78 +177,79 @@ watch(
 
 <template>
   <div class="settings-container">
-    <t-card :bordered="false" title="Server.properties 配置编辑器">
-      <template #actions>
-        <t-space>
-          <t-button variant="text" shape="square" :loading="loading" @click="loadData">
-            <template #icon><refresh-icon /></template>
-          </t-button>
-          <t-button theme="primary" :loading="saving" @click="handleSave">
-            <template #icon><save-icon /></template>
-            保存配置
-          </t-button>
-        </t-space>
-      </template>
+    <div class="page-header">
+      <div class="section-title">Server.properties 配置编辑器</div>
+      <t-space>
+        <t-button variant="text" shape="square" :loading="loading" @click="loadData">
+          <template #icon><refresh-icon /></template>
+        </t-button>
+        <t-button theme="primary" :loading="saving" @click="handleSave">
+          <template #icon><save-icon /></template>
+          保存配置
+        </t-button>
+      </t-space>
+    </div>
 
-      <t-loading :loading="loading" text="正在读取配置文件...">
-        <div class="config-list">
+    <t-loading :loading="loading" text="正在读取配置文件...">
+      <div class="config-list">
 
-          <div v-if="!loading && renderList.length === 0" class="empty-tip">
-            无法找到配置项或文件为空
+        <div v-if="!loading && renderList.length === 0" class="empty-tip">
+          无法找到配置项或文件为空
+        </div>
+
+        <div
+          v-for="item in renderList"
+          :key="item.key"
+          class="setting-item"
+          :class="{ 'unknown-item': item.isUnknown }"
+        >
+          <div class="setting-info">
+            <div class="title">
+              {{ item.label }}
+            </div>
+            <div class="key-name-row">
+              <span v-if="!item.isUnknown" class="key-name">{{ item.key }}</span>
+            </div>
+            <div v-if="!item.isUnknown" class="desc">{{ item.desc || '暂无描述' }}</div>
           </div>
 
-          <div
-            v-for="item in renderList"
-            :key="item.key"
-            class="setting-item"
-            :class="{ 'unknown-item': item.isUnknown }"
-          >
-            <div class="setting-info">
-              <div class="title">
-                {{ item.label }}
-              </div>
-              <div v-if="!item.isUnknown" class="key-name">{{ item.key }}</div>
-              <div v-if="!item.isUnknown" class="desc">{{ item.desc || '暂无描述' }}</div>
-            </div>
+          <div class="setting-control">
+            <template v-if="item.type === 'boolean'">
+              <t-switch
+                :model-value="getBindValue(item.key, 'boolean') as boolean"
+                @update:model-value="(v) => setBindValue(item.key, v, 'boolean')"
+              />
+            </template>
 
-            <div class="setting-control">
-              <template v-if="item.type === 'boolean'">
-                <t-switch
-                  :model-value="getBindValue(item.key, 'boolean') as boolean"
-                  @update:model-value="(v) => setBindValue(item.key, v, 'boolean')"
-                />
-              </template>
+            <template v-else-if="item.type === 'select'">
+              <t-select
+                :model-value="getBindValue(item.key, 'string')"
+                :options="item.options"
+                placeholder="请选择"
+                @update:model-value="(v) => setBindValue(item.key, v, 'string')"
+              />
+            </template>
 
-              <template v-else-if="item.type === 'select'">
-                <t-select
-                  :model-value="getBindValue(item.key, 'string')"
-                  :options="item.options"
-                  placeholder="请选择"
-                  @update:model-value="(v) => setBindValue(item.key, v, 'string')"
-                />
-              </template>
+            <template v-else-if="item.type === 'number'">
+              <t-input-number
+                :model-value="getBindValue(item.key, 'number') as number"
+                theme="column"
+                style="width: 100%"
+                @update:model-value="(v) => setBindValue(item.key, v, 'number')"
+              />
+            </template>
 
-              <template v-else-if="item.type === 'number'">
-                <t-input-number
-                  :model-value="getBindValue(item.key, 'number') as number"
-                  theme="column"
-                  style="width: 100%"
-                  @update:model-value="(v) => setBindValue(item.key, v, 'number')"
-                />
-              </template>
-
-              <template v-else>
-                <t-input
-                  :model-value="getBindValue(item.key, 'string') as string"
-                  placeholder="未设置"
-                  @update:model-value="(v) => setBindValue(item.key, v, 'string')"
-                />
-              </template>
-            </div>
+            <template v-else>
+              <t-input
+                :model-value="getBindValue(item.key, 'string') as string"
+                placeholder="未设置"
+                @update:model-value="(v) => setBindValue(item.key, v, 'string')"
+              />
+            </template>
           </div>
         </div>
-      </t-loading>
-    </t-card>
+      </div>
+    </t-loading>
 
     <div class="form-actions">
       <t-button theme="primary" size="large" :loading="saving" @click="handleSave">保存设置</t-button>
@@ -258,6 +259,40 @@ watch(
 </template>
 
 <style scoped lang="less">
+.settings-container {
+  margin: 0 auto;
+  max-width: 100%;
+}
+
+/* 顶部标题栏 - 蓝色标题风格 */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 32px;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--td-component-stroke);
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--td-text-color-primary);
+  display: flex;
+  align-items: center;
+
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 16px;
+    background-color: var(--td-brand-color);
+    margin-right: 8px;
+    border-radius: 2px;
+  }
+}
+
 .config-list {
   display: flex;
   flex-direction: column;
@@ -267,13 +302,16 @@ watch(
   text-align: center;
   padding: 40px;
   color: var(--td-text-color-placeholder);
+  background: var(--td-bg-color-container);
+  border-radius: var(--td-radius-medium);
+  border: 1px dashed var(--td-component-stroke);
 }
 
 .setting-item {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 16px 0;
+  padding: 16px 24px; /* 增加左右内边距 */
   border-bottom: 1px dashed var(--td-component-stroke);
   flex-wrap: wrap;
   transition: background-color 0.2s;
@@ -284,7 +322,7 @@ watch(
 
   /* 未知项略微区分 */
   &.unknown-item {
-    .key-name {
+    .title {
       color: var(--td-warning-color);
     }
   }
@@ -292,23 +330,38 @@ watch(
   .setting-info {
     flex: 1;
     padding-right: 32px;
+    max-width: 40%; /* 限制左侧宽度，与模板一致 */
     min-width: 200px;
 
     .title {
       font-size: 14px;
       color: var(--td-text-color-primary);
-      font-weight: 600;
+      font-weight: 500;
       line-height: 22px;
+      margin-bottom: 4px;
+    }
+
+    .key-name-row {
       display: flex;
       align-items: center;
-      gap: 8px;
+      margin-bottom: 2px;
     }
 
     .key-name {
       font-family: 'Consolas', monospace;
       font-size: 12px;
-      color: var(--td-text-color-secondary); // 次要文本颜色
-      margin-top: 2px;
+      color: var(--td-text-color-secondary);
+      background-color: var(--td-bg-color-secondarycontainer);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    .unknown-tag {
+      font-size: 12px;
+      color: var(--td-warning-color);
+      background-color: var(--td-bg-color-secondarycontainer);
+      padding: 1px 4px;
+      border-radius: 3px;
     }
 
     .desc {
@@ -320,12 +373,17 @@ watch(
   }
 
   .setting-control {
-    width: 300px;
-    flex-shrink: 0;
+    flex: 1;
+    max-width: 60%;
     display: flex;
-    align-items: center;
-    /* 让控件垂直居中一点 */
-    padding-top: 2px;
+    justify-content: flex-end;
+    align-items: center; /* 垂直居中 */
+
+    /* 让控件统一样式 */
+    .t-input, .t-select, .t-input-number {
+      width: 100%;
+      max-width: 400px;
+    }
   }
 }
 
@@ -333,9 +391,9 @@ watch(
   margin-top: 24px;
   display: flex;
   gap: 16px;
-  justify-content: flex-end; /* 按钮靠右更符合表单习惯，或者根据你原本风格靠左 */
   padding-top: 24px;
   border-top: 1px solid var(--td-component-stroke);
+  /* 恢复左对齐，如果需要右对齐可改为 justify-content: flex-end */
 }
 
 /* 适配暗黑模式的滚动条等细节由 TDesign 变量自动处理 */
@@ -343,20 +401,25 @@ watch(
 @media (max-width: 768px) {
   .setting-item {
     flex-direction: column;
-    padding: 16px 0;
+    padding: 16px;
 
     .setting-info {
       padding-right: 0;
       margin-bottom: 12px;
+      max-width: 100%;
     }
 
     .setting-control {
-      width: 100%;
+      max-width: 100%;
+      justify-content: flex-start;
+
+      .t-input, .t-select, .t-input-number {
+        max-width: 100%;
+      }
     }
   }
 
   .form-actions {
-    justify-content: stretch;
     flex-direction: column;
 
     button {
