@@ -3,11 +3,13 @@ import { ref } from 'vue';
 import {
   StoreIcon,
   SettingIcon,
-  TimeIcon
+  TimeIcon,
+  Setting1Icon
 } from 'tdesign-icons-vue-next';
 
-import GeneralSettings from '@/pages/instance/console/components/settingsComponents/GeneralSettings.vue';
-import ModsPluginsManager from '@/pages/instance/console/components/settingsComponents/ModsPluginsManager.vue';
+import GeneralSettings from './settingsComponents/GeneralSettings.vue';
+import ModsPluginsManager from './settingsComponents/ModsPluginsManager.vue';
+import ServerProperties from './settingsComponents/ServerProperties.vue'
 
 const visible = ref(false);
 const currentTab = ref(0);
@@ -15,6 +17,7 @@ const currentTab = ref(0);
 const menuItems = [
   { label: '实例设置', icon: SettingIcon },
   { label: '插件/模组', icon: StoreIcon },
+  { label: '服务器属性', icon: Setting1Icon },
   { label: '定时任务', icon: TimeIcon },
 ];
 
@@ -65,6 +68,10 @@ defineExpose({ open });
         </div>
 
         <div v-if="currentTab === 2" class="panel-wrapper">
+          <server-properties :instance-id="21"/>
+        </div>
+
+        <div v-if="currentTab === 3" class="panel-wrapper">
           <h3 class="panel-title">任务列表</h3>
           <div class="card-content">任务配置...</div>
         </div>
