@@ -118,6 +118,21 @@ public class PluginsAndModsController: ControllerBase
                         System.IO.File.Move(currentFilePath, newPath);
                         successCount++;
                     }
+                }else if (request.Action == "delete")
+                {
+                    // 循环删除文件 确保只操作jar文件
+                    if (Path.GetFileName(fileName).EndsWith(".jar.disabled", StringComparison.OrdinalIgnoreCase) || Path.GetFileName(fileName).EndsWith(".jar", StringComparison.OrdinalIgnoreCase))
+                    {
+                        try
+                        {
+                            System.IO.File.Delete(currentFilePath);
+                            successCount++;
+                        }
+                        catch
+                        {
+                            failCount ++;
+                        }
+                    }
                 }
             }
             catch (Exception ex)
