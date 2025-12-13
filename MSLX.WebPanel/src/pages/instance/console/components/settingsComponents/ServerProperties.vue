@@ -258,11 +258,6 @@ watch(
 </template>
 
 <style scoped lang="less">
-
-.settings-container {
-  margin: 0 calc(0px - var(--td-comp-paddingLR-xl)); // 消掉tcard自带的padding
-}
-
 .config-list {
   display: flex;
   flex-direction: column;
