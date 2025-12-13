@@ -88,3 +88,11 @@ public class TaskStatusResponse
     public int Progress { get; set; } 
     public string Message { get; set; } = "";
 }
+
+public class CreateDirectoryRequest
+{
+    public string Path { get; set; } = string.Empty;
+    
+    [Required(ErrorMessage = "新目录名称 (name) 不能为空")]
+    public string Name { get; set; } = string.Empty;
+}

@@ -95,6 +95,69 @@ public class FileContentController : ControllerBase
             });
         }
     }
+    
+    [HttpPost("instance/{id}/directory")]
+    public IActionResult CreateDirectory(uint id, [FromBody] CreateDirectoryRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            return BadRequest(new ApiResponse<object> { Code = 400, Message = "文件夹名字不能为空" });
+        }
+        
+        // 合法？
+        char[] invalidChars = Path.GetInvalidFileNameChars();
+        if (request.Name.IndexOfAny(invalidChars) >= 0)
+        {
+             return BadRequest(new ApiResponse<object> { Code = 400, Message = "文件夹名字包含非法字符" });
+        }
+        
+        var server = ConfigServices.ServerList.GetServer(id);
+        if (server == null)
+        {
+            return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
+        }
+
+        // 组合完整路径：用户当前路径 + 新文件夹名
+        string relativePath = Path.Combine(request.Path ?? "", request.Name);
+        
+        var check = FileUtils.GetSafePath(server.Base, relativePath);
+        if (!check.IsSafe)
+        {
+            return BadRequest(new ApiResponse<object> { Code = 403, Message = check.Message });
+        }
+
+        string finalPath = check.FullPath;
+
+        // 检查冲突
+        if (Directory.Exists(finalPath))
+        {
+            return BadRequest(new ApiResponse<object> { Code = 400, Message = "该文件夹已存在" });
+        }
+        if (System.IO.File.Exists(finalPath))
+        {
+            return BadRequest(new ApiResponse<object> { Code = 400, Message = "存在同名文件" });
+        }
+
+        try
+        {
+            // 创建文件夹
+            Directory.CreateDirectory(finalPath);
+
+            return Ok(new ApiResponse<object>
+            {
+                Code = 200,
+                Message = "文件夹创建成功"
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new ApiResponse<object>
+            {
+                Code = 500,
+                Message = $"创建失败: {ex.Message}"
+            });
+        }
+    }
 
     // 保存文件
     [HttpPost("instance/{id}/content")]

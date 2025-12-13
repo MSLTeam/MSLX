@@ -67,6 +67,13 @@ export function saveFileContent(instanceId: number, path: string, content: strin
   });
 }
 
+export function createDirectory(instanceId: number, path: string,name: string) {
+  return request.post({
+    url: `/api/files/instance/${instanceId}/directory`,
+    data: { path, name }
+  });
+}
+
 export function renameFile(instanceId: number, oldPath: string, newPath: string) {
   return request.post({
     url: `/api/files/instance/${instanceId}/rename`,
