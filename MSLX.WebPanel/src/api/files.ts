@@ -1,6 +1,7 @@
 import { request } from '@/utils/request';
 import {
   FilesListModel,
+  PluginsAndModsListModel,
   UploadFinishResponse,
   UploadInitResponse,
   UploadPackageCheckJarResponse,
@@ -126,5 +127,21 @@ export async function changeFileMode(instanceId: number, path: string, mode: str
   return await request.post({
     url: `/api/files/instance/${instanceId}/chmod`,
     data: { path, mode }
+  });
+}
+
+// 模组/插件管理
+
+export async function getPluginsOrModsList(instanceId: number, type: 'mods' | 'plugins'){
+  return await request.get<PluginsAndModsListModel>({
+    url: `/api/files/pm/instance/${instanceId}/list`,
+    params: { mode: type }
+  });
+}
+
+export async function setPluginsOrModsStatus(instanceId:number, type: 'mods' | 'plugins',action: 'enable' | 'disable' | 'delete', targets: string[] ){
+  return await request.post({
+    url: `/api/files/pm/instance/${instanceId}/set`,
+    data: { mode: type, action, targets }
   });
 }

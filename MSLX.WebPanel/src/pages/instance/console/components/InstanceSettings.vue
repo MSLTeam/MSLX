@@ -6,7 +6,8 @@ import {
   TimeIcon
 } from 'tdesign-icons-vue-next';
 
-import GeneralSettings from '@/pages/instance/console/components/settingsComponents/GeneralSettings.vue'
+import GeneralSettings from '@/pages/instance/console/components/settingsComponents/GeneralSettings.vue';
+import ModsPluginsManager from '@/pages/instance/console/components/settingsComponents/ModsPluginsManager.vue';
 
 const visible = ref(false);
 const currentTab = ref(0);
@@ -60,10 +61,7 @@ defineExpose({ open });
         </div>
 
         <div v-if="currentTab === 1" class="panel-wrapper">
-          <h3 class="panel-title">已安装插件</h3>
-          <div class="card-content">
-            <p v-for="i in 20" :key="i">自适应内容行 {{ i }}...</p>
-          </div>
+          <mods-plugins-manager/>
         </div>
 
         <div v-if="currentTab === 2" class="panel-wrapper">
