@@ -10,6 +10,7 @@ import {
 import GeneralSettings from './settingsComponents/GeneralSettings.vue';
 import ModsPluginsManager from './settingsComponents/ModsPluginsManager.vue';
 import ServerProperties from './settingsComponents/ServerProperties.vue'
+import CronTasks from './settingsComponents/CronTasks.vue'
 
 const visible = ref(false);
 const currentTab = ref(0);
@@ -72,8 +73,7 @@ defineExpose({ open });
         </div>
 
         <div v-if="currentTab === 3" class="panel-wrapper">
-          <h3 class="panel-title">任务列表</h3>
-          <div class="card-content">任务配置...</div>
+          <cron-tasks/>
         </div>
 
       </div>
