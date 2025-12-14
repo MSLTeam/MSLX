@@ -11,6 +11,7 @@ const REMEMBER_USER_NAME = 'remembered_username';
 const InitUserInfo = {
   name: '',
   avatar: '',
+  id: '',
   version: '',
   systemInfo:{
     netVersion: "",
