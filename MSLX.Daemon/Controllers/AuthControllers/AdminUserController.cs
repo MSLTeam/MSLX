@@ -7,7 +7,7 @@ namespace MSLX.Daemon.Controllers.AuthControllers;
 
 [ApiController]
 [Route("api/admin/user")]
-[Authorize(Roles = "Admin")]
+[Authorize(Roles = "admin")]
 public class AdminUserController : ControllerBase
 {
     /// <summary>

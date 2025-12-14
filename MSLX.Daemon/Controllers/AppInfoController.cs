@@ -72,6 +72,7 @@ public class AppInfoController : ControllerBase
             {
                 ["clientName"] = "MSLX Daemon",
                 ["version"] = PlatFormServices.GetFormattedVersion(),
+                ["id"] = currentUserId,
                 ["user"] = displayName,  
                 ["avatar"] = displayAvatar,
                 ["roles"] = JToken.FromObject(roles),
