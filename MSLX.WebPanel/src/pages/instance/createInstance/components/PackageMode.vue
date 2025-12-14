@@ -384,7 +384,7 @@ const startSignalRConnection = async (serverId: string) => {
   const { baseUrl, token } = userStore;
   if (!baseUrl || !token) return;
 
-  const hubUrl = new URL('/api/hubs/creationProgressHub', baseUrl);
+  const hubUrl = new URL('/api/hubs/creationProgressHub', baseUrl || window.location.origin);
   hubUrl.searchParams.append('x-user-token', token);
 
   hubConnection.value = new HubConnectionBuilder()

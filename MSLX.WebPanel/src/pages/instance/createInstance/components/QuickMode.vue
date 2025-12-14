@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onUnmounted, ref, watch, onMounted, computed, nextTick } from 'vue';
-import { useRouter } from 'vue-router';
 import { type FormRules, MessagePlugin } from 'tdesign-vue-next';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { useUserStore } from '@/store';
@@ -381,17 +380,9 @@ const onSubmit = async () => {
 const startSignalRConnection = async (serverId: string) => {
   const { baseUrl, token } = userStore;
 
-  if (!baseUrl || !token) {
-    MessagePlugin.error('未找到登录信息 (baseUrl 或 token)，无法连接到实时进度服务。');
-    isCreating.value = false;
-    isSubmitting.value = false;
-    currentStep.value = 0;
-    return;
-  }
-
   let isSuccessHandled = false;
 
-  const hubUrl = new URL('/api/hubs/creationProgressHub', baseUrl);
+  const hubUrl = new URL('/api/hubs/creationProgressHub', baseUrl || window.location.origin);
   hubUrl.searchParams.append('x-user-token', token);
 
   hubConnection.value = new HubConnectionBuilder()
@@ -482,9 +473,6 @@ const goToHome = () => {
   customJavaPath.value = '';
 }; */
 
-const viewDetails = () => {
-  changeUrl(`/instance/console/${createdServerId.value}`);
-};
 </script>
 
 <template>
