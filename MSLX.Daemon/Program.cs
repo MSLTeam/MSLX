@@ -71,6 +71,9 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddSignalR();
 
+// 权限拦截处理器
+builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler, CustomAuthorizationResultHandler>();
+
 // 注册单例服务
 builder.Services.AddSingleton<FrpProcessService>();
 builder.Services.AddSingleton(typeof(IBackgroundTaskQueue<>), typeof(BackgroundTaskQueue<>));
