@@ -86,6 +86,7 @@ public class ServerUpdateService : BackgroundService
             server.AutoRestart = req.AutoRestart;
             server.InputEncoding = req.InputEncoding;
             server.OutputEncoding = req.OutputEncoding;
+            server.FileEncoding = req.FileEncoding;
             ConfigServices.ServerList.UpdateServer(server);
 
             // 检查 Java

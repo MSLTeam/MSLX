@@ -75,7 +75,10 @@ public class ServerCreationService : BackgroundService
             Core = request.core,
             MinM = request.minM,
             MaxM = request.maxM,
-            Args = request.args ?? ""
+            Args = request.args ?? "",
+            InputEncoding = PlatFormServices.GetOs() == "Windows"? "gbk" : "utf-8",
+            OutputEncoding = PlatFormServices.GetOs() == "Windows"? "gbk" : "utf-8",
+            FileEncoding = PlatFormServices.GetOs() == "Windows"? "gbk" : "utf-8",
         };
 
         ConfigServices.ServerList.CreateServer(server);
