@@ -1,6 +1,6 @@
 {
   "version": "0.2.1",
-  "buildTime": "2025-12-14 19:35:58",
+  "buildTime": "2025-12-14 20:15:40",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,13 +68,25 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "623464149938747840e8d0bff40caa86ecc55d8b",
-  "commitMsg": "assets(webpanel): 更新前端资源到 v0.2.1-alpha 版本",
+  "commitId": "29b6dead47b8a1ea27ef3b4b48b6e45a0dd1d615",
+  "commitMsg": "feat(webpanel): 添加404页面路由并优化重定向逻辑",
   "commitAuthor": "luluxiaoyu",
   "history": [
     {
-      "commitId": "623464149938747840e8d0bff40caa86ecc55d8b",
-      "commitTime": "2025-12-14 19:35:34 +0800",
+      "commitId": "29b6dead47b8a1ea27ef3b4b48b6e45a0dd1d615",
+      "commitTime": "2025-12-14 20:14:37 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 添加404页面路由并优化重定向逻辑"
+    },
+    {
+      "commitId": "d2af84935d1abfe861b6139ba3c178af8a81965f",
+      "commitTime": "2025-12-14 19:54:14 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复 SignalR 连接 URL 构建问题"
+    },
+    {
+      "commitId": "876666aa905b84f4d9ff9b391f5c762798ca37c2",
+      "commitTime": "2025-12-14 19:36:12 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "assets(webpanel): 更新前端资源到 v0.2.1-alpha 版本"
     },
@@ -359,18 +371,6 @@
       "commitTime": "2025-12-10 12:59:37 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "feat(webpanel & daemon): 添加文件重命名和删除功能"
-    },
-    {
-      "commitId": "64b7a84adfa2770db1f5af63da15b512ce0ad0d9",
-      "commitTime": "2025-12-10 11:05:55 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 支持新建和编辑文件"
-    },
-    {
-      "commitId": "e9fd7b9275dfe38bb542720b766ef0616765fa9b",
-      "commitTime": "2025-12-10 11:05:26 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 添加保存文件内容的API接口"
     }
   ]
 }
