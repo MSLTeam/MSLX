@@ -62,6 +62,7 @@ public class UserDto
 // --- 用户修改自己信息的请求 ---
 public class UpdateSelfRequest
 {
+    public string? Username { get; set; }
     public string? Name { get; set; } // 昵称
     public string? Avatar { get; set; } // 头像
     public string? Password { get; set; } // 新密码 (可选，为空则不改)

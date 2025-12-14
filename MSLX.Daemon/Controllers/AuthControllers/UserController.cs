@@ -50,6 +50,7 @@ public class UserController : ControllerBase
         // 基本信息
         if (request.Name != null) user.Name = request.Name;
         if (request.Avatar != null) user.Avatar = request.Avatar;
+        if (request.Username != null) user.Username = request.Username;
 
         // 更新密码
         if (!string.IsNullOrEmpty(request.Password))
