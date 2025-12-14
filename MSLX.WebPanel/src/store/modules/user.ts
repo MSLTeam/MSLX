@@ -31,7 +31,7 @@ const InitUserInfo = {
 export const useUserStore = defineStore('user', {
   state: () => ({
     token: localStorage.getItem(TOKEN_NAME) || '',
-    baseUrl: localStorage.getItem(BASE_URL_NAME) || '',
+    baseUrl: localStorage.getItem(BASE_URL_NAME) || window.location.origin,
     userInfo: { ...InitUserInfo },
   }),
 
