@@ -715,6 +715,7 @@ public static class ConfigServices
             // 如果没有用户，创建一个默认管理员
             if (!_userListCache.HasValues)
             {
+                string defaultPassword = StringServices.GenerateRandomString(16);
                 CreateUser(new UserInfo
                 {
                     Username = "mslx",
@@ -724,7 +725,7 @@ public static class ConfigServices
                     ApiKey = StringServices.GenerateRandomString(32),
                     Avatar = "https://www.mslmc.cn/logo.png"
                 });
-                _logger.LogInformation("已初始化默认管理员用户: admin / admin");
+                _logger.LogInformation($"已初始化默认管理员用户: mslx / {defaultPassword}");
             }
         }
 
