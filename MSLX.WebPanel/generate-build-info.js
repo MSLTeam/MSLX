@@ -5,10 +5,8 @@ const { execSync } = require('child_process');
 
 function getGitInfo() {
   try {
-    // 辅助函数：去除字符串两端的空格和各种引号 (包括中文引号 “ ”)
     const clean = (str) => {
       if (!str) return 'unknown';
-      // 移除首尾的空白、双引号、单引号、中文引号
       return str.toString().trim().replace(/^["'“”]+|["'“”]+$/g, '');
     };
 
@@ -16,20 +14,16 @@ function getGitInfo() {
     const commitMsg = clean(execSync('git log -1 --pretty=format:"%s"'));
     const commitAuthor = clean(execSync('git log -1 --pretty=format:"%an"'));
 
-    // 格式: Hash|Date|Author|Message
-    // 注意：这里为了防止 Author 或 Message 里有 | 符号破坏结构，其实最好用其他分隔符，但简单场景 | 够用了
     const logOutput = execSync('git log -50 --pretty=format:"%H|%cd|%an|%s" --date=iso').toString().trim();
 
     const history = logOutput.split('\n').map(line => {
       const parts = line.split('|');
-      // 确保至少有4个部分 (Hash, Date, Author, Msg)
       if (parts.length < 4) return null;
-
       return {
         commitId: parts[0],
         commitTime: parts[1],
-        commitAuthor: clean(parts[2]), // 这里也清洗一下名字
-        commitMsg: clean(parts.slice(3).join('|')) // 防止消息里有 | 符号被切断
+        commitAuthor: clean(parts[2]),
+        commitMsg: clean(parts.slice(3).join('|'))
       };
     }).filter(Boolean);
 
@@ -41,6 +35,26 @@ function getGitInfo() {
       commitAuthor: 'unknown',
       history: []
     };
+  }
+}
+
+function copyToBackend(sourcePath) {
+  try {
+    const targetPath = path.resolve(__dirname, '../MSLX.Daemon/Frontend');
+    const parentDir = path.dirname(targetPath);
+
+    if (!fs.existsSync(parentDir)) {
+      return;
+    }
+
+    if (!fs.existsSync(targetPath)) {
+      fs.mkdirSync(targetPath, { recursive: true });
+    }
+
+    fs.cpSync(sourcePath, targetPath, { recursive: true, force: true });
+    console.log(`Files copied to backend: ${targetPath}`);
+  } catch (e) {
+    console.error(`Copy failed: ${e.message}`);
   }
 }
 
@@ -78,13 +92,13 @@ function generateBuildFiles() {
     const robotsTxtPath = path.resolve(distDir, 'robots.txt');
     fs.writeFileSync(robotsTxtPath, `User-agent: *\nDisallow: /api/`);
 
-    console.log(`[${buildTime}] 构建成功!`);
+    console.log(`[${buildTime}] Build Metadata Generated.`);
     console.log(`- Version: ${buildInfo.version}`);
-    console.log(`- Commit: ${gitInfo.commitId.substring(0, 7)} by ${gitInfo.commitAuthor}`);
-    console.log(`- Output: ${buildJsonPath}`);
+
+    copyToBackend(distDir);
 
   } catch (error) {
-    console.error('构建错误:', error);
+    console.error('Build Error:', error);
     process.exit(1);
   }
 }

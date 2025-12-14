@@ -25,6 +25,13 @@ namespace MSLX.Daemon.Middleware
 
         public async Task InvokeAsync(HttpContext context)
         {
+            // 忽略非 API 请求
+            var path = context.Request.Path;
+            if (!path.StartsWithSegments("/api")) 
+            {
+                await _next(context);
+                return;
+            }
             // AllowAnonymous 放行
             var endpoint = context.GetEndpoint();
             if (endpoint?.Metadata?.GetMetadata<Microsoft.AspNetCore.Authorization.IAllowAnonymous>() != null)

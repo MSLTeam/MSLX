@@ -1,5 +1,7 @@
+using System.Reflection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.FileProviders;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Middleware;
@@ -134,6 +136,21 @@ logger.LogInformation("欢迎您！" + ConfigServices.Config.ReadConfigKey("user
 app.UseForwardedHeaders();
 app.UseCors("AllowAll");
 
+var embeddedProvider = new ManifestEmbeddedFileProvider(
+    Assembly.GetEntryAssembly()!, 
+    "wwwroot" 
+);
+app.UseDefaultFiles(new DefaultFilesOptions
+{
+    FileProvider = embeddedProvider,
+    RequestPath = ""
+});
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = embeddedProvider,
+    RequestPath = "" 
+});
+
 // 自定义的中间件
 app.UseMiddleware<BlockLoopbackMiddleware>(); 
 app.UseMiddleware<AuthMiddleware>();
@@ -152,6 +169,12 @@ app.MapHub<UpdateProgressHub>("/api/hubs/updateProgressHub");
 app.MapHub<FrpConsoleHub>("/api/hubs/frpLogsHub");
 app.MapHub<InstanceConsoleHub>("/api/hubs/instanceControlHub");
 app.MapControllers();
+
+// SPA
+app.MapFallbackToFile("index.html", new StaticFileOptions
+{
+    FileProvider = embeddedProvider
+});
 
 var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
 lifetime.ApplicationStarted.Register(() =>
