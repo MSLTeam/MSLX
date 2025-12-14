@@ -170,7 +170,7 @@ const startSignalR = async () => {
 
   const { baseUrl, token } = userStore;
   const hubUrl = new URL('/api/hubs/instanceControlHub', baseUrl || window.location.origin);
-  if (token) hubUrl.searchParams.append('x-api-key', token);
+  if (token) hubUrl.searchParams.append('x-user-token', token);
 
   hubConnection = new HubConnectionBuilder()
     .withUrl(hubUrl.toString(), { withCredentials: false })

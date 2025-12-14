@@ -2,6 +2,23 @@ import Layout from '@/layouts/index.vue';
 
 export default [
   {
+    path: '/users',
+    component: Layout,
+    name: 'usersBase',
+    meta: {
+      title: '用户管理',
+      icon: 'user',
+    },
+    children: [
+      {
+        path: '',
+        name: 'users',
+        component: () => import('@/pages/users/index.vue'),
+        meta: { title: '用户管理', hidden: true },
+      },
+    ],
+  },
+  {
     path: '/settings',
     component: Layout,
     name: 'settingsBase',

@@ -18,8 +18,6 @@ public class SettingsController: ControllerBase
                 Message = "获取成功",
                 Data = new
                 {
-                    User = ConfigServices.Config.ReadConfig()["user"]?? "",
-                    Avatar = ConfigServices.Config.ReadConfig()["avatar"]?? "",
                     FireWallBanLocalAddr = ConfigServices.Config.ReadConfig()["fireWallBanLocalAddr"]?? false,
                     OpenWebConsoleOnLaunch = ConfigServices.Config.ReadConfig()["openWebConsoleOnLaunch"]?? true,
                     NeoForgeInstallerMirrors = ConfigServices.Config.ReadConfig()["neoForgeInstallerMirrors"]?? "MSL Mirrors",
@@ -33,8 +31,6 @@ public class SettingsController: ControllerBase
     [HttpPost]
     public IActionResult UpdateSettings([FromBody] UpdateSettingsRequest request)
     {
-        ConfigServices.Config.WriteConfigKey("user", request.User);
-        ConfigServices.Config.WriteConfigKey("avatar", request.Avatar);
         ConfigServices.Config.WriteConfigKey("fireWallBanLocalAddr", request.FireWallBanLocalAddr);
         ConfigServices.Config.WriteConfigKey("openWebConsoleOnLaunch", request.OpenWebConsoleOnLaunch);
         ConfigServices.Config.WriteConfigKey("neoForgeInstallerMirrors", request.NeoForgeInstallerMirrors);

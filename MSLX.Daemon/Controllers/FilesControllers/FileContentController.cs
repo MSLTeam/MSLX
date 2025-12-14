@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Files;
@@ -74,7 +75,7 @@ public class FileContentController : ControllerBase
         {
             // 文件流读取文件内容
             using (var fileStream = new FileStream(targetPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            using (var streamReader = new StreamReader(fileStream, System.Text.Encoding.UTF8))
+            using (var streamReader = new StreamReader(fileStream, server.FileEncoding == "gbk" ? Encoding.GetEncoding("gbk") : Encoding.UTF8))
             {
                 string content = await streamReader.ReadToEndAsync();
 
@@ -192,9 +193,7 @@ public class FileContentController : ControllerBase
         // 写入文件
         try
         {
-            var utf8WithoutBom = new System.Text.UTF8Encoding(false);
-
-            await System.IO.File.WriteAllTextAsync(targetPath, request.Content, utf8WithoutBom);
+            await System.IO.File.WriteAllTextAsync(targetPath, request.Content, server.FileEncoding == "gbk" ? Encoding.GetEncoding("gbk") : Encoding.UTF8);
 
             return Ok(new ApiResponse<object>
             {

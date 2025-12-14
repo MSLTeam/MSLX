@@ -52,6 +52,7 @@ export interface UpdateInstanceModel {
   runOnStartup?: boolean;
   inputEncoding?: 'utf-8' | 'gbk';
   outputEncoding?: 'utf-8' | 'gbk';
+  fileEncoding?: 'utf-8' | 'gbk';
 
   // 可选
   coreFileKey?: string;

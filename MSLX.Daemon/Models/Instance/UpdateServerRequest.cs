@@ -50,6 +50,9 @@ public class UpdateServerRequest : IValidatableObject
     [RegularExpression(@"^(?i)(utf-8|gbk)$", ErrorMessage = "输出编码 (OutputEncoding) 仅支持 'utf-8' 或 'gbk'")]
     public string OutputEncoding { get; set; } = "utf-8";
     
+    [RegularExpression(@"^(?i)(utf-8|gbk)$", ErrorMessage = "文件编码 (OutputEncoding) 仅支持 'utf-8' 或 'gbk'")]
+    public string FileEncoding { get; set; } = "utf-8";
+    
     // 更新的可选参数
 
     // 本地上传服务端 Key

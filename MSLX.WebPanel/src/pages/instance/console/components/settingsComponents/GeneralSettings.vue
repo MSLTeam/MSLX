@@ -62,6 +62,7 @@ const formData = ref<UpdateInstanceModel>({
   runOnStartup: false,
   inputEncoding: 'utf-8',
   outputEncoding: 'utf-8',
+  fileEncoding: 'utf-8',
   coreUrl: '',
   coreSha256: '',
   coreFileKey: '',
@@ -355,7 +356,7 @@ const startSignalRListening = async () => {
 
   const { baseUrl, token } = userStore;
   const hubUrl = new URL('/api/hubs/updateProgressHub', baseUrl);
-  hubUrl.searchParams.append('x-api-key', token);
+  hubUrl.searchParams.append('x-user-token', token);
 
   hubConnection.value = new HubConnectionBuilder()
     .withUrl(hubUrl.toString(), { withCredentials: false })
@@ -686,6 +687,16 @@ onUnmounted(() => {
         <div class="setting-control flex-row">
           <t-select v-model="formData.inputEncoding" :options="encodingOptions" label="输入" style="width: 140px" />
           <t-select v-model="formData.outputEncoding" :options="encodingOptions" label="输出" style="width: 140px" />
+        </div>
+      </div>
+
+      <div class="setting-item">
+        <div class="setting-info">
+          <div class="title">文件编码</div>
+          <div class="desc">设置文件编辑和保存时的编码格式，乱码时请尝试切换。(一般Windows是GBK，其他是UTF-8。)</div>
+        </div>
+        <div class="setting-control flex-row">
+          <t-select v-model="formData.fileEncoding" :options="encodingOptions" style="width: 140px" />
         </div>
       </div>
 

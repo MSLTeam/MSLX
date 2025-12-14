@@ -1,5 +1,7 @@
+using System.Reflection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.FileProviders;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Middleware;
@@ -71,6 +73,9 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddSignalR();
 
+// 权限拦截处理器
+builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler, CustomAuthorizationResultHandler>();
+
 // 注册单例服务
 builder.Services.AddSingleton<FrpProcessService>();
 builder.Services.AddSingleton(typeof(IBackgroundTaskQueue<>), typeof(BackgroundTaskQueue<>));
@@ -131,9 +136,24 @@ logger.LogInformation("欢迎您！" + ConfigServices.Config.ReadConfigKey("user
 app.UseForwardedHeaders();
 app.UseCors("AllowAll");
 
+var embeddedProvider = new ManifestEmbeddedFileProvider(
+    Assembly.GetEntryAssembly()!, 
+    "wwwroot" 
+);
+app.UseDefaultFiles(new DefaultFilesOptions
+{
+    FileProvider = embeddedProvider,
+    RequestPath = ""
+});
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = embeddedProvider,
+    RequestPath = "" 
+});
+
 // 自定义的中间件
 app.UseMiddleware<BlockLoopbackMiddleware>(); 
-app.UseMiddleware<ApiKeyMiddleware>();
+app.UseMiddleware<AuthMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -150,13 +170,18 @@ app.MapHub<FrpConsoleHub>("/api/hubs/frpLogsHub");
 app.MapHub<InstanceConsoleHub>("/api/hubs/instanceControlHub");
 app.MapControllers();
 
+// SPA
+app.MapFallbackToFile("index.html", new StaticFileOptions
+{
+    FileProvider = embeddedProvider
+});
+
 var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
 lifetime.ApplicationStarted.Register(() =>
 {
-    if(((bool?)ConfigServices.Config.ReadConfig()["openWebConsoleOnLaunch"] ?? true) && (listenAddr.Contains("localhost") || listenAddr.Contains("127.0.0.1")))
+    if((bool?)ConfigServices.Config.ReadConfig()["openWebConsoleOnLaunch"] ?? true)
     {
-        var address = "https://alpha-mslx.aino.cyou/login";
-        PlatFormServices.OpenBrowser($"{address}?auth={StringServices.EncodeToBase64($"{listenAddr}|{ConfigServices.Config.ReadConfigKey("apiKey")}")}");
+        PlatFormServices.OpenBrowser($"{listenAddr}");
     }
 });
 
