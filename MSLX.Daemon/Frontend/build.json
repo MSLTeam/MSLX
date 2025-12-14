@@ -1,0 +1,376 @@
+{
+  "version": "0.1.1",
+  "buildTime": "2025-12-14 16:27:08",
+  "dependencies": {
+    "@codemirror/lang-javascript": "^6.2.4",
+    "@codemirror/lang-json": "^6.0.2",
+    "@codemirror/lang-yaml": "^6.1.2",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/theme-one-dark": "^6.1.3",
+    "@codemirror/view": "^6.39.2",
+    "@eslint/js": "^9.38.0",
+    "@microsoft/signalr": "^9.0.6",
+    "@vueuse/core": "^14.0.0",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
+    "ansi-colors": "^4.1.3",
+    "axios": "^1.13.1",
+    "cron-parser": "^5.4.0",
+    "dayjs": "^1.11.11",
+    "echarts": "^5.5.1",
+    "lodash": "^4.17.21",
+    "md-editor-v3": "^6.1.0",
+    "nprogress": "^0.2.0",
+    "pinia": "^2.1.7",
+    "pinia-plugin-persistedstate": "^3.2.1",
+    "qrcode.vue": "^3.4.1",
+    "qs": "^6.13.0",
+    "tdesign-icons-vue-next": "^0.4.1",
+    "tdesign-vue-next": "^1.17.1",
+    "tvision-color": "^1.6.0",
+    "typescript-eslint": "^8.46.2",
+    "vue": "^3.4.31",
+    "vue-clipboard3": "^2.0.0",
+    "vue-codemirror": "^6.1.1",
+    "vue-router": "^4.4.0"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.3.0",
+    "@commitlint/config-conventional": "^19.2.2",
+    "@types/lodash": "^4.17.7",
+    "@types/qs": "^6.9.15",
+    "@types/ws": "^8.5.10",
+    "@typescript-eslint/eslint-plugin": "^8.46.2",
+    "@typescript-eslint/parser": "^8.46.2",
+    "@vitejs/plugin-vue": "^5.1.0",
+    "@vitejs/plugin-vue-jsx": "^4.0.0",
+    "@vue/compiler-sfc": "^3.4.31",
+    "@vue/eslint-config-typescript": "^14.6.0",
+    "commitizen": "^4.3.0",
+    "cz-conventional-changelog": "^3.3.0",
+    "eslint": "^9.38.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "eslint-plugin-vue": "^10.5.1",
+    "eslint-plugin-vue-scoped-css": "^2.6.0",
+    "husky": "^9.1.1",
+    "less": "^4.2.0",
+    "lint-staged": "^15.2.7",
+    "mockjs": "^1.1.0",
+    "prettier": "^3.3.3",
+    "stylelint": "^16.25.0",
+    "stylelint-less": "^3.0.0",
+    "stylelint-order": "^6.0.4",
+    "typescript": "^5.5.3",
+    "vite": "^5.3.3",
+    "vite-plugin-mock": "^3.0.1",
+    "vite-svg-loader": "^5.1.0",
+    "vue-tsc": "^2.0.26"
+  },
+  "commitId": "229b1cc2bca3f9d6ee4d1908f3e1503087a32c2a",
+  "commitMsg": "feat(daemon): 初始化默认管理员用户时生成随机密码",
+  "commitAuthor": "luluxiaoyu",
+  "history": [
+    {
+      "commitId": "229b1cc2bca3f9d6ee4d1908f3e1503087a32c2a",
+      "commitTime": "2025-12-14 16:11:10 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 初始化默认管理员用户时生成随机密码"
+    },
+    {
+      "commitId": "3bfab9ab8262f0824aa8b67e958c87948e3fc597",
+      "commitTime": "2025-12-14 16:08:46 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 添加默认用户安全风险提示"
+    },
+    {
+      "commitId": "7326f3ca31d25b4e5934952a0231733bac7bf4f0",
+      "commitTime": "2025-12-14 15:59:01 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 添加自定义权限拦截处理器"
+    },
+    {
+      "commitId": "c64a19bc807806230408aa55b10e9496ac12b129",
+      "commitTime": "2025-12-14 15:52:04 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "refactor(daemon): 修正管理员角色授权标识为小写 & 新增UID返回在status接口"
+    },
+    {
+      "commitId": "4345ab29aa86817ba0d135079184a558fe789e84",
+      "commitTime": "2025-12-14 15:51:34 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 实现用户管理功能"
+    },
+    {
+      "commitId": "dcd7edef1fb1ef71dfdf71eca13cebb32312f835",
+      "commitTime": "2025-12-14 15:36:04 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "refactor(daemon): 移除旧版设置中用户和头像配置项"
+    },
+    {
+      "commitId": "a765a0a7c12ee9be134f2574f172463753137fc7",
+      "commitTime": "2025-12-14 15:35:45 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 重构设置页面并增加用户信息管理功能"
+    },
+    {
+      "commitId": "05dd9e3aef8252b5780d35102d6fe41656512642",
+      "commitTime": "2025-12-14 15:26:42 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 允许用户更新用户名"
+    },
+    {
+      "commitId": "2a917e812fd8e512d8dec6d26bfd0b0efdb382df",
+      "commitTime": "2025-12-14 15:07:53 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 改用JWT Token验证登录"
+    },
+    {
+      "commitId": "953fa59d3a08dc7426007fa67285a2424a11481c",
+      "commitTime": "2025-12-14 15:01:44 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 实现基于JWT和API Key的用户认证系统"
+    },
+    {
+      "commitId": "88d2dbf1b73514003af9d37d2ce58f4b9dc0d570",
+      "commitTime": "2025-12-14 12:55:27 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "dependency(daemon & desktop): 升级.NET框架版本到10.0 LTS"
+    },
+    {
+      "commitId": "43badc23a2cc92a6db95b0f9e3ccfbfecd6b102f",
+      "commitTime": "2025-12-13 23:57:51 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver:(daemon & webpanel): 更新版本号至0.1.1-alpha"
+    },
+    {
+      "commitId": "e8d3f612a2b5ac11768ce4a5606eb71394f7ac28",
+      "commitTime": "2025-12-13 23:45:15 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 统一服务器属性设置组件样式"
+    },
+    {
+      "commitId": "1fa9a0190a5fbba915ed5edd8dd52894c78195a5",
+      "commitTime": "2025-12-13 23:43:13 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 添加实例定时任务管理功能"
+    },
+    {
+      "commitId": "2ec19c43432de6aefc6f08522a66d73f9f2279ce",
+      "commitTime": "2025-12-13 23:42:47 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 添加定时任务调度功能"
+    },
+    {
+      "commitId": "791e0359c9a8a45cf3494a1aa85709abc07bffc4",
+      "commitTime": "2025-12-13 22:04:35 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 更新公告接口地址"
+    },
+    {
+      "commitId": "a0e5fc49db66910aa03fd9d5f75d29ebeb48a965",
+      "commitTime": "2025-12-13 19:32:54 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 修复服务器设置容器边距问题"
+    },
+    {
+      "commitId": "aa9549530bc95b7713114724d5e88cd45d8ed501",
+      "commitTime": "2025-12-13 18:59:46 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 添加服务器属性配置面板"
+    },
+    {
+      "commitId": "89a77a2901e3beb2fabf0dcb4561ac6c8efcd3d3",
+      "commitTime": "2025-12-13 15:50:50 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 文件管理支持新建文件夹"
+    },
+    {
+      "commitId": "d0a8b17e24a6dc6abca2dc3bf3ce13af9e797933",
+      "commitTime": "2025-12-13 15:31:28 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 实例设置弹窗添加模组/插件管理功能"
+    },
+    {
+      "commitId": "c61479ebb816b7e587c2392d0e76a31afff64ce6",
+      "commitTime": "2025-12-13 15:28:11 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 插件模组管理添加删除功能"
+    },
+    {
+      "commitId": "4c80dda19079258599277b03fdd778516a2b12d5",
+      "commitTime": "2025-12-13 14:40:56 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 添加插件和模组管理相关接口"
+    },
+    {
+      "commitId": "c4fd85c13a492ba841db9a43571a0ed909cc42c7",
+      "commitTime": "2025-12-13 12:03:16 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 调整实例设置页面标签页顺序和布局"
+    },
+    {
+      "commitId": "7e46efddd664ed9929bc2850046b19a050cbefbe",
+      "commitTime": "2025-12-12 16:53:39 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 更新默认主题模式为自动"
+    },
+    {
+      "commitId": "804751f3d74f3f4094043427fe16e142a890671e",
+      "commitTime": "2025-12-12 16:51:28 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 优化首页节点版本显示效果"
+    },
+    {
+      "commitId": "79ec61d76b3294bf34747ce825fc505f8786f6d3",
+      "commitTime": "2025-12-12 16:24:37 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(daemon & webpanel): 规范版本号并进入alpha早期测试版本迭代发版状态"
+    },
+    {
+      "commitId": "ac283c910bcd6900903a5e096e658b7f3c9c76cb",
+      "commitTime": "2025-12-10 20:44:01 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复切换实例时文件管理页面可能存在的实例ID没刷新的问题"
+    },
+    {
+      "commitId": "8ebc3492047b8703c1e497cae25cd38eb7746de9",
+      "commitTime": "2025-12-10 17:12:05 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 分离设置和关于页面 & 重构关于页面信息展示"
+    },
+    {
+      "commitId": "c9edc9274332a8b01d050cd6df4875da5704be32",
+      "commitTime": "2025-12-10 16:10:08 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 添加文件操作请求模型验证"
+    },
+    {
+      "commitId": "c774ead9893bc15ace45c08cc0e62d58f574fe2b",
+      "commitTime": "2025-12-10 15:32:28 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 新增文件权限管理功能"
+    },
+    {
+      "commitId": "b2c9bb53eb71b4976dc7a4cd1fbfd4f9ace6ea1c",
+      "commitTime": "2025-12-10 15:05:33 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 实现文件压缩和解压功能"
+    },
+    {
+      "commitId": "d42d82ea4a10774f1debd49b49b835c0c43a8915",
+      "commitTime": "2025-12-10 14:14:33 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 文件管理页面添加返回控制台按钮"
+    },
+    {
+      "commitId": "f4bcb0fb6d1e445dc19a7a9369dce3dfae4c1800",
+      "commitTime": "2025-12-10 14:06:33 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 图片预览功能 & 阻止非文本内容的在线编辑功能"
+    },
+    {
+      "commitId": "95bf530839265278f593a621b0a52297c174b263",
+      "commitTime": "2025-12-10 13:58:39 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 实现文件下载功能"
+    },
+    {
+      "commitId": "dc1b0068e387e0fb0b644a3001c3e94df9184421",
+      "commitTime": "2025-12-10 13:47:06 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 实现文件上传到实例文件夹功能"
+    },
+    {
+      "commitId": "2964902088ad03f4cff97214d232cf8b2539c71d",
+      "commitTime": "2025-12-10 12:59:37 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 添加文件重命名和删除功能"
+    },
+    {
+      "commitId": "64b7a84adfa2770db1f5af63da15b512ce0ad0d9",
+      "commitTime": "2025-12-10 11:05:55 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 支持新建和编辑文件"
+    },
+    {
+      "commitId": "e9fd7b9275dfe38bb542720b766ef0616765fa9b",
+      "commitTime": "2025-12-10 11:05:26 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 添加保存文件内容的API接口"
+    },
+    {
+      "commitId": "79fa13f26155c5bad3140d6b2bc945b9a70f1b65",
+      "commitTime": "2025-12-10 10:37:56 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 新增文件内容获取接口并优化路径安全检查"
+    },
+    {
+      "commitId": "54ce1fb79d033862b0c0ac7384a6338e6bdc314d",
+      "commitTime": "2025-12-09 23:44:00 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 简单实现文件管理的文件列表获取功能"
+    },
+    {
+      "commitId": "e2fd607bdf9c5accf0041ad9ad764be5285df9a7",
+      "commitTime": "2025-12-09 22:27:37 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 阻止运行中的服务器被修改核心设置"
+    },
+    {
+      "commitId": "0f1b0d7b0c98324f51f1ddf90a7085ad786ef858",
+      "commitTime": "2025-12-09 22:07:00 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "refactor(daemon): 整理创建/更新服务端实例类文件位置"
+    },
+    {
+      "commitId": "628b9a3def20c665ae9bd4c3d15ecc957caac644",
+      "commitTime": "2025-12-09 22:03:01 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 优化停止服务器逻辑"
+    },
+    {
+      "commitId": "f3801ea94ca0ea86e8848c12eb93bc5cf6fe91b9",
+      "commitTime": "2025-12-09 21:49:29 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复自定义模式创建实例时路径字段初始化问题"
+    },
+    {
+      "commitId": "842683a16a03baa166656112a826f65a8f27ab9e",
+      "commitTime": "2025-12-09 21:39:51 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 支持自定义输入输出编码配置"
+    },
+    {
+      "commitId": "266a0147fa9cb1905cc0ae5a82093e7a66ae1bba",
+      "commitTime": "2025-12-09 21:21:36 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复实例设置组件导入命名问题"
+    },
+    {
+      "commitId": "0bb9b1ba53cbe113e68220b53bfe6774ef568585",
+      "commitTime": "2025-12-09 21:20:40 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 优化实例设置对话框滚动条样式"
+    },
+    {
+      "commitId": "43b6118984c62dfd89a43ff9bc0281041ae1f3ad",
+      "commitTime": "2025-12-09 21:15:50 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 调整通用设置组件的内边距"
+    },
+    {
+      "commitId": "2ea593b15da16c70cf414b7ed37d65cf75947acd",
+      "commitTime": "2025-12-09 21:07:04 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 支持自定义启动模式的服务端实例配置"
+    },
+    {
+      "commitId": "6779ed0803792e0dcfb8228bba210be4358dd0b0",
+      "commitTime": "2025-12-09 20:54:03 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 添加实例通用设置页面及功能"
+    }
+  ]
+}
