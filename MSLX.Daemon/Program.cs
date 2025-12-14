@@ -133,7 +133,7 @@ app.UseCors("AllowAll");
 
 // 自定义的中间件
 app.UseMiddleware<BlockLoopbackMiddleware>(); 
-app.UseMiddleware<ApiKeyMiddleware>();
+app.UseMiddleware<AuthMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {

@@ -10,15 +10,28 @@ public static class ConfigServices
     public static ServerListConfig ServerList { get; private set; } = null!;
     public static FrpListConfig FrpList { get; private set; } = null!;
     public static TaskListConfig TaskList { get; private set; } = null!;
+    public static UserListConfig UserList { get; private set; } = null!;
+    public static string JwtSecret { get; private set; } = string.Empty;
 
     public static void Initialize(ILoggerFactory loggerFactory)
     {
         ApplicationLogging.LoggerFactory = loggerFactory;
 
         Config = new IConfigService();
+        
+        // 生成JWT密钥
+        var secret = Config.ReadConfigKey("JwtSecret")?.ToString();
+        if (string.IsNullOrEmpty(secret))
+        {
+            secret = StringServices.GenerateRandomString(32);
+            Config.WriteConfigKey("JwtSecret", secret);
+        }
+        JwtSecret = secret;
+        
         ServerList = new ServerListConfig();
         FrpList = new FrpListConfig();
         TaskList = new TaskListConfig();
+        UserList = new UserListConfig();
     }
 
     public static string GetAppDataPath()
@@ -684,5 +697,192 @@ public static class ConfigServices
         {
             _taskListLock?.Dispose();
         }
+    }
+    
+    public class UserListConfig : IDisposable
+    {
+        private readonly string _userListPath = Path.Combine(GetAppDataPath(), "DaemonData", "Configs", "UserList.json");
+        private JArray _userListCache;
+        private readonly ReaderWriterLockSlim _userListLock = new ReaderWriterLockSlim();
+        private readonly ILogger _logger;
+
+        public UserListConfig()
+        {
+            _logger = ApplicationLogging.CreateLogger<UserListConfig>();
+            InitializeFile(_userListPath, "[]");
+            _userListCache = LoadJson<JArray>(_userListPath);
+            
+            // 如果没有用户，创建一个默认管理员
+            if (!_userListCache.HasValues)
+            {
+                CreateUser(new UserInfo
+                {
+                    Username = "mslx",
+                    Name = "MSLX 用户",
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("mslx"),
+                    Role = "admin",
+                    ApiKey = StringServices.GenerateRandomString(32),
+                    Avatar = "https://www.mslmc.cn/logo.png"
+                });
+                _logger.LogInformation("已初始化默认管理员用户: admin / admin");
+            }
+        }
+
+        private void InitializeFile(string path, string defaultContent)
+        {
+            var dir = Path.GetDirectoryName(path);
+            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir!);
+            if (!File.Exists(path)) File.WriteAllText(path, defaultContent);
+        }
+
+        public UserInfo? GetUserByApiKey(string apiKey)
+        {
+            _userListLock.EnterReadLock();
+            try
+            {
+                return _userListCache
+                    .FirstOrDefault(u => u["ApiKey"]?.ToString() == apiKey)
+                    ?.ToObject<UserInfo>();
+            }
+            finally { _userListLock.ExitReadLock(); }
+        }
+
+        public UserInfo? GetUserByUsername(string username)
+        {
+            _userListLock.EnterReadLock();
+            try
+            {
+                return _userListCache
+                    .FirstOrDefault(u => u["Username"]?.ToString() == username)
+                    ?.ToObject<UserInfo>();
+            }
+            finally { _userListLock.ExitReadLock(); }
+        }
+
+        public bool ValidateUser(string username, string rawPassword)
+        {
+            _userListLock.EnterReadLock();
+            try
+            {
+                // 先找到用户
+                var userToken = _userListCache.FirstOrDefault(u => u["Username"]?.ToString() == username);
+            
+                if (userToken == null) return false;
+
+                string storedHash = userToken["PasswordHash"]?.ToString() ?? "";
+
+                // 验证
+                return BCrypt.Net.BCrypt.Verify(rawPassword, storedHash);
+            }
+            catch 
+            {
+                return false;
+            }
+            finally { _userListLock.ExitReadLock(); }
+        }
+
+        public bool CreateUser(UserInfo user)
+        {
+            _userListLock.EnterWriteLock();
+            try
+            {
+                if (_userListCache.Any(u => u["Username"]?.ToString() == user.Username)) return false;
+            
+                // 确保存进去的是 Hash 过的
+                if (!user.PasswordHash.StartsWith("$2")) 
+                {
+                    user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(user.PasswordHash);
+                }
+
+                _userListCache.Add(JObject.FromObject(user));
+                SaveJson(_userListPath, _userListCache);
+                return true;
+            }
+            finally { _userListLock.ExitWriteLock(); }
+        }
+        
+        public void UpdateLastLoginTime(string username)
+        {
+            _userListLock.EnterWriteLock();
+            try
+            {
+                var userToken = _userListCache.FirstOrDefault(u => u["Username"]?.ToString() == username);
+                if (userToken != null)
+                {
+                    // 更新时间
+                    userToken["LastLoginTime"] = DateTime.Now;
+
+                    SaveJson(_userListPath, _userListCache);
+                }
+            }
+            finally
+            {
+                _userListLock.ExitWriteLock();
+            }
+        }
+        
+        public UserInfo? GetUserById(string id)
+        {
+            _userListLock.EnterReadLock();
+            try
+            {
+                return _userListCache
+                    .FirstOrDefault(u => u["Id"]?.ToString() == id)
+                    ?.ToObject<UserInfo>();
+            }
+            finally
+            {
+                _userListLock.ExitReadLock();
+            }
+        }
+        
+        public List<UserInfo> GetAllUsers()
+        {
+            _userListLock.EnterReadLock();
+            try
+            {
+                return _userListCache.Select(u => u.ToObject<UserInfo>()).ToList();
+            }
+            finally { _userListLock.ExitReadLock(); }
+        }
+        
+        public bool UpdateUser(UserInfo updatedUser)
+        {
+            _userListLock.EnterWriteLock();
+            try
+            {
+                var target = _userListCache.FirstOrDefault(u => u["Id"]?.ToString() == updatedUser.Id);
+                if (target == null) return false;
+
+                target.Replace(JObject.FromObject(updatedUser));
+                SaveJson(_userListPath, _userListCache);
+                return true;
+            }
+            finally { _userListLock.ExitWriteLock(); }
+        }
+        
+        public bool DeleteUser(string userId)
+        {
+            _userListLock.EnterWriteLock();
+            try
+            {
+                var target = _userListCache.FirstOrDefault(u => u["Id"]?.ToString() == userId);
+                if (target == null) return false;
+
+                _userListCache.Remove(target);
+                SaveJson(_userListPath, _userListCache);
+                return true;
+            }
+            finally { _userListLock.ExitWriteLock(); }
+        }
+        
+        private T LoadJson<T>(string path) where T : JToken
+        {
+            var content = File.ReadAllText(path);
+            return JToken.Parse(content) as T ?? throw new InvalidDataException("Invalid JSON");
+        }
+        private void SaveJson<T>(string path, T data) where T : JToken 
+            => File.WriteAllText(path, data.ToString(Newtonsoft.Json.Formatting.Indented));
+        public void Dispose() => _userListLock?.Dispose();
     }
 }
