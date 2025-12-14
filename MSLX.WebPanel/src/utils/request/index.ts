@@ -117,11 +117,11 @@ const transform: AxiosTransform = {
       config.baseURL = baseUrl;
     }
 
-    // 动态设置 x-api-key
+    // 动态设置 x-user-token
     if (token && (config as Recordable)?.requestOptions?.withToken !== false) {
       // 如果包含了headers 大概率不是请求到守护进程端的 就不传递apikey了
       if (!config.headers.hasAuthorization()) {
-        (config as Recordable).headers['x-api-key'] = token;
+        (config as Recordable).headers['x-user-token'] = token;
       }
     }
     return config;

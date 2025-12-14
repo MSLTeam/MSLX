@@ -392,7 +392,7 @@ const startSignalRConnection = async (serverId: string) => {
   let isSuccessHandled = false;
 
   const hubUrl = new URL('/api/hubs/creationProgressHub', baseUrl);
-  hubUrl.searchParams.append('x-api-key', token);
+  hubUrl.searchParams.append('x-user-token', token);
 
   hubConnection.value = new HubConnectionBuilder()
     .withUrl(hubUrl.toString(), { withCredentials: false })

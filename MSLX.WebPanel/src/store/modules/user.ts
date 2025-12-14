@@ -2,12 +2,11 @@ import { defineStore } from 'pinia';
 import { TOKEN_NAME, BASE_URL_NAME } from '@/config/global';
 import { store, usePermissionStore } from '@/store';
 import { request } from '@/utils/request';
-import router from '@/router';
-import { MessagePlugin } from 'tdesign-vue-next';
+import { changeUrl } from '@/router';
 
 // 存储记忆信息
 const REMEMBER_URL_NAME = 'remembered_url';
-const REMEMBER_KEY_NAME = 'remembered_key';
+const REMEMBER_USER_NAME = 'remembered_username';
 
 const InitUserInfo = {
   name: '',
@@ -33,58 +32,66 @@ export const useUserStore = defineStore('user', {
     baseUrl: localStorage.getItem(BASE_URL_NAME) || '',
     userInfo: { ...InitUserInfo },
   }),
-  getters: {
-    roles: (state) => {
-      // 在这里也加个兜底，确保 getters 总是返回数组
-      return state.userInfo?.roles || [];
-    },
-  },
-  actions: {
-    async login(loginParams: Record<string, unknown>) {
-      const { url, key, checked } = loginParams as { url: string; key: string; checked: boolean };
 
-      // 1处理 URL
-      let processedUrl = url;
-      if (!/^(https?:)?\/\//.test(url)) {
-        processedUrl = `http://${url}`;
+  getters: {
+    roles: (state) => state.userInfo?.roles || [],
+  },
+
+  actions: {
+    // 判断后端是否同源
+    async checkConnection(baseUrl: string) {
+      let processedUrl = baseUrl;
+      if (baseUrl && !/^(https?:)?\/\//.test(baseUrl)) {
+        processedUrl = `http://${baseUrl}`;
       }
+      try {
+        await request.get({
+          url: '/api/ping',
+          baseURL: processedUrl || undefined,
+          timeout: 3000,
+        });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+
+    // 登录
+    async login(loginParams: Record<string, unknown>) {
+      const { url, username, password, checked } = loginParams;
+
+      // 处理 URL
+      let processedUrl = url as string;
+      if (processedUrl && !/^(https?:)?\/\//.test(processedUrl)) {
+        processedUrl = `http://${processedUrl}`;
+      }
+      const requestBaseUrl = processedUrl || '';
 
       try {
-        // 将 baseURL 和 headers 作为 AxiosRequestConfig (第一个参数) 的一部分传入
-        const resData = await request.get({
-          url: '/api/status',
-          baseURL: processedUrl,
-          headers: {
-            'x-api-key': key,
-          },
+        // 请求登录接口拿到 Token
+        const res = await request.post({
+          url: '/api/auth/login',
+          baseURL: requestBaseUrl,
+          data: { username, password },
         });
 
-        // 登录成功，存储 token 和 baseUrl (当前会话)
-        this.token = key;
-        this.baseUrl = processedUrl;
-        localStorage.setItem(TOKEN_NAME, key);
-        localStorage.setItem(BASE_URL_NAME, processedUrl);
+        // 保存 Token 和 BaseURL
+        this.token = res.token;
+        this.baseUrl = requestBaseUrl;
 
-        // 记住
+        localStorage.setItem(TOKEN_NAME, res.token);
+        localStorage.setItem(BASE_URL_NAME, requestBaseUrl);
+
+        // 处理记住账号
         if (checked) {
-          localStorage.setItem(REMEMBER_URL_NAME, url);
-          localStorage.setItem(REMEMBER_KEY_NAME, key);
+          localStorage.setItem(REMEMBER_URL_NAME, (url as string) || '');
+          localStorage.setItem(REMEMBER_USER_NAME, username as string);
         } else {
           localStorage.removeItem(REMEMBER_URL_NAME);
-          localStorage.removeItem(REMEMBER_KEY_NAME);
+          localStorage.removeItem(REMEMBER_USER_NAME);
         }
 
-        // 存储用户信息
-        this.userInfo = {
-          name: resData.user,
-          avatar: resData.avatar,
-          roles: ['all'],
-          ...resData,
-        };
-
-        // 初始化动态路由
-        const permissionStore = usePermissionStore();
-        await permissionStore.initRoutes(this.userInfo.roles);
+        await this.getUserInfo();
 
       } catch (e) {
         console.error('Login failed:', e);
@@ -92,32 +99,35 @@ export const useUserStore = defineStore('user', {
       }
     },
 
+    // 用户信息
     async getUserInfo() {
-      if (!this.token) {
-        return;
-      }
+      if (!this.token) return;
 
       try {
-        const resData = await request.get({ url: '/api/status' });
+        const resData = await request.get({
+          url: '/api/status',
+        });
 
+        // 存储用户信息
         this.userInfo = {
-          name: resData.user,
-          avatar: resData.avatar,
-          roles: ['all'],
+          ...InitUserInfo,
           ...resData,
+          name: resData.user || resData.username, // 兼容字段
+          roles: ['all'],
         };
+
+        // 初始化路由权限
+        const permissionStore = usePermissionStore();
+        await permissionStore.initRoutes(this.userInfo.roles);
+
       } catch (e) {
-        // 获取不到用户信息 要求重新登录
         console.error('Get user info failed:', e);
-        await this.logout(); // logout 会清除路由
-        await router.push('/login');
-        MessagePlugin.error('连接 MSLX 守护进程失败，请重新登录！');
+        await this.logout();
+        changeUrl('/login');
       }
     },
 
-    /**
-     * +++ 修改 logout +++
-     */
+    // 登出
     async logout() {
       const permissionStore = usePermissionStore();
       await permissionStore.clearRoutes();
@@ -133,16 +143,12 @@ export const useUserStore = defineStore('user', {
       this.token = '';
     },
   },
+
   persist: {
     afterRestore: (ctx) => {
       if (ctx.store.token) {
-        const permissionStore = usePermissionStore();
-
-        ctx.store.getUserInfo().then(() => {
-          permissionStore.initRoutes(ctx.store.roles || []);
-        }).catch(() => {
-          // getUserInfo 失败, logout 逻辑已在内部执行
-        });
+        // 页面刷新后，利用 Token 重新拉取 Status 信息
+        ctx.store.getUserInfo();
       }
     },
   },

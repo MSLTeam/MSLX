@@ -36,7 +36,7 @@ const getImageUrl = (name: string, id: number) => {
       return customImg;
     case 'server-icon':
       return new URL(
-        `${localStorage.getItem(BASE_URL_NAME)}/api/instance/icon/${id}.png?x-api-key=${localStorage.getItem(TOKEN_NAME)}`,
+        `${localStorage.getItem(BASE_URL_NAME)}/api/instance/icon/${id}.png?x-user-token=${localStorage.getItem(TOKEN_NAME)}`,
         import.meta.url,
       ).href;
     default:

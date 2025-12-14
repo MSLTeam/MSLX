@@ -1,86 +1,91 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { MessagePlugin } from 'tdesign-vue-next';
 import type { FormInstanceFunctions, FormRule } from 'tdesign-vue-next';
 import { useUserStore } from '@/store';
 
 const userStore = useUserStore();
-const REMEMBER_URL_NAME = 'remembered_url';
-const REMEMBER_KEY_NAME = 'remembered_key';
-
-const INITIAL_DATA = {
-  url: localStorage.getItem(REMEMBER_URL_NAME) || 'localhost:1027',
-  key: localStorage.getItem(REMEMBER_KEY_NAME) || '',
-  checked: !!localStorage.getItem(REMEMBER_URL_NAME),
-};
-
-const FORM_RULES: Record<string, FormRule[]> = {
-  url: [{ required: true, message: '连接地址必填', type: 'error' }],
-  key: [{ required: true, message: '密钥必填', type: 'error' }],
-};
-
-const form = ref<FormInstanceFunctions>();
-const formData = ref({ ...INITIAL_DATA });
-const showPsw = ref(false);
-
 const router = useRouter();
 const route = useRoute();
 
-const handleLoginSuccess = () => {
-  MessagePlugin.success('登陆成功');
-  const redirect = route.query.redirect as string;
-  const redirectUrl = redirect ? decodeURIComponent(redirect) : '/dashboard/base';
-  router.push(redirectUrl);
+// 定义 LocalStorage Key
+const REMEMBER_URL = 'remembered_url';
+const REMEMBER_USER = 'remembered_username';
 
-  if (formData.value.checked) {
-    localStorage.setItem(REMEMBER_URL_NAME, formData.value.url);
-    localStorage.setItem(REMEMBER_KEY_NAME, formData.value.key);
-  } else {
-    localStorage.removeItem(REMEMBER_URL_NAME);
-    localStorage.removeItem(REMEMBER_KEY_NAME);
+// 状态控制
+const loading = ref(false);
+const showPsw = ref(false);
+const isLocalBackend = ref(false); // 是否是同源后端
+const isChecking = ref(true);      // 是否正在检测连接
+
+// 表单数据
+const formData = reactive({
+  url: localStorage.getItem(REMEMBER_URL) || '',
+  username: localStorage.getItem(REMEMBER_USER) || '',
+  password: '',
+  checked: !!localStorage.getItem(REMEMBER_USER), // 记住用户名开关
+});
+
+const form = ref<FormInstanceFunctions>();
+
+// 动态校验规则
+const formRules = computed((): Record<string, FormRule[]> => {
+  const rules: Record<string, FormRule[]> = {
+    username: [{ required: true, message: '请输入用户名', type: 'error' }],
+    password: [{ required: true, message: '请输入密码', type: 'error' }],
+  };
+  // 只有非同源才校验 URL
+  if (!isLocalBackend.value) {
+    rules.url = [{ required: true, message: '请输入服务器地址', type: 'error' }];
   }
+  return rules;
+});
+
+// 初始化检测：判断后端是否在本地
+const initCheck = async () => {
+  isChecking.value = true;
+  // 检测同源
+  const isLocal = await userStore.checkConnection('');
+
+  if (isLocal) {
+    isLocalBackend.value = true;
+    formData.url = '';
+  } else {
+    isLocalBackend.value = false;
+  }
+  isChecking.value = false;
 };
 
+// 提交登录
 const onSubmit = async ({ validateResult }) => {
   if (validateResult === true) {
+    loading.value = true;
     try {
-      await userStore.login(formData.value);
-      handleLoginSuccess();
-    } catch (e: any) {
-      console.log(e);
-      MessagePlugin.error(e.message || '登录失败');
-    }
-  }
-};
+      await userStore.login({
+        url: isLocalBackend.value ? '' : formData.url, // 同源传空，异地传值
+        username: formData.username,
+        password: formData.password,
+        checked: formData.checked,
+      });
 
-const checkAutoLogin = async () => {
-  const authParam = route.query.auth as string;
-  if (!authParam) return;
-  try {
-    const decodedStr = window.atob(authParam);
-    const lastIndex = decodedStr.lastIndexOf('|');
-    if (lastIndex === -1) {
-      MessagePlugin.warning('自动登录链接无效');
-      return;
+      MessagePlugin.success('登录成功');
+
+      // 跳转逻辑
+      const redirect = route.query.redirect as string;
+      const redirectUrl = redirect ? decodeURIComponent(redirect) : '/dashboard/base';
+      router.push(redirectUrl);
+
+    } catch (e: any) {
+      MessagePlugin.error(e.message || '登录失败，请检查账号密码');
+    } finally {
+      loading.value = false;
     }
-    const url = decodedStr.substring(0, lastIndex);
-    const key = decodedStr.substring(lastIndex + 1);
-    if (!url || !key) return;
-    formData.value.url = url;
-    formData.value.key = key;
-    const msgInstance = MessagePlugin.loading('检测到登录参数，正在自动登录...');
-    await userStore.login(formData.value);
-    MessagePlugin.close(msgInstance);
-    handleLoginSuccess();
-  } catch (e: any) {
-    console.error('Auto login failed:', e);
-    MessagePlugin.error('自动登录链接无效或已过期');
   }
 };
 
 onMounted(() => {
-  checkAutoLogin();
+  initCheck();
 });
 </script>
 
@@ -89,50 +94,64 @@ onMounted(() => {
     ref="form"
     class="login-form"
     :data="formData"
-    :rules="FORM_RULES"
+    :rules="formRules"
     label-width="0"
     @submit="onSubmit"
   >
-    <div class="input-group">
-      <t-form-item name="url">
+    <div v-if="isChecking" class="loading-wrapper">
+      <t-loading text="正在连接服务..." size="small" />
+    </div>
+
+    <div v-else class="input-group">
+      <t-form-item v-if="!isLocalBackend" name="url">
         <t-input
           v-model="formData.url"
           size="large"
-          placeholder="请输入MSLX连接地址"
+          placeholder="服务器地址 (如 localhost:1027)"
           class="glass-input"
         >
-          <template #prefix-icon>
-            <t-icon name="api" />
-          </template>
+          <template #prefix-icon><t-icon name="server" /></template>
         </t-input>
       </t-form-item>
 
-      <t-form-item name="key">
+      <t-form-item name="username">
         <t-input
-          v-model="formData.key"
+          v-model="formData.username"
           size="large"
-          :type="showPsw ? 'text' : 'password'"
-          clearable
-          placeholder="请输入密钥"
+          placeholder="请输入用户名"
           class="glass-input"
         >
-          <template #prefix-icon>
-            <t-icon name="lock-on" />
-          </template>
+          <template #prefix-icon><t-icon name="user" /></template>
+        </t-input>
+      </t-form-item>
+
+      <t-form-item name="password">
+        <t-input
+          v-model="formData.password"
+          size="large"
+          :type="showPsw ? 'text' : 'password'"
+          placeholder="请输入密码"
+          class="glass-input"
+        >
+          <template #prefix-icon><t-icon name="lock-on" /></template>
           <template #suffix-icon>
-            <t-icon :name="showPsw ? 'browse' : 'browse-off'" @click="showPsw = !showPsw" style="cursor: pointer" />
+            <t-icon
+              :name="showPsw ? 'browse' : 'browse-off'"
+              style="cursor: pointer"
+              @click="showPsw = !showPsw"
+            />
           </template>
         </t-input>
       </t-form-item>
     </div>
 
     <div class="check-container">
-      <t-checkbox v-model="formData.checked">记住连接信息</t-checkbox>
+      <t-checkbox v-model="formData.checked">记住用户名</t-checkbox>
     </div>
 
     <t-form-item class="btn-container">
-      <t-button block size="large" type="submit" class="login-btn">
-        确认登录
+      <t-button block size="large" type="submit" class="login-btn" :loading="loading">
+        登 录
       </t-button>
     </t-form-item>
   </t-form>
@@ -140,36 +159,44 @@ onMounted(() => {
 
 <style lang="less" scoped>
 .login-form {
+  .loading-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 20px 0;
+  }
+
   .input-group {
     display: flex;
     flex-direction: column;
-    gap: 16px; // 输入框之间的间距
+    gap: 16px;
   }
 
+  // 输入框样式
   :deep(.t-input) {
     border-radius: 8px;
     box-shadow: none;
     transition: all 0.3s;
+    background-color: rgba(255, 255, 255, 0.6); // 微透明背景
+
+    &:hover, &:focus-within {
+      background-color: rgba(255, 255, 255, 0.95);
+    }
   }
 
   .check-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 16px 0 32px;
-
-    :deep(.t-checkbox__label) {
-      opacity: 0.9;
-    }
+    margin: 16px 0 24px;
   }
 
   .login-btn {
-    border-radius: 24px; // 圆角按钮
+    border-radius: 24px;
     font-weight: bold;
     height: 48px;
     font-size: 16px;
-    background-color: #fff; // 默认白色
-    color: #333; // 默认深色字
+    background-color: #fff;
+    color: #333;
     border: none;
     transition: transform 0.2s;
 
@@ -180,7 +207,7 @@ onMounted(() => {
   }
 }
 
-
+// 适配亮色主题
 :global(.light) .login-btn {
   background-color: var(--td-brand-color);
   color: #fff;
