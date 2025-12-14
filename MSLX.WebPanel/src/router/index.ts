@@ -31,9 +31,14 @@ const defaultRouterList: Array<RouteRecordRaw> = [
     redirect: '/dashboard/base',
   },
   {
+    path: '/404',
+    name: '404',
+    component: () => import('@/pages/notFound/index.vue'),
+  },
+  {
     path: '/:w+',
     name: '404Page',
-    redirect: '/result/404',
+    redirect: '/404',
   },
 ];
 

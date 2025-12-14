@@ -355,7 +355,7 @@ const startSignalRListening = async () => {
   progressLogs.value = [];
 
   const { baseUrl, token } = userStore;
-  const hubUrl = new URL('/api/hubs/updateProgressHub', baseUrl);
+  const hubUrl = new URL('/api/hubs/updateProgressHub', baseUrl || window.location.origin);
   hubUrl.searchParams.append('x-user-token', token);
 
   hubConnection.value = new HubConnectionBuilder()

@@ -1,6 +1,6 @@
 {
-  "version": "0.2.0",
-  "buildTime": "2025-12-14 17:04:24",
+  "version": "0.2.1",
+  "buildTime": "2025-12-14 20:15:40",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,64 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "1ea6698777d7bc8d75e95d339e91f619f33dcf87",
-  "commitMsg": "fix(daemon): 统一使用无 BOM 的 UTF-8 编码以解决关服异常的问题",
+  "commitId": "29b6dead47b8a1ea27ef3b4b48b6e45a0dd1d615",
+  "commitMsg": "feat(webpanel): 添加404页面路由并优化重定向逻辑",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "29b6dead47b8a1ea27ef3b4b48b6e45a0dd1d615",
+      "commitTime": "2025-12-14 20:14:37 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 添加404页面路由并优化重定向逻辑"
+    },
+    {
+      "commitId": "d2af84935d1abfe861b6139ba3c178af8a81965f",
+      "commitTime": "2025-12-14 19:54:14 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复 SignalR 连接 URL 构建问题"
+    },
+    {
+      "commitId": "876666aa905b84f4d9ff9b391f5c762798ca37c2",
+      "commitTime": "2025-12-14 19:36:12 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(webpanel): 更新前端资源到 v0.2.1-alpha 版本"
+    },
+    {
+      "commitId": "1fba70392dd14712d29b26a5d203f5ee2e2f8033",
+      "commitTime": "2025-12-14 19:34:27 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(webpanel & daaemon): 更新项目版本至 0.2.1-alpha"
+    },
+    {
+      "commitId": "eee89a9860cf31cfe0aedc66b77608150c93f5b9",
+      "commitTime": "2025-12-14 19:30:12 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 更新关于页面的 .NET Core 版本信息"
+    },
+    {
+      "commitId": "643baedbd7a27186339176fda78170c5ab6262ce",
+      "commitTime": "2025-12-14 19:28:48 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 设置baseUrl默认值为当前域名"
+    },
+    {
+      "commitId": "3c7dcdc1a62e799e85b7a3bdd7ed8d7ab245033d",
+      "commitTime": "2025-12-14 17:13:35 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复初始化管理员账户的密码错误"
+    },
+    {
+      "commitId": "e28aa14fe2620b2fbdf58af7b25c4034fe96e2b9",
+      "commitTime": "2025-12-14 17:06:44 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #1 from MSLTeam/dev"
+    },
+    {
+      "commitId": "c75e987fbf2800311e134adbaf1bb73351b2d9bd",
+      "commitTime": "2025-12-14 17:05:32 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(webpanel & daemon): v0.2.0-alpha"
+    },
     {
       "commitId": "1ea6698777d7bc8d75e95d339e91f619f33dcf87",
       "commitTime": "2025-12-14 17:01:18 +0800",
@@ -317,60 +371,6 @@
       "commitTime": "2025-12-10 12:59:37 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "feat(webpanel & daemon): 添加文件重命名和删除功能"
-    },
-    {
-      "commitId": "64b7a84adfa2770db1f5af63da15b512ce0ad0d9",
-      "commitTime": "2025-12-10 11:05:55 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 支持新建和编辑文件"
-    },
-    {
-      "commitId": "e9fd7b9275dfe38bb542720b766ef0616765fa9b",
-      "commitTime": "2025-12-10 11:05:26 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 添加保存文件内容的API接口"
-    },
-    {
-      "commitId": "79fa13f26155c5bad3140d6b2bc945b9a70f1b65",
-      "commitTime": "2025-12-10 10:37:56 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 新增文件内容获取接口并优化路径安全检查"
-    },
-    {
-      "commitId": "54ce1fb79d033862b0c0ac7384a6338e6bdc314d",
-      "commitTime": "2025-12-09 23:44:00 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 简单实现文件管理的文件列表获取功能"
-    },
-    {
-      "commitId": "e2fd607bdf9c5accf0041ad9ad764be5285df9a7",
-      "commitTime": "2025-12-09 22:27:37 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 阻止运行中的服务器被修改核心设置"
-    },
-    {
-      "commitId": "0f1b0d7b0c98324f51f1ddf90a7085ad786ef858",
-      "commitTime": "2025-12-09 22:07:00 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(daemon): 整理创建/更新服务端实例类文件位置"
-    },
-    {
-      "commitId": "628b9a3def20c665ae9bd4c3d15ecc957caac644",
-      "commitTime": "2025-12-09 22:03:01 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 优化停止服务器逻辑"
-    },
-    {
-      "commitId": "f3801ea94ca0ea86e8848c12eb93bc5cf6fe91b9",
-      "commitTime": "2025-12-09 21:49:29 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复自定义模式创建实例时路径字段初始化问题"
-    },
-    {
-      "commitId": "842683a16a03baa166656112a826f65a8f27ab9e",
-      "commitTime": "2025-12-09 21:39:51 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 支持自定义输入输出编码配置"
     }
   ]
 }
