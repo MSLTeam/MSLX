@@ -1,4 +1,4 @@
-using MSLX.Daemon.Models;
+﻿using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Instance;
 using Newtonsoft.Json.Linq;
 
@@ -720,7 +720,7 @@ public static class ConfigServices
                 {
                     Username = "mslx",
                     Name = "MSLX 用户",
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("mslx"),
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(defaultPassword),
                     Role = "admin",
                     ApiKey = StringServices.GenerateRandomString(32),
                     Avatar = "https://www.mslmc.cn/logo.png"
