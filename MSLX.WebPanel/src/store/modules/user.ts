@@ -10,6 +10,7 @@ const REMEMBER_USER_NAME = 'remembered_username';
 
 const InitUserInfo = {
   name: '',
+  username: '',
   avatar: '',
   id: '',
   version: '',

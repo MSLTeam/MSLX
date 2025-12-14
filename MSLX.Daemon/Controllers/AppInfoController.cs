@@ -74,6 +74,7 @@ public class AppInfoController : ControllerBase
                 ["version"] = PlatFormServices.GetFormattedVersion(),
                 ["id"] = currentUserId,
                 ["user"] = displayName,  
+                ["username"] = userInfo?.Username ?? "mslx",
                 ["avatar"] = displayAvatar,
                 ["roles"] = JToken.FromObject(roles),
                 ["userIp"] = clientIp,
