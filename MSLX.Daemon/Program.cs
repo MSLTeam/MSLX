@@ -179,10 +179,9 @@ app.MapFallbackToFile("index.html", new StaticFileOptions
 var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
 lifetime.ApplicationStarted.Register(() =>
 {
-    if(((bool?)ConfigServices.Config.ReadConfig()["openWebConsoleOnLaunch"] ?? true) && (listenAddr.Contains("localhost") || listenAddr.Contains("127.0.0.1")))
+    if((bool?)ConfigServices.Config.ReadConfig()["openWebConsoleOnLaunch"] ?? true)
     {
-        var address = "https://alpha-mslx.aino.cyou/login";
-        PlatFormServices.OpenBrowser($"{address}?auth={StringServices.EncodeToBase64($"{listenAddr}|{ConfigServices.Config.ReadConfigKey("apiKey")}")}");
+        PlatFormServices.OpenBrowser($"{listenAddr}");
     }
 });
 
