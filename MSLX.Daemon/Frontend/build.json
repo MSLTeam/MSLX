@@ -1,6 +1,6 @@
 {
-  "version": "0.1.1",
-  "buildTime": "2025-12-14 16:27:08",
+  "version": "0.2.0",
+  "buildTime": "2025-12-14 17:04:24",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,40 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "229b1cc2bca3f9d6ee4d1908f3e1503087a32c2a",
-  "commitMsg": "feat(daemon): 初始化默认管理员用户时生成随机密码",
+  "commitId": "1ea6698777d7bc8d75e95d339e91f619f33dcf87",
+  "commitMsg": "fix(daemon): 统一使用无 BOM 的 UTF-8 编码以解决关服异常的问题",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "1ea6698777d7bc8d75e95d339e91f619f33dcf87",
+      "commitTime": "2025-12-14 17:01:18 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 统一使用无 BOM 的 UTF-8 编码以解决关服异常的问题"
+    },
+    {
+      "commitId": "6e1d53ae207d7a19164eb5e7c2825e866f298464",
+      "commitTime": "2025-12-14 16:54:50 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 支持设置文件编辑时候的编码格式 & Windows下创建服务端默认编码格式是GBK"
+    },
+    {
+      "commitId": "7c69ce1d47225c0317e9e3ab30b52ace6bd67aa0",
+      "commitTime": "2025-12-14 16:41:17 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 调整启动时打开Web控制台的逻辑"
+    },
+    {
+      "commitId": "c4b0cb9400aac8031a2ba89952d058b8857bd200",
+      "commitTime": "2025-12-14 16:38:03 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(frontend): 更新前端资源到v0.1.1-alpha"
+    },
+    {
+      "commitId": "05dcd4553bc93a978c5e736681aad2f38ca36e3a",
+      "commitTime": "2025-12-14 16:37:25 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 嵌入前端资源并优化认证中间件"
+    },
     {
       "commitId": "229b1cc2bca3f9d6ee4d1908f3e1503087a32c2a",
       "commitTime": "2025-12-14 16:11:10 +0800",
@@ -341,36 +371,6 @@
       "commitTime": "2025-12-09 21:39:51 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "feat(daemon): 支持自定义输入输出编码配置"
-    },
-    {
-      "commitId": "266a0147fa9cb1905cc0ae5a82093e7a66ae1bba",
-      "commitTime": "2025-12-09 21:21:36 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复实例设置组件导入命名问题"
-    },
-    {
-      "commitId": "0bb9b1ba53cbe113e68220b53bfe6774ef568585",
-      "commitTime": "2025-12-09 21:20:40 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 优化实例设置对话框滚动条样式"
-    },
-    {
-      "commitId": "43b6118984c62dfd89a43ff9bc0281041ae1f3ad",
-      "commitTime": "2025-12-09 21:15:50 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 调整通用设置组件的内边距"
-    },
-    {
-      "commitId": "2ea593b15da16c70cf414b7ed37d65cf75947acd",
-      "commitTime": "2025-12-09 21:07:04 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 支持自定义启动模式的服务端实例配置"
-    },
-    {
-      "commitId": "6779ed0803792e0dcfb8228bba210be4358dd0b0",
-      "commitTime": "2025-12-09 20:54:03 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 添加实例通用设置页面及功能"
     }
   ]
 }
