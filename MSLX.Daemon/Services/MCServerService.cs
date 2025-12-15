@@ -14,12 +14,18 @@ public class MCServerService
     private readonly ILogger<MCServerService> _logger;
     private readonly IHubContext<InstanceConsoleHub> _hubContext;
     private readonly IHostApplicationLifetime _appLifetime;
+    
+    // 短时间内崩溃重启限制
+    private readonly ConcurrentDictionary<uint, List<DateTime>> _crashHistory = new();
+    private const int CrashCheckWindowSeconds = 300; 
+    private const int MaxCrashCount = 5;  
 
     public class ServerContext
     {
         public Process? Process { get; set; }
         public ConcurrentQueue<string> Logs { get; set; } = new();
         public bool IsInitializing { get; set; } = false;
+        public volatile bool IsStopping = false;
     }
 
     private readonly ConcurrentDictionary<uint, ServerContext> _activeServers = new();
@@ -68,7 +74,8 @@ public class MCServerService
     {
         if (IsServerRunning(instanceId))
             return (false, "该服务器已经在运行中或正在启动中");
-
+        
+        _crashHistory.TryRemove(instanceId, out _);
         var serverInfo = ConfigServices.ServerList.GetServer(instanceId);
         if (serverInfo == null)
             return (false, "找不到指定的服务器配置");
@@ -334,6 +341,7 @@ public class MCServerService
         {
             try
             {
+                context.IsStopping = true; // 标记正在停止
                 if (context.Process != null && !context.Process.HasExited)
                 {
                     try
@@ -508,31 +516,85 @@ public class MCServerService
         });
     }
 
-    /// <summary>
-    /// 统一处理服务器退出后的逻辑
-    /// </summary>
+    // 监听服务器退出 执行崩溃重启等内容
     private void HandleServerExit(uint instanceId, int exitCode)
     {
-        if (!_activeServers.TryGetValue(instanceId, out var context))
+        if (!_activeServers.TryGetValue(instanceId, out var context)) return;
+
+        // 用户手动停止
+        if (context.IsStopping)
         {
+            _activeServers.TryRemove(instanceId, out _);
+            RecordLog(instanceId, context, "[MSLX] 服务器已停止 (用户操作)。");
             return;
         }
 
+        // 不是从控制台停止的
         if (_activeServers.TryRemove(instanceId, out var removedContext))
         {
-            // 退出日志
             string exitMsg = $"[MSLX] 服务器进程已停止，退出代码: {exitCode}";
-            if (exitCode != 0)
-            {
-                exitMsg += " (异常退出)";
-            }
-            else
-            {
-                exitMsg += " (正常关闭)";
-            }
-
+            exitMsg += exitCode != 0 ? " (异常退出)" : " (正常关闭)";
             RecordLog(instanceId, removedContext, exitMsg);
+            
             _logger.LogInformation($"MC 服务器 [{instanceId}] 停止处理完成 (Code: {exitCode})");
+
+            // 自动重启
+            try
+            {
+                var serverInfo = ConfigServices.ServerList.GetServer(instanceId);
+                
+                if (serverInfo != null && serverInfo.AutoRestart)
+                {
+                    // 熔断检查
+                    var history = _crashHistory.GetOrAdd(instanceId, new List<DateTime>());
+
+                    // 加锁处理 List
+                    lock (history)
+                    {
+                        DateTime now = DateTime.Now;
+                        history.Add(now); // 记录本次崩溃时间
+
+                        // 清理超出时间窗口的旧记录
+                        history.RemoveAll(t => t < now.AddSeconds(-CrashCheckWindowSeconds));
+
+                        // 检查剩余的记录数量是否超过阈值
+                        if (history.Count > MaxCrashCount)
+                        {
+                            RecordLog(instanceId, removedContext, 
+                                $">>> [MSLX] 严重错误：服务器在 {CrashCheckWindowSeconds} 秒内已崩溃 {history.Count} 次！");
+                            RecordLog(instanceId, removedContext, 
+                                ">>> [MSLX] 为防止无限重启导致系统卡死，守护进程已放弃自动重启该实例。");
+                            RecordLog(instanceId, removedContext, 
+                                ">>> [MSLX] 请检查服务器配置、Java环境或日志文件，修复问题后请手动启动。");
+                            
+                            _logger.LogError($"实例 {instanceId} 触发重启熔断保护，停止重启。");
+                            
+                            // 没救了喵
+                            return; 
+                        }
+                        
+                        RecordLog(instanceId, removedContext, 
+                            $">>> [MSLX] 检测到异常退出，正在准备第 {history.Count} 次尝试重启 (阈值: {MaxCrashCount}次/5分钟)...");
+                    }
+
+                    _ = Task.Run(async () =>
+                    {
+                        // 等5秒是好习惯
+                        await Task.Delay(5000); 
+                        
+                        // 重新启动
+                        var (success, msg) = StartServer(instanceId);
+                        if (!success)
+                        {
+                             _logger.LogWarning($"[AutoRestart] 实例 {instanceId} 重启失败: {msg}");
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"[AutoRestart] 自动重启逻辑出错");
+            }
         }
     }
 
