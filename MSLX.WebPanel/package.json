@@ -1,9 +1,8 @@
 {
-  "name": "MSLX.WebPanel",
+  "name": "mslx-webpanel",
   "version": "0.2.1",
   "scripts": {
-    "dev:mock": "vite --open --mode mock",
-    "dev": "vite --open --mode development",
+    "dev": "vite --mode development",
     "dev:linux": "vite --mode development",
     "build:test": "vite build --mode test",
     "build": "vue-tsc --noEmit && vite build --mode release && node generate-build-info.js",
