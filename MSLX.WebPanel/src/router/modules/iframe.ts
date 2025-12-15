@@ -9,7 +9,7 @@ export default [
     component: Layout,
     redirect: '/frame/doc',
     meta: {
-      icon: 'internet',
+      icon: 'earth',
       title: '链接',
     },
 
