@@ -1,9 +1,18 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from 'vue';
 import {
-  DashboardIcon, DesktopIcon,
-  PlayCircleIcon, RefreshIcon, StopCircleIcon,
-  TimeIcon, SettingIcon, FolderIcon
+  DashboardIcon,
+  DesktopIcon,
+  PlayCircleIcon,
+  RefreshIcon,
+  StopCircleIcon,
+  TimeIcon,
+  SettingIcon,
+  FolderIcon,
+  ArrowLeftRight1Icon,
+  EnterIcon,
+  WinkIcon,
+  UserUnlockedIcon,
 } from 'tdesign-icons-vue-next';
 import { InstanceInfoModel } from '@/api/model/instance';
 
@@ -19,10 +28,10 @@ const props = defineProps<{
 }>();
 
 const emits = defineEmits<{
-  start: [],
-  stop: [],
-  'clear-log': [],
-  'refresh-info': []
+  start: [];
+  stop: [];
+  'clear-log': [];
+  'refresh-info': [];
 }>();
 
 const settingsRef = ref<InstanceType<typeof InstanceSettings> | null>(null);
@@ -47,7 +56,7 @@ const parseTimeSpanToSeconds = (timeStr?: string) => {
   const match = timeStr.match(/^(?:(\d+)\.)?(\d{1,2}):(\d{2}):(\d{2})(?:\.\d+)?$/);
   if (match) {
     const days = parseInt(match[1] || '0', 10);
-    return (days * 86400) + (parseInt(match[2]) * 3600) + (parseInt(match[3]) * 60) + parseInt(match[4]);
+    return days * 86400 + parseInt(match[2]) * 3600 + parseInt(match[3]) * 60 + parseInt(match[4]);
   }
   return 0;
 };
@@ -68,17 +77,27 @@ const startTimer = () => {
   timer = window.setInterval(() => runSeconds.value++, 1000);
 };
 const stopTimer = () => {
-  if (timer) { clearInterval(timer); timer = null; }
+  if (timer) {
+    clearInterval(timer);
+    timer = null;
+  }
 };
 
-watch(() => props.serverInfo?.uptime, (v) => v && (runSeconds.value = parseTimeSpanToSeconds(v)), { immediate: true });
-watch(() => props.isRunning, (v) => v ? (!timer && startTimer()) : stopTimer(), { immediate: true });
+watch(
+  () => props.serverInfo?.uptime,
+  (v) => v && (runSeconds.value = parseTimeSpanToSeconds(v)),
+  { immediate: true },
+);
+watch(
+  () => props.isRunning,
+  (v) => (v ? !timer && startTimer() : stopTimer()),
+  { immediate: true },
+);
 onUnmounted(() => stopTimer());
 </script>
 
 <template>
   <div class="sidebar-content">
-
     <t-card class="control-card" :bordered="false">
       <div class="control-header">
         <div class="status-indicator" :class="{ running: isRunning }">
@@ -92,20 +111,22 @@ onUnmounted(() => stopTimer());
       <div class="control-actions">
         <t-button
           v-if="!isRunning"
-          theme="primary" size="large" block :loading="loading"
-          @click="$emit('clear-log');$emit('start');"
+          theme="primary"
+          size="large"
+          block
+          :loading="loading"
+          @click="
+            $emit('clear-log');
+            $emit('start');
+          "
         >
           <template #icon><play-circle-icon /></template>启动实例
         </t-button>
-        <t-button
-          v-else
-          theme="danger" size="large" block :loading="loading"
-          @click="$emit('stop')"
-        >
+        <t-button v-else theme="danger" size="large" block :loading="loading" @click="$emit('stop')">
           <template #icon><stop-circle-icon /></template>停止实例
         </t-button>
 
-        <t-button variant="outline" style="margin:0;" block @click="changeUrl(`/instance/files/${serverId}`)">
+        <t-button variant="outline" style="margin: 0" block @click="changeUrl(`/instance/files/${serverId}`)">
           <template #icon><folder-icon /></template>文件管理
         </t-button>
 
@@ -121,7 +142,7 @@ onUnmounted(() => stopTimer());
       </div>
     </t-card>
 
-    <t-card title="实例详情" class="info-card" :bordered="false">
+    <t-card v-if="serverInfo?.java !== 'none'" title="实例详情" class="info-card" :bordered="false">
       <div class="info-list">
         <div class="info-item">
           <div class="label"><desktop-icon /> 实例名称</div>
@@ -131,30 +152,68 @@ onUnmounted(() => stopTimer());
           <div class="label"><dashboard-icon /> 内存限制</div>
           <div class="value">{{ serverInfo?.maxM || '?' }} MB</div>
         </div>
-        <div class="proxy-group">
+        <div class="proxy-group"></div>
+        <div class="info-item">
+          <div class="label"><enter-icon /> 运行端口</div>
+          <div class="value">{{ serverInfo?.mcConfig?.serverPort || '?' }}</div>
+        </div>
+        <div class="info-item">
+          <div class="label"><arrow-left-right-1-icon /> 游戏难度</div>
+          <div class="value">{{ serverInfo?.mcConfig?.difficulty || '?' }}</div>
+        </div>
+        <div class="info-item">
+          <div class="label"><wink-icon /> 游戏模式</div>
+          <div class="value">{{ serverInfo?.mcConfig?.gamemode || '?' }}</div>
+        </div>
+        <div class="info-item">
+          <div class="label"><folder-icon /> 游戏地图</div>
+          <div class="value">{{ serverInfo?.mcConfig?.levelName || '?' }}</div>
+        </div>
+        <div class="info-item">
+          <div class="label"><user-unlocked-icon /> 正版验证</div>
+          <div class="value">{{ serverInfo?.mcConfig?.onlineMode === 'true' ? '已开启' : '已关闭' }}</div>
+        </div>
+
+        <div class="proxy-group"></div>
           <div class="info-item">
             <div class="label"><time-icon /> 运行时长</div>
             <div class="value">{{ isRunning ? formattedUptime : '--:--:--' }}</div>
           </div>
+      </div>
+    </t-card>
+
+    <t-card v-else title="实例详情" class="info-card" :bordered="false">
+      <div class="info-list">
+        <div class="info-item">
+          <div class="label"><desktop-icon /> 实例名称</div>
+          <div class="value">{{ serverInfo?.name || 'Minecraft Server' }}</div>
+        </div>
+        <div class="info-item">
+          <div class="label"><dashboard-icon /> 模式</div>
+          <div class="value">自定义模式</div>
+        </div>
+
+        <div class="proxy-group"></div>
+        <div class="info-item">
+          <div class="label"><time-icon /> 运行时长</div>
+          <div class="value">{{ isRunning ? formattedUptime : '--:--:--' }}</div>
         </div>
       </div>
     </t-card>
 
-    <instance-settings
-      ref="settingsRef"
-      :server-id="serverId"
-      @success="handleSettingsSaved"
-    />
-
+    <instance-settings ref="settingsRef" :server-id="serverId" @success="handleSettingsSaved" />
   </div>
 </template>
 
 <style scoped lang="less">
 .sidebar-content {
-  display: flex; flex-direction: column; gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.control-card, .info-card {
+.control-card,
+.info-card {
   border-radius: 12px;
   box-shadow: var(--td-shadow-1);
   background: var(--td-bg-color-container);
@@ -162,39 +221,72 @@ onUnmounted(() => stopTimer());
 
 .control-card {
   .control-header {
-    display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
     .status-indicator {
-      display: flex; align-items: center; gap: 10px; font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
       color: var(--td-text-color-secondary);
       .pulse {
-        width: 8px; height: 8px; border-radius: 50%;
-        background: var(--td-bg-color-component-disabled); transition: all 0.3s;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--td-bg-color-component-disabled);
+        transition: all 0.3s;
       }
       &.running {
         color: var(--td-success-color);
-        .pulse { background: var(--td-success-color); box-shadow: 0 0 8px var(--td-success-color); }
+        .pulse {
+          background: var(--td-success-color);
+          box-shadow: 0 0 8px var(--td-success-color);
+        }
       }
     }
   }
   .control-actions {
-    display: flex; flex-direction: column; gap: 16px; /* 调整了间距，让按钮排列更舒服 */
+    display: flex;
+    flex-direction: column;
+    gap: 16px; /* 调整了间距，让按钮排列更舒服 */
     .action-row {
-      display: flex; gap: 12px;
-      .t-button { flex: 1; margin: 0; }
+      display: flex;
+      gap: 12px;
+      .t-button {
+        flex: 1;
+        margin: 0;
+      }
     }
   }
 }
 
 .info-card {
   .info-list {
-    display: flex; flex-direction: column; gap: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     .proxy-group {
-      padding-top: 12px; border-top: 1px dashed var(--td-component-stroke); margin-top: 4px;
+      border-top: 1px dashed var(--td-component-stroke);
+      margin-top: 4px;
     }
     .info-item {
-      display: flex; justify-content: space-between; align-items: center;
-      .label { display: flex; align-items: center; gap: 8px; color: var(--td-text-color-placeholder); font-size: 13px; }
-      .value { font-family: var(--td-font-family-number); font-weight: 500; font-size: 13px; }
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      .label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--td-text-color-placeholder);
+        font-size: 13px;
+      }
+      .value {
+        font-family: var(--td-font-family-number);
+        font-weight: 500;
+        font-size: 13px;
+      }
     }
   }
 }
