@@ -35,6 +35,7 @@ public class MCServerService
         _appLifetime = appLifetime;
 
         _appLifetime.ApplicationStopping.Register(StopAllServers);
+        _appLifetime.ApplicationStarted.Register(OnAppStarted);
 
         // 注册编码提供程序，以支持 GBK 等非 Unicode 编码
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -458,6 +459,54 @@ public class MCServerService
 
         _activeServers.Clear();
     }
+    
+    // 启动的生命周期事件
+    private void OnAppStarted()
+    {
+        Task.Run(async () =>
+        {
+            try
+            {
+                // 等3s 确保服务全部初始化了
+                await Task.Delay(3000);
+
+                _logger.LogInformation("[AutoStart] 正在检查自启动实例...");
+                var config = ConfigServices.ServerList.GetServerList();
+
+                int count = 0;
+
+                foreach (var item in config)
+                {
+                    uint id = (uint)item.ID;
+                    bool autoStart = item.RunOnStartup;
+
+                    if (id > 0 && autoStart)
+                    {
+                        _logger.LogInformation($"[AutoStart] 检测到实例 [{id}] 配置为自启动，正在启动...");
+                        var (success, msg) = StartServer(id);
+                        
+                        if (success)
+                        {
+                            count++;
+                            // 延迟启动
+                            await Task.Delay(5000);
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"[AutoStart] 实例 [{id}] 启动请求被拒绝: {msg}");
+                        }
+                    }
+                }
+
+                if (count > 0)
+                    _logger.LogInformation($"[AutoStart] 自启动流程完成，共启动 {count} 个实例。");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[AutoStart] 自启动流程发生异常");
+            }
+        });
+    }
 
     /// <summary>
     /// 统一处理服务器退出后的逻辑
@@ -564,7 +613,7 @@ public class MCServerService
                     _logger.LogError("下载Authlib-Injector失败: 无法获取元数据。");
                     return false;
                 }
-                _logger.LogWarning("获取元数据失败，将使用旧版本Authlib-Injecto。");
+                _logger.LogWarning("获取元数据失败，将使用旧版本Authlib-Injector。");
             }
         }catch(Exception ex)
         {
