@@ -28,6 +28,7 @@ let hubConnection: HubConnection | null = null;
 
 // 命令输入缓冲
 let commandBuffer = '';
+const inputCommand = ref('');
 
 // 主题配置
 const termThemes = {
@@ -122,6 +123,14 @@ const handleTerminalInput = async (data: string) => {
     commandBuffer += data;
     term.write(data); // 本地回显
   }
+};
+
+const handleSendInput = async () => {
+  if (!inputCommand.value) return;
+  const cmd = inputCommand.value;
+  term?.writeln(cmd);
+  await sendCommandToServer(cmd);
+  inputCommand.value = '';
 };
 
 const sendCommandToServer = async (cmd: string) => {
@@ -265,6 +274,15 @@ onUnmounted(async () => {
       <div class="tab-title">MSLX 服务端控制台 | #{{ serverId }}</div>
     </div>
     <div ref="terminalBody" class="terminal-body"></div>
+    <div class="terminal-footer">
+      <input
+        v-model="inputCommand"
+        class="cmd-input"
+        placeholder="发送控制台指令..."
+        @keyup.enter="handleSendInput"
+      />
+      <button class="send-btn" @click="handleSendInput">发送</button>
+    </div>
   </div>
 </template>
 
@@ -311,13 +329,67 @@ onUnmounted(async () => {
 
   .terminal-body {
     position: absolute;
-    top: 38px; bottom: 0; left: 0; right: 0;
+    top: 38px; bottom: 50px; left: 0; right: 0;
     padding: 6px 0 6px 10px; // 底部留白略微增加
     z-index: 1;
 
     /* 针对 xterm 的滚动条应用 Mixin */
     :deep(.xterm-viewport) {
       .scrollbar-mixin();
+    }
+  }
+
+  .terminal-footer {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    background-color: var(--td-bg-color-container);
+    border-top: 1px solid var(--td-component-stroke);
+    z-index: 10;
+    gap: 12px;
+
+    .cmd-input {
+      flex: 1;
+      height: 32px;
+      background: transparent;
+      border: 1px solid var(--td-component-border);
+      border-radius: 4px;
+      padding: 0 12px;
+      color: var(--td-text-color-primary);
+      font-family: Menlo, monospace;
+      font-size: 13px;
+      outline: none;
+      transition: all 0.2s;
+
+      &:focus {
+        border-color: var(--td-brand-color);
+        background-color: var(--td-bg-color-secondarycontainer);
+      }
+      &::placeholder {
+        color: var(--td-text-color-placeholder);
+      }
+    }
+
+    .send-btn {
+      height: 32px;
+      padding: 0 16px;
+      border: none;
+      border-radius: 4px;
+      background-color: var(--td-brand-color);
+      color: #fff;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        background-color: var(--td-brand-color-hover);
+      }
+      &:active {
+        background-color: var(--td-brand-color-active);
+      }
     }
   }
 }
