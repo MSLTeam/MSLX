@@ -192,7 +192,7 @@ onUnmounted(async () => {
   <div class="monitor-dashboard">
     <t-row :gutter="[12, 12]">
       <t-col :xs="12" :md="6">
-        <t-card :bordered="false" class="chart-card" size="small">
+        <t-card shadow :bordered="false" class="chart-card" size="small">
           <div class="card-content">
             <div class="info-section">
               <div class="label">CPU 使用率</div>
@@ -213,7 +213,7 @@ onUnmounted(async () => {
       </t-col>
 
       <t-col :xs="12" :md="6">
-        <t-card :bordered="false" class="chart-card" size="small">
+        <t-card shadow :bordered="false" class="chart-card" size="small">
           <div class="card-content">
             <div class="info-section">
               <div class="label">内存使用率</div>
@@ -242,11 +242,6 @@ onUnmounted(async () => {
   transition: all 0.3s;
   border-radius: 6px;
   background-color: var(--td-bg-color-container);
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--td-shadow-2);
-  }
 }
 
 .card-content {
