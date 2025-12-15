@@ -159,11 +159,11 @@ onUnmounted(() => stopTimer());
         </div>
         <div class="info-item">
           <div class="label"><arrow-left-right-1-icon /> 游戏难度</div>
-          <div class="value">{{ serverInfo?.mcConfig?.difficulty || '?' }}</div>
+          <div class="value"><t-tag theme="primary">{{ serverInfo?.mcConfig?.difficulty || '?' }}</t-tag></div>
         </div>
         <div class="info-item">
           <div class="label"><wink-icon /> 游戏模式</div>
-          <div class="value">{{ serverInfo?.mcConfig?.gamemode || '?' }}</div>
+          <div class="value"><t-tag>{{ serverInfo?.mcConfig?.gamemode || '?' }}</t-tag></div>
         </div>
         <div class="info-item">
           <div class="label"><folder-icon /> 游戏地图</div>
@@ -171,7 +171,7 @@ onUnmounted(() => stopTimer());
         </div>
         <div class="info-item">
           <div class="label"><user-unlocked-icon /> 正版验证</div>
-          <div class="value">{{ serverInfo?.mcConfig?.onlineMode === 'true' ? '已开启' : '已关闭' }}</div>
+          <div class="value"><t-tag :theme="serverInfo?.mcConfig?.onlineMode === 'true' ? 'success' : 'warning'">{{ serverInfo?.mcConfig?.onlineMode === 'true' ? '已开启' : '已关闭' }}</t-tag></div>
         </div>
 
         <div class="proxy-group"></div>
