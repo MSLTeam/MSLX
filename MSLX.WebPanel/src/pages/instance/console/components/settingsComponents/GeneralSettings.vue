@@ -124,7 +124,7 @@ const authSelectType = ref('');
 const customAuthUrl = ref('');
 const authOptions = [
   { label: '官方/离线模式 (无)', value: 'none' },
-  { label: 'MSL 统一身份验证', value: 'https://skin.mslmc.net/api/yggdrasil' },
+  { label: 'MSL 统一身份验证 (MSL Skin)', value: 'https://skin.mslmc.net/api/yggdrasil' },
   { label: 'LittleSkin', value: 'https://littleskin.cn/api/yggdrasil' },
   { label: '自定义服务器', value: 'custom' }
 ];
