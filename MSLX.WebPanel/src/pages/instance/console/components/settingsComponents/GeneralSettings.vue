@@ -585,12 +585,12 @@ onUnmounted(() => {
         </div>
       </template>
 
-      <div class="setting-group-title">自动备份</div>
+      <div class="setting-group-title">备份设置</div>
 
       <div class="setting-item">
         <div class="setting-info">
           <div class="title">备份策略</div>
-          <div class="desc">设置自动备份保留数量，以及触发备份的延迟时间</div>
+          <div class="desc">设置自动备份保留的最大数量，以及触发备份的延迟时间</div>
         </div>
         <div class="setting-control flex-row">
           <t-input-number
