@@ -1,6 +1,6 @@
 <template>
-  <div class="modern-menu-wrapper">
-    <template v-for="item in list" :key="item.path">
+  <div id="menu-wrapper" class="modern-menu-wrapper" :class="{ 'is-horizontal': isHorizontal }">
+    <template v-for="item in renderList" :key="item.path">
       <template v-if="!item.children || !item.children.length || item.meta?.single">
         <t-menu-item
           v-if="getHref(item)"
@@ -42,9 +42,21 @@
           <t-icon v-if="beIcon(item)" :name="item.icon" />
           <component :is="beRender(item).render" v-else-if="beRender(item).can" class="t-icon" />
         </template>
-        <menu-content v-if="item.children" :nav-data="item.children" />
+        <menu-content v-if="item.children" :nav-data="item.children" :is-horizontal="false" />
       </t-submenu>
     </template>
+
+    <t-submenu
+      v-if="isHorizontal && overflowList.length > 0"
+      name="more-menu"
+      title="更多"
+      class="modern-submenu"
+    >
+      <template #icon>
+        <t-icon name="ellipsis" />
+      </template>
+      <menu-content :nav-data="overflowList" :is-horizontal="false" />
+    </t-submenu>
   </div>
 </template>
 
@@ -55,17 +67,42 @@ import isObject from 'lodash/isObject';
 import type { MenuRoute } from '@/types/interface';
 import { getActive } from '@/router';
 
+defineOptions({
+  name: 'MenuContent',
+});
+
 const props = defineProps({
   navData: {
     type: Array as PropType<MenuRoute[]>,
     default: () => [],
   },
+  isHorizontal: {
+    type: Boolean,
+    default: false,
+  },
+  maxItemCount: {
+    type: Number,
+    default: 3,
+  }
 });
 
 const active = computed(() => getActive());
+
 const list = computed(() => {
   const { navData } = props;
   return getMenuList(navData);
+});
+
+// 计算需要显示的列表
+const renderList = computed(() => {
+  if (!props.isHorizontal) return list.value;
+  return list.value.slice(0, props.maxItemCount);
+});
+
+// 计算溢出的列表
+const overflowList = computed(() => {
+  if (!props.isHorizontal) return [];
+  return list.value.slice(props.maxItemCount);
 });
 
 type ListItemType = MenuRoute & { icon?: string };
@@ -132,7 +169,24 @@ const openHref = (url: string) => {
 <style lang="less" scoped>
 @ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 
-:deep(.t-menu__item),
+:deep(.t-menu__item) {
+  position: relative;
+  margin: 4px 0;
+  border-radius: 8px !important;
+  height: 40px;
+  line-height: 40px;
+
+  color: var(--td-text-color-primary);
+  font-size: 14px;
+
+  transition: background-color 0.2s, color 0.2s, transform 0.2s;
+
+  display: flex;
+  align-items: center;
+
+  overflow: hidden;
+}
+
 :deep(.t-submenu__title) {
   position: relative;
   margin: 4px 10px;
@@ -194,12 +248,11 @@ const openHref = (url: string) => {
   }
 }
 
-:deep(.t-submenu) .t-menu__item {
-  margin: 4px 10px;
+#menu-wrapper.is-horizontal {
+  --td-comp-margin-s: 0px !important;
 }
 
 :deep(.t-submenu) .t-menu__item.t-is-active::before {
   display: none;
 }
-
 </style>
