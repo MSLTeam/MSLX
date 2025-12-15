@@ -22,6 +22,7 @@ export default [
           frameSrc: 'https://mslx.mslmc.cn',
           frameBlank: true,
           title: 'MSLX 文档',
+          icon: 'book',
         },
       },
       {
@@ -32,6 +33,7 @@ export default [
           frameSrc: 'https://user.mslmc.net',
           frameBlank: true,
           title: 'MSL 用户中心',
+          icon: 'user-arrow-left',
         },
       },
     ],
