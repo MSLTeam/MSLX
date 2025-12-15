@@ -4,6 +4,7 @@ import { useUserStore } from '@/store';
 
 import Banner from './components/Banner.vue'
 import InfoCard from './components/InfoCard.vue';
+import SystemStatus from './components/SystemStatus.vue'
 import Announcement from './components/Announcement.vue';
 import { changeUrl } from '@/router';
 
@@ -32,6 +33,7 @@ const isDefaultUser = computed(() => {
 
     <banner />
     <info-card style="margin-top: 12px;"/>
+    <system-status style="margin-top: 12px;"/>
     <announcement style="margin-top: 12px;"/>
   </div>
 </template>

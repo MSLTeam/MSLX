@@ -80,12 +80,14 @@ builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationM
 builder.Services.AddSingleton<FrpProcessService>();
 builder.Services.AddSingleton(typeof(IBackgroundTaskQueue<>), typeof(BackgroundTaskQueue<>));
 builder.Services.AddSingleton<MCServerService>();
+builder.Services.AddSingleton<SystemMonitor>();
 
 // 后台服务注册
 builder.Services.AddHostedService<ServerCreationService>();
 builder.Services.AddHostedService<ServerUpdateService>();
 builder.Services.AddHostedService<TempFileCleanupService>();
 builder.Services.AddHostedService<TaskSchedulerService>();
+builder.Services.AddHostedService<SystemMonitorWorker>();
 
 // 瞬时服务注册
 builder.Services.AddScoped<JavaScannerService>();
@@ -168,6 +170,7 @@ app.MapHub<CreationProgressHub>("/api/hubs/creationProgressHub");
 app.MapHub<UpdateProgressHub>("/api/hubs/updateProgressHub");
 app.MapHub<FrpConsoleHub>("/api/hubs/frpLogsHub");
 app.MapHub<InstanceConsoleHub>("/api/hubs/instanceControlHub");
+app.MapHub<SystemMonitorHub>("/api/hubs/system");
 app.MapControllers();
 
 // SPA
