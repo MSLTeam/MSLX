@@ -40,6 +40,7 @@ public class UpdateServerRequest : IValidatableObject
     public string BackupPath { get; set; } = "MSLX://Backup/Instance";
 
     public bool AutoRestart { get; set; } = false;
+    public bool ForceAutoRestart { get; set; } = true;
     public bool RunOnStartup { get; set; } = false;
     
     // 两个编码 暂时仅支持 utf-8 和 gbk

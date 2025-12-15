@@ -543,7 +543,7 @@ public class MCServerService
             {
                 var serverInfo = ConfigServices.ServerList.GetServer(instanceId);
                 
-                if (serverInfo != null && serverInfo.AutoRestart)
+                if (serverInfo != null && serverInfo.AutoRestart && (exitCode!=0 || serverInfo.ForceAutoRestart))
                 {
                     // 熔断检查
                     var history = _crashHistory.GetOrAdd(instanceId, new List<DateTime>());

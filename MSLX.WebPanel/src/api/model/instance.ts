@@ -49,6 +49,7 @@ export interface UpdateInstanceModel {
   backupDelay?: number;
   backupPath?: string;
   autoRestart?: boolean;
+  forceAutoRestart?: boolean;
   runOnStartup?: boolean;
   inputEncoding?: 'utf-8' | 'gbk';
   outputEncoding?: 'utf-8' | 'gbk';
@@ -74,6 +75,7 @@ export interface InstanceSettingsModel {
   backupDelay?: number;
   backupPath?: string;
   autoRestart?: boolean;
+  forceAutoRestart?: boolean;
   runOnStartup?: boolean;
   inputEncoding?: 'utf-8' | 'gbk';
   outputEncoding?: 'utf-8' | 'gbk';
