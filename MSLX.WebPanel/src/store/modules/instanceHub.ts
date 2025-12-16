@@ -52,7 +52,7 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
       if (token) hubUrl.searchParams.append('x-user-token', token);
 
       const newConnection = new HubConnectionBuilder()
-        .withUrl(hubUrl.toString())
+        .withUrl(hubUrl.toString(),{ withCredentials: false })
         .configureLogging(LogLevel.Warning)
         .withAutomaticReconnect([0, 2000, 5000, 10000])
         .build();
