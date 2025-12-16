@@ -39,7 +39,7 @@ namespace MSLX.Daemon.Services
 
         private async Task ProcessTasksAsync()
         {
-            // 使用 UTC 时间作为系统当前时间的基准，满足 Cronos 库要求
+            // 使用 UTC 时间作为系统当前时间的基准
             var nowUtc = DateTime.UtcNow;
             
             var tasks = ConfigServices.TaskList.GetTaskList().Where(t => t.Enable).ToList();
@@ -70,7 +70,6 @@ namespace MSLX.Daemon.Services
                     : nowUtc.AddMinutes(-1);
 
                 // 获取下一次运行时间
-                // 关键点：传入 TimeZoneInfo.Local，让 Cron 表达式匹配服务器本地时间
                 DateTime? nextRunUtc = expression.GetNextOccurrence(fromTimeUtc, TimeZoneInfo.Local);
 
                 if (nextRunUtc.HasValue)
@@ -111,6 +110,10 @@ namespace MSLX.Daemon.Services
 
                     case "restart":
                         await HandleRestartAsync(task.InstanceId, task.Payload);
+                        break;
+                    
+                    case "backup":
+                        _mcService.StartBackupServer(task.InstanceId);
                         break;
                     
                     default:

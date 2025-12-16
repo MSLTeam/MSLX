@@ -55,6 +55,7 @@ const formData = ref({
 // 任务类型
 const taskTypeOptions = [
   { label: '发送命令 (Command)', value: 'command' },
+  { label: '备份存档 (Backup)', value: 'backup' },
   { label: '开启服务器 (Start)', value: 'start' },
   { label: '停止服务器 (Stop)', value: 'stop' },
   { label: '重启服务器 (Restart)', value: 'restart' },
@@ -254,7 +255,7 @@ onMounted(fetchData);
             </div>
           </div>
 
-          <div class="setting-item" v-if="formData.type === 'command' || formData.type === 'restart'">
+          <div v-if="formData.type === 'command' || formData.type === 'restart'" class="setting-item">
             <div class="setting-info">
               <div class="title">{{ formData.type === 'restart' ? '重启提示语' : '控制台命令' }}</div>
               <div class="desc">
@@ -296,7 +297,7 @@ onMounted(fetchData);
         <div v-for="item in taskList" :key="item.id" class="task-card">
           <div class="card-left">
             <div class="task-header-row">
-              <t-tag size="small" :theme="item.enable ? 'success' : 'default'" variant="light" class="status-tag">
+              <t-tag size="small" :theme="item.enable ? 'success' : 'warning'" variant="light" class="status-tag">
                 {{ item.enable ? '运行中' : '已暂停' }}
               </t-tag>
               <span class="task-name">{{ item.name }}</span>
