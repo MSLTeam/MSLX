@@ -29,7 +29,7 @@ import ServerCoreSelector from '@/pages/instance/createInstance/components/Serve
 const route = useRoute();
 const userStore = useUserStore();
 
-const instanceId = parseInt(route.params.id as string);
+const instanceId = computed(() => parseInt(route.params.id as string));
 
 const formRef = ref<FormInstanceFunctions | null>(null);
 const loading = ref(false);
@@ -46,7 +46,7 @@ const encodingOptions = [
 
 // 数据模型
 const formData = ref<UpdateInstanceModel>({
-  id: instanceId,
+  id: instanceId.value,
   name: '',
   base: '',
   java: '',
@@ -67,6 +67,44 @@ const formData = ref<UpdateInstanceModel>({
   coreUrl: '',
   coreSha256: '',
   coreFileKey: '',
+});
+
+// --- 内存单位转换 ---
+
+const minUnit = ref('MB');
+const maxUnit = ref('MB');
+const unitOptions = [
+  { label: 'MB', value: 'MB' },
+  { label: 'GB', value: 'GB' }
+];
+
+
+// 计算属性
+const minMComputed = computed({
+  get: () => {
+    if (minUnit.value === 'GB') {
+      const val = formData.value.minM / 1024;
+      // 读取时保留 2 位小数
+      return Math.round(val * 100) / 100;
+    }
+    return formData.value.minM;
+  },
+  set: (val) => {
+    formData.value.minM = minUnit.value === 'GB' ? Math.round(val * 1024) : val;
+  }
+});
+
+const maxMComputed = computed({
+  get: () => {
+    if (maxUnit.value === 'GB') {
+      const val = formData.value.maxM / 1024;
+      return Math.round(val * 100) / 100;
+    }
+    return formData.value.maxM;
+  },
+  set: (val) => {
+    formData.value.maxM = maxUnit.value === 'GB' ? Math.round(val * 1024) : val;
+  }
 });
 
 // --- Java 逻辑 ---
@@ -243,7 +281,8 @@ const initData = async () => {
   loading.value = true;
   try {
     await fetchJavaVersions();
-    const res = await getInstanceSettings(instanceId);
+    formData.value.id = instanceId.value;
+    const res = await getInstanceSettings(instanceId.value);
     formData.value = {
       ...formData.value,
       ...res,
@@ -251,6 +290,10 @@ const initData = async () => {
       coreFileKey: '',
       coreSha256: ''
     };
+
+    // 判断内存单位
+    minUnit.value = (res.minM > 0 && res.minM % 1024 === 0) ? 'GB' : 'MB';
+    maxUnit.value = (res.maxM > 0 && res.maxM % 1024 === 0) ? 'GB' : 'MB';
 
     isPathEditable.value = false;
 
@@ -297,6 +340,7 @@ const initData = async () => {
   }
 };
 
+watch(instanceId, initData);
 onMounted(initData);
 
 const onSubmit = async () => {
@@ -381,7 +425,7 @@ const startSignalRListening = async () => {
 
   try {
     await hubConnection.value.start();
-    await hubConnection.value.invoke('JoinGroup', instanceId.toString());
+    await hubConnection.value.invoke('JoinGroup', instanceId.value.toString());
   } catch {
     progressLogs.value.push({ time: '-', msg: '连接失败' });
   }
@@ -403,322 +447,345 @@ onUnmounted(() => {
 
 <template>
   <div class="settings-container">
-    <t-form
-      ref="formRef"
-      :data="formData"
-      :rules="rules"
-      label-width="0"
-      @submit="onSubmit"
-    >
-      <div class="setting-group-title">基础设置</div>
-
-      <div class="setting-item">
-        <div class="setting-info">
-          <div class="title">服务器名称</div>
-          <div class="desc">在面板列表中显示的别名，支持中文</div>
-        </div>
-        <div class="setting-control">
-          <t-input v-model="formData.name" placeholder="请输入名称" />
-        </div>
-      </div>
-
-      <div class="setting-item">
-        <div class="setting-info">
-          <div class="title">实例路径</div>
-          <div class="desc">
-            <span :class="{ 'text-warning': isPathEditable }">
-                {{ isPathEditable ? '警告：修改路径可能导致无法找到原文件' : '服务器文件的物理存储路径，非必要请勿修改' }}
-            </span>
-          </div>
-        </div>
-        <div class="setting-control">
-          <t-input v-model="formData.base" :disabled="!isPathEditable">
-            <template #suffix>
-              <t-tooltip :content="isPathEditable ? '点击锁定' : '点击解锁编辑 (慎重)'">
-                <t-button variant="text" shape="square" @click="togglePathEdit">
-                  <template #icon>
-                    <lock-off-icon v-if="isPathEditable" style="color: var(--td-warning-color)" />
-                    <lock-on-icon v-else />
-                  </template>
-                </t-button>
-              </t-tooltip>
-            </template>
-          </t-input>
-        </div>
-      </div>
-
-      <div class="setting-group-title">运行模式</div>
-
-      <div class="setting-item">
-        <div class="setting-info">
-          <div class="title">启动方式</div>
-          <div class="desc">选择使用 Java 启动 Minecraft，或使用自定义命令启动其他程序 (如 Bedrock, Python 等)</div>
-        </div>
-        <div class="setting-control">
-          <t-select v-model="javaType" :options="[
-            { label: 'MSLX 在线下载 (Java)', value: 'online' },
-            { label: '使用本地版本 (Java)', value: 'local' },
-            { label: '自定义路径 (Java)', value: 'custom' },
-            { label: '环境变量 (Java)', value: 'env' },
-            { label: '自定义命令 (无Java)', value: 'none' }
-          ]" />
-
-          <div v-if="javaType !== 'none'" style="margin-top: 8px">
-            <t-select
-              v-if="javaType === 'online'"
-              v-model="selectedJavaVersion"
-              :options="javaVersions"
-              placeholder="请选择版本"
-              filterable
-            />
-            <t-select
-              v-if="javaType === 'local'"
-              v-model="customJavaPath"
-              :options="localJavaVersions"
-              placeholder="选择已识别的 Java"
-            />
-            <t-input
-              v-if="javaType === 'custom'"
-              v-model="customJavaPath"
-              placeholder="输入 java 可执行文件完整路径"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div class="setting-item">
-        <div class="setting-info">
-          <div class="title">{{ javaType === 'none' ? '启动命令 (Command)' : '启动参数 (JVM Args)' }}</div>
-          <div class="desc">
-            {{ javaType === 'none'
-            ? '完全自定义的启动命令。程序将直接执行此段内容，不依赖 Java 环境。'
-            : '传递给 Java 的启动参数，如 GC 策略 (例如 -XX:+UseG1GC)'
-            }}
-          </div>
-        </div>
-        <div class="setting-control">
-          <t-textarea
-            v-model="formData.args"
-            :autosize="{ minRows: 2, maxRows: 4 }"
-            :placeholder="javaType === 'none' ? '例如: ./bedrock_server_x64' : '无特殊需求请留空'"
-          />
-        </div>
-      </div>
-
-      <template v-if="javaType !== 'none'">
-        <div class="setting-group-title">核心管理</div>
+    <t-loading :loading="loading" show-overlay>
+      <t-form
+        ref="formRef"
+        :data="formData"
+        :rules="rules"
+        label-width="0"
+        @submit="onSubmit"
+      >
+        <div class="setting-group-title">基础设置</div>
 
         <div class="setting-item">
           <div class="setting-info">
-            <div class="title">服务端核心文件</div>
+            <div class="title">服务器名称</div>
+            <div class="desc">在面板列表中显示的别名，支持中文</div>
+          </div>
+          <div class="setting-control">
+            <t-input v-model="formData.name" placeholder="请输入名称" />
+          </div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="title">实例路径</div>
             <div class="desc">
-              指定启动的 Jar 文件名。如果文件已存在于目录中，直接输入文件名即可。
-              <br/>需要更新核心？点击下方“文件工具”
+              <span :class="{ 'text-warning': isPathEditable }">
+                  {{ isPathEditable ? '警告：修改路径可能导致无法找到原文件' : '服务器文件的物理存储路径，非必要请勿修改' }}
+              </span>
             </div>
           </div>
           <div class="setting-control">
-            <t-input v-model="formData.core" placeholder="例如 server.jar">
+            <t-input v-model="formData.base" :disabled="!isPathEditable">
               <template #suffix>
-                <t-button variant="text" theme="primary" size="small" @click="showCoreTools = !showCoreTools">
-                  {{ showCoreTools ? '收起工具' : '文件工具' }}
-                </t-button>
+                <t-tooltip :content="isPathEditable ? '点击锁定' : '点击解锁编辑 (慎重)'">
+                  <t-button variant="text" shape="square" @click="togglePathEdit">
+                    <template #icon>
+                      <lock-off-icon v-if="isPathEditable" style="color: var(--td-warning-color)" />
+                      <lock-on-icon v-else />
+                    </template>
+                  </t-button>
+                </t-tooltip>
               </template>
             </t-input>
-
-            <div v-if="showCoreTools" class="core-tools-panel">
-              <t-space direction="vertical" style="width: 100%">
-                <t-alert theme="info" message="在此处操作会自动下载/上传文件，并填入上方的文件名。" />
-
-                <t-row :gutter="12">
-                  <t-col :span="6">
-                    <t-button block variant="outline" @click="showCoreSelector = true">
-                      <template #icon><t-icon name="cloud-download" /></template>
-                      从版本库下载
-                    </t-button>
-                  </t-col>
-                  <t-col :span="6">
-                    <t-button block variant="outline" :loading="isUploading" @click="triggerFileSelect">
-                      <template #icon><t-icon name="upload" /></template>
-                      上传本地文件
-                    </t-button>
-                  </t-col>
-                </t-row>
-
-                <input ref="uploadInputRef" type="file" accept=".jar" hidden @change="onFileChange" />
-
-                <div v-if="isUploading" class="upload-progress">
-                  <span>正在上传: {{ uploadedFileName }}</span>
-                  <t-progress theme="line" :percentage="uploadProgress" />
-                </div>
-              </t-space>
-            </div>
           </div>
         </div>
-      </template>
 
-      <template v-if="javaType !== 'none'">
-        <div class="setting-group-title">资源限制</div>
+        <div class="setting-group-title">运行模式</div>
 
         <div class="setting-item">
           <div class="setting-info">
-            <div class="title">内存分配 (MB)</div>
-            <div class="desc">设置 Java 堆内存大小 (Xms / Xmx)</div>
+            <div class="title">启动方式</div>
+            <div class="desc">选择使用 Java 启动 Minecraft，或使用自定义命令启动其他程序 (如 Bedrock, Python 等)</div>
+          </div>
+          <div class="setting-control">
+            <t-select v-model="javaType" :options="[
+              { label: 'MSLX 在线下载 (Java)', value: 'online' },
+              { label: '使用本地版本 (Java)', value: 'local' },
+              { label: '自定义路径 (Java)', value: 'custom' },
+              { label: '环境变量 (Java)', value: 'env' },
+              { label: '自定义命令 (无Java)', value: 'none' }
+            ]" />
+
+            <div v-if="javaType !== 'none'" style="margin-top: 8px">
+              <t-select
+                v-if="javaType === 'online'"
+                v-model="selectedJavaVersion"
+                :options="javaVersions"
+                placeholder="请选择版本"
+                filterable
+              />
+              <t-select
+                v-if="javaType === 'local'"
+                v-model="customJavaPath"
+                :options="localJavaVersions"
+                placeholder="选择已识别的 Java"
+              />
+              <t-input
+                v-if="javaType === 'custom'"
+                v-model="customJavaPath"
+                placeholder="输入 java 可执行文件完整路径"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="title">{{ javaType === 'none' ? '启动命令 (Command)' : '启动参数 (JVM Args)' }}</div>
+            <div class="desc">
+              {{ javaType === 'none'
+              ? '完全自定义的启动命令。程序将直接执行此段内容，不依赖 Java 环境。'
+              : '传递给 Java 的启动参数，如 GC 策略 (例如 -XX:+UseG1GC)'
+              }}
+            </div>
+          </div>
+          <div class="setting-control">
+            <t-textarea
+              v-model="formData.args"
+              :autosize="{ minRows: 2, maxRows: 4 }"
+              :placeholder="javaType === 'none' ? '例如: ./bedrock_server_x64' : '无特殊需求请留空'"
+            />
+          </div>
+        </div>
+
+        <template v-if="javaType !== 'none'">
+          <div class="setting-group-title">核心管理</div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="title">服务端核心文件</div>
+              <div class="desc">
+                指定启动的 Jar 文件名。如果文件已存在于目录中，直接输入文件名即可。
+                <br/>需要更新核心？点击下方“文件工具”
+              </div>
+            </div>
+            <div class="setting-control">
+              <t-input v-model="formData.core" placeholder="例如 server.jar">
+                <template #suffix>
+                  <t-button variant="text" theme="primary" size="small" @click="showCoreTools = !showCoreTools">
+                    {{ showCoreTools ? '收起工具' : '文件工具' }}
+                  </t-button>
+                </template>
+              </t-input>
+
+              <div v-if="showCoreTools" class="core-tools-panel">
+                <t-space direction="vertical" style="width: 100%">
+                  <t-alert theme="info" message="在此处操作会自动下载/上传文件，并填入上方的文件名。" />
+
+                  <t-row :gutter="12">
+                    <t-col :span="6">
+                      <t-button block variant="outline" @click="showCoreSelector = true">
+                        <template #icon><t-icon name="cloud-download" /></template>
+                        从版本库下载
+                      </t-button>
+                    </t-col>
+                    <t-col :span="6">
+                      <t-button block variant="outline" :loading="isUploading" @click="triggerFileSelect">
+                        <template #icon><t-icon name="upload" /></template>
+                        上传本地文件
+                      </t-button>
+                    </t-col>
+                  </t-row>
+
+                  <input ref="uploadInputRef" type="file" accept=".jar" hidden @change="onFileChange" />
+
+                  <div v-if="isUploading" class="upload-progress">
+                    <span>正在上传: {{ uploadedFileName }}</span>
+                    <t-progress theme="line" :percentage="uploadProgress" />
+                  </div>
+                </t-space>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <template v-if="javaType !== 'none'">
+          <div class="setting-group-title">资源限制</div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <div class="title">内存分配</div>
+              <div class="desc">设置 Java 堆内存大小 (Xms / Xmx)</div>
+            </div>
+
+            <div class="setting-control flex-row">
+
+              <div class="memory-input-group">
+                <t-input-number
+                  v-model="minMComputed"
+                  :min="0"
+                  :decimal-places="minUnit === 'GB' ? 1 : 0"
+                  placeholder="Xms"
+                  theme="normal"
+                  class="input-left"
+                />
+                <t-select
+                  v-model="minUnit"
+                  :options="unitOptions"
+                  :clearable="false"
+                  class="select-right"
+                />
+              </div>
+
+              <span class="separator">-</span>
+
+              <div class="memory-input-group">
+                <t-input-number
+                  v-model="maxMComputed"
+                  :min="0"
+                  :decimal-places="maxUnit === 'GB' ? 1 : 0"
+                  placeholder="Xmx"
+                  theme="normal"
+                  class="input-left"
+                />
+                <t-select
+                  v-model="maxUnit"
+                  :options="unitOptions"
+                  :clearable="false"
+                  class="select-right"
+                />
+              </div>
+
+            </div>
+          </div>
+        </template>
+
+        <div class="setting-group-title">备份设置</div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="title">备份策略</div>
+            <div class="desc">设置自动备份保留的最大数量，以及触发备份的延迟时间</div>
           </div>
           <div class="setting-control flex-row">
             <t-input-number
-              v-model="formData.minM"
-              :min="0"
-              placeholder="最小(Xms)"
+              v-model="formData.backupMaxCount"
+              :min="1"
+              :max="100"
+              placeholder="保留份数"
               theme="column"
               style="width: 140px"
-              suffix="MB"
+              suffix="份"
             />
-            <span class="separator">-</span>
+            <span class="separator">/</span>
             <t-input-number
-              v-model="formData.maxM"
+              v-model="formData.backupDelay"
               :min="0"
-              placeholder="最大(Xmx)"
+              placeholder="延迟时间"
               theme="column"
               style="width: 140px"
-              suffix="MB"
+              suffix="秒"
             />
           </div>
-        </div>
-      </template>
-
-      <div class="setting-group-title">备份设置</div>
-
-      <div class="setting-item">
-        <div class="setting-info">
-          <div class="title">备份策略</div>
-          <div class="desc">设置自动备份保留的最大数量，以及触发备份的延迟时间</div>
-        </div>
-        <div class="setting-control flex-row">
-          <t-input-number
-            v-model="formData.backupMaxCount"
-            :min="1"
-            :max="100"
-            placeholder="保留份数"
-            theme="column"
-            style="width: 140px"
-            suffix="份"
-          />
-          <span class="separator">/</span>
-          <t-input-number
-            v-model="formData.backupDelay"
-            :min="0"
-            placeholder="延迟时间"
-            theme="column"
-            style="width: 140px"
-            suffix="秒"
-          />
-        </div>
-        <div class="setting-info-desc-only">
-          <t-tooltip content="MSLX 向服务器发送 save-all 指令后，会等待指定的秒数，确保数据完全写入硬盘后再开始打包备份。">
-                 <span style="font-size: 12px; color: var(--td-text-color-placeholder); cursor: help">
-                     <t-icon name="help-circle" /> 什么是延迟时间？
-                 </span>
-          </t-tooltip>
-        </div>
-      </div>
-
-      <div class="setting-item">
-        <div class="setting-info">
-          <div class="title">备份存放路径</div>
-          <div class="desc">选择备份文件存储的位置。推荐存储在实例文件夹外部以免误删。</div>
-        </div>
-        <div class="setting-control">
-          <t-select v-model="backupLocationType" :options="[
-            { label: '实例文件夹内 (Instance)', value: 'MSLX://Backup/Instance' },
-            { label: '全局数据目录 (Data)', value: 'MSLX://Backup/Data' },
-            { label: '自定义绝对路径', value: 'custom' }
-          ]" />
-
-          <div style="margin-top: 8px" v-if="backupLocationType === 'custom'">
-            <t-input v-model="customBackupPath" placeholder="输入备份存放的绝对路径" />
+          <div class="setting-info-desc-only">
+            <t-tooltip content="MSLX 向服务器发送 save-all 指令后，会等待指定的秒数，确保数据完全写入硬盘后再开始打包备份。">
+                   <span style="font-size: 12px; color: var(--td-text-color-placeholder); cursor: help">
+                       <t-icon name="help-circle" /> 什么是延迟时间？
+                   </span>
+            </t-tooltip>
           </div>
         </div>
-      </div>
 
-      <div v-if="javaType !== 'none'" class="setting-group-title">外置登录</div>
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="title">备份存放路径</div>
+            <div class="desc">选择备份文件存储的位置。推荐存储在实例文件夹外部以免误删。</div>
+          </div>
+          <div class="setting-control">
+            <t-select v-model="backupLocationType" :options="[
+              { label: '实例文件夹内 (Instance)', value: 'MSLX://Backup/Instance' },
+              { label: '全局数据目录 (Data)', value: 'MSLX://Backup/Data' },
+              { label: '自定义绝对路径', value: 'custom' }
+            ]" />
 
-      <div v-if="javaType !== 'none'" class="setting-item">
-        <div class="setting-info">
-          <div class="title">Yggdrasil API</div>
-          <div class="desc">
-            选择认证服务器。留空则表示使用官方正版登录 (或离线模式)。
+            <div style="margin-top: 8px" v-if="backupLocationType === 'custom'">
+              <t-input v-model="customBackupPath" placeholder="输入备份存放的绝对路径" />
+            </div>
           </div>
         </div>
-        <div class="setting-control">
-          <t-select v-model="authSelectType" :options="authOptions" />
 
-          <div style="margin-top: 8px" v-if="authSelectType === 'custom'">
-            <t-input v-model="customAuthUrl" placeholder="输入 Authlib-Injector API 地址" />
+        <div v-if="javaType !== 'none'" class="setting-group-title">外置登录</div>
+
+        <div v-if="javaType !== 'none'" class="setting-item">
+          <div class="setting-info">
+            <div class="title">Yggdrasil API</div>
+            <div class="desc">
+              选择认证服务器。留空则表示使用官方正版登录 (或离线模式)。
+            </div>
+          </div>
+          <div class="setting-control">
+            <t-select v-model="authSelectType" :options="authOptions" />
+
+            <div style="margin-top: 8px" v-if="authSelectType === 'custom'">
+              <t-input v-model="customAuthUrl" placeholder="输入 Authlib-Injector API 地址" />
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="setting-group-title">高级设置</div>
+        <div class="setting-group-title">高级设置</div>
 
-      <div class="setting-item">
-        <div class="setting-info">
-          <div class="title">自动重启</div>
-          <div class="desc">当服务器崩溃或意外停止时尝试自动重启</div>
-          <div class="desc">熔断机制: 若5分钟内尝试重启次数达到 5 次，则停止尝试重启</div>
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="title">自动重启</div>
+            <div class="desc">当服务器崩溃或意外停止时尝试自动重启</div>
+            <div class="desc">熔断机制: 若5分钟内尝试重启次数达到 5 次，则停止尝试重启</div>
+          </div>
+          <div class="setting-control">
+            <t-switch v-model="formData.autoRestart" :label="['已开启', '已关闭']" />
+          </div>
         </div>
-        <div class="setting-control">
-          <t-switch v-model="formData.autoRestart" :label="['已开启', '已关闭']" />
-        </div>
-      </div>
 
-      <div class="setting-item" v-if="formData.autoRestart">
-        <div class="setting-info">
-          <div class="title">强制自动重启</div>
-          <div class="desc">开启此功能后，就算服务器是正常退出的也会强制重启(正常退出 => 退出代码 0)</div>
-          <div class="desc">不影响手动在面板关闭服务器</div>
+        <div class="setting-item" v-if="formData.autoRestart">
+          <div class="setting-info">
+            <div class="title">强制自动重启</div>
+            <div class="desc">开启此功能后，就算服务器是正常退出的也会强制重启(正常退出 => 退出代码 0)</div>
+            <div class="desc">不影响手动在面板关闭服务器</div>
+          </div>
+          <div class="setting-control">
+            <t-switch v-model="formData.forceAutoRestart" :label="['已开启', '已关闭']" />
+          </div>
         </div>
-        <div class="setting-control">
-          <t-switch v-model="formData.forceAutoRestart" :label="['已开启', '已关闭']" />
-        </div>
-      </div>
 
-      <div class="setting-item">
-        <div class="setting-info">
-          <div class="title">随守护进程启动</div>
-          <div class="desc">当物理机开机/面板启动时，自动启动此实例</div>
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="title">随守护进程启动</div>
+            <div class="desc">当物理机开机/面板启动时，自动启动此实例</div>
+          </div>
+          <div class="setting-control">
+            <t-switch v-model="formData.runOnStartup" :label="['已开启', '已关闭']" />
+          </div>
         </div>
-        <div class="setting-control">
-          <t-switch v-model="formData.runOnStartup" :label="['已开启', '已关闭']" />
-        </div>
-      </div>
 
-      <div class="setting-item">
-        <div class="setting-info">
-          <div class="title">控制台编码</div>
-          <div class="desc">设置输入输出流的字符集，乱码时请尝试切换</div>
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="title">控制台编码</div>
+            <div class="desc">设置输入输出流的字符集，乱码时请尝试切换</div>
+          </div>
+          <div class="setting-control flex-row">
+            <t-select v-model="formData.inputEncoding" :options="encodingOptions" label="输入" style="width: 140px" />
+            <t-select v-model="formData.outputEncoding" :options="encodingOptions" label="输出" style="width: 140px" />
+          </div>
         </div>
-        <div class="setting-control flex-row">
-          <t-select v-model="formData.inputEncoding" :options="encodingOptions" label="输入" style="width: 140px" />
-          <t-select v-model="formData.outputEncoding" :options="encodingOptions" label="输出" style="width: 140px" />
-        </div>
-      </div>
 
-      <div class="setting-item">
-        <div class="setting-info">
-          <div class="title">文件编码</div>
-          <div class="desc">设置文件编辑和保存时的编码格式，乱码时请尝试切换。(一般Windows是GBK，其他是UTF-8。)</div>
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="title">文件编码</div>
+            <div class="desc">设置文件编辑和保存时的编码格式，乱码时请尝试切换。(一般Windows是GBK，其他是UTF-8。)</div>
+          </div>
+          <div class="setting-control flex-row">
+            <t-select v-model="formData.fileEncoding" :options="encodingOptions" style="width: 140px" />
+          </div>
         </div>
-        <div class="setting-control flex-row">
-          <t-select v-model="formData.fileEncoding" :options="encodingOptions" style="width: 140px" />
+
+        <div class="form-actions">
+          <t-button theme="primary" type="submit" size="large" :loading="submitting">保存设置</t-button>
+          <t-button theme="default" variant="base" size="large" @click="initData">重置更改</t-button>
         </div>
-      </div>
 
-      <div class="form-actions">
-        <t-button theme="primary" type="submit" size="large" :loading="submitting">保存设置</t-button>
-        <t-button theme="default" variant="base" size="large" @click="initData">重置更改</t-button>
-      </div>
-
-    </t-form>
+      </t-form>
+    </t-loading>
 
     <server-core-selector v-model:visible="showCoreSelector" @confirm="onCoreSelected" />
 
@@ -886,5 +953,62 @@ onUnmounted(() => {
       width: 100%;
     }
   }
+}
+/* 覆盖或替换之前的样式 */
+.memory-input-group {
+  display: flex;
+  align-items: center;
+  /* 1. 进一步缩小总宽度：从 155px -> 110px，足够显示 4 位数 */
+  max-width: 110px;
+  width: 100%;
+
+  /* 左边的数字输入框 */
+  .input-left {
+    flex: 1;
+    min-width: 0;
+
+    :deep(.t-input) {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+      border-right: none;
+      padding: 0; /* 移除内边距，更紧凑 */
+    }
+
+    /* 2. 让数字绝对居中 */
+    :deep(.t-input__inner) {
+      text-align: center;
+    }
+  }
+
+  /* 右边的单位选择器 */
+  .select-right {
+    width: 40px; /* 3. 缩窄单位宽度：60px -> 40px */
+    flex-shrink: 0;
+
+    :deep(.t-input) {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      background-color: var(--td-bg-color-secondarycontainer);
+      padding: 0;
+    }
+
+    /* 4. 修复单位文字不居中问题 */
+    :deep(.t-input__inner) {
+      text-align: center;
+      padding: 0 !important; /* 强制去除内边距，确保文字完全居中 */
+      font-size: 12px; /* 字体稍微改小一点，更显精致 */
+      color: var(--td-text-color-secondary);
+    }
+
+    :deep(.t-select__right-icon) {
+      display: none;
+    }
+  }
+}
+
+.separator {
+  margin: 0 4px;
+  color: var(--td-text-color-placeholder);
+  flex-shrink: 0;
 }
 </style>

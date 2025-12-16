@@ -110,7 +110,7 @@ const handleConfirmDelete = async () => {
 
     <t-row :gutter="[24, 24]">
       <t-col v-for="item in store.instanceList" :key="item.id" :xs="12" :sm="6" :md="4" :lg="3" :xl="3">
-        <t-card class="server-card" :bordered="false" @click="handleCardClick(item)">
+        <t-card class="server-card" :class="{ 'status-running': item.status }" :bordered="false" @click="handleCardClick(item)">
           <div class="card-header">
             <div class="icon-wrapper" :class="{ 'is-running': item.status }">
               <t-avatar :image="getImageUrl(item.icon, item.id)" size="large" shape="round" class="server-icon" />
@@ -215,6 +215,26 @@ const handleConfirmDelete = async () => {
   overflow: hidden;
   box-shadow: var(--td-shadow-1);
   border: 1px solid transparent;
+
+  // 运行中绿色条
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 6.9px; // 反正就是这个数好看qwq
+    background: transparent;
+    transition: background-color 0.3s;
+    z-index: 1;
+    background: var(--td-component-stroke); // 没运行的颜色
+    border-top-left-radius: @card-radius;
+    border-top-right-radius: @card-radius;
+  }
+
+  &.status-running::before {
+    background: var(--td-success-color);
+  }
 
   // 悬浮效果：上浮 + 阴影增强 + 边框高亮
   &:hover {

@@ -39,7 +39,7 @@ public class FrpController : ControllerBase
                 configType = item["ConfigType"]?.Value<string>(),
                 status = isRunning,
             };
-        }).ToList();
+        }).Reverse().ToList();
         
         return Ok(new ApiResponse<object>
         {
