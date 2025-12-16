@@ -6,9 +6,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
     <ApplicationIcon>icon.ico</ApplicationIcon>
-    <Version>0.2.2-alpha</Version>
-    <FileVersion>0.2.2.0</FileVersion>
-    <AssemblyVersion>0.2.2.0</AssemblyVersion>
+    <Version>0.2.2.1-alpha</Version>
+    <FileVersion>0.2.2.1</FileVersion>
+    <AssemblyVersion>0.2.2.1</AssemblyVersion>
     <Copyright>Copyright © 2021 - 2025 MSLTeam</Copyright>
     <AssemblyTitle>MSLX.Daemon</AssemblyTitle>
     <AssemblyDescription>MSLX Daemon</AssemblyDescription>
