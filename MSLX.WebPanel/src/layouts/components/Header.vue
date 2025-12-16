@@ -15,7 +15,7 @@
       </template>
 
       <template v-if="layout !== 'side'" #default>
-        <menu-content class="header-menu hide-on-mobile" :nav-data="menu" />
+        <menu-content class="header-menu hide-on-mobile" :nav-data="menu" :is-horizontal="true" />
 
         <t-popup
           placement="bottom-left"
@@ -26,8 +26,8 @@
             <t-icon name="app" />
           </t-button>
           <template #content>
-            <t-menu :value="active" :theme="theme" expand-mutex @change="handleMenuChange" style="width: 100vw;">
-              <menu-content :nav-data="menu" />
+            <t-menu :value="active" :theme="theme" expand-mutex style="width: 100vw;" @change="handleMenuChange">
+              <menu-content :nav-data="menu"/>
             </t-menu>
           </template>
         </t-popup>
@@ -195,7 +195,7 @@ const navToGitHub = () => {
 };
 
 const navToHelper = () => {
-  window.open('https://www.mslmc.cn');
+  window.open('https://mslx.mslmc.cn');
 };
 </script>
 <style lang="less" scoped>

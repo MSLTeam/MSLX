@@ -69,6 +69,19 @@ const handleStop = async () => {
   }
 };
 
+// 备份
+const handleBackup = async () => {
+  try {
+    terminalRef.value?.writeln('\x1b[1;32m[System] 正在发送备份任务...\x1b[0m');
+    await postInstanceAction(serverId.value, 'backup');
+    // isRunning.value = true; // 由状态更新处理
+    MessagePlugin.success('备份任务启动中···');
+    loading.value = false;
+  } catch (e: any) {
+    terminalRef.value?.writeln(`\x1b[1;31m[Error] 备份任务启动失败: ${e.message}\x1b[0m`);
+  }
+};
+
 const handleClearLog = () => {
   terminalRef.value?.clear();
 };
@@ -107,6 +120,7 @@ onMounted(() => {
           :server-info="serverInfo"
           @start="handleStart"
           @stop="handleStop"
+          @backup="handleBackup"
           @clear-log="handleClearLog"
         />
       </div>

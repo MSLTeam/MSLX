@@ -236,7 +236,7 @@ onMounted(() => {
       :on-confirm="() => ($refs.formRef as any).submit()"
       width="480px"
     >
-      <t-form ref="formRef" :data="formData" :rules="rules" @submit="onSubmit" label-align="top">
+      <t-form ref="formRef" :data="formData" :rules="rules" label-align="top" @submit="onSubmit">
 
         <t-form-item label="用户名" name="username">
           <t-input
@@ -252,7 +252,7 @@ onMounted(() => {
 
         <t-form-item label="角色" name="role">
           <t-radio-group v-model="formData.role" variant="default-filled">
-            <t-radio-button value="user">普通用户</t-radio-button>
+            <t-radio-button value="user" disabled>普通用户</t-radio-button>
             <t-radio-button value="admin">管理员</t-radio-button>
           </t-radio-group>
         </t-form-item>

@@ -47,10 +47,16 @@ function copyToBackend(sourcePath) {
       return;
     }
 
+    if (fs.existsSync(targetPath)) {
+      fs.rmSync(targetPath, { recursive: true, force: true });
+      console.log(`Cleaned target directory: ${targetPath}`);
+    }
+
     if (!fs.existsSync(targetPath)) {
       fs.mkdirSync(targetPath, { recursive: true });
     }
 
+    // 执行复制
     fs.cpSync(sourcePath, targetPath, { recursive: true, force: true });
     console.log(`Files copied to backend: ${targetPath}`);
   } catch (e) {

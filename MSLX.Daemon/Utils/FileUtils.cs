@@ -1,4 +1,6 @@
+using System.Dynamic;
 using System.Security.Cryptography;
+using System.Text;
 
 namespace MSLX.Daemon.Utils;
 
@@ -86,5 +88,98 @@ public class FileUtils
         }
     
         return false;
+    }
+}
+
+// 读取服务器配置文件
+public class ServerPropertiesLoader : DynamicObject
+{
+    private readonly Dictionary<string, string> _properties = new Dictionary<string, string>();
+
+    /// <summary>
+    /// 私有构造函数，防止外部直接实例化
+    /// </summary>
+    private ServerPropertiesLoader() { }
+
+    /// <summary>
+    /// 加载配置文件并返回动态对象
+    /// </summary>
+    /// <param name="filePath">文件路径</param>
+    /// <returns>动态配置对象</returns>
+    public static dynamic Load(string filePath,Encoding  encoding)
+    {
+        var instance = new ServerPropertiesLoader();
+
+        if (!File.Exists(filePath))
+        {
+            throw new FileNotFoundException("配置文件未找到", filePath);
+        }
+
+        // 读取所有行
+        var lines = File.ReadAllLines(filePath, encoding);
+
+        foreach (var line in lines)
+        {
+            string trimLine = line.Trim();
+
+            // 跳过注释 (#) 和空行
+            if (string.IsNullOrEmpty(trimLine) || trimLine.StartsWith("#"))
+            {
+                continue;
+            }
+
+            // 按第一个 '=' 分割键值对
+            int splitIndex = trimLine.IndexOf('=');
+            if (splitIndex > 0)
+            {
+                string key = trimLine.Substring(0, splitIndex).Trim();
+                string value = trimLine.Substring(splitIndex + 1).Trim();
+
+                // 处理 Minecraft 特有的转义字符
+                value = value.Replace(@"\:", ":");
+
+                instance._properties[key] = value;
+            }
+        }
+
+        return instance;
+    }
+
+    /// <summary>
+    /// 重写动态成员获取逻辑
+    /// </summary>
+    public override bool TryGetMember(GetMemberBinder binder, out object? result)
+    {
+        string key = binder.Name;
+
+        // 直接尝试获取
+        if (_properties.TryGetValue(key, out string? value))
+        {
+            result = value;
+            return true;
+        }
+
+        // 中划线转换
+        string keyWithDashes = key.Replace("_", "-");
+        if (_properties.TryGetValue(keyWithDashes, out string? valueWithDash))
+        {
+            result = valueWithDash;
+            return true;
+        }
+
+        // 不知道哇
+        result = "未知";
+        return true;
+    }
+
+    /// <summary>
+    /// 提供索引器访问方式：config["server-port"]
+    /// </summary>
+    public string this[string key]
+    {
+        get
+        {
+            return _properties.TryGetValue(key, out var val) ? val : "未知";
+        }
     }
 }

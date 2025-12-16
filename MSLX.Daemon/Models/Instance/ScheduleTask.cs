@@ -28,8 +28,8 @@ public class CreateTaskRequest
     public string Cron { get; set; } = ""; 
     
     [Required]
-    [AllowedValues("command", "start", "stop", "restart", ErrorMessage = "不支持的任务类型，仅支持: command, start, stop, restart")]
-    public string Type { get; set; } = "Command"; 
+    [AllowedValues("command", "start", "stop", "restart","backup", ErrorMessage = "不支持的任务类型，仅支持: command, start, stop, restart, backup")]
+    public string Type { get; set; } = "command"; 
         
     public string Payload { get; set; } = "";
         

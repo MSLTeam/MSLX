@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useUserStore } from '@/store';
-import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import c from 'ansi-colors';
 import '@xterm/xterm/css/xterm.css';
+import { useInstanceHubStore } from '@/store/modules/instanceHub'; // 引入 Store
 import colorizeServerLog from '@/utils/colorizeLog';
 
 const props = defineProps<{
@@ -16,7 +15,9 @@ const emits = defineEmits<{
   update: []
 }>();
 
-const userStore = useUserStore();
+// 使用 Store
+const hubStore = useInstanceHubStore();
+
 const terminalWrapper = ref<HTMLElement | null>(null);
 const terminalBody = ref<HTMLElement | null>(null);
 
@@ -24,10 +25,14 @@ let term: Terminal | null = null;
 let fitAddon: FitAddon | null = null;
 let resizeObserver: ResizeObserver | null = null;
 let themeObserver: MutationObserver | null = null;
-let hubConnection: HubConnection | null = null;
+
+// 取消订阅函数的引用
+let cleanupLog: (() => void) | null = null;
+let cleanupCmdResult: (() => void) | null = null;
 
 // 命令输入缓冲
 let commandBuffer = '';
+const inputCommand = ref('');
 
 // 主题配置
 const termThemes = {
@@ -51,9 +56,7 @@ const termThemes = {
 
 // 日志染色
 c.enabled = true;
-const colorizeLog = (log: string): string => {
-  return colorizeServerLog(log);
-};
+const colorizeLog = (log: string): string => colorizeServerLog(log);
 
 // 初始化终端
 const initTerminal = () => {
@@ -66,13 +69,13 @@ const initTerminal = () => {
 
   const isDark = document.documentElement.getAttribute('theme-mode') === 'dark';
   term = new Terminal({
-    cursorBlink: true, // 服务器控制台通常开启光标闪烁
+    cursorBlink: true,
     cursorStyle: 'block',
     fontSize: 13,
     fontFamily: 'Menlo, Monaco, "Courier New", monospace',
     lineHeight: 1.4,
     theme: isDark ? termThemes.dark : termThemes.light,
-    disableStdin: false, // 开启输入
+    disableStdin: false,
     convertEol: true,
   });
 
@@ -80,10 +83,7 @@ const initTerminal = () => {
   term.loadAddon(fitAddon);
   term.open(terminalBody.value);
 
-  // 监听输入
-  term.onData((data) => {
-    handleTerminalInput(data);
-  });
+  term.onData((data) => handleTerminalInput(data));
 
   const fitTerminal = () => {
     if (terminalBody.value && terminalBody.value.clientWidth > 0 && terminalBody.value.clientHeight > 0) {
@@ -98,42 +98,40 @@ const initTerminal = () => {
   writeWelcomeMsg();
 };
 
-// 简单的终端输入处理（本地回显 + 缓冲）
+// 终端输入处理
 const handleTerminalInput = async (data: string) => {
   if (!term || !props.serverId) return;
-
-  // 回车键
   if (data === '\r') {
-    term.write('\r\n'); // 换行
+    term.write('\r\n');
     if (commandBuffer.trim()) {
       await sendCommandToServer(commandBuffer);
     }
     commandBuffer = '';
-  }
-  // 退格键
-  else if (data === '\u007F') {
+  } else if (data === '\u007F') {
     if (commandBuffer.length > 0) {
       commandBuffer = commandBuffer.slice(0, -1);
-      term.write('\b \b'); // 移动光标回退，打印空格覆盖，再回退
+      term.write('\b \b');
     }
-  }
-  // 其他可打印字符
-  else if (data >= String.fromCharCode(0x20)) {
+  } else if (data >= String.fromCharCode(0x20)) {
     commandBuffer += data;
-    term.write(data); // 本地回显
+    term.write(data);
   }
 };
 
+const handleSendInput = async () => {
+  if (!inputCommand.value) return;
+  const cmd = inputCommand.value;
+  term?.writeln(cmd);
+  await sendCommandToServer(cmd);
+  inputCommand.value = '';
+};
+
+// 使用 Store 发送指令
 const sendCommandToServer = async (cmd: string) => {
-  if (!hubConnection) {
-    term?.writeln('\x1b[1;31m[System] 未连接到控制服务，无法发送指令。\x1b[0m');
-    return;
-  }
   try {
-    // 调用 SendCommand
-    await hubConnection.invoke('SendCommand', props.serverId, cmd);
+    await hubStore.sendCommand(cmd);
   } catch (err: any) {
-    term?.writeln(`\x1b[1;31m[Error] 指令发送失败: ${err.message}\x1b[0m`);
+    term?.writeln(`\x1b[1;31m[Error] ${err.message}\x1b[0m`);
   }
 };
 
@@ -146,95 +144,61 @@ const updateTerminalTheme = () => {
 const writeWelcomeMsg = () => {
   term?.writeln('\x1b[1;34m[System]\x1b[0m 正在连接服务器控制台 ...');
   term?.writeln(`\x1b[1;34m[System]\x1b[0m 实例 ID: ${props.serverId}`);
-  term?.writeln('\x1b[90mTip: 直接输入指令并回车即可发送到服务器。\x1b[0m');
   term?.writeln('');
 };
 
-// SignalR
-const stopSignalR = async () => {
-  if (hubConnection) {
-    try {
-      // 离开组
-      if (hubConnection.state === 'Connected') {
-        await hubConnection.invoke('LeaveGroup', props.serverId);
-      }
-      await hubConnection.stop();
-      hubConnection = null;
-    } catch (e) { console.error(e); }
-  }
-};
 
-const startSignalR = async () => {
-  await stopSignalR();
+// 连接 Store
+const connectStore = async () => {
   if (!props.serverId) return;
 
-  const { baseUrl, token } = userStore;
-  const hubUrl = new URL('/api/hubs/instanceControlHub', baseUrl || window.location.origin);
-  if (token) hubUrl.searchParams.append('x-user-token', token);
-
-  hubConnection = new HubConnectionBuilder()
-    .withUrl(hubUrl.toString(), { withCredentials: false })
-    .configureLogging(LogLevel.Warning)
-    .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
-    .build();
-
-  // 监听日志接收
-  hubConnection.on('ReceiveLog', (message: string) => {
-    term?.writeln(colorizeLog(message));
-    if(message.startsWith('[MSLX]')){
+  // 订阅日志
+  if (cleanupLog) cleanupLog();
+  cleanupLog = hubStore.onLog((msg) => {
+    // 确保 term 存在再写入
+    if (term) {
+      term.writeln(colorizeLog(msg));
+    }
+    if(msg.startsWith('[MSLX]')){
       emits('update');
     }
   });
 
-  // 监听指令结果 (不显示在终端，或者只显示错误)
-  hubConnection.on('CommandResult', (success: boolean, msg: string) => {
+  // 订阅指令结果
+  if (cleanupCmdResult) cleanupCmdResult();
+  cleanupCmdResult = hubStore.onCommandResult((success, msg) => {
     if (!success) {
       term?.writeln(`\x1b[1;31m[System] 指令执行反馈: ${msg}\x1b[0m`);
     }
   });
 
-  hubConnection.onreconnecting(() => {
-    term?.writeln('\x1b[1;31m[System] 连接中断，尝试重连...\x1b[0m');
-  });
-
-  hubConnection.onreconnected(async () => {
-    term?.writeln('\x1b[1;32m[System] 网络恢复，重新订阅日志...\x1b[0m');
-    try {
-      await hubConnection?.invoke('JoinGroup', props.serverId);
-    } catch (err: any) {
-      term?.writeln(`\x1b[1;31m[Error] 重新订阅失败: ${err.message}\x1b[0m`);
-    }
-  });
-
-  hubConnection.onclose((error) => {
-    if (error) {
-      term?.writeln(`\x1b[1;31m[System] 连接已断开: ${error.message}\x1b[0m`);
-    }
-  });
-
-  try {
-    await hubConnection.start();
-    term?.writeln('\x1b[1;32m[System] 已连接到实例控制服务\x1b[0m');
-    // 加入组
-    await hubConnection.invoke('JoinGroup', props.serverId);
-  } catch (err: any) {
-    term?.writeln(`\x1b[1;31m[Error] 连接失败: ${err.message}\x1b[0m`);
-  }
+  // 发起连接
+  await hubStore.connect(props.serverId);
 };
 
-// 公开方法
+
+const disconnectStore = async () => {
+  // 取消回调订阅
+  if (cleanupLog) cleanupLog();
+  if (cleanupCmdResult) cleanupCmdResult();
+
+  // 告知 Store 本组件退出
+  await hubStore.disconnect();
+};
+
 const writeln = (msg: string) => term?.writeln(msg);
 const clear = () => {
   term?.clear();
   writeWelcomeMsg();
 };
-
 defineExpose({ writeln, clear });
 
-watch(() => props.serverId, async (newVal) => {
-  if (newVal) {
+// 监听 ServerId 变化
+watch(() => props.serverId, async (newVal, oldVal) => {
+  if (newVal !== oldVal) {
+    await disconnectStore(); // 断开旧的引用
     initTerminal();
-    await startSignalR();
+    await connectStore(); // 建立新的引用
   }
 });
 
@@ -245,14 +209,14 @@ onMounted(async () => {
   themeObserver = new MutationObserver(updateTerminalTheme);
   themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['theme-mode'] });
 
-  if (props.serverId) await startSignalR();
+  await connectStore();
 });
 
 onUnmounted(async () => {
   themeObserver?.disconnect();
-  await stopSignalR();
-  term?.dispose();
   resizeObserver?.disconnect();
+  term?.dispose();
+  await disconnectStore();
 });
 </script>
 
@@ -265,12 +229,20 @@ onUnmounted(async () => {
       <div class="tab-title">MSLX 服务端控制台 | #{{ serverId }}</div>
     </div>
     <div ref="terminalBody" class="terminal-body"></div>
+    <div class="terminal-footer">
+      <input
+        v-model="inputCommand"
+        class="cmd-input"
+        placeholder="发送控制台指令..."
+        @keyup.enter="handleSendInput"
+      />
+      <button class="send-btn" @click="handleSendInput">发送</button>
+    </div>
   </div>
 </template>
 
 <style scoped lang="less">
 @import '@/style/scrollbar.less';
-
 .terminal-wrapper {
   flex: 1;
   display: flex;
@@ -311,13 +283,57 @@ onUnmounted(async () => {
 
   .terminal-body {
     position: absolute;
-    top: 38px; bottom: 0; left: 0; right: 0;
-    padding: 6px 0 6px 10px; // 底部留白略微增加
+    top: 38px; bottom: 50px; left: 0; right: 0;
+    padding: 6px 0 6px 10px;
     z-index: 1;
-
-    /* 针对 xterm 的滚动条应用 Mixin */
     :deep(.xterm-viewport) {
       .scrollbar-mixin();
+    }
+  }
+
+  .terminal-footer {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    background-color: var(--td-bg-color-container);
+    border-top: 1px solid var(--td-component-stroke);
+    z-index: 10;
+    gap: 12px;
+
+    .cmd-input {
+      flex: 1;
+      height: 32px;
+      background: transparent;
+      border: 1px solid var(--td-component-border);
+      border-radius: 4px;
+      padding: 0 12px;
+      color: var(--td-text-color-primary);
+      font-family: Menlo, monospace;
+      font-size: 13px;
+      outline: none;
+      transition: all 0.2s;
+      &:focus {
+        border-color: var(--td-brand-color);
+        background-color: var(--td-bg-color-secondarycontainer);
+      }
+      &::placeholder { color: var(--td-text-color-placeholder); }
+    }
+
+    .send-btn {
+      height: 32px;
+      padding: 0 16px;
+      border: none;
+      border-radius: 4px;
+      background-color: var(--td-brand-color);
+      color: #fff;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      &:hover { background-color: var(--td-brand-color-hover); }
+      &:active { background-color: var(--td-brand-color-active); }
     }
   }
 }

@@ -59,6 +59,7 @@ const formData = ref<UpdateInstanceModel>({
   backupDelay: 10,
   backupPath: 'MSLX://Backup/Instance',
   autoRestart: false,
+  forceAutoRestart: true,
   runOnStartup: false,
   inputEncoding: 'utf-8',
   outputEncoding: 'utf-8',
@@ -124,7 +125,7 @@ const authSelectType = ref('');
 const customAuthUrl = ref('');
 const authOptions = [
   { label: '官方/离线模式 (无)', value: 'none' },
-  { label: 'MSL 统一身份验证', value: 'https://skin.mslmc.net/api/yggdrasil' },
+  { label: 'MSL 统一身份验证 (MSL Skin)', value: 'https://skin.mslmc.net/api/yggdrasil' },
   { label: 'LittleSkin', value: 'https://littleskin.cn/api/yggdrasil' },
   { label: '自定义服务器', value: 'custom' }
 ];
@@ -585,12 +586,12 @@ onUnmounted(() => {
         </div>
       </template>
 
-      <div class="setting-group-title">自动备份</div>
+      <div class="setting-group-title">备份设置</div>
 
       <div class="setting-item">
         <div class="setting-info">
           <div class="title">备份策略</div>
-          <div class="desc">设置自动备份保留数量，以及触发备份的延迟时间</div>
+          <div class="desc">设置自动备份保留的最大数量，以及触发备份的延迟时间</div>
         </div>
         <div class="setting-control flex-row">
           <t-input-number
@@ -663,9 +664,21 @@ onUnmounted(() => {
         <div class="setting-info">
           <div class="title">自动重启</div>
           <div class="desc">当服务器崩溃或意外停止时尝试自动重启</div>
+          <div class="desc">熔断机制: 若5分钟内尝试重启次数达到 5 次，则停止尝试重启</div>
         </div>
         <div class="setting-control">
           <t-switch v-model="formData.autoRestart" :label="['已开启', '已关闭']" />
+        </div>
+      </div>
+
+      <div class="setting-item" v-if="formData.autoRestart">
+        <div class="setting-info">
+          <div class="title">强制自动重启</div>
+          <div class="desc">开启此功能后，就算服务器是正常退出的也会强制重启(正常退出 => 退出代码 0)</div>
+          <div class="desc">不影响手动在面板关闭服务器</div>
+        </div>
+        <div class="setting-control">
+          <t-switch v-model="formData.forceAutoRestart" :label="['已开启', '已关闭']" />
         </div>
       </div>
 

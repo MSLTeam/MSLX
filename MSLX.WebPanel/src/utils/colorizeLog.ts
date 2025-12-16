@@ -15,6 +15,7 @@ const colorizeServerLog = (log: string): string => {
   // 启动器/系统前缀处理
   if (log.startsWith('[System]')) log = log.replace(/^\[System\]/, `[${c.blue.bold('System')}]`);
   if (log.includes('[MSLX]')) log = log.replace(/\[MSLX\]/g, `[${c.magenta.bold('MSLX')}]`);
+  if (log.includes('[MSLX-Backup]')) log = log.replace(/\[MSLX-Backup\]/g, `[${c.magenta.bold('MSLX-Backup')}]`);
   if (log.startsWith('>>>')) log = log.replace(/^>>>/, c.red.bold('>>>'));
 
   // 核心格式 [Time Level]:
@@ -58,11 +59,20 @@ const colorizeServerLog = (log: string): string => {
 
   // 单位与数字
   log = log.replace(/\b\d+(\.\d+)?\s?(ms|s|%|MB|GB|KB)\b/gi, (match) => c.blue(match));
-  log = log.replace(/(?<!\d:\d)\b\d+\b(?!\s*:\s*\d)/g, (match) => {
-    if (match.length >= 4 && match.length <= 6) return c.blue(match); // 端口/PID
-    if (match.length <= 3) return c.blue(match); // 数量
+
+  // 使用正则同时匹配 "ANSI代码" 和 "数字"。
+  // 如果匹配到 ANSI代码，直接原样返回，不进行处理。
+  // 只有匹配到纯数字时，才应用颜色。
+  // eslint-disable-next-line no-control-regex
+  log = log.replace(/(\u001b\[[\d;]*m)|((?<!\d:\d)\b\d+\b(?!\s*:\s*\d))/g, (match, ansi, number) => {
+    if (ansi) return match; // 保护原有的颜色代码不被破坏
+    if (number) {
+      if (number.length >= 4 && number.length <= 6) return c.blue(number); // 端口/PID
+      if (number.length <= 3) return c.blue(number); // 数量
+    }
     return match;
   });
+
   log = log.replace(/(\*:\d{1,5})/, (match) => c.blue.bold(match));
 
   // 关键词状态高亮
