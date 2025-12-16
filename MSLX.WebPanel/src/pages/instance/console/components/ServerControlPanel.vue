@@ -13,6 +13,7 @@ import {
   EnterIcon,
   WinkIcon,
   UserUnlockedIcon,
+  CloudIcon,
 } from 'tdesign-icons-vue-next';
 import { InstanceInfoModel } from '@/api/model/instance';
 
@@ -32,6 +33,7 @@ const emits = defineEmits<{
   stop: [];
   'clear-log': [];
   'refresh-info': [];
+  backup: [];
 }>();
 
 const settingsRef = ref<InstanceType<typeof InstanceSettings> | null>(null);
@@ -126,9 +128,21 @@ onUnmounted(() => stopTimer());
           <template #icon><stop-circle-icon /></template>停止实例
         </t-button>
 
-        <t-button variant="outline" style="margin: 0" block @click="changeUrl(`/instance/files/${serverId}`)">
-          <template #icon><folder-icon /></template>文件管理
-        </t-button>
+        <div class="action-row">
+          <t-button variant="outline" block @click="changeUrl(`/instance/files/${serverId}`)">
+            <template #icon><folder-icon /></template>文件管理
+          </t-button>
+
+          <t-button
+            variant="outline"
+            block
+            :disabled="!isRunning"
+            :loading="loading"
+            @click="$emit('backup')"
+          >
+            <template #icon><cloud-icon /></template>备份存档
+          </t-button>
+        </div>
 
         <div class="action-row">
           <t-button variant="outline" theme="warning" block @click="$emit('clear-log')">
@@ -175,10 +189,10 @@ onUnmounted(() => stopTimer());
         </div>
 
         <div class="proxy-group"></div>
-          <div class="info-item">
-            <div class="label"><time-icon /> 运行时长</div>
-            <div class="value">{{ isRunning ? formattedUptime : '--:--:--' }}</div>
-          </div>
+        <div class="info-item">
+          <div class="label"><time-icon /> 运行时长</div>
+          <div class="value">{{ isRunning ? formattedUptime : '--:--:--' }}</div>
+        </div>
       </div>
     </t-card>
 

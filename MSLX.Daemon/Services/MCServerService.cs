@@ -4,6 +4,7 @@ using MSLX.Daemon.Models;
 using MSLX.Daemon.Utils;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.IO.Compression;
 using System.Text;
 using Newtonsoft.Json.Linq;
 
@@ -14,11 +15,11 @@ public class MCServerService
     private readonly ILogger<MCServerService> _logger;
     private readonly IHubContext<InstanceConsoleHub> _hubContext;
     private readonly IHostApplicationLifetime _appLifetime;
-    
+
     // 短时间内崩溃重启限制
     private readonly ConcurrentDictionary<uint, List<DateTime>> _crashHistory = new();
-    private const int CrashCheckWindowSeconds = 300; 
-    private const int MaxCrashCount = 5;  
+    private const int CrashCheckWindowSeconds = 300;
+    private const int MaxCrashCount = 5;
 
     public class ServerContext
     {
@@ -26,6 +27,7 @@ public class MCServerService
         public ConcurrentQueue<string> Logs { get; set; } = new();
         public bool IsInitializing { get; set; } = false;
         public volatile bool IsStopping = false;
+        public volatile bool IsBackuping = false;
     }
 
     private readonly ConcurrentDictionary<uint, ServerContext> _activeServers = new();
@@ -74,7 +76,7 @@ public class MCServerService
     {
         if (IsServerRunning(instanceId))
             return (false, "该服务器已经在运行中或正在启动中");
-        
+
         _crashHistory.TryRemove(instanceId, out _);
         var serverInfo = ConfigServices.ServerList.GetServer(instanceId);
         if (serverInfo == null)
@@ -163,11 +165,11 @@ public class MCServerService
                     return;
                 }
             }
-            
+
             // 处理外置登录
             string authJvm = "";
             if (!string.IsNullOrEmpty(serverInfo.YggdrasilApiAddr))
-            { 
+            {
                 if (!await DownloadAuthlib(serverInfo.Base, instanceId, context))
                 {
                     RecordLog(instanceId, context, $">>> [MSLX-MCServer] 外置登录库下载失败！将不启用外置登录......");
@@ -263,7 +265,8 @@ public class MCServerService
             // 处理NeoForge类型参数
             if (serverInfo.Core.Contains("@libraries"))
             {
-                args = $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args} {serverInfo.Core} nogui";
+                args =
+                    $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args} {serverInfo.Core} nogui";
             }
 
             // 处理编码
@@ -394,7 +397,7 @@ public class MCServerService
     /// <summary>
     /// 向服务器发送命令
     /// </summary>
-    public bool SendCommand(uint instanceId, string command)
+    public bool SendCommand(uint instanceId, string command,bool repeatCommandToLog = false)
     {
         if (_activeServers.TryGetValue(instanceId, out var context))
         {
@@ -404,7 +407,7 @@ public class MCServerService
                 {
                     context.Process.StandardInput.WriteLine(command);
                     context.Process.StandardInput.Flush();
-                    RecordLog(instanceId, context, $"[MSLX] 已发送命令: {command}");
+                    if(repeatCommandToLog) RecordLog(instanceId, context, $"[MSLX] 已发送命令: {command}");
                     return true;
                 }
             }
@@ -467,7 +470,7 @@ public class MCServerService
 
         _activeServers.Clear();
     }
-    
+
     // 启动的生命周期事件
     private void OnAppStarted()
     {
@@ -492,7 +495,7 @@ public class MCServerService
                     {
                         _logger.LogInformation($"[AutoStart] 检测到实例 [{id}] 配置为自启动，正在启动...");
                         var (success, msg) = StartServer(id);
-                        
+
                         if (success)
                         {
                             count++;
@@ -535,15 +538,15 @@ public class MCServerService
             string exitMsg = $"[MSLX] 服务器进程已停止，退出代码: {exitCode}";
             exitMsg += exitCode != 0 ? " (异常退出)" : " (正常关闭)";
             RecordLog(instanceId, removedContext, exitMsg);
-            
+
             _logger.LogInformation($"MC 服务器 [{instanceId}] 停止处理完成 (Code: {exitCode})");
 
             // 自动重启
             try
             {
                 var serverInfo = ConfigServices.ServerList.GetServer(instanceId);
-                
-                if (serverInfo != null && serverInfo.AutoRestart && (exitCode!=0 || serverInfo.ForceAutoRestart))
+
+                if (serverInfo != null && serverInfo.AutoRestart && (exitCode != 0 || serverInfo.ForceAutoRestart))
                 {
                     // 熔断检查
                     var history = _crashHistory.GetOrAdd(instanceId, new List<DateTime>());
@@ -560,33 +563,33 @@ public class MCServerService
                         // 检查剩余的记录数量是否超过阈值
                         if (history.Count > MaxCrashCount)
                         {
-                            RecordLog(instanceId, removedContext, 
+                            RecordLog(instanceId, removedContext,
                                 $">>> [MSLX] 严重错误：服务器在 {CrashCheckWindowSeconds} 秒内已崩溃 {history.Count} 次！");
-                            RecordLog(instanceId, removedContext, 
+                            RecordLog(instanceId, removedContext,
                                 ">>> [MSLX] 为防止无限重启导致系统卡死，守护进程已放弃自动重启该实例。");
-                            RecordLog(instanceId, removedContext, 
+                            RecordLog(instanceId, removedContext,
                                 ">>> [MSLX] 请检查服务器配置、Java环境或日志文件，修复问题后请手动启动。");
-                            
+
                             _logger.LogError($"实例 {instanceId} 触发重启熔断保护，停止重启。");
-                            
+
                             // 没救了喵
-                            return; 
+                            return;
                         }
-                        
-                        RecordLog(instanceId, removedContext, 
+
+                        RecordLog(instanceId, removedContext,
                             $">>> [MSLX] 检测到异常退出，正在准备第 {history.Count} 次尝试重启 (阈值: {MaxCrashCount}次/5分钟)...");
                     }
 
                     _ = Task.Run(async () =>
                     {
                         // 等5秒是好习惯
-                        await Task.Delay(5000); 
-                        
+                        await Task.Delay(5000);
+
                         // 重新启动
                         var (success, msg) = StartServer(instanceId);
                         if (!success)
                         {
-                             _logger.LogWarning($"[AutoRestart] 实例 {instanceId} 重启失败: {msg}");
+                            _logger.LogWarning($"[AutoRestart] 实例 {instanceId} 重启失败: {msg}");
                         }
                     });
                 }
@@ -635,9 +638,9 @@ public class MCServerService
         // 通过 SignalR 推送日志
         _hubContext.Clients.Group(instanceId.ToString()).SendAsync("ReceiveLog", data);
     }
-    
+
     // 安装Authlib-Injector
-    private async Task<bool> DownloadAuthlib(string basePath,uint instanceId, ServerContext context)
+    private async Task<bool> DownloadAuthlib(string basePath, uint instanceId, ServerContext context)
     {
         try
         {
@@ -646,15 +649,20 @@ public class MCServerService
             if (response.IsSuccessStatusCode)
             {
                 JObject authlibJobj = JObject.Parse(response.Content);
-                if (!File.Exists(Path.Combine(basePath, "authlib-injector.jar")) || !await FileUtils.ValidateFileSha256Async(Path.Combine(basePath, "authlib-injector.jar"),authlibJobj["checksums"]["sha256"].ToString()))
+                if (!File.Exists(Path.Combine(basePath, "authlib-injector.jar")) ||
+                    !await FileUtils.ValidateFileSha256Async(Path.Combine(basePath, "authlib-injector.jar"),
+                        authlibJobj["checksums"]["sha256"].ToString()))
                 {
                     // 下崽
                     var downloader = new ParallelDownloader(parallelCount: 1);
-                    var (success, errorMsg) = await downloader.DownloadFileAsync(authlibJobj["download_url"].ToString().Replace("authlib-injector.yushi.moe", "authlib-injector.mirrors.mslmc.cn"), Path.Combine(basePath, "authlib-injector.jar"),
+                    var (success, errorMsg) = await downloader.DownloadFileAsync(
+                        authlibJobj["download_url"].ToString().Replace("authlib-injector.yushi.moe",
+                            "authlib-injector.mirrors.mslmc.cn"), Path.Combine(basePath, "authlib-injector.jar"),
                         // 进度回调
                         async (progress, speed) =>
                         {
-                            RecordLog(instanceId, context, $"正在下载 Authlib-Injector... 进度: {progress:0.00}% | 下载速度: {speed}");
+                            RecordLog(instanceId, context,
+                                $"正在下载 Authlib-Injector... 进度: {progress:0.00}% | 下载速度: {speed}");
                         }
                     );
 
@@ -675,17 +683,279 @@ public class MCServerService
                     _logger.LogError("下载Authlib-Injector失败: 无法获取元数据。");
                     return false;
                 }
+
                 _logger.LogWarning("获取元数据失败，将使用旧版本Authlib-Injector。");
             }
-        }catch(Exception ex)
+        }
+        catch (Exception ex)
         {
             _logger.LogError(ex, "下载Authlib-Injector失败");
             if (!File.Exists(Path.Combine(basePath, "authlib-injector.jar")))
             {
                 return false;
             }
-            
         }
+
         return true;
+    }
+
+    // —————— 备份相关 ——————
+    public bool StartBackupServer(uint instanceId)
+    {
+        if (_activeServers.TryGetValue(instanceId, out var context))
+        {
+            _ = Task.Run(async () => await BackupServer(instanceId, context));
+            return true;
+        }
+
+        return false;
+    }
+    
+    private async Task BackupServer(uint instanceId, ServerContext context)
+    {
+        if (context.IsBackuping)
+        {
+            _logger.LogWarning($"[Backup] 忽略备份请求，实例 {instanceId} 正在备份中。");
+            RecordLog(instanceId, context, "[MSLX-Backup] 正在备份中，请勿重复操作。");
+            return;
+        }
+        try
+        {
+            context.IsBackuping = true;
+            var server = ConfigServices.ServerList.GetServer(instanceId);
+            if (server == null) return;
+
+            if (IsServerRunning(instanceId))
+            {
+                SendCommand(instanceId, "save-off");
+                await Task.Delay(1000);
+                SendCommand(instanceId, "save-all");
+                SendCommand(instanceId,
+                    "tellraw @a [{\"text\":\"[\",\"color\":\"yellow\"},{\"text\":\"MSLX\",\"color\":\"green\"},{\"text\":\"]\",\"color\":\"yellow\"},{\"text\":\"正在进行服务器存档备份，请勿关闭服务器哦，否则可能造成回档！备份期间不会影响正常游戏~\",\"color\":\"aqua\"}]");
+                RecordLog(instanceId, context, "[MSLX-Backup] 正在备份服务器存档...");
+
+                await Task.Delay(server.BackupDelay * 1000); // 等待延迟时间进行保存
+            }
+
+            // 获取需要备份的内容
+            string worldPath = "world";
+            if (File.Exists(Path.Combine(server.Base, "server.properties")))
+            {
+                dynamic config = ServerPropertiesLoader.Load(Path.Combine(server.Base, "server.properties"),
+                    Encoding.GetEncoding(server.FileEncoding));
+                worldPath = config.level_name == "未知" ? "world" : config.level_name;
+            }
+
+            // 兼容插件端的文件夹分离模式
+            string fullWorldPath = Path.Combine(server.Base, worldPath);
+            string fullNetherPath = Path.Combine(server.Base, worldPath + "_nether");
+            string fullEndPath = Path.Combine(server.Base, worldPath + "_the_end");
+
+            // 备份列表
+            var foldersToCompress = new List<string>();
+
+            if (Directory.Exists(fullWorldPath)) foldersToCompress.Add(fullWorldPath);
+            if (Directory.Exists(fullNetherPath)) foldersToCompress.Add(fullNetherPath);
+            if (Directory.Exists(fullEndPath)) foldersToCompress.Add(fullEndPath);
+
+            // 确保有文件夹需要备份
+            if (foldersToCompress.Count == 0)
+            {
+                _logger.LogWarning("未找到任何世界存档文件夹（包括主世界、下界、末地），备份失败！");
+                if (IsServerRunning(instanceId))
+                {
+                    SendCommand(instanceId, "save-on");
+                    SendCommand(instanceId,
+                        "tellraw @a [{\"text\":\"[\",\"color\":\"yellow\"},{\"text\":\"MSLX\",\"color\":\"green\"},{\"text\":\"]\",\"color\":\"yellow\"},{\"text\":\"备份失败！未找到任何世界存档文件夹！\",\"color\":\"red\"}]");
+                }
+
+                return;
+            }
+
+            // 拼接备份的目标保存位置
+            string backupDir = Path.Combine(server.Base, "mslx-backups"); // 默认是存档内
+            if (server.BackupPath != "MSLX://Backup/Instance")
+            {
+                if (server.BackupPath == "MSLX://Backup/Data")
+                {
+                    backupDir = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Backups",
+                        $"Backups_{server.Name}_{instanceId}");
+                }
+                else if (!string.IsNullOrEmpty(server.BackupPath))
+                {
+                    backupDir = Path.Combine(server.BackupPath);
+                }
+            }
+
+            string backupPath = Path.Combine(backupDir, $"mslx-backup_{DateTime.Now.ToString("yyyyMMdd_HHmmss")}.zip");
+            if (!Directory.Exists(backupDir)) Directory.CreateDirectory(backupDir);
+
+            // 最大备份存档限制
+            int maxBackups = 20;
+            if (server.BackupMaxCount > 0) maxBackups = server.BackupMaxCount;
+
+            // 删除多余的备份
+            try
+            {
+                var backupFiles = Directory.GetFiles(backupDir, "mslx-backup_*.zip")
+                    .Select(path => new FileInfo(path))
+                    .OrderBy(fi => fi.Name) // 按文件名排序，文件名早的=时间旧的
+                    .ToList();
+
+                if (maxBackups >= 1 && backupFiles.Count >= maxBackups)
+                {
+                    int filesToDeleteCount = backupFiles.Count - maxBackups + 1;
+                    var filesToDelete = backupFiles.Take(filesToDeleteCount).ToList();
+
+                    // 遍历删除最旧的文件
+                    foreach (var fileToDelete in filesToDelete)
+                    {
+                        try
+                        {
+                            fileToDelete.Delete();
+                            RecordLog(instanceId, context, $"[MSLX-Backup] 已删除旧备份：{fileToDelete.Name}");
+                        }
+                        catch (Exception ex)
+                        {
+                            // 如果删除失败，仅发出警告，不中断整个备份过程
+                            RecordLog(instanceId, context, $"[MSLX-Backup] 删除旧备份 {fileToDelete.Name} 失败：{ex.Message}");
+                            _logger.LogWarning($"删除旧备份 {fileToDelete.Name} 失败：{ex.ToString()}");
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"删除多余的备份失败 {instanceId}, {e.Message}");
+                RecordLog(instanceId, context, $"[MSLX-Backup] 删除多余的备份失败：{e.Message}");
+            }
+
+            // 开始压缩
+            RecordLog(instanceId, context, $"[MSLX-Backup] 正在压缩服务器存档...");
+            await using (FileStream zipToOpen = new FileStream(backupPath, FileMode.Create))
+            {
+                using (ZipArchive archive = new ZipArchive(zipToOpen, ZipArchiveMode.Create))
+                {
+                    foreach (var folderPath in foldersToCompress)
+                    {
+                        // 开始递归压缩
+                        await CompressFolder(server.Base, folderPath, archive);
+                    }
+                }
+            }
+
+            // 输出备份信息
+            if (IsServerRunning(instanceId))
+            {
+                try
+                {
+                    FileInfo backupFileInfo = new FileInfo(backupPath);
+                    string fileName = backupFileInfo.Name;
+                    long fileSizeInBytes = backupFileInfo.Length;
+                    string formattedSize;
+                    if (fileSizeInBytes > 1024 * 1024 * 1024)
+                    {
+                        formattedSize = $"{fileSizeInBytes / (1024.0 * 1024.0 * 1024.0):F2} GB";
+                    }
+                    else if (fileSizeInBytes > 1024 * 1024)
+                    {
+                        formattedSize = $"{fileSizeInBytes / (1024.0 * 1024.0):F2} MB";
+                    }
+                    else if (fileSizeInBytes > 1024)
+                    {
+                        formattedSize = $"{fileSizeInBytes / 1024.0:F2} KB";
+                    }
+                    else
+                    {
+                        formattedSize = $"{fileSizeInBytes} Bytes";
+                    }
+
+                    string tellrawMessage = $"tellraw @a [";
+                    tellrawMessage += "{\"text\":\"[\",\"color\":\"yellow\"},";
+                    tellrawMessage += "{\"text\":\"MSLX\",\"color\":\"green\"},";
+                    tellrawMessage += "{\"text\":\"]\",\"color\":\"yellow\"},";
+                    tellrawMessage += "{\"text\":\" 服务器存档备份完成！\\n\",\"color\":\"aqua\"},";
+                    tellrawMessage += $"{{\"text\":\"文件名: \",\"color\":\"gray\"}},";
+                    tellrawMessage += $"{{\"text\":\"{fileName}\",\"color\":\"white\"}},";
+                    tellrawMessage += $"{{\"text\":\"\\n大小: \",\"color\":\"gray\"}},";
+                    tellrawMessage += $"{{\"text\":\"{formattedSize}\",\"color\":\"white\"}}";
+                    tellrawMessage += "]";
+                    SendCommand(instanceId, "save-on");
+                    SendCommand(instanceId, tellrawMessage);
+                }
+                catch (Exception ex)
+                {
+                    RecordLog(instanceId, context, "[MSL备份] 无法获取备份文件信息：" + ex.Message);
+                    _logger.LogWarning("无法获取备份文件信息：" + ex.ToString());
+                    SendCommand(instanceId, "save-on");
+                    SendCommand(instanceId,
+                        "tellraw @a [{\"text\":\"[\",\"color\":\"yellow\"},{\"text\":\"MSLX\",\"color\":\"green\"},{\"text\":\"]\",\"color\":\"yellow\"},{\"text\":\"服务器存档备份完成！\",\"color\":\"aqua\"}]");
+                }
+            }
+
+            RecordLog(instanceId, context, $"[MSLX-Backup] 存档备份成功！已保存至：{backupPath}");
+            _logger.LogInformation($"[MSLX-Backup] 存档备份成功！已保存至：{backupPath}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"备份服务器失败 {instanceId}, {ex.Message}");
+        }
+        finally
+        {
+            context.IsBackuping = false;
+            // 最后这里再执行一次 不知道有啥意义 留着吧 qwq
+            if (IsServerRunning(instanceId))
+            {
+                SendCommand(instanceId,"save-on");
+            }
+        }
+    }
+
+    // 递归压缩方法
+    private async Task CompressFolder(string rootPath, string currentPath, ZipArchive archive)
+    {
+        string[] files = Directory.GetFiles(currentPath);
+
+        foreach (string file in files)
+        {
+            // 排除 session.lock
+            if (Path.GetFileName(file).Equals("session.lock", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            // 计算相对路径 (作为压缩包内的文件名)
+            string entryName = Path.GetRelativePath(rootPath, file);
+
+            try
+            {
+                // 共享只读打开
+                await using (FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                {
+                    // 在压缩包中创建条目
+                    ZipArchiveEntry entry = archive.CreateEntry(entryName, CompressionLevel.Optimal);
+
+                    // 最后修改时间
+                    entry.LastWriteTime = File.GetLastWriteTime(file);
+
+                    // 文件流复制到压缩包条目流中
+                    using (Stream entryStream = entry.Open())
+                    {
+                        await fs.CopyToAsync(entryStream);
+                    }
+                }
+            }
+            catch (IOException ex)
+            {
+                throw new IOException($"无法以共享只读模式打开文件 '{entryName}'。服务器施加了排他锁。错误: {ex.Message}", ex);
+            }
+        }
+
+        // 递归处理子文件夹
+        string[] folders = Directory.GetDirectories(currentPath);
+        foreach (string folder in folders)
+        {
+            await CompressFolder(rootPath, folder, archive);
+        }
     }
 }

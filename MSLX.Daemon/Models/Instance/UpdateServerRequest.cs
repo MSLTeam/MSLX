@@ -34,7 +34,7 @@ public class UpdateServerRequest : IValidatableObject
     [Range(1, 100, ErrorMessage = "备份数量限制必须在 1-100 之间")]
     public int BackupMaxCount { get; set; } = 20;
 
-    [Range(1, int.MaxValue, ErrorMessage = "备份间隔必须大于 0")]
+    [Range(5, int.MaxValue, ErrorMessage = "备份间隔必须大于 5")]
     public int BackupDelay { get; set; } = 10;
 
     public string BackupPath { get; set; } = "MSLX://Backup/Instance";

@@ -51,7 +51,7 @@ namespace MSLX.Daemon.Hubs
                 return;
             }
 
-            bool success = _mcServerService.SendCommand(instanceId, command);
+            bool success = _mcServerService.SendCommand(instanceId, command,true);
             await Clients.Caller.SendAsync("CommandResult", new { success, message = success ? "命令已发送" : "发送失败，服务器可能未运行" });
         }
     }
