@@ -1,6 +1,6 @@
 {
-  "version": "0.2.2",
-  "buildTime": "2025-12-16 20:02:12",
+  "version": "0.2.2.1",
+  "buildTime": "2025-12-16 22:24:41",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,64 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "591862469edc988235863d3f3b4bf883b8e507b0",
-  "commitMsg": "fix(webpanel): 配置SignalR连接禁用Cookie发送",
+  "commitId": "eafda5a80239976d192dd80d0f2b36f52b8c4eca",
+  "commitMsg": "bumpver(daemon & webpanel): 更新应用版本号至0.2.2.1",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "eafda5a80239976d192dd80d0f2b36f52b8c4eca",
+      "commitTime": "2025-12-16 22:24:14 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新应用版本号至0.2.2.1"
+    },
+    {
+      "commitId": "71720d73c7ca4e89d3882603af6bce91f1fb8fab",
+      "commitTime": "2025-12-16 22:20:25 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 服务端实例列表卡片添加明显的运行状态颜色显示"
+    },
+    {
+      "commitId": "a74901d681ab0e6f56ef66b898227e93a11746c2",
+      "commitTime": "2025-12-16 22:10:17 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(daemon): 更新Frp列表排序，最新创建的在前面"
+    },
+    {
+      "commitId": "11884693a76e0a1e6fb1372e6c7d815d6cb16081",
+      "commitTime": "2025-12-16 22:08:54 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 创建实例和实例设置中支持内存单位切换为 GB 或 MB"
+    },
+    {
+      "commitId": "2c3a6f1edf555f716d2a2a825835f032fe2ff133",
+      "commitTime": "2025-12-16 21:38:47 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 创建服务端的时候允许直接输入核心文件名"
+    },
+    {
+      "commitId": "6a87cbcc18a748b30a4da5655f2d377f602a779a",
+      "commitTime": "2025-12-16 21:28:18 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复实例设置弹窗可能存在不更新信息的问题"
+    },
+    {
+      "commitId": "9f5bb204cdf1322243445a3b29a4f551759aebee",
+      "commitTime": "2025-12-16 21:05:19 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(wenpanel): 添加一只应急食品，猜猜她在哪？"
+    },
+    {
+      "commitId": "1ce13511dd239b31dcf8ec9eceb374c3d006f435",
+      "commitTime": "2025-12-16 20:04:27 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #3 from MSLTeam/dev"
+    },
+    {
+      "commitId": "05bf515b6ecc9b57e140a8d3a052fe390aa7a076",
+      "commitTime": "2025-12-16 20:03:07 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入前端 v0.2.2-alpha 版本资源"
+    },
     {
       "commitId": "591862469edc988235863d3f3b4bf883b8e507b0",
       "commitTime": "2025-12-16 20:01:26 +0800",
@@ -317,60 +371,6 @@
       "commitTime": "2025-12-14 16:08:46 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "feat(webpanel & daemon): 添加默认用户安全风险提示"
-    },
-    {
-      "commitId": "7326f3ca31d25b4e5934952a0231733bac7bf4f0",
-      "commitTime": "2025-12-14 15:59:01 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 添加自定义权限拦截处理器"
-    },
-    {
-      "commitId": "c64a19bc807806230408aa55b10e9496ac12b129",
-      "commitTime": "2025-12-14 15:52:04 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(daemon): 修正管理员角色授权标识为小写 & 新增UID返回在status接口"
-    },
-    {
-      "commitId": "4345ab29aa86817ba0d135079184a558fe789e84",
-      "commitTime": "2025-12-14 15:51:34 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 实现用户管理功能"
-    },
-    {
-      "commitId": "dcd7edef1fb1ef71dfdf71eca13cebb32312f835",
-      "commitTime": "2025-12-14 15:36:04 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(daemon): 移除旧版设置中用户和头像配置项"
-    },
-    {
-      "commitId": "a765a0a7c12ee9be134f2574f172463753137fc7",
-      "commitTime": "2025-12-14 15:35:45 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 重构设置页面并增加用户信息管理功能"
-    },
-    {
-      "commitId": "05dd9e3aef8252b5780d35102d6fe41656512642",
-      "commitTime": "2025-12-14 15:26:42 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 允许用户更新用户名"
-    },
-    {
-      "commitId": "2a917e812fd8e512d8dec6d26bfd0b0efdb382df",
-      "commitTime": "2025-12-14 15:07:53 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 改用JWT Token验证登录"
-    },
-    {
-      "commitId": "953fa59d3a08dc7426007fa67285a2424a11481c",
-      "commitTime": "2025-12-14 15:01:44 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 实现基于JWT和API Key的用户认证系统"
-    },
-    {
-      "commitId": "88d2dbf1b73514003af9d37d2ce58f4b9dc0d570",
-      "commitTime": "2025-12-14 12:55:27 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "dependency(daemon & desktop): 升级.NET框架版本到10.0 LTS"
     }
   ]
 }
