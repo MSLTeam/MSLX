@@ -177,6 +177,11 @@ const nextStep = async () => {
         MessagePlugin.warning('请点击按钮选择一个服务端核心');
         return;
       }
+    } else if (downloadType.value === 'custom') {
+      if (!formData.value.core) {
+        MessagePlugin.warning('请输入核心文件名');
+        return;
+      }
     } else {
       // 自定义文件
       if (!formData.value.coreFileKey) {
@@ -565,6 +570,7 @@ const goToHome = () => {
                 <t-radio-group v-model="downloadType" variant="default-filled">
                   <t-radio-button value="online">在线下载 (推荐)</t-radio-button>
                   <t-radio-button value="manual">选择本地文件</t-radio-button>
+                  <t-radio-button value="custom">自定义文件名</t-radio-button>
                 </t-radio-group>
               </t-form-item>
 
@@ -632,6 +638,14 @@ const goToHome = () => {
                       </t-button>
                     </div>
                   </div>
+                </t-form-item>
+              </div>
+
+              <div v-if="downloadType === 'custom'" class="online-select-area">
+                <t-alert theme="warning" message="此模式通常用于服务器目录中已经存在核心文件，或者您打算稍后手动通过文件管理上传核心。" style="margin-bottom: 16px" />
+
+                <t-form-item label="核心文件名" name="core" help="请确保文件名包含后缀，例如: server.jar">
+                  <t-input v-model="formData.core" placeholder="请输入核心文件名 (例如 server.jar)" />
                 </t-form-item>
               </div>
             </div>

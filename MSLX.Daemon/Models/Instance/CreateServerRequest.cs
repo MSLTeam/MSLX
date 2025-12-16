@@ -50,6 +50,7 @@ public class CreateServerRequest : IValidatableObject
             }
         }
 
+        /*
         // 啥都不给？捣乱都不敢这么捣法吧！
         bool hasSource = !string.IsNullOrWhiteSpace(coreFileKey) 
                          || !string.IsNullOrWhiteSpace(packageFileKey) 
@@ -61,7 +62,7 @@ public class CreateServerRequest : IValidatableObject
                 "参数缺失：必须至少提供一种来源 (coreUrl, coreFileKey 或 packageFileKey)。",
                 new[] { nameof(core) }
             );
-        }
+        } */
     }
 }
 
