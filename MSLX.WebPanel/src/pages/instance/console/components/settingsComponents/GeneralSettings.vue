@@ -29,7 +29,11 @@ import ServerCoreSelector from '@/pages/instance/createInstance/components/Serve
 const route = useRoute();
 const userStore = useUserStore();
 
-const instanceId = computed(() => parseInt(route.params.id as string));
+const instanceId = computed(() => {
+  const idStr = route.params.id as string;
+  if (!idStr) return NaN;
+  return parseInt(idStr);
+});
 
 const formRef = ref<FormInstanceFunctions | null>(null);
 const loading = ref(false);
@@ -278,6 +282,9 @@ const rules = computed<FormRules>(() => {
 });
 
 const initData = async () => {
+  if (!instanceId.value || Number.isNaN(instanceId.value)) {
+    return;
+  }
   loading.value = true;
   try {
     await fetchJavaVersions();
@@ -340,7 +347,11 @@ const initData = async () => {
   }
 };
 
-watch(instanceId, initData);
+watch(instanceId, (newId) => {
+  if (newId && !Number.isNaN(newId)) {
+    initData();
+  }
+});
 onMounted(initData);
 
 const onSubmit = async () => {
