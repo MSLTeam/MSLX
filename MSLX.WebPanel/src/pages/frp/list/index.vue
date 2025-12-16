@@ -141,7 +141,6 @@ onMounted(() => {
 
 <style scoped lang="less">
 .dashboard-wrapper {
-  background-color: var(--td-bg-color-page);
   min-height: 100vh;
   width: 100%;
   box-sizing: border-box;
