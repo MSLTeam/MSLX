@@ -14,10 +14,13 @@ import {
   WinkIcon,
   UserUnlockedIcon,
   CloudIcon,
+  ChartBarIcon,
+  InfoCircleIcon
 } from 'tdesign-icons-vue-next';
 import { InstanceInfoModel } from '@/api/model/instance';
 
 import InstanceSettings from './InstanceSettings.vue';
+import InstanceMonitor from './InstanceMonitor.vue';
 import { changeUrl } from '@/router';
 
 // --- Props & Emits ---
@@ -37,15 +40,15 @@ const emits = defineEmits<{
 }>();
 
 const settingsRef = ref<InstanceType<typeof InstanceSettings> | null>(null);
+// 控制 Tab 切换，默认显示详情
+const activeTab = ref('info');
 
-// 设置按钮
 const handleOpenSettings = () => {
   if (settingsRef.value) {
     settingsRef.value.open();
   }
 };
 
-// 子组件保存成功后的回调
 const handleSettingsSaved = () => {
   emits('refresh-info');
 };
@@ -90,11 +93,20 @@ watch(
   (v) => v && (runSeconds.value = parseTimeSpanToSeconds(v)),
   { immediate: true },
 );
+
+// 监听运行状态
 watch(
   () => props.isRunning,
-  (v) => (v ? !timer && startTimer() : stopTimer()),
+  (v) => {
+    if (v) {
+      if (!timer) startTimer();
+    } else {
+      stopTimer();
+    }
+  },
   { immediate: true },
 );
+
 onUnmounted(() => stopTimer());
 </script>
 
@@ -156,64 +168,87 @@ onUnmounted(() => stopTimer());
       </div>
     </t-card>
 
-    <t-card v-if="serverInfo?.java !== 'none'" title="实例详情" class="info-card" :bordered="false">
-      <div class="info-list">
-        <div class="info-item">
-          <div class="label"><desktop-icon /> 实例名称</div>
-          <div class="value">{{ serverInfo?.name || 'Minecraft Server' }}</div>
-        </div>
-        <div class="info-item">
-          <div class="label"><dashboard-icon /> 内存限制</div>
-          <div class="value">{{ serverInfo?.maxM || '?' }} MB</div>
-        </div>
-        <div class="proxy-group"></div>
-        <div class="info-item">
-          <div class="label"><enter-icon /> 运行端口</div>
-          <div class="value">{{ serverInfo?.mcConfig?.serverPort || '?' }}</div>
-        </div>
-        <div class="info-item">
-          <div class="label"><arrow-left-right-1-icon /> 游戏难度</div>
-          <div class="value"><t-tag theme="primary">{{ serverInfo?.mcConfig?.difficulty || '?' }}</t-tag></div>
-        </div>
-        <div class="info-item">
-          <div class="label"><wink-icon /> 游戏模式</div>
-          <div class="value"><t-tag>{{ serverInfo?.mcConfig?.gamemode || '?' }}</t-tag></div>
-        </div>
-        <div class="info-item">
-          <div class="label"><folder-icon /> 游戏地图</div>
-          <div class="value">{{ serverInfo?.mcConfig?.levelName || '?' }}</div>
-        </div>
-        <div class="info-item">
-          <div class="label"><user-unlocked-icon /> 正版验证</div>
-          <div class="value"><t-tag :theme="serverInfo?.mcConfig?.onlineMode === 'true' ? 'success' : 'warning'">{{ serverInfo?.mcConfig?.onlineMode === 'true' ? '已开启' : '已关闭' }}</t-tag></div>
-        </div>
+    <div class="info-tabs-container">
+      <t-tabs v-model="activeTab" theme="card">
+        <t-tab-panel value="info">
+          <template #label>
+            <info-circle-icon style="margin-right: 4px" /> 详情
+          </template>
 
-        <div class="proxy-group"></div>
-        <div class="info-item">
-          <div class="label"><time-icon /> 运行时长</div>
-          <div class="value">{{ isRunning ? formattedUptime : '--:--:--' }}</div>
-        </div>
-      </div>
-    </t-card>
+          <div class="tab-content-wrapper">
+            <div class="info-list">
+              <div class="info-item">
+                <div class="label"><desktop-icon /> 实例名称</div>
+                <div class="value">{{ serverInfo?.name || 'Minecraft Server' }}</div>
+              </div>
 
-    <t-card v-else title="实例详情" class="info-card" :bordered="false">
-      <div class="info-list">
-        <div class="info-item">
-          <div class="label"><desktop-icon /> 实例名称</div>
-          <div class="value">{{ serverInfo?.name || 'Minecraft Server' }}</div>
-        </div>
-        <div class="info-item">
-          <div class="label"><dashboard-icon /> 模式</div>
-          <div class="value">自定义模式</div>
-        </div>
+              <template v-if="serverInfo?.java !== 'none'">
+                <div class="info-item">
+                  <div class="label"><dashboard-icon /> 内存限制</div>
+                  <div class="value">{{ serverInfo?.maxM || '?' }} MB</div>
+                </div>
+                <div class="proxy-group"></div>
+                <div class="info-item">
+                  <div class="label"><enter-icon /> 运行端口</div>
+                  <div class="value">{{ serverInfo?.mcConfig?.serverPort || '?' }}</div>
+                </div>
+                <div class="info-item">
+                  <div class="label"><arrow-left-right-1-icon /> 游戏难度</div>
+                  <div class="value"><t-tag theme="primary">{{ serverInfo?.mcConfig?.difficulty || '?' }}</t-tag></div>
+                </div>
+                <div class="info-item">
+                  <div class="label"><wink-icon /> 游戏模式</div>
+                  <div class="value"><t-tag>{{ serverInfo?.mcConfig?.gamemode || '?' }}</t-tag></div>
+                </div>
+                <div class="info-item">
+                  <div class="label"><folder-icon /> 游戏地图</div>
+                  <div class="value">{{ serverInfo?.mcConfig?.levelName || '?' }}</div>
+                </div>
+                <div class="info-item">
+                  <div class="label"><user-unlocked-icon /> 正版验证</div>
+                  <div class="value">
+                    <t-tag :theme="serverInfo?.mcConfig?.onlineMode === 'true' ? 'success' : 'warning'">
+                      {{ serverInfo?.mcConfig?.onlineMode === 'true' ? '已开启' : '已关闭' }}
+                    </t-tag>
+                  </div>
+                </div>
+              </template>
 
-        <div class="proxy-group"></div>
-        <div class="info-item">
-          <div class="label"><time-icon /> 运行时长</div>
-          <div class="value">{{ isRunning ? formattedUptime : '--:--:--' }}</div>
-        </div>
-      </div>
-    </t-card>
+              <template v-else>
+                <div class="info-item">
+                  <div class="label"><dashboard-icon /> 模式</div>
+                  <div class="value">自定义模式</div>
+                </div>
+              </template>
+
+              <div class="proxy-group"></div>
+              <div class="info-item">
+                <div class="label"><time-icon /> 运行时长</div>
+                <div class="value">{{ isRunning ? formattedUptime : '--:--:--' }}</div>
+              </div>
+            </div>
+          </div>
+        </t-tab-panel>
+
+        <t-tab-panel value="monitor" :disabled="!isRunning">
+          <template #label>
+            <chart-bar-icon style="margin-right: 4px" /> 监控
+          </template>
+
+          <div class="tab-content-wrapper">
+            <instance-monitor
+              v-if="serverInfo && isRunning"
+              :server-id="serverId"
+              :is-running="isRunning"
+              :max-memory="serverInfo.java === 'none' ? 0 : (serverInfo.maxM || 4096)"
+            />
+            <div v-else class="monitor-placeholder">
+              实例未运行，暂无监控数据
+            </div>
+          </div>
+        </t-tab-panel>
+      </t-tabs>
+    </div>
 
     <instance-settings ref="settingsRef" :server-id="serverId" @success="handleSettingsSaved" />
   </div>
@@ -223,17 +258,15 @@ onUnmounted(() => stopTimer());
 .sidebar-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-}
-
-.control-card,
-.info-card {
-  border-radius: 12px;
-  box-shadow: var(--td-shadow-1);
-  background: var(--td-bg-color-container);
+  gap: 16px; /* 稍微缩小组件间距，整体更紧凑 */
+  height: 100%;
 }
 
 .control-card {
+  border-radius: 12px;
+  box-shadow: var(--td-shadow-1);
+  background: var(--td-bg-color-container);
+
   .control-header {
     display: flex;
     justify-content: space-between;
@@ -264,7 +297,7 @@ onUnmounted(() => stopTimer());
   .control-actions {
     display: flex;
     flex-direction: column;
-    gap: 16px; /* 调整了间距，让按钮排列更舒服 */
+    gap: 16px;
     .action-row {
       display: flex;
       gap: 12px;
@@ -276,31 +309,58 @@ onUnmounted(() => stopTimer());
   }
 }
 
-.info-card {
-  .info-list {
+/* Tab 样式 */
+.info-tabs-container {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--td-shadow-1);
+  background: var(--td-bg-color-container);
+
+  :deep(.t-tabs__nav-container) {
+    background: var(--td-bg-color-container);
+    padding: 0 4px;
+  }
+
+  :deep(.t-tabs__content) {
+    padding: 0;
+  }
+}
+
+.tab-content-wrapper {
+  padding: 16px;
+  min-height: 200px;
+}
+
+.monitor-placeholder {
+  color: var(--td-text-color-placeholder);
+  text-align: center;
+  padding: 40px 0;
+  font-size: 13px;
+}
+
+.info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  .proxy-group {
+    border-top: 1px dashed var(--td-component-stroke);
+    margin-top: 4px;
+  }
+  .info-item {
     display: flex;
-    flex-direction: column;
-    gap: 12px;
-    .proxy-group {
-      border-top: 1px dashed var(--td-component-stroke);
-      margin-top: 4px;
-    }
-    .info-item {
+    justify-content: space-between;
+    align-items: center;
+    .label {
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      .label {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: var(--td-text-color-placeholder);
-        font-size: 13px;
-      }
-      .value {
-        font-family: var(--td-font-family-number);
-        font-weight: 500;
-        font-size: 13px;
-      }
+      gap: 8px;
+      color: var(--td-text-color-placeholder);
+      font-size: 13px;
+    }
+    .value {
+      font-family: var(--td-font-family-number);
+      font-weight: 500;
+      font-size: 13px;
     }
   }
 }

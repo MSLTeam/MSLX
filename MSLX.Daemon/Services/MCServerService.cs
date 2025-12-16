@@ -28,6 +28,10 @@ public class MCServerService
         public bool IsInitializing { get; set; } = false;
         public volatile bool IsStopping = false;
         public volatile bool IsBackuping = false;
+        
+        // 用于计算资源使用率
+        public TimeSpan PreviousTotalProcessorTime { get; set; } = TimeSpan.Zero;
+        public DateTime PreviousCpuCheckTime { get; set; } = DateTime.MinValue;
     }
 
     private readonly ConcurrentDictionary<uint, ServerContext> _activeServers = new();
@@ -517,6 +521,16 @@ public class MCServerService
                 _logger.LogError(ex, "[AutoStart] 自启动流程发生异常");
             }
         });
+        
+        // 启动实例监控
+        Task.Run(async () =>
+        {
+            await Task.Delay(5000); 
+            
+            // 启动资源监控循环
+            _logger.LogInformation("[Monitor] 正在启动服务器资源监控服务...");
+            await StartResourceMonitoring();
+        });
     }
 
     // 监听服务器退出 执行崩溃重启等内容
@@ -956,6 +970,78 @@ public class MCServerService
         foreach (string folder in folders)
         {
             await CompressFolder(rootPath, folder, archive);
+        }
+    }
+    
+    // —————— 进程资源占用推送 ——————
+    private async Task StartResourceMonitoring()
+    {
+        var timer = new PeriodicTimer(TimeSpan.FromSeconds(2)); // 推送间隔
+        int processorCount = Environment.ProcessorCount; // 获取逻辑核心数
+
+        while (await timer.WaitForNextTickAsync(_appLifetime.ApplicationStopping))
+        {
+            if (_activeServers.IsEmpty) continue;
+
+            foreach (var kvp in _activeServers)
+            {
+                var instanceId = kvp.Key;
+                var context = kvp.Value;
+
+                try
+                {
+                    // 检查进程是否存活
+                    if (context.Process == null || context.Process.HasExited || context.IsInitializing) 
+                        continue;
+
+                    // 刷新资源计数
+                    context.Process.Refresh();
+
+                    // 内存
+                    long memoryUsage = context.Process.WorkingSet64;
+
+                    // 计算CPU使用率
+                    double cpuUsage = 0;
+                    var currentTime = DateTime.UtcNow;
+                    var currentTotalProcessorTime = context.Process.TotalProcessorTime;
+
+                    if (context.PreviousCpuCheckTime != DateTime.MinValue)
+                    {
+                        // 计算时间差
+                        double timePassedMs = (currentTime - context.PreviousCpuCheckTime).TotalMilliseconds;
+                        double cpuTimePassedMs = (currentTotalProcessorTime - context.PreviousTotalProcessorTime).TotalMilliseconds;
+
+                        // 防止除以零
+                        if (timePassedMs > 0)
+                        {
+                            // 计算：(CPU时间差 / 物理时间差) = 占用比
+                            // 结果是 0.0 - 1.0 (单核) 或 0.0 - N.0 (多核)
+                            // 除以 processorCount 归一化到系统总 CPU 的百分比 (0-100%)
+                            cpuUsage = (cpuTimePassedMs / timePassedMs) / processorCount * 100;
+                        }
+                    }
+
+                    // 更新状态数据到 ServerContext
+                    context.PreviousCpuCheckTime = currentTime;
+                    context.PreviousTotalProcessorTime = currentTotalProcessorTime;
+                    
+                    // 你太极端了喵
+                    if (cpuUsage < 0) cpuUsage = 0;
+                    if (cpuUsage > 100) cpuUsage = 100;
+
+                    // 推送数据
+                    await _hubContext.Clients.Group(instanceId.ToString()).SendAsync("ReceiveStatus", 
+                        instanceId, 
+                        Math.Round(cpuUsage, 2), // 保留两位小数
+                        memoryUsage
+                    );
+                }
+                catch (Exception ex)
+                {
+                    // 通常进程中途退出可能会触发
+                    _logger.LogTrace($"监控实例 {instanceId} 资源时发生微小异常: {ex.Message}");
+                }
+            }
         }
     }
 }
