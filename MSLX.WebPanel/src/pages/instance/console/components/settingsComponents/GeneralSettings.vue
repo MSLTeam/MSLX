@@ -69,6 +69,44 @@ const formData = ref<UpdateInstanceModel>({
   coreFileKey: '',
 });
 
+// --- 内存单位转换 ---
+
+const minUnit = ref('MB');
+const maxUnit = ref('MB');
+const unitOptions = [
+  { label: 'MB', value: 'MB' },
+  { label: 'GB', value: 'GB' }
+];
+
+
+// 计算属性
+const minMComputed = computed({
+  get: () => {
+    if (minUnit.value === 'GB') {
+      const val = formData.value.minM / 1024;
+      // 读取时保留 2 位小数
+      return Math.round(val * 100) / 100;
+    }
+    return formData.value.minM;
+  },
+  set: (val) => {
+    formData.value.minM = minUnit.value === 'GB' ? Math.round(val * 1024) : val;
+  }
+});
+
+const maxMComputed = computed({
+  get: () => {
+    if (maxUnit.value === 'GB') {
+      const val = formData.value.maxM / 1024;
+      return Math.round(val * 100) / 100;
+    }
+    return formData.value.maxM;
+  },
+  set: (val) => {
+    formData.value.maxM = maxUnit.value === 'GB' ? Math.round(val * 1024) : val;
+  }
+});
+
 // --- Java 逻辑 ---
 const javaType = ref('custom');
 const javaVersions = ref<{ label: string; value: string }[]>([]);
@@ -252,6 +290,10 @@ const initData = async () => {
       coreFileKey: '',
       coreSha256: ''
     };
+
+    // 判断内存单位
+    minUnit.value = (res.minM > 0 && res.minM % 1024 === 0) ? 'GB' : 'MB';
+    maxUnit.value = (res.maxM > 0 && res.maxM % 1024 === 0) ? 'GB' : 'MB';
 
     isPathEditable.value = false;
 
@@ -564,27 +606,48 @@ onUnmounted(() => {
 
           <div class="setting-item">
             <div class="setting-info">
-              <div class="title">内存分配 (MB)</div>
+              <div class="title">内存分配</div>
               <div class="desc">设置 Java 堆内存大小 (Xms / Xmx)</div>
             </div>
+
             <div class="setting-control flex-row">
-              <t-input-number
-                v-model="formData.minM"
-                :min="0"
-                placeholder="最小(Xms)"
-                theme="column"
-                style="width: 140px"
-                suffix="MB"
-              />
+
+              <div class="memory-input-group">
+                <t-input-number
+                  v-model="minMComputed"
+                  :min="0"
+                  :decimal-places="minUnit === 'GB' ? 1 : 0"
+                  placeholder="Xms"
+                  theme="normal"
+                  class="input-left"
+                />
+                <t-select
+                  v-model="minUnit"
+                  :options="unitOptions"
+                  :clearable="false"
+                  class="select-right"
+                />
+              </div>
+
               <span class="separator">-</span>
-              <t-input-number
-                v-model="formData.maxM"
-                :min="0"
-                placeholder="最大(Xmx)"
-                theme="column"
-                style="width: 140px"
-                suffix="MB"
-              />
+
+              <div class="memory-input-group">
+                <t-input-number
+                  v-model="maxMComputed"
+                  :min="0"
+                  :decimal-places="maxUnit === 'GB' ? 1 : 0"
+                  placeholder="Xmx"
+                  theme="normal"
+                  class="input-left"
+                />
+                <t-select
+                  v-model="maxUnit"
+                  :options="unitOptions"
+                  :clearable="false"
+                  class="select-right"
+                />
+              </div>
+
             </div>
           </div>
         </template>
@@ -890,5 +953,62 @@ onUnmounted(() => {
       width: 100%;
     }
   }
+}
+/* 覆盖或替换之前的样式 */
+.memory-input-group {
+  display: flex;
+  align-items: center;
+  /* 1. 进一步缩小总宽度：从 155px -> 110px，足够显示 4 位数 */
+  max-width: 110px;
+  width: 100%;
+
+  /* 左边的数字输入框 */
+  .input-left {
+    flex: 1;
+    min-width: 0;
+
+    :deep(.t-input) {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+      border-right: none;
+      padding: 0; /* 移除内边距，更紧凑 */
+    }
+
+    /* 2. 让数字绝对居中 */
+    :deep(.t-input__inner) {
+      text-align: center;
+    }
+  }
+
+  /* 右边的单位选择器 */
+  .select-right {
+    width: 40px; /* 3. 缩窄单位宽度：60px -> 40px */
+    flex-shrink: 0;
+
+    :deep(.t-input) {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      background-color: var(--td-bg-color-secondarycontainer);
+      padding: 0;
+    }
+
+    /* 4. 修复单位文字不居中问题 */
+    :deep(.t-input__inner) {
+      text-align: center;
+      padding: 0 !important; /* 强制去除内边距，确保文字完全居中 */
+      font-size: 12px; /* 字体稍微改小一点，更显精致 */
+      color: var(--td-text-color-secondary);
+    }
+
+    :deep(.t-select__right-icon) {
+      display: none;
+    }
+  }
+}
+
+.separator {
+  margin: 0 4px;
+  color: var(--td-text-color-placeholder);
+  flex-shrink: 0;
 }
 </style>

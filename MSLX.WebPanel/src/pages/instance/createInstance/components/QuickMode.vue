@@ -96,6 +96,34 @@ const formData = ref(<CreateInstanceQucikModeModel>{
   args: '',
 });
 
+
+// 处理内存的单位
+const unitOptions = [
+  { label: 'GB', value: 'GB' },
+  { label: 'MB', value: 'MB' },
+];
+
+const minUnit = ref('GB');
+const maxUnit = ref('GB');
+
+const minMComputed = computed({
+  get: () => {
+    return minUnit.value === 'GB' ? formData.value.minM / 1024 : formData.value.minM;
+  },
+  set: (val) => {
+    formData.value.minM = minUnit.value === 'GB' ? Math.round(val * 1024) : val;
+  }
+});
+
+const maxMComputed = computed({
+  get: () => {
+    return maxUnit.value === 'GB' ? formData.value.maxM / 1024 : formData.value.maxM;
+  },
+  set: (val) => {
+    formData.value.maxM = maxUnit.value === 'GB' ? Math.round(val * 1024) : val;
+  }
+});
+
 // 监听选择java的状态变量 修改表单数据
 watch(
   [javaType, selectedJavaVersion, customJavaPath],
@@ -651,19 +679,51 @@ const goToHome = () => {
             </div>
 
             <div v-show="currentStep === 3" class="step-content">
-              <t-row :gutter="16">
-                <t-col :span="6">
-                  <t-form-item label="最小内存 (MB)" name="minM">
-                    <t-input-number v-model="formData.minM" :min="1" />
+              <t-row :gutter="[16, 24]">
+                <t-col :xs="12" :span="6">
+                  <t-form-item label="最小内存" name="minM">
+                    <t-space :size="8" style="width: 100%">
+                      <t-input-number
+                        v-model="minMComputed"
+                        :min="0"
+                        :decimal-places="minUnit === 'GB' ? 1 : 0"
+                        placeholder="Xms"
+                        theme="column"
+                        style="width: 100%"
+                      />
+                      <t-select
+                        v-model="minUnit"
+                        :options="unitOptions"
+                        :clearable="false"
+                        style="width: 80px"
+                      />
+                    </t-space>
                   </t-form-item>
                 </t-col>
-                <t-col :span="6">
-                  <t-form-item label="最大内存 (MB)" name="maxM">
-                    <t-input-number v-model="formData.maxM" :min="1" />
+
+                <t-col :xs="12" :span="6">
+                  <t-form-item label="最大内存" name="maxM">
+                    <t-space :size="8" style="width: 100%">
+                      <t-input-number
+                        v-model="maxMComputed"
+                        :min="0"
+                        :decimal-places="maxUnit === 'GB' ? 1 : 0"
+                        placeholder="Xmx"
+                        theme="column"
+                        style="width: 100%"
+                      />
+                      <t-select
+                        v-model="maxUnit"
+                        :options="unitOptions"
+                        :clearable="false"
+                        style="width: 80px"
+                      />
+                    </t-space>
                   </t-form-item>
                 </t-col>
               </t-row>
-              <t-form-item label="额外 JVM 参数 (可选)" name="args" help="例如: -XX:+UseG1GC">
+
+              <t-form-item label="额外 JVM 参数 (可选)" name="args" help="例如: -XX:+UseG1GC" style="margin-top: 16px">
                 <t-textarea v-model="formData.args" placeholder="-XX:+UseG1GC" />
               </t-form-item>
             </div>
