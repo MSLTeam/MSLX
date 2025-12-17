@@ -31,7 +31,7 @@ import {
 import CronGenerator from './CronGenerator.vue';
 
 const route = useRoute();
-const instanceId = computed(() => parseInt(route.params.id as string));
+const instanceId = computed(() => parseInt(route.params.serverId as string));
 
 // --- 状态管理 ---
 const taskList = ref<CronTaskItemModel[]>([]);

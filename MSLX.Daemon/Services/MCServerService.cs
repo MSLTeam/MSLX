@@ -5,6 +5,7 @@ using MSLX.Daemon.Utils;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Management;
 using System.Text;
 using Newtonsoft.Json.Linq;
 
@@ -975,73 +976,127 @@ public class MCServerService
     
     // —————— 进程资源占用推送 ——————
     private async Task StartResourceMonitoring()
+{
+    var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
+    int processorCount = Environment.ProcessorCount;
+
+    while (await timer.WaitForNextTickAsync(_appLifetime.ApplicationStopping))
     {
-        var timer = new PeriodicTimer(TimeSpan.FromSeconds(2)); // 推送间隔
-        int processorCount = Environment.ProcessorCount; // 获取逻辑核心数
+        if (_activeServers.IsEmpty) continue;
 
-        while (await timer.WaitForNextTickAsync(_appLifetime.ApplicationStopping))
+        foreach (var kvp in _activeServers)
         {
-            if (_activeServers.IsEmpty) continue;
+            var instanceId = kvp.Key;
+            var context = kvp.Value;
 
-            foreach (var kvp in _activeServers)
+            try
             {
-                var instanceId = kvp.Key;
-                var context = kvp.Value;
+                if (context.Process == null || context.Process.HasExited || context.IsInitializing)
+                    continue;
 
-                try
+                // 确定监控目标
+                Process monitorTarget = context.Process;
+
+                // Windows 下的精准父子进程定位
+                if (PlatFormServices.GetOs() == "Windows")
                 {
-                    // 检查进程是否存活
-                    if (context.Process == null || context.Process.HasExited || context.IsInitializing) 
-                        continue;
-
-                    // 刷新资源计数
-                    context.Process.Refresh();
-
-                    // 内存
-                    long memoryUsage = context.Process.WorkingSet64;
-
-                    // 计算CPU使用率
-                    double cpuUsage = 0;
-                    var currentTime = DateTime.UtcNow;
-                    var currentTotalProcessorTime = context.Process.TotalProcessorTime;
-
-                    if (context.PreviousCpuCheckTime != DateTime.MinValue)
+                    // 如果当前持有的是 cmd/conhost 等外壳
+                    var name = monitorTarget.ProcessName.ToLower();
+                    if (name == "cmd" || name == "powershell" || name == "conhost")
                     {
-                        // 计算时间差
-                        double timePassedMs = (currentTime - context.PreviousCpuCheckTime).TotalMilliseconds;
-                        double cpuTimePassedMs = (currentTotalProcessorTime - context.PreviousTotalProcessorTime).TotalMilliseconds;
-
-                        // 防止除以零
-                        if (timePassedMs > 0)
+                        // pid查询
+                        var child = GetChildJavaProcess(monitorTarget.Id);
+                        if (child != null)
                         {
-                            // 计算：(CPU时间差 / 物理时间差) = 占用比
-                            // 结果是 0.0 - 1.0 (单核) 或 0.0 - N.0 (多核)
-                            // 除以 processorCount 归一化到系统总 CPU 的百分比 (0-100%)
-                            cpuUsage = (cpuTimePassedMs / timePassedMs) / processorCount * 100;
+                            monitorTarget = child;
                         }
                     }
-
-                    // 更新状态数据到 ServerContext
-                    context.PreviousCpuCheckTime = currentTime;
-                    context.PreviousTotalProcessorTime = currentTotalProcessorTime;
-                    
-                    // 你太极端了喵
-                    if (cpuUsage < 0) cpuUsage = 0;
-                    if (cpuUsage > 100) cpuUsage = 100;
-
-                    // 推送数据
-                    await _hubContext.Clients.Group(instanceId.ToString()).SendAsync("ReceiveStatus", 
-                        instanceId, 
-                        Math.Round(cpuUsage, 2), // 保留两位小数
-                        memoryUsage
-                    );
                 }
-                catch (Exception ex)
+
+                // 刷新数据
+                monitorTarget.Refresh();
+                
+                // 目标不在了
+                if (monitorTarget.HasExited) continue;
+
+                long memoryUsage = monitorTarget.WorkingSet64;
+                double cpuUsage = 0;
+                
+                var currentTime = DateTime.UtcNow;
+                var currentTotalProcessorTime = monitorTarget.TotalProcessorTime;
+
+                if (context.PreviousCpuCheckTime != DateTime.MinValue)
                 {
-                    // 通常进程中途退出可能会触发
-                    _logger.LogTrace($"监控实例 {instanceId} 资源时发生微小异常: {ex.Message}");
+                    double timePassedMs = (currentTime - context.PreviousCpuCheckTime).TotalMilliseconds;
+                    double cpuTimePassedMs = (currentTotalProcessorTime - context.PreviousTotalProcessorTime).TotalMilliseconds;
+
+                    // 如果 monitorTarget 的 ID 变了（从壳变到了真身），不要计算这一轮的 CPU，
+                    
+                    if (timePassedMs > 0 && cpuTimePassedMs >= 0 && cpuTimePassedMs < timePassedMs * processorCount * 2) 
+                    {
+                        cpuUsage = (cpuTimePassedMs / timePassedMs) / processorCount * 100;
+                    }
+                }
+
+                context.PreviousCpuCheckTime = currentTime;
+                context.PreviousTotalProcessorTime = currentTotalProcessorTime;
+
+                if (cpuUsage > 100) cpuUsage = 100;
+                if (cpuUsage < 0) cpuUsage = 0;
+
+                await _hubContext.Clients.Group(instanceId.ToString()).SendAsync("ReceiveStatus",
+                    instanceId,
+                    Math.Round(cpuUsage, 2),
+                    memoryUsage
+                );
+            }
+            catch
+            {
+                // 忽略异常，重置状态
+                context.PreviousCpuCheckTime = DateTime.MinValue;
+            }
+        }
+    }
+}
+    
+    /// <summary>
+    /// [Windows专用] 通过 WMI 查找指定父进程启动的子进程 (Java/Bedrock)
+    /// </summary>
+    private Process? GetChildJavaProcess(int parentPid)
+    {
+        if (!OperatingSystem.IsWindows()) return null;
+
+        try
+        {
+            // 使用 WMI 查询：查找所有 ParentProcessId 等于当前 CMD PID 的进程
+            using var searcher = new ManagementObjectSearcher(
+                $"Select ProcessId, Name, CommandLine From Win32_Process Where ParentProcessId={parentPid}");
+
+            using var collection = searcher.Get();
+
+            foreach (var obj in collection)
+            {
+                var childPid = Convert.ToInt32(obj["ProcessId"]);
+                var name = obj["Name"]?.ToString()?.ToLower() ?? "";
+            
+                //  Java 或 Bedrock 进程
+                if (name.Contains("java") || name.Contains("bedrock") || name.Contains("server"))
+                {
+                    try 
+                    {
+                        return Process.GetProcessById(childPid);
+                    }
+                    catch 
+                    {
+                        // 进程可能刚查到就退出了，忽略
+                    }
                 }
             }
         }
+        catch (Exception ex)
+        {
+            _logger.LogWarning($"WMI 查询子进程失败: {ex.Message}");
+        }
+        return null;
     }
 }

@@ -141,7 +141,6 @@ onMounted(() => {
 
 <style scoped lang="less">
 .dashboard-wrapper {
-  background-color: var(--td-bg-color-page);
   min-height: 100vh;
   width: 100%;
   box-sizing: border-box;
@@ -155,7 +154,7 @@ onMounted(() => {
 
 .design-card {
   position: relative;
-  background-color: var(--td-bg-color-container);
+  background-color: color-mix(in srgb, var(--td-bg-color-container), transparent 50%) !important;
   border: 1px solid var(--td-border-level-2-color);
   border-radius: 8px;
   overflow: hidden;

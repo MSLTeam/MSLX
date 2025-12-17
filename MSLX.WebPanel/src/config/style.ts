@@ -11,4 +11,5 @@ export default {
   showHeader: true,
   backgroundTheme: 'blueGrey',
   brandTheme: 'default',
+  enableCustomTheme: false,
 };

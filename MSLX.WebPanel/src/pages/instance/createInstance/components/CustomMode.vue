@@ -45,10 +45,7 @@ const onSubmit: FormProps['onSubmit'] = async ({ validateResult }) => {
 
 <template>
   <div>
-    <t-card v-if="!isSuccess" :bordered="false">
-      <template #header>
-        <span style="font-weight: bold; font-size: 16px">自定义启动指令模式</span>
-      </template>
+    <div v-if="!isSuccess">
 
       <t-form ref="formRef" :rules="rules" :data="formData" label-align="top" @submit="onSubmit">
         <t-form-item label="服务器名称" name="name">
@@ -74,7 +71,7 @@ const onSubmit: FormProps['onSubmit'] = async ({ validateResult }) => {
           </t-space>
         </t-form-item>
       </t-form>
-    </t-card>
+    </div>
 
     <div v-else class="result-success">
       <t-icon class="result-success-icon" name="check-circle" />

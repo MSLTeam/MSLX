@@ -8,7 +8,7 @@ export default [
     meta: { hidden: true },
     children: [
       {
-        path: ':id',
+        path: ':frpId',
         name: 'FrpConsole',
         component: () => import('@/pages/frp/console/index.vue'),
         meta: {
@@ -25,7 +25,7 @@ export default [
     meta: { hidden: true },
     children: [
       {
-        path: ':id',
+        path: ':serverId',
         name: 'InstanceConsole',
         component: () => import('@/pages/instance/console/index.vue'),
         meta: {
@@ -42,7 +42,7 @@ export default [
     meta: { hidden: true },
     children: [
       {
-        path: ':id',
+        path: ':serverFilesId',
         name: 'InstanceFiles',
         component: () => import('@/pages/instance/files/index.vue'),
         meta: {
