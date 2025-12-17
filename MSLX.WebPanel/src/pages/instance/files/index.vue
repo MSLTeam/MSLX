@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
   AppIcon,
@@ -49,6 +49,10 @@ const fileList = ref<FilesListModel[]>([]);
 const currentPath = ref('');
 const selectedRowKeys = ref<string[]>([]);
 
+// 屏幕响应式状态
+const screenWidth = ref(window.innerWidth);
+const isMobile = computed(() => screenWidth.value < 768);
+
 // 各类弹窗状态
 const showEditor = ref(false);
 const showImagePreview = ref(false);
@@ -57,11 +61,11 @@ const showRenameDialog = ref(false);
 const showBatchUploader = ref(false);
 const showCompressor = ref(false);
 const showDecompressor = ref(false);
-const showPermissionDialog = ref(false); // 权限弹窗
-const showCreateFolderDialog = ref(false); // 新建文件夹弹窗显示状态
+const showPermissionDialog = ref(false);
+const showCreateFolderDialog = ref(false);
 
 // 临时数据
-const newFolderName = ref(''); // 新文件夹名称绑定
+const newFolderName = ref('');
 const editorFileName = ref('');
 const editorContent = ref('');
 const isSaving = ref(false);
@@ -73,6 +77,11 @@ const renameTargetObj = ref<{ name: string; fullPath: string } | null>(null);
 const compressTargets = ref<string[]>([]);
 const decompressTargetFile = ref('');
 const permissionTargets = ref<Array<{ name: string; fullPath: string; mode: string }>>([]);
+
+// 监听窗口大小变化
+const handleResize = () => {
+  screenWidth.value = window.innerWidth;
+};
 
 const isImage = (name: string) => {
   const ext = name.split('.').pop()?.toLowerCase();
@@ -104,22 +113,37 @@ const getFileIcon = (row: FilesListModel) => {
   return { icon: FileIcon, color: 'var(--td-text-color-secondary)' };
 };
 
-// 检查是否有权限字段支持
 const hasPermissionSupport = computed(() => {
   return fileList.value.some((item) => item.permission && item.permission !== '');
 });
 
+// 手机端只保留核心列
 const columns = computed(() => {
-  const baseCols = [
-    { colKey: 'row-select', type: 'multiple', width: 40 },
-    { colKey: 'name', title: '文件名', ellipsis: true, width: 'auto' },
+  // 基础列配置
+  const selectionCol = { colKey: 'row-select', type: 'multiple', width: isMobile.value ? 34 : 40 };
+  const nameCol = { colKey: 'name', title: '文件名', ellipsis: true, width: 'auto' };
+  const operationCol = {
+    colKey: 'operation',
+    title: '操作',
+    width: isMobile.value ? 50 : 80,
+    align: 'center',
+    fixed: isMobile.value ? 'right' : undefined, // 手机端固定操作列在右侧
+  };
+
+  if (isMobile.value) {
+    // 手机模式：只返回 勾选、文件名、操作
+    return [selectionCol, nameCol, operationCol];
+  }
+
+  // PC 模式：返回完整列
+  return [
+    selectionCol,
+    nameCol,
     { colKey: 'size', title: '大小', width: 100, align: 'right' },
-    // 动态加入权限列
     ...(hasPermissionSupport.value ? [{ colKey: 'permission', title: '权限', width: 80, align: 'center' }] : []),
     { colKey: 'lastModified', title: '修改时间', width: 180, align: 'center' },
-    { colKey: 'operation', title: '操作', width: 80, align: 'center' },
+    operationCol,
   ];
-  return baseCols;
 });
 
 const breadcrumbs = computed(() => {
@@ -130,6 +154,7 @@ const breadcrumbs = computed(() => {
     accumPath = accumPath ? `${accumPath}/${part}` : part;
     crumbs.push({ name: part, path: accumPath });
   });
+  // 手机端如果路径太长，只显示最后两级和根目录
   return crumbs;
 });
 
@@ -164,7 +189,7 @@ const fetchData = async () => {
   }
 };
 
-// 预览 新建 编辑
+// ---------------- 业务逻辑 ----------------
 const openPreview = async (fileName: string) => {
   if (previewUrl.value) {
     window.URL.revokeObjectURL(previewUrl.value);
@@ -237,7 +262,6 @@ const handleSaveFile = async (newContent: string) => {
   }
 };
 
-// 新建文件夹
 const handleOpenCreateFolder = () => {
   newFolderName.value = '';
   showCreateFolderDialog.value = true;
@@ -252,13 +276,12 @@ const handleConfirmCreateFolder = async () => {
     await createDirectory(instanceId.value, currentPath.value, newFolderName.value);
     MessagePlugin.success('文件夹创建成功');
     showCreateFolderDialog.value = false;
-    handleRefresh(); // 刷新列表
+    handleRefresh();
   } catch (error: any) {
     MessagePlugin.error(`创建失败: ${error.message || '未知错误'}`);
   }
 };
 
-// 重命名逻辑
 const handleOpenRename = (row: any) => {
   renameTargetObj.value = {
     name: row.name,
@@ -280,7 +303,6 @@ const handleConfirmRename = async () => {
   }
 };
 
-// 删除逻辑
 const handleDelete = (row?: any) => {
   let targets: string[] = [];
   if (row) {
@@ -323,7 +345,6 @@ const navigateTo = (path: string) => {
 };
 const handleRefresh = () => fetchData();
 
-// 下载逻辑
 const handleDownload = async (row?: any) => {
   let targets: string[] = [];
   if (row) {
@@ -377,18 +398,15 @@ const handleDecompressSuccess = () => {
   handleRefresh();
 };
 
-// --- 权限管理入口 ---
 const handleOpenPermission = (row?: any) => {
   permissionTargets.value = [];
   if (row) {
-    // 单个文件
     permissionTargets.value.push({
       name: row.name,
       fullPath: currentPath.value ? `${currentPath.value}/${row.name}` : row.name,
       mode: row.permission || '755',
     });
   } else {
-    // 批量
     if (selectedRowKeys.value.length === 0) return;
     selectedRowKeys.value.forEach((key) => {
       const item = fileList.value.find((f) => f.name === key);
@@ -426,8 +444,13 @@ watch(instanceId, () => {
 
 onMounted(() => {
   const queryPath = route.query.path as string;
+  window.addEventListener('resize', handleResize);
   if (queryPath) currentPath.value = queryPath;
   else fetchData();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
 });
 </script>
 
@@ -436,7 +459,7 @@ onMounted(() => {
     <t-card :bordered="false" class="file-manager-card">
       <div class="toolbar">
         <div class="breadcrumb-area">
-          <t-breadcrumb :max-item-width="'150px'">
+          <t-breadcrumb :max-item-width="isMobile ? '80px' : '150px'">
             <t-breadcrumb-item
               v-for="(crumb, index) in breadcrumbs"
               :key="index"
@@ -450,7 +473,8 @@ onMounted(() => {
         </div>
         <div class="actions-area">
           <t-button variant="outline" size="medium" @click="changeUrl(`/instance/console/${instanceId}`)">
-            <template #icon><rollback-icon /></template>返回控制台
+            <template #icon><rollback-icon /></template>
+            <span v-if="!isMobile">控制台</span>
           </t-button>
           <t-dropdown
             :options="[
@@ -459,11 +483,13 @@ onMounted(() => {
             ]"
           >
             <t-button variant="outline" size="medium">
-              <template #icon><file-add-icon /></template>新建
+              <template #icon><file-add-icon /></template>
+              <span v-if="!isMobile">新建</span>
             </t-button>
           </t-dropdown>
           <t-button theme="primary" size="medium" @click="showBatchUploader = true">
-            <template #icon><cloud-upload-icon /></template>上传文件
+            <template #icon><cloud-upload-icon /></template>
+            <span v-if="!isMobile">上传</span>
           </t-button>
           <t-button variant="outline" size="medium" @click="handleRefresh">
             <template #icon><refresh-icon /></template>
@@ -496,6 +522,7 @@ onMounted(() => {
           <template #operation="{ row }">
             <div class="op-actions">
               <t-dropdown
+                :placement="isMobile ? 'bottom-right' : 'bottom'"
                 :options="
                   [
                     {
@@ -522,7 +549,7 @@ onMounted(() => {
                   ].filter((opt: any) => opt.show !== false) as any
                 "
               >
-                <t-button variant="text" shape="square"><more-icon /></t-button>
+                <t-button variant="text" shape="square" size="medium"><more-icon /></t-button>
               </t-dropdown>
             </div>
           </template>
@@ -533,15 +560,19 @@ onMounted(() => {
 
     <transition name="slide-up">
       <div v-if="hasSelection" class="selection-bar">
-        <div class="selection-info">
+        <div class="selection-info" v-if="!isMobile">
           已选 <span>{{ selectedRowKeys.length }}</span> 项
         </div>
+        <div class="selection-info" v-else>
+          <span>{{ selectedRowKeys.length }}</span>
+        </div>
+
         <div class="selection-actions">
           <t-button size="small" variant="text" theme="primary" @click="handleCompress()">
-            <template #icon><file-zip-icon /></template>压缩
+            <template #icon><file-zip-icon /></template><span v-if="!isMobile">压缩</span>
           </t-button>
           <t-button size="small" variant="text" theme="primary" @click="handleDownload()">
-            <template #icon><download-icon /></template>下载
+            <template #icon><download-icon /></template><span v-if="!isMobile">下载</span>
           </t-button>
           <t-button
             v-if="hasPermissionSupport"
@@ -550,10 +581,10 @@ onMounted(() => {
             theme="primary"
             @click="handleOpenPermission()"
           >
-            <template #icon><lock-on-icon /></template>权限
+            <template #icon><lock-on-icon /></template><span v-if="!isMobile">权限</span>
           </t-button>
           <t-button size="small" variant="text" theme="danger" @click="handleDelete()">
-            <template #icon><delete-icon /></template>删除
+            <template #icon><delete-icon /></template><span v-if="!isMobile">删除</span>
           </t-button>
           <t-button size="small" variant="text" @click="selectedRowKeys = []">取消</t-button>
         </div>
@@ -567,24 +598,19 @@ onMounted(() => {
       :loading="isSaving"
       @save="handleSaveFile"
     />
-
     <t-dialog v-model:visible="showCreateDialog" header="新建文件" :on-confirm="handleConfirmCreate">
       <t-input v-model="newFileName" placeholder="输入文件名" :autofocus="true" @enter="handleConfirmCreate" />
     </t-dialog>
-
     <t-dialog v-model:visible="showRenameDialog" header="重命名" :on-confirm="handleConfirmRename">
       <t-input v-model="renameNewName" placeholder="输入新名称" :autofocus="true" @enter="handleConfirmRename" />
     </t-dialog>
-
     <file-uploader
       v-model:visible="showBatchUploader"
       :instance-id="instanceId"
       :current-path="currentPath"
       @success="handleUploadSuccess"
     />
-
     <image-preview v-model:visible="showImagePreview" :file-name="previewFileName" :image-blob-url="previewUrl" />
-
     <file-compressor
       v-model:visible="showCompressor"
       :instance-id="instanceId"
@@ -592,7 +618,6 @@ onMounted(() => {
       :files="compressTargets"
       @success="handleCompressSuccess"
     />
-
     <file-decompress
       v-model:visible="showDecompressor"
       :instance-id="instanceId"
@@ -600,7 +625,6 @@ onMounted(() => {
       :file-name="decompressTargetFile"
       @success="handleDecompressSuccess"
     />
-
     <file-permission
       v-model:visible="showPermissionDialog"
       :instance-id="instanceId"
@@ -608,7 +632,6 @@ onMounted(() => {
       :targets="permissionTargets"
       @success="handlePermissionSuccess"
     />
-
     <t-dialog v-model:visible="showCreateFolderDialog" header="新建文件夹" :on-confirm="handleConfirmCreateFolder">
       <t-input
         v-model="newFolderName"
@@ -647,9 +670,12 @@ onMounted(() => {
   flex-wrap: nowrap;
   overflow-x: auto;
   gap: 16px;
+  /* 隐藏滚动条但保留功能 */
   &::-webkit-scrollbar {
     display: none;
   }
+  scrollbar-width: none;
+
   .breadcrumb-area {
     flex: 1;
     display: flex;
@@ -666,20 +692,29 @@ onMounted(() => {
   }
   .actions-area {
     display: flex;
-    gap: 12px;
+    gap: 8px; /* 移动端缩小间距 */
     flex-shrink: 0;
     min-width: max-content;
     align-items: center;
   }
 }
+
+/* 移动端特定样式调整 */
 @media (max-width: 768px) {
   .toolbar {
-    padding: 12px 16px;
+    padding: 10px 12px;
   }
-  .actions-area .btn-text {
-    display: none;
+  .file-manager-card {
+    border-radius: 0; /* 手机端去掉圆角以利用空间 */
+    min-height: calc(100vh - 100px);
+  }
+  /* 调整表格内边距 */
+  :deep(.t-table th),
+  :deep(.t-table td) {
+    padding: 8px !important;
   }
 }
+
 .table-wrapper {
   width: 100%;
   flex: 1;
@@ -700,7 +735,15 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* 确保文件名在手机端能够自适应截断 */
+  max-width: calc(100vw - 140px);
 }
+@media (min-width: 768px) {
+  .file-table .name-text {
+    max-width: 100%;
+  }
+}
+
 .file-table .name-text:hover {
   color: var(--td-brand-color);
 }
@@ -711,7 +754,7 @@ onMounted(() => {
   transform: translateX(-50%);
   width: max-content;
   min-width: 280px;
-  max-width: 90%;
+  max-width: 95%;
   background: var(--td-bg-color-container);
   border: 1px solid var(--td-component-stroke);
   box-shadow: var(--td-shadow-3);
@@ -721,7 +764,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   z-index: 500;
-  gap: 24px;
+  gap: 16px;
   .selection-info span {
     color: var(--td-brand-color);
     font-weight: bold;
@@ -730,9 +773,19 @@ onMounted(() => {
   }
   .selection-actions {
     display: flex;
-    gap: 12px;
+    gap: 4px; /* 移动端更紧凑 */
   }
 }
+
+@media (max-width: 768px) {
+  .selection-bar {
+    bottom: 20px;
+    padding: 8px 16px;
+    min-width: auto;
+    width: 90%;
+  }
+}
+
 .slide-up-enter-active,
 .slide-up-leave-active {
   transition:
