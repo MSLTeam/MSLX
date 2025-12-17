@@ -1,24 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch, onUnmounted } from 'vue';
 import {
-  DashboardIcon,
-  DesktopIcon,
-  PlayCircleIcon,
-  RefreshIcon,
-  StopCircleIcon,
-  TimeIcon,
-  SettingIcon,
-  FolderIcon,
-  ArrowLeftRight1Icon,
-  EnterIcon,
-  WinkIcon,
-  UserUnlockedIcon,
-  CloudIcon,
-  ChartBarIcon,
-  InfoCircleIcon
+  DashboardIcon, DesktopIcon, PlayCircleIcon, RefreshIcon, StopCircleIcon,
+  TimeIcon, SettingIcon, FolderIcon, ArrowLeftRight1Icon, EnterIcon,
+  WinkIcon, UserUnlockedIcon, CloudIcon, ChartBarIcon, InfoCircleIcon
 } from 'tdesign-icons-vue-next';
 import { InstanceInfoModel } from '@/api/model/instance';
-
 import InstanceSettings from './InstanceSettings.vue';
 import InstanceMonitor from './InstanceMonitor.vue';
 import { changeUrl } from '@/router';
@@ -32,27 +19,16 @@ const props = defineProps<{
 }>();
 
 const emits = defineEmits<{
-  start: [];
-  stop: [];
-  'clear-log': [];
-  'refresh-info': [];
-  backup: [];
+  start: []; stop: []; 'clear-log': []; 'refresh-info': []; backup: [];
 }>();
 
 const settingsRef = ref<InstanceType<typeof InstanceSettings> | null>(null);
-// 控制 Tab 切换，默认显示详情
 const activeTab = ref('info');
 
-const handleOpenSettings = () => {
-  if (settingsRef.value) {
-    settingsRef.value.open();
-  }
-};
+const handleOpenSettings = () => { settingsRef.value?.open(); };
+const handleSettingsSaved = () => { emits('refresh-info'); };
 
-const handleSettingsSaved = () => {
-  emits('refresh-info');
-};
-
+// --- 计时器逻辑 ---
 const runSeconds = ref(0);
 let timer: number | null = null;
 
@@ -60,8 +36,7 @@ const parseTimeSpanToSeconds = (timeStr?: string) => {
   if (!timeStr) return 0;
   const match = timeStr.match(/^(?:(\d+)\.)?(\d{1,2}):(\d{2}):(\d{2})(?:\.\d+)?$/);
   if (match) {
-    const days = parseInt(match[1] || '0', 10);
-    return days * 86400 + parseInt(match[2]) * 3600 + parseInt(match[3]) * 60 + parseInt(match[4]);
+    return (parseInt(match[1] || '0', 10) * 86400) + (parseInt(match[2]) * 3600) + (parseInt(match[3]) * 60) + parseInt(match[4]);
   }
   return 0;
 };
@@ -69,50 +44,23 @@ const parseTimeSpanToSeconds = (timeStr?: string) => {
 const formattedUptime = computed(() => {
   if (runSeconds.value <= 0) return '00:00:00';
   const days = Math.floor(runSeconds.value / 86400);
-  const hours = Math.floor((runSeconds.value % 86400) / 3600);
-  const minutes = Math.floor((runSeconds.value % 3600) / 60);
-  const seconds = Math.floor(runSeconds.value % 60);
-  const pad = (n: number) => n.toString().padStart(2, '0');
-  const t = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+  const t = new Date(runSeconds.value * 1000).toISOString().substr(11, 8);
   return days > 0 ? `${days}天 ${t}` : t;
 });
 
-const startTimer = () => {
-  if (timer) clearInterval(timer);
-  timer = window.setInterval(() => runSeconds.value++, 1000);
-};
-const stopTimer = () => {
-  if (timer) {
-    clearInterval(timer);
-    timer = null;
-  }
-};
+watch(() => props.serverInfo?.uptime, (v) => v && (runSeconds.value = parseTimeSpanToSeconds(v)), { immediate: true });
+watch(() => props.isRunning, (v) => {
+  if (v) { if (!timer) timer = window.setInterval(() => runSeconds.value++, 1000); }
+  else { if (timer) { clearInterval(timer); timer = null; } }
+}, { immediate: true });
 
-watch(
-  () => props.serverInfo?.uptime,
-  (v) => v && (runSeconds.value = parseTimeSpanToSeconds(v)),
-  { immediate: true },
-);
-
-// 监听运行状态
-watch(
-  () => props.isRunning,
-  (v) => {
-    if (v) {
-      if (!timer) startTimer();
-    } else {
-      stopTimer();
-    }
-  },
-  { immediate: true },
-);
-
-onUnmounted(() => stopTimer());
+onUnmounted(() => { if (timer) clearInterval(timer); });
 </script>
 
 <template>
   <div class="sidebar-content">
-    <t-card class="control-card" :bordered="false">
+
+    <t-card :bordered="false" class="control-card">
       <div class="control-header">
         <div class="status-indicator" :class="{ running: isRunning }">
           <span class="pulse"></span>{{ isRunning ? 'Running' : 'Stopped' }}
@@ -125,14 +73,8 @@ onUnmounted(() => stopTimer());
       <div class="control-actions">
         <t-button
           v-if="!isRunning"
-          theme="primary"
-          size="large"
-          block
-          :loading="loading"
-          @click="
-            $emit('clear-log');
-            $emit('start');
-          "
+          theme="primary" size="large" block :loading="loading"
+          @click="$emit('clear-log'); $emit('start');"
         >
           <template #icon><play-circle-icon /></template>启动实例
         </t-button>
@@ -141,114 +83,58 @@ onUnmounted(() => stopTimer());
         </t-button>
 
         <div class="action-row">
-          <t-button variant="outline" block @click="changeUrl(`/instance/files/${serverId}`)">
-            <template #icon><folder-icon /></template>文件管理
+          <t-button class="glass-btn" variant="outline" block @click="changeUrl(`/instance/files/${serverId}`)">
+            <template #icon><folder-icon /></template>文件
           </t-button>
 
-          <t-button
-            variant="outline"
-            block
-            :disabled="!isRunning"
-            :loading="loading"
-            @click="$emit('backup')"
-          >
-            <template #icon><cloud-icon /></template>备份存档
+          <t-button class="glass-btn" variant="outline" block :disabled="!isRunning" :loading="loading" @click="$emit('backup')">
+            <template #icon><cloud-icon /></template>备份
           </t-button>
         </div>
 
         <div class="action-row">
-          <t-button variant="outline" theme="warning" block @click="$emit('clear-log')">
+          <t-button class="glass-btn" variant="outline" theme="warning" block @click="$emit('clear-log')">
             <template #icon><refresh-icon /></template>清空
           </t-button>
 
-          <t-button variant="outline" theme="primary" block @click="handleOpenSettings">
+          <t-button class="glass-btn" variant="outline" theme="primary" block @click="handleOpenSettings">
             <template #icon><setting-icon /></template>设置
           </t-button>
         </div>
       </div>
     </t-card>
 
-    <div class="info-tabs-container">
-      <t-tabs v-model="activeTab" theme="card">
-        <t-tab-panel value="info">
-          <template #label>
-            <info-circle-icon style="margin-right: 4px" /> 详情
+    <t-card :bordered="false" title="实例概览" class="info-card">
+      <template #actions>
+        <t-radio-group v-model="activeTab" variant="default-filled" size="small">
+          <t-radio-button value="info"><info-circle-icon /> 详情</t-radio-button>
+          <t-radio-button value="monitor" :disabled="!isRunning"><chart-bar-icon /> 监控</t-radio-button>
+        </t-radio-group>
+      </template>
+
+      <div class="card-content-area">
+        <div v-if="activeTab === 'info'" class="info-list">
+          <div class="info-item"><div class="label"><desktop-icon /> 实例名称</div><div class="value">{{ serverInfo?.name }}</div></div>
+          <template v-if="serverInfo?.java !== 'none'">
+            <div class="info-item"><div class="label"><dashboard-icon /> 内存限制</div><div class="value">{{ serverInfo?.maxM }} MB</div></div>
+            <div class="proxy-group"></div>
+            <div class="info-item"><div class="label"><enter-icon /> 运行端口</div><div class="value">{{ serverInfo?.mcConfig?.serverPort }}</div></div>
+            <div class="info-item"><div class="label"><arrow-left-right-1-icon /> 游戏难度</div><div class="value"><t-tag theme="primary" >{{ serverInfo?.mcConfig?.difficulty }}</t-tag></div></div>
+            <div class="info-item"><div class="label"><wink-icon /> 游戏模式</div><div class="value"><t-tag >{{ serverInfo?.mcConfig?.gamemode }}</t-tag></div></div>
+            <div class="info-item"><div class="label"><folder-icon /> 游戏地图</div><div class="value">{{ serverInfo?.mcConfig?.levelName }}</div></div>
+            <div class="info-item"><div class="label"><user-unlocked-icon /> 正版验证</div><div class="value"><t-tag :theme="serverInfo?.mcConfig?.onlineMode === 'true' ? 'success' : 'warning'" >{{ serverInfo?.mcConfig?.onlineMode === 'true' ? '开启' : '关闭' }}</t-tag></div></div>
           </template>
+          <template v-else><div class="info-item"><div class="label"><dashboard-icon /> 模式</div><div class="value">自定义模式</div></div></template>
+          <div class="proxy-group"></div>
+          <div class="info-item"><div class="label"><time-icon /> 运行时长</div><div class="value">{{ isRunning ? formattedUptime : '--:--:--' }}</div></div>
+        </div>
 
-          <div class="tab-content-wrapper">
-            <div class="info-list">
-              <div class="info-item">
-                <div class="label"><desktop-icon /> 实例名称</div>
-                <div class="value">{{ serverInfo?.name || 'Minecraft Server' }}</div>
-              </div>
-
-              <template v-if="serverInfo?.java !== 'none'">
-                <div class="info-item">
-                  <div class="label"><dashboard-icon /> 内存限制</div>
-                  <div class="value">{{ serverInfo?.maxM || '?' }} MB</div>
-                </div>
-                <div class="proxy-group"></div>
-                <div class="info-item">
-                  <div class="label"><enter-icon /> 运行端口</div>
-                  <div class="value">{{ serverInfo?.mcConfig?.serverPort || '?' }}</div>
-                </div>
-                <div class="info-item">
-                  <div class="label"><arrow-left-right-1-icon /> 游戏难度</div>
-                  <div class="value"><t-tag theme="primary">{{ serverInfo?.mcConfig?.difficulty || '?' }}</t-tag></div>
-                </div>
-                <div class="info-item">
-                  <div class="label"><wink-icon /> 游戏模式</div>
-                  <div class="value"><t-tag>{{ serverInfo?.mcConfig?.gamemode || '?' }}</t-tag></div>
-                </div>
-                <div class="info-item">
-                  <div class="label"><folder-icon /> 游戏地图</div>
-                  <div class="value">{{ serverInfo?.mcConfig?.levelName || '?' }}</div>
-                </div>
-                <div class="info-item">
-                  <div class="label"><user-unlocked-icon /> 正版验证</div>
-                  <div class="value">
-                    <t-tag :theme="serverInfo?.mcConfig?.onlineMode === 'true' ? 'success' : 'warning'">
-                      {{ serverInfo?.mcConfig?.onlineMode === 'true' ? '已开启' : '已关闭' }}
-                    </t-tag>
-                  </div>
-                </div>
-              </template>
-
-              <template v-else>
-                <div class="info-item">
-                  <div class="label"><dashboard-icon /> 模式</div>
-                  <div class="value">自定义模式</div>
-                </div>
-              </template>
-
-              <div class="proxy-group"></div>
-              <div class="info-item">
-                <div class="label"><time-icon /> 运行时长</div>
-                <div class="value">{{ isRunning ? formattedUptime : '--:--:--' }}</div>
-              </div>
-            </div>
-          </div>
-        </t-tab-panel>
-
-        <t-tab-panel value="monitor" :disabled="!isRunning">
-          <template #label>
-            <chart-bar-icon style="margin-right: 4px" /> 监控
-          </template>
-
-          <div class="tab-content-wrapper">
-            <instance-monitor
-              v-if="serverInfo && isRunning"
-              :server-id="serverId"
-              :is-running="isRunning"
-              :max-memory="serverInfo.java === 'none' ? 0 : (serverInfo.maxM || 4096)"
-            />
-            <div v-else class="monitor-placeholder">
-              实例未运行，暂无监控数据
-            </div>
-          </div>
-        </t-tab-panel>
-      </t-tabs>
-    </div>
+        <div v-else-if="activeTab === 'monitor'" class="monitor-view">
+          <instance-monitor v-if="serverInfo && isRunning" :server-id="serverId" :is-running="isRunning" :max-memory="serverInfo.java === 'none' ? 0 : (serverInfo.maxM || 4096)" />
+          <div v-else class="monitor-placeholder">实例未运行</div>
+        </div>
+      </div>
+    </t-card>
 
     <instance-settings ref="settingsRef" :server-id="serverId" @success="handleSettingsSaved" />
   </div>
@@ -256,112 +142,117 @@ onUnmounted(() => stopTimer());
 
 <style scoped lang="less">
 .sidebar-content {
-  display: flex;
-  flex-direction: column;
-  gap: 16px; /* 稍微缩小组件间距，整体更紧凑 */
-  height: 100%;
+  display: flex; flex-direction: column; gap: 16px; height: 100%;
 }
 
-.control-card {
-  border-radius: 12px;
-  box-shadow: var(--td-shadow-1);
-  background: var(--td-bg-color-container);
+.control-card, .info-card {
+  :deep(.t-card__body) { padding-top: 10px; }
+}
 
-  .control-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-    .status-indicator {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 600;
-      color: var(--td-text-color-secondary);
-      .pulse {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--td-bg-color-component-disabled);
-        transition: all 0.3s;
+/* === 卡片 1: Radio 按钮透明化 === */
+.info-card {
+  :deep(.t-radio-group) {
+    background-color: transparent !important; /* 去掉整个条的背景 */
+  }
+  :deep(.t-radio-button) {
+    background-color: transparent !important; /* 去掉按钮背景 */
+    border: 1px solid transparent; /* 默认无边框 */
+    color: var(--td-text-color-secondary);
+    transition: all 0.2s;
+
+    /* 选中状态：加个淡淡的主题色背景和边框 */
+    &.t-is-checked {
+      background-color: color-mix(in srgb, var(--td-brand-color), transparent 85%) !important;
+      border-color: var(--td-brand-color) !important;
+      color: var(--td-brand-color) !important;
+      box-shadow: none !important; /* 去掉默认阴影 */
+    }
+
+    /* 悬浮状态 */
+    &:hover:not(.t-is-checked) {
+      color: var(--td-text-color-primary);
+      background-color: color-mix(in srgb, var(--td-text-color-primary), transparent 95%) !important;
+    }
+  }
+}
+
+/* === 卡片 2: 控制区域 === */
+.control-header {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;
+  .status-indicator {
+    display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--td-text-color-secondary);
+    .pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--td-bg-color-component-disabled); transition: all 0.3s; }
+    &.running { color: var(--td-success-color); .pulse { background: var(--td-success-color); box-shadow: 0 0 8px var(--td-success-color); } }
+  }
+}
+
+.control-actions {
+  display: flex; flex-direction: column; gap: 16px;
+  .action-row {
+    display: flex; gap: 12px;
+
+    .glass-btn {
+      flex: 1; margin: 0;
+      backdrop-filter: blur(4px);
+      transition: all 0.2s;
+
+      &.t-is-disabled {
+        background-color: color-mix(in srgb, var(--td-bg-color-component-disabled), transparent 50%) !important;
+        border-color: var(--td-component-border) !important;
+        color: var(--td-text-color-disabled) !important;
+        cursor: not-allowed !important;
+        &:hover {
+          background-color: color-mix(in srgb, var(--td-bg-color-component-disabled), transparent 50%) !important;
+          border-color: var(--td-component-border) !important;
+          color: var(--td-text-color-disabled) !important;
+        }
       }
-      &.running {
-        color: var(--td-success-color);
-        .pulse {
-          background: var(--td-success-color);
-          box-shadow: 0 0 8px var(--td-success-color);
+
+      &.t-button--theme-default {
+        background-color: color-mix(in srgb, var(--td-text-color-primary), transparent 92%) !important;
+        border-color: var(--td-component-border);
+        color: var(--td-text-color-primary);
+
+        &:hover {
+          background-color: color-mix(in srgb, var(--td-text-color-primary), transparent 85%) !important;
+          border-color: var(--td-text-color-primary);
+        }
+      }
+
+      &.t-button--theme-warning {
+        background-color: color-mix(in srgb, var(--td-warning-color), transparent 90%) !important;
+        border-color: var(--td-warning-color) !important;
+        color: var(--td-warning-color) !important;
+
+        &:hover {
+          background-color: color-mix(in srgb, var(--td-warning-color), transparent 80%) !important;
+        }
+      }
+
+      &.t-button--theme-primary {
+        background-color: color-mix(in srgb, var(--td-brand-color), transparent 90%) !important;
+        border-color: var(--td-brand-color) !important;
+        color: var(--td-brand-color) !important;
+
+        &:hover {
+          background-color: color-mix(in srgb, var(--td-brand-color), transparent 80%) !important;
         }
       }
     }
   }
-  .control-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    .action-row {
-      display: flex;
-      gap: 12px;
-      .t-button {
-        flex: 1;
-        margin: 0;
-      }
-    }
-  }
-}
-
-/* Tab 样式 */
-.info-tabs-container {
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: var(--td-shadow-1);
-  background: var(--td-bg-color-container);
-
-  :deep(.t-tabs__nav-container) {
-    background: var(--td-bg-color-container);
-    padding: 0 4px;
-  }
-
-  :deep(.t-tabs__content) {
-    padding: 0;
-  }
-}
-
-.tab-content-wrapper {
-  padding: 16px;
-  min-height: 200px;
 }
 
 .monitor-placeholder {
-  color: var(--td-text-color-placeholder);
-  text-align: center;
-  padding: 40px 0;
-  font-size: 13px;
+  color: var(--td-text-color-placeholder); text-align: center; padding: 40px 0; font-size: 13px;
 }
 
 .info-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  .proxy-group {
-    border-top: 1px dashed var(--td-component-stroke);
-    margin-top: 4px;
-  }
+  display: flex; flex-direction: column; gap: 12px;
+  .proxy-group { border-top: 1px dashed var(--td-component-stroke); margin-top: 4px; }
   .info-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    .label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--td-text-color-placeholder);
-      font-size: 13px;
-    }
-    .value {
-      font-family: var(--td-font-family-number);
-      font-weight: 500;
-      font-size: 13px;
-    }
+    display: flex; justify-content: space-between; align-items: center;
+    .label { display: flex; align-items: center; gap: 8px; color: var(--td-text-color-placeholder); font-size: 13px; }
+    .value { font-family: var(--td-font-family-number); font-weight: 500; font-size: 13px; }
   }
 }
 </style>

@@ -28,7 +28,7 @@ let hubConnection: HubConnection | null = null;
 // 主题配置
 const termThemes = {
   dark: {
-    background: '#181818', foreground: '#cccccc', cursor: 'transparent', selectionBackground: '#264f78',
+    background: 'transparent', foreground: '#cccccc', cursor: 'transparent', selectionBackground: '#264f78',
     black: '#000000', red: '#cd3131', green: '#0dbc79', yellow: '#e5e510',
     blue: '#2472c8', magenta: '#bc3fbc', cyan: '#11a8cd', white: '#e5e5e5',
     brightBlack: '#666666', brightRed: '#f14c4c', brightGreen: '#23d18b',
@@ -36,7 +36,7 @@ const termThemes = {
     brightCyan: '#29b8db', brightWhite: '#e5e5e5',
   },
   light: {
-    background: '#ffffff', foreground: '#333333', cursor: 'transparent', selectionBackground: '#add6ff',
+    background: 'transparent', foreground: '#333333', cursor: 'transparent', selectionBackground: '#add6ff',
     black: '#000000', red: '#cd3131', green: '#00bc79', yellow: '#9d9d10',
     blue: '#2472c8', magenta: '#bc3fbc', cyan: '#11a8cd', white: '#e5e5e5',
     brightBlack: '#666666', brightRed: '#f14c4c', brightGreen: '#23d18b',
@@ -235,7 +235,11 @@ onUnmounted(async () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: var(--td-bg-color-container);
+
+  /* 50% 透明背景 + 毛玻璃 */
+  background-color: color-mix(in srgb, var(--td-bg-color-container), transparent 50%);
+  backdrop-filter: blur(10px);
+
   border: 1px solid var(--td-component-stroke);
   border-radius: 12px;
   overflow: hidden;
@@ -247,7 +251,10 @@ onUnmounted(async () => {
   .terminal-header {
     height: 38px;
     flex-shrink: 0;
-    background-color: var(--td-border-level-1-color);
+
+    /* 头部透明 */
+    background-color: transparent;
+
     border-bottom: 1px solid var(--td-component-stroke);
     display: flex;
     align-items: center;
@@ -274,11 +281,17 @@ onUnmounted(async () => {
     padding: 6px 0 0 10px;
     z-index: 1;
 
+    /* 确保 xterm 的容器也是透明的 */
+    :deep(.xterm),
+    :deep(.xterm-viewport),
+    :deep(.xterm-screen) {
+      background-color: transparent !important;
+    }
+
     /* 针对 xterm 的滚动条应用 Mixin */
     :deep(.xterm-viewport) {
       .scrollbar-mixin();
     }
   }
 }
-
 </style>
