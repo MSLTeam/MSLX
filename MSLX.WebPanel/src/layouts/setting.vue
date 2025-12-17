@@ -14,13 +14,20 @@
         <t-radio-group v-model="formData.mode">
           <div v-for="(item, index) in MODE_OPTIONS" :key="index" class="setting-layout-drawer">
             <div>
-              <t-radio-button :key="index" :value="item.type"
-              ><component :is="getModeIcon(item.type)"
-              /></t-radio-button>
+              <t-radio-button :key="index" :value="item.type">
+                <component :is="getModeIcon(item.type)" />
+              </t-radio-button>
               <p :style="{ textAlign: 'center', marginTop: '8px' }">{{ item.text }}</p>
             </div>
           </div>
         </t-radio-group>
+
+        <div class="setting-group-title">个性化</div>
+        <div class="setting-item-row">
+          <span class="setting-item-label">开启背景美化</span>
+          <t-switch v-model="formData.enableCustomTheme" />
+        </div>
+
         <div class="setting-group-title">主题色</div>
         <t-radio-group v-model="formData.brandTheme">
           <div
@@ -73,12 +80,11 @@
     </div>
   </t-drawer>
 </template>
+
 <script setup lang="ts">
 import { ref, computed, onMounted, watchEffect, onBeforeUnmount } from 'vue';
-// import { MessagePlugin } from 'tdesign-vue-next';
 import type { PopupVisibleChangeContext } from 'tdesign-vue-next';
 import { Color } from 'tvision-color';
-// import useClipboard from 'vue-clipboard3';
 
 import { useSettingStore } from '@/store';
 import Thumbnail from '@/components/thumbnail/index.vue';
@@ -94,7 +100,7 @@ import SettingAutoIcon from '@/assets/assets-setting-auto.svg';
 const settingStore = useSettingStore();
 
 const screenWidth = ref(window.innerWidth);
-const isMobile = computed(() => screenWidth.value < 480); // 480px断点
+const isMobile = computed(() => screenWidth.value < 480);
 const drawerSize = computed(() => {
   return isMobile.value ? '85%' : '408px';
 });
@@ -110,17 +116,17 @@ const MODE_OPTIONS = [
   { type: 'light', text: '明亮' },
   { type: 'dark', text: '暗黑' },
 ];
-const initStyleConfig = () => {
-  const styleConfig = STYLE_CONFIG;
-  for (const key in styleConfig) {
-    if (Object.prototype.hasOwnProperty.call(styleConfig, key)) {
-      styleConfig[key] = settingStore[key];
-    }
-  }
 
+const initStyleConfig = () => {
+  const styleConfig = { ...STYLE_CONFIG };
+  for (const key in settingStore.$state) {
+    // @ts-ignore
+    styleConfig[key] = settingStore[key];
+  }
   return styleConfig;
 };
 
+// 初始化表单数据
 const formData = ref({ ...initStyleConfig() });
 const isColoPickerDisplay = ref(false);
 
@@ -149,9 +155,12 @@ const changeColor = (hex: string) => {
 };
 
 onMounted(() => {
-  document.querySelector('.dynamic-color-btn').addEventListener('click', () => {
-    isColoPickerDisplay.value = true;
-  });
+  const dynamicBtn = document.querySelector('.dynamic-color-btn');
+  if (dynamicBtn) {
+    dynamicBtn.addEventListener('click', () => {
+      isColoPickerDisplay.value = true;
+    });
+  }
   window.addEventListener('resize', updateScreenWidth);
 });
 
@@ -164,20 +173,7 @@ const onPopupVisibleChange = (visible: boolean, context: PopupVisibleChangeConte
     isColoPickerDisplay.value = visible;
   }
 };
-/* 复制方法
-const handleCopy = () => {
-  const text = JSON.stringify(formData.value, null, 4);
-  const { toClipboard } = useClipboard();
-  toClipboard(text)
-    .then(() => {
-      MessagePlugin.closeAll();
-      MessagePlugin.success('复制成功');
-    })
-    .catch(() => {
-      MessagePlugin.closeAll();
-      MessagePlugin.error('复制失败');
-    });
-}; */
+
 const getModeIcon = (mode: string) => {
   if (mode === 'light') {
     return SettingLightIcon;
@@ -198,17 +194,31 @@ const getThumbnailUrl = (name: string): string => {
   return `https://tdesign.gtimg.com/tdesign-pro/setting/${name}.png`;
 };
 
+// 监听 formData 变化并同步到 Store
 watchEffect(() => {
   settingStore.updateConfig(formData.value);
 });
 </script>
+
 <style lang="less" scoped>
+/* 开关行 */
+.setting-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+
+  .setting-item-label {
+    font-size: 14px;
+    color: var(--td-text-color-primary);
+  }
+}
+
 .tdesign-setting {
   z-index: 100;
   position: fixed;
   bottom: 200px;
   right: 0;
-  transition: transform 0.3s cubic-bezier(0.7, 0.3, 0.1, 1), visibility 0.3s cubic-bezier(0.7, 0.3, 0.1, 1);
   height: 40px;
   width: 40px;
   border-radius: 20px 0 0 20px;

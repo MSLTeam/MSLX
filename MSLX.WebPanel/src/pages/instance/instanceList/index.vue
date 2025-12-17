@@ -223,7 +223,7 @@ const handleConfirmDelete = async () => {
     top: 0;
     left: 0;
     width: 100%;
-    height: 6.9px; // 反正就是这个数好看qwq
+    height: 5.1px; // 反正就是这个数好看qwq
     background: transparent;
     transition: background-color 0.3s;
     z-index: 1;
