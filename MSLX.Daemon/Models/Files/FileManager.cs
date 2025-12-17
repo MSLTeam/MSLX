@@ -82,6 +82,12 @@ public class ChmodRequest
     public string Mode { get; set; } = "755";
 }
 
+public class BatchOperationRequest
+{
+    public List<string> SourcePaths { get; set; } = new(); 
+    public string TargetPath { get; set; } = "";           
+}
+
 public class TaskStatusResponse
 {
     public string Status { get; set; } = "pending"; 

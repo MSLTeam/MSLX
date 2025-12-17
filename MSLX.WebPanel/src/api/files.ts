@@ -152,3 +152,21 @@ export async function setPluginsOrModsStatus(instanceId:number, type: 'mods' | '
     data: { mode: type, action, targets }
   });
 }
+
+// 批量复制
+export function copyFiles(instanceId: number, sourcePaths: string[], targetPath: string) {
+  return request.post({
+    url: `/api/files/instance/${instanceId}/copy`,
+    data: { sourcePaths, targetPath },
+    timeout: 120 * 1000,
+  });
+}
+
+// 批量移动
+export function moveFiles(instanceId: number, sourcePaths: string[], targetPath: string) {
+  return request.post({
+    url: `/api/files/instance/${instanceId}/move`,
+    data: { sourcePaths, targetPath },
+    timeout: 120 * 1000,
+  });
+}

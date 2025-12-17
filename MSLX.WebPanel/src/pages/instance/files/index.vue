@@ -20,14 +20,19 @@ import {
   RefreshIcon,
   RollbackIcon,
   SettingIcon,
+  FileCopyIcon,
+  SwapIcon,
+  CloseIcon,
 } from 'tdesign-icons-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import {
+  copyFiles,
   createDirectory,
   deleteFiles,
   downloadFileStream,
   getFileContent,
   getInstanceFilesList,
+  moveFiles,
   renameFile,
   saveFileContent,
 } from '@/api/files';
@@ -428,6 +433,77 @@ const handlePermissionSuccess = () => {
 
 const handleUploadSuccess = () => handleRefresh();
 
+// ———— 剪贴板 ——————
+const clipboard = ref<string[]>([]); // 存储被复制/剪切的文件名(相对路径)
+const clipboardMode = ref<'copy' | 'move'>('copy'); // 操作模式
+const clipboardSourcePath = ref(''); // 记录来源路径，用于判断是否在同一目录
+
+// 当前是否可以粘贴
+const hasClipboard = computed(() => clipboard.value.length > 0);
+
+// 粘贴按钮是否禁用
+const isPasteDisabled = computed(() => {
+  return currentPath.value === clipboardSourcePath.value;
+});
+
+// 处理复制
+const handleCopy = () => {
+  if (selectedRowKeys.value.length === 0) return;
+  const paths = selectedRowKeys.value.map((name) => (currentPath.value ? `${currentPath.value}/${name}` : name));
+
+  clipboard.value = paths;
+  clipboardMode.value = 'copy';
+  clipboardSourcePath.value = currentPath.value;
+
+  selectedRowKeys.value = [];
+  MessagePlugin.info(`已复制 ${paths.length} 项，请前往目标目录粘贴`);
+};
+
+// 处理剪切
+const handleCut = () => {
+  if (selectedRowKeys.value.length === 0) return;
+
+  const paths = selectedRowKeys.value.map((name) => (currentPath.value ? `${currentPath.value}/${name}` : name));
+
+  clipboard.value = paths;
+  clipboardMode.value = 'move';
+  clipboardSourcePath.value = currentPath.value;
+
+  selectedRowKeys.value = [];
+  MessagePlugin.info(`已剪切 ${paths.length} 项，请前往目标目录粘贴`);
+};
+
+// 取消粘贴
+const handleCancelPaste = () => {
+  clipboard.value = [];
+  clipboardSourcePath.value = '';
+  MessagePlugin.info('已取消操作');
+};
+
+// 执行粘贴
+const handlePaste = async () => {
+  if (clipboard.value.length === 0) return;
+
+  const loadingMsg = MessagePlugin.loading('正在粘贴中...');
+  try {
+    if (clipboardMode.value === 'copy') {
+      await copyFiles(instanceId.value, clipboard.value, currentPath.value);
+    } else {
+      await moveFiles(instanceId.value, clipboard.value, currentPath.value);
+    }
+
+    MessagePlugin.success('粘贴成功');
+    clipboard.value = []; // 粘贴成功后清空剪贴板
+    handleRefresh(); // 刷新当前列表
+  } catch (error: any) {
+    MessagePlugin.error(`粘贴失败: ${error.message || '未知错误'}`);
+  } finally {
+    MessagePlugin.close(loadingMsg);
+  }
+};
+
+// —————— 生命周期 ——————
+
 watch(currentPath, (newPath) => {
   router.replace({ query: { ...route.query, path: newPath || undefined } });
   fetchData();
@@ -560,14 +636,22 @@ onUnmounted(() => {
 
     <transition name="slide-up">
       <div v-if="hasSelection" class="selection-bar">
-        <div class="selection-info" v-if="!isMobile">
+        <div v-if="!isMobile" class="selection-info">
           已选 <span>{{ selectedRowKeys.length }}</span> 项
         </div>
-        <div class="selection-info" v-else>
+        <div v-else class="selection-info">
           <span>{{ selectedRowKeys.length }}</span>
         </div>
 
         <div class="selection-actions">
+          <t-button size="small" variant="text" theme="primary" @click="handleCopy()">
+            <template #icon><file-copy-icon /></template><span v-if="!isMobile">复制</span>
+          </t-button>
+
+          <t-button size="small" variant="text" theme="primary" @click="handleCut()">
+            <template #icon><swap-icon /></template><span v-if="!isMobile">剪切</span>
+          </t-button>
+
           <t-button size="small" variant="text" theme="primary" @click="handleCompress()">
             <template #icon><file-zip-icon /></template><span v-if="!isMobile">压缩</span>
           </t-button>
@@ -587,6 +671,30 @@ onUnmounted(() => {
             <template #icon><delete-icon /></template><span v-if="!isMobile">删除</span>
           </t-button>
           <t-button size="small" variant="text" @click="selectedRowKeys = []">取消</t-button>
+        </div>
+      </div>
+
+      <div v-else-if="hasClipboard" class="selection-bar clipboard-bar">
+        <div class="selection-info">
+          <span v-if="clipboardMode === 'copy'">准备复制</span>
+          <span v-else>准备移动</span>
+          <span>{{ clipboard.length }}</span> 项
+        </div>
+
+        <div class="selection-actions">
+          <t-button
+            theme="primary"
+            :disabled="isPasteDisabled"
+            @click="handlePaste"
+          >
+            <template #icon><file-paste-icon /></template>
+            粘贴在此处
+          </t-button>
+
+          <t-button variant="text" theme="default" @click="handleCancelPaste">
+            <template #icon><close-icon /></template>
+            取消
+          </t-button>
         </div>
       </div>
     </transition>
@@ -796,5 +904,10 @@ onUnmounted(() => {
 .slide-up-leave-to {
   transform: translateY(100%);
   opacity: 0;
+}
+.clipboard-bar {
+  z-index: 501;
+  border-color: var(--td-brand-color);
+  background-color: var(--td-bg-color-container);
 }
 </style>
