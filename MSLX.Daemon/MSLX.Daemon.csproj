@@ -30,6 +30,7 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.0.1" />
     <PackageReference Include="System.Diagnostics.PerformanceCounters" Version="1.0.21-alpha" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
+    <PackageReference Include="System.Management" Version="10.0.1" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="10.0.1" />
     <PackageReference Include="Tomlyn" Version="0.19.0" />
   </ItemGroup>
