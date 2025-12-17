@@ -726,6 +726,7 @@ public static class ConfigServices
                     Avatar = "https://www.mslmc.cn/logo.png"
                 });
                 _logger.LogInformation($"已初始化默认管理员用户: mslx / {defaultPassword}");
+                _logger.LogInformation($"账号: mslx \n 密码: {defaultPassword}");
             }
         }
 
