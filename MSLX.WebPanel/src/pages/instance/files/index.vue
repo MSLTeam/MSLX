@@ -42,7 +42,7 @@ import { changeUrl } from '@/router';
 
 const route = useRoute();
 const router = useRouter();
-const instanceId = computed(() => Number(route.params.serverId));
+const instanceId = computed(() => Number(route.params.serverFilesId));
 
 const loading = ref(false);
 const fileList = ref<FilesListModel[]>([]);
@@ -416,6 +416,9 @@ watch(currentPath, (newPath) => {
 });
 
 watch(instanceId, () => {
+  if (route.name !== 'InstanceFiles') {
+    return;
+  }
   currentPath.value = '';
   selectedRowKeys.value = [];
   fetchData();

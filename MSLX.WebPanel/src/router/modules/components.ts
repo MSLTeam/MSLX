@@ -42,7 +42,7 @@ export default [
     meta: { hidden: true },
     children: [
       {
-        path: ':id',
+        path: ':serverFilesId',
         name: 'InstanceFiles',
         component: () => import('@/pages/instance/files/index.vue'),
         meta: {
