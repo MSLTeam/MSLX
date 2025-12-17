@@ -119,9 +119,11 @@ const MODE_OPTIONS = [
 
 const initStyleConfig = () => {
   const styleConfig = { ...STYLE_CONFIG };
-  for (const key in settingStore.$state) {
-    // @ts-ignore
-    styleConfig[key] = settingStore[key];
+  for (const key in styleConfig) {
+    if (Object.prototype.hasOwnProperty.call(styleConfig, key)) {
+      // @ts-ignore
+      styleConfig[key] = settingStore[key];
+    }
   }
   return styleConfig;
 };
