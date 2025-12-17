@@ -1,6 +1,6 @@
 {
-  "version": "0.2.2.1",
-  "buildTime": "2025-12-16 22:24:41",
+  "version": "0.2.3",
+  "buildTime": "2025-12-17 12:06:14",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,76 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "eafda5a80239976d192dd80d0f2b36f52b8c4eca",
-  "commitMsg": "bumpver(daemon & webpanel): 更新应用版本号至0.2.2.1",
+  "commitId": "ee1b9e58f22772fd6df36ab59cbdfff0c2d8c37e",
+  "commitMsg": "bumpver(daemon & webpanel): 更新应用版本号至 v0.2.3-alpha",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "ee1b9e58f22772fd6df36ab59cbdfff0c2d8c37e",
+      "commitTime": "2025-12-17 12:05:45 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新应用版本号至 v0.2.3-alpha"
+    },
+    {
+      "commitId": "6231e7a3a94eb856457c8ffb24bfab7b907739b9",
+      "commitTime": "2025-12-17 12:04:23 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修正Windows下实例资源获取逻辑"
+    },
+    {
+      "commitId": "ffee3003822c7c85496cafcde2405120e23f41ea",
+      "commitTime": "2025-12-17 11:48:01 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 魔法对轰之CSS大作战 - 新增添加背景图功能"
+    },
+    {
+      "commitId": "2e811da483e6870f3099a2669d0d673da32bed17",
+      "commitTime": "2025-12-17 10:40:06 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 优化一些页面组件样式"
+    },
+    {
+      "commitId": "8c40ccb4fcfba7d56fa547e16f885e2e5992883f",
+      "commitTime": "2025-12-17 10:13:38 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 实现文件管理器移动端适配"
+    },
+    {
+      "commitId": "a8a13707e0c24202c39eb7d39a2f16d87338c100",
+      "commitTime": "2025-12-17 10:09:02 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复文件路由参数不一致问题"
+    },
+    {
+      "commitId": "5a73f9ea0fc72fb63435b46bf94f52d2fba6e7e9",
+      "commitTime": "2025-12-17 10:04:29 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复可能存在的ID篡位问题"
+    },
+    {
+      "commitId": "980040c5c10ac1f880564a57ff22afb020b58d3f",
+      "commitTime": "2025-12-16 23:25:44 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 移除一些页面组件多余的背景色"
+    },
+    {
+      "commitId": "de8ce7d665faa2421fb686465538263d5d9841f8",
+      "commitTime": "2025-12-16 23:02:58 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 防止实例ID无效时发起请求"
+    },
+    {
+      "commitId": "0cfdbfe60dc9ba14b1da15a4b6e22b084ce9beca",
+      "commitTime": "2025-12-16 22:26:40 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #4 from MSLTeam/dev"
+    },
+    {
+      "commitId": "9655a838d5ae9a2bf716ab8ff9c186c9320d3a8a",
+      "commitTime": "2025-12-16 22:25:20 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v0.2.2.1-alpha 版本前端资源"
+    },
     {
       "commitId": "eafda5a80239976d192dd80d0f2b36f52b8c4eca",
       "commitTime": "2025-12-16 22:24:14 +0800",
@@ -305,72 +371,6 @@
       "commitTime": "2025-12-14 19:30:12 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "feat(webpanel): 更新关于页面的 .NET Core 版本信息"
-    },
-    {
-      "commitId": "643baedbd7a27186339176fda78170c5ab6262ce",
-      "commitTime": "2025-12-14 19:28:48 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 设置baseUrl默认值为当前域名"
-    },
-    {
-      "commitId": "3c7dcdc1a62e799e85b7a3bdd7ed8d7ab245033d",
-      "commitTime": "2025-12-14 17:13:35 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复初始化管理员账户的密码错误"
-    },
-    {
-      "commitId": "e28aa14fe2620b2fbdf58af7b25c4034fe96e2b9",
-      "commitTime": "2025-12-14 17:06:44 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #1 from MSLTeam/dev"
-    },
-    {
-      "commitId": "c75e987fbf2800311e134adbaf1bb73351b2d9bd",
-      "commitTime": "2025-12-14 17:05:32 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(webpanel & daemon): v0.2.0-alpha"
-    },
-    {
-      "commitId": "1ea6698777d7bc8d75e95d339e91f619f33dcf87",
-      "commitTime": "2025-12-14 17:01:18 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 统一使用无 BOM 的 UTF-8 编码以解决关服异常的问题"
-    },
-    {
-      "commitId": "6e1d53ae207d7a19164eb5e7c2825e866f298464",
-      "commitTime": "2025-12-14 16:54:50 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel & daemon): 支持设置文件编辑时候的编码格式 & Windows下创建服务端默认编码格式是GBK"
-    },
-    {
-      "commitId": "7c69ce1d47225c0317e9e3ab30b52ace6bd67aa0",
-      "commitTime": "2025-12-14 16:41:17 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 调整启动时打开Web控制台的逻辑"
-    },
-    {
-      "commitId": "c4b0cb9400aac8031a2ba89952d058b8857bd200",
-      "commitTime": "2025-12-14 16:38:03 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(frontend): 更新前端资源到v0.1.1-alpha"
-    },
-    {
-      "commitId": "05dcd4553bc93a978c5e736681aad2f38ca36e3a",
-      "commitTime": "2025-12-14 16:37:25 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 嵌入前端资源并优化认证中间件"
-    },
-    {
-      "commitId": "229b1cc2bca3f9d6ee4d1908f3e1503087a32c2a",
-      "commitTime": "2025-12-14 16:11:10 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 初始化默认管理员用户时生成随机密码"
-    },
-    {
-      "commitId": "3bfab9ab8262f0824aa8b67e958c87948e3fc597",
-      "commitTime": "2025-12-14 16:08:46 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel & daemon): 添加默认用户安全风险提示"
     }
   ]
 }
