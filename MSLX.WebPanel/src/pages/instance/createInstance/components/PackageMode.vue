@@ -494,7 +494,7 @@ const viewDetails = () => {
 </script>
 
 <template>
-  <t-card :bordered="false">
+  <div>
     <div class="main-layout-container">
       <div class="steps-aside">
         <t-steps layout="vertical" style="margin-top: 16px" :current="currentStep" status="process" readonly>
@@ -770,7 +770,7 @@ const viewDetails = () => {
     </div>
 
     <server-core-selector v-model:visible="showCoreSelector" @confirm="onCoreSelected" />
-  </t-card>
+  </div>
 </template>
 
 <style scoped lang="less">

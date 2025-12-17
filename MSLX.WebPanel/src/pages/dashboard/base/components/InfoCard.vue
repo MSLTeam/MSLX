@@ -122,7 +122,7 @@ onMounted(() => {
   justify-content: space-between;
   padding: 10px 14px;
 
-  background-color: var(--td-bg-color-container-hover);
+  background-color: color-mix(in srgb, var(--td-bg-color-container-hover), transparent 60%) !important;
   border-radius: var(--td-radius-medium);
   font-size: var(--td-font-size-m);
 

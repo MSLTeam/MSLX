@@ -126,7 +126,6 @@ onMounted(() => {
 <style scoped lang="less">
 .console-page {
   padding-bottom: 12px;
-  background-color: var(--td-bg-color-page);
   height: calc(100vh - 64px);
   box-sizing: border-box;
   overflow: hidden;
