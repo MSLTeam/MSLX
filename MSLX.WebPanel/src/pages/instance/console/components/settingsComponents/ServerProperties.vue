@@ -162,9 +162,10 @@ const setBindValue = (key: string, value: any, type: string) => {
 
 // --- 生命周期 ---
 
-watch(
-  () => route.params.id,
-  (newId) => {
+watch(() => route.params.serverId, (newId) => {
+    if (route.name !== 'InstanceConsole') {
+      return;
+    }
     if (newId) {
       instanceId.value = parseInt(newId as string);
       loadData();

@@ -23,7 +23,7 @@ import { getPluginsOrModsList, setPluginsOrModsStatus } from '@/api/files';
 import UploadDialog from '@/pages/instance/files/components/FileUploader.vue';
 
 const route = useRoute();
-const instanceId = parseInt(route.params.id as string);
+const instanceId = parseInt(route.params.serverId as string);
 
 // --- 类型定义 ---
 interface FileItem {
@@ -176,7 +176,7 @@ onMounted(() => {
   fetchData();
 });
 
-watch(() => route.params.id, (newId) => {
+watch(() => route.params.serverId, (newId) => {
   if(newId) location.reload();
 });
 </script>

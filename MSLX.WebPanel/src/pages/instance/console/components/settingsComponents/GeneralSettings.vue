@@ -30,7 +30,7 @@ const route = useRoute();
 const userStore = useUserStore();
 
 const instanceId = computed(() => {
-  const idStr = route.params.id as string;
+  const idStr = route.params.serverId as string;
   if (!idStr) return NaN;
   return parseInt(idStr);
 });
@@ -282,7 +282,7 @@ const rules = computed<FormRules>(() => {
 });
 
 const initData = async () => {
-  if (!instanceId.value || Number.isNaN(instanceId.value)) {
+  if (!instanceId.value) {
     return;
   }
   loading.value = true;
@@ -347,8 +347,13 @@ const initData = async () => {
   }
 };
 
-watch(instanceId, (newId) => {
-  if (newId && !Number.isNaN(newId)) {
+
+watch(() => route.params.serverId, (newId) => {
+  if (route.name !== 'InstanceConsole') {
+    return;
+  }
+
+  if(newId){
     initData();
   }
 });

@@ -42,7 +42,7 @@ import { changeUrl } from '@/router';
 
 const route = useRoute();
 const router = useRouter();
-const instanceId = computed(() => Number(route.params.id));
+const instanceId = computed(() => Number(route.params.serverId));
 
 const loading = ref(false);
 const fileList = ref<FilesListModel[]>([]);

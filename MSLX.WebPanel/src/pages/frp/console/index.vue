@@ -15,7 +15,7 @@ const tunnelsStore = useTunnelsStore();
 const route = useRoute();
 
 // 状态
-const frpId = ref(parseInt(route.params.id as string) || 0);
+const frpId = ref(parseInt(route.params.frpId as string) || 0);
 const isRunning = ref(false);
 const loading = ref(false);
 const tunnelInfo = ref<TunnelInfoModel | null>(null);
@@ -75,8 +75,11 @@ const handleClearLog = () => {
 
 // 监听路由参数变化
 watch(
-  () => route.params.id,
+  () => route.params.frpId,
   async (newId) => {
+    if (route.name !== 'FrpConsole') {
+      return;
+    }
     if (newId) {
       frpId.value = parseInt(newId as string);
       // terminalRef.value?.writeln('\x1b[33m[System] 检测到 Frp ID 变更，正在刷新数据...\x1b[0m');
