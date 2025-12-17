@@ -134,6 +134,10 @@ watch(
 
     transition: background-color 0.3s, border-color 0.3s;
   }
+  :deep(.t-input) {
+    background-color: rgba(255, 255, 255, 0.4) !important;
+    border-color: rgba(255, 255, 255, 0.5) !important;
+  }
 
   // 黑暗小卡片样式
   &.dark,
@@ -149,10 +153,14 @@ watch(
 
       /* 边框：极淡白色 */
       border: 1px solid rgba(255, 255, 255, 0.08) !important;
-
-      /* 强制文字变白 */
-      color: rgba(255, 255, 255, 0.9) !important;
     }
+    :deep(.t-input) {
+      background-color: transparent !important;
+      border-color: var(--td-component-border) !important;
+    }
+  }
+  :deep(.md-editor-preview blockquote) {
+    background-color: color-mix(in srgb, var(--md-theme-quote-bg-color), transparent 50%) !important;
   }
 }
 </style>
