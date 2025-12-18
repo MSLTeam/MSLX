@@ -170,3 +170,11 @@ export function moveFiles(instanceId: number, sourcePaths: string[], targetPath:
     timeout: 120 * 1000,
   });
 }
+
+// 上传图片到静态资源文件夹
+export function uploadFilesToStaticImages(fileKey: string,fileName: string) {
+  return request.post({
+    url: `api/static/images/upload`,
+    data: { fileKey, fileName },
+  });
+}

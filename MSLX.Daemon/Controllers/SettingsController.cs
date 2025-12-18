@@ -43,4 +43,40 @@ public class SettingsController: ControllerBase
             }
         );
     }
+
+    [HttpGet("webpanel/style")]
+    public IActionResult GetWebPanelStyle()
+    {
+        return Ok(new ApiResponse<object>
+        {
+            Code = 200,
+            Message = "获取成功",
+            Data = new
+            {
+                WebPanelStyleLightBackground = ConfigServices.Config.ReadConfig()["webPanelStyleLightBackground"]?? "",
+                WebPanelStyleNightBackground = ConfigServices.Config.ReadConfig()["webPanelStyleNightBackground"]?? "",
+                WebPanelStyleLightBackgroundOpacity = ConfigServices.Config.ReadConfig()["webPanelStyleLightBackgroundOpacity"]?? 1.0,
+                WebPanelStyleDarkBackgroundOpacity = ConfigServices.Config.ReadConfig()["webPanelStyleDarkBackgroundOpacity"]?? 1.0,
+                WebPanelStyleLightComponentsOpacity = ConfigServices.Config.ReadConfig()["webPanelStyleLightComponentsOpacity"]?? 0.4,
+                WebPanelStyleDarkComponentsOpacity = ConfigServices.Config.ReadConfig()["webPanelStyleDarkComponentsOpacity"]?? 0.6,
+            }
+        });
+    }
+
+    [HttpPost("webpanel/style")]
+    public IActionResult UpdateWebPanelStyle([FromBody] UpdateWebPanelStyleSettingsRequest request)
+    {
+        ConfigServices.Config.WriteConfigKey("webPanelStyleLightBackground",request.WebPanelStyleLightBackground);
+        ConfigServices.Config.WriteConfigKey("webPanelStyleDarkBackground",request.WebPanelStyleDarkBackground);
+        ConfigServices.Config.WriteConfigKey("webPanelStyleLightBackgroundOpacity",request.WebPanelStyleLightBackgroundOpacity);
+        ConfigServices.Config.WriteConfigKey("webPanelStyleDarkBackgroundOpacity",request.WebPanelStyleDarkBackgroundOpacity);
+        ConfigServices.Config.WriteConfigKey("webPanelStyleLightComponentsOpacity",request.WebPanelStyleLightComponentsOpacity);
+        ConfigServices.Config.WriteConfigKey("webPanelStyleDarkComponentsOpacity",request.WebPanelStyleDarkComponentsOpacity);
+        return Ok(new ApiResponse<object>
+            {
+                Code = 200,
+                Message = "更新成功",
+            }
+        );
+    }
 }

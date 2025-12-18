@@ -91,13 +91,9 @@ public class StaticImagesController: ControllerBase
             {
                 Directory.CreateDirectory(Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Public", "Images"));
             }
-
-            if (System.IO.File.Exists(finalPath))
-            {
-                System.IO.File.Delete(finalPath);
-            }
             
-            System.IO.File.Move(finalPath,Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Public", "Images",request.FileName));
+            
+            System.IO.File.Move(finalPath,Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Public", "Images",request.FileName),true);
             return Ok(new ApiResponse<object>()
             {
                 Code = 200,

@@ -5,3 +5,12 @@ export interface SettingsModel {
   listenHost: string;
   listenPort: number;
 }
+
+export interface WebpanelSettingsModel {
+  webPanelStyleDarkBackgroundOpacity: number;
+  webPanelStyleDarkComponentsOpacity: number;
+  webPanelStyleLightBackground: string;
+  webPanelStyleLightBackgroundOpacity: number;
+  webPanelStyleLightComponentsOpacity: number;
+  webPanelStyleNightBackground: string;
+}
