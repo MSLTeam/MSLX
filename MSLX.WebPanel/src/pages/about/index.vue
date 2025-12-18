@@ -241,7 +241,7 @@ onMounted(() => {
 .build-summary {
   margin-bottom: 24px;
   .info-block {
-    background: var(--td-bg-color-container-hover);
+    background-color: color-mix(in srgb, var(--td-bg-color-container-hover), transparent 50%);
     padding: 16px;
     border-radius: var(--td-radius-medium);
     height: 100%;
@@ -376,7 +376,7 @@ onMounted(() => {
 .dev-card {
   display: flex;
   align-items: center;
-  background-color: var(--td-bg-color-container-hover);
+  background-color: color-mix(in srgb, var(--td-bg-color-container-hover), transparent 50%);
   padding: 16px;
   border-radius: var(--td-radius-medium);
   transition: all 0.3s cubic-bezier(0.38, 0, 0.24, 1);
