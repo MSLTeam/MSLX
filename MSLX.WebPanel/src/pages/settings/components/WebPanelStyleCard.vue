@@ -32,9 +32,7 @@ const handleFileUpload = async (files: any, targetField: 'webPanelStyleLightBack
               accept="image/png, image/jpeg, image/webp"
               @change="(val) => handleFileUpload(val, 'webPanelStyleLightBackground')"
             >
-              <t-button variant="text" shape="square">
-                <upload-icon />
-              </t-button>
+              <t-button variant="text" shape="square"><upload-icon /></t-button>
             </t-upload>
           </template>
         </t-input>
@@ -57,27 +55,63 @@ const handleFileUpload = async (files: any, targetField: 'webPanelStyleLightBack
       </t-form-item>
 
       <t-divider dashed />
-      <div class="group-title">透明度调整 (0.1 - 1.0)</div>
 
+      <div class="group-title">透明度调整 (0.1 - 1.0)</div>
       <t-row :gutter="[32, 16]">
-        <t-col :span="6">
+        <t-col :xs="24" :sm="12" :md="6">
           <t-form-item label="浅色背景透明度">
-            <t-slider v-model="webpanelStore.settings.webPanelStyleLightBackgroundOpacity" :min="0.1" :max="1" :step="0.01" />
+            <t-slider v-model="webpanelStore.settings.webPanelStyleLightBackgroundOpacity" :min="0.1" :max="1" :step="0.01" :tooltip-props="{ theme: 'light' }" />
           </t-form-item>
         </t-col>
-        <t-col :span="6">
+        <t-col :xs="24" :sm="12" :md="6">
           <t-form-item label="浅色组件透明度">
-            <t-slider v-model="webpanelStore.settings.webPanelStyleLightComponentsOpacity" :min="0.1" :max="1" :step="0.01" />
+            <t-slider v-model="webpanelStore.settings.webPanelStyleLightComponentsOpacity" :min="0.1" :max="1" :step="0.01" :tooltip-props="{ theme: 'light' }" />
           </t-form-item>
         </t-col>
-        <t-col :span="6">
+        <t-col :xs="24" :sm="12" :md="6">
           <t-form-item label="深色背景透明度">
             <t-slider v-model="webpanelStore.settings.webPanelStyleDarkBackgroundOpacity" :min="0.1" :max="1" :step="0.01" />
           </t-form-item>
         </t-col>
-        <t-col :span="6">
+        <t-col :xs="24" :sm="12" :md="6">
           <t-form-item label="深色组件透明度">
             <t-slider v-model="webpanelStore.settings.webPanelStyleDarkComponentsOpacity" :min="0.1" :max="1" :step="0.01" />
+          </t-form-item>
+        </t-col>
+      </t-row>
+
+      <t-divider dashed />
+
+      <div class="group-title">终端毛玻璃强度 (Blur)</div>
+      <t-row :gutter="[32, 16]">
+        <t-col :xs="24" :sm="12" :md="6">
+          <t-form-item label="浅色模式模糊度">
+            <t-slider
+              v-model="webpanelStore.settings.webpPanelTerminalBlurLight"
+              :min="0"
+              :max="50"
+              :step="1"
+              :input-number-props="{ theme: 'column', style: 'width: 65px' } as any"
+            >
+              <template #label="{ value }">
+                {{ value }}px
+              </template>
+            </t-slider>
+          </t-form-item>
+        </t-col>
+        <t-col :xs="24" :sm="12" :md="6">
+          <t-form-item label="深色模式模糊度">
+            <t-slider
+              v-model="webpanelStore.settings.webpPanelTerminalBlurDark"
+              :min="0"
+              :max="50"
+              :step="1"
+              :input-number-props="{ theme: 'column', style: 'width: 65px' } as any"
+            >
+              <template #label="{ value }">
+                {{ value }}px
+              </template>
+            </t-slider>
           </t-form-item>
         </t-col>
       </t-row>
@@ -114,7 +148,6 @@ const handleFileUpload = async (files: any, targetField: 'webPanelStyleLightBack
   height: 40px;
 }
 
-// 重置上传组件默认样式
 :deep(.t-input__suffix) {
   display: flex;
   align-items: center;
@@ -124,17 +157,34 @@ const handleFileUpload = async (files: any, targetField: 'webPanelStyleLightBack
     display: inline-flex;
     vertical-align: middle;
   }
-  .t-upload__content {
-    display: flex;
-  }
-
-  .t-upload__tips {
-    display: none;
-  }
+  .t-upload__content { display: flex; }
+  .t-upload__tips { display: none; }
 }
 
 :deep(.t-upload__single) {
   display: flex;
   align-items: center;
+}
+
+/* 移动端适配：将表单项改为垂直排列，防止滑块被挤成点 */
+@media screen and (max-width: 768px) {
+  :deep(.t-form-item) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  :deep(.t-form__label) {
+    width: 100% !important;
+    text-align: left;
+    margin-right: 0 !important;
+    margin-bottom: 8px;
+  }
+  :deep(.t-form__controls) {
+    margin-left: 0 !important;
+    width: 100%;
+
+    .t-slider {
+      width: 100%;
+    }
+  }
 }
 </style>

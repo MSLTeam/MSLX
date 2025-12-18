@@ -43,8 +43,8 @@ const customThemeVars = computed(() => {
     '--bg-op-dark': s.webPanelStyleDarkBackgroundOpacity,
     '--comp-op-light': s.webPanelStyleLightComponentsOpacity,
     '--comp-op-dark': s.webPanelStyleDarkComponentsOpacity,
-    '--term-blur-light': '5px',
-    '--term-blur-dark': '5px',
+    '--term-blur-light': `${s.webpPanelTerminalBlurLight ?? 5}px`,
+    '--term-blur-dark': `${s.webpPanelTerminalBlurDark ?? 5}px`,
   };
 });
 
