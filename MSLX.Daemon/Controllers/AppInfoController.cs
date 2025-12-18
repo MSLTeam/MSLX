@@ -82,7 +82,7 @@ public class AppInfoController : ControllerBase
                 ["targetFrontendVersion"] = new JObject
                 {
                     ["desktop"] = "0.0.0",
-                    ["panel"] = "0.3.1"
+                    ["panel"] = "0.3.1.1"
                 },
                 ["systemInfo"] = systemInfo
             };
