@@ -48,7 +48,7 @@ const handleFileUpload = async (files: any, targetField: 'webPanelStyleLightBack
               :auto-upload="false"
               :show-file-list="false"
               accept="image/png, image/jpeg, image/webp"
-              @change="(_, ctx) => handleFileUpload(ctx, 'webPanelStyleNightBackground')"
+              @change="(val) => handleFileUpload(val, 'webPanelStyleNightBackground')"
             >
               <t-button variant="text" shape="square"><upload-icon /></t-button>
             </t-upload>
