@@ -546,8 +546,9 @@ const goToHome = () => {
                 <template #message>
                   <p>不同的 Minecraft 版本需要不同的 Java 版本。</p>
                   <ul>
-                    <li>目前推荐最高使用 <b>Java 21</b> ，Java 25 可能存在兼容性问题。</li>
-                    <li>MC 1.20.5 - 最新版本: 需要 Java 21 或更高版本。</li>
+                    <li>建议直接使用 <b>推荐版本</b> 超出版本可能存在兼容性问题。</li>
+                    <li>MC 26.1 - 最新版: 需要 Java 25 或更高版本。</li>
+                    <li>MC 1.20.5 - 1.21.10: 需要 Java 21 或更高版本。</li>
                     <li>MC 1.18 - 1.20.4: 需要 Java 17 或更高版本。</li>
                     <li>MC 1.17/1.17.1: 需要 Java 16。</li>
                     <li>MC 1.13 - 1.16.5: 需要 Java 8 / 11。</li>

@@ -82,6 +82,16 @@ public class ChmodRequest
     public string Mode { get; set; } = "755";
 }
 
+public class BatchOperationRequest
+{
+    [Required(ErrorMessage = "源文件列表是必填项")]
+    [MinLength(1, ErrorMessage = "请至少选择一个文件或文件夹")]
+    public List<string> SourcePaths { get; set; } = new(); 
+    
+    [Required(AllowEmptyStrings = true, ErrorMessage = "目标路径是必填项")]
+    public string TargetPath { get; set; } = "";           
+}
+
 public class TaskStatusResponse
 {
     public string Status { get; set; } = "pending"; 

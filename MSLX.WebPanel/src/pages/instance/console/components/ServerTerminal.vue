@@ -37,7 +37,7 @@ const inputCommand = ref('');
 // 主题配置
 const termThemes = {
   dark: {
-    background: '#181818', foreground: '#cccccc', cursor: '#cccccc', selectionBackground: '#264f78',
+    background: 'transparent', foreground: '#cccccc', cursor: '#cccccc', selectionBackground: '#264f78',
     black: '#000000', red: '#cd3131', green: '#0dbc79', yellow: '#e5e510',
     blue: '#2472c8', magenta: '#bc3fbc', cyan: '#11a8cd', white: '#e5e5e5',
     brightBlack: '#666666', brightRed: '#f14c4c', brightGreen: '#23d18b',
@@ -45,7 +45,7 @@ const termThemes = {
     brightCyan: '#29b8db', brightWhite: '#e5e5e5',
   },
   light: {
-    background: '#ffffff', foreground: '#333333', cursor: '#333333', selectionBackground: '#add6ff',
+    background: 'transparent', foreground: '#333333', cursor: '#333333', selectionBackground: '#add6ff',
     black: '#000000', red: '#cd3131', green: '#00bc79', yellow: '#9d9d10',
     blue: '#2472c8', magenta: '#bc3fbc', cyan: '#11a8cd', white: '#e5e5e5',
     brightBlack: '#666666', brightRed: '#f14c4c', brightGreen: '#23d18b',
@@ -77,6 +77,7 @@ const initTerminal = () => {
     theme: isDark ? termThemes.dark : termThemes.light,
     disableStdin: false,
     convertEol: true,
+    allowTransparency: true,
   });
 
   fitAddon = new FitAddon();
@@ -243,11 +244,17 @@ onUnmounted(async () => {
 
 <style scoped lang="less">
 @import '@/style/scrollbar.less';
+
 .terminal-wrapper {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: var(--td-bg-color-container);
+
+  // 透明+毛玻璃
+  background-color: color-mix(in srgb, var(--td-bg-color-container), transparent 50%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
   border: 1px solid var(--td-component-stroke);
   border-radius: 12px;
   overflow: hidden;
@@ -259,8 +266,9 @@ onUnmounted(async () => {
   .terminal-header {
     height: 38px;
     flex-shrink: 0;
-    background-color: var(--td-border-level-1-color);
+    background-color: transparent;
     border-bottom: 1px solid var(--td-component-stroke);
+
     display: flex;
     align-items: center;
     padding: 0 16px;
@@ -278,6 +286,9 @@ onUnmounted(async () => {
       color: var(--td-text-color-placeholder);
       font-size: 12px;
       font-family: Menlo, monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
 
@@ -286,6 +297,14 @@ onUnmounted(async () => {
     top: 38px; bottom: 50px; left: 0; right: 0;
     padding: 6px 0 6px 10px;
     z-index: 1;
+
+    // 确保xterm透明
+    :deep(.xterm),
+    :deep(.xterm-viewport),
+    :deep(.xterm-screen) {
+      background-color: transparent !important;
+    }
+
     :deep(.xterm-viewport) {
       .scrollbar-mixin();
     }
@@ -298,7 +317,10 @@ onUnmounted(async () => {
     display: flex;
     align-items: center;
     padding: 0 16px;
-    background-color: var(--td-bg-color-container);
+
+    /* 底部也是全透明 */
+    background-color: transparent;
+
     border-top: 1px solid var(--td-component-stroke);
     z-index: 10;
     gap: 12px;
@@ -306,7 +328,9 @@ onUnmounted(async () => {
     .cmd-input {
       flex: 1;
       height: 32px;
-      background: transparent;
+
+      background-color: color-mix(in srgb, var(--td-bg-color-secondarycontainer), transparent 70%);
+
       border: 1px solid var(--td-component-border);
       border-radius: 4px;
       padding: 0 12px;
@@ -317,7 +341,7 @@ onUnmounted(async () => {
       transition: all 0.2s;
       &:focus {
         border-color: var(--td-brand-color);
-        background-color: var(--td-bg-color-secondarycontainer);
+        background-color: color-mix(in srgb, var(--td-bg-color-secondarycontainer), transparent 50%);
       }
       &::placeholder { color: var(--td-text-color-placeholder); }
     }

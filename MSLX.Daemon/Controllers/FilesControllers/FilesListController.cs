@@ -346,6 +346,202 @@ public class FilesListController : ControllerBase
             return StatusCode(500, $"读取文件失败: {ex.Message}");
         }
     }
+    
+    // 复制文件或文件夹
+    [HttpPost("instance/{id}/copy")]
+    public IActionResult CopyFiles(uint id, [FromBody] BatchOperationRequest request)
+    {
+        var server = ConfigServices.ServerList.GetServer(id);
+        if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
+
+        // 验证目标目录是否安全
+        var checkTarget = FileUtils.GetSafePath(server.Base, request.TargetPath);
+        if (!checkTarget.IsSafe) return BadRequest(new ApiResponse<object> { Code = 403, Message = "目标路径非法: " + checkTarget.Message });
+
+        string targetBaseDir = checkTarget.FullPath;
+        if (!Directory.Exists(targetBaseDir))
+        {
+            return NotFound(new ApiResponse<object> { Code = 404, Message = "目标目录不存在" });
+        }
+
+        int successCount = 0;
+        int failCount = 0;
+        List<string> errors = new List<string>();
+
+        foreach (var sourceRelPath in request.SourcePaths)
+        {
+            // 验证源路径是否安全
+            var checkSource = FileUtils.GetSafePath(server.Base, sourceRelPath);
+            if (!checkSource.IsSafe)
+            {
+                failCount++;
+                errors.Add($"路径非法: {sourceRelPath}");
+                continue;
+            }
+
+            string sourcePath = checkSource.FullPath;
+            
+            // 计算最终的目标路径
+            string fileName = Path.GetFileName(sourcePath);
+            // 如果是根目录无法获取文件名，跳过
+            if (string.IsNullOrEmpty(fileName)) 
+            {
+                failCount++;
+                continue;
+            }
+
+            string destPath = Path.Combine(targetBaseDir, fileName);
+
+            // 防止复制到自己内部
+            if (destPath.StartsWith(sourcePath + Path.DirectorySeparatorChar))
+            {
+                failCount++;
+                errors.Add($"无法将文件夹复制到其子目录: {fileName}");
+                continue;
+            }
+
+            try
+            {
+                if (Directory.Exists(sourcePath))
+                {
+                    // 递归复制文件夹
+                    CopyDirectory(sourcePath, destPath);
+                    successCount++;
+                }
+                else if (System.IO.File.Exists(sourcePath))
+                {
+                    // 复制文件 (默认覆盖)
+                    System.IO.File.Copy(sourcePath, destPath, true);
+                    successCount++;
+                }
+                else
+                {
+                    failCount++;
+                    errors.Add($"源文件不存在: {fileName}");
+                }
+            }
+            catch (Exception ex)
+            {
+                failCount++;
+                errors.Add($"{fileName}: {ex.Message}");
+            }
+        }
+
+        return Ok(new ApiResponse<object>
+        {
+            Code = 200,
+            Message = $"复制完成: 成功 {successCount} 个，失败 {failCount} 个",
+            Data = errors.Count > 0 ? errors : null
+        });
+    }
+
+    // 移动文件或文件夹
+    [HttpPost("instance/{id}/move")]
+    public IActionResult MoveFiles(uint id, [FromBody] BatchOperationRequest request)
+    {
+        var server = ConfigServices.ServerList.GetServer(id);
+        if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
+
+        var checkTarget = FileUtils.GetSafePath(server.Base, request.TargetPath);
+        if (!checkTarget.IsSafe) return BadRequest(new ApiResponse<object> { Code = 403, Message = "目标路径非法: " + checkTarget.Message });
+
+        string targetBaseDir = checkTarget.FullPath;
+        if (!Directory.Exists(targetBaseDir))
+        {
+            return NotFound(new ApiResponse<object> { Code = 404, Message = "目标目录不存在" });
+        }
+
+        int successCount = 0;
+        int failCount = 0;
+        List<string> errors = new List<string>();
+
+        foreach (var sourceRelPath in request.SourcePaths)
+        {
+            var checkSource = FileUtils.GetSafePath(server.Base, sourceRelPath);
+            if (!checkSource.IsSafe)
+            {
+                failCount++;
+                continue;
+            }
+
+            string sourcePath = checkSource.FullPath;
+            string fileName = Path.GetFileName(sourcePath);
+            if (string.IsNullOrEmpty(fileName)) continue;
+
+            string destPath = Path.Combine(targetBaseDir, fileName);
+
+            // 检查源和目标是否相同
+            if (sourcePath == destPath)
+            {
+                failCount++;
+                errors.Add("源路径与目标路径相同");
+                continue;
+            }
+
+            try
+            {
+                if (Directory.Exists(sourcePath))
+                {
+                    // 移动文件夹
+                    Directory.Move(sourcePath, destPath);
+                    successCount++;
+                }
+                else if (System.IO.File.Exists(sourcePath))
+                {
+                    // 如果目标文件已存在，先删除
+                    if (System.IO.File.Exists(destPath))
+                    {
+                        System.IO.File.Delete(destPath);
+                    }
+                    System.IO.File.Move(sourcePath, destPath);
+                    successCount++;
+                }
+                else
+                {
+                    failCount++;
+                }
+            }
+            catch (Exception ex)
+            {
+                failCount++;
+                errors.Add($"{fileName}: {ex.Message}");
+            }
+        }
+
+        return Ok(new ApiResponse<object>
+        {
+            Code = 200,
+            Message = $"移动完成: 成功 {successCount} 个，失败 {failCount} 个",
+            Data = errors.Count > 0 ? errors : null
+        });
+    }
+    
+
+    // 递归复制文件夹方法
+    private void CopyDirectory(string sourceDir, string destinationDir)
+    {
+        var dir = new DirectoryInfo(sourceDir);
+        if (!dir.Exists) throw new DirectoryNotFoundException($"Source directory not found: {dir.FullName}");
+
+        DirectoryInfo[] dirs = dir.GetDirectories();
+
+        // 创建目标文件夹
+        Directory.CreateDirectory(destinationDir);
+
+        // 复制文件
+        foreach (FileInfo file in dir.GetFiles())
+        {
+            string targetFilePath = Path.Combine(destinationDir, file.Name);
+            file.CopyTo(targetFilePath, true);
+        }
+
+        // 递归复制子文件夹
+        foreach (DirectoryInfo subDir in dirs)
+        {
+            string newDestinationDir = Path.Combine(destinationDir, subDir.Name);
+            CopyDirectory(subDir.FullName, newDestinationDir);
+        }
+    }
 
     private string GetUnixPermissionSafe(FileSystemInfo info)
     {
