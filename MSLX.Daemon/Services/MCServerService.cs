@@ -80,12 +80,15 @@ public class MCServerService
     /// <summary>
     /// 启动 MC 服务器 (非阻塞模式)
     /// </summary>
-    public (bool success, string message) StartServer(uint instanceId)
+    public (bool success, string message) StartServer(uint instanceId, bool isAutoRestart = false)
     {
         if (IsServerRunning(instanceId))
             return (false, "该服务器已经在运行中或正在启动中");
 
-        _crashHistory.TryRemove(instanceId, out _);
+        if (!isAutoRestart)
+        {
+            _crashHistory.TryRemove(instanceId, out _);
+        }
         var serverInfo = ConfigServices.ServerList.GetServer(instanceId);
         if (serverInfo == null)
             return (false, "找不到指定的服务器配置");
@@ -604,7 +607,7 @@ public class MCServerService
                         await Task.Delay(5000);
 
                         // 重新启动
-                        var (success, msg) = StartServer(instanceId);
+                        var (success, msg) = StartServer(instanceId,true);
                         if (!success)
                         {
                             _logger.LogWarning($"[AutoRestart] 实例 {instanceId} 重启失败: {msg}");
