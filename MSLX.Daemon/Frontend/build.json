@@ -1,6 +1,6 @@
 {
-  "version": "0.3.0",
-  "buildTime": "2025-12-18 16:04:48",
+  "version": "0.3.1",
+  "buildTime": "2025-12-18 17:22:58",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,46 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "05a1552c336f19e836d892feeada74a8929f6311",
-  "commitMsg": "bumpver(dameon & webpanel): 更新项目版本号至 0.3.0",
+  "commitId": "e66f1a5a062872ac672db0c1ebc34046df07d27c",
+  "commitMsg": "bumover(daemon & webpanel) 更新版本号至0.3.1",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "e66f1a5a062872ac672db0c1ebc34046df07d27c",
+      "commitTime": "2025-12-18 17:22:40 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumover(daemon & webpanel) 更新版本号至0.3.1"
+    },
+    {
+      "commitId": "62d9eb69da1f056f9eb1b8da4e72144ce503271a",
+      "commitTime": "2025-12-18 17:21:35 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 添加终端毛玻璃模糊度设置功能"
+    },
+    {
+      "commitId": "caef8408b33a63ebfa0847bd943fb6d3024b5962",
+      "commitTime": "2025-12-18 17:00:56 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 调整终端和卡片组件背景样式以适配自定义主题模式的参数"
+    },
+    {
+      "commitId": "094aad5c1b4f66f3d17800d3b18896f6e9a95a53",
+      "commitTime": "2025-12-18 16:38:14 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复面板样式设置黑暗模式上传图片函数失效的问题"
+    },
+    {
+      "commitId": "6cda17aacf66b03050dbf21a08c8d80380dccf99",
+      "commitTime": "2025-12-18 16:05:54 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #6 from MSLTeam/dev"
+    },
+    {
+      "commitId": "0f1acb225d58fac27811b569b6ed2547a33e55e0",
+      "commitTime": "2025-12-18 16:05:08 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v0.3.0-alpha 版本前端资源"
+    },
     {
       "commitId": "05a1552c336f19e836d892feeada74a8929f6311",
       "commitTime": "2025-12-18 16:04:25 +0800",
@@ -335,42 +371,6 @@
       "commitTime": "2025-12-16 17:15:28 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "feat(daemon & webpanel): 添加服务器存档备份功能"
-    },
-    {
-      "commitId": "0b376b8294b3195d879e9c24f43b6b999304c951",
-      "commitTime": "2025-12-15 23:32:36 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 优化服务器控制面板信息展示样式"
-    },
-    {
-      "commitId": "dcb36f19c2953d251b43df381e97cce2520bd9a6",
-      "commitTime": "2025-12-15 23:23:25 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 优化日志代码上色逻辑以保护ANSI代码"
-    },
-    {
-      "commitId": "164636f75935d2a525433093558cdebe76976c8a",
-      "commitTime": "2025-12-15 23:23:04 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 在服务端实例控制页面添加一个输入框"
-    },
-    {
-      "commitId": "a110aad6325bd7b66090b17924dd24f29d99f222",
-      "commitTime": "2025-12-15 17:11:02 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 改进 macOS 内存和 CPU 监控逻辑"
-    },
-    {
-      "commitId": "562e8853911692e4ad338523e32994ed8f8cc7de",
-      "commitTime": "2025-12-15 17:04:20 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 统一卡片组件样式并优化细节"
-    },
-    {
-      "commitId": "b99acdf39cadaffc6cb90769638cae31077ad930",
-      "commitTime": "2025-12-15 16:57:19 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 仪表盘页面添加系统状态监控面板"
     }
   ]
 }
