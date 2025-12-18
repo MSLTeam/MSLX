@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Utils;
 
@@ -27,34 +27,42 @@ public class SystemMonitorWorker : BackgroundService
     {
         _logger.LogInformation("[SystemMonitor] 后台监控服务已启动");
 
-        while (!stoppingToken.IsCancellationRequested)
+        // 创建定时器
+        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(UpdateIntervalMs));
+
+        try
         {
-            try
+            do
             {
-                // 获取数据
-                var (cpu, totalMem, usedMem) = await _monitor.GetStatusAsync();
-
-                // 构造数据包
-                var payload = new
+                try
                 {
-                    timestamp = DateTime.Now.ToString("HH:mm:ss"), // 方便前端做X轴
-                    cpu = cpu,           // CPU百分比 (0-100)
-                    memTotal = totalMem, // 总内存 MB
-                    memUsed = usedMem,   // 已用内存 MB
-                    memUsage = totalMem > 0 ? Math.Round((usedMem / totalMem) * 100, 1) : 0 // 内存百分比
-                };
+                    var (cpu, totalMem, usedMem) = await _monitor.GetStatusAsync();
 
-                // 推送到 SignalR 组
-                await _hubContext.Clients.Group(SystemMonitorHub.GroupName)
-                    .SendAsync("ReceiveSystemStats", payload, stoppingToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "[SystemMonitor] 采集或推送数据时出错");
-            }
+                    var payload = new
+                    {
+                        timestamp = DateTime.Now.ToString("HH:mm:ss"),
+                        cpu = cpu,
+                        memTotal = totalMem,
+                        memUsed = usedMem,
+                        memUsage = totalMem > 0 ? Math.Round((usedMem / totalMem) * 100, 1) : 0
+                    };
 
-            // 等待下一轮
-            await Task.Delay(UpdateIntervalMs, stoppingToken);
+                    await _hubContext.Clients.Group(SystemMonitorHub.GroupName)
+                        .SendAsync("ReceiveSystemStats", payload, stoppingToken);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    // 捕获业务逻辑报错，但不捕获取消异常
+                    _logger.LogError(ex, "[SystemMonitor] 采集或推送数据时出错");
+                }
+
+            } while (await timer.WaitForNextTickAsync(stoppingToken));
         }
+        catch (OperationCanceledException)
+        {
+            // 忽略取消异常
+        }
+
+        _logger.LogInformation("[SystemMonitor] 后台监控服务已停止");
     }
 }

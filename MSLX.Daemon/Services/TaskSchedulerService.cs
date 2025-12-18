@@ -1,4 +1,4 @@
-using Cronos;
+﻿using Cronos;
 using MSLX.Daemon.Models.Instance;
 using MSLX.Daemon.Utils;
 
@@ -21,20 +21,29 @@ namespace MSLX.Daemon.Services
         {
             _logger.LogInformation(">>> [MSLX-Scheduler] 定时任务调度器已启动");
 
-            while (!stoppingToken.IsCancellationRequested)
-            {
-                try
-                {
-                    await ProcessTasksAsync();
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "调度器循环发生异常");
-                }
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
 
-                // 1秒检查一次
-                await Task.Delay(1000, stoppingToken);
+            try
+            {
+                while (await timer.WaitForNextTickAsync(stoppingToken))
+                {
+                    try
+                    {
+                        await ProcessTasksAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        // 捕获业务逻辑异常，保证调度器不挂
+                        _logger.LogError(ex, "调度器循环发生异常");
+                    }
+                }
             }
+            catch (OperationCanceledException)
+            {
+                // 正常退出
+            }
+
+            _logger.LogInformation(">>> [MSLX-Scheduler] 定时任务调度器已停止");
         }
 
         private async Task ProcessTasksAsync()
