@@ -4,6 +4,7 @@
     header="选择服务端核心"
     width="85%"
     top="5vh"
+    attach="body"
     :footer="false"
     destroy-on-close
     class="core-selector-dialog"
