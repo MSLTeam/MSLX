@@ -1,6 +1,6 @@
 {
-  "version": "0.3.1",
-  "buildTime": "2025-12-18 17:22:58",
+  "version": "0.3.1.1",
+  "buildTime": "2025-12-18 18:45:31",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,34 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "e66f1a5a062872ac672db0c1ebc34046df07d27c",
-  "commitMsg": "bumover(daemon & webpanel) 更新版本号至0.3.1",
+  "commitId": "6741e7c8858c5db192bd908accc92239b216eaa2",
+  "commitMsg": "bumpver(daemon & webpanel): 更新项目版本号至 0.3.1.1",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "6741e7c8858c5db192bd908accc92239b216eaa2",
+      "commitTime": "2025-12-18 18:45:14 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新项目版本号至 0.3.1.1"
+    },
+    {
+      "commitId": "e5f913728b44faf8772d6140662a5b844dce6520",
+      "commitTime": "2025-12-18 18:44:18 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel & daemon): 修复字段错误导致的暗黑模式主体下背景无法保存"
+    },
+    {
+      "commitId": "af163123813f94963cdb172c17a1bf685fff7398",
+      "commitTime": "2025-12-18 17:25:03 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #7 from MSLTeam/dev"
+    },
+    {
+      "commitId": "25eb6ea2290950143d329d2c198bc6a8da97edb2",
+      "commitTime": "2025-12-18 17:24:07 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v0.3.1-alpha 版本前端资源"
+    },
     {
       "commitId": "e66f1a5a062872ac672db0c1ebc34046df07d27c",
       "commitTime": "2025-12-18 17:22:40 +0800",
@@ -347,30 +371,6 @@
       "commitTime": "2025-12-16 19:51:52 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "bumpver(daemon & webpanel): 更新项目版本号至0.2.2"
-    },
-    {
-      "commitId": "e54841e14efe0210a6d5cd943e761278818546be",
-      "commitTime": "2025-12-16 19:50:16 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(webpanel): 暂时禁用前端创建/变更用户权限为普通用户的功能"
-    },
-    {
-      "commitId": "b2532a6fe31bbcce2108051149fc6b839c0b7526",
-      "commitTime": "2025-12-16 19:16:42 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 定时任务新增备份存档支持"
-    },
-    {
-      "commitId": "86372a771fce2f4f141dd9f203b073a26e8e7cd4",
-      "commitTime": "2025-12-16 19:08:43 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 实现单个实例的实例资源状态监控"
-    },
-    {
-      "commitId": "d96df769b697aa8ded8f45ced83e40f0de147e24",
-      "commitTime": "2025-12-16 17:15:28 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 添加服务器存档备份功能"
     }
   ]
 }
