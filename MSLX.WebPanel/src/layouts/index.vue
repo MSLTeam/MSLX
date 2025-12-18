@@ -34,7 +34,7 @@ const customThemeVars = computed(() => {
   const s = webpanelStore.settings;
 
   const lightBg = getImageUrl(s.webPanelStyleLightBackground, defaultLightBg);
-  const darkBg = getImageUrl(s.webPanelStyleNightBackground, defaultDarkBg);
+  const darkBg = getImageUrl(s.webPanelStyleDarkBackground, defaultDarkBg);
 
   return {
     '--bg-img-light': `url('${lightBg}')`,

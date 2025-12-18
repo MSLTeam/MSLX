@@ -54,7 +54,7 @@ public class SettingsController: ControllerBase
             Data = new
             {
                 WebPanelStyleLightBackground = ConfigServices.Config.ReadConfig()["webPanelStyleLightBackground"]?? "",
-                WebPanelStyleNightBackground = ConfigServices.Config.ReadConfig()["webPanelStyleNightBackground"]?? "",
+                WebPanelStyleDarkBackground = ConfigServices.Config.ReadConfig()["webPanelStyleDarkBackground"]?? "",
                 WebPanelStyleLightBackgroundOpacity = ConfigServices.Config.ReadConfig()["webPanelStyleLightBackgroundOpacity"]?? 1.0,
                 WebPanelStyleDarkBackgroundOpacity = ConfigServices.Config.ReadConfig()["webPanelStyleDarkBackgroundOpacity"]?? 1.0,
                 WebPanelStyleLightComponentsOpacity = ConfigServices.Config.ReadConfig()["webPanelStyleLightComponentsOpacity"]?? 0.4,
