@@ -43,6 +43,8 @@ const customThemeVars = computed(() => {
     '--bg-op-dark': s.webPanelStyleDarkBackgroundOpacity,
     '--comp-op-light': s.webPanelStyleLightComponentsOpacity,
     '--comp-op-dark': s.webPanelStyleDarkComponentsOpacity,
+    '--term-blur-light': `${s.webpPanelTerminalBlurLight ?? 5}px`,
+    '--term-blur-dark': `${s.webpPanelTerminalBlurDark ?? 5}px`,
   };
 });
 
@@ -164,6 +166,7 @@ watch(
   :deep(.t-layout__header),
   :deep(.t-header),
   :deep(.t-card),
+  :deep(.design-card),
   :deep(.t-input) {
     background-color: rgba(255, 255, 255, var(--comp-op-light)) !important;
     border: 1px solid rgba(255, 255, 255, 0.3) !important;
@@ -176,6 +179,13 @@ watch(
   :deep(.t-input) {
     border-color: rgba(255, 255, 255, 0.5) !important;
   }
+  // 终端
+  :deep(.terminal-wrapper){
+    background-color: rgba(255, 255, 255, var(--comp-op-light)) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    backdrop-filter: blur(var(--term-blur-light)) !important;
+    -webkit-backdrop-filter: blur(var(--term-blur-light)) !important;
+  }
 
   // 黑夜组件样式
   &.dark,
@@ -184,6 +194,7 @@ watch(
     :deep(.t-aside),
     :deep(.t-layout__header),
     :deep(.t-header),
+    :deep(.design-card),
     :deep(.t-card) {
       background-color: rgba(20, 20, 20, var(--comp-op-dark)) !important;
       border: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -191,6 +202,14 @@ watch(
     :deep(.t-input) {
       background-color: transparent !important;
       border-color: var(--td-component-border) !important;
+    }
+    // 终端
+    :deep(.terminal-wrapper){
+      background-color: rgba(20, 20, 20, var(--comp-op-dark)) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      backdrop-filter: blur(var(--term-blur-dark)) !important;
+      -webkit-backdrop-filter: blur(var(--term-blur-dark)) !important;
+      --td-component-stroke: rgba(255, 255, 255, 0.1) !important;
     }
   }
 

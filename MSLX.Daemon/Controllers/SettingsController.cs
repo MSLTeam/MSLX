@@ -59,6 +59,8 @@ public class SettingsController: ControllerBase
                 WebPanelStyleDarkBackgroundOpacity = ConfigServices.Config.ReadConfig()["webPanelStyleDarkBackgroundOpacity"]?? 1.0,
                 WebPanelStyleLightComponentsOpacity = ConfigServices.Config.ReadConfig()["webPanelStyleLightComponentsOpacity"]?? 0.4,
                 WebPanelStyleDarkComponentsOpacity = ConfigServices.Config.ReadConfig()["webPanelStyleDarkComponentsOpacity"]?? 0.6,
+                WebpPanelTerminalBlurLight = ConfigServices.Config.ReadConfig()["webpPanelTerminalBlurLight"]?? 5.0,
+                WebpPanelTerminalBlurDark = ConfigServices.Config.ReadConfig()["webpPanelTerminalBlurDark"]?? 5.0,
             }
         });
     }
@@ -72,6 +74,8 @@ public class SettingsController: ControllerBase
         ConfigServices.Config.WriteConfigKey("webPanelStyleDarkBackgroundOpacity",request.WebPanelStyleDarkBackgroundOpacity);
         ConfigServices.Config.WriteConfigKey("webPanelStyleLightComponentsOpacity",request.WebPanelStyleLightComponentsOpacity);
         ConfigServices.Config.WriteConfigKey("webPanelStyleDarkComponentsOpacity",request.WebPanelStyleDarkComponentsOpacity);
+        ConfigServices.Config.WriteConfigKey("webpPanelTerminalBlurLight",request.WebpPanelTerminalBlurLight);
+        ConfigServices.Config.WriteConfigKey("webpPanelTerminalBlurDark",request.WebpPanelTerminalBlurDark);
         return Ok(new ApiResponse<object>
             {
                 Code = 200,

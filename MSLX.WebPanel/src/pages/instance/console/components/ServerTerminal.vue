@@ -251,7 +251,7 @@ onUnmounted(async () => {
   flex-direction: column;
 
   // 透明+毛玻璃
-  background-color: color-mix(in srgb, var(--td-bg-color-container), transparent 50%);
+  background-color: var(--td-bg-color-container);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 

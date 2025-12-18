@@ -13,9 +13,11 @@ export const useWebpanelStore = defineStore('webpanel', {
     settings: {
       webPanelStyleDarkBackgroundOpacity: 1.0,
       webPanelStyleDarkComponentsOpacity: 0.4,
+      webpPanelTerminalBlurDark: 5.0,
       webPanelStyleLightBackground: '',
       webPanelStyleLightBackgroundOpacity: 1.0,
       webPanelStyleLightComponentsOpacity: 0.6,
+      webpPanelTerminalBlurLight: 5.0,
       webPanelStyleNightBackground: '',
     } as WebpanelSettingsModel,
     loading: false,

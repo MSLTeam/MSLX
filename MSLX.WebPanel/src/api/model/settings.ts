@@ -13,4 +13,6 @@ export interface WebpanelSettingsModel {
   webPanelStyleLightBackgroundOpacity: number;
   webPanelStyleLightComponentsOpacity: number;
   webPanelStyleNightBackground: string;
+  webpPanelTerminalBlurLight: number;
+  webpPanelTerminalBlurDark: number;
 }

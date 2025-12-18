@@ -39,4 +39,10 @@ public class UpdateWebPanelStyleSettingsRequest
 
     [Range(0.01, 1.0, ErrorMessage = "参数错误")]
     public double WebPanelStyleDarkComponentsOpacity { get; set; } = 0.6;
+    
+    [Range(0.0, 50.0, ErrorMessage = "透明度仅支持设置0-50")]
+    public double WebpPanelTerminalBlurLight { get; set; } = 5.0;
+    
+    [Range(0.0, 50.0, ErrorMessage = "透明度仅支持设置0-50")]
+    public double WebpPanelTerminalBlurDark { get; set; } = 5.0;
 }
