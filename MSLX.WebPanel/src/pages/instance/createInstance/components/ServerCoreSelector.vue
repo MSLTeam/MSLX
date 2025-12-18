@@ -2,7 +2,7 @@
   <t-dialog
     v-model:visible="isVisible"
     header="选择服务端核心"
-    width="900px"
+    width="85%"
     top="5vh"
     :footer="false"
     destroy-on-close
@@ -273,7 +273,7 @@ watch(() => props.visible, (val) => {
 <style scoped lang="less">
 .core-selector-layout {
   display: flex;
-  height: 550px; // 固定高度，内部滚动
+  height: 75vh; // 固定高度，内部滚动
   border-top: 1px solid var(--td-border-level-2-color);
 }
 
