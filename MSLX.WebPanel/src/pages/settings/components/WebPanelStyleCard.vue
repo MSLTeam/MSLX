@@ -5,7 +5,7 @@ import { useWebpanelStore } from '@/store/modules/webpanel';
 const webpanelStore = useWebpanelStore();
 
 // 上传背景
-const handleFileUpload = async (files: any, targetField: 'webPanelStyleLightBackground' | 'webPanelStyleNightBackground') => {
+const handleFileUpload = async (files: any, targetField: 'webPanelStyleLightBackground' | 'webPanelStyleDarkBackground') => {
   const rawFile = files[0]?.raw || files.raw;
   if (!rawFile) return;
 
@@ -39,14 +39,14 @@ const handleFileUpload = async (files: any, targetField: 'webPanelStyleLightBack
       </t-form-item>
 
       <t-form-item label="深色背景">
-        <t-input v-model="webpanelStore.settings.webPanelStyleNightBackground" placeholder="输入完整URL地址或者在右边上传图片">
+        <t-input v-model="webpanelStore.settings.webPanelStyleDarkBackground" placeholder="输入完整URL地址或者在右边上传图片">
           <template #suffix>
             <t-upload
               theme="custom"
               :auto-upload="false"
               :show-file-list="false"
               accept="image/png, image/jpeg, image/webp"
-              @change="(val) => handleFileUpload(val, 'webPanelStyleNightBackground')"
+              @change="(val) => handleFileUpload(val, 'webPanelStyleDarkBackground')"
             >
               <t-button variant="text" shape="square"><upload-icon /></t-button>
             </t-upload>
