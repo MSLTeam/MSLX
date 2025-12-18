@@ -154,7 +154,7 @@ onMounted(() => {
 
 .design-card {
   position: relative;
-  background-color: color-mix(in srgb, var(--td-bg-color-container), transparent 50%) !important;
+  background-color: var(--td-bg-color-container);
   border: 1px solid var(--td-border-level-2-color);
   border-radius: 8px;
   overflow: hidden;
