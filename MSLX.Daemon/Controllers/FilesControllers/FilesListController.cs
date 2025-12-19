@@ -317,41 +317,29 @@ public class FilesListController : ControllerBase
             });
         }
     }
-    
+
     // 下载文件
     [HttpGet("instance/{id}/download")]
     public IActionResult DownloadFile(uint id, [FromQuery] string path)
     {
         var server = ConfigServices.ServerList.GetServer(id);
         if (server == null) return NotFound("实例不存在");
-        
+
         var check = FileUtils.GetSafePath(server.Base, path);
         if (!check.IsSafe) return BadRequest("非法路径");
 
         string targetPath = check.FullPath;
         if (!System.IO.File.Exists(targetPath)) return NotFound("文件不存在");
-        
+
         if (Directory.Exists(targetPath)) return BadRequest("无法直接下载文件夹");
-
-        try
-        {
-            var stream = new FileStream(targetPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            
-            string fileName = Path.GetFileName(targetPath);
-
-            return PhysicalFile(
+        return PhysicalFile(
             targetPath,
             "application/octet-stream",
-            fileName,
+            Path.GetFileName(targetPath),
             enableRangeProcessing: true
         );
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, $"读取文件失败: {ex.Message}");
-        }
     }
-    
+
     // 复制文件或文件夹
     [HttpPost("instance/{id}/copy")]
     public IActionResult CopyFiles(uint id, [FromBody] BatchOperationRequest request)

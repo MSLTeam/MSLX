@@ -44,10 +44,13 @@ import FileCompressor from './components/FileCompressor.vue';
 import FileDecompress from './components/FileDecompress.vue';
 import FilePermission from './components/FilePermission.vue';
 import { changeUrl } from '@/router';
+import {useUserStore} from "@/store";
 
 const route = useRoute();
 const router = useRouter();
 const instanceId = computed(() => Number(route.params.serverFilesId));
+
+const userStore = useUserStore();
 
 const loading = ref(false);
 const fileList = ref<FilesListModel[]>([]);
@@ -357,31 +360,43 @@ const handleDownload = async (row?: any) => {
   } else {
     targets = [...selectedRowKeys.value];
   }
+
   if (targets.length === 0) return;
+
+  const { baseUrl, token } = userStore;
+  const apiBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+
   for (const name of targets) {
     if (fileList.value.find((f) => f.name === name)?.type === 'folder') {
       MessagePlugin.warning(`暂不支持下载文件夹: ${name} 请压缩后再下载！`);
       continue;
     }
+
     const fullPath = currentPath.value ? `${currentPath.value}/${name}` : name;
-    const msg = MessagePlugin.loading(`准备下载: ${name}...`);
+
     try {
-      const res = await downloadFileStream(instanceId.value, fullPath);
-      const blob = new Blob([res as any]);
+      const downloadUrl = new URL(`${apiBase || window.location.origin }/api/instance/${instanceId.value}/download`);
+
+      downloadUrl.searchParams.append('path', fullPath);
+      downloadUrl.searchParams.append('x-user-token', token); // 关键：鉴权 Token
+
       const link = document.createElement('a');
-      link.href = window.URL.createObjectURL(blob);
-      link.download = name;
+      link.href = downloadUrl.toString();
       link.style.display = 'none';
+      link.download = name;
+
       document.body.appendChild(link);
       link.click();
+
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(link.href);
-      MessagePlugin.close(msg);
-    } catch {
-      MessagePlugin.close(msg);
-      MessagePlugin.error(`下载失败: ${name}`);
+
+    } catch (e) {
+      console.error(e);
+      MessagePlugin.error(`创建下载链接失败: ${name}`);
     }
   }
+
+  // 下载动作触发后，清空选中状态
   if (!row) selectedRowKeys.value = [];
 };
 
