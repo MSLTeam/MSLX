@@ -532,7 +532,7 @@ public class MCServerService
         // 启动实例监控
         Task.Run(async () =>
         {
-            await Task.Delay(5000);
+            await Task.Delay(2000);
 
             // 启动资源监控循环
             _logger.LogInformation("[Monitor] 正在启动服务器资源监控服务...");
