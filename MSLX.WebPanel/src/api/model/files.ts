@@ -19,3 +19,11 @@ export interface FilesListModel{
   lastModified: string;
   permission: string;
 }
+
+export interface PluginsAndModsListModel{
+  totalCount: number;
+  activeCount: number;
+  disableCount: number;
+  jarFiles: string[];
+  disableJarFiles: string[];
+}

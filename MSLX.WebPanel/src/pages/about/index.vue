@@ -70,7 +70,7 @@ onMounted(() => {
         <div class="intro-text">
           <p>
             <strong>MSLX</strong> 是由 <strong>MSL 原班团队 MSLTeam</strong> 倾力打造的全新一代开服工具。 基于
-            <strong>.NET Core 8.0</strong> 环境。
+            <strong>.NET Core 10.0</strong> 环境。
           </p>
           <p>
             它传承了 MSL 经典的 UI 设计语言，旨在让操作零门槛——无论是老用户还是新伙伴，都能即刻上手，极速部署您的 MC
@@ -131,7 +131,7 @@ onMounted(() => {
               <div class="info-block">
                 <div class="label">核心框架</div>
                 <div class="value framework">
-                  <span class="dotnet">.NET 8.0</span>
+                  <span class="dotnet">.NET 10.0</span>
                   <t-divider layout="vertical" />
                   <span class="vue">Vue 3.x</span>
                 </div>
@@ -241,7 +241,7 @@ onMounted(() => {
 .build-summary {
   margin-bottom: 24px;
   .info-block {
-    background: var(--td-bg-color-container-hover);
+    background-color: color-mix(in srgb, var(--td-bg-color-container-hover), transparent 50%);
     padding: 16px;
     border-radius: var(--td-radius-medium);
     height: 100%;
@@ -376,7 +376,7 @@ onMounted(() => {
 .dev-card {
   display: flex;
   align-items: center;
-  background-color: var(--td-bg-color-container-hover);
+  background-color: color-mix(in srgb, var(--td-bg-color-container-hover), transparent 50%);
   padding: 16px;
   border-radius: var(--td-radius-medium);
   transition: all 0.3s cubic-bezier(0.38, 0, 0.24, 1);

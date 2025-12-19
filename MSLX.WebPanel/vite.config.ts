@@ -43,6 +43,13 @@ export default ({ mode }: ConfigEnv): UserConfig => {
     server: {
       port: 1102,
       host: '0.0.0.0',
+      proxy: {
+        '/api': {
+          target: 'http://localhost:1027',
+          changeOrigin: true,
+          ws: true,
+        }
+      },
     },
     build: {
       chunkSizeWarningLimit: 1500, // 调整包的大小

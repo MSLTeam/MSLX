@@ -12,26 +12,33 @@ export interface CreateInstanceQucikModeModel {
   args: string;
 }
 
-export interface InstanceListModel{
-  id:number;
-  name:string;
-  basePath:string;
-  java:string;
-  core:string;
-  icon:string;
-  status:boolean;
+export interface InstanceListModel {
+  id: number;
+  name: string;
+  basePath: string;
+  java: string;
+  core: string;
+  icon: string;
+  status: boolean;
 }
 
-export interface InstanceInfoModel{
-  id:number;
-  name:string;
-  basePath:string;
-  java:string;
-  core:string;
+export interface InstanceInfoModel {
+  id: number;
+  name: string;
+  basePath: string;
+  java: string;
+  core: string;
   minM: number;
   maxM: number;
-  status:boolean;
-  uptime:string;
+  status: boolean;
+  uptime: string;
+  mcConfig: {
+    difficulty: string;
+    levelName: string;
+    gamemode: string;
+    serverPort: string;
+    onlineMode: string;
+  };
 }
 
 export interface UpdateInstanceModel {
@@ -49,9 +56,11 @@ export interface UpdateInstanceModel {
   backupDelay?: number;
   backupPath?: string;
   autoRestart?: boolean;
+  forceAutoRestart?: boolean;
   runOnStartup?: boolean;
   inputEncoding?: 'utf-8' | 'gbk';
   outputEncoding?: 'utf-8' | 'gbk';
+  fileEncoding?: 'utf-8' | 'gbk';
 
   // 可选
   coreFileKey?: string;
@@ -73,6 +82,7 @@ export interface InstanceSettingsModel {
   backupDelay?: number;
   backupPath?: string;
   autoRestart?: boolean;
+  forceAutoRestart?: boolean;
   runOnStartup?: boolean;
   inputEncoding?: 'utf-8' | 'gbk';
   outputEncoding?: 'utf-8' | 'gbk';

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Models.Tasks;
 using MSLX.Daemon.Utils;
@@ -27,23 +27,39 @@ public class ServerUpdateService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("服务器更新后台服务已启动。");
+        _logger.LogInformation("[MSLX-Service] 服务器更新后台服务已启动。");
 
-        while (!stoppingToken.IsCancellationRequested)
+        try
         {
-            // 从队列拿任务
-            var task = await _taskQueue.DequeueTaskAsync(stoppingToken);
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                // 获取任务
+                var task = await _taskQueue.DequeueTaskAsync(stoppingToken);
 
-            try
-            {
-                await ProcessUpdate(task);
+                // 执行业务逻辑
+                try
+                {
+                    await ProcessUpdate(task);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "更新任务异常: {ServerId}", task?.ServerId);
+
+                    if (task != null)
+                    {
+                        await _hubContext.Clients.Group(task.ServerId)
+                            .SendAsync("UpdateStatus", "系统内部错误", -1, true);
+                    }
+                }
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "更新任务异常");
-                // 发送错误通知给前端
-                await _hubContext.Clients.Group(task.ServerId).SendAsync("UpdateStatus", "系统内部错误", -1, true);
-            }
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("[MSLX-Service] 服务器更新服务已停止（正常退出）。");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogCritical(ex, "[MSLX-Service] 服务器更新服务发生致命错误。");
         }
     }
 
@@ -86,6 +102,7 @@ public class ServerUpdateService : BackgroundService
             server.AutoRestart = req.AutoRestart;
             server.InputEncoding = req.InputEncoding;
             server.OutputEncoding = req.OutputEncoding;
+            server.FileEncoding = req.FileEncoding;
             ConfigServices.ServerList.UpdateServer(server);
 
             // 检查 Java

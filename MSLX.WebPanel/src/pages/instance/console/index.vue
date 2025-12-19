@@ -15,7 +15,7 @@ const route = useRoute();
 const instanceListStore = useInstanceListStore();
 
 // 状态
-const serverId = ref(parseInt(route.params.id as string) || 0);
+const serverId = ref(parseInt(route.params.serverId as string) || 0);
 const isRunning = ref(false);
 const loading = ref(false);
 const serverInfo = ref<InstanceInfoModel>(null); // 占位数据对象
@@ -69,14 +69,30 @@ const handleStop = async () => {
   }
 };
 
+// 备份
+const handleBackup = async () => {
+  try {
+    terminalRef.value?.writeln('\x1b[1;32m[System] 正在发送备份任务...\x1b[0m');
+    await postInstanceAction(serverId.value, 'backup');
+    // isRunning.value = true; // 由状态更新处理
+    MessagePlugin.success('备份任务启动中···');
+    loading.value = false;
+  } catch (e: any) {
+    terminalRef.value?.writeln(`\x1b[1;31m[Error] 备份任务启动失败: ${e.message}\x1b[0m`);
+  }
+};
+
 const handleClearLog = () => {
   terminalRef.value?.clear();
 };
 
 // 监听路由参数变化
 watch(
-  () => route.params.id,
+  () => route.params.serverId,
   async (newId) => {
+    if (route.name !== 'InstanceConsole') {
+      return;
+    }
     if (newId) {
       serverId.value = parseInt(newId as string);
       //terminalRef.value?.writeln(`\x1b[33m[System] 切换到实例 ID: ${serverId.value} \x1b[0m`);
@@ -107,6 +123,7 @@ onMounted(() => {
           :server-info="serverInfo"
           @start="handleStart"
           @stop="handleStop"
+          @backup="handleBackup"
           @clear-log="handleClearLog"
         />
       </div>
@@ -117,7 +134,6 @@ onMounted(() => {
 <style scoped lang="less">
 .console-page {
   padding-bottom: 12px;
-  background-color: var(--td-bg-color-page);
   height: calc(100vh - 64px);
   box-sizing: border-box;
   overflow: hidden;

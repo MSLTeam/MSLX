@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Files;
@@ -74,7 +75,7 @@ public class FileContentController : ControllerBase
         {
             // 文件流读取文件内容
             using (var fileStream = new FileStream(targetPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            using (var streamReader = new StreamReader(fileStream, System.Text.Encoding.UTF8))
+            using (var streamReader = new StreamReader(fileStream, server.FileEncoding == "gbk" ? Encoding.GetEncoding("gbk") : Encoding.UTF8))
             {
                 string content = await streamReader.ReadToEndAsync();
 
@@ -92,6 +93,69 @@ public class FileContentController : ControllerBase
             {
                 Code = 500,
                 Message = $"读取文件失败: {ex.Message}"
+            });
+        }
+    }
+    
+    [HttpPost("instance/{id}/directory")]
+    public IActionResult CreateDirectory(uint id, [FromBody] CreateDirectoryRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            return BadRequest(new ApiResponse<object> { Code = 400, Message = "文件夹名字不能为空" });
+        }
+        
+        // 合法？
+        char[] invalidChars = Path.GetInvalidFileNameChars();
+        if (request.Name.IndexOfAny(invalidChars) >= 0)
+        {
+             return BadRequest(new ApiResponse<object> { Code = 400, Message = "文件夹名字包含非法字符" });
+        }
+        
+        var server = ConfigServices.ServerList.GetServer(id);
+        if (server == null)
+        {
+            return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
+        }
+
+        // 组合完整路径：用户当前路径 + 新文件夹名
+        string relativePath = Path.Combine(request.Path ?? "", request.Name);
+        
+        var check = FileUtils.GetSafePath(server.Base, relativePath);
+        if (!check.IsSafe)
+        {
+            return BadRequest(new ApiResponse<object> { Code = 403, Message = check.Message });
+        }
+
+        string finalPath = check.FullPath;
+
+        // 检查冲突
+        if (Directory.Exists(finalPath))
+        {
+            return BadRequest(new ApiResponse<object> { Code = 400, Message = "该文件夹已存在" });
+        }
+        if (System.IO.File.Exists(finalPath))
+        {
+            return BadRequest(new ApiResponse<object> { Code = 400, Message = "存在同名文件" });
+        }
+
+        try
+        {
+            // 创建文件夹
+            Directory.CreateDirectory(finalPath);
+
+            return Ok(new ApiResponse<object>
+            {
+                Code = 200,
+                Message = "文件夹创建成功"
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new ApiResponse<object>
+            {
+                Code = 500,
+                Message = $"创建失败: {ex.Message}"
             });
         }
     }
@@ -129,9 +193,7 @@ public class FileContentController : ControllerBase
         // 写入文件
         try
         {
-            var utf8WithoutBom = new System.Text.UTF8Encoding(false);
-
-            await System.IO.File.WriteAllTextAsync(targetPath, request.Content, utf8WithoutBom);
+            await System.IO.File.WriteAllTextAsync(targetPath, request.Content, server.FileEncoding == "gbk" ? Encoding.GetEncoding("gbk") : Encoding.UTF8);
 
             return Ok(new ApiResponse<object>
             {

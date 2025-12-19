@@ -107,6 +107,7 @@ public class InstanceSettingsController : ControllerBase
             server.YggdrasilApiAddr = request.YggdrasilApiAddr;
             server.RunOnStartup = request.RunOnStartup;
             server.AutoRestart = request.AutoRestart;
+            server.ForceAutoRestart = request.ForceAutoRestart;
             server.InputEncoding = request.InputEncoding;
             server.OutputEncoding = request.OutputEncoding;
 

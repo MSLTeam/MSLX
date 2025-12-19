@@ -32,20 +32,35 @@ public class ServerCreationService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("服务器创建后台服务已启动。");
+        _logger.LogInformation("[MSLX-Service] 服务器创建后台服务已启动。");
 
-        while (!stoppingToken.IsCancellationRequested)
+        try
         {
-            var task = await _taskQueue.DequeueTaskAsync(stoppingToken);
-            try
+            while (!stoppingToken.IsCancellationRequested)
             {
-                await ProcessCreation(task, stoppingToken);
+                // 获取任务
+                var task = await _taskQueue.DequeueTaskAsync(stoppingToken);
+
+                // 处理业务逻辑
+                try
+                {
+                    await ProcessCreation(task, stoppingToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "处理任务失败: {ServerId}", task?.ServerId);
+
+                    await UpdateStatusAsync(task.ServerId, $"创建流程异常中断: {ex.Message}", -1, true, ex);
+                }
             }
-            catch (Exception ex)
-            {
-                // 兜底
-                await UpdateStatusAsync(task.ServerId, $"创建流程异常中断: {ex.Message}", -1, true, ex);
-            }
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("[MSLX-Service] 收到停止信号，后台服务正在停止...");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogCritical(ex, "[MSLX-Service] 后台服务发生致命错误。");
         }
     }
 
@@ -75,7 +90,10 @@ public class ServerCreationService : BackgroundService
             Core = request.core,
             MinM = request.minM,
             MaxM = request.maxM,
-            Args = request.args ?? ""
+            Args = request.args ?? "",
+            InputEncoding = PlatFormServices.GetOs() == "Windows"? "gbk" : "utf-8",
+            OutputEncoding = PlatFormServices.GetOs() == "Windows"? "gbk" : "utf-8",
+            FileEncoding = PlatFormServices.GetOs() == "Windows"? "gbk" : "utf-8",
         };
 
         ConfigServices.ServerList.CreateServer(server);

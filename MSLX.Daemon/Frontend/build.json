@@ -1,0 +1,376 @@
+{
+  "version": "0.5.1",
+  "buildTime": "2025-12-19 14:03:51",
+  "dependencies": {
+    "@codemirror/lang-javascript": "^6.2.4",
+    "@codemirror/lang-json": "^6.0.2",
+    "@codemirror/lang-yaml": "^6.1.2",
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/theme-one-dark": "^6.1.3",
+    "@codemirror/view": "^6.39.2",
+    "@eslint/js": "^9.38.0",
+    "@microsoft/signalr": "^10.0.0",
+    "@vueuse/core": "^14.0.0",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
+    "ansi-colors": "^4.1.3",
+    "axios": "^1.13.1",
+    "cron-parser": "^5.4.0",
+    "dayjs": "^1.11.11",
+    "echarts": "^5.5.1",
+    "lodash": "^4.17.21",
+    "md-editor-v3": "^6.1.0",
+    "nprogress": "^0.2.0",
+    "pinia": "^2.1.7",
+    "pinia-plugin-persistedstate": "^3.2.1",
+    "qrcode.vue": "^3.4.1",
+    "qs": "^6.13.0",
+    "tdesign-icons-vue-next": "^0.4.1",
+    "tdesign-vue-next": "^1.17.1",
+    "tvision-color": "^1.6.0",
+    "typescript-eslint": "^8.46.2",
+    "vue": "^3.4.31",
+    "vue-clipboard3": "^2.0.0",
+    "vue-codemirror": "^6.1.1",
+    "vue-router": "^4.4.0"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.3.0",
+    "@commitlint/config-conventional": "^19.2.2",
+    "@types/lodash": "^4.17.7",
+    "@types/qs": "^6.9.15",
+    "@types/ws": "^8.5.10",
+    "@typescript-eslint/eslint-plugin": "^8.46.2",
+    "@typescript-eslint/parser": "^8.46.2",
+    "@vitejs/plugin-vue": "^5.1.0",
+    "@vitejs/plugin-vue-jsx": "^4.0.0",
+    "@vue/compiler-sfc": "^3.4.31",
+    "@vue/eslint-config-typescript": "^14.6.0",
+    "commitizen": "^4.3.0",
+    "cz-conventional-changelog": "^3.3.0",
+    "eslint": "^9.38.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "eslint-plugin-vue": "^10.5.1",
+    "eslint-plugin-vue-scoped-css": "^2.6.0",
+    "husky": "^9.1.1",
+    "less": "^4.2.0",
+    "lint-staged": "^15.2.7",
+    "mockjs": "^1.1.0",
+    "prettier": "^3.3.3",
+    "stylelint": "^16.25.0",
+    "stylelint-less": "^3.0.0",
+    "stylelint-order": "^6.0.4",
+    "typescript": "^5.5.3",
+    "vite": "^5.3.3",
+    "vite-plugin-mock": "^3.0.1",
+    "vite-svg-loader": "^5.1.0",
+    "vue-tsc": "^2.0.26"
+  },
+  "commitId": "7b386bd70e6827544e40a33eb0f3c764c781ce68",
+  "commitMsg": "fix(webpanel): 修复文件下载地址错误",
+  "commitAuthor": "luluxiaoyu",
+  "history": [
+    {
+      "commitId": "7b386bd70e6827544e40a33eb0f3c764c781ce68",
+      "commitTime": "2025-12-19 14:02:28 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复文件下载地址错误"
+    },
+    {
+      "commitId": "a5a96610b11701690ce4e41ce7a3dcf8684fdc7b",
+      "commitTime": "2025-12-19 13:52:02 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v0.5.1-beta 版本前端资源"
+    },
+    {
+      "commitId": "d13114674f38ac6b6706302f0e05fc6610978533",
+      "commitTime": "2025-12-19 13:50:48 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.1-beta (hotfix)"
+    },
+    {
+      "commitId": "49793dc92de8f0de43a87aa8d84fcd4dd853d713",
+      "commitTime": "2025-12-19 13:49:23 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(daemon): 减少启动任务等待时间"
+    },
+    {
+      "commitId": "3257a2827c6ced5ed7ca9ebe1bbc2454529c9673",
+      "commitTime": "2025-12-19 13:47:29 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon & webpanel): 修复大文件无法下载的问题"
+    },
+    {
+      "commitId": "a75bb94413d7a072e125199ff0536e8d1f0500aa",
+      "commitTime": "2025-12-19 12:21:06 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #9 from MSLTeam/dev"
+    },
+    {
+      "commitId": "3b8dd38c1d07ccaa11350e37ef3b3078c5b6e896",
+      "commitTime": "2025-12-19 12:18:20 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v0.5.0-beta 版本前端资源"
+    },
+    {
+      "commitId": "2ed82ecc7076983aa9d804032712e6ff58143f36",
+      "commitTime": "2025-12-19 12:11:55 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.0-beta"
+    },
+    {
+      "commitId": "a8bad6fce7cac1a2c0395ea1a7a5e1af9b1336a9",
+      "commitTime": "2025-12-19 12:02:31 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 登录成功后显示欢迎通知"
+    },
+    {
+      "commitId": "d5e047f117bfb06d6057f760168a0e84fa11cbaf",
+      "commitTime": "2025-12-19 11:01:22 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复后台任务没有在退出时正常处理"
+    },
+    {
+      "commitId": "f67e2dd1ad44b85f22bf6bef84603aa5e06a0567",
+      "commitTime": "2025-12-18 23:33:52 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 优化文件管理器下载文件"
+    },
+    {
+      "commitId": "7174759e9c90bdefcb4cd1822799c81cae0560a6",
+      "commitTime": "2025-12-18 23:30:26 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复一些循环任务在退出时报错"
+    },
+    {
+      "commitId": "737cce65445c77d2cbd2516e54257f894f00f380",
+      "commitTime": "2025-12-18 23:18:35 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复在Windows下Java选择Java Path时无法正确监控资源的问题"
+    },
+    {
+      "commitId": "939feab2b127687881a14fed55f666ddf3de3f69",
+      "commitTime": "2025-12-18 23:10:20 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 程序内配置日志级别"
+    },
+    {
+      "commitId": "3c79a754458ab1fe552671bbd0c20a9dd18cd838",
+      "commitTime": "2025-12-18 22:44:59 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复创建服务器页面在自定义背景模式下丢失容器背景色的问题"
+    },
+    {
+      "commitId": "c1fe1f435e5500d95cb02b24873f9496d013e440",
+      "commitTime": "2025-12-18 22:38:49 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复开启背景美化后服务端核心选择组件变成透明的问题"
+    },
+    {
+      "commitId": "cca315a3593079a4a3d832a466a6f29391716445",
+      "commitTime": "2025-12-18 22:28:44 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 调整服务端核心选择器宽度和高度"
+    },
+    {
+      "commitId": "3377f89109f8ad8cb75738b204f88dd00f05f2e4",
+      "commitTime": "2025-12-18 18:46:34 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #8 from MSLTeam/dev"
+    },
+    {
+      "commitId": "b4421842a95e01615c2cf6483e4852fb2e2f1b19",
+      "commitTime": "2025-12-18 18:46:02 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v0.3.1.1-alpha 版本前端资源"
+    },
+    {
+      "commitId": "6741e7c8858c5db192bd908accc92239b216eaa2",
+      "commitTime": "2025-12-18 18:45:14 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新项目版本号至 0.3.1.1"
+    },
+    {
+      "commitId": "e5f913728b44faf8772d6140662a5b844dce6520",
+      "commitTime": "2025-12-18 18:44:18 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel & daemon): 修复字段错误导致的暗黑模式主体下背景无法保存"
+    },
+    {
+      "commitId": "af163123813f94963cdb172c17a1bf685fff7398",
+      "commitTime": "2025-12-18 17:25:03 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #7 from MSLTeam/dev"
+    },
+    {
+      "commitId": "25eb6ea2290950143d329d2c198bc6a8da97edb2",
+      "commitTime": "2025-12-18 17:24:07 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v0.3.1-alpha 版本前端资源"
+    },
+    {
+      "commitId": "e66f1a5a062872ac672db0c1ebc34046df07d27c",
+      "commitTime": "2025-12-18 17:22:40 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumover(daemon & webpanel) 更新版本号至0.3.1"
+    },
+    {
+      "commitId": "62d9eb69da1f056f9eb1b8da4e72144ce503271a",
+      "commitTime": "2025-12-18 17:21:35 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 添加终端毛玻璃模糊度设置功能"
+    },
+    {
+      "commitId": "caef8408b33a63ebfa0847bd943fb6d3024b5962",
+      "commitTime": "2025-12-18 17:00:56 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 调整终端和卡片组件背景样式以适配自定义主题模式的参数"
+    },
+    {
+      "commitId": "094aad5c1b4f66f3d17800d3b18896f6e9a95a53",
+      "commitTime": "2025-12-18 16:38:14 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复面板样式设置黑暗模式上传图片函数失效的问题"
+    },
+    {
+      "commitId": "6cda17aacf66b03050dbf21a08c8d80380dccf99",
+      "commitTime": "2025-12-18 16:05:54 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #6 from MSLTeam/dev"
+    },
+    {
+      "commitId": "0f1acb225d58fac27811b569b6ed2547a33e55e0",
+      "commitTime": "2025-12-18 16:05:08 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v0.3.0-alpha 版本前端资源"
+    },
+    {
+      "commitId": "05a1552c336f19e836d892feeada74a8929f6311",
+      "commitTime": "2025-12-18 16:04:25 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(dameon & webpanel): 更新项目版本号至 0.3.0"
+    },
+    {
+      "commitId": "e18bfff992149af0bc44ff5b9c95110bff95650a",
+      "commitTime": "2025-12-18 15:58:27 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复崩溃重启熔断检查无效的问题"
+    },
+    {
+      "commitId": "0c617d5205b43232fe21c11b38b1bca3db5bf011",
+      "commitTime": "2025-12-18 15:56:57 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 尝试修复Windows下单实例资源状态获取异常的问题"
+    },
+    {
+      "commitId": "b7e9930a68c13f815cfa4f5e2084494e14901a90",
+      "commitTime": "2025-12-18 15:34:57 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 调整关于页面卡片透明度"
+    },
+    {
+      "commitId": "9d2bd3e1bc5552ed3ba75ccf7773a1dedfe5bf28",
+      "commitTime": "2025-12-18 15:27:28 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "refactor(webpanel): 拆分设置页面的组件"
+    },
+    {
+      "commitId": "952fc2c5b515ba56a482b225df5e59e610988a98",
+      "commitTime": "2025-12-18 15:16:53 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 新增面板自定义样式功能"
+    },
+    {
+      "commitId": "44233a4b204e668c86d1f80a3de02c92f0222cef",
+      "commitTime": "2025-12-18 14:09:33 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 实现公共静态图片资源的访问和上传接口"
+    },
+    {
+      "commitId": "8b5b44afcb0db6b8ed3864ad06a59704c606e7b3",
+      "commitTime": "2025-12-18 13:50:07 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(webpanel): 更新 Java 版本选择说明"
+    },
+    {
+      "commitId": "6d80aa26292b96e60ab8bef692110e9373e4b713",
+      "commitTime": "2025-12-17 18:47:47 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 添加文件复制/移动操作请求验证"
+    },
+    {
+      "commitId": "032f0b086ad9bd09abde6fc85d936a1e065db591",
+      "commitTime": "2025-12-17 18:44:24 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 添加更加直观的默认管理员账户密码日志输出"
+    },
+    {
+      "commitId": "c00a9388b43a35569d4bb973dc206c54a68e5943",
+      "commitTime": "2025-12-17 17:24:25 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 提取魔改主题的相关配置"
+    },
+    {
+      "commitId": "9fe6a06689360b301845c8345630fb7539b1a4ae",
+      "commitTime": "2025-12-17 17:15:38 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 调整背景模式下输入框和MD引用块的样式"
+    },
+    {
+      "commitId": "c5289a6171322e5732f26fb4ae8e76528cc472ea",
+      "commitTime": "2025-12-17 17:07:57 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 更新终端组件样式以支持透明背景和毛玻璃效果"
+    },
+    {
+      "commitId": "8badc7e112cadfc4779e8f399aa805c9606d12e2",
+      "commitTime": "2025-12-17 16:29:46 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复面板样式弹窗异常退出的问题"
+    },
+    {
+      "commitId": "b5427a8c011a872aac52ba76c54964110e7c12c9",
+      "commitTime": "2025-12-17 16:19:56 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 文件管理器新增复制和移动的操作"
+    },
+    {
+      "commitId": "6a8445619da00522616dd794f906fdd5e836a67a",
+      "commitTime": "2025-12-17 12:07:29 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #5 from MSLTeam/dev"
+    },
+    {
+      "commitId": "7c2a64898b0f69cec14b54bac1ac95d636e99dfc",
+      "commitTime": "2025-12-17 12:06:50 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入前端 v0.2.3-alpha 版本资源"
+    },
+    {
+      "commitId": "ee1b9e58f22772fd6df36ab59cbdfff0c2d8c37e",
+      "commitTime": "2025-12-17 12:05:45 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新应用版本号至 v0.2.3-alpha"
+    },
+    {
+      "commitId": "6231e7a3a94eb856457c8ffb24bfab7b907739b9",
+      "commitTime": "2025-12-17 12:04:23 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修正Windows下实例资源获取逻辑"
+    },
+    {
+      "commitId": "ffee3003822c7c85496cafcde2405120e23f41ea",
+      "commitTime": "2025-12-17 11:48:01 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 魔法对轰之CSS大作战 - 新增添加背景图功能"
+    },
+    {
+      "commitId": "2e811da483e6870f3099a2669d0d673da32bed17",
+      "commitTime": "2025-12-17 10:40:06 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 优化一些页面组件样式"
+    }
+  ]
+}

@@ -17,11 +17,14 @@ import {
 import { MessagePlugin } from 'tdesign-vue-next';
 import { finishUpload, initUpload, saveUploadedFile, uploadChunk } from '@/api/files';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   visible: boolean;
   instanceId: number;
   currentPath: string;
-}>();
+  allowFolder?: boolean;
+}>(), {
+  allowFolder: true
+});
 
 const emit = defineEmits(['update:visible', 'success']);
 
@@ -270,7 +273,7 @@ onUnmounted(() => tasks.value.forEach((t) => t.abortController?.abort()));
           <t-button variant="outline" size="small" @click="handleSelectFiles"
             ><template #icon><file-icon /></template> 选择文件</t-button
           >
-          <t-button variant="outline" size="small" @click="handleSelectFolder"
+          <t-button v-if="props.allowFolder" variant="outline" size="small" @click="handleSelectFolder"
             ><template #icon><folder-icon /></template> 选择文件夹</t-button
           >
         </div>

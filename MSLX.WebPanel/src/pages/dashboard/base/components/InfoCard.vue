@@ -13,7 +13,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <t-card :bordered="false" shadow style="width: 100%">
+  <t-card shadow :bordered="false" class="system-info-card">
     <div class="info-grid">
       <div class="info-item">
         <span class="info-label">
@@ -36,7 +36,11 @@ onMounted(() => {
           <t-icon name="dashboard" />
           <span>面板版本：</span>
         </span>
-        <span class="info-value">v{{ pkg.version }}</span>
+        <t-tooltip :content="pkg.version" :max-width="'400px'">
+          <span class="info-value truncate-value">
+            {{ pkg.version }}
+          </span>
+        </t-tooltip>
       </div>
 
       <div class="info-item">
@@ -44,7 +48,11 @@ onMounted(() => {
           <t-icon name="cloud" />
           <span>节点版本：</span>
         </span>
-        <span class="info-value">v{{ userStore.userInfo.version }}</span>
+        <t-tooltip :content="`v${userStore.userInfo.version}`" :max-width="'400px'">
+          <span class="info-value truncate-value">
+            v{{ userStore.userInfo.version }}
+          </span>
+        </t-tooltip>
       </div>
 
       <div class="info-item">
@@ -89,6 +97,19 @@ onMounted(() => {
 </template>
 
 <style scoped lang="less">
+.system-info-card {
+  width: 100%;
+  transition: all 0.3s;
+  border-radius: 6px;
+  background-color: var(--td-bg-color-container);
+
+
+  // 调整内边距
+  :deep(.t-card__body) {
+    padding: var(--td-comp-paddingTB-l) var(--td-comp-paddingLR-l);
+  }
+}
+
 .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -101,9 +122,16 @@ onMounted(() => {
   justify-content: space-between;
   padding: 10px 14px;
 
-  background-color: var(--td-bg-color-container-hover);
+  background-color: color-mix(in srgb, var(--td-bg-color-container-hover), transparent 60%) !important;
   border-radius: var(--td-radius-medium);
   font-size: var(--td-font-size-m);
+
+  // 增加一点边框或过渡让它更精致
+  border: 1px solid transparent;
+  transition: border-color 0.2s;
+  &:hover {
+    border-color: var(--td-component-stroke);
+  }
 
   overflow: hidden;
 }
@@ -121,7 +149,6 @@ onMounted(() => {
   color: var(--td-text-color-primary);
   font-weight: 600;
 
-  /* margin-left: auto; */ /* 👈 3.2 移除 */
   padding-left: 10px;
 
   text-align: right;

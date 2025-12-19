@@ -1,5 +1,7 @@
+﻿using System.Reflection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.FileProviders;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Middleware;
@@ -8,6 +10,12 @@ using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils.BackgroundTasks;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// 日志级别配置
+builder.Logging.SetMinimumLevel(LogLevel.Information);
+builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
+builder.Logging.AddFilter("System", LogLevel.Warning);
+builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Warning);
 
 // 创建临时 Logger
 using (var bootstrapLoggerFactory = LoggerFactory.Create(logging => logging.AddConsole()))
@@ -71,15 +79,23 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddSignalR();
 
+// 权限拦截处理器
+builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler, CustomAuthorizationResultHandler>();
+
 // 注册单例服务
 builder.Services.AddSingleton<FrpProcessService>();
 builder.Services.AddSingleton(typeof(IBackgroundTaskQueue<>), typeof(BackgroundTaskQueue<>));
 builder.Services.AddSingleton<MCServerService>();
+builder.Services.AddSingleton<SystemMonitor>();
 
-// 需要依赖注入的服务注册
+// 后台服务注册
 builder.Services.AddHostedService<ServerCreationService>();
 builder.Services.AddHostedService<ServerUpdateService>();
 builder.Services.AddHostedService<TempFileCleanupService>();
+builder.Services.AddHostedService<TaskSchedulerService>();
+builder.Services.AddHostedService<SystemMonitorWorker>();
+
+// 瞬时服务注册
 builder.Services.AddScoped<JavaScannerService>();
 builder.Services.AddTransient<NeoForgeInstallerService>();
 builder.Services.AddTransient<ServerDeploymentService>();
@@ -128,9 +144,24 @@ logger.LogInformation("欢迎您！" + ConfigServices.Config.ReadConfigKey("user
 app.UseForwardedHeaders();
 app.UseCors("AllowAll");
 
+var embeddedProvider = new ManifestEmbeddedFileProvider(
+    Assembly.GetEntryAssembly()!, 
+    "wwwroot" 
+);
+app.UseDefaultFiles(new DefaultFilesOptions
+{
+    FileProvider = embeddedProvider,
+    RequestPath = ""
+});
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = embeddedProvider,
+    RequestPath = "" 
+});
+
 // 自定义的中间件
 app.UseMiddleware<BlockLoopbackMiddleware>(); 
-app.UseMiddleware<ApiKeyMiddleware>();
+app.UseMiddleware<AuthMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -145,15 +176,21 @@ app.MapHub<CreationProgressHub>("/api/hubs/creationProgressHub");
 app.MapHub<UpdateProgressHub>("/api/hubs/updateProgressHub");
 app.MapHub<FrpConsoleHub>("/api/hubs/frpLogsHub");
 app.MapHub<InstanceConsoleHub>("/api/hubs/instanceControlHub");
+app.MapHub<SystemMonitorHub>("/api/hubs/system");
 app.MapControllers();
+
+// SPA
+app.MapFallbackToFile("index.html", new StaticFileOptions
+{
+    FileProvider = embeddedProvider
+});
 
 var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
 lifetime.ApplicationStarted.Register(() =>
 {
-    if(((bool?)ConfigServices.Config.ReadConfig()["openWebConsoleOnLaunch"] ?? true) && (listenAddr.Contains("localhost") || listenAddr.Contains("127.0.0.1")))
+    if((bool?)ConfigServices.Config.ReadConfig()["openWebConsoleOnLaunch"] ?? true)
     {
-        var address = "https://alpha-mslx.aino.cyou/login";
-        PlatFormServices.OpenBrowser($"{address}?auth={StringServices.EncodeToBase64($"{listenAddr}|{ConfigServices.Config.ReadConfigKey("apiKey")}")}");
+        PlatFormServices.OpenBrowser($"{listenAddr}");
     }
 });
 

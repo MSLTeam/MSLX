@@ -56,7 +56,9 @@ defineEmits<{
         </t-button>
         <t-button
           style="margin: 0"
-          variant="dashed"
+          class="glass-btn"
+          variant="outline"
+          theme="warning"
           block
           @click="$emit('clear-log')"
         >
@@ -153,6 +155,22 @@ defineEmits<{
   }
   .control-actions {
     display: flex; flex-direction: column; width: 100%; gap: 16px;
+
+    .glass-btn {
+      backdrop-filter: blur(4px);
+      transition: all 0.2s;
+
+      // 按钮
+      &.t-button--theme-warning {
+        background-color: color-mix(in srgb, var(--td-warning-color), transparent 90%) !important;
+        border-color: var(--td-warning-color) !important;
+        color: var(--td-warning-color) !important;
+
+        &:hover {
+          background-color: color-mix(in srgb, var(--td-warning-color), transparent 80%) !important;
+        }
+      }
+    }
   }
 }
 

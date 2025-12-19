@@ -34,12 +34,13 @@ public class UpdateServerRequest : IValidatableObject
     [Range(1, 100, ErrorMessage = "备份数量限制必须在 1-100 之间")]
     public int BackupMaxCount { get; set; } = 20;
 
-    [Range(1, int.MaxValue, ErrorMessage = "备份间隔必须大于 0")]
+    [Range(5, int.MaxValue, ErrorMessage = "备份间隔必须大于 5")]
     public int BackupDelay { get; set; } = 10;
 
     public string BackupPath { get; set; } = "MSLX://Backup/Instance";
 
     public bool AutoRestart { get; set; } = false;
+    public bool ForceAutoRestart { get; set; } = true;
     public bool RunOnStartup { get; set; } = false;
     
     // 两个编码 暂时仅支持 utf-8 和 gbk
@@ -49,6 +50,9 @@ public class UpdateServerRequest : IValidatableObject
 
     [RegularExpression(@"^(?i)(utf-8|gbk)$", ErrorMessage = "输出编码 (OutputEncoding) 仅支持 'utf-8' 或 'gbk'")]
     public string OutputEncoding { get; set; } = "utf-8";
+    
+    [RegularExpression(@"^(?i)(utf-8|gbk)$", ErrorMessage = "文件编码 (OutputEncoding) 仅支持 'utf-8' 或 'gbk'")]
+    public string FileEncoding { get; set; } = "utf-8";
     
     // 更新的可选参数
 

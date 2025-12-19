@@ -19,8 +19,10 @@ namespace MSLX.Daemon.Models;
             public int BackupDelay { get; set; } = 10;
             public string BackupPath { get; set; } = "MSLX://Backup/Instance";
             public bool AutoRestart { get; set; } = false;
+            public bool ForceAutoRestart { get; set; } = true;
             public bool RunOnStartup { get; set; } = false;
             public string InputEncoding { get; set; } = "utf-8";
             public string OutputEncoding { get; set; } = "utf-8";
+            public string FileEncoding { get; set; } = "utf-8";
         }
     }

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onUnmounted, ref, watch, onMounted, computed, nextTick } from 'vue';
-import { useRouter } from 'vue-router';
 import { type FormRules, MessagePlugin } from 'tdesign-vue-next';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { useUserStore } from '@/store';
@@ -97,6 +96,34 @@ const formData = ref(<CreateInstanceQucikModeModel>{
   args: '',
 });
 
+
+// 处理内存的单位
+const unitOptions = [
+  { label: 'GB', value: 'GB' },
+  { label: 'MB', value: 'MB' },
+];
+
+const minUnit = ref('GB');
+const maxUnit = ref('GB');
+
+const minMComputed = computed({
+  get: () => {
+    return minUnit.value === 'GB' ? formData.value.minM / 1024 : formData.value.minM;
+  },
+  set: (val) => {
+    formData.value.minM = minUnit.value === 'GB' ? Math.round(val * 1024) : val;
+  }
+});
+
+const maxMComputed = computed({
+  get: () => {
+    return maxUnit.value === 'GB' ? formData.value.maxM / 1024 : formData.value.maxM;
+  },
+  set: (val) => {
+    formData.value.maxM = maxUnit.value === 'GB' ? Math.round(val * 1024) : val;
+  }
+});
+
 // 监听选择java的状态变量 修改表单数据
 watch(
   [javaType, selectedJavaVersion, customJavaPath],
@@ -176,6 +203,11 @@ const nextStep = async () => {
     if (downloadType.value === 'online') {
       if (!formData.value.coreUrl || !formData.value.core) {
         MessagePlugin.warning('请点击按钮选择一个服务端核心');
+        return;
+      }
+    } else if (downloadType.value === 'custom') {
+      if (!formData.value.core) {
+        MessagePlugin.warning('请输入核心文件名');
         return;
       }
     } else {
@@ -381,18 +413,10 @@ const onSubmit = async () => {
 const startSignalRConnection = async (serverId: string) => {
   const { baseUrl, token } = userStore;
 
-  if (!baseUrl || !token) {
-    MessagePlugin.error('未找到登录信息 (baseUrl 或 token)，无法连接到实时进度服务。');
-    isCreating.value = false;
-    isSubmitting.value = false;
-    currentStep.value = 0;
-    return;
-  }
-
   let isSuccessHandled = false;
 
-  const hubUrl = new URL('/api/hubs/creationProgressHub', baseUrl);
-  hubUrl.searchParams.append('x-api-key', token);
+  const hubUrl = new URL('/api/hubs/creationProgressHub', baseUrl || window.location.origin);
+  hubUrl.searchParams.append('x-user-token', token);
 
   hubConnection.value = new HubConnectionBuilder()
     .withUrl(hubUrl.toString(), { withCredentials: false })
@@ -482,13 +506,10 @@ const goToHome = () => {
   customJavaPath.value = '';
 }; */
 
-const viewDetails = () => {
-  changeUrl(`/instance/console/${createdServerId.value}`);
-};
 </script>
 
 <template>
-  <t-card :bordered="false">
+  <div>
     <div class="main-layout-container">
       <div class="steps-aside">
         <t-steps layout="vertical" style="margin-top: 16px" :current="currentStep" status="process" readonly>
@@ -525,8 +546,9 @@ const viewDetails = () => {
                 <template #message>
                   <p>不同的 Minecraft 版本需要不同的 Java 版本。</p>
                   <ul>
-                    <li>目前推荐最高使用 <b>Java 21</b> ，Java 25 可能存在兼容性问题。</li>
-                    <li>MC 1.20.5 - 最新版本: 需要 Java 21 或更高版本。</li>
+                    <li>建议直接使用 <b>推荐版本</b> 超出版本可能存在兼容性问题。</li>
+                    <li>MC 26.1 - 最新版: 需要 Java 25 或更高版本。</li>
+                    <li>MC 1.20.5 - 1.21.10: 需要 Java 21 或更高版本。</li>
                     <li>MC 1.18 - 1.20.4: 需要 Java 17 或更高版本。</li>
                     <li>MC 1.17/1.17.1: 需要 Java 16。</li>
                     <li>MC 1.13 - 1.16.5: 需要 Java 8 / 11。</li>
@@ -577,6 +599,7 @@ const viewDetails = () => {
                 <t-radio-group v-model="downloadType" variant="default-filled">
                   <t-radio-button value="online">在线下载 (推荐)</t-radio-button>
                   <t-radio-button value="manual">选择本地文件</t-radio-button>
+                  <t-radio-button value="custom">自定义文件名</t-radio-button>
                 </t-radio-group>
               </t-form-item>
 
@@ -646,22 +669,62 @@ const viewDetails = () => {
                   </div>
                 </t-form-item>
               </div>
+
+              <div v-if="downloadType === 'custom'" class="online-select-area">
+                <t-alert theme="warning" message="此模式通常用于服务器目录中已经存在核心文件，或者您打算稍后手动通过文件管理上传核心。" style="margin-bottom: 16px" />
+
+                <t-form-item label="核心文件名" name="core" help="请确保文件名包含后缀，例如: server.jar">
+                  <t-input v-model="formData.core" placeholder="请输入核心文件名 (例如 server.jar)" />
+                </t-form-item>
+              </div>
             </div>
 
             <div v-show="currentStep === 3" class="step-content">
-              <t-row :gutter="16">
-                <t-col :span="6">
-                  <t-form-item label="最小内存 (MB)" name="minM">
-                    <t-input-number v-model="formData.minM" :min="1" />
+              <t-row :gutter="[16, 24]">
+                <t-col :xs="12" :span="6">
+                  <t-form-item label="最小内存" name="minM">
+                    <t-space :size="8" style="width: 100%">
+                      <t-input-number
+                        v-model="minMComputed"
+                        :min="0"
+                        :decimal-places="minUnit === 'GB' ? 1 : 0"
+                        placeholder="Xms"
+                        theme="column"
+                        style="width: 100%"
+                      />
+                      <t-select
+                        v-model="minUnit"
+                        :options="unitOptions"
+                        :clearable="false"
+                        style="width: 80px"
+                      />
+                    </t-space>
                   </t-form-item>
                 </t-col>
-                <t-col :span="6">
-                  <t-form-item label="最大内存 (MB)" name="maxM">
-                    <t-input-number v-model="formData.maxM" :min="1" />
+
+                <t-col :xs="12" :span="6">
+                  <t-form-item label="最大内存" name="maxM">
+                    <t-space :size="8" style="width: 100%">
+                      <t-input-number
+                        v-model="maxMComputed"
+                        :min="0"
+                        :decimal-places="maxUnit === 'GB' ? 1 : 0"
+                        placeholder="Xmx"
+                        theme="column"
+                        style="width: 100%"
+                      />
+                      <t-select
+                        v-model="maxUnit"
+                        :options="unitOptions"
+                        :clearable="false"
+                        style="width: 80px"
+                      />
+                    </t-space>
                   </t-form-item>
                 </t-col>
               </t-row>
-              <t-form-item label="额外 JVM 参数 (可选)" name="args" help="例如: -XX:+UseG1GC">
+
+              <t-form-item label="额外 JVM 参数 (可选)" name="args" help="例如: -XX:+UseG1GC" style="margin-top: 16px">
                 <t-textarea v-model="formData.args" placeholder="-XX:+UseG1GC" />
               </t-form-item>
             </div>
@@ -709,7 +772,7 @@ const viewDetails = () => {
     </div>
 
     <server-core-selector v-model:visible="showCoreSelector" @confirm="onCoreSelected" />
-  </t-card>
+  </div>
 </template>
 
 <style scoped lang="less">
@@ -756,7 +819,7 @@ const viewDetails = () => {
 .java-option-panel {
   margin-top: 16px;
   padding: 16px;
-  background-color: var(--td-bg-color-secondarycontainer);
+  background-color: var(--td-bg-color-container-hover);
   border-radius: var(--td-radius-medium);
 
   .flex-row {
@@ -777,7 +840,7 @@ const viewDetails = () => {
 .online-select-area {
   margin-top: 16px;
   padding: 16px;
-  background-color: var(--td-bg-color-secondarycontainer);
+  background-color: var(--td-bg-color-container-hover);
   border-radius: var(--td-radius-medium);
 }
 

@@ -1,6 +1,7 @@
 import { request } from '@/utils/request';
 import {
   FilesListModel,
+  PluginsAndModsListModel,
   UploadFinishResponse,
   UploadInitResponse,
   UploadPackageCheckJarResponse,
@@ -66,6 +67,13 @@ export function saveFileContent(instanceId: number, path: string, content: strin
   });
 }
 
+export function createDirectory(instanceId: number, path: string,name: string) {
+  return request.post({
+    url: `/api/files/instance/${instanceId}/directory`,
+    data: { path, name }
+  });
+}
+
 export function renameFile(instanceId: number, oldPath: string, newPath: string) {
   return request.post({
     url: `/api/files/instance/${instanceId}/rename`,
@@ -126,5 +134,47 @@ export async function changeFileMode(instanceId: number, path: string, mode: str
   return await request.post({
     url: `/api/files/instance/${instanceId}/chmod`,
     data: { path, mode }
+  });
+}
+
+// 模组/插件管理
+
+export async function getPluginsOrModsList(instanceId: number, type: 'mods' | 'plugins'){
+  return await request.get<PluginsAndModsListModel>({
+    url: `/api/files/pm/instance/${instanceId}/list`,
+    params: { mode: type }
+  });
+}
+
+export async function setPluginsOrModsStatus(instanceId:number, type: 'mods' | 'plugins',action: 'enable' | 'disable' | 'delete', targets: string[] ){
+  return await request.post({
+    url: `/api/files/pm/instance/${instanceId}/set`,
+    data: { mode: type, action, targets }
+  });
+}
+
+// 批量复制
+export function copyFiles(instanceId: number, sourcePaths: string[], targetPath: string) {
+  return request.post({
+    url: `/api/files/instance/${instanceId}/copy`,
+    data: { sourcePaths, targetPath },
+    timeout: 120 * 1000,
+  });
+}
+
+// 批量移动
+export function moveFiles(instanceId: number, sourcePaths: string[], targetPath: string) {
+  return request.post({
+    url: `/api/files/instance/${instanceId}/move`,
+    data: { sourcePaths, targetPath },
+    timeout: 120 * 1000,
+  });
+}
+
+// 上传图片到静态资源文件夹
+export function uploadFilesToStaticImages(fileKey: string,fileName: string) {
+  return request.post({
+    url: `api/static/images/upload`,
+    data: { fileKey, fileName },
   });
 }

@@ -14,7 +14,6 @@ async function getHitokoto() {
 
   try {
     // 异步请求
-    // (注意：如果你还没改拦截器，请使用我之前推荐的“智能识别”方案，否则这里会报错)
     const res = await request.get({
       url: '/?c=a&c=b&c=c&c=d',
       baseURL: 'https://v1.hitokoto.cn'
@@ -40,7 +39,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <t-card :bordered="false" shadow style="width: 100%">
+  <t-card shadow :bordered="false" class="welcome-card">
 
     <div class="welcome-header">
 
@@ -62,6 +61,18 @@ onMounted(() => {
 </template>
 
 <style scoped lang="less">
+// --- 核心卡片样式 (与监控/公告卡片统一) ---
+.welcome-card {
+  width: 100%;
+  transition: all 0.3s;
+  border-radius: 6px;
+  background-color: var(--td-bg-color-container);
+
+  // 调整 Card 内边距，使其看起来更紧凑或更舒适
+  :deep(.t-card__body) {
+    padding: var(--td-comp-paddingTB-l) var(--td-comp-paddingLR-l);
+  }
+}
 
 .welcome-header {
   display: flex;
@@ -80,6 +91,12 @@ onMounted(() => {
   border-radius: 50%;
   border: 2px solid var(--td-brand-color);
   box-shadow: var(--td-shadow-1);
+  transition: transform 0.3s;
+
+  // 头像悬浮微动效果
+  &:hover {
+    transform: rotate(5deg) scale(1.05);
+  }
 }
 
 .welcome-info {
@@ -99,6 +116,7 @@ onMounted(() => {
   .welcome-icon {
     color: var(--td-warning-color);
     font-size: 1.2em;
+    animation: sun-spin 10s linear infinite; // 增加一个小动画
   }
 }
 
@@ -108,6 +126,12 @@ onMounted(() => {
   font-size: var(--td-font-size-m);
   font-style: italic;
   line-height: 1.6;
+}
+
+// 定义太阳旋转动画
+@keyframes sun-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 // -------------------------------------

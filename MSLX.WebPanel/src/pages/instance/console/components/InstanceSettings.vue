@@ -3,17 +3,22 @@ import { ref } from 'vue';
 import {
   StoreIcon,
   SettingIcon,
-  TimeIcon
+  TimeIcon,
+  Setting1Icon
 } from 'tdesign-icons-vue-next';
 
-import GeneralSettings from '@/pages/instance/console/components/settingsComponents/GeneralSettings.vue'
+import GeneralSettings from './settingsComponents/GeneralSettings.vue';
+import ModsPluginsManager from './settingsComponents/ModsPluginsManager.vue';
+import ServerProperties from './settingsComponents/ServerProperties.vue'
+import CronTasks from './settingsComponents/CronTasks.vue'
 
 const visible = ref(false);
 const currentTab = ref(0);
 
 const menuItems = [
-  { label: '插件/模组', icon: StoreIcon },
   { label: '实例设置', icon: SettingIcon },
+  { label: '插件/模组', icon: StoreIcon },
+  { label: '服务器属性', icon: Setting1Icon },
   { label: '定时任务', icon: TimeIcon },
 ];
 
@@ -53,20 +58,22 @@ defineExpose({ open });
 
       <div class="main-content">
 
-        <div v-if="currentTab === 0" class="panel-wrapper">
-          <h3 class="panel-title">已安装插件</h3>
-          <div class="card-content">
-            <p v-for="i in 20" :key="i">自适应内容行 {{ i }}...</p>
-          </div>
-        </div>
 
-        <div v-if="currentTab === 1" class="panel-wrapper">
+
+        <div v-if="currentTab === 0" class="panel-wrapper">
           <general-settings />
         </div>
 
+        <div v-if="currentTab === 1" class="panel-wrapper">
+          <mods-plugins-manager/>
+        </div>
+
         <div v-if="currentTab === 2" class="panel-wrapper">
-          <h3 class="panel-title">任务列表</h3>
-          <div class="card-content">任务配置...</div>
+          <server-properties :instance-id="21"/>
+        </div>
+
+        <div v-if="currentTab === 3" class="panel-wrapper">
+          <cron-tasks/>
         </div>
 
       </div>
