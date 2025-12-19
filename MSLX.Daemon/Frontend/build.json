@@ -1,6 +1,6 @@
 {
-  "version": "0.3.1.1",
-  "buildTime": "2025-12-18 18:45:31",
+  "version": "0.5.0",
+  "buildTime": "2025-12-19 12:13:08",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,82 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "6741e7c8858c5db192bd908accc92239b216eaa2",
-  "commitMsg": "bumpver(daemon & webpanel): 更新项目版本号至 0.3.1.1",
+  "commitId": "2ed82ecc7076983aa9d804032712e6ff58143f36",
+  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.0-beta",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "2ed82ecc7076983aa9d804032712e6ff58143f36",
+      "commitTime": "2025-12-19 12:11:55 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.0-beta"
+    },
+    {
+      "commitId": "a8bad6fce7cac1a2c0395ea1a7a5e1af9b1336a9",
+      "commitTime": "2025-12-19 12:02:31 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 登录成功后显示欢迎通知"
+    },
+    {
+      "commitId": "d5e047f117bfb06d6057f760168a0e84fa11cbaf",
+      "commitTime": "2025-12-19 11:01:22 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复后台任务没有在退出时正常处理"
+    },
+    {
+      "commitId": "f67e2dd1ad44b85f22bf6bef84603aa5e06a0567",
+      "commitTime": "2025-12-18 23:33:52 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 优化文件管理器下载文件"
+    },
+    {
+      "commitId": "7174759e9c90bdefcb4cd1822799c81cae0560a6",
+      "commitTime": "2025-12-18 23:30:26 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复一些循环任务在退出时报错"
+    },
+    {
+      "commitId": "737cce65445c77d2cbd2516e54257f894f00f380",
+      "commitTime": "2025-12-18 23:18:35 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复在Windows下Java选择Java Path时无法正确监控资源的问题"
+    },
+    {
+      "commitId": "939feab2b127687881a14fed55f666ddf3de3f69",
+      "commitTime": "2025-12-18 23:10:20 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 程序内配置日志级别"
+    },
+    {
+      "commitId": "3c79a754458ab1fe552671bbd0c20a9dd18cd838",
+      "commitTime": "2025-12-18 22:44:59 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复创建服务器页面在自定义背景模式下丢失容器背景色的问题"
+    },
+    {
+      "commitId": "c1fe1f435e5500d95cb02b24873f9496d013e440",
+      "commitTime": "2025-12-18 22:38:49 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复开启背景美化后服务端核心选择组件变成透明的问题"
+    },
+    {
+      "commitId": "cca315a3593079a4a3d832a466a6f29391716445",
+      "commitTime": "2025-12-18 22:28:44 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 调整服务端核心选择器宽度和高度"
+    },
+    {
+      "commitId": "3377f89109f8ad8cb75738b204f88dd00f05f2e4",
+      "commitTime": "2025-12-18 18:46:34 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #8 from MSLTeam/dev"
+    },
+    {
+      "commitId": "b4421842a95e01615c2cf6483e4852fb2e2f1b19",
+      "commitTime": "2025-12-18 18:46:02 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v0.3.1.1-alpha 版本前端资源"
+    },
     {
       "commitId": "6741e7c8858c5db192bd908accc92239b216eaa2",
       "commitTime": "2025-12-18 18:45:14 +0800",
@@ -299,78 +371,6 @@
       "commitTime": "2025-12-16 22:25:20 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "assets(daemon): 嵌入 v0.2.2.1-alpha 版本前端资源"
-    },
-    {
-      "commitId": "eafda5a80239976d192dd80d0f2b36f52b8c4eca",
-      "commitTime": "2025-12-16 22:24:14 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新应用版本号至0.2.2.1"
-    },
-    {
-      "commitId": "71720d73c7ca4e89d3882603af6bce91f1fb8fab",
-      "commitTime": "2025-12-16 22:20:25 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 服务端实例列表卡片添加明显的运行状态颜色显示"
-    },
-    {
-      "commitId": "a74901d681ab0e6f56ef66b898227e93a11746c2",
-      "commitTime": "2025-12-16 22:10:17 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(daemon): 更新Frp列表排序，最新创建的在前面"
-    },
-    {
-      "commitId": "11884693a76e0a1e6fb1372e6c7d815d6cb16081",
-      "commitTime": "2025-12-16 22:08:54 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 创建实例和实例设置中支持内存单位切换为 GB 或 MB"
-    },
-    {
-      "commitId": "2c3a6f1edf555f716d2a2a825835f032fe2ff133",
-      "commitTime": "2025-12-16 21:38:47 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 创建服务端的时候允许直接输入核心文件名"
-    },
-    {
-      "commitId": "6a87cbcc18a748b30a4da5655f2d377f602a779a",
-      "commitTime": "2025-12-16 21:28:18 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复实例设置弹窗可能存在不更新信息的问题"
-    },
-    {
-      "commitId": "9f5bb204cdf1322243445a3b29a4f551759aebee",
-      "commitTime": "2025-12-16 21:05:19 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(wenpanel): 添加一只应急食品，猜猜她在哪？"
-    },
-    {
-      "commitId": "1ce13511dd239b31dcf8ec9eceb374c3d006f435",
-      "commitTime": "2025-12-16 20:04:27 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #3 from MSLTeam/dev"
-    },
-    {
-      "commitId": "05bf515b6ecc9b57e140a8d3a052fe390aa7a076",
-      "commitTime": "2025-12-16 20:03:07 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(daemon): 嵌入前端 v0.2.2-alpha 版本资源"
-    },
-    {
-      "commitId": "591862469edc988235863d3f3b4bf883b8e507b0",
-      "commitTime": "2025-12-16 20:01:26 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 配置SignalR连接禁用Cookie发送"
-    },
-    {
-      "commitId": "6ff031a86a5065e675fc98d6e069208d98d99eb8",
-      "commitTime": "2025-12-16 19:59:37 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "deps(webpanel): 更新 @microsoft/signalr 到 v10.0.0 版本"
-    },
-    {
-      "commitId": "23e8e845f78a86b97303f615fb2f063ffff24b57",
-      "commitTime": "2025-12-16 19:51:52 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新项目版本号至0.2.2"
     }
   ]
 }

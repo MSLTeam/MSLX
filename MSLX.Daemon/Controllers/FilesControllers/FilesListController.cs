@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Files;
 using MSLX.Daemon.Utils;
@@ -339,7 +339,12 @@ public class FilesListController : ControllerBase
             
             string fileName = Path.GetFileName(targetPath);
 
-            return File(stream, "application/octet-stream", fileName);
+            return PhysicalFile(
+            targetPath,
+            "application/octet-stream",
+            fileName,
+            enableRangeProcessing: true
+        );
         }
         catch (Exception ex)
         {

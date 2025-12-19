@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
@@ -10,6 +10,12 @@ using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils.BackgroundTasks;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// 日志级别配置
+builder.Logging.SetMinimumLevel(LogLevel.Information);
+builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
+builder.Logging.AddFilter("System", LogLevel.Warning);
+builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Warning);
 
 // 创建临时 Logger
 using (var bootstrapLoggerFactory = LoggerFactory.Create(logging => logging.AddConsole()))

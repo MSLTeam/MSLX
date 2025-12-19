@@ -1,4 +1,4 @@
-using MSLX.Daemon.Utils;
+﻿using MSLX.Daemon.Utils;
 
 namespace MSLX.Daemon.Services;
 
@@ -15,38 +15,47 @@ public class TempFileCleanupService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        while (!stoppingToken.IsCancellationRequested)
+        // 创建一个 1小时 的定时器
+        using var timer = new PeriodicTimer(TimeSpan.FromHours(1));
+
+        try
         {
-            try
+            do
             {
-                if (Directory.Exists(_tempPath))
+                try
                 {
-                    var files = Directory.GetFiles(_tempPath);
-                    foreach (var file in files)
+                    if (Directory.Exists(_tempPath))
                     {
-                        var fi = new FileInfo(file);
-                        // 如果文件超过 2 小时没动静，就不要咯
-                        if (DateTime.Now - fi.LastWriteTime > TimeSpan.FromHours(2))
+                        var files = Directory.GetFiles(_tempPath);
+
+                        foreach (var file in files)
                         {
                             try
                             {
-                                fi.Delete();
-                                _logger.LogInformation("已清理过期临时文件: {File}", fi.Name);
+                                var fi = new FileInfo(file);
+                                if (DateTime.Now - fi.LastWriteTime > TimeSpan.FromHours(2))
+                                {
+                                    fi.Delete();
+                                    _logger.LogInformation("已清理过期临时文件: {File}", fi.Name);
+                                }
                             }
                             catch
                             {
+                                // 忽略单个文件的删除错误
                             }
                         }
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "清理临时文件出错");
-            }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "清理临时文件出错");
+                }
 
-            // 1h检查一次
-            await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
+            } while (await timer.WaitForNextTickAsync(stoppingToken));
+        }
+        catch (OperationCanceledException)
+        {
+            // 正常退出
         }
     }
 }

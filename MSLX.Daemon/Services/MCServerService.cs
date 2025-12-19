@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Utils;
@@ -1010,14 +1010,44 @@ public class MCServerService
                         context.MonitorProcess = context.Process;
                     }
 
-                    // [Windows] 穿透 cmd/conhost 查找 Java
+                    // 针对Windows系统的查询诊断进程
                     if (OperatingSystem.IsWindows())
                     {
                         var name = context.MonitorProcess.ProcessName.ToLower();
+                        bool needFindChild = false;
+
+                        // cmd外壳
                         if (name == "cmd" || name == "powershell" || name == "conhost" || name == "wt")
                         {
+                            needFindChild = true;
+                        }
+                        // javapath
+                        else if (name == "java" || name == "javaw")
+                        {
+                            try
+                            {
+                                // 获取进程的主模块路径
+                                string path = context.MonitorProcess.MainModule?.FileName?.ToLower() ?? "";
+                                if (path.Contains("javapath") || path.Contains("common files"))
+                                {
+                                    needFindChild = true;
+                                }
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        // 找子进程
+                        if (needFindChild)
+                        {
                             var child = GetChildJavaProcess(context.MonitorProcess.Id);
-                            if (child != null) context.MonitorProcess = child;
+                            // 只有当找到了有效的子进程，且子进程ID不同时才切换
+                            if (child != null && child.Id != context.MonitorProcess.Id)
+                            {
+                                _logger.LogInformation($"[Monitor] 识别到 Wrapper 进程，切换监控目标: {context.MonitorProcess.Id} -> {child.Id}");
+                                context.MonitorProcess = child;
+                            }
                         }
                     }
 

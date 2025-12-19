@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { MessagePlugin } from 'tdesign-vue-next';
 import type { FormInstanceFunctions, FormRule } from 'tdesign-vue-next';
 import { useUserStore } from '@/store';
+import NotificationPlugin from "tdesign-vue-next/es/notification/plugin";
 
 const userStore = useUserStore();
 const router = useRouter();
@@ -64,6 +65,7 @@ const onSubmit = async ({ validateResult }) => {
     try {
       await userStore.login({
         url: isLocalBackend.value ? '' : formData.url, // 同源传空，异地传值
+        // url: isLocalBackend.value ? window.location.origin : formData.url, // 同源传空，异地传值
         username: formData.username,
         password: formData.password,
         checked: formData.checked,
@@ -75,6 +77,11 @@ const onSubmit = async ({ validateResult }) => {
       const redirect = route.query.redirect as string;
       const redirectUrl = redirect ? decodeURIComponent(redirect) : '/dashboard/base';
       router.push(redirectUrl);
+
+      NotificationPlugin.success({
+        content:`欢迎回来！${userStore.userInfo.name}`,
+        title: 'MSLX 控制台'
+      })
 
     } catch (e: any) {
       MessagePlugin.error(e.message || '登录失败，请检查账号密码');
