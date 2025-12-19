@@ -1,6 +1,6 @@
 {
   "version": "0.5.1",
-  "buildTime": "2025-12-19 13:51:44",
+  "buildTime": "2025-12-19 14:03:51",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,22 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "d13114674f38ac6b6706302f0e05fc6610978533",
-  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.1-beta (hotfix)",
+  "commitId": "7b386bd70e6827544e40a33eb0f3c764c781ce68",
+  "commitMsg": "fix(webpanel): 修复文件下载地址错误",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "7b386bd70e6827544e40a33eb0f3c764c781ce68",
+      "commitTime": "2025-12-19 14:02:28 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复文件下载地址错误"
+    },
+    {
+      "commitId": "a5a96610b11701690ce4e41ce7a3dcf8684fdc7b",
+      "commitTime": "2025-12-19 13:52:02 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v0.5.1-beta 版本前端资源"
+    },
     {
       "commitId": "d13114674f38ac6b6706302f0e05fc6610978533",
       "commitTime": "2025-12-19 13:50:48 +0800",
@@ -359,18 +371,6 @@
       "commitTime": "2025-12-17 10:40:06 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "style(webpanel): 优化一些页面组件样式"
-    },
-    {
-      "commitId": "8c40ccb4fcfba7d56fa547e16f885e2e5992883f",
-      "commitTime": "2025-12-17 10:13:38 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 实现文件管理器移动端适配"
-    },
-    {
-      "commitId": "a8a13707e0c24202c39eb7d39a2f16d87338c100",
-      "commitTime": "2025-12-17 10:09:02 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复文件路由参数不一致问题"
     }
   ]
 }
