@@ -1,5 +1,5 @@
 using System.Net;
-using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 
 namespace MSLX.Daemon.Middleware;
 
@@ -16,7 +16,7 @@ public class BlockLoopbackMiddleware
     {
         var remoteIp = context.Connection.RemoteIpAddress ?? IPAddress.Loopback;
 
-        if (IPAddress.IsLoopback(remoteIp) && ((bool?)ConfigServices.Config.ReadConfig()["fireWallBanLocalAddr"] ?? false))
+        if (IPAddress.IsLoopback(remoteIp) && ((bool?)IConfigBase.Config.ReadConfig()["fireWallBanLocalAddr"] ?? false))
         {
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             context.Response.ContentType = "application/json";

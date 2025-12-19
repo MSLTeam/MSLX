@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 
 namespace MSLX.Daemon.Controllers.AuthControllers;
 
@@ -16,7 +17,7 @@ public class AdminUserController : ControllerBase
     [HttpGet("list")]
     public IActionResult GetList()
     {
-        var users = ConfigServices.UserList.GetAllUsers();
+        var users = IConfigBase.UserList.GetAllUsers();
         
         var dtoList = users.Select(u => new UserDto
         {
@@ -45,7 +46,7 @@ public class AdminUserController : ControllerBase
     public IActionResult CreateUser([FromBody] AdminCreateUserRequest request)
     {
         // 检查用户名是否存在
-        if (ConfigServices.UserList.GetUserByUsername(request.Username) != null)
+        if (IConfigBase.UserList.GetUserByUsername(request.Username) != null)
         {
             return BadRequest(new ApiResponse<object> { Code = 400, Message = "用户名已存在" });
         }
@@ -61,7 +62,7 @@ public class AdminUserController : ControllerBase
             Avatar = "https://www.mslmc.cn/logo.png"
         };
 
-        if (ConfigServices.UserList.CreateUser(newUser))
+        if (IConfigBase.UserList.CreateUser(newUser))
         {
             return Ok(new ApiResponse<object> { Code = 200, Message = "创建成功" });
         }
@@ -75,7 +76,7 @@ public class AdminUserController : ControllerBase
     [HttpPost("update/{id}")]
     public IActionResult UpdateUser(string id, [FromBody] AdminUpdateUserRequest request)
     {
-        var user = ConfigServices.UserList.GetUserById(id);
+        var user = IConfigBase.UserList.GetUserById(id);
         if (user == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "用户不存在" });
 
         // 不允许修改用户名，只能修改属性
@@ -96,7 +97,7 @@ public class AdminUserController : ControllerBase
             user.ApiKey = StringServices.GenerateRandomString(32);
         }
 
-        if (ConfigServices.UserList.UpdateUser(user))
+        if (IConfigBase.UserList.UpdateUser(user))
         {
             return Ok(new ApiResponse<object> { Code = 200, Message = "更新成功" });
         }
@@ -117,7 +118,7 @@ public class AdminUserController : ControllerBase
             return BadRequest(new ApiResponse<object> { Code = 400, Message = "不能删除自己" });
         }
 
-        if (ConfigServices.UserList.DeleteUser(id))
+        if (IConfigBase.UserList.DeleteUser(id))
         {
             return Ok(new ApiResponse<object> { Code = 200, Message = "删除成功" });
         }

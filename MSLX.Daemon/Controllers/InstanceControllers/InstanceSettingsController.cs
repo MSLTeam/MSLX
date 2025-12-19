@@ -4,6 +4,7 @@ using MSLX.Daemon.Models.Instance;
 using MSLX.Daemon.Models.Tasks;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.Daemon.Utils.BackgroundTasks;
 
 namespace MSLX.Daemon.Controllers.InstanceControllers;
@@ -28,7 +29,7 @@ public class InstanceSettingsController : ControllerBase
         try
         {
             McServerInfo.ServerInfo serverInfo =
-                ConfigServices.ServerList.GetServer(id) ?? throw new Exception("未找到服务端实例配置");
+                IConfigBase.ServerList.GetServer(id) ?? throw new Exception("未找到服务端实例配置");
             return Ok(new ApiResponse<object>
             {
                 Code = 200,
@@ -57,7 +58,7 @@ public class InstanceSettingsController : ControllerBase
         });
         // if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        var server = ConfigServices.ServerList.GetServer(id);
+        var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound("服务器不存在");
 
         // 是否存在耗时操作
@@ -112,7 +113,7 @@ public class InstanceSettingsController : ControllerBase
             server.OutputEncoding = request.OutputEncoding;
 
             // 保存到磁盘
-            ConfigServices.ServerList.UpdateServer(server);
+            IConfigBase.ServerList.UpdateServer(server);
 
             return Ok(new ApiResponse<object>
             {
@@ -133,7 +134,7 @@ public class InstanceSettingsController : ControllerBase
 
         // 解析版本
         string version = javaConfig.Replace("MSLX://Java/", "");
-        string javaBaseDir = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Tools", "Java");
+        string javaBaseDir = Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Tools", "Java");
         string javaExec = PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java";
 
         // 检查文件是否存在

@@ -4,10 +4,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.BackgroundTasks;
+using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.Daemon.Middleware;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Services;
-using MSLX.Daemon.Utils.BackgroundTasks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,7 +21,7 @@ builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.W
 // 创建临时 Logger
 using (var bootstrapLoggerFactory = LoggerFactory.Create(logging => logging.AddConsole()))
 {
-    ConfigServices.Initialize(bootstrapLoggerFactory);
+    IConfigBase.Initialize(bootstrapLoggerFactory);
 }
 
 // 检查启动参数
@@ -31,14 +32,14 @@ bool configUpdated = false;
 //传入了 host 参数，更新配置
 if (!string.IsNullOrWhiteSpace(argHost))
 {
-    ConfigServices.Config.WriteConfigKey("listenHost", argHost); // 假设你有 WriteConfigKey 方法
+    IConfigBase.Config.WriteConfigKey("listenHost", argHost); // 假设你有 WriteConfigKey 方法
     configUpdated = true;
 }
 
 // 传入了 port 参数，更新配置
 if (!string.IsNullOrWhiteSpace(argPort))
 {
-    ConfigServices.Config.WriteConfigKey("listenPort", argPort);
+    IConfigBase.Config.WriteConfigKey("listenPort", argPort);
     configUpdated = true;
 }
 
@@ -49,8 +50,8 @@ if (configUpdated)
 }
 
 // 读取最终配置
-string finalIp = ConfigServices.Config.ReadConfig()["listenHost"]?.ToString() ?? "";
-string finalPort = ConfigServices.Config.ReadConfig()["listenPort"]?.ToString() ?? "";
+string finalIp = IConfigBase.Config.ReadConfig()["listenHost"]?.ToString() ?? "";
+string finalPort = IConfigBase.Config.ReadConfig()["listenPort"]?.ToString() ?? "";
 
 // 默认值回退
 string targetIp = string.IsNullOrEmpty(finalIp) ? "localhost" : finalIp;
@@ -104,7 +105,7 @@ builder.Services.AddTransient<ServerDeploymentService>();
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.KnownNetworks.Clear(); 
+    options.KnownIPNetworks.Clear(); 
     options.KnownProxies.Clear();
 });
 
@@ -134,12 +135,12 @@ var app = builder.Build();
 var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
 var logger = loggerFactory.CreateLogger("Program"); 
 
-ConfigServices.Initialize(loggerFactory);
+IConfigBase.Initialize(loggerFactory);
 
 logger.LogInformation("\n  __  __   ____    _      __  __\n |  \\/  | / ___|  | |     \\ \\/ /\n | |\\/| | \\___ \\  | |      \\  / \n | |  | |  ___) | | |___   /  \\ \n |_|  |_| |____/  |_____| /_/\\_\\\n                                ");
 logger.LogInformation($"MSLX.Daemon 守护进程正在启动... 监听地址: {listenAddr}");
-logger.LogInformation($"将使用 {ConfigServices.GetAppDataPath()} 作为应用程序数据目录。");
-logger.LogInformation("欢迎您！" + ConfigServices.Config.ReadConfigKey("user"));
+logger.LogInformation($"将使用 {IConfigBase.GetAppDataPath()} 作为应用程序数据目录。");
+logger.LogInformation("欢迎使用！");
 
 app.UseForwardedHeaders();
 app.UseCors("AllowAll");
@@ -188,7 +189,7 @@ app.MapFallbackToFile("index.html", new StaticFileOptions
 var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
 lifetime.ApplicationStarted.Register(() =>
 {
-    if((bool?)ConfigServices.Config.ReadConfig()["openWebConsoleOnLaunch"] ?? true)
+    if((bool?)IConfigBase.Config.ReadConfig()["openWebConsoleOnLaunch"] ?? true)
     {
         PlatFormServices.OpenBrowser($"{listenAddr}");
     }

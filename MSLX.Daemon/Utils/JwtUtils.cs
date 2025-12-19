@@ -1,5 +1,6 @@
 using Microsoft.IdentityModel.Tokens;
 using MSLX.Daemon.Models;
+using MSLX.Daemon.Utils.ConfigUtils;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -12,16 +13,16 @@ namespace MSLX.Daemon.Utils
         public static string GenerateToken(UserInfo user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(ConfigServices.JwtSecret);
+            var key = Encoding.ASCII.GetBytes(IConfigBase.JwtSecret);
             
             var claims = new List<Claim>
             {
-                new Claim("UserId", user.Id), 
+                new Claim("UserId", user.Id),
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Role, user.Role),
             };
             
-            foreach(var res in user.Resources) 
+            foreach(var res in user.Resources)
             {
                 claims.Add(new Claim("Resource", res));
             }
@@ -41,7 +42,7 @@ namespace MSLX.Daemon.Utils
         public static ClaimsPrincipal? ValidateToken(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(ConfigServices.JwtSecret);
+            var key = Encoding.ASCII.GetBytes(IConfigBase.JwtSecret);
             try
             {
                 var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters

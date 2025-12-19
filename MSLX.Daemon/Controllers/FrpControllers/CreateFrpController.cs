@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Frp;
 using MSLX.Daemon.Services;
-using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Controllers.FrpControllers;
@@ -20,7 +20,7 @@ public class CreateFrpController : ControllerBase
     [HttpPost("add")]
     public IActionResult CreateTunnel([FromBody] CreateFrpRequest request)
     {
-        bool suc = ConfigServices.FrpList.CreateFrpConfig(request.name, request.provider, request.format,
+        bool suc = IConfigBase.FrpList.CreateFrpConfig(request.name, request.provider, request.format,
             request.config);
         var response = new ApiResponse<JObject>
         {
@@ -43,7 +43,7 @@ public class CreateFrpController : ControllerBase
                 Message = "请先停止该隧道！"
             });
         }
-        bool suc = ConfigServices.FrpList.DeleteFrpConfig(request.id);
+        bool suc = IConfigBase.FrpList.DeleteFrpConfig(request.id);
         var response = new ApiResponse<JObject>
         {
             Code = suc ? 200 : 400,

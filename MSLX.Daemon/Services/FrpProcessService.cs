@@ -7,6 +7,7 @@ using Downloader;
 using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Services;
@@ -39,7 +40,7 @@ public class FrpProcessService
         _hubContext = hubContext;
         _appLifetime = appLifetime;
         
-        string baseDir = ConfigServices.GetAppDataPath();
+        string baseDir = IConfigBase.GetAppDataPath();
         string exeName = PlatFormServices.GetOs() == "Windows" ? "frpc.exe" : "frpc";
         
         _toolsDir = Path.Combine(baseDir, "DaemonData", "Tools");
@@ -72,7 +73,7 @@ public class FrpProcessService
     {
         if (IsFrpRunning(id)) return (false, "该隧道已经在运行中或正在启动中");
         
-        var frpConfig = ConfigServices.FrpList.GetFrpConfig(id);
+        var frpConfig = IConfigBase.FrpList.GetFrpConfig(id);
         if (frpConfig == null) return (false, "找不到指定的配置");
 
         // 占位
@@ -111,7 +112,7 @@ public class FrpProcessService
 
             // 配置文件
             string configType = frpConfig["ConfigType"]?.ToString() ?? "ini";
-            string configFolder = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Configs", "Frpc", id.ToString());
+            string configFolder = Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Configs", "Frpc", id.ToString());
             string configFilePath = Path.Combine(configFolder, $"frpc.{configType}");
         
             if (!File.Exists(configFilePath))

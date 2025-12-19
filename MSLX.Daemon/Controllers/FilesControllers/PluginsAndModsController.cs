@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Files;
-using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 
 namespace MSLX.Daemon.Controllers.FilesControllers;
 
@@ -14,7 +14,7 @@ public class PluginsAndModsController: ControllerBase
     {
         try
         {
-            var server = ConfigServices.ServerList.GetServer(id);
+            var server = IConfigBase.ServerList.GetServer(id);
             if (server == null)
             {
                 return NotFound(new ApiResponse<object>
@@ -63,7 +63,7 @@ public class PluginsAndModsController: ControllerBase
     [HttpPost("instance/{id}/set")]
     public IActionResult SetPluginOrModState(uint id, [FromBody] SetPluginModStateRequest request)
     {
-        var server = ConfigServices.ServerList.GetServer(id);
+        var server = IConfigBase.ServerList.GetServer(id);
         if (server == null)
             return NotFound(new ApiResponse<object> { Code = 404, Message = "服务器不存在" });
         

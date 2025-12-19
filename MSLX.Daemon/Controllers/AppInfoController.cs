@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using MSLX.Daemon.Utils;
 using System.Runtime.InteropServices;
 using Microsoft.AspNetCore.Authorization;
+using MSLX.Daemon.Utils.ConfigUtils;
 
 namespace MSLX.Daemon.Controllers;
 
@@ -22,7 +23,7 @@ public class AppInfoController : ControllerBase
 
         if (!string.IsNullOrEmpty(currentUserId))
         {
-            var userInfo = ConfigServices.UserList.GetUserById(currentUserId);
+            var userInfo = IConfigBase.UserList.GetUserById(currentUserId);
             if (userInfo != null)
             {
                 displayName = !string.IsNullOrEmpty(userInfo.Name) ? userInfo.Name : userInfo.Username;

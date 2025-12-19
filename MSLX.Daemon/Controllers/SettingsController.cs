@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Settings;
-using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 
 namespace MSLX.Daemon.Controllers;
 
@@ -18,11 +18,11 @@ public class SettingsController: ControllerBase
                 Message = "获取成功",
                 Data = new
                 {
-                    FireWallBanLocalAddr = ConfigServices.Config.ReadConfig()["fireWallBanLocalAddr"]?? false,
-                    OpenWebConsoleOnLaunch = ConfigServices.Config.ReadConfig()["openWebConsoleOnLaunch"]?? true,
-                    NeoForgeInstallerMirrors = ConfigServices.Config.ReadConfig()["neoForgeInstallerMirrors"]?? "MSL Mirrors",
-                    ListenHost = ConfigServices.Config.ReadConfig()["listenHost"]?? "localhost",
-                    ListenPort = ConfigServices.Config.ReadConfig()["listenPort"]?? 1027,
+                    FireWallBanLocalAddr = IConfigBase.Config.ReadConfig()["fireWallBanLocalAddr"]?? false,
+                    OpenWebConsoleOnLaunch = IConfigBase.Config.ReadConfig()["openWebConsoleOnLaunch"]?? true,
+                    NeoForgeInstallerMirrors = IConfigBase.Config.ReadConfig()["neoForgeInstallerMirrors"]?? "MSL Mirrors",
+                    ListenHost = IConfigBase.Config.ReadConfig()["listenHost"]?? "localhost",
+                    ListenPort = IConfigBase.Config.ReadConfig()["listenPort"]?? 1027,
                 }
             }
         );
@@ -31,11 +31,11 @@ public class SettingsController: ControllerBase
     [HttpPost]
     public IActionResult UpdateSettings([FromBody] UpdateSettingsRequest request)
     {
-        ConfigServices.Config.WriteConfigKey("fireWallBanLocalAddr", request.FireWallBanLocalAddr);
-        ConfigServices.Config.WriteConfigKey("openWebConsoleOnLaunch", request.OpenWebConsoleOnLaunch);
-        ConfigServices.Config.WriteConfigKey("neoForgeInstallerMirrors", request.NeoForgeInstallerMirrors);
-        ConfigServices.Config.WriteConfigKey("listenHost", request.ListenHost);
-        ConfigServices.Config.WriteConfigKey("listenPort", request.ListenPort);
+        IConfigBase.Config.WriteConfigKey("fireWallBanLocalAddr", request.FireWallBanLocalAddr);
+        IConfigBase.Config.WriteConfigKey("openWebConsoleOnLaunch", request.OpenWebConsoleOnLaunch);
+        IConfigBase.Config.WriteConfigKey("neoForgeInstallerMirrors", request.NeoForgeInstallerMirrors);
+        IConfigBase.Config.WriteConfigKey("listenHost", request.ListenHost);
+        IConfigBase.Config.WriteConfigKey("listenPort", request.ListenPort);
         return Ok(new ApiResponse<object>
             {
                 Code = 200,
@@ -53,14 +53,14 @@ public class SettingsController: ControllerBase
             Message = "获取成功",
             Data = new
             {
-                WebPanelStyleLightBackground = ConfigServices.Config.ReadConfig()["webPanelStyleLightBackground"]?? "",
-                WebPanelStyleDarkBackground = ConfigServices.Config.ReadConfig()["webPanelStyleDarkBackground"]?? "",
-                WebPanelStyleLightBackgroundOpacity = ConfigServices.Config.ReadConfig()["webPanelStyleLightBackgroundOpacity"]?? 1.0,
-                WebPanelStyleDarkBackgroundOpacity = ConfigServices.Config.ReadConfig()["webPanelStyleDarkBackgroundOpacity"]?? 1.0,
-                WebPanelStyleLightComponentsOpacity = ConfigServices.Config.ReadConfig()["webPanelStyleLightComponentsOpacity"]?? 0.4,
-                WebPanelStyleDarkComponentsOpacity = ConfigServices.Config.ReadConfig()["webPanelStyleDarkComponentsOpacity"]?? 0.6,
-                WebpPanelTerminalBlurLight = ConfigServices.Config.ReadConfig()["webpPanelTerminalBlurLight"]?? 5.0,
-                WebpPanelTerminalBlurDark = ConfigServices.Config.ReadConfig()["webpPanelTerminalBlurDark"]?? 5.0,
+                WebPanelStyleLightBackground = IConfigBase.Config.ReadConfig()["webPanelStyleLightBackground"]?? "",
+                WebPanelStyleDarkBackground = IConfigBase.Config.ReadConfig()["webPanelStyleDarkBackground"]?? "",
+                WebPanelStyleLightBackgroundOpacity = IConfigBase.Config.ReadConfig()["webPanelStyleLightBackgroundOpacity"]?? 1.0,
+                WebPanelStyleDarkBackgroundOpacity = IConfigBase.Config.ReadConfig()["webPanelStyleDarkBackgroundOpacity"]?? 1.0,
+                WebPanelStyleLightComponentsOpacity = IConfigBase.Config.ReadConfig()["webPanelStyleLightComponentsOpacity"]?? 0.4,
+                WebPanelStyleDarkComponentsOpacity = IConfigBase.Config.ReadConfig()["webPanelStyleDarkComponentsOpacity"]?? 0.6,
+                WebpPanelTerminalBlurLight = IConfigBase.Config.ReadConfig()["webpPanelTerminalBlurLight"]?? 5.0,
+                WebpPanelTerminalBlurDark = IConfigBase.Config.ReadConfig()["webpPanelTerminalBlurDark"]?? 5.0,
             }
         });
     }
@@ -68,14 +68,14 @@ public class SettingsController: ControllerBase
     [HttpPost("webpanel/style")]
     public IActionResult UpdateWebPanelStyle([FromBody] UpdateWebPanelStyleSettingsRequest request)
     {
-        ConfigServices.Config.WriteConfigKey("webPanelStyleLightBackground",request.WebPanelStyleLightBackground);
-        ConfigServices.Config.WriteConfigKey("webPanelStyleDarkBackground",request.WebPanelStyleDarkBackground);
-        ConfigServices.Config.WriteConfigKey("webPanelStyleLightBackgroundOpacity",request.WebPanelStyleLightBackgroundOpacity);
-        ConfigServices.Config.WriteConfigKey("webPanelStyleDarkBackgroundOpacity",request.WebPanelStyleDarkBackgroundOpacity);
-        ConfigServices.Config.WriteConfigKey("webPanelStyleLightComponentsOpacity",request.WebPanelStyleLightComponentsOpacity);
-        ConfigServices.Config.WriteConfigKey("webPanelStyleDarkComponentsOpacity",request.WebPanelStyleDarkComponentsOpacity);
-        ConfigServices.Config.WriteConfigKey("webpPanelTerminalBlurLight",request.WebpPanelTerminalBlurLight);
-        ConfigServices.Config.WriteConfigKey("webpPanelTerminalBlurDark",request.WebpPanelTerminalBlurDark);
+        IConfigBase.Config.WriteConfigKey("webPanelStyleLightBackground",request.WebPanelStyleLightBackground);
+        IConfigBase.Config.WriteConfigKey("webPanelStyleDarkBackground",request.WebPanelStyleDarkBackground);
+        IConfigBase.Config.WriteConfigKey("webPanelStyleLightBackgroundOpacity",request.WebPanelStyleLightBackgroundOpacity);
+        IConfigBase.Config.WriteConfigKey("webPanelStyleDarkBackgroundOpacity",request.WebPanelStyleDarkBackgroundOpacity);
+        IConfigBase.Config.WriteConfigKey("webPanelStyleLightComponentsOpacity",request.WebPanelStyleLightComponentsOpacity);
+        IConfigBase.Config.WriteConfigKey("webPanelStyleDarkComponentsOpacity",request.WebPanelStyleDarkComponentsOpacity);
+        IConfigBase.Config.WriteConfigKey("webpPanelTerminalBlurLight",request.WebpPanelTerminalBlurLight);
+        IConfigBase.Config.WriteConfigKey("webpPanelTerminalBlurDark",request.WebpPanelTerminalBlurDark);
         return Ok(new ApiResponse<object>
             {
                 Code = 200,

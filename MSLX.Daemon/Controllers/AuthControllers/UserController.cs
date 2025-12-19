@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 
 namespace MSLX.Daemon.Controllers.AuthControllers;
 
@@ -17,7 +18,7 @@ public class UserController : ControllerBase
         var userId = User.FindFirst("UserId")?.Value;
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        var user = ConfigServices.UserList.GetUserById(userId);
+        var user = IConfigBase.UserList.GetUserById(userId);
         if (user == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "用户不存在" });
         
         var dto = new UserDto
@@ -44,7 +45,7 @@ public class UserController : ControllerBase
         var userId = User.FindFirst("UserId")?.Value;
         if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-        var user = ConfigServices.UserList.GetUserById(userId);
+        var user = IConfigBase.UserList.GetUserById(userId);
         if (user == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "用户不存在" });
 
         // 基本信息
@@ -65,7 +66,7 @@ public class UserController : ControllerBase
         }
 
         // 保存到文件
-        if (ConfigServices.UserList.UpdateUser(user))
+        if (IConfigBase.UserList.UpdateUser(user))
         {
             return Ok(new ApiResponse<object> { Code = 200, Message = "更新成功" });
         }

@@ -2,6 +2,7 @@
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Files;
 using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 
 namespace MSLX.Daemon.Controllers.FilesControllers;
 
@@ -13,7 +14,7 @@ public class FilesListController : ControllerBase
     [HttpGet("instance/{id}/lists")]
     public IActionResult GetFilesList(uint id, [FromQuery] string? path = "")
     {
-        var server = ConfigServices.ServerList.GetServer(id);
+        var server = IConfigBase.ServerList.GetServer(id);
         if (server == null)
         {
             return NotFound(new ApiResponse<object>
@@ -116,7 +117,7 @@ public class FilesListController : ControllerBase
             return BadRequest(new ApiResponse<object> { Code = 400, Message = "当前操作系统不支持修改文件权限" });
         }
 
-        var server = ConfigServices.ServerList.GetServer(id);
+        var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
 
         var check = FileUtils.GetSafePath(server.Base, request.Path);
@@ -179,7 +180,7 @@ public class FilesListController : ControllerBase
     [HttpPost("instance/{id}/rename")]
     public IActionResult RenameFile(uint id, [FromBody] RenameFileRequest request)
     {
-        var server = ConfigServices.ServerList.GetServer(id);
+        var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
         
         var checkSource = FileUtils.GetSafePath(server.Base, request.OldPath);
@@ -215,7 +216,7 @@ public class FilesListController : ControllerBase
     [HttpPost("instance/{id}/delete")]
     public IActionResult DeleteFiles(uint id, [FromBody] DeleteFileRequest request)
     {
-        var server = ConfigServices.ServerList.GetServer(id);
+        var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
 
         int successCount = 0;
@@ -263,10 +264,10 @@ public class FilesListController : ControllerBase
     [HttpPost("instance/{id}/upload")]
     public IActionResult SaveUploadedFile(uint id, [FromBody] SaveUploadRequest request)
     {
-        var server = ConfigServices.ServerList.GetServer(id);
+        var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
 
-        string tempBasePath = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Temp", "Uploads");
+        string tempBasePath = Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Temp", "Uploads");
         string tempFilePath = Path.Combine(tempBasePath, request.UploadId + ".tmp");
 
         if (!System.IO.File.Exists(tempFilePath))
@@ -322,7 +323,7 @@ public class FilesListController : ControllerBase
     [HttpGet("instance/{id}/download")]
     public IActionResult DownloadFile(uint id, [FromQuery] string path)
     {
-        var server = ConfigServices.ServerList.GetServer(id);
+        var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound("实例不存在");
 
         var check = FileUtils.GetSafePath(server.Base, path);
@@ -344,7 +345,7 @@ public class FilesListController : ControllerBase
     [HttpPost("instance/{id}/copy")]
     public IActionResult CopyFiles(uint id, [FromBody] BatchOperationRequest request)
     {
-        var server = ConfigServices.ServerList.GetServer(id);
+        var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
 
         // 验证目标目录是否安全
@@ -432,7 +433,7 @@ public class FilesListController : ControllerBase
     [HttpPost("instance/{id}/move")]
     public IActionResult MoveFiles(uint id, [FromBody] BatchOperationRequest request)
     {
-        var server = ConfigServices.ServerList.GetServer(id);
+        var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
 
         var checkTarget = FileUtils.GetSafePath(server.Base, request.TargetPath);

@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
-using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 using Newtonsoft.Json.Linq;
 using MSLX.Daemon.Models.Instance; 
 using MSLX.Daemon.Models.Tasks;
@@ -26,7 +26,7 @@ public class CreateInstanceController : ControllerBase
     [HttpPost("createServer")]
     public async Task<IActionResult> CreateServer([FromBody] CreateServerRequest request)
     {
-        var serverId = ConfigServices.ServerList.GenerateServerId();
+        var serverId = IConfigBase.ServerList.GenerateServerId();
 
         // 创建一个任务对象
         var task = new CreateServerTask
@@ -61,7 +61,7 @@ public class CreateInstanceController : ControllerBase
                 Message = "服务器实例正在运行，请先停止再删除！",
             });
         }
-        bool suc = ConfigServices.ServerList.DeleteServer(request.Id,request.DeleteFiles ?? false);
+        bool suc = IConfigBase.ServerList.DeleteServer(request.Id,request.DeleteFiles ?? false);
         var response = new ApiResponse<object>
         {
             Code = suc ? 200 : 400,
