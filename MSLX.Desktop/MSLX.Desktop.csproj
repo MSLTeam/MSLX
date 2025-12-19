@@ -9,13 +9,20 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AtomUI" Version="5.0.1-build.3" />
-    <PackageReference Include="Avalonia" Version="11.3.6" />
-    <PackageReference Include="Avalonia.Desktop" Version="11.3.6" />
+    <PackageReference Include="AtomUI.Core" Version="5.1.2" />
+    <PackageReference Include="AtomUI.Desktop.Controls" Version="5.1.2" />
+    <PackageReference Include="AtomUI.Generator" Version="5.1.2" />
+    <PackageReference Include="AtomUI.Icons.IconPark" Version="5.1.2" />
+    <PackageReference Include="Avalonia" Version="11.3.9" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.9" />
     <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-    <PackageReference Include="Avalonia.Diagnostics" Version="11.3.6">
+    <PackageReference Include="Avalonia.Diagnostics" Version="11.3.9">
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Models\" />
   </ItemGroup>
 </Project>
