@@ -19,7 +19,7 @@ namespace MSLX.Daemon.Services
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation(">>> [MSLX-Scheduler] 定时任务调度器已启动");
+            _logger.LogInformation("[MSLX-Scheduler] 定时任务调度器已启动");
 
             using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
 
