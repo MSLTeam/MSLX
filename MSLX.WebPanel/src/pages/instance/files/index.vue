@@ -378,7 +378,7 @@ const handleDownload = async (row?: any) => {
       const downloadUrl = new URL(`${apiBase || window.location.origin }/api/files/instance/${instanceId.value}/download`);
 
       downloadUrl.searchParams.append('path', fullPath);
-      downloadUrl.searchParams.append('x-user-token', token); // 关键：鉴权 Token
+      downloadUrl.searchParams.append('x-user-token', token);  // 暂时先用token鉴权
 
       const link = document.createElement('a');
       link.href = downloadUrl.toString();
