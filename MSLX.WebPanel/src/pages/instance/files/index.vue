@@ -375,7 +375,7 @@ const handleDownload = async (row?: any) => {
     const fullPath = currentPath.value ? `${currentPath.value}/${name}` : name;
 
     try {
-      const downloadUrl = new URL(`${apiBase || window.location.origin }/api/instance/${instanceId.value}/download`);
+      const downloadUrl = new URL(`${apiBase || window.location.origin }/api/files/instance/${instanceId.value}/download`);
 
       downloadUrl.searchParams.append('path', fullPath);
       downloadUrl.searchParams.append('x-user-token', token); // 关键：鉴权 Token
