@@ -11,11 +11,11 @@ namespace MSLX.Daemon.Utils.ConfigUtils
 
         // 读写锁，保证并发安全
         private readonly ReaderWriterLockSlim _taskListLock = new ReaderWriterLockSlim();
-        private readonly ILogger _logger;
+        // private readonly ILogger _logger;
 
         public TaskListConfig()
         {
-            _logger = ApplicationLogging.CreateLogger<TaskListConfig>();
+            // _logger = ApplicationLogging.CreateLogger<TaskListConfig>();
             InitializeFile(_taskListPath, "[]");
             _taskListCache = IConfigBase.LoadJson<JArray>(_taskListPath);
         }

@@ -9,11 +9,11 @@ namespace MSLX.Daemon.Utils.ConfigUtils
         private JArray _serverListCache;
         private readonly ReaderWriterLockSlim _configLock = new ReaderWriterLockSlim();
         private readonly ReaderWriterLockSlim _serverListLock = new ReaderWriterLockSlim();
-        private readonly ILogger _logger;
+        // private readonly ILogger _logger;
 
         public ServerListConfig()
         {
-            _logger = ApplicationLogging.CreateLogger<ServerListConfig>();
+            // _logger = ApplicationLogging.CreateLogger<ServerListConfig>();
             InitializeFile(_serverListPath, "[]");
             _serverListCache = IConfigBase.LoadJson<JArray>(_serverListPath);
         }

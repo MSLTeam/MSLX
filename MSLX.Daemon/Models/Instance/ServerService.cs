@@ -8,6 +8,6 @@ public class ServerActionRequest
     public uint? ID { get; set; }
 
     [Required(ErrorMessage = "操作不能为空")]
-    [AllowedValues("start", "stop","backup", ErrorMessage = "操作 (action) 错误")]
+    [AllowedValues("start", "stop", "backup", "agreeEula?true", "agreeEula?false", ErrorMessage = "操作 (action) 错误：不支持的参数")]
     public string Action { get; set; }
 }

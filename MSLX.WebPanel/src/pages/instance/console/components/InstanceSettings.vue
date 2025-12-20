@@ -38,7 +38,6 @@ defineExpose({ open });
     top="3vh"
     attach="body"
     :footer="false"
-    destroy-on-close
     class="settings-dialog"
   >
     <div class="layout-container">

@@ -7,11 +7,11 @@ namespace MSLX.Daemon.Utils.ConfigUtils
         private readonly string _frpListPath = Path.Combine(IConfigBase.GetAppConfigPath(), "FrpList.json");
         private JArray _frpListCache;
         private readonly ReaderWriterLockSlim _frpListLock = new ReaderWriterLockSlim();
-        private readonly ILogger _logger;
+        // private readonly ILogger _logger;
 
         public FrpListConfig()
         {
-            _logger = ApplicationLogging.CreateLogger<FrpListConfig>();
+            // _logger = ApplicationLogging.CreateLogger<FrpListConfig>();
             InitializeFile(_frpListPath, "[]");
             _frpListCache = IConfigBase.LoadJson<JArray>(_frpListPath);
         }

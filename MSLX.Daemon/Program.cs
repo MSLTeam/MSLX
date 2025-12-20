@@ -32,7 +32,7 @@ bool configUpdated = false;
 //传入了 host 参数，更新配置
 if (!string.IsNullOrWhiteSpace(argHost))
 {
-    IConfigBase.Config.WriteConfigKey("listenHost", argHost); // 假设你有 WriteConfigKey 方法
+    IConfigBase.Config.WriteConfigKey("listenHost", argHost);
     configUpdated = true;
 }
 

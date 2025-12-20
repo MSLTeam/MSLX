@@ -10,6 +10,7 @@ export interface CreateInstanceQucikModeModel {
   minM: number;
   maxM: number;
   args: string;
+  ignoreEula?: boolean;
 }
 
 export interface InstanceListModel {
@@ -57,6 +58,7 @@ export interface UpdateInstanceModel {
   backupPath?: string;
   autoRestart?: boolean;
   forceAutoRestart?: boolean;
+  ignoreEula?: boolean;
   runOnStartup?: boolean;
   inputEncoding?: 'utf-8' | 'gbk';
   outputEncoding?: 'utf-8' | 'gbk';
@@ -83,6 +85,7 @@ export interface InstanceSettingsModel {
   backupPath?: string;
   autoRestart?: boolean;
   forceAutoRestart?: boolean;
+  ignoreEula?: boolean;
   runOnStartup?: boolean;
   inputEncoding?: 'utf-8' | 'gbk';
   outputEncoding?: 'utf-8' | 'gbk';

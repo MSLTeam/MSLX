@@ -350,9 +350,7 @@ public class NeoForgeInstallerService
             else
             {
                 // 这里是1.12-版本的处理逻辑
-                JArray? libraries2 = installJobj["versionInfo"]?["libraries"] as JArray;
-
-                if (libraries2 == null)
+                if (installJobj["versionInfo"]?["libraries"] is not JArray libraries2)
                 {
                     ReportLog($"[ {InstallName} ]错误：无法获取运行库列表");
                     throw new Exception("Err: 无法获取运行库列表");
@@ -463,9 +461,8 @@ public class NeoForgeInstallerService
 
             if (InstallVersionType != 5) // 低版本不需要运行编译构建
             {
-                // 安全获取 processors 数组
-                JArray? processors = installJobj["processors"] as JArray;
-                if (processors == null)
+                // 获取 processors 数组
+                if (installJobj["processors"] is not JArray processors)
                 {
                     ReportLog($"[ {InstallName} ]错误：无法获取 processors 数组");
                     return false;
@@ -473,11 +470,9 @@ public class NeoForgeInstallerService
 
                 foreach (JObject processor in processors.Cast<JObject>())
                 {
-                    // 安全获取 sides 数组
-                    JArray? sides = processor["sides"] as JArray;
-
+                    // 获取 sides 数组
                     // 如果 sides 为 null 或包含 "server"，则处理
-                    if (sides == null || sides.Values<string>().Contains("server"))
+                    if (processor["sides"] is not JArray sides || sides.Values<string>().Contains("server"))
                     {
                         string buildarg = @"-Djavax.net.ssl.trustStoreType=Windows-ROOT -cp """;
 
@@ -494,9 +489,8 @@ public class NeoForgeInstallerService
                         // 处理 classpath
                         buildarg += Path.Combine(InstallBasePath, "libraries", jarPath) + classPathConnectChar;
 
-                        // 安全获取 classpath 数组
-                        JArray? classpath = processor["classpath"] as JArray;
-                        if (classpath == null)
+                        // 获取 classpath 数组
+                        if (processor["classpath"] is not JArray classpath)
                         {
                             ReportLog("警告：processor 缺少 classpath 属性，跳过此项");
                             continue;
@@ -952,7 +946,7 @@ public class NeoForgeInstallerService
     }
 
     // 获取jar主类
-    public static string? GetJarMainClass(string? jarFilePath)
+    private static string? GetJarMainClass(string? jarFilePath)
     {
         // 1. 检查输入参数
         if (string.IsNullOrWhiteSpace(jarFilePath))
