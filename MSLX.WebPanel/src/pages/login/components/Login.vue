@@ -19,6 +19,7 @@ const loading = ref(false);
 const showPsw = ref(false);
 const isLocalBackend = ref(false); // 是否是同源后端
 const isChecking = ref(true);      // 是否正在检测连接
+const showForgetModal = ref(false); // 控制忘记密码弹窗
 
 // 表单数据
 const formData = reactive({
@@ -97,6 +98,7 @@ onMounted(() => {
 </script>
 
 <template>
+  <div>
   <t-form
     ref="form"
     class="login-form"
@@ -154,6 +156,9 @@ onMounted(() => {
 
     <div class="check-container">
       <t-checkbox v-model="formData.checked">记住用户名</t-checkbox>
+      <t-link theme="primary" hover="color" @click="showForgetModal = true">
+        忘记密码？
+      </t-link>
     </div>
 
     <t-form-item class="btn-container">
@@ -162,6 +167,42 @@ onMounted(() => {
       </t-button>
     </t-form-item>
   </t-form>
+    <t-dialog
+      v-model:visible="showForgetModal"
+      header="找回或重置密码"
+      :footer="false"
+      width="480px"
+      attach="body"
+    >
+      <div class="reset-guide">
+        <div class="guide-item">
+          <div class="guide-title">
+            <t-icon name="user-talk" /> 方式一：联系管理员
+          </div>
+          <p class="guide-desc">
+            如果系统中存在其他管理员账号，请联系对应人员协助您在后台重置密码。
+          </p>
+        </div>
+
+        <t-divider dashed style="margin: 16px 0" />
+
+        <div class="guide-item">
+          <div class="guide-title">
+            <t-icon name="refresh" /> 方式二：初始化默认账户
+          </div>
+          <p class="guide-desc">
+            若无法联系其他管理员，请在服务器端删除以下配置文件：
+          </p>
+          <div class="code-block">
+            DaemonData/Configs/UserList.json
+          </div>
+          <p>
+            <t-alert style="margin-top: 10px;">操作提示：删除该文件后，请<strong>重启守护进程</strong>。系统将自动重新创建包含默认账号密码的初始文件。</t-alert>
+          </p>
+        </div>
+      </div>
+    </t-dialog>
+  </div>
 </template>
 
 <style lang="less" scoped>
@@ -218,5 +259,40 @@ onMounted(() => {
 :global(.light) .login-btn {
   background-color: var(--td-brand-color);
   color: #fff;
+}
+
+// 重置密码弹窗
+.reset-guide {
+  padding: 8px 4px;
+
+  .guide-item {
+    .guide-title {
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--td-text-color-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .guide-desc {
+      font-size: 13px;
+      color: var(--td-text-color-secondary);
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+
+    .code-block {
+      background-color: var(--td-bg-color-secondarycontainer);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-family: monospace;
+      color: var(--td-brand-color);
+      font-size: 13px;
+      word-break: break-all;
+      border: 1px dashed var(--td-component-border);
+    }
+  }
 }
 </style>
