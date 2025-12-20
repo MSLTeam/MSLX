@@ -1,12 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import {
-  MessagePlugin,
-  DialogPlugin,
-  type FormRules,
-  type FormInstanceFunctions,
-} from 'tdesign-vue-next';
+import { MessagePlugin, DialogPlugin, type FormRules, type FormInstanceFunctions } from 'tdesign-vue-next';
 import {
   TimeIcon,
   AddIcon,
@@ -18,17 +13,15 @@ import {
   CodeIcon,
   CloseIcon,
   SaveIcon,
+  BookIcon,
 } from 'tdesign-icons-vue-next';
 
 import { CronTaskItemModel } from '@/api/model/cronTasks';
-import {
-  getCronTasks,
-  addCronTask,
-  updateCronTask,
-  deleteCronTask,
-} from '@/api/cronTasks';
+import { getCronTasks, addCronTask, updateCronTask, deleteCronTask } from '@/api/cronTasks';
 
 import CronGenerator from './CronGenerator.vue';
+import { changeUrl } from '@/router';
+import { DOC_URLS } from '@/api/docs';
 
 const route = useRoute();
 const instanceId = computed(() => parseInt(route.params.serverId as string));
@@ -66,10 +59,16 @@ const rules: FormRules = {
   name: [{ required: true, message: '必填', trigger: 'blur' }],
   cron: [{ required: true, message: '必填', trigger: 'blur' }],
   type: [{ required: true, message: '必选', trigger: 'change' }],
-  payload: [{ validator: (val) => {
-      if (formData.value.type === 'command' && !val) return { result: false, message: '命令内容不能为空', type: 'error' };
-      return true;
-    }, trigger: 'blur' }]
+  payload: [
+    {
+      validator: (val) => {
+        if (formData.value.type === 'command' && !val)
+          return { result: false, message: '命令内容不能为空', type: 'error' };
+        return true;
+      },
+      trigger: 'blur',
+    },
+  ],
 };
 
 // --- 方法 ---
@@ -133,7 +132,7 @@ const handleSubmit = async () => {
         formData.value.cron,
         formData.value.payload,
         formData.value.type,
-        formData.value.enable
+        formData.value.enable,
       );
       MessagePlugin.success('更新成功');
     } else {
@@ -144,7 +143,7 @@ const handleSubmit = async () => {
         formData.value.cron,
         formData.value.payload,
         formData.value.type,
-        formData.value.enable
+        formData.value.enable,
       );
       MessagePlugin.success('创建成功');
     }
@@ -173,7 +172,7 @@ const handleDelete = (item: CronTaskItemModel) => {
         MessagePlugin.error(e.message);
       }
     },
-    onClose: () => confirmDialog.hide()
+    onClose: () => confirmDialog.hide(),
   });
 };
 
@@ -204,13 +203,18 @@ onMounted(fetchData);
 
 <template>
   <div class="page-container">
-
     <div class="page-header">
       <div class="section-title">定时计划任务</div>
-      <t-button v-if="!isCreating" theme="primary" @click="handleStartCreate">
-        <template #icon><add-icon /></template>
-        创建新任务
-      </t-button>
+      <t-space>
+        <t-button v-if="!isCreating" theme="default" @click="changeUrl(DOC_URLS.cron)">
+          <template #icon><book-icon /></template>
+          使用文档
+        </t-button>
+        <t-button v-if="!isCreating" theme="primary" @click="handleStartCreate">
+          <template #icon><add-icon /></template>
+          创建新任务
+        </t-button>
+      </t-space>
     </div>
 
     <transition name="slide-fade">
@@ -221,7 +225,6 @@ onMounted(fetchData);
         </div>
 
         <t-form ref="formRef" :data="formData" :rules="rules" label-width="0">
-
           <div class="setting-item">
             <div class="setting-info">
               <div class="title">任务名称</div>
@@ -239,9 +242,7 @@ onMounted(fetchData);
             </div>
             <div class="setting-control">
               <t-input v-model="formData.cron" placeholder="例如: 0 0 12 * * ?" />
-              <t-button variant="outline" theme="default" @click="showCronGen = true">
-                表达式生成器
-              </t-button>
+              <t-button variant="outline" theme="default" @click="showCronGen = true"> 表达式生成器 </t-button>
             </div>
           </div>
 
@@ -259,11 +260,17 @@ onMounted(fetchData);
             <div class="setting-info">
               <div class="title">{{ formData.type === 'restart' ? '重启提示语' : '控制台命令' }}</div>
               <div class="desc">
-                {{ formData.type === 'restart' ? '重启前发送给全服玩家的倒计时提示消息' : '不需要加 /，直接输入命令内容' }}
+                {{
+                  formData.type === 'restart' ? '重启前发送给全服玩家的倒计时提示消息' : '不需要加 /，直接输入命令内容'
+                }}
               </div>
             </div>
             <div class="setting-control">
-              <t-textarea v-model="formData.payload" :autosize="{ minRows: 2, maxRows: 5 }" placeholder="请输入内容..." />
+              <t-textarea
+                v-model="formData.payload"
+                :autosize="{ minRows: 2, maxRows: 5 }"
+                placeholder="请输入内容..."
+              />
             </div>
           </div>
 
@@ -290,9 +297,7 @@ onMounted(fetchData);
 
     <t-loading :loading="loading" show-overlay>
       <div class="task-list">
-        <div v-if="taskList.length === 0 && !loading" class="empty-state">
-          暂无任务，请点击上方创建
-        </div>
+        <div v-if="taskList.length === 0 && !loading" class="empty-state">暂无任务，请点击上方创建</div>
 
         <div v-for="item in taskList" :key="item.id" class="task-card">
           <div class="card-left">
@@ -329,12 +334,7 @@ onMounted(fetchData);
       </div>
     </t-loading>
 
-    <cron-generator
-      v-model:visible="showCronGen"
-      :initial-value="formData.cron"
-      @confirm="onCronGenerated"
-    />
-
+    <cron-generator v-model:visible="showCronGen" :initial-value="formData.cron" @confirm="onCronGenerated" />
   </div>
 </template>
 
@@ -350,9 +350,9 @@ onMounted(fetchData);
   align-items: center;
 
   /* 核心修复：复用 setting-group-title 的间距和边框样式 */
-  margin-top: 32px;      /* 增加顶部距离，不再顶格 */
-  margin-bottom: 16px;   /* 底部留白 */
-  padding-bottom: 8px;   /* 文字和虚线的距离 */
+  margin-top: 32px; /* 增加顶部距离，不再顶格 */
+  margin-bottom: 16px; /* 底部留白 */
+  padding-bottom: 8px; /* 文字和虚线的距离 */
   border-bottom: 1px dashed var(--td-component-stroke); /* 底部虚线 */
 }
 
@@ -442,9 +442,11 @@ onMounted(fetchData);
     gap: 8px; /* 输入框和按钮之间的间距 */
 
     /* 让输入框、下拉框占满剩余空间 */
-    .t-input, .t-select, .t-textarea {
-      flex: 1;       /* 关键：自动撑开宽度 */
-      width: auto;   /* 覆盖之前的 width: 100% */
+    .t-input,
+    .t-select,
+    .t-textarea {
+      flex: 1; /* 关键：自动撑开宽度 */
+      width: auto; /* 覆盖之前的 width: 100% */
       max-width: 400px;
     }
 
@@ -570,7 +572,11 @@ onMounted(fetchData);
     .setting-control {
       max-width: 100%;
       justify-content: flex-start;
-      .t-input, .t-select, .t-textarea { max-width: 100%; }
+      .t-input,
+      .t-select,
+      .t-textarea {
+        max-width: 100%;
+      }
     }
   }
 
