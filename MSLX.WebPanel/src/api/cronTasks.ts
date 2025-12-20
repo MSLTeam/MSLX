@@ -23,6 +23,6 @@ export async function updateCronTask(instanceId: number, id: string, name: strin
 
 export async function deleteCronTask(id: string) {
   return await request.post({
-    url: `/api/instance/tasks/delete${id}`,
+    url: `/api/instance/tasks/delete/${id}`,
   });
 }
