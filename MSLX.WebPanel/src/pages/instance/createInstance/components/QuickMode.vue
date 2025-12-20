@@ -835,7 +835,7 @@ const goToHome = () => {
 .java-option-panel {
   margin-top: 16px;
   padding: 16px;
-  background-color: var(--td-bg-color-container-hover);
+  background-color: var(--td-bg-color-secondarycontainer);
   border-radius: var(--td-radius-medium);
 
   .flex-row {
@@ -856,7 +856,7 @@ const goToHome = () => {
 .online-select-area {
   margin-top: 16px;
   padding: 16px;
-  background-color: var(--td-bg-color-container-hover);
+  background-color: var(--td-bg-color-secondarycontainer);
   border-radius: var(--td-radius-medium);
 }
 

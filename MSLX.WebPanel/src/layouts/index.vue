@@ -101,6 +101,7 @@ watch(
 
 .global-layout-bg.custom-theme-enabled {
   color: var(--td-text-color-primary);
+  --current-comp-op: var(--comp-op-light); // 目前组件透明度
 
   // 使用伪元素控制背景图透明度
   &::before {
@@ -150,7 +151,7 @@ watch(
     background: transparent !important;
     box-shadow: none !important;
     --td-bg-color-container: transparent !important;
-    --td-bg-color-secondarycontainer: transparent !important;
+    --td-bg-color-secondarycontainer: color-mix(in srgb, var(--td-bg-color-container-hover) calc(var(--current-comp-op) * 100%), transparent) !important;
     --td-component-stroke: transparent !important;
     --td-gray-color-13: transparent !important;
   }
@@ -167,6 +168,8 @@ watch(
   :deep(.t-header),
   :deep(.t-card),
   :deep(.design-card),
+  :deep(.t-textarea__inner),
+  :deep(.t-input-number),
   :deep(.t-input) {
     background-color: rgba(255, 255, 255, var(--comp-op-light)) !important;
     border: 1px solid rgba(255, 255, 255, 0.3) !important;
@@ -176,8 +179,10 @@ watch(
       background-color 0.3s,
       border-color 0.3s;
   }
-  :deep(.t-input) {
-    border-color: rgba(255, 255, 255, 0.5) !important;
+  :deep(.t-input),
+  :deep(.t-textarea__inner),
+  :deep(.t-input-number) {
+    border-color: var(--td-component-border) !important;
   }
   // 终端
   :deep(.terminal-wrapper){
@@ -190,6 +195,8 @@ watch(
   // 黑夜组件样式
   &.dark,
   :global(html[theme-mode='dark']) & {
+    --current-comp-op: var(--comp-op-dark);
+
     :deep(.t-layout__sider),
     :deep(.t-aside),
     :deep(.t-layout__header),
@@ -199,7 +206,9 @@ watch(
       background-color: rgba(20, 20, 20, var(--comp-op-dark)) !important;
       border: 1px solid rgba(255, 255, 255, 0.08) !important;
     }
-    :deep(.t-input) {
+    :deep(.t-input),
+    :deep(.t-textarea__inner),
+    :deep(.t-input-number) {
       background-color: transparent !important;
       border-color: var(--td-component-border) !important;
     }

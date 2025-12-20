@@ -812,7 +812,7 @@ const viewDetails = () => {
 .online-select-area {
   margin-top: 16px;
   padding: 16px;
-  background-color: var(--td-bg-color-container-hover);
+  background-color: var(--td-bg-color-secondarycontainer);
   border-radius: var(--td-radius-medium);
 }
 .flex-row {
@@ -842,7 +842,7 @@ const viewDetails = () => {
   margin-top: 12px;
   display: flex;
   align-items: center;
-  background-color: var(--td-bg-color-container);
+  background-color: var(--td-bg-color-secondarycontainer);
   border: 1px solid var(--td-brand-color);
   border-radius: var(--td-radius-medium);
   padding: 12px;
