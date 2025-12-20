@@ -398,7 +398,7 @@ onMounted(() => {
     justify-content: space-between;
     align-items: center;
     padding: 8px 12px;
-    background: var(--td-bg-color-component);
+    background: var(--td-bg-color-secondarycontainer);
     border: 1px solid var(--td-component-border);
     border-radius: 4px;
     .dep-name {
