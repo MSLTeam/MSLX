@@ -4,7 +4,6 @@ using MSLX.Daemon.Models;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using Newtonsoft.Json.Linq;
-using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
@@ -170,7 +169,8 @@ public class MCServerService
         {
             RecordLog(instanceId, context, "[MSLX] 正在初始化服务...");
             // 检查Eula
-            if (serverInfo.Java != "none" && !serverInfo.IgnoreEula && !skipEulaCheck)
+            //if (serverInfo.Java != "none" && !serverInfo.IgnoreEula && !skipEulaCheck)
+            if (!serverInfo.IgnoreEula && !skipEulaCheck)
             {
                 string eulaPath = Path.Combine(serverInfo.Base, "eula.txt");
                 bool needAgree = false;
