@@ -242,8 +242,9 @@ onMounted(() => {
   }
 }
 
+
+// 欢迎弹窗样式
 :deep(.welcome-dialog) {
-  // 增加圆角和毛玻璃质感（可选，视TDesign版本而定）
   border-radius: 16px;
   overflow: hidden;
 
@@ -269,7 +270,7 @@ onMounted(() => {
   .header-text {
     font-size: 20px;
     font-weight: 700;
-    color: var(--td-text-color-primary); // 适配暗色
+    color: var(--td-text-color-primary);
   }
 }
 
@@ -283,7 +284,7 @@ onMounted(() => {
 
   // 账号卡片样式
   .account-card {
-    background-color: var(--td-bg-color-secondarycontainer); // TDesign 语义化背景色
+    background-color: var(--td-bg-color-secondarycontainer);
     padding: 20px;
     border-radius: 8px;
     border: 1px solid var(--td-component-border);
@@ -312,12 +313,12 @@ onMounted(() => {
         color: var(--td-text-color-primary);
 
         &.highlight {
-          color: var(--td-brand-color); // 使用品牌色高亮用户名
+          color: var(--td-brand-color);
           font-size: 16px;
         }
 
         &.mono {
-          font-family: 'Consolas', 'Monaco', monospace; // 等宽字体显示密码提示
+          font-family: 'Consolas', 'Monaco', monospace; // 等宽字体
           font-size: 12px;
           opacity: 0.8;
         }
