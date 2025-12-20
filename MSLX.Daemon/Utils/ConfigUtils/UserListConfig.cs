@@ -30,7 +30,18 @@ namespace MSLX.Daemon.Utils.ConfigUtils
                     Avatar = "https://www.mslmc.cn/logo.png"
                 });
                 _logger.LogInformation($"已初始化默认管理员用户: mslx / {defaultPassword}");
-                _logger.LogInformation($"账号: mslx \n 密码: {defaultPassword}");
+                _logger.LogInformation($"账号: mslx \n密码: {defaultPassword}");
+                
+                // 这里打开带初始化信息提示的登录页面
+                PlatFormServices.OpenBrowser($"http://{IConfigBase.Config.ReadConfig()["listenHost"] ?? "localhost"}:{IConfigBase.Config.ReadConfig()["listenPort"] ?? 1027}/login?initialize=true");
+            }
+            else
+            {
+                // 有用户了 在这里打开默认地址
+                if((bool?)IConfigBase.Config.ReadConfig()["openWebConsoleOnLaunch"] ?? true)
+                {
+                    PlatFormServices.OpenBrowser($"http://{IConfigBase.Config.ReadConfig()["listenHost"] ?? "localhost"}:{IConfigBase.Config.ReadConfig()["listenPort"] ?? 1027}");
+                }
             }
         }
 

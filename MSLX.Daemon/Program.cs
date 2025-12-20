@@ -140,7 +140,7 @@ IConfigBase.Initialize(loggerFactory);
 logger.LogInformation("\n  __  __   ____    _      __  __\n |  \\/  | / ___|  | |     \\ \\/ /\n | |\\/| | \\___ \\  | |      \\  / \n | |  | |  ___) | | |___   /  \\ \n |_|  |_| |____/  |_____| /_/\\_\\\n                                ");
 logger.LogInformation($"MSLX.Daemon 守护进程正在启动... 监听地址: {listenAddr}");
 logger.LogInformation($"将使用 {IConfigBase.GetAppDataPath()} 作为应用程序数据目录。");
-logger.LogInformation("欢迎使用！");
+logger.LogInformation("欢迎使用MSLX！");
 
 app.UseForwardedHeaders();
 app.UseCors("AllowAll");
@@ -189,10 +189,8 @@ app.MapFallbackToFile("index.html", new StaticFileOptions
 var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
 lifetime.ApplicationStarted.Register(() =>
 {
-    if((bool?)IConfigBase.Config.ReadConfig()["openWebConsoleOnLaunch"] ?? true)
-    {
-        PlatFormServices.OpenBrowser($"{listenAddr}");
-    }
+    // 启动事件
+    // 咦？怎么什么也没有？
 });
 
 app.Run();
