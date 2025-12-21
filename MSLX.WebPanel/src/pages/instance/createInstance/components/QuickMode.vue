@@ -96,7 +96,6 @@ const formData = ref(<CreateInstanceQucikModeModel>{
   args: '',
 });
 
-
 // 处理内存的单位
 const unitOptions = [
   { label: 'GB', value: 'GB' },
@@ -112,7 +111,7 @@ const minMComputed = computed({
   },
   set: (val) => {
     formData.value.minM = minUnit.value === 'GB' ? Math.round(val * 1024) : val;
-  }
+  },
 });
 
 const maxMComputed = computed({
@@ -121,7 +120,7 @@ const maxMComputed = computed({
   },
   set: (val) => {
     formData.value.maxM = maxUnit.value === 'GB' ? Math.round(val * 1024) : val;
-  }
+  },
 });
 
 // 监听选择java的状态变量 修改表单数据
@@ -355,7 +354,7 @@ const removeUploadedFile = async () => {
     uploadedFileName.value = '';
     MessagePlugin.success('文件已移除');
   }
-}
+};
 // --- 上传相关 结束 ---
 
 // 提交 & SignalR 状态
@@ -486,7 +485,6 @@ onUnmounted(() => {
   hubConnection.value?.stop();
 });
 
-/*
 const goToHome = () => {
   isSuccess.value = false;
   currentStep.value = 0;
@@ -504,8 +502,7 @@ const goToHome = () => {
   downloadType.value = 'online';
   javaType.value = 'online';
   customJavaPath.value = '';
-}; */
-
+};
 </script>
 
 <template>
@@ -639,7 +636,13 @@ const goToHome = () => {
               <div v-if="downloadType === 'manual'" class="online-select-area">
                 <t-form-item label="上传核心文件" name="coreFileKey">
                   <div class="select-core-wrapper">
-                    <input ref="uploadInputRef" accept=".jar" type="file" style="display: none" @change="onFileChange" />
+                    <input
+                      ref="uploadInputRef"
+                      accept=".jar"
+                      type="file"
+                      style="display: none"
+                      @change="onFileChange"
+                    />
 
                     <t-button v-if="!isUploading && !formData.coreFileKey" variant="outline" @click="triggerFileSelect">
                       <template #icon><t-icon name="upload" /></template>
@@ -671,7 +674,11 @@ const goToHome = () => {
               </div>
 
               <div v-if="downloadType === 'custom'" class="online-select-area">
-                <t-alert theme="warning" message="此模式通常用于服务器目录中已经存在核心文件，或者您打算稍后手动通过文件管理上传核心。" style="margin-bottom: 16px" />
+                <t-alert
+                  theme="warning"
+                  message="此模式通常用于服务器目录中已经存在核心文件，或者您打算稍后手动通过文件管理上传核心。"
+                  style="margin-bottom: 16px"
+                />
 
                 <t-form-item label="核心文件名" name="core" help="请确保文件名包含后缀，例如: server.jar">
                   <t-input v-model="formData.core" placeholder="请输入核心文件名 (例如 server.jar)" />
@@ -692,12 +699,7 @@ const goToHome = () => {
                         theme="column"
                         style="width: 100%"
                       />
-                      <t-select
-                        v-model="minUnit"
-                        :options="unitOptions"
-                        :clearable="false"
-                        style="width: 80px"
-                      />
+                      <t-select v-model="minUnit" :options="unitOptions" :clearable="false" style="width: 80px" />
                     </t-space>
                   </t-form-item>
                 </t-col>
@@ -713,12 +715,7 @@ const goToHome = () => {
                         theme="column"
                         style="width: 100%"
                       />
-                      <t-select
-                        v-model="maxUnit"
-                        :options="unitOptions"
-                        :clearable="false"
-                        style="width: 80px"
-                      />
+                      <t-select v-model="maxUnit" :options="unitOptions" :clearable="false" style="width: 80px" />
                     </t-space>
                   </t-form-item>
                 </t-col>
@@ -764,8 +761,27 @@ const goToHome = () => {
           <div class="result-success-title">服务器 ({{ createdServerId }}) 已创建成功</div>
           <div class="result-success-describe">你现在可以去服务器列表启动它了</div>
           <div>
-            <t-button @click="changeUrl('/instance/list')"> 返回服务端列表 </t-button>
-            <t-button theme="default" @click="changeUrl(`/instance/console/${createdServerId}`)"> 前往控制台 </t-button>
+            <t-button
+              @click="
+                () => {
+                  goToHome();
+                  changeUrl('/instance/list');
+                }
+              "
+            >
+              返回服务端列表
+            </t-button>
+            <t-button
+              theme="default"
+              @click="
+                () => {
+                  goToHome();
+                  changeUrl(`/instance/console/${createdServerId}`);
+                }
+              "
+            >
+              前往控制台
+            </t-button>
           </div>
         </div>
       </div>
@@ -819,7 +835,7 @@ const goToHome = () => {
 .java-option-panel {
   margin-top: 16px;
   padding: 16px;
-  background-color: var(--td-bg-color-container-hover);
+  background-color: var(--td-bg-color-secondarycontainer);
   border-radius: var(--td-radius-medium);
 
   .flex-row {
@@ -840,7 +856,7 @@ const goToHome = () => {
 .online-select-area {
   margin-top: 16px;
   padding: 16px;
-  background-color: var(--td-bg-color-container-hover);
+  background-color: var(--td-bg-color-secondarycontainer);
   border-radius: var(--td-radius-medium);
 }
 

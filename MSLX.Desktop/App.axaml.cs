@@ -1,4 +1,4 @@
-using AtomUI.Controls;
+using AtomUI.Desktop.Controls;
 using AtomUI.Theme;
 using AtomUI.Theme.Language;
 using Avalonia;
@@ -16,10 +16,12 @@ namespace MSLX.Desktop
             {
                 builder.WithDefaultLanguageVariant(LanguageVariant.zh_CN);
                 builder.WithDefaultTheme(IThemeManager.DEFAULT_THEME_ID);
-                builder.UseOSSControls();
+                builder.UseAlibabaSansFont(); // ≈‰÷√◊÷ÃÂ
+                builder.UseDesktopControls();
+                
                 //builder.UseGalleryControls();
-                //builder.UseOSSDataGrid();
-                //builder.UseColorPicker();
+                //builder.UseDesktopDataGrid();
+                //builder.UseDesktopColorPicker();
             });
         }
 

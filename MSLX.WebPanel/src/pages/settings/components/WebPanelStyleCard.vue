@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import { UploadIcon } from 'tdesign-icons-vue-next';
+import { BookIcon, UploadIcon } from 'tdesign-icons-vue-next';
 import { useWebpanelStore } from '@/store/modules/webpanel';
+import { changeUrl } from '@/router';
+import { DOC_URLS } from '@/api/docs';
 
 const webpanelStore = useWebpanelStore();
 
 // 上传背景
-const handleFileUpload = async (files: any, targetField: 'webPanelStyleLightBackground' | 'webPanelStyleDarkBackground') => {
+const handleFileUpload = async (
+  files: any,
+  targetField: 'webPanelStyleLightBackground' | 'webPanelStyleDarkBackground',
+) => {
   const rawFile = files[0]?.raw || files.raw;
   if (!rawFile) return;
 
@@ -17,12 +22,27 @@ const handleFileUpload = async (files: any, targetField: 'webPanelStyleLightBack
 </script>
 
 <template>
-  <t-card :bordered="false" title="面板自定义样式" description="这里设置的样式需要在面板左上角的样式面板中启用背景美化才会生效哦！" :loading="webpanelStore.loading" class="settings-card">
+  <t-card
+    :bordered="false"
+    title="面板自定义样式"
+    description="这里设置的样式需要在面板左上角的样式面板中启用背景美化才会生效哦！"
+    :loading="webpanelStore.loading"
+    class="settings-card"
+  >
+    <template #actions>
+      <t-button theme="default" @click="changeUrl(DOC_URLS.style)">
+        <template #icon>
+          <book-icon />
+        </template>
+        设置文档</t-button>
+    </template>
     <t-form :data="webpanelStore.settings" :label-width="120" label-align="left" @submit="webpanelStore.saveSettings">
-
       <div class="group-title">背景图片设置</div>
       <t-form-item label="浅色背景" help="留空则使用默认的背景图哦～">
-        <t-input v-model="webpanelStore.settings.webPanelStyleLightBackground" placeholder="输入完整URL地址或者在右边上传图片">
+        <t-input
+          v-model="webpanelStore.settings.webPanelStyleLightBackground"
+          placeholder="输入完整URL地址或者在右边上传图片"
+        >
           <template #suffix>
             <t-upload
               theme="custom"
@@ -39,7 +59,10 @@ const handleFileUpload = async (files: any, targetField: 'webPanelStyleLightBack
       </t-form-item>
 
       <t-form-item label="深色背景">
-        <t-input v-model="webpanelStore.settings.webPanelStyleDarkBackground" placeholder="输入完整URL地址或者在右边上传图片">
+        <t-input
+          v-model="webpanelStore.settings.webPanelStyleDarkBackground"
+          placeholder="输入完整URL地址或者在右边上传图片"
+        >
           <template #suffix>
             <t-upload
               theme="custom"
@@ -60,22 +83,44 @@ const handleFileUpload = async (files: any, targetField: 'webPanelStyleLightBack
       <t-row :gutter="[32, 16]">
         <t-col :xs="24" :sm="12" :md="6">
           <t-form-item label="浅色背景透明度">
-            <t-slider v-model="webpanelStore.settings.webPanelStyleLightBackgroundOpacity" :min="0.1" :max="1" :step="0.01" :tooltip-props="{ theme: 'light' }" />
+            <t-slider
+              v-model="webpanelStore.settings.webPanelStyleLightBackgroundOpacity"
+              :min="0.1"
+              :max="1"
+              :step="0.01"
+              :tooltip-props="{ theme: 'light' }"
+            />
           </t-form-item>
         </t-col>
         <t-col :xs="24" :sm="12" :md="6">
           <t-form-item label="浅色组件透明度">
-            <t-slider v-model="webpanelStore.settings.webPanelStyleLightComponentsOpacity" :min="0.1" :max="1" :step="0.01" :tooltip-props="{ theme: 'light' }" />
+            <t-slider
+              v-model="webpanelStore.settings.webPanelStyleLightComponentsOpacity"
+              :min="0.1"
+              :max="1"
+              :step="0.01"
+              :tooltip-props="{ theme: 'light' }"
+            />
           </t-form-item>
         </t-col>
         <t-col :xs="24" :sm="12" :md="6">
           <t-form-item label="深色背景透明度">
-            <t-slider v-model="webpanelStore.settings.webPanelStyleDarkBackgroundOpacity" :min="0.1" :max="1" :step="0.01" />
+            <t-slider
+              v-model="webpanelStore.settings.webPanelStyleDarkBackgroundOpacity"
+              :min="0.1"
+              :max="1"
+              :step="0.01"
+            />
           </t-form-item>
         </t-col>
         <t-col :xs="24" :sm="12" :md="6">
           <t-form-item label="深色组件透明度">
-            <t-slider v-model="webpanelStore.settings.webPanelStyleDarkComponentsOpacity" :min="0.1" :max="1" :step="0.01" />
+            <t-slider
+              v-model="webpanelStore.settings.webPanelStyleDarkComponentsOpacity"
+              :min="0.1"
+              :max="1"
+              :step="0.01"
+            />
           </t-form-item>
         </t-col>
       </t-row>
@@ -93,9 +138,7 @@ const handleFileUpload = async (files: any, targetField: 'webPanelStyleLightBack
               :step="1"
               :input-number-props="{ theme: 'column', style: 'width: 65px' } as any"
             >
-              <template #label="{ value }">
-                {{ value }}px
-              </template>
+              <template #label="{ value }"> {{ value }}px </template>
             </t-slider>
           </t-form-item>
         </t-col>
@@ -108,9 +151,7 @@ const handleFileUpload = async (files: any, targetField: 'webPanelStyleLightBack
               :step="1"
               :input-number-props="{ theme: 'column', style: 'width: 65px' } as any"
             >
-              <template #label="{ value }">
-                {{ value }}px
-              </template>
+              <template #label="{ value }"> {{ value }}px </template>
             </t-slider>
           </t-form-item>
         </t-col>
@@ -130,7 +171,9 @@ const handleFileUpload = async (files: any, targetField: 'webPanelStyleLightBack
   border-radius: 8px;
   overflow: hidden;
   transition: all 0.3s;
-  &:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); }
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
 }
 
 .group-title {
@@ -157,8 +200,12 @@ const handleFileUpload = async (files: any, targetField: 'webPanelStyleLightBack
     display: inline-flex;
     vertical-align: middle;
   }
-  .t-upload__content { display: flex; }
-  .t-upload__tips { display: none; }
+  .t-upload__content {
+    display: flex;
+  }
+  .t-upload__tips {
+    display: none;
+  }
 }
 
 :deep(.t-upload__single) {

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Files;
 using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 
 namespace MSLX.Daemon.Controllers.FilesControllers;
 
@@ -13,7 +14,7 @@ public class FileContentController : ControllerBase
     [HttpGet("instance/{id}/content")]
     public async Task<IActionResult> GetFileContent(uint id, [FromQuery] string path)
     {
-        var server = ConfigServices.ServerList.GetServer(id);
+        var server = IConfigBase.ServerList.GetServer(id);
         if (server == null)
             return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
 
@@ -112,7 +113,7 @@ public class FileContentController : ControllerBase
              return BadRequest(new ApiResponse<object> { Code = 400, Message = "文件夹名字包含非法字符" });
         }
         
-        var server = ConfigServices.ServerList.GetServer(id);
+        var server = IConfigBase.ServerList.GetServer(id);
         if (server == null)
         {
             return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
@@ -169,7 +170,7 @@ public class FileContentController : ControllerBase
             return BadRequest(new ApiResponse<object> { Code = 400, Message = "文件路径不能为空" });
         }
 
-        var server = ConfigServices.ServerList.GetServer(id);
+        var server = IConfigBase.ServerList.GetServer(id);
         if (server == null)
         {
             return NotFound(new ApiResponse<object> { Code = 404, Message = "找不到指定的实例" });

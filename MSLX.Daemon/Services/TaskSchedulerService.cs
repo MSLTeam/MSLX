@@ -1,6 +1,6 @@
 ﻿using Cronos;
 using MSLX.Daemon.Models.Instance;
-using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 
 namespace MSLX.Daemon.Services
 {
@@ -51,14 +51,14 @@ namespace MSLX.Daemon.Services
             // 使用 UTC 时间作为系统当前时间的基准
             var nowUtc = DateTime.UtcNow;
             
-            var tasks = ConfigServices.TaskList.GetTaskList().Where(t => t.Enable).ToList();
+            var tasks = IConfigBase.TaskList.GetTaskList().Where(t => t.Enable).ToList();
 
             foreach (var task in tasks)
             {
                 if (ShouldRun(task, nowUtc))
                 {
                     // 更新最后运行时间
-                    ConfigServices.TaskList.UpdateLastRunTime(task.ID, nowUtc);
+                    IConfigBase.TaskList.UpdateLastRunTime(task.ID, nowUtc);
 
                     // 丢到线程池执行
                     _ = Task.Run(async () => await ExecuteTaskLogic(task));

@@ -2,12 +2,13 @@
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
+using Newtonsoft.Json.Linq;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Management;
 using System.Text;
-using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Services;
 
@@ -80,7 +81,8 @@ public class MCServerService
     /// <summary>
     /// 启动 MC 服务器 (非阻塞模式)
     /// </summary>
-    public (bool success, string message) StartServer(uint instanceId, bool isAutoRestart = false)
+    public (bool success, string message) StartServer(uint instanceId,
+        bool isAutoRestart = false,bool skipEulaCheck=false)
     {
         if (IsServerRunning(instanceId))
             return (false, "该服务器已经在运行中或正在启动中");
@@ -89,7 +91,7 @@ public class MCServerService
         {
             _crashHistory.TryRemove(instanceId, out _);
         }
-        var serverInfo = ConfigServices.ServerList.GetServer(instanceId);
+        var serverInfo = IConfigBase.ServerList.GetServer(instanceId);
         if (serverInfo == null)
             return (false, "找不到指定的服务器配置");
 
@@ -97,9 +99,33 @@ public class MCServerService
         _activeServers[instanceId] = context;
 
         // 后台任务启动服务器
-        _ = Task.Run(async () => await InternalStartServerAsync(instanceId, context, serverInfo));
+        _ = Task.Run(async () => await InternalStartServerAsync(instanceId, context, serverInfo,skipEulaCheck));
 
         return (true, "正在启动服务器...");
+    }
+
+    public async Task<bool> AgreeEULA(uint instanseId,bool agree)
+    {
+        var serverInfo = IConfigBase.ServerList.GetServer(instanseId);
+        if (serverInfo == null)
+            return (false);
+        if (agree)
+        {
+            string eulaPath = Path.Combine(serverInfo.Base, "eula.txt");
+            try
+            {
+                // 写入同意后的文件内容
+                string eulaFileContent =
+                    $"#By changing the setting below to TRUE you are indicating your agreement to our EULA (https://aka.ms/MinecraftEULA).\n#{DateTime.Now}\neula=true";
+                await File.WriteAllTextAsync(eulaPath, eulaFileContent);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        StartServer(instanseId, skipEulaCheck: true);
+        return true;
     }
 
     /// <summary>
@@ -137,11 +163,44 @@ public class MCServerService
     /// 异步启动服务器
     /// </summary>
     private async Task InternalStartServerAsync(uint instanceId, ServerContext context,
-        McServerInfo.ServerInfo serverInfo)
+        McServerInfo.ServerInfo serverInfo,bool skipEulaCheck)
     {
         try
         {
             RecordLog(instanceId, context, "[MSLX] 正在初始化服务...");
+            // 检查Eula
+            //if (serverInfo.Java != "none" && !serverInfo.IgnoreEula && !skipEulaCheck)
+            if (!serverInfo.IgnoreEula && !skipEulaCheck)
+            {
+                string eulaPath = Path.Combine(serverInfo.Base, "eula.txt");
+                bool needAgree = false;
+
+                // 检测文件是否存在或未同意
+                if (!File.Exists(eulaPath))
+                {
+                    needAgree = true;
+                }
+                else
+                {
+                    string content = await File.ReadAllTextAsync(eulaPath);
+                    if (!content.Contains("eula=true"))
+                    {
+                        needAgree = true;
+                    }
+                }
+
+                if (needAgree)
+                {
+                    // 发送 EULA 未同意提示
+                    RecordLog(instanceId, context,
+                        ">>> [MSLX] 检测到 EULA 协议尚未签署，服务器启动已停止，等待用户操作...");
+                    _ = _hubContext.Clients.Group(instanceId.ToString()).SendAsync("RequireEULA");
+                    _activeServers.TryRemove(instanceId, out _);
+                    return;
+                }
+                    
+            }
+
             // 检查核心文件是否存在
             if (serverInfo.Core != "none" && !serverInfo.Core.Contains("@libraries"))
             {
@@ -166,7 +225,7 @@ public class MCServerService
             if (serverInfo.Java.StartsWith("MSLX://Java/"))
             {
                 string javaVersion = serverInfo.Java.Replace("MSLX://Java/", "");
-                string javaBaseDir = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Tools", "Java");
+                string javaBaseDir = Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Tools", "Java");
                 string javaPath = Path.Combine(javaBaseDir, javaVersion, "bin",
                     PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java");
                 if (!File.Exists(javaPath))
@@ -188,57 +247,6 @@ public class MCServerService
                 else
                 {
                     authJvm = $"-javaagent:authlib-injector.jar={serverInfo.YggdrasilApiAddr}";
-                }
-            }
-
-            // 自动同意EULA
-            if (serverInfo.Java != "none")
-            {
-                string eulaPath = Path.Combine(serverInfo.Base, "eula.txt");
-                bool needAgree = false;
-
-                // 检测文件是否存在或未同意
-                if (!File.Exists(eulaPath))
-                {
-                    needAgree = true;
-                }
-                else
-                {
-                    string content = await File.ReadAllTextAsync(eulaPath);
-                    if (!content.Contains("eula=true"))
-                    {
-                        needAgree = true;
-                    }
-                }
-
-                if (needAgree)
-                {
-                    // 写入同意后的文件内容
-                    string eulaFileContent =
-                        $"#By changing the setting below to TRUE you are indicating your agreement to our EULA (https://aka.ms/MinecraftEULA).\n#{DateTime.Now}\neula=true";
-                    await File.WriteAllTextAsync(eulaPath, eulaFileContent);
-
-                    // 发送正式的提示信息
-                    RecordLog(instanceId, context, ">>> [MSLX] 检测到 EULA 协议尚未签署，正在自动处理...");
-                    RecordLog(instanceId, context,
-                        "=======================================================================");
-                    RecordLog(instanceId, context, "                       Minecraft 最终用户许可协议声明                   ");
-                    RecordLog(instanceId, context,
-                        "=======================================================================");
-                    RecordLog(instanceId, context,
-                        "  原文提示: \"By changing the setting below to TRUE you are indicating");
-                    RecordLog(instanceId, context, "  your agreement to our EULA (https://aka.ms/MinecraftEULA).\"");
-                    RecordLog(instanceId, context, "");
-                    RecordLog(instanceId, context, "  [重要提示]");
-                    RecordLog(instanceId, context, "  为了启动服务器，系统已自动将 eula 设置为 true。");
-                    RecordLog(instanceId, context, "  此操作即代表您已阅读、知悉并同意《Minecraft 最终用户许可协议》。");
-                    RecordLog(instanceId, context, "  协议地址: https://aka.ms/MinecraftEULA");
-                    RecordLog(instanceId, context,
-                        "=======================================================================");
-
-                    // 强制看5秒
-                    RecordLog(instanceId, context, ">>> 协议签署完成，将在 5 秒后继续启动服务器...");
-                    await Task.Delay(5000);
                 }
             }
 
@@ -268,7 +276,7 @@ public class MCServerService
             if (serverInfo.Java.StartsWith("MSLX://Java/"))
             {
                 string javaVersion = serverInfo.Java.Replace("MSLX://Java/", "");
-                string javaBaseDir = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Tools", "Java");
+                string javaBaseDir = Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Tools", "Java");
                 exec = Path.Combine(javaBaseDir, javaVersion, "bin",
                     PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java");
             }
@@ -360,7 +368,7 @@ public class MCServerService
                 {
                     try
                     {
-                        var server = ConfigServices.ServerList.GetServer(instanceId);
+                        var server = IConfigBase.ServerList.GetServer(instanceId);
                         if ((server != null && server.Java == "none") && !(server.Args ?? "").Contains("bedrock"))
                         {
                             context.Process.StandardInput.Close(); // 关闭输入流 不结束就等10s吧
@@ -493,7 +501,7 @@ public class MCServerService
                 await Task.Delay(3000);
 
                 _logger.LogInformation("[AutoStart] 正在检查自启动实例...");
-                var config = ConfigServices.ServerList.GetServerList();
+                var config = IConfigBase.ServerList.GetServerList();
 
                 int count = 0;
 
@@ -565,7 +573,7 @@ public class MCServerService
             // 自动重启
             try
             {
-                var serverInfo = ConfigServices.ServerList.GetServer(instanceId);
+                var serverInfo = IConfigBase.ServerList.GetServer(instanceId);
 
                 if (serverInfo != null && serverInfo.AutoRestart && (exitCode != 0 || serverInfo.ForceAutoRestart))
                 {
@@ -607,7 +615,7 @@ public class MCServerService
                         await Task.Delay(5000);
 
                         // 重新启动
-                        var (success, msg) = StartServer(instanceId,true);
+                        var (success, msg) = StartServer(instanceId, true);
                         if (!success)
                         {
                             _logger.LogWarning($"[AutoRestart] 实例 {instanceId} 重启失败: {msg}");
@@ -667,18 +675,58 @@ public class MCServerService
         {
             HttpService.HttpResponse response =
                 await GeneralApi.GetAsync("https://authlib-injector.mirrors.mslmc.cn/artifact/latest.json");
+
             if (response.IsSuccessStatusCode)
             {
-                JObject authlibJobj = JObject.Parse(response.Content);
-                if (!File.Exists(Path.Combine(basePath, "authlib-injector.jar")) ||
-                    !await FileUtils.ValidateFileSha256Async(Path.Combine(basePath, "authlib-injector.jar"),
-                        authlibJobj["checksums"]["sha256"].ToString()))
+                // 检查响应内容是否为空
+                if (string.IsNullOrWhiteSpace(response.Content))
                 {
-                    // 下崽
+                    _logger.LogError("下载Authlib-Injector失败: 响应内容为空。");
+                    return File.Exists(Path.Combine(basePath, "authlib-injector.jar"));
+                }
+
+                JObject? authlibJobj = JObject.Parse(response.Content);
+
+                // 检查 JSON 解析结果和必需字段
+                if (authlibJobj == null)
+                {
+                    _logger.LogError("下载Authlib-Injector失败: JSON 解析失败。");
+                    return File.Exists(Path.Combine(basePath, "authlib-injector.jar"));
+                }
+
+                // 获取 checksums.sha256
+                var sha256Token = authlibJobj["checksums"]?["sha256"];
+                var sha256 = sha256Token?.ToString();
+
+                if (string.IsNullOrEmpty(sha256))
+                {
+                    _logger.LogError("下载Authlib-Injector失败: 无法获取 SHA256 校验值。");
+                    return File.Exists(Path.Combine(basePath, "authlib-injector.jar"));
+                }
+
+                // 获取 download_url
+                var downloadUrlToken = authlibJobj["download_url"];
+                var downloadUrl = downloadUrlToken?.ToString();
+
+                if (string.IsNullOrEmpty(downloadUrl))
+                {
+                    _logger.LogError("下载Authlib-Injector失败: 无法获取下载地址。");
+                    return File.Exists(Path.Combine(basePath, "authlib-injector.jar"));
+                }
+
+                var authlibPath = Path.Combine(basePath, "authlib-injector.jar");
+
+                // 检查是否需要下载
+                if (!File.Exists(authlibPath) || !await FileUtils.ValidateFileSha256Async(authlibPath, sha256))
+                {
+                    // 下载
                     var downloader = new ParallelDownloader(parallelCount: 1);
+                    var mirroredUrl = downloadUrl.Replace("authlib-injector.yushi.moe",
+                                                          "authlib-injector.mirrors.mslmc.cn");
+
                     var (success, errorMsg) = await downloader.DownloadFileAsync(
-                        authlibJobj["download_url"].ToString().Replace("authlib-injector.yushi.moe",
-                            "authlib-injector.mirrors.mslmc.cn"), Path.Combine(basePath, "authlib-injector.jar"),
+                        mirroredUrl,
+                        authlibPath,
                         // 进度回调
                         async (progress, speed) =>
                         {
@@ -689,8 +737,8 @@ public class MCServerService
 
                     if (!success)
                     {
-                        _logger.LogError("下载Authlib-Injector失败: {0}", errorMsg);
-                        if (!File.Exists(Path.Combine(basePath, "authlib-injector.jar")))
+                        _logger.LogError("下载Authlib-Injector失败: {ErrorMsg}", errorMsg);
+                        if (!File.Exists(authlibPath))
                         {
                             return false;
                         }
@@ -699,13 +747,22 @@ public class MCServerService
             }
             else
             {
-                if (!File.Exists(Path.Combine(basePath, "authlib-injector.jar")))
+                var authlibPath = Path.Combine(basePath, "authlib-injector.jar");
+                if (!File.Exists(authlibPath))
                 {
-                    _logger.LogError("下载Authlib-Injector失败: 无法获取元数据。");
+                    _logger.LogError("下载Authlib-Injector失败: 无法获取元数据 (HTTP {StatusCode})。",
+                        response.StatusCode);
                     return false;
                 }
-
                 _logger.LogWarning("获取元数据失败，将使用旧版本Authlib-Injector。");
+            }
+        }
+        catch (Newtonsoft.Json.JsonException jsonEx)
+        {
+            _logger.LogError(jsonEx, "下载Authlib-Injector失败: JSON 解析错误");
+            if (!File.Exists(Path.Combine(basePath, "authlib-injector.jar")))
+            {
+                return false;
             }
         }
         catch (Exception ex)
@@ -720,6 +777,7 @@ public class MCServerService
         return true;
     }
 
+    #region 备份实例
     // —————— 备份相关 ——————
     public bool StartBackupServer(uint instanceId)
     {
@@ -744,7 +802,7 @@ public class MCServerService
         try
         {
             context.IsBackuping = true;
-            var server = ConfigServices.ServerList.GetServer(instanceId);
+            var server = IConfigBase.ServerList.GetServer(instanceId);
             if (server == null) return;
 
             if (IsServerRunning(instanceId))
@@ -800,7 +858,7 @@ public class MCServerService
             {
                 if (server.BackupPath == "MSLX://Backup/Data")
                 {
-                    backupDir = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Backups",
+                    backupDir = Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Backups",
                         $"Backups_{server.Name}_{instanceId}");
                 }
                 else if (!string.IsNullOrEmpty(server.BackupPath))
@@ -980,11 +1038,13 @@ public class MCServerService
             await CompressFolder(rootPath, folder, archive);
         }
     }
+    #endregion
 
+    #region 进程资源监控
     // —————— 进程资源占用推送 ——————
     private async Task StartResourceMonitoring()
     {
-        var timer = new PeriodicTimer(TimeSpan.FromSeconds(3)); 
+        var timer = new PeriodicTimer(TimeSpan.FromSeconds(3));
         int processorCount = Environment.ProcessorCount;
 
         while (await timer.WaitForNextTickAsync(_appLifetime.ApplicationStopping))
@@ -1150,4 +1210,5 @@ public class MCServerService
 
         return null;
     }
+    #endregion
 }

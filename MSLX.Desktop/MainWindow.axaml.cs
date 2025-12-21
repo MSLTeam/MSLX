@@ -1,7 +1,6 @@
-
 namespace MSLX.Desktop;
 
-public partial class MainWindow : AtomUI.Controls.Window
+public partial class MainWindow : AtomUI.Desktop.Controls.Window
 {
     public MainWindow()
     {

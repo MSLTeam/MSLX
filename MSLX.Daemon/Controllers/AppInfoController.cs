@@ -4,6 +4,7 @@ using Newtonsoft.Json.Linq;
 using MSLX.Daemon.Utils;
 using System.Runtime.InteropServices;
 using Microsoft.AspNetCore.Authorization;
+using MSLX.Daemon.Utils.ConfigUtils;
 
 namespace MSLX.Daemon.Controllers;
 
@@ -22,7 +23,7 @@ public class AppInfoController : ControllerBase
 
         if (!string.IsNullOrEmpty(currentUserId))
         {
-            var userInfo = ConfigServices.UserList.GetUserById(currentUserId);
+            var userInfo = IConfigBase.UserList.GetUserById(currentUserId);
             if (userInfo != null)
             {
                 displayName = !string.IsNullOrEmpty(userInfo.Name) ? userInfo.Name : userInfo.Username;
@@ -82,7 +83,7 @@ public class AppInfoController : ControllerBase
                 ["targetFrontendVersion"] = new JObject
                 {
                     ["desktop"] = "0.0.0",
-                    ["panel"] = "0.5.1"
+                    ["panel"] = "0.5.2"
                 },
                 ["systemInfo"] = systemInfo
             };

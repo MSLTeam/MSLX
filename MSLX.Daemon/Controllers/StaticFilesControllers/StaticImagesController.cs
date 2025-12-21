@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Files;
 using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 
 namespace MSLX.Daemon.Controllers.StaticFilesControllers;
 
@@ -16,7 +17,7 @@ public class StaticImagesController: ControllerBase
     {
         try
         {
-            string rootBase = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Public", "Images");
+            string rootBase = Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Public", "Images");
             
             var (isSafe, targetPath, message) = FileUtils.GetSafePath(rootBase, fileName);
 
@@ -81,19 +82,19 @@ public class StaticImagesController: ControllerBase
     {
         try
         {
-            var finalPath = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Temp", "Uploads", request.FileKey + ".tmp");
+            var finalPath = Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Temp", "Uploads", request.FileKey + ".tmp");
             if (!System.IO.File.Exists(finalPath))
             {
                 return NotFound(new ApiResponse<string> { Code = 404, Message = "找不到指定的上传文件，可能已过期" });
             }
 
-            if (!Directory.Exists(Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Public", "Images")))
+            if (!Directory.Exists(Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Public", "Images")))
             {
-                Directory.CreateDirectory(Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Public", "Images"));
+                Directory.CreateDirectory(Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Public", "Images"));
             }
             
             
-            System.IO.File.Move(finalPath,Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Public", "Images",request.FileName),true);
+            System.IO.File.Move(finalPath,Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Public", "Images",request.FileName),true);
             return Ok(new ApiResponse<object>()
             {
                 Code = 200,

@@ -21,6 +21,7 @@ namespace MSLX.Daemon.Models;
             public bool AutoRestart { get; set; } = false;
             public bool ForceAutoRestart { get; set; } = true;
             public bool RunOnStartup { get; set; } = false;
+            public bool IgnoreEula { get; set; } = false;
             public string InputEncoding { get; set; } = "utf-8";
             public string OutputEncoding { get; set; } = "utf-8";
             public string FileEncoding { get; set; } = "utf-8";

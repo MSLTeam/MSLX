@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Instance;
-using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 
 namespace MSLX.Daemon.Controllers.InstanceControllers;
     [ApiController]
@@ -23,7 +23,7 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
         {
             try
             {
-                var tasks = ConfigServices.TaskList.GetTaskList();
+                var tasks = IConfigBase.TaskList.GetTaskList();
                 return Ok(new ApiResponse<List<ScheduleTask>>
                 {
                     Code = 200,
@@ -49,7 +49,7 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
         {
             try
             {
-                var tasks = ConfigServices.TaskList.GetTasksByInstanceId(instanceId);
+                var tasks = IConfigBase.TaskList.GetTasksByInstanceId(instanceId);
                 return Ok(new ApiResponse<List<ScheduleTask>>
                 {
                     Code = 200,
@@ -87,7 +87,7 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
                 };
 
                 // 保存
-                bool success = ConfigServices.TaskList.CreateTask(newTask);
+                bool success = IConfigBase.TaskList.CreateTask(newTask);
                 if (!success)
                 {
                     throw new Exception("创建任务失败，可能是 ID 冲突");
@@ -119,7 +119,7 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
             try
             {
                 // 检查任务是否存在
-                var existingTask = ConfigServices.TaskList.GetTask(request.ID);
+                var existingTask = IConfigBase.TaskList.GetTask(request.ID);
                 if (existingTask == null)
                 {
                     throw new Exception("未找到指定的任务");
@@ -135,7 +135,7 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
                 existingTask.Enable = request.Enable;
 
                 // 保存
-                bool success = ConfigServices.TaskList.UpdateTask(existingTask);
+                bool success = IConfigBase.TaskList.UpdateTask(existingTask);
                 if (!success)
                 {
                     throw new Exception("更新任务失败");
@@ -165,7 +165,7 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
         {
             try
             {
-                bool success = ConfigServices.TaskList.DeleteTask(id);
+                bool success = IConfigBase.TaskList.DeleteTask(id);
                 if (!success)
                 {
                     throw new Exception("删除失败，未找到指定 ID 的任务");

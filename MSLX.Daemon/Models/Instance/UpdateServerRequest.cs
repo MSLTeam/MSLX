@@ -42,6 +42,7 @@ public class UpdateServerRequest : IValidatableObject
     public bool AutoRestart { get; set; } = false;
     public bool ForceAutoRestart { get; set; } = true;
     public bool RunOnStartup { get; set; } = false;
+    public bool IgnoreEula { get; set; } = false;
     
     // 两个编码 暂时仅支持 utf-8 和 gbk
     

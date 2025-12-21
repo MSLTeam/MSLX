@@ -23,6 +23,7 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
   });
 
   const logHandlers = new Set<(_msg: string) => void>();
+  const eulaHandlers = new Set<() => void>();
   const commandResultHandlers = new Set<(_success: boolean, _msg: string) => void>();
 
 
@@ -59,7 +60,11 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
 
       // --- 注册事件 ---
       newConnection.on('ReceiveLog', (message: string) => {
-        logHandlers.forEach(handler => handler(message));
+        logHandlers.forEach((handler) => handler(message));
+      });
+
+      newConnection.on('RequireEULA', () => {
+        eulaHandlers.forEach((handler) => handler());
       });
 
       newConnection.on('CommandResult', (success: boolean, msg: string) => {
@@ -144,6 +149,11 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
     return () => logHandlers.delete(handler);
   };
 
+  const onEula = (handler: () => void) => {
+    eulaHandlers.add(handler);
+    return () => logHandlers.delete(handler);
+  };
+
   const onCommandResult = (handler: (_success: boolean, _msg: string) => void) => {
     commandResultHandlers.add(handler);
     return () => commandResultHandlers.delete(handler);
@@ -158,6 +168,7 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
     setMaxMemory,
     sendCommand,
     onLog,
+    onEula,
     onCommandResult
   };
 });

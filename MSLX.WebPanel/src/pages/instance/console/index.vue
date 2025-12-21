@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { MessagePlugin } from 'tdesign-vue-next';
+import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 
 // 组件
 import ServerTerminal from './components/ServerTerminal.vue';
@@ -9,10 +9,14 @@ import ServerControlPanel from './components/ServerControlPanel.vue';
 import { getInstanceInfo, postInstanceAction } from '@/api/instance';
 import { InstanceInfoModel } from '@/api/model/instance';
 import { useInstanceListStore } from '@/store/modules/instance';
+import { useInstanceHubStore } from '@/store/modules/instanceHub';
 
 const route = useRoute();
 
 const instanceListStore = useInstanceListStore();
+
+// 使用 Store
+const hubStore = useInstanceHubStore();
 
 // 状态
 const serverId = ref(parseInt(route.params.serverId as string) || 0);
@@ -85,6 +89,29 @@ const handleBackup = async () => {
 const handleClearLog = () => {
   terminalRef.value?.clear();
 };
+const eulaDialogVisible = ref(false);
+// 连接 Store
+const connectStore = async () => {
+  if (!serverId.value) return;
+
+  hubStore.onEula(() => {
+    // 显示对话框
+    eulaDialogVisible.value = true;
+  });
+
+  // 发起连接
+  await hubStore.connect(serverId.value);
+};
+
+const handleAgreeEula = async (agreed) => {
+  try {
+    eulaDialogVisible.value = false;
+    await postInstanceAction(serverId.value, `agreeEula?${agreed}`);
+    MessagePlugin.success(agreed ? '已发送同意请求' : '已发送请求');
+  } catch (e) {
+    MessagePlugin.error(e.message || '发送失败');
+  }
+};
 
 // 监听路由参数变化
 watch(
@@ -101,9 +128,10 @@ watch(
   },
 );
 
-onMounted(() => {
+onMounted(async () => {
   if (serverId.value) {
-    fetchServerInfo();
+    await fetchServerInfo();
+    await connectStore();
   }
 });
 </script>
@@ -128,6 +156,36 @@ onMounted(() => {
         />
       </div>
     </div>
+    <t-dialog
+      v-model:visible="eulaDialogVisible"
+      header="是否同意EULA"
+      :confirm-btn="{
+        content: '同意',
+        theme: 'primary',
+      }"
+      :cancel-btn="{
+        content: '不同意',
+        theme: 'default',
+      }"
+      @confirm="handleAgreeEula(true)"
+      @cancel="handleAgreeEula(false)"
+    >
+      <div style="line-height: 1.6">
+        <p style="margin-bottom: 12px">
+          开启Minecraft服务器需要您同意 <strong>EULA</strong> ！<t-link theme="primary" underline>
+            (https://aka.ms/minecrafteula)</t-link
+          >
+        </p>
+        <p style="margin-bottom: 12px">
+          <strong style="color: #e34d59">请您务必认真仔细阅读！</strong>
+        </p>
+        <p style="margin-bottom: 12px"><strong>注意：</strong>不论您选择是或否，服务器都会在您操作后继续运行。</p>
+        <p style="margin-bottom: 12px; color: #f59a23">
+          ⚠️ 如果您<strong>未同意 EULA</strong>，服务器可能会在运行时自动关闭！
+        </p>
+        <p style="margin-top: 16px">💡 提示：如要在每次启动实例时忽略此提示，请在<strong>设置</strong>里进行配置。</p>
+      </div>
+    </t-dialog>
   </div>
 </template>
 

@@ -29,6 +29,33 @@ const developers = [
   },
 ];
 
+const testers = [
+  {
+    name: 'GuHanDuRen',
+    role: 'Alpha Tester',
+    avatar: 'https://q.qlogo.cn/headimg_dl?dst_uin=2778318425&spec=640&img_type=jpg',
+    desc: '最早期内部功能测试',
+  },
+  {
+    name: '邱息',
+    role: 'Beta Tester',
+    avatar: 'https://q.qlogo.cn/headimg_dl?dst_uin=3687624214&spec=640&img_type=jpg',
+    desc: '提供了宝贵的建议',
+  },
+  {
+    name: 'Nebula琳',
+    role: 'Beta Tester',
+    avatar: 'https://q.qlogo.cn/headimg_dl?dst_uin=3770298358&spec=640&img_type=jpg',
+    desc: '提供了宝贵的建议',
+  },
+  {
+    name: 'MSLX Beta 群友们',
+    role: 'Members',
+    avatar: 'https://p.qlogo.cn/gh/839645854/839645854/0',
+    desc: '感谢各位内测群的群友们！',
+  },
+];
+
 const loading = ref(true);
 const buildInfo = ref<BuildInfoModel | null>(null);
 
@@ -90,6 +117,24 @@ onMounted(() => {
                 <div class="dev-name">{{ dev.name }}</div>
                 <div class="dev-role">{{ dev.role }}</div>
                 <div class="dev-desc" :title="dev.desc">{{ dev.desc }}</div>
+              </div>
+            </div>
+          </t-col>
+        </t-row>
+      </t-card>
+
+      <t-card :bordered="false" title="鸣谢">
+        <p class="about-desc">特别感谢参与内测并提供反馈的伙伴们：</p>
+        <t-row :gutter="[16, 16]">
+          <t-col v-for="tester in testers" :key="tester.name" :span="3" :xs="12" :sm="4" :md="4" :lg="3">
+            <div class="dev-card">
+              <t-avatar :image="tester.avatar" size="56px" shape="circle" class="dev-avatar" />
+              <div class="dev-info">
+                <div class="dev-name">{{ tester.name }}</div>
+                <div class="dev-role" style="background: var(--td-success-color-1); color: var(--td-success-color-7)">
+                  {{ tester.role }}
+                </div>
+                <div class="dev-desc" :title="tester.desc">{{ tester.desc }}</div>
               </div>
             </div>
           </t-col>
@@ -241,7 +286,7 @@ onMounted(() => {
 .build-summary {
   margin-bottom: 24px;
   .info-block {
-    background-color: color-mix(in srgb, var(--td-bg-color-container-hover), transparent 50%);
+    background-color: var(--td-bg-color-secondarycontainer);
     padding: 16px;
     border-radius: var(--td-radius-medium);
     height: 100%;
@@ -353,7 +398,7 @@ onMounted(() => {
     justify-content: space-between;
     align-items: center;
     padding: 8px 12px;
-    background: var(--td-bg-color-component);
+    background: var(--td-bg-color-secondarycontainer);
     border: 1px solid var(--td-component-border);
     border-radius: 4px;
     .dep-name {
@@ -376,7 +421,7 @@ onMounted(() => {
 .dev-card {
   display: flex;
   align-items: center;
-  background-color: color-mix(in srgb, var(--td-bg-color-container-hover), transparent 50%);
+  background-color: var(--td-bg-color-secondarycontainer);
   padding: 16px;
   border-radius: var(--td-radius-medium);
   transition: all 0.3s cubic-bezier(0.38, 0, 0.24, 1);
