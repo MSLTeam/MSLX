@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 
 namespace MSLX.Daemon.Controllers.AuthControllers;
 
@@ -13,10 +14,10 @@ public class AuthController : ControllerBase
     [AllowAnonymous] 
     public IActionResult Login([FromBody] LoginRequest request)
     {
-        if (ConfigServices.UserList.ValidateUser(request.Username, request.Password))
+        if (IConfigBase.UserList.ValidateUser(request.Username, request.Password))
         {
-            var user = ConfigServices.UserList.GetUserByUsername(request.Username);
-            ConfigServices.UserList.UpdateLastLoginTime(request.Username);
+            var user = IConfigBase.UserList.GetUserByUsername(request.Username);
+            IConfigBase.UserList.UpdateLastLoginTime(request.Username);
 
             if (user == null)
             {
@@ -27,7 +28,7 @@ public class AuthController : ControllerBase
 
             var resultData = new
             {
-                token = token,
+                token,
                 userInfo = new
                 {
                     user.Id,

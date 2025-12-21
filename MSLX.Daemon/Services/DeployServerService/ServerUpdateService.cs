@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Models.Tasks;
-using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.Daemon.Utils.BackgroundTasks;
 
 namespace MSLX.Daemon.Services;
@@ -79,7 +79,7 @@ public class ServerUpdateService : BackgroundService
 
         try 
         {
-            var server = ConfigServices.ServerList.GetServer((uint)req.ID);
+            var server = IConfigBase.ServerList.GetServer((uint)req.ID);
             if (server == null) 
             {
                 await report("找不到服务器配置", -1, true);
@@ -103,7 +103,7 @@ public class ServerUpdateService : BackgroundService
             server.InputEncoding = req.InputEncoding;
             server.OutputEncoding = req.OutputEncoding;
             server.FileEncoding = req.FileEncoding;
-            ConfigServices.ServerList.UpdateServer(server);
+            IConfigBase.ServerList.UpdateServer(server);
 
             // 检查 Java
             if (!string.IsNullOrEmpty(req.Java))
@@ -128,11 +128,11 @@ public class ServerUpdateService : BackgroundService
             }
 
             // 保存最终配置
-            ConfigServices.ServerList.UpdateServer(server);
+            IConfigBase.ServerList.UpdateServer(server);
             
             await report("更新完成！", 100);
         }
-        catch(Exception ex)
+        catch
         {
              // 不用处理啥
         }

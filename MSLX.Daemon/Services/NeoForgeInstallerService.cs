@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Text;
 using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Services;
@@ -18,8 +19,8 @@ public class NeoForgeInstallerService
 
     public event EventHandler<InstallLogEventArgs>? OnLog;
     public string InstallName = "NeoForge";
-    public string InstallBasePath;
-    public string InstallerPath;
+    public string InstallBasePath = string.Empty;
+    public string InstallerPath = string.Empty;
     public uint InstallVersionType = 5;
     public string InstallMcVersion = "";
     public string InstallMirrorsName = "MSL Mirrors";
@@ -45,7 +46,7 @@ public class NeoForgeInstallerService
             // 输出一些信息
             if (!installerPath.Contains("neo")) InstallName = "Forge";
             ReportLog($"开始执行{InstallName}安装进程，安装路径：{basePath}，安装器路径：{installerPath}，Java环境路径：{javaEnvPath}。");
-            InstallMirrorsName = ConfigServices.Config.ReadConfig()["neoForgeInstallerMirrors"]?.ToString() ??
+            InstallMirrorsName = IConfigBase.Config.ReadConfig()["neoForgeInstallerMirrors"]?.ToString() ??
                                  "MSL Mirrors";
             switch (InstallMirrorsName)
             {
@@ -170,7 +171,7 @@ public class NeoForgeInstallerService
             if (response.IsSuccessStatusCode)
             {
                 JObject vanillaJobj = JObject.Parse(response.Content ?? "{}");
-                vanillaUrl = vanillaJobj["data"]["url"]?.ToString() ?? "";
+                vanillaUrl = vanillaJobj["data"]?["url"]?.ToString() ?? "";
             }
 
             if (string.IsNullOrEmpty(vanillaUrl))
@@ -259,33 +260,51 @@ public class NeoForgeInstallerService
             {
                 // 1.13以上高版本处理逻辑
                 var versionlJobj = GetJsonObj(Path.Combine(InstallBasePath, "temp", "version.json"));
-                JArray libraries2 = (JArray)installJobj["libraries"]; //获取lib数组 这是install那个json
-                JArray libraries = (JArray)versionlJobj["libraries"]; //获取lib数组
+
+                // 安全获取 libraries 数组
+                JArray? libraries2 = installJobj["libraries"] as JArray;
+                JArray? libraries = versionlJobj["libraries"] as JArray;
+
+                if (libraries2 == null || libraries == null)
+                {
+                    ReportLog($"[ {InstallName} ]错误：无法获取运行库列表");
+                    throw new Exception("Err: 无法获取运行库列表");
+                }
 
                 // 比较器存储 用于查重
                 var addedDownloadPaths = new HashSet<string>();
 
                 foreach (JObject lib in libraries.Cast<JObject>()) // 遍历数组，进行文件下载
                 {
-                    // libCount++;
-                    string _dlurl = ReplaceStr(lib["downloads"]["artifact"]["url"].ToString());
+                    // 安全获取嵌套属性
+                    var artifactToken = lib["downloads"]?["artifact"];
+                    if (artifactToken == null)
+                        continue;
+
+                    string? _dlurl = artifactToken["url"]?.ToString();
                     if (string.IsNullOrEmpty(_dlurl))
                         continue;
 
-                    // 把文件路径扔进去查重
-                    if (!addedDownloadPaths.Add(lib["downloads"]["artifact"]["path"].ToString()))
+                    _dlurl = ReplaceStr(_dlurl);
+
+                    string? path = artifactToken["path"]?.ToString();
+                    if (string.IsNullOrEmpty(path))
                         continue;
 
-                    string _sha1 = lib["downloads"]["artifact"]["sha1"].ToString();
-                    ReportLog($"[ {InstallName} 运行库]下载：" + lib["downloads"]["artifact"]["path"].ToString());
+                    // 把文件路径扔进去查重
+                    if (!addedDownloadPaths.Add(path))
+                        continue;
+
+                    string? _sha1 = artifactToken["sha1"]?.ToString();
+                    ReportLog($"[ {InstallName} 运行库]下载：" + path);
 
                     // 添加下载项
                     var taskLib = downloader.DownloadFileAsync(
-                        ReplaceStr(_dlurl),
-                        Path.Combine(InstallBasePath, "libraries", lib["downloads"]["artifact"]["path"].ToString()),
+                        _dlurl,
+                        Path.Combine(InstallBasePath, "libraries", path),
                         async (progress, speed) =>
                         {
-                            ReportLog($"正在下载 {lib["downloads"]["artifact"]["path"].ToString()} 进度: {progress:0.00}% | 下载速度: {speed}");
+                            ReportLog($"正在下载 {path} 进度: {progress:0.00}% | 下载速度: {speed}");
                         }
                     );
                     tasks.Add(taskLib);
@@ -294,25 +313,35 @@ public class NeoForgeInstallerService
                 // 来自MSL的注释 - 2024.02.27 下午11：25 写的时候bmclapi炸了，导致被迫暂停，望周知（
                 foreach (JObject lib in libraries2.Cast<JObject>()) //遍历数组，进行文件下载
                 {
-                    // libCount++;
-                    string _dlurl = ReplaceStr(lib["downloads"]["artifact"]["url"].ToString());
+                    // 安全获取嵌套属性
+                    var artifactToken = lib["downloads"]?["artifact"];
+                    if (artifactToken == null)
+                        continue;
+
+                    string? _dlurl = artifactToken["url"]?.ToString();
                     if (string.IsNullOrEmpty(_dlurl))
                         continue;
 
-                    // 查重
-                    if (!addedDownloadPaths.Add(lib["downloads"]["artifact"]["path"].ToString()))
+                    _dlurl = ReplaceStr(_dlurl);
+
+                    string? path = artifactToken["path"]?.ToString();
+                    if (string.IsNullOrEmpty(path))
                         continue;
 
-                    string _sha1 = lib["downloads"]["artifact"]["sha1"].ToString();
-                    ReportLog($"[ {InstallName} 运行库]下载：" + lib["downloads"]["artifact"]["path"].ToString());
+                    // 查重
+                    if (!addedDownloadPaths.Add(path))
+                        continue;
+
+                    string? _sha1 = artifactToken["sha1"]?.ToString();
+                    ReportLog($"[ {InstallName} 运行库]下载：" + path);
 
                     // 添加下载项
                     var taskLib = downloader.DownloadFileAsync(
-                        ReplaceStr(_dlurl),
-                        Path.Combine(InstallBasePath, "libraries", lib["downloads"]["artifact"]["path"].ToString()),
+                        _dlurl,
+                        Path.Combine(InstallBasePath, "libraries", path),
                         async (progress, speed) =>
                         {
-                            ReportLog($"正在下载 {lib["downloads"]["artifact"]["path"].ToString()} 进度: {progress:0.00}% | 下载速度: {speed}");
+                            ReportLog($"正在下载 {path} 进度: {progress:0.00}% | 下载速度: {speed}");
                         }
                     );
                     tasks.Add(taskLib);
@@ -321,34 +350,51 @@ public class NeoForgeInstallerService
             else
             {
                 // 这里是1.12-版本的处理逻辑
-                JArray libraries2 = (JArray)installJobj["versionInfo"]["libraries"]; // 获取lib数组 这是install那个json 低版本仅此一个
+                if (installJobj["versionInfo"]?["libraries"] is not JArray libraries2)
+                {
+                    ReportLog($"[ {InstallName} ]错误：无法获取运行库列表");
+                    throw new Exception("Err: 无法获取运行库列表");
+                }
+
                 int libALLCount = libraries2.Count; //总数
                 int libCount = 0; // 用于计数
+
                 foreach (JObject lib in libraries2.Cast<JObject>()) // 遍历数组，进行文件下载
                 {
                     libCount++;
+
+                    string? libName = lib["name"]?.ToString();
+                    if (string.IsNullOrEmpty(libName))
+                        continue;
+
+                    string libPath = NameToPath(libName);
+
                     string _dlurl;
-                    if (string.IsNullOrEmpty(lib["url"]?.ToString() ?? ""))
+                    string? libUrl = lib["url"]?.ToString();
+
+                    if (string.IsNullOrEmpty(libUrl))
                     {
-                        _dlurl = ReplaceStr("https://maven.minecraftforge.net/" +
-                                            NameToPath(lib["name"]?.ToString() ?? ""));
+                        _dlurl = ReplaceStr("https://maven.minecraftforge.net/" + libPath);
                     }
                     else
                     {
-                        _dlurl = ReplaceStr(lib["url"]?.ToString() ?? "" + NameToPath(lib["name"]?.ToString() ?? ""));
+                        //_dlurl = ReplaceStr(lib["url"]?.ToString() ?? "" + NameToPath(lib["name"]?.ToString() ?? ""));
+
+                        _dlurl = ReplaceStr(libUrl.TrimEnd('/') + "/" + libPath);
                     }
 
                     if (string.IsNullOrEmpty(_dlurl))
                         continue;
-                    ReportLog($"[ {InstallName} 运行库]下载：" + NameToPath(lib["name"]?.ToString() ?? ""));
+
+                    ReportLog($"[ {InstallName} 运行库]下载：" + libPath);
 
                     // 添加下载项
                     var taskLib = downloader.DownloadFileAsync(
-                        ReplaceStr(_dlurl),
-                        Path.Combine(InstallBasePath, "libraries", lib["name"]?.ToString() ?? ""),
+                        _dlurl,
+                        Path.Combine(InstallBasePath, "libraries", libPath),
                         async (progress, speed) =>
                         {
-                            ReportLog($"正在下载 {lib["downloads"]["artifact"]["path"].ToString()} 进度: {progress:0.00}% | 下载速度: {speed}");
+                            ReportLog($"正在下载 {libPath} 进度: {progress:0.00}% | 下载速度: {speed}");
                         }
                     );
                     tasks.Add(taskLib);
@@ -410,66 +456,99 @@ public class NeoForgeInstallerService
                 CopyJarFiles(Path.Combine(InstallBasePath, "temp"), InstallBasePath, 2);
             }
 
-            // 开始处理编译参数
             ReportLog($"正在处理 {InstallName} 编译参数···");
-
             List<string> cmdLines = [];
+
             if (InstallVersionType != 5) // 低版本不需要运行编译构建
             {
-                JArray processors = (JArray)installJobj["processors"]; //获取processors数组
+                // 获取 processors 数组
+                if (installJobj["processors"] is not JArray processors)
+                {
+                    ReportLog($"[ {InstallName} ]错误：无法获取 processors 数组");
+                    return false;
+                }
+
                 foreach (JObject processor in processors.Cast<JObject>())
                 {
-                    string buildarg;
-                    JArray sides = (JArray)processor["sides"]; //获取sides数组
-                    if (sides == null || sides.Values<string>().Contains("server"))
+                    // 获取 sides 数组
+                    // 如果 sides 为 null 或包含 "server"，则处理
+                    if (processor["sides"] is not JArray sides || sides.Values<string>().Contains("server"))
                     {
-                        buildarg = @"-Djavax.net.ssl.trustStoreType=Windows-ROOT -cp """;
-                        // 处理classpath
-                        buildarg += Path.Combine(InstallBasePath, "libraries",
-                            NameToPath(processor["jar"]?.ToString() ?? "")) + classPathConnectChar;
-                        JArray classpath = (JArray)processor["classpath"];
-                        string entryjar = Path.Combine(InstallBasePath, "libraries",
-                            NameToPath(processor["jar"]?.ToString() ?? "")); // 获取入口文件路径
-                        ReportLog("捕获到执行的入口文件：" + entryjar);
-                        string mainclass = GetJarMainClass(entryjar);
-                        if (mainclass != null)
+                        string buildarg = @"-Djavax.net.ssl.trustStoreType=Windows-ROOT -cp """;
+
+                        // 安全获取 jar 路径
+                        string? jarName = processor["jar"]?.ToString();
+                        if (string.IsNullOrEmpty(jarName))
                         {
-                            ReportLog("捕获到入口文件的主类：" + mainclass);
+                            ReportLog("警告：processor 缺少 jar 属性，跳过此项");
+                            continue;
                         }
-                        else
+
+                        string jarPath = NameToPath(jarName);
+
+                        // 处理 classpath
+                        buildarg += Path.Combine(InstallBasePath, "libraries", jarPath) + classPathConnectChar;
+
+                        // 获取 classpath 数组
+                        if (processor["classpath"] is not JArray classpath)
+                        {
+                            ReportLog("警告：processor 缺少 classpath 属性，跳过此项");
+                            continue;
+                        }
+
+                        string entryjar = Path.Combine(InstallBasePath, "libraries", jarPath);
+                        ReportLog("捕获到执行的入口文件：" + entryjar);
+
+                        // 获取主类
+                        string? mainclass = GetJarMainClass(entryjar);
+                        if (string.IsNullOrEmpty(mainclass))
                         {
                             ReportLog("未能捕获到入口文件的主类，安装失败！");
                             return false;
                         }
 
-                        foreach (string path in classpath.Values<string>())
+                        ReportLog("捕获到入口文件的主类：" + mainclass);
+
+                        // 处理 classpath 路径
+                        foreach (string? path in classpath.Values<string>())
                         {
+                            if (string.IsNullOrEmpty(path))
+                                continue;
+
                             buildarg += Path.Combine(InstallBasePath, "libraries", NameToPath(path)) + classPathConnectChar;
                         }
 
-                        buildarg += @""" "; // 结束cp处理
+                        buildarg += @""" "; // 结束 cp 处理
 
-                        // 添加主类（为什么不能从json获取呢：？）（要解包才能获取，懒得了qaq）
-                        // （划掉上行）没想到吧 现在可以解包获取了！！！
+                        // 添加主类
                         buildarg += $"{mainclass} ";
 
-                        // 处理args
-                        JArray args = (JArray)processor["args"];
-                        foreach (string arg in args.Values<string>())
+                        // 安全获取并处理 args 数组
+                        JArray? args = processor["args"] as JArray;
+                        if (args == null)
                         {
-                            if (arg.StartsWith("[") && arg.EndsWith("]")) //在[]中，表明要转换
+                            ReportLog("警告：processor 缺少 args 属性，跳过此项");
+                            continue;
+                        }
+
+                        foreach (string? arg in args.Values<string>())
+                        {
+                            if (string.IsNullOrEmpty(arg))
+                                continue;
+
+                            if (arg.StartsWith("[") && arg.EndsWith("]")) // 在 [] 中，表明要转换
                             {
-                                // buildarg = buildarg + @"""" + Path.Combine(InstallBasePath,"libraries") + "\\" + ReplaceStr(NameToPath(arg)) + @""" ";
-                                buildarg = buildarg + @"""" +
+                                buildarg += @"""" +
                                            Path.Combine(InstallBasePath, "libraries", ReplaceStr(NameToPath(arg))) +
                                            @""" ";
                             }
                             else
                             {
-                                buildarg = buildarg + @"""" + ReplaceStr(arg) + @""" ";
+                                buildarg += @"""" + ReplaceStr(arg) + @""" ";
                             }
                         }
 
+                        // 检查并添加命令行
                         if (!buildarg.Contains("DOWNLOAD_MOJMAPS"))
                         {
                             cmdLines.Add(buildarg);
@@ -497,10 +576,10 @@ public class NeoForgeInstallerService
                     if (res_metadata.IsSuccessStatusCode)
                     {
                         // 查找对应版本的元信息文件URL
-                        JObject metadata_jobj = JObject.Parse((string)res_metadata.Content);
+                        JObject metadata_jobj = JObject.Parse(res_metadata.Content ?? throw new Exception("err: null res_metadata.Content"));
                         var foundVersion = metadata_jobj["versions"]?
                             .FirstOrDefault(v => v["id"]?.ToString() == InstallMcVersion);
-                        string versionUrl = foundVersion?["url"]?.ToString();
+                        string? versionUrl = foundVersion?["url"]?.ToString();
                         if (string.IsNullOrEmpty(versionUrl))
                         {
                             ReportLog($"错误：未能在版本清单中找到版本号为 '{InstallMcVersion}' 的详细信息。请检查版本号是否正确。");
@@ -516,8 +595,7 @@ public class NeoForgeInstallerService
                         HttpService.HttpResponse res_version_metadata = await GeneralApi.GetAsync(versionUrl);
                         if (res_version_metadata.IsSuccessStatusCode)
                         {
-                            JObject version_metadata_jobj =
-                                JObject.Parse((string)res_version_metadata.Content);
+                            JObject version_metadata_jobj = JObject.Parse(res_version_metadata.Content ?? throw new Exception("err: null res_version_metadata.Content"));
                             string mappingsUrl = version_metadata_jobj["downloads"]?["server_mappings"]?["url"]
                                 ?.ToString() ?? "";
                             if (string.IsNullOrEmpty(mappingsUrl))
@@ -868,8 +946,14 @@ public class NeoForgeInstallerService
     }
 
     // 获取jar主类
-    public static string GetJarMainClass(string jarFilePath)
+    private static string? GetJarMainClass(string? jarFilePath)
     {
+        // 1. 检查输入参数
+        if (string.IsNullOrWhiteSpace(jarFilePath))
+        {
+            return null;
+        }
+
         if (!File.Exists(jarFilePath))
         {
             return null;
@@ -881,8 +965,7 @@ public class NeoForgeInstallerService
             using (ZipArchive archive = ZipFile.OpenRead(jarFilePath))
             {
                 // 查找 MANIFEST.MF 文件
-                ZipArchiveEntry manifestEntry = archive.GetEntry("META-INF/MANIFEST.MF");
-
+                ZipArchiveEntry? manifestEntry = archive.GetEntry("META-INF/MANIFEST.MF");
                 if (manifestEntry == null)
                 {
                     return null;
@@ -892,21 +975,35 @@ public class NeoForgeInstallerService
                 using (Stream stream = manifestEntry.Open())
                 using (StreamReader reader = new StreamReader(stream))
                 {
-                    string line;
+                    string? line;
                     while ((line = reader.ReadLine()) != null)
                     {
                         // 读取主类
                         if (line.StartsWith("Main-Class:", StringComparison.OrdinalIgnoreCase))
                         {
-                            return line.Substring("Main-Class:".Length).Trim();
+                            // 安全地提取主类名称
+                            string mainClass = line.Substring("Main-Class:".Length).Trim();
+
+                            // 返回前验证不为空
+                            return string.IsNullOrWhiteSpace(mainClass) ? null : mainClass;
                         }
                     }
                 }
             }
         }
+        catch (IOException ioEx)
+        {
+            Console.WriteLine($"读取 JAR 文件失败 (IO错误): {ioEx.Message}");
+            return null;
+        }
+        catch (InvalidDataException dataEx)
+        {
+            Console.WriteLine($"读取 JAR 文件失败 (无效的ZIP格式): {dataEx.Message}");
+            return null;
+        }
         catch (Exception ex)
         {
-            Console.WriteLine("读取 JAR 文件失败: " + ex.ToString());
+            Console.WriteLine($"读取 JAR 文件失败: {ex}");
             return null;
         }
 

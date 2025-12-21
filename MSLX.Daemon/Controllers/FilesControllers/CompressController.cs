@@ -5,6 +5,7 @@ using Microsoft.Extensions.Caching.Memory;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Files;
 using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 
 namespace MSLX.Daemon.Controllers.FilesControllers;
 
@@ -18,13 +19,14 @@ public class CompressController: ControllerBase
     {
         _cache = memoryCache;
     }
-    // —————— 压缩 ——————
-    
+
+    #region 压缩
+
     // 提交压缩任务
     [HttpPost("instance/{id}/compress")]
     public IActionResult StartCompress(uint id, [FromBody] CompressRequest request)
     {
-        var server = ConfigServices.ServerList.GetServer(id);
+        var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
 
         // 生成唯一任务ID
@@ -65,8 +67,8 @@ public class CompressController: ControllerBase
     {
         try
         {
-            var server = ConfigServices.ServerList.GetServer(instanceId);
-            
+            var server = IConfigBase.ServerList.GetServer(instanceId);
+            if(server == null) throw new Exception("实例不存在");
             // 更新状态
             UpdateStatus(cacheKey, "processing", 0, "正在扫描文件...");
 
@@ -157,14 +159,16 @@ public class CompressController: ControllerBase
             Message = msg 
         }, TimeSpan.FromMinutes(30));
     }
-    
-    // —————— 解压 ——————
-    
+
+    #endregion
+
+    #region 解压
+
     // 提交解压任务
     [HttpPost("instance/{id}/decompress")]
     public IActionResult StartDecompress(uint id, [FromBody] DecompressRequest request)
     {
-        var server = ConfigServices.ServerList.GetServer(id);
+        var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
 
         // 生成任务ID
@@ -205,7 +209,9 @@ public class CompressController: ControllerBase
     {
         try
         {
-            var server = ConfigServices.ServerList.GetServer(instanceId);
+            var server = IConfigBase.ServerList.GetServer(instanceId);
+            if(server == null) throw new Exception("实例不存在");
+
             UpdateStatus(cacheKey, "processing", 0, "正在分析文件...");
 
             // 绝对路径
@@ -342,5 +348,5 @@ public class CompressController: ControllerBase
             return Encoding.GetEncoding("GBK");
         }
     }
-    
+    #endregion
 }

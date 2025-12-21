@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Controllers.InstanceControllers;
@@ -20,7 +21,7 @@ public class InstanceInfoController : ControllerBase
     [HttpGet("list")]
     public IActionResult GetInstanceList()
     {
-        ConfigServices.ServerListConfig config = ConfigServices.ServerList;
+        ServerListConfig config = IConfigBase.ServerList;
         var serverList = config.ReadServerList();
         var resultList = serverList.Select(item => 
         {
@@ -75,7 +76,7 @@ public class InstanceInfoController : ControllerBase
         try
         {
             McServerInfo.ServerInfo server =
-                ConfigServices.ServerList.GetServer(id) ?? throw new Exception("找不到指定的服务器");
+                IConfigBase.ServerList.GetServer(id) ?? throw new Exception("找不到指定的服务器");
             if (System.IO.File.Exists(Path.Combine(server.Base, "server.properties")))
             {
                 dynamic config = ServerPropertiesLoader.Load(Path.Combine(server.Base, "server.properties"),Encoding.GetEncoding(server.FileEncoding));
@@ -184,7 +185,7 @@ public class InstanceInfoController : ControllerBase
         try
         {
             McServerInfo.ServerInfo server =
-                ConfigServices.ServerList.GetServer(id) ?? throw new Exception("找不到指定的服务器");
+                IConfigBase.ServerList.GetServer(id) ?? throw new Exception("找不到指定的服务器");
             string iconPath = Path.Combine(server.Base, "server-icon.png");
             if (!System.IO.File.Exists(iconPath))
             {

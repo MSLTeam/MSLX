@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory; 
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Files;
-using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Controllers.FilesControllers;
@@ -20,7 +20,7 @@ public class UploadController : ControllerBase
     {
         _memoryCache = memoryCache;
         // 临时文件存放目录
-        _tempPath = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Temp", "Uploads");
+        _tempPath = Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Temp", "Uploads");
         if (!Directory.Exists(_tempPath)) Directory.CreateDirectory(_tempPath);
     }
 

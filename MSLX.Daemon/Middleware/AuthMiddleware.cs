@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
 using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 using System.Net;
 using System.Security.Claims;
 
@@ -73,7 +74,7 @@ namespace MSLX.Daemon.Middleware
                     // 必须确保 JwtUtils.GenerateToken 时加入了 new Claim("UserId", user.Id)
                     var userId = principal.FindFirst("UserId")?.Value;
                     
-                    if (!string.IsNullOrEmpty(userId) && ConfigServices.UserList.GetUserById(userId) != null)
+                    if (!string.IsNullOrEmpty(userId) && IConfigBase.UserList.GetUserById(userId) != null)
                     {
                         context.User = principal;
                         isAuthenticated = true;
@@ -102,7 +103,7 @@ namespace MSLX.Daemon.Middleware
                 if (!string.IsNullOrEmpty(inputKey))
                 {
                     // A. 全局 Admin Key
-                    string globalApiKey = ConfigServices.Config.ReadConfigKey("apiKey")?.ToString() ?? "";
+                    string globalApiKey = IConfigBase.Config.ReadConfigKey("apiKey")?.ToString() ?? "";
                     
                     if (!string.IsNullOrEmpty(globalApiKey) && globalApiKey.Equals(inputKey))
                     {
@@ -117,7 +118,7 @@ namespace MSLX.Daemon.Middleware
                     // B. 用户独立 Key
                     else
                     {
-                        var user = ConfigServices.UserList.GetUserByApiKey(inputKey);
+                        var user = IConfigBase.UserList.GetUserByApiKey(inputKey);
                         if (user != null)
                         {
                             context.User = user.ToPrincipal("ApiKey");

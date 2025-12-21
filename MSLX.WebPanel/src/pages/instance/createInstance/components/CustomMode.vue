@@ -20,6 +20,7 @@ const formData = reactive(<CreateInstanceQucikModeModel>{
   minM: 1027, // 因为不能不填这两内存 只能用magic number代替咯～
   maxM: 1027,
   args: '',
+  ignoreEula: true,
 });
 
 const rules: FormRules<CreateInstanceQucikModeModel> = {
@@ -29,24 +30,42 @@ const rules: FormRules<CreateInstanceQucikModeModel> = {
 
 const onSubmit: FormProps['onSubmit'] = async ({ validateResult }) => {
   if (validateResult === true) {
-    try{
+    try {
       const res = await postCreateInstanceQuickMode(formData);
       createdServerId.value = res.serverId;
       MessagePlugin.success('创建成功');
       isSuccess.value = true;
-    }catch (e){
+    } catch (e) {
       MessagePlugin.error('创建失败！' + e.message);
     }
   } else {
     MessagePlugin.warning('请检查表单填写');
   }
 };
+
+const goToHome = () => {
+  isSuccess.value = false;
+
+  Object.assign(formData, {
+    name: '新建服务器',
+    path: null,
+    java: 'none',
+    core: 'none',
+    packageFileKey: '',
+    coreFileKey: '',
+    coreUrl: '',
+    coreSha256: '',
+    minM: 1027,
+    maxM: 1027,
+    args: '',
+    ignoreEula: true,
+  });
+};
 </script>
 
 <template>
   <div>
     <div v-if="!isSuccess">
-
       <t-form ref="formRef" :rules="rules" :data="formData" label-align="top" @submit="onSubmit">
         <t-form-item label="服务器名称" name="name">
           <t-input v-model="formData.name" placeholder="给你的服务器起一个名字" />
@@ -65,7 +84,10 @@ const onSubmit: FormProps['onSubmit'] = async ({ validateResult }) => {
           />
         </t-form-item>
 
-        <t-form-item>
+        <t-form-item label="忽略EULA提示" name="args" help="若您的实例并非MC服务器，可打开此选项">
+          <t-switch v-model="formData.ignoreEula" :label="['已开启', '已关闭']" />
+        </t-form-item>
+        <t-form-item style="margin-top: 20px">
           <t-space>
             <t-button theme="primary" type="submit">提交创建</t-button>
           </t-space>
@@ -78,8 +100,27 @@ const onSubmit: FormProps['onSubmit'] = async ({ validateResult }) => {
       <div class="result-success-title">服务器 ({{ createdServerId }}) 已创建成功</div>
       <div class="result-success-describe">你现在可以去服务器列表启动它了</div>
       <div>
-        <t-button @click="changeUrl('/instance/list')"> 返回服务端列表 </t-button>
-        <t-button theme="default" @click="changeUrl(`/instance/console/${createdServerId}`)"> 前往控制台 </t-button>
+        <t-button
+          @click="
+            () => {
+              goToHome();
+              changeUrl('/instance/list');
+            }
+          "
+        >
+          返回服务端列表
+        </t-button>
+        <t-button
+          theme="default"
+          @click="
+            () => {
+              goToHome();
+              changeUrl(`/instance/console/${createdServerId}`);
+            }
+          "
+        >
+          前往控制台
+        </t-button>
       </div>
     </div>
   </div>

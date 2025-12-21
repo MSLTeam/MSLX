@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using MSLX.Daemon.Models.Instance;
-using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Services;
@@ -26,7 +26,7 @@ public class JavaScannerService
         // 缓存读取
         if (!forceRefresh)
         {
-            var cachedToken = ConfigServices.Config.ReadConfigKey("JavaCache");
+            var cachedToken = IConfigBase.Config.ReadConfigKey("JavaCache");
             if (cachedToken != null && cachedToken.HasValues)
             {
                 try
@@ -80,14 +80,24 @@ public class JavaScannerService
         // 过滤掉无效结果并排序
         var validJavaList = results
             .Where(x => x != null)
+            .Select(x => x!) // Where 已经过滤了 null，故使用 null-forgiving operator，
             .OrderByDescending(x => x.Version)
             .ToList();
 
-        // 写入缓存到
-        _logger.LogInformation("扫描完成，发现 {Count} 个有效 Java 环境，已写入缓存。", validJavaList.Count);
-        ConfigServices.Config.WriteConfigKey("JavaCache", JArray.FromObject(validJavaList));
+        // 写入缓存
+        if (validJavaList.Count > 0)
+        {
+            _logger.LogInformation("扫描完成，发现 {Count} 个有效 Java 环境，已写入缓存。", validJavaList.Count);
+            IConfigBase.Config.WriteConfigKey("JavaCache", JArray.FromObject(validJavaList));
+        }
+        else
+        {
+            _logger.LogInformation("扫描完成，未发现有效的 Java 环境。");
+            // 清除旧的Java配置列表
+            // IConfigBase.Config.WriteConfigKey("JavaCache", new JArray());
+        }
 
-        return validJavaList;
+        return validJavaList; // 如果为空，会返回空列表
     }
 
     private string GetJavaExecName() => RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "java.exe" : "java";
@@ -215,43 +225,58 @@ public class JavaScannerService
     }
 
     // --- 验证逻辑 ---
-    private async Task<JavaInfo> ValidateAndParseJava(string javaPath)
+    private async Task<JavaInfo?> ValidateAndParseJava(string? javaPath)
     {
         try
         {
-            // 解析软链接
+            if (string.IsNullOrWhiteSpace(javaPath))
+                return null;
             var fileInfo = new FileInfo(javaPath);
-            if (!fileInfo.Exists) return null;
+            if (!fileInfo.Exists)
+                return null;
+
             string realPath = fileInfo.LinkTarget ?? javaPath;
 
             var startInfo = new ProcessStartInfo
             {
                 FileName = realPath,
                 Arguments = "-version",
-                RedirectStandardError = true, // java -version 输出在 stderr
+                RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
 
             using var process = Process.Start(startInfo);
-            if (process == null) return null;
+            if (process == null)
+                return null;
 
             var output = await process.StandardError.ReadToEndAsync();
             await process.WaitForExitAsync();
 
-            if (process.ExitCode != 0) return null;
+            if (process.ExitCode != 0)
+                return null;
 
-            // 解析版本：openjdk version "17.0.1" 
+            // 解析版本：openjdk version "xx.x.x" 
             var versionMatch = Regex.Match(output, "version \"([^\"]+)\"");
-            if (!versionMatch.Success) return null;
+            if (!versionMatch.Success)
+                return null;
 
             string vendor = "Unknown";
-            if (output.Contains("OpenJDK", StringComparison.OrdinalIgnoreCase)) vendor = "OpenJDK";
-            else if (output.Contains("Java(TM)", StringComparison.OrdinalIgnoreCase)) vendor = "Oracle";
-            else if (output.Contains("Microsoft", StringComparison.OrdinalIgnoreCase)) vendor = "Microsoft";
+            if (output.Contains("OpenJDK", StringComparison.OrdinalIgnoreCase))
+                vendor = "OpenJDK";
+            else if (output.Contains("Java(TM)", StringComparison.OrdinalIgnoreCase))
+                vendor = "Oracle";
+            else if (output.Contains("Microsoft", StringComparison.OrdinalIgnoreCase))
+                vendor = "Microsoft";
 
-            // 推断 JAVA_HOME (bin 的上一级)
-            var homeDir = Directory.GetParent(Path.GetDirectoryName(realPath))?.FullName;
+            // 获取 JAVA_HOME (bin 的上一级)
+            string? homeDir = null;
+            var dirName = Path.GetDirectoryName(realPath);
+            if (!string.IsNullOrEmpty(dirName))
+            {
+                var parentDir = Directory.GetParent(dirName);
+                homeDir = parentDir?.FullName;
+            }
 
             return new JavaInfo
             {
@@ -259,7 +284,9 @@ public class JavaScannerService
                 Home = homeDir,
                 Version = versionMatch.Groups[1].Value,
                 Vendor = vendor,
-                Is64Bit = output.Contains("64-Bit") || output.Contains("amd64") || output.Contains("x86_64")
+                Is64Bit = output.Contains("64-Bit") ||
+                         output.Contains("amd64") ||
+                         output.Contains("x86_64")
             };
         }
         catch

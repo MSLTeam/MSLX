@@ -99,13 +99,12 @@ const formData = ref(<CreateInstanceQucikModeModel>{
   args: '',
 });
 
-
 // 处理内存单位
 const minUnit = ref('GB');
 const maxUnit = ref('GB');
 const unitOptions = [
   { label: 'MB', value: 'MB' },
-  { label: 'GB', value: 'GB' }
+  { label: 'GB', value: 'GB' },
 ];
 
 const minMComputed = computed({
@@ -115,7 +114,7 @@ const minMComputed = computed({
   set: (val) => {
     // 存入 formData 时总是转回 MB
     formData.value.minM = minUnit.value === 'GB' ? Math.round(val * 1024) : val;
-  }
+  },
 });
 
 const maxMComputed = computed({
@@ -124,7 +123,7 @@ const maxMComputed = computed({
   },
   set: (val) => {
     formData.value.maxM = maxUnit.value === 'GB' ? Math.round(val * 1024) : val;
-  }
+  },
 });
 
 // 监听选择java的状态变量 修改表单数据
@@ -465,7 +464,6 @@ onUnmounted(() => {
   hubConnection.value?.stop();
 });
 
-/*
 const goToHome = () => {
   isSuccess.value = false;
   currentStep.value = 0;
@@ -487,7 +485,7 @@ const goToHome = () => {
   downloadType.value = 'online';
   javaType.value = 'online';
 };
-
+/*
 const viewDetails = () => {
   router.push('/detail/advanced');
 }; */
@@ -692,12 +690,7 @@ const viewDetails = () => {
                         theme="column"
                         style="width: 100%"
                       />
-                      <t-select
-                        v-model="minUnit"
-                        :options="unitOptions"
-                        :clearable="false"
-                        style="width: 80px"
-                      />
+                      <t-select v-model="minUnit" :options="unitOptions" :clearable="false" style="width: 80px" />
                     </t-space>
                   </t-form-item>
                 </t-col>
@@ -713,12 +706,7 @@ const viewDetails = () => {
                         theme="column"
                         style="width: 100%"
                       />
-                      <t-select
-                        v-model="maxUnit"
-                        :options="unitOptions"
-                        :clearable="false"
-                        style="width: 80px"
-                      />
+                      <t-select v-model="maxUnit" :options="unitOptions" :clearable="false" style="width: 80px" />
                     </t-space>
                   </t-form-item>
                 </t-col>
@@ -763,8 +751,27 @@ const viewDetails = () => {
           <div class="result-success-title">整合包服务器已部署成功</div>
           <div class="result-success-describe">文件已解压，环境已配置就绪</div>
           <div>
-            <t-button @click="changeUrl('/instance/list')"> 返回服务端列表 </t-button>
-            <t-button theme="default" @click="changeUrl(`/instance/console/${createdServerId}`)"> 前往控制台 </t-button>
+            <t-button
+              @click="
+                () => {
+                  goToHome();
+                  changeUrl('/instance/list');
+                }
+              "
+            >
+              返回服务端列表
+            </t-button>
+            <t-button
+              theme="default"
+              @click="
+                () => {
+                  goToHome();
+                  changeUrl(`/instance/console/${createdServerId}`);
+                }
+              "
+            >
+              前往控制台
+            </t-button>
           </div>
         </div>
       </div>
@@ -805,7 +812,7 @@ const viewDetails = () => {
 .online-select-area {
   margin-top: 16px;
   padding: 16px;
-  background-color: var(--td-bg-color-container-hover);
+  background-color: var(--td-bg-color-secondarycontainer);
   border-radius: var(--td-radius-medium);
 }
 .flex-row {
@@ -835,7 +842,7 @@ const viewDetails = () => {
   margin-top: 12px;
   display: flex;
   align-items: center;
-  background-color: var(--td-bg-color-container);
+  background-color: var(--td-bg-color-secondarycontainer);
   border: 1px solid var(--td-brand-color);
   border-radius: var(--td-radius-medium);
   padding: 12px;

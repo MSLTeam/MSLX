@@ -4,6 +4,7 @@ using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Tasks;
 using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.Daemon.Utils.BackgroundTasks;
 
 namespace MSLX.Daemon.Services;
@@ -85,7 +86,7 @@ public class ServerCreationService : BackgroundService
         {
             ID = serverId,
             Name = request.name,
-            Base = request.path ?? Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Servers", serverIdStr),
+            Base = request.path ?? Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Servers", serverIdStr),
             Java = request.java ?? "java",
             Core = request.core,
             MinM = request.minM,
@@ -96,7 +97,7 @@ public class ServerCreationService : BackgroundService
             FileEncoding = PlatFormServices.GetOs() == "Windows"? "gbk" : "utf-8",
         };
 
-        ConfigServices.ServerList.CreateServer(server);
+        IConfigBase.ServerList.CreateServer(server);
         Directory.CreateDirectory(server.Base); 
         _logger.LogInformation("服务器 {ServerId} 基础目录已配置。", serverId);
 
@@ -135,7 +136,7 @@ public class ServerCreationService : BackgroundService
             if (!string.IsNullOrEmpty(newLaunchArgs))
             {
                 server.Core = newLaunchArgs;
-                ConfigServices.ServerList.UpdateServer(server);
+                IConfigBase.ServerList.UpdateServer(server);
                 _logger.LogInformation("已更新 Forge 启动参数: {Args}", newLaunchArgs);
             }
 

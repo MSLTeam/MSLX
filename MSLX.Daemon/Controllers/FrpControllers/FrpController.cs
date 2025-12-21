@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Frp;
 using MSLX.Daemon.Services;
-using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.ConfigUtils;
 using Newtonsoft.Json.Linq;
 using Tomlyn;
 using Tomlyn.Model;
@@ -24,7 +24,7 @@ public class FrpController : ControllerBase
     [HttpGet("list")]
     public IActionResult GetFrpList()
     {
-        var configList = ConfigServices.FrpList.ReadFrpList();
+        var configList = IConfigBase.FrpList.ReadFrpList();
         
         var resultList = configList.Select(item => 
         {
@@ -86,7 +86,7 @@ public class FrpController : ControllerBase
         };
 
         // 获取配置
-        var frpConfigMeta = ConfigServices.FrpList.GetFrpConfig(id);
+        var frpConfigMeta = IConfigBase.FrpList.GetFrpConfig(id);
         if (frpConfigMeta == null)
         {
             return NotFound(new ApiResponse<object> { Code = 404, Message = "找不到该配置" });
@@ -106,7 +106,7 @@ public class FrpController : ControllerBase
         }
 
         // 读取文件
-        string configPath = Path.Combine(ConfigServices.GetAppDataPath(), "DaemonData", "Configs", "Frpc", id.ToString(), $"frpc.toml");
+        string configPath = Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Configs", "Frpc", id.ToString(), $"frpc.toml");
         if (!System.IO.File.Exists(configPath))
         {
             // 说实话 这能丢？

@@ -141,10 +141,14 @@ const traverseFileTree = async (entry: any, queue: { file: File; path: string }[
     const relativePath = entry.fullPath.startsWith('/') ? entry.fullPath.slice(1) : entry.fullPath;
     queue.push({ file, path: relativePath });
   } else if (entry.isDirectory) {
-    const dirReader = entry.createReader();
-    const entries = await readAllDirectoryEntries(dirReader);
-    for (const subEntry of entries) {
-      await traverseFileTree(subEntry, queue);
+    if(props.allowFolder){
+      const dirReader = entry.createReader();
+      const entries = await readAllDirectoryEntries(dirReader);
+      for (const subEntry of entries) {
+        await traverseFileTree(subEntry, queue);
+      }
+    }else{
+      MessagePlugin.error('此处不支持上传文件夹');
     }
   }
 };
@@ -268,7 +272,8 @@ onUnmounted(() => tasks.value.forEach((t) => t.abortController?.abort()));
         @drop.prevent="handleDrop"
       >
         <cloud-upload-icon size="40px" style="color: var(--td-brand-color)" />
-        <p class="drop-text">拖入文件或文件夹</p>
+        <p v-if="props.allowFolder" class="drop-text">拖入文件或文件夹</p>
+        <p v-if="!props.allowFolder" class="drop-text">拖入文件</p>
         <div class="drop-actions">
           <t-button variant="outline" size="small" @click="handleSelectFiles"
             ><template #icon><file-icon /></template> 选择文件</t-button

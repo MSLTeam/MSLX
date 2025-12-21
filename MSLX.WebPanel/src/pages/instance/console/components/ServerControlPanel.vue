@@ -15,7 +15,7 @@ const props = defineProps<{
   serverId: number;
   isRunning: boolean;
   loading: boolean;
-  serverInfo: InstanceInfoModel;
+  serverInfo?: InstanceInfoModel;
 }>();
 
 const emits = defineEmits<{

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { ServerIcon, ControlPlatformIcon } from 'tdesign-icons-vue-next';
+import { ServerIcon, ControlPlatformIcon, BookIcon } from 'tdesign-icons-vue-next';
 import { getSettings, updateSettings } from '@/api/settings';
 import type { SettingsModel } from '@/api/model/settings';
+import { changeUrl } from '@/router';
+import { DOC_URLS } from '@/api/docs';
 
 const loading = ref(false);
 const submitLoading = ref(false);
@@ -65,18 +67,11 @@ defineExpose({ initData });
     <t-form ref="sysForm" :data="sysData" :label-width="120" label-align="left" @submit="onSysSubmit">
       <div class="group-title">守护进程</div>
 
-      <t-form-item
-        label="自动打开控制台"
-        help="MSLX 守护进程启动成功后，是否自动登录网页端控制台。"
-      >
+      <t-form-item label="自动打开控制台" help="MSLX 守护进程启动成功后，是否自动登录网页端控制台。">
         <t-switch v-model="sysData.openWebConsoleOnLaunch" />
       </t-form-item>
 
-      <t-form-item
-        label="安装镜像源"
-        help="选择在自动安装 NeoForge / Forge 时所使用的镜像源。"
-        style="margin-top: 6px;"
-      >
+      <t-form-item label="安装镜像源" help="选择在自动安装 NeoForge / Forge 时所使用的镜像源。" style="margin-top: 6px">
         <t-select v-model="sysData.neoForgeInstallerMirrors" :options="mirrorOptions" />
       </t-form-item>
 
@@ -84,10 +79,7 @@ defineExpose({ initData });
 
       <div class="group-title">网络与安全</div>
 
-      <t-form-item
-        label="禁止本地访问"
-        help="开启后将禁止本地回环地址访问，增强安全性。"
-      >
+      <t-form-item label="禁止本地访问" help="开启后将禁止本地回环地址访问，增强安全性。">
         <t-space align="center">
           <t-switch v-model="sysData.fireWallBanLocalAddr" />
           <span class="status-label">{{ sysData.fireWallBanLocalAddr ? '已开启' : '已关闭' }}</span>
@@ -97,7 +89,7 @@ defineExpose({ initData });
       <t-form-item
         label="监听地址设置"
         help="设置MSLX守护进程的监听地址。(需要重启守护进程生效,若不明白这是干什么的请一定不要修改！)"
-        style="margin-top: 6px;"
+        style="margin-top: 6px"
       >
         <t-row :gutter="16" style="width: 100%">
           <t-col :span="6">
@@ -106,13 +98,24 @@ defineExpose({ initData });
             </t-input>
           </t-col>
 
-          <t-col :span="4" style="display: flex; align-items: center;">
+          <t-col :span="4" style="display: flex; align-items: center">
             <span style="margin-right: 8px; color: var(--td-text-color-secondary)">:</span>
             <t-input v-model="sysData.listenPort" placeholder="1027" style="width: 120px">
               <template #prefix-icon><control-platform-icon /></template>
             </t-input>
           </t-col>
         </t-row>
+      </t-form-item>
+
+      <t-form-item style="margin-top: 6px" label="远程访问">
+        <t-space align="center">
+          <t-button theme="default" @click="changeUrl(DOC_URLS.remote_access)">
+            <template #icon>
+              <book-icon />
+            </template>
+            配置远程访问说明</t-button
+          >
+        </t-space>
       </t-form-item>
 
       <t-form-item>
@@ -129,7 +132,9 @@ defineExpose({ initData });
   border-radius: 8px;
   overflow: hidden;
   transition: all 0.3s;
-  &:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); }
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
 }
 
 .group-title {

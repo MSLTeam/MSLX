@@ -8,11 +8,7 @@ import {
   DialogPlugin,
   NotifyPlugin,
 } from 'tdesign-vue-next';
-import {
-  HubConnection,
-  HubConnectionBuilder,
-  LogLevel,
-} from '@microsoft/signalr';
+import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { useUserStore } from '@/store';
 import { LockOnIcon, LockOffIcon } from 'tdesign-icons-vue-next';
 
@@ -45,7 +41,7 @@ const isPathEditable = ref(false);
 // 编码选项
 const encodingOptions = [
   { label: 'UTF-8', value: 'utf-8' },
-  { label: 'GBK', value: 'gbk' }
+  { label: 'GBK', value: 'gbk' },
 ];
 
 // 数据模型
@@ -64,6 +60,7 @@ const formData = ref<UpdateInstanceModel>({
   backupPath: 'MSLX://Backup/Instance',
   autoRestart: false,
   forceAutoRestart: true,
+  ignoreEula: false,
   runOnStartup: false,
   inputEncoding: 'utf-8',
   outputEncoding: 'utf-8',
@@ -79,9 +76,8 @@ const minUnit = ref('MB');
 const maxUnit = ref('MB');
 const unitOptions = [
   { label: 'MB', value: 'MB' },
-  { label: 'GB', value: 'GB' }
+  { label: 'GB', value: 'GB' },
 ];
-
 
 // 计算属性
 const minMComputed = computed({
@@ -95,7 +91,7 @@ const minMComputed = computed({
   },
   set: (val) => {
     formData.value.minM = minUnit.value === 'GB' ? Math.round(val * 1024) : val;
-  }
+  },
 });
 
 const maxMComputed = computed({
@@ -108,7 +104,7 @@ const maxMComputed = computed({
   },
   set: (val) => {
     formData.value.maxM = maxUnit.value === 'GB' ? Math.round(val * 1024) : val;
-  }
+  },
 });
 
 // --- Java 逻辑 ---
@@ -140,15 +136,12 @@ const fetchJavaVersions = async (force = false) => {
 };
 
 // 监听 Java 类型变化
-watch(
-  [javaType, selectedJavaVersion, customJavaPath],
-  ([type, ver, path]) => {
-    if (type === 'none') formData.value.java = 'none';
-    else if (type === 'env') formData.value.java = 'java';
-    else if (type === 'custom' || type === 'local') formData.value.java = path;
-    else if (type === 'online') formData.value.java = ver ? `MSLX://Java/${ver}` : '';
-  }
-);
+watch([javaType, selectedJavaVersion, customJavaPath], ([type, ver, path]) => {
+  if (type === 'none') formData.value.java = 'none';
+  else if (type === 'env') formData.value.java = 'java';
+  else if (type === 'custom' || type === 'local') formData.value.java = path;
+  else if (type === 'online') formData.value.java = ver ? `MSLX://Java/${ver}` : '';
+});
 
 // --- 备份路径逻辑 ---
 const backupLocationType = ref('MSLX://Backup/Instance');
@@ -169,7 +162,7 @@ const authOptions = [
   { label: '官方/离线模式 (无)', value: 'none' },
   { label: 'MSL 统一身份验证 (MSL Skin)', value: 'https://skin.mslmc.net/api/yggdrasil' },
   { label: 'LittleSkin', value: 'https://littleskin.cn/api/yggdrasil' },
-  { label: '自定义服务器', value: 'custom' }
+  { label: '自定义服务器', value: 'custom' },
 ];
 
 watch([authSelectType, customAuthUrl], ([type, url]) => {
@@ -206,7 +199,9 @@ const onFileChange = async (event: Event) => {
   const file = input.files[0];
 
   if (formData.value.coreFileKey) {
-    try { await deleteUpload(formData.value.coreFileKey); } catch {
+    try {
+      await deleteUpload(formData.value.coreFileKey);
+    } catch {
       console.error('删除上传失败');
     }
   }
@@ -248,7 +243,7 @@ const togglePathEdit = () => {
     NotifyPlugin.warning({
       title: '风险操作',
       content: '修改实例路径会导致面板无法找到原有文件。请确保您已手动移动了文件，或您明确知道自己在做什么。',
-      duration: 5000
+      duration: 5000,
     });
   }
   isPathEditable.value = !isPathEditable.value;
@@ -295,12 +290,12 @@ const initData = async () => {
       ...res,
       coreUrl: '',
       coreFileKey: '',
-      coreSha256: ''
+      coreSha256: '',
     };
 
     // 判断内存单位
-    minUnit.value = (res.minM > 0 && res.minM % 1024 === 0) ? 'GB' : 'MB';
-    maxUnit.value = (res.maxM > 0 && res.maxM % 1024 === 0) ? 'GB' : 'MB';
+    minUnit.value = res.minM > 0 && res.minM % 1024 === 0 ? 'GB' : 'MB';
+    maxUnit.value = res.maxM > 0 && res.maxM % 1024 === 0 ? 'GB' : 'MB';
 
     isPathEditable.value = false;
 
@@ -313,7 +308,7 @@ const initData = async () => {
       javaType.value = 'online';
       selectedJavaVersion.value = res.java.replace('MSLX://Java/', '');
     } else {
-      const inLocal = localJavaVersions.value.find(v => v.value === res.java);
+      const inLocal = localJavaVersions.value.find((v) => v.value === res.java);
       javaType.value = inLocal ? 'local' : 'custom';
       customJavaPath.value = res.java;
     }
@@ -339,7 +334,6 @@ const initData = async () => {
       authSelectType.value = 'custom';
       customAuthUrl.value = authUrl;
     }
-
   } catch (e: any) {
     MessagePlugin.error('获取配置失败: ' + e.message);
   } finally {
@@ -347,16 +341,18 @@ const initData = async () => {
   }
 };
 
+watch(
+  () => route.params.serverId,
+  (newId) => {
+    if (route.name !== 'InstanceConsole') {
+      return;
+    }
 
-watch(() => route.params.serverId, (newId) => {
-  if (route.name !== 'InstanceConsole') {
-    return;
-  }
-
-  if(newId){
-    initData();
-  }
-});
+    if (newId) {
+      initData();
+    }
+  },
+);
 onMounted(initData);
 
 const onSubmit = async () => {
@@ -372,8 +368,14 @@ const onSubmit = async () => {
           header: '确认变更核心文件?',
           body: '检测到您上传或选择了新的核心文件，这将覆盖服务器现有的部署。',
           theme: 'warning',
-          onConfirm: () => { dialog.hide(); resolve(true); },
-          onClose: () => { dialog.hide(); resolve(false); },
+          onConfirm: () => {
+            dialog.hide();
+            resolve(true);
+          },
+          onClose: () => {
+            dialog.hide();
+            resolve(false);
+          },
         });
       });
       if (!confirm) return;
@@ -428,7 +430,7 @@ const startSignalRListening = async () => {
     progressLogs.value.push({ time: new Date().toLocaleTimeString(), msg: isErr ? `[错误] ${msg}` : msg });
     nextTick(() => {
       const div = document.getElementById('update-log-box');
-      if(div) div.scrollTop = div.scrollHeight;
+      if (div) div.scrollTop = div.scrollHeight;
     });
     if (prog >= 0) progressPercent.value = Number(prog.toFixed(1));
     if (prog === 100) {
@@ -464,13 +466,7 @@ onUnmounted(() => {
 <template>
   <div class="settings-container">
     <t-loading :loading="loading" show-overlay>
-      <t-form
-        ref="formRef"
-        :data="formData"
-        :rules="rules"
-        label-width="0"
-        @submit="onSubmit"
-      >
+      <t-form ref="formRef" :data="formData" :rules="rules" label-width="0" @submit="onSubmit">
         <div class="setting-group-title">基础设置</div>
 
         <div class="setting-item">
@@ -488,7 +484,9 @@ onUnmounted(() => {
             <div class="title">实例路径</div>
             <div class="desc">
               <span :class="{ 'text-warning': isPathEditable }">
-                  {{ isPathEditable ? '警告：修改路径可能导致无法找到原文件' : '服务器文件的物理存储路径，非必要请勿修改' }}
+                {{
+                  isPathEditable ? '警告：修改路径可能导致无法找到原文件' : '服务器文件的物理存储路径，非必要请勿修改'
+                }}
               </span>
             </div>
           </div>
@@ -516,13 +514,16 @@ onUnmounted(() => {
             <div class="desc">选择使用 Java 启动 Minecraft，或使用自定义命令启动其他程序 (如 Bedrock, Python 等)</div>
           </div>
           <div class="setting-control">
-            <t-select v-model="javaType" :options="[
-              { label: 'MSLX 在线下载 (Java)', value: 'online' },
-              { label: '使用本地版本 (Java)', value: 'local' },
-              { label: '自定义路径 (Java)', value: 'custom' },
-              { label: '环境变量 (Java)', value: 'env' },
-              { label: '自定义命令 (无Java)', value: 'none' }
-            ]" />
+            <t-select
+              v-model="javaType"
+              :options="[
+                { label: 'MSLX 在线下载 (Java)', value: 'online' },
+                { label: '使用本地版本 (Java)', value: 'local' },
+                { label: '自定义路径 (Java)', value: 'custom' },
+                { label: '环境变量 (Java)', value: 'env' },
+                { label: '自定义命令 (无Java)', value: 'none' },
+              ]"
+            />
 
             <div v-if="javaType !== 'none'" style="margin-top: 8px">
               <t-select
@@ -551,9 +552,10 @@ onUnmounted(() => {
           <div class="setting-info">
             <div class="title">{{ javaType === 'none' ? '启动命令 (Command)' : '启动参数 (JVM Args)' }}</div>
             <div class="desc">
-              {{ javaType === 'none'
-              ? '完全自定义的启动命令。程序将直接执行此段内容，不依赖 Java 环境。'
-              : '传递给 Java 的启动参数，如 GC 策略 (例如 -XX:+UseG1GC)'
+              {{
+                javaType === 'none'
+                  ? '完全自定义的启动命令。程序将直接执行此段内容，不依赖 Java 环境。'
+                  : '传递给 Java 的启动参数，如 GC 策略 (例如 -XX:+UseG1GC)'
               }}
             </div>
           </div>
@@ -574,7 +576,7 @@ onUnmounted(() => {
               <div class="title">服务端核心文件</div>
               <div class="desc">
                 指定启动的 Jar 文件名。如果文件已存在于目录中，直接输入文件名即可。
-                <br/>需要更新核心？点击下方“文件工具”
+                <br />需要更新核心？点击下方“文件工具”
               </div>
             </div>
             <div class="setting-control">
@@ -627,7 +629,6 @@ onUnmounted(() => {
             </div>
 
             <div class="setting-control flex-row">
-
               <div class="memory-input-group">
                 <t-input-number
                   v-model="minMComputed"
@@ -637,12 +638,7 @@ onUnmounted(() => {
                   theme="normal"
                   class="input-left"
                 />
-                <t-select
-                  v-model="minUnit"
-                  :options="unitOptions"
-                  :clearable="false"
-                  class="select-right"
-                />
+                <t-select v-model="minUnit" :options="unitOptions" :clearable="false" class="select-right" />
               </div>
 
               <span class="separator">-</span>
@@ -656,14 +652,8 @@ onUnmounted(() => {
                   theme="normal"
                   class="input-left"
                 />
-                <t-select
-                  v-model="maxUnit"
-                  :options="unitOptions"
-                  :clearable="false"
-                  class="select-right"
-                />
+                <t-select v-model="maxUnit" :options="unitOptions" :clearable="false" class="select-right" />
               </div>
-
             </div>
           </div>
         </template>
@@ -696,10 +686,12 @@ onUnmounted(() => {
             />
           </div>
           <div class="setting-info-desc-only">
-            <t-tooltip content="MSLX 向服务器发送 save-all 指令后，会等待指定的秒数，确保数据完全写入硬盘后再开始打包备份。">
-                   <span style="font-size: 12px; color: var(--td-text-color-placeholder); cursor: help">
-                       <t-icon name="help-circle" /> 什么是延迟时间？
-                   </span>
+            <t-tooltip
+              content="MSLX 向服务器发送 save-all 指令后，会等待指定的秒数，确保数据完全写入硬盘后再开始打包备份。"
+            >
+              <span style="font-size: 12px; color: var(--td-text-color-placeholder); cursor: help">
+                <t-icon name="help-circle" /> 什么是延迟时间？
+              </span>
             </t-tooltip>
           </div>
         </div>
@@ -710,11 +702,14 @@ onUnmounted(() => {
             <div class="desc">选择备份文件存储的位置。推荐存储在实例文件夹外部以免误删。</div>
           </div>
           <div class="setting-control">
-            <t-select v-model="backupLocationType" :options="[
-              { label: '实例文件夹内 (Instance)', value: 'MSLX://Backup/Instance' },
-              { label: '全局数据目录 (Data)', value: 'MSLX://Backup/Data' },
-              { label: '自定义绝对路径', value: 'custom' }
-            ]" />
+            <t-select
+              v-model="backupLocationType"
+              :options="[
+                { label: '实例文件夹内 (Instance)', value: 'MSLX://Backup/Instance' },
+                { label: '全局数据目录 (Data)', value: 'MSLX://Backup/Data' },
+                { label: '自定义绝对路径', value: 'custom' },
+              ]"
+            />
 
             <div style="margin-top: 8px" v-if="backupLocationType === 'custom'">
               <t-input v-model="customBackupPath" placeholder="输入备份存放的绝对路径" />
@@ -727,9 +722,7 @@ onUnmounted(() => {
         <div v-if="javaType !== 'none'" class="setting-item">
           <div class="setting-info">
             <div class="title">Yggdrasil API</div>
-            <div class="desc">
-              选择认证服务器。留空则表示使用官方正版登录 (或离线模式)。
-            </div>
+            <div class="desc">选择认证服务器。留空则表示使用官方正版登录 (或离线模式)。</div>
           </div>
           <div class="setting-control">
             <t-select v-model="authSelectType" :options="authOptions" />
@@ -761,6 +754,16 @@ onUnmounted(() => {
           </div>
           <div class="setting-control">
             <t-switch v-model="formData.forceAutoRestart" :label="['已开启', '已关闭']" />
+          </div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="title">忽略EULA提示</div>
+            <div class="desc">若您的实例并非MC服务器，可打开此选项</div>
+          </div>
+          <div class="setting-control">
+            <t-switch v-model="formData.ignoreEula" :label="['已开启', '已关闭']" />
           </div>
         </div>
 
@@ -799,7 +802,6 @@ onUnmounted(() => {
           <t-button theme="primary" type="submit" size="large" :loading="submitting">保存设置</t-button>
           <t-button theme="default" variant="base" size="large" @click="initData">重置更改</t-button>
         </div>
-
       </t-form>
     </t-loading>
 
