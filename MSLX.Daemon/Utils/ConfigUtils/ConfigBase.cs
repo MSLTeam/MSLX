@@ -37,17 +37,17 @@ namespace MSLX.Daemon.Utils.ConfigUtils
         {
             if (PlatFormServices.GetOs() == "MacOS")
             {
-                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MSLX");
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MSLX", "DaemonData");
             }
             else
             {
-                return AppContext.BaseDirectory;
+                return Path.Combine(AppContext.BaseDirectory,"DaemonData");
             }
         }
 
         public static string GetAppConfigPath()
         {
-            return Path.Combine(GetAppDataPath(), "DaemonData", "Configs");
+            return Path.Combine(GetAppDataPath(), "Configs");
         }
 
         public static T LoadJson<T>(string path) where T : JToken

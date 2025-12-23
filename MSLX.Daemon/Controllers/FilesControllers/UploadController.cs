@@ -1,4 +1,4 @@
-using System.IO.Compression;
+﻿using System.IO.Compression;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory; 
@@ -20,7 +20,7 @@ public class UploadController : ControllerBase
     {
         _memoryCache = memoryCache;
         // 临时文件存放目录
-        _tempPath = Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Temp", "Uploads");
+        _tempPath = Path.Combine(IConfigBase.GetAppDataPath(), "Temp", "Uploads");
         if (!Directory.Exists(_tempPath)) Directory.CreateDirectory(_tempPath);
     }
 

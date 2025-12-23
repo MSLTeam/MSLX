@@ -1,4 +1,4 @@
-using System.Formats.Tar;
+﻿using System.Formats.Tar;
 using System.IO.Compression;
 using System.Text.RegularExpressions;
 using Downloader;
@@ -32,7 +32,7 @@ public class ServerDeploymentService
     {
         if (string.IsNullOrEmpty(packageFileKey)) return;
 
-        string tempFilePath = Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Temp", "Uploads", packageFileKey + ".tmp");
+        string tempFilePath = Path.Combine(IConfigBase.GetAppDataPath(), "Temp", "Uploads", packageFileKey + ".tmp");
 
         if (!File.Exists(tempFilePath))
         {
@@ -94,7 +94,7 @@ public class ServerDeploymentService
         if (string.IsNullOrEmpty(javaConfig) || !javaConfig.Contains("MSLX://Java/")) return;
 
         string javaVersion = javaConfig.Replace("MSLX://Java/", "");
-        string javaBaseDir = Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Tools", "Java");
+        string javaBaseDir = Path.Combine(IConfigBase.GetAppDataPath(), "Tools", "Java");
         string finalJavaDir = Path.Combine(javaBaseDir, javaVersion);
         string javaExec = PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java";
         string javaPath = Path.Combine(finalJavaDir, "bin", javaExec);
@@ -159,7 +159,7 @@ public class ServerDeploymentService
         // 用户上传
         if (!string.IsNullOrEmpty(userUploadKey))
         {
-            string tempFilePath = Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Temp", "Uploads", userUploadKey + ".tmp");
+            string tempFilePath = Path.Combine(IConfigBase.GetAppDataPath(), "Temp", "Uploads", userUploadKey + ".tmp");
             if (File.Exists(tempFilePath))
             {
                 try
@@ -222,7 +222,7 @@ public class ServerDeploymentService
             if (javaConfig.Contains("MSLX://Java/"))
             {
                 string version = javaConfig.Replace("MSLX://Java/", "");
-                javaPath = Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Tools", "Java", version, "bin", 
+                javaPath = Path.Combine(IConfigBase.GetAppDataPath(), "Tools", "Java", version, "bin", 
                     PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java");
             }
 

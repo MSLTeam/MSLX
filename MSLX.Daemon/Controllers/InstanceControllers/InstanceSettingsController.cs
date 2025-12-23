@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Instance;
 using MSLX.Daemon.Models.Tasks;
@@ -135,7 +135,7 @@ public class InstanceSettingsController : ControllerBase
 
         // 解析版本
         string version = javaConfig.Replace("MSLX://Java/", "");
-        string javaBaseDir = Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Tools", "Java");
+        string javaBaseDir = Path.Combine(IConfigBase.GetAppDataPath(), "Tools", "Java");
         string javaExec = PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java";
 
         // 检查文件是否存在
