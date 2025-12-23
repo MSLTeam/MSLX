@@ -2,17 +2,50 @@
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 USER root
 
+# 自动识别 Debian / Ubuntu / 新版 / 旧版
+RUN \
+    # Debian 12+ (Bookworm) 的新版配置
+    if [ -f /etc/apt/sources.list.d/debian.sources ]; then \
+        sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources && \
+        sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources; \
+    fi && \
+    # Ubuntu 24.04+ (Noble) 的新版配置
+    if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then \
+        sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list.d/ubuntu.sources && \
+        sed -i 's/security.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list.d/ubuntu.sources; \
+    fi && \
+    # 旧版 Debian/Ubuntu 的传统配置 (sources.list)
+    if [ -f /etc/apt/sources.list ]; then \
+        # 替换 Ubuntu 域名
+        sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+        sed -i 's/security.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+        # 替换 Debian 域名
+        sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+        sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list; \
+    fi
+
 # 安装一些库和设置时区
 RUN apt-get update && \
-    apt-get install -y procps libfreetype6 fontconfig acl tzdata && \
+    apt-get install -y --no-install-recommends \
+    procps \
+    libfreetype6 \
+    fontconfig \
+    acl \
+    tzdata \
+    openjdk-17-jre-headless \
+    openjdk-21-jre-headless && \
+    # 设置时区
     ln -fs /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
     dpkg-reconfigure -f noninteractive tzdata && \
+    # 清理缓存
     rm -rf /var/lib/apt/lists/*
 
 ENV ASPNETCORE_HTTP_PORTS=1027
 
 WORKDIR /app
 EXPOSE 1027
+
+ENV host=*
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release

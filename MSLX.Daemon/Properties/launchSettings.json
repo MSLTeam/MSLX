@@ -1,4 +1,4 @@
-{
+﻿{
   "profiles": {
     "http": {
       "commandName": "Project",
@@ -13,7 +13,7 @@
       "commandName": "Docker",
       "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}/swagger",
       "environmentVariables": {
-        "ASPNETCORE_HTTP_PORTS": "8080"
+        "ASPNETCORE_URLS": "http://+:1027"
       },
       "publishAllPorts": true,
       "useSSL": false

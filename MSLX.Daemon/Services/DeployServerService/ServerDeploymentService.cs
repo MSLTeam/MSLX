@@ -310,8 +310,11 @@ public class ServerDeploymentService
         {
             Directory.CreateDirectory(tempExtractPath);
 
+            // 解压逻辑
             if (archivePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            {
                 ZipFile.ExtractToDirectory(archivePath, tempExtractPath);
+            }
             else if (archivePath.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase))
             {
                 using var fs = File.OpenRead(archivePath);
@@ -319,6 +322,7 @@ public class ServerDeploymentService
                 TarFile.ExtractToDirectory(gzip, tempExtractPath, true);
             }
 
+            // 寻找 JavaHome
             string javaExec = PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java";
             string? validJavaHome = Directory.GetFiles(tempExtractPath, javaExec, SearchOption.AllDirectories)
                 .Select(f => Directory.GetParent(Path.GetDirectoryName(f)!)?.FullName)
@@ -327,33 +331,78 @@ public class ServerDeploymentService
             if (string.IsNullOrEmpty(validJavaHome))
                 throw new DirectoryNotFoundException($"无法在压缩包中定位到包含 {javaExec} 的 bin 目录。");
 
-            if (Directory.Exists(finalDestDir)) Directory.Delete(finalDestDir, true);
+            if (Directory.Exists(finalDestDir))
+            {
+                RemoveReadOnlyAttributes(finalDestDir);
+                Directory.Delete(finalDestDir, true);
+            }
             Directory.CreateDirectory(finalDestDir);
-            
-             foreach (string dirPath in Directory.GetDirectories(validJavaHome, "*", SearchOption.AllDirectories))
+
+            RemoveReadOnlyAttributes(validJavaHome);
+
+            // 复制目录结构
+            foreach (string dirPath in Directory.GetDirectories(validJavaHome, "*", SearchOption.AllDirectories))
             {
                 Directory.CreateDirectory(dirPath.Replace(validJavaHome, finalDestDir));
             }
+            // 复制文件
             foreach (string newPath in Directory.GetFiles(validJavaHome, "*.*", SearchOption.AllDirectories))
             {
                 File.Copy(newPath, newPath.Replace(validJavaHome, finalDestDir), true);
             }
 
+            // Linux 权限处理
             if (PlatFormServices.GetOs() != "Windows")
             {
                 try
                 {
-                    string javaBinPath = Path.Combine(finalDestDir, "bin", "java");
-                    if (File.Exists(javaBinPath))
-                        System.Diagnostics.Process.Start("chmod", $"+x \"{javaBinPath}\"").WaitForExit();
+                    string binPath = Path.Combine(finalDestDir, "bin");
+                    if (Directory.Exists(binPath))
+                    {
+                        System.Diagnostics.Process.Start("chmod", $"-R +x \"{binPath}\"").WaitForExit();
+                    }
                 }
                 catch { }
             }
         }
         finally
         {
-            try { Directory.Delete(tempExtractPath, true); } catch { }
+            // 清理临时文件
+            try
+            {
+                // 临时文件夹也要去只读，不然删不掉
+                RemoveReadOnlyAttributes(tempExtractPath);
+                Directory.Delete(tempExtractPath, true);
+            }
+            catch { }
+
             try { File.Delete(archivePath); } catch { }
+        }
+    }
+
+    /// <summary>
+    /// 递归移除文件夹及文件的“只读”属性
+    /// 解决 Linux/Docker 环境下 classes.jsa 无法被删除或覆盖的问题
+    /// </summary>
+    private void RemoveReadOnlyAttributes(string directoryPath)
+    {
+        if (!Directory.Exists(directoryPath)) return;
+
+        var dirInfo = new DirectoryInfo(directoryPath);
+
+        // 去掉文件夹本身的只读属性
+        if ((dirInfo.Attributes & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+        {
+            dirInfo.Attributes &= ~FileAttributes.ReadOnly;
+        }
+
+        // 递归去掉所有文件的只读属性
+        foreach (var file in dirInfo.GetFiles("*", SearchOption.AllDirectories))
+        {
+            if (file.IsReadOnly)
+            {
+                file.IsReadOnly = false;
+            }
         }
     }
 
