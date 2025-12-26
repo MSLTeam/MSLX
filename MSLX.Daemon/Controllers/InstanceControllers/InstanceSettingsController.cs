@@ -102,6 +102,7 @@ public class InstanceSettingsController : ControllerBase
             server.Java = request.Java;
             server.Core = request.Core;
             server.Base = request.Base;
+            server.ForceExitDelay = request.ForceExitDelay;
             server.BackupDelay = request.BackupDelay;
             server.BackupMaxCount = request.BackupMaxCount;
             server.BackupPath = request.BackupPath;

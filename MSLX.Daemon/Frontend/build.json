@@ -1,6 +1,6 @@
 {
-  "version": "0.5.2",
-  "buildTime": "2025-12-21 13:32:37",
+  "version": "0.5.3",
+  "buildTime": "2025-12-26 15:04:49",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,82 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "018d511d6bb5fc5775cb6774bcb4079417b12846",
-  "commitMsg": "bumpver(daemon & webpanel): 升级应用版本至v0.5.2-beta",
+  "commitId": "8a830a4944db0d516073aed4cd2025284daac962",
+  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到0.5.3-beta",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "8a830a4944db0d516073aed4cd2025284daac962",
+      "commitTime": "2025-12-26 15:04:24 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到0.5.3-beta"
+    },
+    {
+      "commitId": "63fe6c44275941a245470f7581f807f63dce0c51",
+      "commitTime": "2025-12-26 15:02:42 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(daemon): 优化在macOS下数据目录位置"
+    },
+    {
+      "commitId": "a651d85b1ca9e5ac2357cc4b2545af9bc5525a6e",
+      "commitTime": "2025-12-26 14:57:45 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(daemon): 修改程序集名称配置"
+    },
+    {
+      "commitId": "178c580cf7d9ad4bdb9727e3b9699d9457748313",
+      "commitTime": "2025-12-26 14:48:54 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge remote-tracking branch 'origin/master' into dev"
+    },
+    {
+      "commitId": "73c6d859ee721ca15496776a4ec7165c49e77212",
+      "commitTime": "2025-12-26 14:47:29 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 添加服务器强制退出延迟设置功能"
+    },
+    {
+      "commitId": "69dd1211d7e3cada8e947308c6885afd6b82071b",
+      "commitTime": "2025-12-25 23:22:59 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 适配26.1+版本的NeoForge安装逻辑"
+    },
+    {
+      "commitId": "e69ddafc161f336628ef0ce6a5a7915497241773",
+      "commitTime": "2025-12-23 19:10:12 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修正运行在Docker下面的一些问题"
+    },
+    {
+      "commitId": "c1890e047d3eda3555a1e517a0438e578866abe8",
+      "commitTime": "2025-12-23 14:03:08 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 新增Docker配置文件 & 简化app数据位置调用"
+    },
+    {
+      "commitId": "ba0d37efc8b5993f49398feb9f5254a2661506ae",
+      "commitTime": "2025-12-21 14:06:15 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复启动时浏览器页面被打开两次"
+    },
+    {
+      "commitId": "a8c556b3d5e9911dbdf7ef8fe215a56cd7c08a20",
+      "commitTime": "2025-12-21 13:38:43 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge branch 'master' of https://github.com/MSLTeam/MSLX"
+    },
+    {
+      "commitId": "c91e4f396c8be55c09ab25defc475c122ea49d26",
+      "commitTime": "2025-12-21 13:37:02 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #10 from MSLTeam/dev"
+    },
+    {
+      "commitId": "d556e84013111440e08b0b24abf1bcea76df2633",
+      "commitTime": "2025-12-21 13:35:05 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v0.5.2-beta 版本前端资源"
+    },
     {
       "commitId": "018d511d6bb5fc5775cb6774bcb4079417b12846",
       "commitTime": "2025-12-21 13:32:04 +0800",
@@ -179,6 +251,12 @@
       "commitTime": "2025-12-19 14:06:10 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "fix(webpanel): 修正注释"
+    },
+    {
+      "commitId": "5dc499f447bf405649a834c7730a173669795807",
+      "commitTime": "2025-12-19 14:04:31 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(webpanel): 嵌入 v0.5.1-beta 版本前端资源"
     },
     {
       "commitId": "62ec67e9ed71da24cf2fc1a943d9c06894774201",
@@ -293,84 +371,6 @@
       "commitTime": "2025-12-18 18:46:34 +0800",
       "commitAuthor": "小宇",
       "commitMsg": "Merge pull request #8 from MSLTeam/dev"
-    },
-    {
-      "commitId": "b4421842a95e01615c2cf6483e4852fb2e2f1b19",
-      "commitTime": "2025-12-18 18:46:02 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(daemon): 嵌入 v0.3.1.1-alpha 版本前端资源"
-    },
-    {
-      "commitId": "6741e7c8858c5db192bd908accc92239b216eaa2",
-      "commitTime": "2025-12-18 18:45:14 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新项目版本号至 0.3.1.1"
-    },
-    {
-      "commitId": "e5f913728b44faf8772d6140662a5b844dce6520",
-      "commitTime": "2025-12-18 18:44:18 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel & daemon): 修复字段错误导致的暗黑模式主体下背景无法保存"
-    },
-    {
-      "commitId": "af163123813f94963cdb172c17a1bf685fff7398",
-      "commitTime": "2025-12-18 17:25:03 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #7 from MSLTeam/dev"
-    },
-    {
-      "commitId": "25eb6ea2290950143d329d2c198bc6a8da97edb2",
-      "commitTime": "2025-12-18 17:24:07 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(daemon): 嵌入 v0.3.1-alpha 版本前端资源"
-    },
-    {
-      "commitId": "e66f1a5a062872ac672db0c1ebc34046df07d27c",
-      "commitTime": "2025-12-18 17:22:40 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumover(daemon & webpanel) 更新版本号至0.3.1"
-    },
-    {
-      "commitId": "62d9eb69da1f056f9eb1b8da4e72144ce503271a",
-      "commitTime": "2025-12-18 17:21:35 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel & daemon): 添加终端毛玻璃模糊度设置功能"
-    },
-    {
-      "commitId": "caef8408b33a63ebfa0847bd943fb6d3024b5962",
-      "commitTime": "2025-12-18 17:00:56 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 调整终端和卡片组件背景样式以适配自定义主题模式的参数"
-    },
-    {
-      "commitId": "094aad5c1b4f66f3d17800d3b18896f6e9a95a53",
-      "commitTime": "2025-12-18 16:38:14 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复面板样式设置黑暗模式上传图片函数失效的问题"
-    },
-    {
-      "commitId": "6cda17aacf66b03050dbf21a08c8d80380dccf99",
-      "commitTime": "2025-12-18 16:05:54 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #6 from MSLTeam/dev"
-    },
-    {
-      "commitId": "0f1acb225d58fac27811b569b6ed2547a33e55e0",
-      "commitTime": "2025-12-18 16:05:08 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(daemon): 嵌入 v0.3.0-alpha 版本前端资源"
-    },
-    {
-      "commitId": "05a1552c336f19e836d892feeada74a8929f6311",
-      "commitTime": "2025-12-18 16:04:25 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(dameon & webpanel): 更新项目版本号至 0.3.0"
-    },
-    {
-      "commitId": "e18bfff992149af0bc44ff5b9c95110bff95650a",
-      "commitTime": "2025-12-18 15:58:27 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复崩溃重启熔断检查无效的问题"
     }
   ]
 }

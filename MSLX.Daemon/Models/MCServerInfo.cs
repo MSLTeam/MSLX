@@ -14,6 +14,7 @@ namespace MSLX.Daemon.Models;
             public int? MinM { get; set; }
             public int? MaxM { get; set; }
             public string? Args { get; set; }
+            public int ForceExitDelay { get; set; } = 10;
             public string YggdrasilApiAddr { get; set; } = "";
             public int BackupMaxCount { get; set; } = 20;
             public int BackupDelay { get; set; } = 10;

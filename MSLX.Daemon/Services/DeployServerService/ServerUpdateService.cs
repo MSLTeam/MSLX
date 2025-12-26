@@ -94,12 +94,14 @@ public class ServerUpdateService : BackgroundService
             // server.Java = req.Java;
             server.Core = req.Core;
             server.Base = req.Base;
+            server.ForceExitDelay = req.ForceExitDelay;
             server.BackupDelay = req.BackupDelay;
             server.BackupMaxCount = req.BackupMaxCount;
             server.BackupPath = req.BackupPath;
             server.YggdrasilApiAddr = req.YggdrasilApiAddr;
             server.RunOnStartup = req.RunOnStartup;
             server.AutoRestart = req.AutoRestart;
+            server.IgnoreEula = req.IgnoreEula;
             server.InputEncoding = req.InputEncoding;
             server.OutputEncoding = req.OutputEncoding;
             server.FileEncoding = req.FileEncoding;
