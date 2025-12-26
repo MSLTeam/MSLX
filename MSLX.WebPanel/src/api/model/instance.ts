@@ -52,6 +52,7 @@ export interface UpdateInstanceModel {
   maxM: number;
   args?: string;
   // 这些后端有默认值
+  forceExitDelay?: number;
   yggdrasilApiAddr?: string;
   backupMaxCount?: number;
   backupDelay?: number;

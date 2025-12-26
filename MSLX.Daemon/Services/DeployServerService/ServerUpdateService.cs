@@ -94,6 +94,7 @@ public class ServerUpdateService : BackgroundService
             // server.Java = req.Java;
             server.Core = req.Core;
             server.Base = req.Base;
+            server.ForceExitDelay = req.ForceExitDelay;
             server.BackupDelay = req.BackupDelay;
             server.BackupMaxCount = req.BackupMaxCount;
             server.BackupPath = req.BackupPath;
