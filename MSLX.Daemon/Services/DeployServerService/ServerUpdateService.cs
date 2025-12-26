@@ -101,6 +101,7 @@ public class ServerUpdateService : BackgroundService
             server.YggdrasilApiAddr = req.YggdrasilApiAddr;
             server.RunOnStartup = req.RunOnStartup;
             server.AutoRestart = req.AutoRestart;
+            server.IgnoreEula = req.IgnoreEula;
             server.InputEncoding = req.InputEncoding;
             server.OutputEncoding = req.OutputEncoding;
             server.FileEncoding = req.FileEncoding;
