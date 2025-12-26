@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Formats.Tar;
@@ -43,7 +43,7 @@ public class FrpProcessService
         string baseDir = IConfigBase.GetAppDataPath();
         string exeName = PlatFormServices.GetOs() == "Windows" ? "frpc.exe" : "frpc";
         
-        _toolsDir = Path.Combine(baseDir, "DaemonData", "Tools");
+        _toolsDir = Path.Combine(baseDir, "Tools");
         _frpcExecutablePath = Path.Combine(_toolsDir, exeName);
 
         _appLifetime.ApplicationStopping.Register(StopAllFrp);
@@ -112,7 +112,7 @@ public class FrpProcessService
 
             // 配置文件
             string configType = frpConfig["ConfigType"]?.ToString() ?? "ini";
-            string configFolder = Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Configs", "Frpc", id.ToString());
+            string configFolder = Path.Combine(IConfigBase.GetAppDataPath(), "Configs", "Frpc", id.ToString());
             string configFilePath = Path.Combine(configFolder, $"frpc.{configType}");
         
             if (!File.Exists(configFilePath))

@@ -225,7 +225,7 @@ public class MCServerService
             if (serverInfo.Java.StartsWith("MSLX://Java/"))
             {
                 string javaVersion = serverInfo.Java.Replace("MSLX://Java/", "");
-                string javaBaseDir = Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Tools", "Java");
+                string javaBaseDir = Path.Combine(IConfigBase.GetAppDataPath(), "Tools", "Java");
                 string javaPath = Path.Combine(javaBaseDir, javaVersion, "bin",
                     PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java");
                 if (!File.Exists(javaPath))
@@ -276,7 +276,7 @@ public class MCServerService
             if (serverInfo.Java.StartsWith("MSLX://Java/"))
             {
                 string javaVersion = serverInfo.Java.Replace("MSLX://Java/", "");
-                string javaBaseDir = Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Tools", "Java");
+                string javaBaseDir = Path.Combine(IConfigBase.GetAppDataPath(), "Tools", "Java");
                 exec = Path.Combine(javaBaseDir, javaVersion, "bin",
                     PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java");
             }
@@ -858,7 +858,7 @@ public class MCServerService
             {
                 if (server.BackupPath == "MSLX://Backup/Data")
                 {
-                    backupDir = Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Backups",
+                    backupDir = Path.Combine(IConfigBase.GetAppDataPath(), "Backups",
                         $"Backups_{server.Name}_{instanceId}");
                 }
                 else if (!string.IsNullOrEmpty(server.BackupPath))

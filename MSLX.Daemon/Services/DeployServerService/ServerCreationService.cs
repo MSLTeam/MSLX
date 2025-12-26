@@ -86,7 +86,7 @@ public class ServerCreationService : BackgroundService
         {
             ID = serverId,
             Name = request.name,
-            Base = request.path ?? Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Servers", serverIdStr),
+            Base = request.path ?? Path.Combine(IConfigBase.GetAppDataPath(), "Servers", serverIdStr),
             Java = request.java ?? "java",
             Core = request.core,
             MinM = request.minM,

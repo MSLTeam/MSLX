@@ -10,7 +10,7 @@ public class TempFileCleanupService : BackgroundService
     public TempFileCleanupService(ILogger<TempFileCleanupService> logger)
     {
         _logger = logger;
-        _tempPath = Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Temp", "Uploads");
+        _tempPath = Path.Combine(IConfigBase.GetAppDataPath(), "Temp", "Uploads");
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

@@ -267,7 +267,7 @@ public class FilesListController : ControllerBase
         var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
 
-        string tempBasePath = Path.Combine(IConfigBase.GetAppDataPath(), "DaemonData", "Temp", "Uploads");
+        string tempBasePath = Path.Combine(IConfigBase.GetAppDataPath(), "Temp", "Uploads");
         string tempFilePath = Path.Combine(tempBasePath, request.UploadId + ".tmp");
 
         if (!System.IO.File.Exists(tempFilePath))
