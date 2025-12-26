@@ -366,10 +366,10 @@ public class MCServerService
                 context.IsStopping = true; // 标记正在停止
                 if (context.Process != null && !context.Process.HasExited)
                 {
+                    var server = IConfigBase.ServerList.GetServer(instanceId);
                     try
                     {
-                        var server = IConfigBase.ServerList.GetServer(instanceId);
-                        if ((server != null && server.Java == "none") && !(server.Args ?? "").Contains("bedrock"))
+                        if (server != null && server.Java == "none" && !(server.Args ?? "").Contains("bedrock"))
                         {
                             context.Process.StandardInput.Close(); // 关闭输入流 不结束就等10s吧
                         }
@@ -380,7 +380,7 @@ public class MCServerService
                         }
 
                         // 等待 10 秒
-                        if (!context.Process.WaitForExit(10000))
+                        if (!context.Process.WaitForExit(server.ForceExitDelay * 1000))
                         {
                             // 如果 10 秒后还没关闭，强制结束
                             context.Process.Kill();
@@ -395,7 +395,7 @@ public class MCServerService
                     {
                         // 如果发送命令失败，直接强制结束
                         context.Process.Kill();
-                        context.Process.WaitForExit(1000);
+                        context.Process.WaitForExit(server.ForceExitDelay * 1000);
                         RecordLog(instanceId, context, "[MSLX] 服务器进程已强制结束");
                     }
                 }

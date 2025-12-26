@@ -711,7 +711,7 @@ onUnmounted(() => {
               ]"
             />
 
-            <div style="margin-top: 8px" v-if="backupLocationType === 'custom'">
+            <div v-if="backupLocationType === 'custom'" style="margin-top: 8px">
               <t-input v-model="customBackupPath" placeholder="输入备份存放的绝对路径" />
             </div>
           </div>
@@ -727,7 +727,7 @@ onUnmounted(() => {
           <div class="setting-control">
             <t-select v-model="authSelectType" :options="authOptions" />
 
-            <div style="margin-top: 8px" v-if="authSelectType === 'custom'">
+            <div v-if="authSelectType === 'custom'" style="margin-top: 8px">
               <t-input v-model="customAuthUrl" placeholder="输入 Authlib-Injector API 地址" />
             </div>
           </div>
@@ -746,7 +746,7 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div class="setting-item" v-if="formData.autoRestart">
+        <div v-if="formData.autoRestart" class="setting-item">
           <div class="setting-info">
             <div class="title">强制自动重启</div>
             <div class="desc">开启此功能后，就算服务器是正常退出的也会强制重启(正常退出 => 退出代码 0)</div>
@@ -754,6 +754,17 @@ onUnmounted(() => {
           </div>
           <div class="setting-control">
             <t-switch v-model="formData.forceAutoRestart" :label="['已开启', '已关闭']" />
+          </div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="title">关服强制结束时间</div>
+            <div class="desc">设置在发出Stop指令或关服请求后，等待多久后强制结束进程</div>
+            <div class="desc">可设置10 - 120 s</div>
+          </div>
+          <div class="setting-control">
+            <t-input-number v-model="formData.forceExitDelay" />
           </div>
         </div>
 

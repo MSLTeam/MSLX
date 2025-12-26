@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Text;
+using System.Text.RegularExpressions;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using Newtonsoft.Json.Linq;
@@ -33,11 +34,11 @@ public class NeoForgeInstallerService
     public async Task<bool> InstallNeoForge(string basePath, string installerPath, string javaEnvPath)
     {
         // 编译输出日志的缓存变量
-        string logTemp = ""; 
+        string logTemp = "";
         int counter = 100;
-        
+
         string classPathConnectChar = PlatFormServices.GetOs() == "Windows" ? ";" : ":";
-        
+
         try
         {
             // 传递变量
@@ -99,7 +100,7 @@ public class NeoForgeInstallerService
 
             // 解压安装jar
             ReportLog($"正在解压 {InstallName} 安装器文件...");
-            bool unzip = ExtractJar(Path.Combine(InstallBasePath,installerPath), Path.Combine(basePath, "temp"));
+            bool unzip = ExtractJar(Path.Combine(InstallBasePath, installerPath), Path.Combine(basePath, "temp"));
             if (!unzip)
             {
                 ReportLog($"解压 {InstallName} 安装器失败，安装失败！");
@@ -167,7 +168,9 @@ public class NeoForgeInstallerService
             }
 
             HttpService.HttpResponse response =
-                await MSLApi.GetAsync($"/download/server/vanilla/{InstallMcVersion}", null);
+                await MSLApi.GetAsync(
+                    $"/download/server/vanilla{(InstallMcVersion.Contains("snapshot") ? "-snapshot" : "")}/{InstallMcVersion}",
+                    null);
             if (response.IsSuccessStatusCode)
             {
                 JObject vanillaJobj = JObject.Parse(response.Content ?? "{}");
@@ -302,10 +305,7 @@ public class NeoForgeInstallerService
                     var taskLib = downloader.DownloadFileAsync(
                         _dlurl,
                         Path.Combine(InstallBasePath, "libraries", path),
-                        async (progress, speed) =>
-                        {
-                            ReportLog($"正在下载 {path} 进度: {progress:0.00}% | 下载速度: {speed}");
-                        }
+                        async (progress, speed) => { ReportLog($"正在下载 {path} 进度: {progress:0.00}% | 下载速度: {speed}"); }
                     );
                     tasks.Add(taskLib);
                 }
@@ -339,10 +339,7 @@ public class NeoForgeInstallerService
                     var taskLib = downloader.DownloadFileAsync(
                         _dlurl,
                         Path.Combine(InstallBasePath, "libraries", path),
-                        async (progress, speed) =>
-                        {
-                            ReportLog($"正在下载 {path} 进度: {progress:0.00}% | 下载速度: {speed}");
-                        }
+                        async (progress, speed) => { ReportLog($"正在下载 {path} 进度: {progress:0.00}% | 下载速度: {speed}"); }
                     );
                     tasks.Add(taskLib);
                 }
@@ -403,7 +400,7 @@ public class NeoForgeInstallerService
 
             // 所有文件成功添加到下载 等待下崽崽完成～
             ReportLog($"正在等待所有库文件下载完成···");
-            
+
             var results = await Task.WhenAll(tasks);
 
             foreach (var result in results)
@@ -515,7 +512,8 @@ public class NeoForgeInstallerService
                             if (string.IsNullOrEmpty(path))
                                 continue;
 
-                            buildarg += Path.Combine(InstallBasePath, "libraries", NameToPath(path)) + classPathConnectChar;
+                            buildarg += Path.Combine(InstallBasePath, "libraries", NameToPath(path)) +
+                                        classPathConnectChar;
                         }
 
                         buildarg += @""" "; // 结束 cp 处理
@@ -539,8 +537,8 @@ public class NeoForgeInstallerService
                             if (arg.StartsWith("[") && arg.EndsWith("]")) // 在 [] 中，表明要转换
                             {
                                 buildarg += @"""" +
-                                           Path.Combine(InstallBasePath, "libraries", ReplaceStr(NameToPath(arg))) +
-                                           @""" ";
+                                            Path.Combine(InstallBasePath, "libraries", ReplaceStr(NameToPath(arg))) +
+                                            @""" ";
                             }
                             else
                             {
@@ -563,7 +561,7 @@ public class NeoForgeInstallerService
             }
 
             // 额外自动处理下载混淆代码映射表（好心的mj在新版本去除了这个代码混淆 这个后续估计也不需要咯）
-            if (InstallVersionType < 4) // 低版本不下载映射表
+            if (InstallVersionType < 4 && CompareMinecraftVersions(InstallMcVersion,"1.21.11") < 1) // 低版本和26.1+版本不下载映射表
             {
                 // 自动DOWNLOAD_MOJMAPS
                 ReportLog("正在下载MC映射表，请耐心等待……");
@@ -576,7 +574,8 @@ public class NeoForgeInstallerService
                     if (res_metadata.IsSuccessStatusCode)
                     {
                         // 查找对应版本的元信息文件URL
-                        JObject metadata_jobj = JObject.Parse(res_metadata.Content ?? throw new Exception("err: null res_metadata.Content"));
+                        JObject metadata_jobj = JObject.Parse(res_metadata.Content ??
+                                                              throw new Exception("err: null res_metadata.Content"));
                         var foundVersion = metadata_jobj["versions"]?
                             .FirstOrDefault(v => v["id"]?.ToString() == InstallMcVersion);
                         string? versionUrl = foundVersion?["url"]?.ToString();
@@ -595,7 +594,9 @@ public class NeoForgeInstallerService
                         HttpService.HttpResponse res_version_metadata = await GeneralApi.GetAsync(versionUrl);
                         if (res_version_metadata.IsSuccessStatusCode)
                         {
-                            JObject version_metadata_jobj = JObject.Parse(res_version_metadata.Content ?? throw new Exception("err: null res_version_metadata.Content"));
+                            JObject version_metadata_jobj = JObject.Parse(res_version_metadata.Content ??
+                                                                          throw new Exception(
+                                                                              "err: null res_version_metadata.Content"));
                             string mappingsUrl = version_metadata_jobj["downloads"]?["server_mappings"]?["url"]
                                 ?.ToString() ?? "";
                             if (string.IsNullOrEmpty(mappingsUrl))
@@ -605,11 +606,11 @@ public class NeoForgeInstallerService
 
                             // 下载到指定位置
                             ReportLog($"映射表文件下载到: {mappings_file_path}");
-                            var (suc_mojmap,err_mojmap) = await downloader.DownloadFileAsync(
-                                ReplaceStr(mappingsUrl), 
-                                mappings_file_path, 
+                            var (suc_mojmap, err_mojmap) = await downloader.DownloadFileAsync(
+                                ReplaceStr(mappingsUrl),
+                                mappings_file_path,
                                 // 进度回调
-                                async (progress, speed) => 
+                                async (progress, speed) =>
                                 {
                                     // lazy~
                                 }
@@ -632,7 +633,7 @@ public class NeoForgeInstallerService
                     else
                     {
                         ReportLog("无法获取MC元信息，请重试，或改用命令行安装。");
-                        ReportLog(res_metadata.Content??"");
+                        ReportLog(res_metadata.Content ?? "");
                         return false;
                     }
                 }
@@ -643,7 +644,7 @@ public class NeoForgeInstallerService
                     return false;
                 }
             }
-            
+
             // 开始执行编译构建
             foreach (string cmdLine in cmdLines)
             {
@@ -667,24 +668,27 @@ public class NeoForgeInstallerService
                 process.ErrorDataReceived -= ProcessOutputDataReceived;
                 process.OutputDataReceived -= ProcessOutputDataReceived;
             }
-            
+
             // 编译完成 安装结束
             ReportLog($"{InstallName} 安装完成！");
-            
+
             // 清理临时文件
             ReportLog("正在清理安装产生的临时文件···");
             try
             {
                 Directory.Delete(Path.Combine(InstallBasePath, "temp"), true);
                 File.Delete(InstallerPath);
-            }catch {}
+            }
+            catch
+            {
+            }
 
             return true;
         }
         catch (Exception ex)
         {
             ReportLog($"安装失败：{ex.Message}");
-            _logger.LogError("安装失败 {0}",ex.ToString());
+            _logger.LogError("安装失败 {0}", ex.ToString());
             return false;
         }
 
@@ -694,7 +698,7 @@ public class NeoForgeInstallerService
             OnLog?.Invoke(this, new InstallLogEventArgs { Message = message, Progress = progress });
             _logger.LogInformation(message);
         }
-        
+
         // 接收编译日志回调
         void ProcessOutputDataReceived(object sender, DataReceivedEventArgs e)
         {
@@ -706,6 +710,7 @@ public class NeoForgeInstallerService
                     ReportLog(logTemp);
                     logTemp = "";
                 }
+
                 logTemp += e.Data + "\n";
                 counter++;
             }
@@ -774,7 +779,9 @@ public class NeoForgeInstallerService
             NameToPath(installJobj["data"]?["MC_SRG"]?["server"]?.ToString() ?? "")));
         str = str.Replace("{PATCHED}", Path.Combine(InstallBasePath, "libraries",
             NameToPath(installJobj["data"]?["PATCHED"]?["server"]?.ToString() ?? "")));
-        str = str.Replace("{BINPATCH}", Path.Combine(InstallBasePath, "temp",(installJobj["data"]?["BINPATCH"]?["server"]?.ToString() ?? "").TrimStart('/'))); // 这个是改掉路径
+        str = str.Replace("{BINPATCH}",
+            Path.Combine(InstallBasePath, "temp",
+                (installJobj["data"]?["BINPATCH"]?["server"]?.ToString() ?? "").TrimStart('/'))); // 这个是改掉路径
         str = str.Replace("{MC_SLIM}", Path.Combine(InstallBasePath, "libraries",
             NameToPath(installJobj["data"]?["MC_SLIM"]?["server"]?.ToString() ?? "")));
         str = str.Replace("{MC_EXTRA}", Path.Combine(InstallBasePath, "libraries",
@@ -812,22 +819,51 @@ public class NeoForgeInstallerService
         return jsonObj;
     }
 
-    // MC版本号判断函数，前>后：1 ，后>前：-1，相等：0
     private int CompareMinecraftVersions(string version1, string version2)
     {
-        var v1 = version1.Split('.').Select(int.Parse).ToArray();
-        var v2 = version2.Split('.').Select(int.Parse).ToArray();
+        // 预处理：提取版本号中的“核心数字序列”
+        var v1Parts = ExtractVersionNumbers(version1);
+        var v2Parts = ExtractVersionNumbers(version2);
 
-        for (int i = 0; i < Math.Max(v1.Length, v2.Length); i++)
+        int maxLength = Math.Max(v1Parts.Count, v2Parts.Count);
+
+        for (int i = 0; i < maxLength; i++)
         {
-            int part1 = i < v1.Length ? v1[i] : 0;
-            int part2 = i < v2.Length ? v2[i] : 0;
+            int part1 = i < v1Parts.Count ? v1Parts[i] : 0;
+            int part2 = i < v2Parts.Count ? v2Parts[i] : 0;
 
             if (part1 > part2) return 1;
             if (part1 < part2) return -1;
         }
 
+        // 核心数字完全一致时的特殊处理
+        bool v1IsSnapshot = version1.Contains("-") || Regex.IsMatch(version1, "[a-zA-Z]");
+        bool v2IsSnapshot = version2.Contains("-") || Regex.IsMatch(version2, "[a-zA-Z]");
+
+        if (!v1IsSnapshot && v2IsSnapshot) return 1; // 正式版 > 测试版
+        if (v1IsSnapshot && !v2IsSnapshot) return -1; // 测试版 < 正式版
+
         return 0;
+    }
+
+    // 辅助方法：使用正则提取纯数字部分
+    private List<int> ExtractVersionNumbers(string version)
+    {
+        var numbers = new List<int>();
+        // 这个正则会匹配所有连续的数字段
+        // "26.1-snapshot-1" -> 匹配出 [26, 1, 1]
+        // "1.20.3" -> 匹配出 [1, 20, 3]
+        var matches = Regex.Matches(version, @"\d+");
+
+        foreach (Match match in matches)
+        {
+            if (int.TryParse(match.Value, out int num))
+            {
+                numbers.Add(num);
+            }
+        }
+
+        return numbers;
     }
 
     // 路径转换函数，参考：https://rechalow.gitee.io/lmaml/FirstChapter/GetCpLibraries.html 非常感谢！

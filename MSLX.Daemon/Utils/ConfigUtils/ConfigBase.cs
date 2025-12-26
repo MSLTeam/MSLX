@@ -35,14 +35,16 @@ namespace MSLX.Daemon.Utils.ConfigUtils
 
         public static string GetAppDataPath()
         {
-            if (PlatFormServices.GetOs() == "MacOS")
+            bool isMacAppBundle = PlatFormServices.GetOs() == "MacOS" && 
+                                  AppContext.BaseDirectory.Contains(".app/Contents/MacOS", StringComparison.OrdinalIgnoreCase);
+
+            if (isMacAppBundle)
             {
+                // MacOS 且在 .app 包内
                 return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MSLX", "DaemonData");
             }
-            else
-            {
-                return Path.Combine(AppContext.BaseDirectory,"DaemonData");
-            }
+            // 数据文件放在程序同级目录下
+            return Path.Combine(AppContext.BaseDirectory, "DaemonData");
         }
 
         public static string GetAppConfigPath()
