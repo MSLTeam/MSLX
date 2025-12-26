@@ -18,6 +18,7 @@
     <AssemblyCulture>zh-CN</AssemblyCulture>
     <NeutralLanguage>zh-CN</NeutralLanguage>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+	<DockerfileTag>mslx-daemon</DockerfileTag>
   </PropertyGroup>
   
 
