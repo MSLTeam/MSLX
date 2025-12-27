@@ -32,7 +32,7 @@ const formData = reactive({
   username: '',
   name: '',
   password: '',
-  role: 'user',
+  role: 'admin',
   resetApiKey: false
 });
 
