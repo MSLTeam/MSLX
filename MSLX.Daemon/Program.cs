@@ -10,6 +10,8 @@ using MSLX.Daemon.Middleware;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Services;
 
+System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // 日志级别配置

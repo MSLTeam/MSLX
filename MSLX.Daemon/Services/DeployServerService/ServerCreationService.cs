@@ -92,7 +92,7 @@ public class ServerCreationService : BackgroundService
             MinM = request.minM,
             MaxM = request.maxM,
             Args = request.args ?? "",
-            InputEncoding = PlatFormServices.GetOs() == "Windows"? "gbk" : "utf-8",
+            InputEncoding = "utf-8",
             OutputEncoding = PlatFormServices.GetOs() == "Windows"? "gbk" : "utf-8",
             FileEncoding = PlatFormServices.GetOs() == "Windows"? "gbk" : "utf-8",
         };

@@ -291,7 +291,7 @@ public class MCServerService
             // 处理编码
             Encoding inputEncoding = GetEncoding(serverInfo.InputEncoding);
             Encoding outputEncoding = GetEncoding(serverInfo.OutputEncoding);
-            _logger.LogDebug(
+            _logger.LogInformation(
                 $"实例 {instanceId} 编码设置 - 输入: {inputEncoding.EncodingName}, 输出: {outputEncoding.EncodingName}");
 
             // 配置启动参数
