@@ -1,6 +1,6 @@
 {
-  "version": "0.5.3",
-  "buildTime": "2025-12-26 15:04:49",
+  "version": "0.5.3.1",
+  "buildTime": "2025-12-27 21:48:24",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,70 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "8a830a4944db0d516073aed4cd2025284daac962",
-  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到0.5.3-beta",
+  "commitId": "e7baa436a39186b4b40029ff0f55352c34ca435e",
+  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.3.1-beta",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "e7baa436a39186b4b40029ff0f55352c34ca435e",
+      "commitTime": "2025-12-27 21:48:07 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.3.1-beta"
+    },
+    {
+      "commitId": "34781aace4e296280f4efebf6c9e92d5e3857980",
+      "commitTime": "2025-12-27 21:47:35 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(webpanel): 默认新增用户权限为admin"
+    },
+    {
+      "commitId": "3fefd6ff215481428a6328639696fc7c743f8a1f",
+      "commitTime": "2025-12-27 21:45:13 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge remote-tracking branch 'origin/master' into dev"
+    },
+    {
+      "commitId": "a89c0b15955e41b715dc9988794e7b632e88c722",
+      "commitTime": "2025-12-27 21:41:36 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复原本支持的GBK编码"
+    },
+    {
+      "commitId": "7310d5b7933d2765a4b7527f59353e19f135a176",
+      "commitTime": "2025-12-27 21:08:49 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复Docker入口文件错误"
+    },
+    {
+      "commitId": "6ad17c168d1768a443ee18c2b387f411030516fb",
+      "commitTime": "2025-12-26 15:19:03 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge branch 'master' of https://github.com/MSLTeam/MSLX"
+    },
+    {
+      "commitId": "158688416baed766e0398bf87b0e750f04bb47f1",
+      "commitTime": "2025-12-26 15:18:46 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(daemon): 修改Docker发布仓库名"
+    },
+    {
+      "commitId": "553a89228933403fe1a0362a91f9678f04afb013",
+      "commitTime": "2025-12-26 15:07:53 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #11 from MSLTeam/dev"
+    },
+    {
+      "commitId": "c3aea1daf88da128e03bfd63ea318358d457d385",
+      "commitTime": "2025-12-26 15:06:55 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复忽略Eula的配置保存问题"
+    },
+    {
+      "commitId": "b530c0ff3c1bab00e08ae549c58f94d3c7aa8287",
+      "commitTime": "2025-12-26 15:06:23 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v0.5.3-beta 版本前端资源"
+    },
     {
       "commitId": "8a830a4944db0d516073aed4cd2025284daac962",
       "commitTime": "2025-12-26 15:04:24 +0800",
@@ -311,66 +371,6 @@
       "commitTime": "2025-12-19 12:11:55 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.0-beta"
-    },
-    {
-      "commitId": "a8bad6fce7cac1a2c0395ea1a7a5e1af9b1336a9",
-      "commitTime": "2025-12-19 12:02:31 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 登录成功后显示欢迎通知"
-    },
-    {
-      "commitId": "d5e047f117bfb06d6057f760168a0e84fa11cbaf",
-      "commitTime": "2025-12-19 11:01:22 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复后台任务没有在退出时正常处理"
-    },
-    {
-      "commitId": "f67e2dd1ad44b85f22bf6bef84603aa5e06a0567",
-      "commitTime": "2025-12-18 23:33:52 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 优化文件管理器下载文件"
-    },
-    {
-      "commitId": "7174759e9c90bdefcb4cd1822799c81cae0560a6",
-      "commitTime": "2025-12-18 23:30:26 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复一些循环任务在退出时报错"
-    },
-    {
-      "commitId": "737cce65445c77d2cbd2516e54257f894f00f380",
-      "commitTime": "2025-12-18 23:18:35 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复在Windows下Java选择Java Path时无法正确监控资源的问题"
-    },
-    {
-      "commitId": "939feab2b127687881a14fed55f666ddf3de3f69",
-      "commitTime": "2025-12-18 23:10:20 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 程序内配置日志级别"
-    },
-    {
-      "commitId": "3c79a754458ab1fe552671bbd0c20a9dd18cd838",
-      "commitTime": "2025-12-18 22:44:59 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复创建服务器页面在自定义背景模式下丢失容器背景色的问题"
-    },
-    {
-      "commitId": "c1fe1f435e5500d95cb02b24873f9496d013e440",
-      "commitTime": "2025-12-18 22:38:49 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复开启背景美化后服务端核心选择组件变成透明的问题"
-    },
-    {
-      "commitId": "cca315a3593079a4a3d832a466a6f29391716445",
-      "commitTime": "2025-12-18 22:28:44 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 调整服务端核心选择器宽度和高度"
-    },
-    {
-      "commitId": "3377f89109f8ad8cb75738b204f88dd00f05f2e4",
-      "commitTime": "2025-12-18 18:46:34 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #8 from MSLTeam/dev"
     }
   ]
 }
