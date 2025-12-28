@@ -11,6 +11,7 @@ env:
 
 jobs:
   build-and-push:
+    name: 构建 & 推送 Docker 镜像
     runs-on: ubuntu-latest
     steps:
       - name: 拉取代码
@@ -28,7 +29,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: 获取元数据a
+      - name: 获取元数据
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -38,8 +39,8 @@ jobs:
             type=raw,value=latest
             # 自动把 git tag (v0.5.3.1) 解析为 0.5.3.1
             type=ref,event=tag
-            # 如果是手动触发，就用 manual
-            type=raw,value=manual,enable=${{ github.event_name == 'workflow_dispatch' }}
+            # 如果是手动触发，就用 dev
+            type=raw,value=dev,enable=${{ github.event_name == 'workflow_dispatch' }}
 
       - name: 构建并推送
         uses: docker/build-push-action@v5
