@@ -1,46 +1,72 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
-    <ApplicationIcon>icon.ico</ApplicationIcon>
-    <Version>0.5.3.1-beta</Version>
-    <FileVersion>0.5.3.1</FileVersion>
-    <AssemblyVersion>0.5.3.1</AssemblyVersion>
-    <Copyright>Copyright © 2021 - 2025 MSLTeam</Copyright>
-    <AssemblyName>MSLX-Daemon</AssemblyName>
-    <AssemblyTitle>MSLX.Daemon</AssemblyTitle>
-    <AssemblyDescription>MSLX Daemon</AssemblyDescription>
-    <AssemblyCompany>MSLTeam</AssemblyCompany>
-    <AssemblyCopyright>Copyright © 2021 - 2025 MSLTeam</AssemblyCopyright>
-    <AssemblyTrademark>MSLTeam</AssemblyTrademark>
-    <AssemblyCulture>zh-CN</AssemblyCulture>
-    <NeutralLanguage>zh-CN</NeutralLanguage>
-    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-	<DockerfileTag>mslx-daemon</DockerfileTag>
-  </PropertyGroup>
-  
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
+		<ApplicationIcon>icon.ico</ApplicationIcon>
+		<Version>0.5.3.1-beta</Version>
+		<FileVersion>0.5.3.1</FileVersion>
+		<AssemblyVersion>0.5.3.1</AssemblyVersion>
+		<Copyright>Copyright © 2021 - 2025 MSLTeam</Copyright>
+		<AssemblyName>MSLX-Daemon</AssemblyName>
+		<AssemblyTitle>MSLX.Daemon</AssemblyTitle>
+		<AssemblyDescription>MSLX Daemon</AssemblyDescription>
+		<AssemblyCompany>MSLTeam</AssemblyCompany>
+		<AssemblyCopyright>Copyright © 2021 - 2025 MSLTeam</AssemblyCopyright>
+		<AssemblyTrademark>MSLTeam</AssemblyTrademark>
+		<AssemblyCulture>zh-CN</AssemblyCulture>
+		<NeutralLanguage>zh-CN</NeutralLanguage>
+		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+		<ContainerRepository>mslx-daemon</ContainerRepository>
 
-  <ItemGroup>
-    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
-    <PackageReference Include="Cronos" Version="0.11.1" />
-    <PackageReference Include="Downloader" Version="4.0.3" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.1" />
-    <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="10.0.1" />
-    <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
-    <PackageReference Include="System.Diagnostics.PerformanceCounters" Version="1.0.21-alpha" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
-    <PackageReference Include="System.Management" Version="10.0.1" />
-    <PackageReference Include="System.Text.Encoding.CodePages" Version="10.0.1" NoWarn="NU1510"/>
-    <PackageReference Include="Tomlyn" Version="0.19.0" />
-  </ItemGroup>
+		<ContainerImageTags>latest;$(Version)</ContainerImageTags>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <EmbeddedResource Include="Frontend/**" LogicalName="wwwroot/%(RecursiveDir)%(FileName)%(Extension)" />
-  </ItemGroup>
 
+	<ItemGroup>
+		<PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+		<PackageReference Include="Cronos" Version="0.11.1" />
+		<PackageReference Include="Downloader" Version="4.0.3" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.1" />
+		<PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="10.0.1" />
+		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+		<PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
+		<PackageReference Include="System.Diagnostics.PerformanceCounters" Version="1.0.21-alpha" />
+		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
+		<PackageReference Include="System.Management" Version="10.0.1" />
+		<PackageReference Include="System.Text.Encoding.CodePages" Version="10.0.1" NoWarn="NU1510"/>
+		<PackageReference Include="Tomlyn" Version="0.19.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="Frontend/**" LogicalName="wwwroot/%(RecursiveDir)%(FileName)%(Extension)" />
+	</ItemGroup>
+
+	<Target Name="PushMultiArch" AfterTargets="DockerPublish">
+		<PropertyGroup>
+			<ImageName>xiaoyululu/$(ContainerRepository)</ImageName>
+			<FullVersion>$(Version)</FullVersion>
+		</PropertyGroup>
+
+		<Message Text="====== [开始扩展构建] ======" Importance="high" />
+
+		<Message Text="[1/3] 同步 amd64 版本号标签..." Importance="high" />
+		<Exec Command="docker tag $(ContainerRepository):$(FullVersion) $(ImageName):$(FullVersion)" />
+		<Exec Command="docker push $(ImageName):$(FullVersion)" />
+
+		<Message Text="[2/3] 正在构建并推送 ARM64 镜像 ($(ImageName):$(FullVersion)-arm64)..." Importance="high" />
+
+		<Exec Command="docker buildx create --use --name vs_multiarch_builder || docker buildx use vs_multiarch_builder" IgnoreExitCode="true" />
+
+		<Exec Command="docker buildx build --platform linux/arm64 -f Dockerfile -t $(ImageName):$(FullVersion)-arm64 -t $(ImageName):latest-arm64 --push .." WorkingDirectory="$(MSBuildProjectDirectory)" />
+		<Message Text="[3/3] 正在合并 Manifest ..." Importance="high" />
+
+		<Exec Command="docker buildx imagetools create -t $(ImageName):$(FullVersion) $(ImageName):$(FullVersion) $(ImageName):$(FullVersion)-arm64" />
+
+		<Exec Command="docker buildx imagetools create -t $(ImageName):latest $(ImageName):latest $(ImageName):latest-arm64" />
+		<Message Text="====== [构建完成] ARM64 镜像已上传 ======" Importance="high" />
+	</Target>
 </Project>

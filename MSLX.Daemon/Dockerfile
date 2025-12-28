@@ -16,10 +16,8 @@ RUN \
     fi && \
     # 旧版 Debian/Ubuntu 的传统配置 (sources.list)
     if [ -f /etc/apt/sources.list ]; then \
-        # 替换 Ubuntu 域名
         sed -i 's/archive.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
         sed -i 's/security.ubuntu.com/mirrors.aliyun.com/g' /etc/apt/sources.list && \
-        # 替换 Debian 域名
         sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
         sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list; \
     fi
@@ -47,18 +45,30 @@ EXPOSE 1027
 
 ENV host=*
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+# ▼▼▼ 修改 1: 加上 --platform=$BUILDPLATFORM 使用本机架构运行 SDK ▼▼▼
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
+
+# ▼▼▼ 修改 2: 引入目标架构变量 ▼▼▼
+ARG TARGETARCH
+
 WORKDIR /src
 COPY ["MSLX.Daemon/MSLX.Daemon.csproj", "MSLX.Daemon/"]
-RUN dotnet restore "./MSLX.Daemon/MSLX.Daemon.csproj"
+
+# ▼▼▼ 修改 3: restore 加上 -a $TARGETARCH ▼▼▼
+RUN dotnet restore "./MSLX.Daemon/MSLX.Daemon.csproj" -a $TARGETARCH
+
 COPY . .
 WORKDIR "/src/MSLX.Daemon"
-RUN dotnet build "./MSLX.Daemon.csproj" -c $BUILD_CONFIGURATION -o /app/build
+
+# ▼▼▼ 修改 4: build 加上 -a $TARGETARCH ▼▼▼
+RUN dotnet build "./MSLX.Daemon.csproj" -c $BUILD_CONFIGURATION -o /app/build -a $TARGETARCH
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./MSLX.Daemon.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+
+# ▼▼▼ 修改 5: publish 加上 -a $TARGETARCH ▼▼▼
+RUN dotnet publish "./MSLX.Daemon.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false -a $TARGETARCH
 
 FROM base AS final
 WORKDIR /app
