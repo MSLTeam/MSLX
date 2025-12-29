@@ -20,7 +20,6 @@
 		<NeutralLanguage>zh-CN</NeutralLanguage>
 		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 		<ContainerRepository>mslx-daemon</ContainerRepository>
-
 		<ContainerImageTags>latest;$(Version)</ContainerImageTags>
 	</PropertyGroup>
 
@@ -44,29 +43,4 @@
 	<ItemGroup>
 		<EmbeddedResource Include="Frontend/**" LogicalName="wwwroot/%(RecursiveDir)%(FileName)%(Extension)" />
 	</ItemGroup>
-
-	<Target Name="PushMultiArch" AfterTargets="DockerPublish">
-		<PropertyGroup>
-			<ImageName>xiaoyululu/$(ContainerRepository)</ImageName>
-			<FullVersion>$(Version)</FullVersion>
-		</PropertyGroup>
-
-		<Message Text="====== [开始扩展构建] ======" Importance="high" />
-
-		<Message Text="[1/3] 同步 amd64 版本号标签..." Importance="high" />
-		<Exec Command="docker tag $(ContainerRepository):$(FullVersion) $(ImageName):$(FullVersion)" />
-		<Exec Command="docker push $(ImageName):$(FullVersion)" />
-
-		<Message Text="[2/3] 正在构建并推送 ARM64 镜像 ($(ImageName):$(FullVersion)-arm64)..." Importance="high" />
-
-		<Exec Command="docker buildx create --use --name vs_multiarch_builder || docker buildx use vs_multiarch_builder" IgnoreExitCode="true" />
-
-		<Exec Command="docker buildx build --platform linux/arm64 -f Dockerfile -t $(ImageName):$(FullVersion)-arm64 -t $(ImageName):latest-arm64 --push .." WorkingDirectory="$(MSBuildProjectDirectory)" />
-		<Message Text="[3/3] 正在合并 Manifest ..." Importance="high" />
-
-		<Exec Command="docker buildx imagetools create -t $(ImageName):$(FullVersion) $(ImageName):$(FullVersion) $(ImageName):$(FullVersion)-arm64" />
-
-		<Exec Command="docker buildx imagetools create -t $(ImageName):latest $(ImageName):latest $(ImageName):latest-arm64" />
-		<Message Text="====== [构建完成] ARM64 镜像已上传 ======" Importance="high" />
-	</Target>
 </Project>
