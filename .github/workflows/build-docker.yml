@@ -10,7 +10,7 @@ env:
   # Docker Hub 的镜像名
   IMAGE_NAME: xiaoyululu/mslx-daemon
   # 腾讯云仓库地址
-  TENCENT_REGISTRY: hkccr.ccs.tencentyun.com
+  TENCENT_REGISTRY: ccr.ccs.tencentyun.com
 
 jobs:
   build-and-push:
