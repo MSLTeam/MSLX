@@ -7,10 +7,12 @@ on:
   workflow_dispatch:
 
 env:
-  # Docker Hub 的镜像名
+  # Docker Hub 镜像名
   IMAGE_NAME: xiaoyululu/mslx-daemon
-  # 腾讯云仓库地址
+  # 腾讯云仓库地址 (香港)
   TENCENT_REGISTRY: hkccr.ccs.tencentyun.com
+  # 腾讯云仓库地址 (新加坡)
+  TENCENT_SG_REGISTRY: sgccr.ccs.tencentyun.com
 
 jobs:
   build-and-push:
@@ -33,11 +35,19 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # --- 腾讯云 ---
-      - name: 登录腾讯云 TCR
+      # --- 腾讯云 (香港) ---
+      - name: 登录腾讯云 TCR (香港)
         uses: docker/login-action@v3
         with:
           registry: ${{ env.TENCENT_REGISTRY }}
+          username: ${{ secrets.TENCENT_DOCKER_USERNAME }}
+          password: ${{ secrets.TENCENT_DOCKER_PASSWORD }}
+
+      # --- 腾讯云 (新加坡) ---
+      - name: 登录腾讯云 TCR (新加坡)
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.TENCENT_SG_REGISTRY }}
           username: ${{ secrets.TENCENT_DOCKER_USERNAME }}
           password: ${{ secrets.TENCENT_DOCKER_PASSWORD }}
 
@@ -45,10 +55,11 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          # Docker Hub 和 腾讯云 的镜像地址
+          # 在这里列出所有需要推送的目标镜像地址
           images: |
             ${{ env.IMAGE_NAME }}
             ${{ env.TENCENT_REGISTRY }}/${{ env.IMAGE_NAME }}
+            ${{ env.TENCENT_SG_REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest
             type=ref,event=tag
@@ -61,6 +72,6 @@ jobs:
           file: ./MSLX.Daemon/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          # output.tags 会自动包含两个仓库的地址，buildx 会推送给两边
+          # output.tags 会自动包含三个仓库的地址，buildx 会并发推送给三边
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
