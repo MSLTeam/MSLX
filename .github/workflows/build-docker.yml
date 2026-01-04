@@ -11,8 +11,6 @@ env:
   IMAGE_NAME: xiaoyululu/mslx-daemon
   # 腾讯云仓库地址 (香港)
   TENCENT_REGISTRY: hkccr.ccs.tencentyun.com
-  # 腾讯云仓库地址 (新加坡)
-  TENCENT_SG_REGISTRY: sgccr.ccs.tencentyun.com
 
 jobs:
   build-and-push:
@@ -43,23 +41,14 @@ jobs:
           username: ${{ secrets.TENCENT_DOCKER_USERNAME }}
           password: ${{ secrets.TENCENT_DOCKER_PASSWORD }}
 
-      # --- 腾讯云 (新加坡) ---
-      - name: 登录腾讯云 TCR (新加坡)
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.TENCENT_SG_REGISTRY }}
-          username: ${{ secrets.TENCENT_DOCKER_USERNAME }}
-          password: ${{ secrets.TENCENT_DOCKER_PASSWORD }}
-
       - name: 获取元数据
         id: meta
         uses: docker/metadata-action@v5
         with:
-          # 在这里列出所有需要推送的目标镜像地址
+          # 只保留 Docker Hub 和 腾讯云香港
           images: |
             ${{ env.IMAGE_NAME }}
             ${{ env.TENCENT_REGISTRY }}/${{ env.IMAGE_NAME }}
-            ${{ env.TENCENT_SG_REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=latest
             type=ref,event=tag
@@ -72,6 +61,6 @@ jobs:
           file: ./MSLX.Daemon/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          # output.tags 会自动包含三个仓库的地址，buildx 会并发推送给三边
+          # tags 会自动包含 Docker Hub 和 香港 两个目标
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
