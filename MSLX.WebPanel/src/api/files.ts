@@ -139,9 +139,9 @@ export async function changeFileMode(instanceId: number, path: string, mode: str
 
 // 模组/插件管理
 
-export async function getPluginsOrModsList(instanceId: number, type: 'mods' | 'plugins'){
+export async function getPluginsOrModsList(instanceId: number, type: 'mods' | 'plugins',checkClient: boolean){
   return await request.get<PluginsAndModsListModel>({
-    url: `/api/files/pm/instance/${instanceId}/list`,
+    url: `/api/files/pm/instance/${instanceId}/list?${checkClient?'checkClient=true':''}`,
     params: { mode: type }
   });
 }

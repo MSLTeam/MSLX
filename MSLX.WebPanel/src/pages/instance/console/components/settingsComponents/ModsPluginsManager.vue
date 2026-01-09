@@ -29,6 +29,7 @@ const instanceId = parseInt(route.params.serverId as string);
 interface FileItem {
   name: string;
   status: 'enabled' | 'disabled';
+  isClient?: boolean;
 }
 
 // --- 状态管理 ---
@@ -70,18 +71,32 @@ const displayList = computed(() => {
 });
 
 // --- 核心逻辑：获取列表 ---
-const fetchData = async () => {
+const fetchData = async (checkClient = false) => {
   loading.value = true;
   selectedRowKeys.value = [];
   errorMsg.value = ''; // 每次请求前重置错误信息
   try {
-    const res = await getPluginsOrModsList(instanceId, mode.value);
+    const res = await getPluginsOrModsList(instanceId, mode.value, checkClient);
+
+    // 客户端模组
+    const clientFiles = (res.clientJarFiles || []).map((name: string) => ({
+      name,
+      status: 'enabled',
+      isClient: true
+    } as FileItem));
 
     // 数据转换
     const activeFiles = (res.jarFiles || []).map(name => ({ name, status: 'enabled' } as FileItem));
     const disabledFiles = (res.disableJarFiles || []).map(name => ({ name, status: 'disabled' } as FileItem));
 
-    rawList.value = [...activeFiles, ...disabledFiles];
+    rawList.value = [...clientFiles, ...activeFiles, ...disabledFiles];
+
+    // 如果检测到了客户端模组，给个提示
+    if (checkClient && clientFiles.length > 0) {
+      MessagePlugin.success(`检测到 ${clientFiles.length} 个客户端模组`);
+    } else if (checkClient) {
+      MessagePlugin.info('未检测到仅客户端模组');
+    }
 
   } catch (e: any) {
     const msg = e.message || '获取列表失败';
@@ -205,7 +220,7 @@ watch(() => route.params.serverId, (newId) => {
     <div v-if="errorMsg" class="error-alert-bar">
       <t-alert theme="error" :message="errorMsg" closeable @close="errorMsg = ''">
         <template #operation>
-          <span style="cursor: pointer; margin-left: 8px" @click="fetchData">重试</span>
+          <span style="cursor: pointer; margin-left: 8px" @click="fetchData(false)">重试</span>
         </template>
       </t-alert>
     </div>
@@ -216,7 +231,16 @@ watch(() => route.params.serverId, (newId) => {
           <template #icon><upload-icon /></template>
           上传文件
         </t-button>
-        <t-button variant="outline" :loading="loading" @click="fetchData">
+        <t-button
+          v-if="mode === 'mods'"
+          variant="outline"
+          :loading="loading"
+          @click="fetchData(true)"
+        >
+          <template #icon><search-icon /></template>
+          检测客户端模组
+        </t-button>
+        <t-button variant="outline" :loading="loading" @click="fetchData(false)">
           <template #icon><refresh-icon /></template>
         </t-button>
 
@@ -250,6 +274,19 @@ watch(() => route.params.serverId, (newId) => {
         stripe
         class="custom-table"
       >
+        <template #name="{ row }">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span>{{ row.name }}</span>
+            <t-tag
+              v-if="row.isClient"
+              theme="primary"
+              variant="light"
+              size="small"
+            >
+              客户端
+            </t-tag>
+          </div>
+        </template>
         <template #status="{ row }">
           <t-tag v-if="row.status === 'enabled'" theme="success" variant="light">
             <template #icon><check-circle-icon /></template>
