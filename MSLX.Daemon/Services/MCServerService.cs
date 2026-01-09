@@ -412,6 +412,38 @@ public class MCServerService
 
         return false;
     }
+    
+    /// <summary>
+    /// 强制终止服务器进程
+    /// </summary>
+    public bool ForceKillServer(uint instanceId)
+    {
+        if (_activeServers.TryGetValue(instanceId, out var context))
+        {
+            try
+            {
+                context.IsStopping = true;
+
+                if (context.Process != null && !context.Process.HasExited)
+                {
+                    // 干掉进程！
+                    context.Process.Kill();
+                    RecordLog(instanceId, context, "[MSLX] 正在强制结束进程······");
+                    
+                    context.Process.WaitForExit(1000); 
+                }
+                
+                _activeServers.TryRemove(instanceId, out _);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"强制终止服务器 [{instanceId}] 时出错");
+                RecordLog(instanceId, context, $">>> [MSLX] 强制终止失败: {ex.Message}");
+            }
+        }
+        return false;
+    }
 
     /// <summary>
     /// 向服务器发送命令

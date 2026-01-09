@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
+import { MessagePlugin } from 'tdesign-vue-next';
 
 // 组件
 import ServerTerminal from './components/ServerTerminal.vue';
@@ -69,6 +69,22 @@ const handleStop = async () => {
     loading.value = false;
   } catch (e: any) {
     terminalRef.value?.writeln(`\x1b[1;31m[Error] 停止失败: ${e.message}\x1b[0m`);
+    loading.value = false;
+  }
+};
+
+
+// 强制退出
+const handleForceExit = async () => {
+  loading.value = true;
+  try {
+    terminalRef.value?.writeln('\x1b[1;32m[System] 正在发送强制退出指令...\x1b[0m');
+    await postInstanceAction(serverId.value, 'forceExit');
+    // isRunning.value = false;
+    MessagePlugin.warning('强制退出指令已发送');
+    loading.value = false;
+  } catch (e: any) {
+    terminalRef.value?.writeln(`\x1b[1;31m[Error] 强制退出失败: ${e.message}\x1b[0m`);
     loading.value = false;
   }
 };
@@ -153,6 +169,7 @@ onMounted(async () => {
           @stop="handleStop"
           @backup="handleBackup"
           @clear-log="handleClearLog"
+          @force-exit="handleForceExit"
         />
       </div>
     </div>

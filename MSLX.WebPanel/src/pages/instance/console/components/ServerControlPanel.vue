@@ -3,12 +3,11 @@ import { ref, computed, watch, onUnmounted } from 'vue';
 import {
   DashboardIcon, DesktopIcon, PlayCircleIcon, RefreshIcon, StopCircleIcon,
   TimeIcon, SettingIcon, FolderIcon, ArrowLeftRight1Icon, EnterIcon,
-  WinkIcon, UserUnlockedIcon, CloudIcon, ChartBarIcon, InfoCircleIcon
+  WinkIcon, UserUnlockedIcon, ChartBarIcon, InfoCircleIcon, CloseCircleIcon
 } from 'tdesign-icons-vue-next';
 import { InstanceInfoModel } from '@/api/model/instance';
 import InstanceSettings from './InstanceSettings.vue';
 import InstanceMonitor from './InstanceMonitor.vue';
-import { changeUrl } from '@/router';
 
 // --- Props & Emits ---
 const props = defineProps<{
@@ -19,7 +18,7 @@ const props = defineProps<{
 }>();
 
 const emits = defineEmits<{
-  start: []; stop: []; 'clear-log': []; 'refresh-info': []; backup: [];
+  start: []; stop: []; 'clear-log': []; 'refresh-info': []; backup: []; 'force-exit': [];
 }>();
 
 const settingsRef = ref<InstanceType<typeof InstanceSettings> | null>(null);
@@ -78,19 +77,32 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
         >
           <template #icon><play-circle-icon /></template>启动实例
         </t-button>
-        <t-button v-else theme="danger" size="large" block :loading="loading" @click="$emit('stop')">
-          <template #icon><stop-circle-icon /></template>停止实例
-        </t-button>
 
-        <div class="action-row">
-          <t-button class="glass-btn" variant="outline" block @click="changeUrl(`/instance/files/${serverId}`)">
-            <template #icon><folder-icon /></template>文件
+        <template v-else>
+          <t-button
+            theme="danger"
+            size="large"
+            block
+            :loading="loading"
+            :variant="loading ? 'outline' : 'base'"
+            @click="!loading && $emit('stop')"
+          >
+            <template #icon><stop-circle-icon /></template>
+            {{ loading ? '正在停止...' : '停止实例' }}
           </t-button>
 
-          <t-button class="glass-btn" variant="outline" block :disabled="!isRunning" :loading="loading" @click="$emit('backup')">
-            <template #icon><cloud-icon /></template>备份
+          <t-button
+            v-if="loading"
+            class="force-kill-btn"
+            theme="danger"
+            variant="dashed"
+            block
+            @click="$emit('force-exit')"
+          >
+            <template #icon><close-circle-icon /></template>
+            强制结束
           </t-button>
-        </div>
+        </template>
 
         <div class="action-row">
           <t-button class="glass-btn" variant="outline" theme="warning" block @click="$emit('clear-log')">
@@ -239,6 +251,25 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
         }
       }
     }
+  }
+
+  // 强制退出
+  .force-kill-btn {
+    margin-top: -8px;
+    margin-left: 0;
+    animation: fadeIn 0.3s ease-in-out;
+    border-color: var(--td-error-color-4);
+    color: var(--td-error-color);
+
+    &:hover {
+      background-color: var(--td-error-color-1);
+      border-color: var(--td-error-color);
+    }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 }
 
