@@ -32,13 +32,37 @@ interface FileItem {
   isClient?: boolean;
 }
 
+
+
 // --- 状态管理 ---
 const mode = ref<'mods' | 'plugins'>('mods'); // 当前模式
 const loading = ref(false);
 const rawList = ref<FileItem[]>([]); // 原始数据
 const filterText = ref(''); // 搜索关键词
 const selectedRowKeys = ref<Array<string | number>>([]); // 多选选中项
-const errorMsg = ref(''); // 新增：用于存储加载失败的错误信息
+const errorMsg = ref(''); // 用于存储加载失败的错误信息
+
+// --- 计算属性：过滤后的列表 ---
+const displayList = computed(() => {
+  if (!filterText.value) return rawList.value;
+  const key = filterText.value.toLowerCase();
+  return rawList.value.filter(item => item.name.toLowerCase().includes(key));
+});
+
+// 表单分页
+const pagination = ref({
+  current: 1,
+  pageSize: 20,
+  total: 0,
+  showJumper: true
+});
+
+watch(displayList, (newList) => {
+  pagination.value.total = newList.length;
+  if (filterText.value) pagination.value.current = 1;
+}, { immediate: true });
+
+
 
 // --- 表格列定义 ---
 const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
@@ -62,13 +86,6 @@ const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
     align: 'right'
   },
 ]);
-
-// --- 计算属性：过滤后的列表 ---
-const displayList = computed(() => {
-  if (!filterText.value) return rawList.value;
-  const key = filterText.value.toLowerCase();
-  return rawList.value.filter(item => item.name.toLowerCase().includes(key));
-});
 
 // --- 核心逻辑：获取列表 ---
 const fetchData = async (checkClient = false) => {
@@ -233,6 +250,7 @@ watch(() => route.params.serverId, (newId) => {
         </t-button>
         <t-button
           v-if="mode === 'mods'"
+          :disabled="errorMsg !== ''"
           variant="outline"
           :loading="loading"
           @click="fetchData(true)"
@@ -265,11 +283,11 @@ watch(() => route.params.serverId, (newId) => {
     <div class="table-wrapper">
       <t-table
         v-model:selected-row-keys="selectedRowKeys"
+        v-model:pagination="pagination"
         :data="displayList"
         :columns="columns"
         :row-key="'name'"
         :loading="loading"
-        :pagination="{ defaultPageSize: 20, total: displayList.length, showJumper: true }"
         hover
         stripe
         class="custom-table"
@@ -279,7 +297,7 @@ watch(() => route.params.serverId, (newId) => {
             <span>{{ row.name }}</span>
             <t-tag
               v-if="row.isClient"
-              theme="primary"
+              theme="warning"
               variant="light"
               size="small"
             >
