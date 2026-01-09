@@ -1,6 +1,6 @@
 {
   "name": "mslx-webpanel",
-  "version": "0.5.3.1",
+  "version": "0.5.4",
   "scripts": {
     "dev": "vite --mode development",
     "dev:linux": "vite --mode development",
