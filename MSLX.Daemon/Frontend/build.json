@@ -1,6 +1,6 @@
 {
-  "version": "0.5.3.1",
-  "buildTime": "2025-12-27 21:48:24",
+  "version": "0.5.4",
+  "buildTime": "2026-01-09 21:45:40",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,136 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "e7baa436a39186b4b40029ff0f55352c34ca435e",
-  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.3.1-beta",
+  "commitId": "b86a0a00634e010fe0b49621c7d61af685c00f97",
+  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到v0.5.4-beta",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "b86a0a00634e010fe0b49621c7d61af685c00f97",
+      "commitTime": "2026-01-09 21:45:20 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到v0.5.4-beta"
+    },
+    {
+      "commitId": "3cc7d2bf5fb6ee3775297001f9e6893fba13e58e",
+      "commitTime": "2026-01-09 21:43:22 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 自动勾选检测到的客户端模组"
+    },
+    {
+      "commitId": "d17aec774132d1889dc870ddf060e6b4be6cf967",
+      "commitTime": "2026-01-09 21:41:37 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复模组/插件管理界面首次加载分页失效的问题"
+    },
+    {
+      "commitId": "4bcc3dcc13e07bd2bd03ab5e4df492a776f43346",
+      "commitTime": "2026-01-09 16:56:15 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复控制台按钮丢了"
+    },
+    {
+      "commitId": "6f6e9b7bf1a04807daba9fb60475523489418d2c",
+      "commitTime": "2026-01-09 16:56:02 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 新增仅客户端模组的检测功能"
+    },
+    {
+      "commitId": "8e4c6408b3b7bb68bf17586a6dc0a5424ef2fde4",
+      "commitTime": "2026-01-09 16:23:59 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 实现直接重启功能"
+    },
+    {
+      "commitId": "2588126442672d8b5f48c2b2d3433a10644a33af",
+      "commitTime": "2026-01-09 16:09:13 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 新增强制结束进程功能"
+    },
+    {
+      "commitId": "2634879dc4b7bcba5e64c66a5eaad527e083592f",
+      "commitTime": "2026-01-04 16:57:19 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(daemon): 移除TCR的新加坡地域推送"
+    },
+    {
+      "commitId": "ed0ffcba69b721019d3079a6285444ddc127e579",
+      "commitTime": "2026-01-04 15:32:13 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(daemon): docker版本新增TCR新加坡地域推送"
+    },
+    {
+      "commitId": "f82b06a7190e454a1fd1b49e0e56d528d7908fe3",
+      "commitTime": "2026-01-03 22:45:46 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "buid(daemon): 放弃了喵 还算用TCR HK Region吧~"
+    },
+    {
+      "commitId": "3993404fbf8a88dddae5d0dd8b643780f306af74",
+      "commitTime": "2026-01-03 22:14:53 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(daemon): 再次测试TCR广州地域"
+    },
+    {
+      "commitId": "726c31222f7e0b1dc94f57408ca2693a3cafa771",
+      "commitTime": "2026-01-03 19:51:40 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(daemon): 更改腾讯云TCR服务到香港区域"
+    },
+    {
+      "commitId": "8f31ac86e2ffbe50107c7bab39fe514a99bacdfa",
+      "commitTime": "2026-01-03 19:35:50 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(daemon): 新增腾讯云TCR推送"
+    },
+    {
+      "commitId": "63bacac2dbad3951123d77b7739dbfef90562d22",
+      "commitTime": "2025-12-29 12:07:28 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(daemon): 优化Dockerfile"
+    },
+    {
+      "commitId": "162f76f8cf4282353ef3bca1e564e092693e174c",
+      "commitTime": "2025-12-29 11:55:44 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(daemon): 移除本地多余构建步骤"
+    },
+    {
+      "commitId": "76d0de012dea3e226ab4caa13c2605e402e3cbb7",
+      "commitTime": "2025-12-29 00:14:08 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "actions(daemon): 优化工作流"
+    },
+    {
+      "commitId": "9f07378f4c4c12da8a9ff0063555c15d8f4aa8f9",
+      "commitTime": "2025-12-28 23:58:05 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "actions(daemon): 守护进程端的Docker自动推送"
+    },
+    {
+      "commitId": "b67eb505846b36faa6d8cbd8f21d8754073ba371",
+      "commitTime": "2025-12-27 22:57:32 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(daemon): 移除依赖包警告"
+    },
+    {
+      "commitId": "ef3401d52c2b014c0faa9856c918b8baf7e06571",
+      "commitTime": "2025-12-27 22:35:22 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(daemon): 优化创建服务端默认编码设置"
+    },
+    {
+      "commitId": "3e927a740f49e9b3ad54bcbd5eb7ba8c4c2daf7e",
+      "commitTime": "2025-12-27 21:49:34 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #12 from MSLTeam/dev"
+    },
+    {
+      "commitId": "45f8aad12850bb99cfbb2f16f92599499d1363b2",
+      "commitTime": "2025-12-27 21:48:58 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v0.5.3.1-beta 前端资源"
+    },
     {
       "commitId": "e7baa436a39186b4b40029ff0f55352c34ca435e",
       "commitTime": "2025-12-27 21:48:07 +0800",
@@ -245,132 +371,6 @@
       "commitTime": "2025-12-20 19:09:18 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "feat(webpanel): 在关于页面新增内测人员鸣谢信息"
-    },
-    {
-      "commitId": "605080bb0e933825fd4268203767aeeb43eea37d",
-      "commitTime": "2025-12-20 15:09:58 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 添加忘记密码弹窗功能"
-    },
-    {
-      "commitId": "5dab4d0b4be5322038f7dd97b1fd42cd9b9a9dd3",
-      "commitTime": "2025-12-20 15:01:18 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(webpanel): 优化注释内容"
-    },
-    {
-      "commitId": "cee2f94fc3a808f55fbfa40c2b426ae4a61a83b5",
-      "commitTime": "2025-12-20 14:58:49 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 首次启动时，新增网页控制台的初始化提示"
-    },
-    {
-      "commitId": "24434c896d7fffa9421be4dfd9fa5f94376622ba",
-      "commitTime": "2025-12-20 12:09:25 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "perf(daemon): 删除eula事件中没必要的java检测"
-    },
-    {
-      "commitId": "8f12bd02bd0cb27cff0711a017f803c5398a015b",
-      "commitTime": "2025-12-20 12:04:23 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "feat: 新的同意EULA交互逻辑 perf: 部分功能优化 fix: 修复一些奇奇怪怪的问题"
-    },
-    {
-      "commitId": "6edc9870a71d47a93a2213282f7a16991d431250",
-      "commitTime": "2025-12-20 00:22:28 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "perf(daemon): 优化ConfigUtils，防止后续越堆越史（） perf(daemon): 为部分代码优化null空类型转换 fix(daemon): 可能会修复一些bug，也可能会增加一些bug（）"
-    },
-    {
-      "commitId": "77a821c05387e9e94b1456708713ca21ae661b34",
-      "commitTime": "2025-12-19 21:27:05 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "Merge branch 'master' into dev"
-    },
-    {
-      "commitId": "2a40118636d7473a2a6c6e7e28fdf01b59341b27",
-      "commitTime": "2025-12-19 21:23:32 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "perf: 优化"
-    },
-    {
-      "commitId": "0c8ed667a3766f9d6aff2c6804cac49cc31f7b32",
-      "commitTime": "2025-12-19 21:12:52 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "Merge branch 'master' of https://github.com/MSLTeam/MSLX"
-    },
-    {
-      "commitId": "f9950ce802c703f9856da00545d717f4c5a47a6f",
-      "commitTime": "2025-12-19 21:12:27 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "芝士什么"
-    },
-    {
-      "commitId": "c6b777fd2558c9083b4d50fac8c1d32c0f0d1cf6",
-      "commitTime": "2025-12-19 14:06:10 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修正注释"
-    },
-    {
-      "commitId": "5dc499f447bf405649a834c7730a173669795807",
-      "commitTime": "2025-12-19 14:04:31 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(webpanel): 嵌入 v0.5.1-beta 版本前端资源"
-    },
-    {
-      "commitId": "62ec67e9ed71da24cf2fc1a943d9c06894774201",
-      "commitTime": "2025-12-19 14:04:05 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(webpanel): 嵌入 v0.5.1-beta 版本前端资源"
-    },
-    {
-      "commitId": "7b386bd70e6827544e40a33eb0f3c764c781ce68",
-      "commitTime": "2025-12-19 14:02:28 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复文件下载地址错误"
-    },
-    {
-      "commitId": "a5a96610b11701690ce4e41ce7a3dcf8684fdc7b",
-      "commitTime": "2025-12-19 13:52:02 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(daemon): 嵌入 v0.5.1-beta 版本前端资源"
-    },
-    {
-      "commitId": "d13114674f38ac6b6706302f0e05fc6610978533",
-      "commitTime": "2025-12-19 13:50:48 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.1-beta (hotfix)"
-    },
-    {
-      "commitId": "49793dc92de8f0de43a87aa8d84fcd4dd853d713",
-      "commitTime": "2025-12-19 13:49:23 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(daemon): 减少启动任务等待时间"
-    },
-    {
-      "commitId": "3257a2827c6ced5ed7ca9ebe1bbc2454529c9673",
-      "commitTime": "2025-12-19 13:47:29 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon & webpanel): 修复大文件无法下载的问题"
-    },
-    {
-      "commitId": "a75bb94413d7a072e125199ff0536e8d1f0500aa",
-      "commitTime": "2025-12-19 12:21:06 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #9 from MSLTeam/dev"
-    },
-    {
-      "commitId": "3b8dd38c1d07ccaa11350e37ef3b3078c5b6e896",
-      "commitTime": "2025-12-19 12:18:20 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(daemon): 嵌入 v0.5.0-beta 版本前端资源"
-    },
-    {
-      "commitId": "2ed82ecc7076983aa9d804032712e6ff58143f36",
-      "commitTime": "2025-12-19 12:11:55 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.0-beta"
     }
   ]
 }
