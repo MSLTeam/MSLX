@@ -3,11 +3,13 @@ import { ref, computed, watch, onUnmounted } from 'vue';
 import {
   DashboardIcon, DesktopIcon, PlayCircleIcon, RefreshIcon, StopCircleIcon,
   TimeIcon, SettingIcon, FolderIcon, ArrowLeftRight1Icon, EnterIcon,
-  WinkIcon, UserUnlockedIcon, ChartBarIcon, InfoCircleIcon, CloseCircleIcon
+  WinkIcon, UserUnlockedIcon, ChartBarIcon, InfoCircleIcon, CloseCircleIcon,
+  CloudIcon
 } from 'tdesign-icons-vue-next';
 import { InstanceInfoModel } from '@/api/model/instance';
 import InstanceSettings from './InstanceSettings.vue';
 import InstanceMonitor from './InstanceMonitor.vue';
+import { changeUrl } from '@/router';
 
 // --- Props & Emits ---
 const props = defineProps<{
@@ -115,6 +117,16 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
             强制结束
           </t-button>
         </template>
+
+        <div class="action-row">
+          <t-button class="glass-btn" variant="outline" block @click="changeUrl(`/instance/files/${serverId}`)">
+            <template #icon><folder-icon /></template>文件
+          </t-button>
+
+          <t-button class="glass-btn" variant="outline" block :disabled="!isRunning" :loading="loading" @click="$emit('backup')">
+            <template #icon><cloud-icon /></template>备份
+          </t-button>
+        </div>
 
         <div class="action-row">
           <t-button class="glass-btn" variant="outline" theme="warning" block @click="$emit('clear-log')">
