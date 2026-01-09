@@ -42,6 +42,11 @@ public class InstanceController : ControllerBase
                 return suc
                     ? Ok(ApiResponseService.Success("已发送停止服务器指令"))
                     : Ok(ApiResponseService.Error("服务器停止失败"));
+            case "restart":
+                var (restartSuccess, restartMsg) = await _mcServerService.RestartServer(request.ID!.Value);
+                return restartSuccess
+                    ? Ok(ApiResponseService.Success(restartMsg))
+                    : Ok(ApiResponseService.Error("服务器重启失败：" + restartMsg));
             case "forceExit":
                 bool sucFE = _mcServerService.ForceKillServer(request.ID!.Value);
                 return sucFE

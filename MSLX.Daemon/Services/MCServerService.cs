@@ -444,6 +444,45 @@ public class MCServerService
         }
         return false;
     }
+    
+    /// <summary>
+    /// 重启服务器 (停止 -> 等待 -> 启动)
+    /// </summary>
+    public async Task<(bool success, string message)> RestartServer(uint instanceId)
+    {
+        if (IsServerRunning(instanceId))
+        {
+            if (_activeServers.TryGetValue(instanceId, out var context))
+            {
+                RecordLog(instanceId, context, "[MSLX] 正在执行重启...");
+            }
+            
+            bool stopSuccess = StopServer(instanceId);
+
+            if (!stopSuccess)
+            {
+                if (IsServerRunning(instanceId))
+                {
+                    return (false, "重启失败：无法停止当前正在运行的服务器实例。");
+                }
+            }
+            
+            await Task.Delay(1500); 
+        }
+
+        // 重新启动
+        var result = StartServer(instanceId);
+        
+        if (result.success)
+        {
+            if (_activeServers.TryGetValue(instanceId, out var newContext))
+            {
+                RecordLog(instanceId, newContext, "[MSLX] 正在重新启动实例...");
+            }
+        }
+
+        return result;
+    }
 
     /// <summary>
     /// 向服务器发送命令

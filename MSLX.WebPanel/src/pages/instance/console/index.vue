@@ -89,6 +89,21 @@ const handleForceExit = async () => {
   }
 };
 
+// 重启
+const handleRestart = async () => {
+  loading.value = true;
+  try {
+    terminalRef.value?.writeln('\x1b[1;32m[System] 正在发送重启指令...\x1b[0m');
+    await postInstanceAction(serverId.value, 'restart');
+    // isRunning.value = false;
+    MessagePlugin.warning('重启执行成功');
+    loading.value = false;
+  } catch (e: any) {
+    terminalRef.value?.writeln(`\x1b[1;31m[Error] 重启失败: ${e.message}\x1b[0m`);
+    loading.value = false;
+  }
+};
+
 // 备份
 const handleBackup = async () => {
   try {
@@ -170,6 +185,7 @@ onMounted(async () => {
           @backup="handleBackup"
           @clear-log="handleClearLog"
           @force-exit="handleForceExit"
+          @restart="handleRestart"
         />
       </div>
     </div>

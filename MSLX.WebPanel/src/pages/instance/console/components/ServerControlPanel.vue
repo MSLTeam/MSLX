@@ -18,7 +18,7 @@ const props = defineProps<{
 }>();
 
 const emits = defineEmits<{
-  start: []; stop: []; 'clear-log': []; 'refresh-info': []; backup: []; 'force-exit': [];
+  start: []; stop: []; 'clear-log': []; 'refresh-info': []; backup: []; 'force-exit': [];restart: [];
 }>();
 
 const settingsRef = ref<InstanceType<typeof InstanceSettings> | null>(null);
@@ -79,17 +79,29 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
         </t-button>
 
         <template v-else>
-          <t-button
-            theme="danger"
-            size="large"
-            block
-            :loading="loading"
-            :variant="loading ? 'outline' : 'base'"
-            @click="!loading && $emit('stop')"
-          >
-            <template #icon><stop-circle-icon /></template>
-            {{ loading ? '正在停止...' : '停止实例' }}
-          </t-button>
+          <div class="running-action-group">
+            <t-button
+              class="stop-btn"
+              theme="danger"
+              size="large"
+              :loading="loading"
+              :variant="loading ? 'outline' : 'base'"
+              @click="!loading && $emit('stop')"
+            >
+              <template #icon><stop-circle-icon /></template>
+              {{ loading ? '停止中...' : '停止' }}
+            </t-button>
+
+            <t-button
+              theme="warning"
+              size="large"
+              shape="square"
+              :disabled="loading"
+              @click="$emit('restart')"
+            >
+              <template #icon><refresh-icon /></template>
+            </t-button>
+          </div>
 
           <t-button
             v-if="loading"
@@ -264,6 +276,14 @@ onUnmounted(() => { if (timer) clearInterval(timer); });
     &:hover {
       background-color: var(--td-error-color-1);
       border-color: var(--td-error-color);
+    }
+  }
+
+  .running-action-group {
+    display: flex;
+
+    .stop-btn {
+      flex: 1;
     }
   }
 
