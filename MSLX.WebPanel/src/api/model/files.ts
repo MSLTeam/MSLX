@@ -26,4 +26,5 @@ export interface PluginsAndModsListModel{
   disableCount: number;
   jarFiles: string[];
   disableJarFiles: string[];
+  clientJarFiles: string[];
 }

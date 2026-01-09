@@ -412,6 +412,77 @@ public class MCServerService
 
         return false;
     }
+    
+    /// <summary>
+    /// 强制终止服务器进程
+    /// </summary>
+    public bool ForceKillServer(uint instanceId)
+    {
+        if (_activeServers.TryGetValue(instanceId, out var context))
+        {
+            try
+            {
+                context.IsStopping = true;
+
+                if (context.Process != null && !context.Process.HasExited)
+                {
+                    // 干掉进程！
+                    context.Process.Kill();
+                    RecordLog(instanceId, context, "[MSLX] 正在强制结束进程······");
+                    
+                    context.Process.WaitForExit(1000); 
+                }
+                
+                _activeServers.TryRemove(instanceId, out _);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"强制终止服务器 [{instanceId}] 时出错");
+                RecordLog(instanceId, context, $">>> [MSLX] 强制终止失败: {ex.Message}");
+            }
+        }
+        return false;
+    }
+    
+    /// <summary>
+    /// 重启服务器 (停止 -> 等待 -> 启动)
+    /// </summary>
+    public async Task<(bool success, string message)> RestartServer(uint instanceId)
+    {
+        if (IsServerRunning(instanceId))
+        {
+            if (_activeServers.TryGetValue(instanceId, out var context))
+            {
+                RecordLog(instanceId, context, "[MSLX] 正在执行重启...");
+            }
+            
+            bool stopSuccess = StopServer(instanceId);
+
+            if (!stopSuccess)
+            {
+                if (IsServerRunning(instanceId))
+                {
+                    return (false, "重启失败：无法停止当前正在运行的服务器实例。");
+                }
+            }
+            
+            await Task.Delay(1500); 
+        }
+
+        // 重新启动
+        var result = StartServer(instanceId);
+        
+        if (result.success)
+        {
+            if (_activeServers.TryGetValue(instanceId, out var newContext))
+            {
+                RecordLog(instanceId, newContext, "[MSLX] 正在重新启动实例...");
+            }
+        }
+
+        return result;
+    }
 
     /// <summary>
     /// 向服务器发送命令
