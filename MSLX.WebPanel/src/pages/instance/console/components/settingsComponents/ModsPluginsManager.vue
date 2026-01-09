@@ -110,6 +110,9 @@ const fetchData = async (checkClient = false) => {
 
     // 如果检测到了客户端模组，给个提示
     if (checkClient && clientFiles.length > 0) {
+      // 自动勾选
+      selectedRowKeys.value = clientFiles.map(item => item.name);
+
       MessagePlugin.success(`检测到 ${clientFiles.length} 个客户端模组`);
     } else if (checkClient) {
       MessagePlugin.info('未检测到仅客户端模组');
