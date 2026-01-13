@@ -113,6 +113,7 @@ public class InstanceSettingsController : ControllerBase
             server.ForceAutoRestart = request.ForceAutoRestart;
             server.InputEncoding = request.InputEncoding;
             server.OutputEncoding = request.OutputEncoding;
+            server.FileEncoding = request.FileEncoding;
 
             // 保存到磁盘
             IConfigBase.ServerList.UpdateServer(server);
