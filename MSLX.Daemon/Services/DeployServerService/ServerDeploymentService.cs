@@ -239,7 +239,7 @@ public class ServerDeploymentService
             string downUrl = downContext["data"]?["url"]?.ToString() ?? string.Empty;
             string sha256Exp = downContext["data"]?["sha256"]?.ToString() ?? string.Empty;
 
-            bool success = await DownloadAndValidateAsync(downUrl, Path.Combine(path,filename), "原版服务端", sha256Exp, report);
+            bool success = await DownloadAndValidateAsync(downUrl, Path.Combine(path,filename), $"{version} 原版服务端", sha256Exp, report);
             if (!success) throw new Exception("下载原版服务端依赖失败");
             await report("原版服务端依赖下载成功。", 99.9);
         }
@@ -330,7 +330,7 @@ public class ServerDeploymentService
             if ((DateTime.UtcNow - lastReport).TotalMilliseconds > 1000)
             {
                 lastReport = DateTime.UtcNow;
-                await report($"下载 {itemName} 中... {Math.Round(e.ProgressPercentage, 2)}%", e.ProgressPercentage == 100 ? 99.9 : e.ProgressPercentage);
+                await report($"下载 {itemName} 中... {Math.Round(e.ProgressPercentage, 2)}% ({ConvertBytesToReadable(e.AverageBytesPerSecondSpeed)}/s)", e.ProgressPercentage == 100 ? 99.9 : e.ProgressPercentage);
             }
         };
 
@@ -358,6 +358,18 @@ public class ServerDeploymentService
 
         await downloader.DownloadFileTaskAsync(url, savePath);
         return await tcs.Task;
+    }
+
+    private string ConvertBytesToReadable(double bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        int order = 0;
+        while (bytes >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            bytes = bytes / 1024;
+        }
+        return $"{bytes:0.##} {sizes[order]}";
     }
 
     private async Task ExtractJavaSmartAsync(string archivePath, string version, string baseDir)
