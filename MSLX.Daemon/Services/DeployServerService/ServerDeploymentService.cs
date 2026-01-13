@@ -107,7 +107,7 @@ public class ServerDeploymentService
 
         // 需要下载
         await report($"正在获取 Java {javaVersion} 下载信息...", 0);
-        
+
         // 调用API获取下载地址
         var response = await MSLApi.GetAsync($"/download/jdk/{javaVersion}",
             new Dictionary<string, string>
@@ -166,7 +166,7 @@ public class ServerDeploymentService
                 {
                     File.Move(tempFilePath, destPath, true);
                     await report("用户核心文件部署完成。", 99.9);
-                    return; 
+                    return;
                 }
                 catch (Exception ex)
                 {
@@ -187,6 +187,65 @@ public class ServerDeploymentService
             bool success = await DownloadAndValidateAsync(downloadUrl, destPath, "服务端核心", sha256, report);
             if (!success) throw new Exception("Core download failed");
             await report("核心下载完成。", 99.9);
+        }
+
+        // 自动处理原版服务端依赖
+        try
+        {
+            string targetCoreName = string.Empty;
+            string targetVersion = string.Empty;
+
+            if (coreName.Contains("-"))
+            {
+                string[] parts = coreName.Split('-');
+
+                targetCoreName = parts[0]; 
+                targetVersion = parts[^1].Replace(".jar",string.Empty);   
+            }
+
+            if (!string.IsNullOrEmpty(targetCoreName) && !string.IsNullOrEmpty(targetVersion))
+            {
+                switch(targetCoreName.ToLower())
+                {
+                    case "vanilla":
+                        await DownloadVanilla(Path.Combine(baseDir,".fabric","server"), $"{targetVersion}-server.jar", targetVersion, report);
+                        break;
+                    case "paper":
+                    case "leaves":
+                    case "folia":
+                    case "purpur":
+                    case "leaf":
+                        await DownloadVanilla(Path.Combine(baseDir, "cache"), $"mojang_{targetVersion}.jar", targetVersion, report);
+                        break;
+                }
+            }
+
+        }
+        catch (Exception ex)
+        {
+            await report($"处理原版服务端依赖失败: {ex.Message}",0);
+            // 不需要抛出异常 这不影响正常安装
+        }
+    }
+
+    /// 处理原版服务端的安装方法
+    private async Task DownloadVanilla(string path, string filename, string version, ReportProgress report)
+    {
+        await report("正在下载原版服务端作为依赖···", 0);
+        HttpService.HttpResponse downResponse = await MSLApi.GetAsync("/download/server/vanilla/" + version, null);
+        if (downResponse.IsSuccessStatusCode)
+        {
+            JObject downContext = JObject.Parse(downResponse.Content!);
+            string downUrl = downContext["data"]?["url"]?.ToString() ?? string.Empty;
+            string sha256Exp = downContext["data"]?["sha256"]?.ToString() ?? string.Empty;
+
+            bool success = await DownloadAndValidateAsync(downUrl, Path.Combine(path,filename), $"{version} 原版服务端", sha256Exp, report);
+            if (!success) throw new Exception("下载原版服务端依赖失败");
+            await report("原版服务端依赖下载成功。", 99.9);
+        }
+        else
+        {
+            throw new Exception("获取Vanilla端下载信息失败！");
         }
     }
 
@@ -222,7 +281,7 @@ public class ServerDeploymentService
             if (javaConfig.Contains("MSLX://Java/"))
             {
                 string version = javaConfig.Replace("MSLX://Java/", "");
-                javaPath = Path.Combine(IConfigBase.GetAppDataPath(), "Tools", "Java", version, "bin", 
+                javaPath = Path.Combine(IConfigBase.GetAppDataPath(), "Tools", "Java", version, "bin",
                     PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java");
             }
 
@@ -232,12 +291,12 @@ public class ServerDeploymentService
             if (success)
             {
                 await report("NeoForge/Forge 安装程序执行完毕！", 100);
-                
+
                 // 提取启动参数
                 string runScript = Path.Combine(baseDir, PlatFormServices.GetOs() == "Windows" ? "run.bat" : "run.sh");
                 string launchArgs = ExtractNeoForgeArgsPath(runScript);
-                
-                if (string.IsNullOrEmpty(launchArgs)) 
+
+                if (string.IsNullOrEmpty(launchArgs))
                     throw new Exception("安装成功但未找到启动文件参数！");
 
                 return launchArgs;
@@ -262,7 +321,7 @@ public class ServerDeploymentService
 
         var downloadOpt = new DownloadConfiguration() { ChunkCount = 8, ParallelDownload = true };
         var downloader = new DownloadService(downloadOpt);
-        
+
         var tcs = new TaskCompletionSource<bool>();
         DateTime lastReport = DateTime.MinValue;
 
@@ -271,7 +330,7 @@ public class ServerDeploymentService
             if ((DateTime.UtcNow - lastReport).TotalMilliseconds > 1000)
             {
                 lastReport = DateTime.UtcNow;
-                await report($"下载 {itemName} 中... {Math.Round(e.ProgressPercentage, 2)}%", e.ProgressPercentage == 100 ? 99.9 : e.ProgressPercentage);
+                await report($"下载 {itemName} 中... {Math.Round(e.ProgressPercentage, 2)}% ({ConvertBytesToReadable(e.AverageBytesPerSecondSpeed)}/s)", e.ProgressPercentage == 100 ? 99.9 : e.ProgressPercentage);
             }
         };
 
@@ -299,6 +358,18 @@ public class ServerDeploymentService
 
         await downloader.DownloadFileTaskAsync(url, savePath);
         return await tcs.Task;
+    }
+
+    private string ConvertBytesToReadable(double bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        int order = 0;
+        while (bytes >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            bytes = bytes / 1024;
+        }
+        return $"{bytes:0.##} {sizes[order]}";
     }
 
     private async Task ExtractJavaSmartAsync(string archivePath, string version, string baseDir)
@@ -408,7 +479,7 @@ public class ServerDeploymentService
 
     public static string? ExtractNeoForgeArgsPath(string batFilePath)
     {
-         if (string.IsNullOrEmpty(batFilePath) || !File.Exists(batFilePath)) return null;
+        if (string.IsNullOrEmpty(batFilePath) || !File.Exists(batFilePath)) return null;
         try
         {
             string batFileContent = File.ReadAllText(batFilePath);

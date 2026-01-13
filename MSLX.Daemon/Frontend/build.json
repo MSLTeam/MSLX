@@ -1,6 +1,6 @@
 {
-  "version": "0.5.4",
-  "buildTime": "2026-01-09 21:45:40",
+  "version": "0.5.5",
+  "buildTime": "2026-01-13 12:37:09",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,64 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "b86a0a00634e010fe0b49621c7d61af685c00f97",
-  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到v0.5.4-beta",
+  "commitId": "858fee1f90095d53bc9f067c81c2be5ca24d26cb",
+  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.5-beta",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "858fee1f90095d53bc9f067c81c2be5ca24d26cb",
+      "commitTime": "2026-01-13 12:36:46 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.5-beta"
+    },
+    {
+      "commitId": "49653c92d6cf68d85d1d23be5a1b61c0d3c8c38d",
+      "commitTime": "2026-01-13 12:33:39 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(daemon): 创建服务端下载文件时新增速度显示"
+    },
+    {
+      "commitId": "16a7e5a1d56fd33b5e879d11a29c3909c947556e",
+      "commitTime": "2026-01-13 12:22:43 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(daemon): 下调Jwt Token有效期至一天"
+    },
+    {
+      "commitId": "74bd3c8c3f251459e758c58f37caa66a77721670",
+      "commitTime": "2026-01-13 12:21:34 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 新增自动下载原版服务端作为依赖的功能"
+    },
+    {
+      "commitId": "c5d695722bf2e78d5272c1381b0a744c24e050ca",
+      "commitTime": "2026-01-12 10:46:14 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复检测客户端模组的误判问题"
+    },
+    {
+      "commitId": "173a882a95905dd86ffbf284509d637022266e88",
+      "commitTime": "2026-01-11 20:01:33 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "fix(daemon): 修复创建实例时ignoreEula设置项不生效的bug"
+    },
+    {
+      "commitId": "9e8a6c6a851177b5fab3d94e25a6f62959a3752f",
+      "commitTime": "2026-01-09 22:46:18 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 回退对模组/插件分页的修改"
+    },
+    {
+      "commitId": "e871f670fabbafec80a710d3b225ad3497c40d92",
+      "commitTime": "2026-01-09 21:47:26 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #13 from MSLTeam/dev"
+    },
+    {
+      "commitId": "67efc50cf9d8563808b13d4c2718113b48877d1d",
+      "commitTime": "2026-01-09 21:46:33 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v0.5.4-beta 版本前端资源"
+    },
     {
       "commitId": "b86a0a00634e010fe0b49621c7d61af685c00f97",
       "commitTime": "2026-01-09 21:45:20 +0800",
@@ -317,60 +371,6 @@
       "commitTime": "2025-12-21 13:38:43 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "Merge branch 'master' of https://github.com/MSLTeam/MSLX"
-    },
-    {
-      "commitId": "c91e4f396c8be55c09ab25defc475c122ea49d26",
-      "commitTime": "2025-12-21 13:37:02 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #10 from MSLTeam/dev"
-    },
-    {
-      "commitId": "d556e84013111440e08b0b24abf1bcea76df2633",
-      "commitTime": "2025-12-21 13:35:05 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(daemon): 嵌入 v0.5.2-beta 版本前端资源"
-    },
-    {
-      "commitId": "018d511d6bb5fc5775cb6774bcb4079417b12846",
-      "commitTime": "2025-12-21 13:32:04 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 升级应用版本至v0.5.2-beta"
-    },
-    {
-      "commitId": "c51885837c9431b46be67f4389c9bed4a307f0ec",
-      "commitTime": "2025-12-20 23:33:24 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 上传组件添加支持禁止上传文件夹"
-    },
-    {
-      "commitId": "5514c5d3ef6e8db140ad502742611b46bd04d8c3",
-      "commitTime": "2025-12-20 23:26:52 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 在控制台添加一些文档入口"
-    },
-    {
-      "commitId": "de13261a6b3f69b45fdd99db5d200ce3a0b3859d",
-      "commitTime": "2025-12-20 22:33:56 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修正删除定时任务的API端点"
-    },
-    {
-      "commitId": "99c8dd47ab941d1a6cd96364fd3388a0b8e23cc4",
-      "commitTime": "2025-12-20 20:22:35 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 更新关于页面核心依赖部分信息框背景色"
-    },
-    {
-      "commitId": "f5e86199082acfdca2094b2c2dcb7d7a83090956",
-      "commitTime": "2025-12-20 19:32:53 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 微调一些背景美化模式下的样式"
-    },
-    {
-      "commitId": "e6c7153a36ae04860498d83d293ca8c42459fc6f",
-      "commitTime": "2025-12-20 19:09:18 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 在关于页面新增内测人员鸣谢信息"
     }
   ]
 }

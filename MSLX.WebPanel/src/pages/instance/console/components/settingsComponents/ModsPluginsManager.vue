@@ -49,20 +49,6 @@ const displayList = computed(() => {
   return rawList.value.filter(item => item.name.toLowerCase().includes(key));
 });
 
-// 表单分页
-const pagination = ref({
-  current: 1,
-  pageSize: 20,
-  total: 0,
-  showJumper: true
-});
-
-watch(displayList, (newList) => {
-  pagination.value.total = newList.length;
-  if (filterText.value) pagination.value.current = 1;
-}, { immediate: true });
-
-
 
 // --- 表格列定义 ---
 const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
@@ -286,7 +272,7 @@ watch(() => route.params.serverId, (newId) => {
     <div class="table-wrapper">
       <t-table
         v-model:selected-row-keys="selectedRowKeys"
-        v-model:pagination="pagination"
+        :pagination="{ defaultPageSize: 20, total: displayList.length, showJumper: true ,defaultCurrent: 1}"
         :data="displayList"
         :columns="columns"
         :row-key="'name'"
