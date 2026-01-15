@@ -16,6 +16,7 @@ const colorizeServerLog = (log: string): string => {
   if (log.startsWith('[System]')) log = log.replace(/^\[System\]/, `[${c.blue.bold('System')}]`);
   if (log.includes('[MSLX]')) log = log.replace(/\[MSLX\]/g, `[${c.magenta.bold('MSLX')}]`);
   if (log.includes('[MSLX-Backup]')) log = log.replace(/\[MSLX-Backup\]/g, `[${c.magenta.bold('MSLX-Backup')}]`);
+  if (log.includes('[MSLX-Daemon]')) log = log.replace(/\[MSLX-Daemon\]/g, `[${c.magenta.bold('MSLX-Daemon')}]`);
   if (log.startsWith('>>>')) log = log.replace(/^>>>/, c.red.bold('>>>'));
 
   // 核心格式 [Time Level]:

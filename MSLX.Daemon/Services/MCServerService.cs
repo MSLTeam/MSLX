@@ -167,7 +167,7 @@ public class MCServerService
     {
         try
         {
-            RecordLog(instanceId, context, "[MSLX] 正在初始化服务...");
+            RecordLog(instanceId, context, "[MSLX-Daemon] 正在初始化服务...");
             // 检查Eula
             //if (serverInfo.Java != "none" && !serverInfo.IgnoreEula && !skipEulaCheck)
             if (!serverInfo.IgnoreEula && !skipEulaCheck)
@@ -326,7 +326,7 @@ public class MCServerService
             process.OutputDataReceived += (sender, e) => RecordLog(instanceId, context, e.Data);
             process.ErrorDataReceived += (sender, e) => RecordLog(instanceId, context, e.Data);
 
-            RecordLog(instanceId, context, "[MSLX] 正在启动 Minecraft 服务器...");
+            RecordLog(instanceId, context, "[MSLX-Daemon] 正在启动服务端实例...");
 
             // 启动进程
             if (process.Start())
@@ -337,7 +337,7 @@ public class MCServerService
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
 
-                _logger.LogInformation($"MC 服务器 [{instanceId}] 启动成功，PID: {process.Id}");
+                _logger.LogInformation($"服务器 [{instanceId}] 启动成功，PID: {process.Id}");
                 RecordLog(instanceId, context, $"[MSLX] 服务器进程已启动，PID: {process.Id}");
             }
             else
@@ -497,7 +497,7 @@ public class MCServerService
                 {
                     context.Process.StandardInput.WriteLine(command);
                     context.Process.StandardInput.Flush();
-                    if (repeatCommandToLog) RecordLog(instanceId, context, $"[MSLX] 已发送命令: {command}");
+                    if (repeatCommandToLog) RecordLog(instanceId, context, $"[MSLX-Daemon] 已发送命令: {command}");
                     return true;
                 }
             }
