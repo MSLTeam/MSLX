@@ -34,7 +34,7 @@ const navToGitHub = () => {
 };
 
 const navToHelper = () => {
-  window.open('https://www.mslmc.cn');
+  window.open('https://mslx.mslmc.cn');
 };
 </script>
 

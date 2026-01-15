@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { ServerIcon, ControlPlatformIcon, BookIcon } from 'tdesign-icons-vue-next';
+import { ServerIcon, ControlPlatformIcon, BookIcon, LinkIcon } from 'tdesign-icons-vue-next';
 import { getSettings, updateSettings } from '@/api/settings';
 import type { SettingsModel } from '@/api/model/settings';
 import { changeUrl } from '@/router';
 import { DOC_URLS } from '@/api/docs';
+import { copyText } from '@/utils/clipboard';
 
 const loading = ref(false);
 const submitLoading = ref(false);
@@ -16,6 +17,8 @@ const sysData = reactive<SettingsModel>({
   neoForgeInstallerMirrors: 'MSL Mirrors',
   listenHost: 'localhost',
   listenPort: 1027,
+  oAuthMSLClientID: '',
+  oAuthMSLClientSecret: '',
 });
 
 const mirrorOptions = [
@@ -56,6 +59,12 @@ const handleRefresh = () => {
 };
 
 defineExpose({ initData });
+
+const callbackUrl = ref('');
+
+onMounted(() => {
+  callbackUrl.value = `${window.location.origin}/oauth/callback`;
+});
 </script>
 
 <template>
@@ -73,6 +82,41 @@ defineExpose({ initData });
 
       <t-form-item label="安装镜像源" help="选择在自动安装 NeoForge / Forge 时所使用的镜像源。" style="margin-top: 6px">
         <t-select v-model="sysData.neoForgeInstallerMirrors" :options="mirrorOptions" />
+      </t-form-item>
+
+      <t-divider dashed />
+
+      <div class="group-title">MSL OAuth 2.0</div>
+
+      <t-form-item label="Client ID" style="margin-top: 6px">
+        <t-input v-model="sysData.oAuthMSLClientID" placeholder="请输入 Client ID">
+          <template #prefix-icon><server-icon /></template>
+        </t-input>
+      </t-form-item>
+
+      <t-form-item
+        label="Client Secret"
+        help="配置MSL OAuth 2.0后即可使用您的MSL账号一键登录您的MSLX控制台。"
+        style="margin-top: 16px"
+      >
+        <t-input v-model="sysData.oAuthMSLClientSecret" type="password" placeholder="请输入 Client Secret">
+          <template #prefix-icon><control-platform-icon /></template>
+        </t-input>
+      </t-form-item>
+
+      <t-form-item
+        label="回调地址"
+        help="请将此地址复制并填入 MSL用户中心 OAuth应用配置的 [回调地址] 中"
+        style="margin-top: 16px"
+      >
+        <t-input :value="callbackUrl" readonly placeholder="正在获取当前域名...">
+          <template #prefix-icon><link-icon /></template>
+          <template #suffix>
+            <t-button variant="text" shape="square" @click="copyText(callbackUrl,true,'回调地址复制成功')">
+              <t-icon name="file-copy" />
+            </t-button>
+          </template>
+        </t-input>
       </t-form-item>
 
       <t-divider dashed />

@@ -788,6 +788,17 @@ onUnmounted(() => {
           </div>
         </div>
 
+        <div v-if="javaType !== 'none'" class="setting-item">
+          <div class="setting-info">
+            <div class="title">强制Java使用UTF8</div>
+            <div class="desc">此功能可以解决部分游戏内中文乱码的问题（特别是Windows系统上）</div>
+            <div class="desc">开启此功能后请务必将下面的<b>文件编码</b>设置设置为<b>UTF-8</b></div>
+          </div>
+          <div class="setting-control">
+            <t-switch v-model="formData.forceJvmUTF8" :label="['已开启', '已关闭']" />
+          </div>
+        </div>
+
         <div class="setting-item">
           <div class="setting-info">
             <div class="title">控制台编码</div>

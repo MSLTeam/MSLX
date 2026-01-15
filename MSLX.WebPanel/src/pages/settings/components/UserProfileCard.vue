@@ -10,12 +10,13 @@ import {
   UserIcon,
   ImageIcon,
   LogoQqIcon,
-  LinkIcon
+  LinkIcon,
 } from 'tdesign-icons-vue-next';
 
 import { getSelfInfo, updateSelfInfo } from '@/api/user';
 import type { UserInfoModel, UpdateUserRequest } from '@/api/model/user';
 import { useUserStore } from '@/store';
+import { request } from '@/utils/request';
 
 const userStore = useUserStore();
 
@@ -34,6 +35,7 @@ const userInfo = reactive<UserInfoModel>({
   role: '',
   apiKey: '',
   lastLoginTime: '',
+  openMSLID: '',
 });
 
 const securityState = reactive({
@@ -100,7 +102,7 @@ const resetApiKey = () => {
       } catch (e: any) {
         MessagePlugin.error(e.message || '重置失败');
       }
-    }
+    },
   });
 };
 
@@ -126,7 +128,7 @@ const onUserSubmit = async () => {
       name: userInfo.name,
       avatar: userInfo.avatar,
       password: isPasswordChanged ? securityState.newPassword : undefined,
-      resetApiKey: false
+      resetApiKey: false,
     };
 
     await updateSelfInfo(updateData);
@@ -146,12 +148,11 @@ const onUserSubmit = async () => {
         onConfirm: async () => {
           await userStore.logout();
           window.location.reload();
-        }
+        },
       });
     } else {
       await userStore.getUserInfo();
     }
-
   } catch (error: any) {
     MessagePlugin.error(error.message);
   } finally {
@@ -160,6 +161,55 @@ const onUserSubmit = async () => {
 };
 
 defineExpose({ initData });
+
+// 绑定/解绑MSL账户
+const bindLoading = ref(false); // 绑定按钮 loading 状态
+
+const handleBindMSL = async () => {
+  bindLoading.value = true;
+  try {
+    const state = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    localStorage.setItem('oauth_state', state);
+    const callbackUrl = `${window.location.origin}/oauth/callback?mode=bind`;
+    const res: any = await request.get({
+      url: '/api/auth/oauth/url',
+      params: {
+        state: state,
+        callback: callbackUrl,
+      },
+    });
+
+    if (res && res.url) {
+      window.location.href = res.url;
+    } else {
+      MessagePlugin.error(res.message || '获取绑定地址失败');
+      bindLoading.value = false;
+    }
+  } catch (e: any) {
+    MessagePlugin.error(e.message || '请求失败');
+    bindLoading.value = false;
+  }
+};
+
+const handleUnbindMSL = () => {
+  const confirmDia = DialogPlugin.confirm({
+    header: '解除绑定',
+    theme: 'warning',
+    body: '确定要解除与 MSL 账户的绑定吗？解绑后您将无法使用 MSL 账户快捷登录。',
+    onConfirm: async () => {
+      try {
+        confirmDia.hide();
+        await request.post({
+          url: '/api/auth/oauth/unbind',
+        });
+        MessagePlugin.success('解绑成功');
+        await initData();
+      } catch (e: any) {
+        MessagePlugin.error(e.message || '解绑失败');
+      }
+    },
+  });
+};
 </script>
 
 <template>
@@ -173,7 +223,9 @@ defineExpose({ initData });
       <div class="info-col">
         <div class="main-row">
           <span class="nickname">{{ userInfo.name || '未设置昵称' }}</span>
-          <t-tag v-if="userInfo.role === 'admin'" theme="success" variant="light" size="small" shape="round">管理员</t-tag>
+          <t-tag v-if="userInfo.role === 'admin'" theme="success" variant="light" size="small" shape="round"
+            >管理员</t-tag
+          >
           <t-tag v-else theme="primary" variant="light" size="small" shape="round">普通用户</t-tag>
         </div>
         <div class="sub-row">
@@ -188,7 +240,6 @@ defineExpose({ initData });
     <t-divider />
 
     <t-form ref="userForm" :data="userInfo" :label-width="100" label-align="left" @submit="onUserSubmit">
-
       <t-form-item label="头像设置">
         <t-space direction="vertical" style="width: 100%">
           <t-radio-group v-model="avatarMode" variant="default-filled" @change="handleModeChange">
@@ -233,27 +284,40 @@ defineExpose({ initData });
 
       <t-divider dashed />
 
+      <t-form-item label="MSL 账户绑定" help="绑定后可使用 MSL 账户直接登录本控制台">
+        <div v-if="userInfo.openMSLID && userInfo.openMSLID !== '0'" class="bound-status">
+          <t-tag theme="success" variant="light" size="medium">
+            <template #icon><check-circle-icon /></template>
+            已绑定 (MSL UID: {{ userInfo.openMSLID }})
+          </t-tag>
+          <t-button theme="danger" variant="text" size="small" style="margin-left: 12px" @click="handleUnbindMSL">
+            解除绑定
+          </t-button>
+        </div>
+
+        <div v-else>
+          <t-button theme="primary" variant="outline" :loading="bindLoading" @click="handleBindMSL">
+            <template #icon><link-icon /></template>
+            绑定 MSL 账户
+          </t-button>
+        </div>
+      </t-form-item>
+
+      <t-divider dashed />
+
       <t-form-item label="修改密码">
         <t-switch v-model="securityState.changePassword" />
       </t-form-item>
 
       <template v-if="securityState.changePassword">
         <t-form-item label="新密码" required-mark>
-          <t-input
-            v-model="securityState.newPassword"
-            type="password"
-            placeholder="请输入新密码"
-          >
+          <t-input v-model="securityState.newPassword" type="password" placeholder="请输入新密码">
             <template #prefix-icon><lock-on-icon /></template>
           </t-input>
         </t-form-item>
 
         <t-form-item label="确认密码" required-mark>
-          <t-input
-            v-model="securityState.confirmPassword"
-            type="password"
-            placeholder="请再次输入新密码"
-          >
+          <t-input v-model="securityState.confirmPassword" type="password" placeholder="请再次输入新密码">
             <template #prefix-icon><check-circle-icon /></template>
           </t-input>
         </t-form-item>
@@ -273,7 +337,9 @@ defineExpose({ initData });
   border-radius: 8px;
   overflow: hidden;
   transition: all 0.3s;
-  &:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); }
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
 }
 
 .profile-header {
@@ -329,5 +395,9 @@ defineExpose({ initData });
   margin-top: 12px;
   font-weight: 600;
   height: 40px;
+}
+.bound-status {
+  display: flex;
+  align-items: center;
 }
 </style>

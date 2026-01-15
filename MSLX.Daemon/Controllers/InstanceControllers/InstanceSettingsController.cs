@@ -110,9 +110,11 @@ public class InstanceSettingsController : ControllerBase
             server.RunOnStartup = request.RunOnStartup;
             server.AutoRestart = request.AutoRestart;
             server.IgnoreEula = request.IgnoreEula;
+            server.ForceJvmUTF8 = request.ForceJvmUTF8;
             server.ForceAutoRestart = request.ForceAutoRestart;
             server.InputEncoding = request.InputEncoding;
             server.OutputEncoding = request.OutputEncoding;
+            server.FileEncoding = request.FileEncoding;
 
             // 保存到磁盘
             IConfigBase.ServerList.UpdateServer(server);

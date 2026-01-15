@@ -101,6 +101,26 @@ export const useUserStore = defineStore('user', {
       }
     },
 
+    // oauth 登录
+    async loginByOAuth(data: { token: string; userInfo?: any }) {
+      try {
+        this.token = data.token;
+        localStorage.setItem(TOKEN_NAME, data.token);
+
+        if (!this.baseUrl) {
+          this.baseUrl = window.location.origin;
+          localStorage.setItem(BASE_URL_NAME, this.baseUrl);
+        }
+
+        await this.getUserInfo();
+
+      } catch (e) {
+        console.error('OAuth登录失败:', e);
+        throw e;
+      }
+    },
+
+
     // 用户信息
     async getUserInfo() {
       if (!this.token) return;

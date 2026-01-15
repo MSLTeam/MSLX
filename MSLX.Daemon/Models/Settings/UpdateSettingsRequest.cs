@@ -21,6 +21,12 @@ public class UpdateSettingsRequest
     [Required(ErrorMessage = "监听端口 (listenPort) 不能为空")]
     [Range(1, 65536, ErrorMessage = "监听端口 (listenPort) 错误")]
     public uint ListenPort { get; set; }
+
+    [RegularExpression(@"^$|^.{27}$", ErrorMessage = "MSL OAuth Client ID 格式错误")]
+    public string OAuthMSLClientID { get; set; } = "";
+
+    [RegularExpression(@"^$|^.{112}$", ErrorMessage = "MSL OAuth Client Secret 格式错误")]
+    public string OAuthMSLClientSecret { get; set; } = "";
 }
 
 public class UpdateWebPanelStyleSettingsRequest

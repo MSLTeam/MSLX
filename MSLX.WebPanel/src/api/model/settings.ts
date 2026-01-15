@@ -4,6 +4,8 @@ export interface SettingsModel {
   neoForgeInstallerMirrors: string;
   listenHost: string;
   listenPort: number;
+  oAuthMSLClientID: string;
+  oAuthMSLClientSecret: string;
 }
 
 export interface WebpanelSettingsModel {

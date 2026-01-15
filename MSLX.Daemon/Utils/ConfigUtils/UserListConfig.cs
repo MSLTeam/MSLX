@@ -35,7 +35,10 @@ namespace MSLX.Daemon.Utils.ConfigUtils
                 if (!_hasInitialized)
                 {
                     // 这里打开带初始化信息提示的登录页面
-                    PlatFormServices.OpenBrowser($"http://{IConfigBase.Config.ReadConfig()["listenHost"] ?? "localhost"}:{IConfigBase.Config.ReadConfig()["listenPort"] ?? 1027}/login?initialize=true");
+                    if(!(IConfigBase.Config.ReadConfig()["listenHost"] ?? "localhost").Contains("0.0.0.0") && !(IConfigBase.Config.ReadConfig()["listenHost"] ?? "localhost").Contains("*"))
+                    {
+                        PlatFormServices.OpenBrowser($"http://{IConfigBase.Config.ReadConfig()["listenHost"] ?? "localhost"}:{IConfigBase.Config.ReadConfig()["listenPort"] ?? 1027}/login?initialize=true");
+                    }
                 }
             }
             else
@@ -45,7 +48,10 @@ namespace MSLX.Daemon.Utils.ConfigUtils
                     // 有用户了 在这里打开默认地址
                     if ((bool?)IConfigBase.Config.ReadConfig()["openWebConsoleOnLaunch"] ?? true)
                     {
-                        PlatFormServices.OpenBrowser($"http://{IConfigBase.Config.ReadConfig()["listenHost"] ?? "localhost"}:{IConfigBase.Config.ReadConfig()["listenPort"] ?? 1027}");
+                        if (!(IConfigBase.Config.ReadConfig()["listenHost"] ?? "localhost").Contains("0.0.0.0") && !(IConfigBase.Config.ReadConfig()["listenHost"] ?? "localhost").Contains("*"))
+                        {
+                            PlatFormServices.OpenBrowser($"http://{IConfigBase.Config.ReadConfig()["listenHost"] ?? "localhost"}:{IConfigBase.Config.ReadConfig()["listenPort"] ?? 1027}");
+                        }
                     }
                 }
             }
@@ -82,6 +88,58 @@ namespace MSLX.Daemon.Utils.ConfigUtils
             }
             finally { _userListLock.ExitReadLock(); }
         }
+
+        public UserInfo? GetUserByOpenId(string openId)
+        {
+            _userListLock.EnterReadLock();
+            try
+            {
+                return _userListCache
+                    .FirstOrDefault(u => u["OAuthMSLOpenID"]?.ToString() == openId)
+                    ?.ToObject<UserInfo>();
+            }
+            finally { _userListLock.ExitReadLock(); }
+        }
+
+        public bool BindUserOpenId(string userId, string openId)
+        {
+            _userListLock.EnterWriteLock();
+            try
+            {
+                // 检查用户是否存在
+                var targetUser = _userListCache.FirstOrDefault(u => u["Id"]?.ToString() == userId);
+                if (targetUser == null) return false;
+
+                // 检查该 OpenID 是否已经被其用户绑定了
+                var existingBind = _userListCache.FirstOrDefault(u => u["OAuthMSLOpenID"]?.ToString() == openId);
+                if (existingBind != null && existingBind["Id"]?.ToString() != userId)
+                {
+                    return false;
+                }
+
+                targetUser["OAuthMSLOpenID"] = openId;
+                IConfigBase.SaveJson(_userListPath, _userListCache);
+                return true;
+            }
+            finally { _userListLock.ExitWriteLock(); }
+        }
+
+        public bool UnbindUserOpenId(string userId)
+        {
+            _userListLock.EnterWriteLock();
+            try
+            {
+                var targetUser = _userListCache.FirstOrDefault(u => u["Id"]?.ToString() == userId);
+                if (targetUser == null) return false;
+
+                targetUser["OAuthMSLOpenID"] = null;
+
+                IConfigBase.SaveJson(_userListPath, _userListCache);
+                return true;
+            }
+            finally { _userListLock.ExitWriteLock(); }
+        }
+
 
         public bool ValidateUser(string username, string rawPassword)
         {

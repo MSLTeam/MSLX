@@ -12,6 +12,7 @@ public class UserInfo
     public string PasswordHash { get; set; } = string.Empty;
     public string Role { get; set; } = "user"; // user / admin
     public string ApiKey { get; set; } = string.Empty;
+    public string? OAuthMSLOpenID { get; set; } // 关联的MSL OAuth OpenID
     public DateTime? LastLoginTime { get; set; }
     public List<string> Resources { get; set; } = new List<string>();
 
@@ -55,6 +56,7 @@ public class UserDto
     public string Avatar { get; set; }
     public string Role { get; set; }
     public string ApiKey { get; set; } // 用户可以看到自己的 API Key
+    public string OpenMSLID { get; set; } // 关联的 MSL OAuth OpenID，0 表示未关联
     public DateTime? LastLoginTime { get; set; }
     public List<string> Resources { get; set; }
 }

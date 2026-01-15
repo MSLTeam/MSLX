@@ -23,6 +23,8 @@ public class SettingsController: ControllerBase
                     NeoForgeInstallerMirrors = IConfigBase.Config.ReadConfig()["neoForgeInstallerMirrors"]?? "MSL Mirrors",
                     ListenHost = IConfigBase.Config.ReadConfig()["listenHost"]?? "localhost",
                     ListenPort = IConfigBase.Config.ReadConfig()["listenPort"]?? 1027,
+                    OAuthMSLClientID = IConfigBase.Config.ReadConfig()["oAuthMSLClientID"]?? "",
+                    OAuthMSLClientSecret = IConfigBase.Config.ReadConfig()["oAuthMSLClientSecret"]?? "",
                 }
             }
         );
@@ -36,6 +38,8 @@ public class SettingsController: ControllerBase
         IConfigBase.Config.WriteConfigKey("neoForgeInstallerMirrors", request.NeoForgeInstallerMirrors);
         IConfigBase.Config.WriteConfigKey("listenHost", request.ListenHost);
         IConfigBase.Config.WriteConfigKey("listenPort", request.ListenPort);
+        IConfigBase.Config.WriteConfigKey("oAuthMSLClientID", request.OAuthMSLClientID);
+        IConfigBase.Config.WriteConfigKey("oAuthMSLClientSecret", request.OAuthMSLClientSecret);
         return Ok(new ApiResponse<object>
             {
                 Code = 200,
