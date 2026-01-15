@@ -1,6 +1,6 @@
 {
-  "version": "0.5.5",
-  "buildTime": "2026-01-13 12:37:09",
+  "version": "0.5.6",
+  "buildTime": "2026-01-15 18:10:25",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,76 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "858fee1f90095d53bc9f067c81c2be5ca24d26cb",
-  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.5-beta",
+  "commitId": "e621896c4eeb6d679395b8b13b2b0c562202154c",
+  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.6-beta",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "e621896c4eeb6d679395b8b13b2b0c562202154c",
+      "commitTime": "2026-01-15 18:09:58 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.6-beta"
+    },
+    {
+      "commitId": "9a2f1e73b19e01d6905e8240e4b804d302a2140f",
+      "commitTime": "2026-01-15 17:37:21 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(webpanel): 优化设置页面一些表述"
+    },
+    {
+      "commitId": "8ddb148670e1c64ffbd84c39531aa95afe9f61a2",
+      "commitTime": "2026-01-15 17:36:04 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 新增OAuth Callback页面的设置面板样式适配"
+    },
+    {
+      "commitId": "2de52b1083fa75c48abe890cbd72b2f8f11f359b",
+      "commitTime": "2026-01-15 17:34:53 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemnon & webpanel): 支持配置 MSL OAuth 2.0 登录"
+    },
+    {
+      "commitId": "801aa3be45ffe859f8ba88786a27fb373de15494",
+      "commitTime": "2026-01-15 10:37:03 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 仅自动打开可被访问的本地控制台地址"
+    },
+    {
+      "commitId": "2faed8dfc1908041412e274f967eec8e2c7d4d1c",
+      "commitTime": "2026-01-15 10:36:39 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 仅自动打开可被访问的本地控制台地址"
+    },
+    {
+      "commitId": "fa68e12bb86f33a8bd106522e63ef7aad19bf861",
+      "commitTime": "2026-01-15 10:29:19 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 新增快捷设置Java强制文件编码为UTF8功能"
+    },
+    {
+      "commitId": "14f9d778aa487403e414933a8a6f5e7f639695e7",
+      "commitTime": "2026-01-15 10:14:18 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon & webpanel): 修复在发送指令时控制台状态异常刷新的问题"
+    },
+    {
+      "commitId": "ed5ce56aa24c55be9e3f8148427daa3a72053f9c",
+      "commitTime": "2026-01-14 00:01:40 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复编辑文件编码设置不生效的问题"
+    },
+    {
+      "commitId": "86ba8525c174310b4218413e1be79901a58cfc3e",
+      "commitTime": "2026-01-13 12:38:49 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #14 from MSLTeam/dev"
+    },
+    {
+      "commitId": "d1f9d5f5ccd6875c6f97b036e8aa351e59c82622",
+      "commitTime": "2026-01-13 12:37:48 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v0.5.5-beta 版本前端资源"
+    },
     {
       "commitId": "858fee1f90095d53bc9f067c81c2be5ca24d26cb",
       "commitTime": "2026-01-13 12:36:46 +0800",
@@ -305,72 +371,6 @@
       "commitTime": "2025-12-26 15:06:55 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "fix(daemon): 修复忽略Eula的配置保存问题"
-    },
-    {
-      "commitId": "b530c0ff3c1bab00e08ae549c58f94d3c7aa8287",
-      "commitTime": "2025-12-26 15:06:23 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(daemon): 嵌入 v0.5.3-beta 版本前端资源"
-    },
-    {
-      "commitId": "8a830a4944db0d516073aed4cd2025284daac962",
-      "commitTime": "2025-12-26 15:04:24 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到0.5.3-beta"
-    },
-    {
-      "commitId": "63fe6c44275941a245470f7581f807f63dce0c51",
-      "commitTime": "2025-12-26 15:02:42 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(daemon): 优化在macOS下数据目录位置"
-    },
-    {
-      "commitId": "a651d85b1ca9e5ac2357cc4b2545af9bc5525a6e",
-      "commitTime": "2025-12-26 14:57:45 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(daemon): 修改程序集名称配置"
-    },
-    {
-      "commitId": "178c580cf7d9ad4bdb9727e3b9699d9457748313",
-      "commitTime": "2025-12-26 14:48:54 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge remote-tracking branch 'origin/master' into dev"
-    },
-    {
-      "commitId": "73c6d859ee721ca15496776a4ec7165c49e77212",
-      "commitTime": "2025-12-26 14:47:29 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 添加服务器强制退出延迟设置功能"
-    },
-    {
-      "commitId": "69dd1211d7e3cada8e947308c6885afd6b82071b",
-      "commitTime": "2025-12-25 23:22:59 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 适配26.1+版本的NeoForge安装逻辑"
-    },
-    {
-      "commitId": "e69ddafc161f336628ef0ce6a5a7915497241773",
-      "commitTime": "2025-12-23 19:10:12 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修正运行在Docker下面的一些问题"
-    },
-    {
-      "commitId": "c1890e047d3eda3555a1e517a0438e578866abe8",
-      "commitTime": "2025-12-23 14:03:08 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 新增Docker配置文件 & 简化app数据位置调用"
-    },
-    {
-      "commitId": "ba0d37efc8b5993f49398feb9f5254a2661506ae",
-      "commitTime": "2025-12-21 14:06:15 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复启动时浏览器页面被打开两次"
-    },
-    {
-      "commitId": "a8c556b3d5e9911dbdf7ef8fe215a56cd7c08a20",
-      "commitTime": "2025-12-21 13:38:43 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge branch 'master' of https://github.com/MSLTeam/MSLX"
     }
   ]
 }
