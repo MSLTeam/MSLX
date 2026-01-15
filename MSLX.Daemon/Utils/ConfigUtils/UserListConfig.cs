@@ -35,7 +35,10 @@ namespace MSLX.Daemon.Utils.ConfigUtils
                 if (!_hasInitialized)
                 {
                     // 这里打开带初始化信息提示的登录页面
-                    PlatFormServices.OpenBrowser($"http://{IConfigBase.Config.ReadConfig()["listenHost"] ?? "localhost"}:{IConfigBase.Config.ReadConfig()["listenPort"] ?? 1027}/login?initialize=true");
+                    if(!(IConfigBase.Config.ReadConfig()["listenHost"] ?? "localhost").Contains("0.0.0.0") && !(IConfigBase.Config.ReadConfig()["listenHost"] ?? "localhost").Contains("*"))
+                    {
+                        PlatFormServices.OpenBrowser($"http://{IConfigBase.Config.ReadConfig()["listenHost"] ?? "localhost"}:{IConfigBase.Config.ReadConfig()["listenPort"] ?? 1027}/login?initialize=true");
+                    }
                 }
             }
             else
@@ -45,7 +48,10 @@ namespace MSLX.Daemon.Utils.ConfigUtils
                     // 有用户了 在这里打开默认地址
                     if ((bool?)IConfigBase.Config.ReadConfig()["openWebConsoleOnLaunch"] ?? true)
                     {
-                        PlatFormServices.OpenBrowser($"http://{IConfigBase.Config.ReadConfig()["listenHost"] ?? "localhost"}:{IConfigBase.Config.ReadConfig()["listenPort"] ?? 1027}");
+                        if (!(IConfigBase.Config.ReadConfig()["listenHost"] ?? "localhost").Contains("0.0.0.0") && !(IConfigBase.Config.ReadConfig()["listenHost"] ?? "localhost").Contains("*"))
+                        {
+                            PlatFormServices.OpenBrowser($"http://{IConfigBase.Config.ReadConfig()["listenHost"] ?? "localhost"}:{IConfigBase.Config.ReadConfig()["listenPort"] ?? 1027}");
+                        }
                     }
                 }
             }
