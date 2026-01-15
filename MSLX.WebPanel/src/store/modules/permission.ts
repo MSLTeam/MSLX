@@ -26,7 +26,7 @@ function filterPermissionsRouters(routes: Array<RouteRecordRaw>, roles: Array<un
 
 export const usePermissionStore = defineStore('permission', {
   state: () => ({
-    whiteListRouters: ['/login'],
+    whiteListRouters: ['/login','/oauth/callback'],
     routers: [] as RouteRecordRaw[], // 有权限的路由
     removeRoutes: [] as RouteRecordRaw[], // 没权限的路由
     dynamicRoutesAdded: [] as string[],

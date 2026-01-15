@@ -6,6 +6,7 @@ export interface UserInfoModel {
   role: string;
   apiKey: string;
   lastLoginTime: string;
+  openMSLID?: string;
 }
 
 export interface UpdateUserRequest {

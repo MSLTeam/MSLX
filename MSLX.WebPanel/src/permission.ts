@@ -17,7 +17,7 @@ router.beforeEach(async (to, from, next) => {
 
   const { token } = userStore;
   if (token) {
-    if (to.path === '/login') {
+    if (to.path === '/login' || to.path === '/oauth/callback') {
       next();
       return;
     }

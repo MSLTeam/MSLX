@@ -30,7 +30,8 @@ public class UserController : ControllerBase
             Role = user.Role,
             ApiKey = user.ApiKey,
             LastLoginTime = user.LastLoginTime,
-            Resources = user.Resources
+            Resources = user.Resources,
+            OpenMSLID = user.OAuthMSLOpenID ?? "0"
         };
 
         return Ok(new ApiResponse<UserDto> { Code = 200, Message = "success", Data = dto });
