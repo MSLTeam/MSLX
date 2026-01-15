@@ -376,4 +376,17 @@ onMounted(() => {
     padding: 30px 20px;
   }
 }
+
+.tdesign-setting-outside {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 100;
+
+  // 移动端适配
+  @media (max-width: 768px) {
+    top: 10px;
+    right: 10px;
+  }
+}
 </style>
