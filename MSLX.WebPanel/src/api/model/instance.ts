@@ -60,6 +60,7 @@ export interface UpdateInstanceModel {
   autoRestart?: boolean;
   forceAutoRestart?: boolean;
   ignoreEula?: boolean;
+  forceJvmUTF8?: boolean;
   runOnStartup?: boolean;
   inputEncoding?: 'utf-8' | 'gbk';
   outputEncoding?: 'utf-8' | 'gbk';
@@ -87,6 +88,7 @@ export interface InstanceSettingsModel {
   autoRestart?: boolean;
   forceAutoRestart?: boolean;
   ignoreEula?: boolean;
+  forceJvmUTF8?: boolean;
   runOnStartup?: boolean;
   inputEncoding?: 'utf-8' | 'gbk';
   outputEncoding?: 'utf-8' | 'gbk';

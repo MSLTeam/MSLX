@@ -46,9 +46,10 @@ public class UpdateServerRequest : IValidatableObject
     public bool ForceAutoRestart { get; set; } = true;
     public bool RunOnStartup { get; set; } = false;
     public bool IgnoreEula { get; set; } = false;
-    
+    public bool ForceJvmUTF8 { get; set; } = false;
+
     // 两个编码 暂时仅支持 utf-8 和 gbk
-    
+
     [RegularExpression(@"^(?i)(utf-8|gbk)$", ErrorMessage = "输入编码 (InputEncoding) 仅支持 'utf-8' 或 'gbk'")]
     public string InputEncoding { get; set; } = "utf-8";
 

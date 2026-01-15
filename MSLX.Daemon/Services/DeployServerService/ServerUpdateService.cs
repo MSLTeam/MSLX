@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using Downloader;
+using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Models.Tasks;
-using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.Daemon.Utils.BackgroundTasks;
+using MSLX.Daemon.Utils.ConfigUtils;
 
 namespace MSLX.Daemon.Services;
 
@@ -102,6 +103,7 @@ public class ServerUpdateService : BackgroundService
             server.RunOnStartup = req.RunOnStartup;
             server.AutoRestart = req.AutoRestart;
             server.IgnoreEula = req.IgnoreEula;
+            server.ForceJvmUTF8 = req.ForceJvmUTF8;
             server.InputEncoding = req.InputEncoding;
             server.OutputEncoding = req.OutputEncoding;
             server.FileEncoding = req.FileEncoding;

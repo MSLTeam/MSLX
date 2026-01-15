@@ -255,7 +255,7 @@ public class MCServerService
             await Task.Delay(100);
 
             string args =
-                $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args} -jar {serverInfo.Core} nogui";
+                $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{(serverInfo.ForceJvmUTF8? " -Dfile.encoding=UTF-8":"")} -jar {serverInfo.Core} nogui";
             string exec = serverInfo.Java;
 
             // 处理自定义模式参数
@@ -285,14 +285,14 @@ public class MCServerService
             if (serverInfo.Core.Contains("@libraries"))
             {
                 args =
-                    $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args} {serverInfo.Core} nogui";
+                    $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{(serverInfo.ForceJvmUTF8 ? " -Dfile.encoding=UTF-8" : "")} {serverInfo.Core} nogui";
             }
 
             // 处理编码
             Encoding inputEncoding = GetEncoding(serverInfo.InputEncoding);
             Encoding outputEncoding = GetEncoding(serverInfo.OutputEncoding);
             _logger.LogInformation(
-                $"实例 {instanceId} 编码设置 - 输入: {inputEncoding.EncodingName}, 输出: {outputEncoding.EncodingName}");
+                $"实例 {instanceId} 编码设置 - 输入: {inputEncoding.EncodingName}, 输出: {outputEncoding.EncodingName}，JVM强制UTF8：{serverInfo.ForceJvmUTF8}");
 
             // 配置启动参数
             var startInfo = new ProcessStartInfo
