@@ -284,19 +284,19 @@ const handleUnbindMSL = () => {
 
       <t-divider dashed />
 
-      <t-form-item label="MSL 绑定" help="绑定后可使用 MSL 账户直接登录本控制台">
+      <t-form-item label="MSL 账户绑定" help="绑定后可使用 MSL 账户直接登录本控制台">
         <div v-if="userInfo.openMSLID && userInfo.openMSLID !== '0'" class="bound-status">
           <t-tag theme="success" variant="light" size="medium">
             <template #icon><check-circle-icon /></template>
             已绑定 (MSL UID: {{ userInfo.openMSLID }})
           </t-tag>
-          <t-button theme="danger" variant="text" size="small" @click="handleUnbindMSL" style="margin-left: 12px">
+          <t-button theme="danger" variant="text" size="small" style="margin-left: 12px" @click="handleUnbindMSL">
             解除绑定
           </t-button>
         </div>
 
         <div v-else>
-          <t-button theme="primary" variant="outline" @click="handleBindMSL" :loading="bindLoading">
+          <t-button theme="primary" variant="outline" :loading="bindLoading" @click="handleBindMSL">
             <template #icon><link-icon /></template>
             绑定 MSL 账户
           </t-button>
