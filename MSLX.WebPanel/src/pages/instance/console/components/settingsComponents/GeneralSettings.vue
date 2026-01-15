@@ -788,7 +788,7 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div class="setting-item" v-if="javaType !== 'none'">
+        <div v-if="javaType !== 'none'" class="setting-item">
           <div class="setting-info">
             <div class="title">强制Java使用UTF8</div>
             <div class="desc">此功能可以解决部分游戏内中文乱码的问题（特别是Windows系统上）</div>
