@@ -1,6 +1,6 @@
 {
-  "version": "0.5.6",
-  "buildTime": "2026-01-15 18:10:25",
+  "version": "0.5.7",
+  "buildTime": "2026-01-17 00:19:20",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -24,7 +24,7 @@
     "pinia": "^2.1.7",
     "pinia-plugin-persistedstate": "^3.2.1",
     "qrcode.vue": "^3.4.1",
-    "qs": "^6.13.0",
+    "qs": "6.14.1",
     "tdesign-icons-vue-next": "^0.4.1",
     "tdesign-vue-next": "^1.17.1",
     "tvision-color": "^1.6.0",
@@ -68,10 +68,76 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "e621896c4eeb6d679395b8b13b2b0c562202154c",
-  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.6-beta",
+  "commitId": "4195692aad66c17d5b1c0b390b52de099d486380",
+  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.7-beta",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "4195692aad66c17d5b1c0b390b52de099d486380",
+      "commitTime": "2026-01-17 00:18:57 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.7-beta"
+    },
+    {
+      "commitId": "75cb0db8e88b2e1c55bd9af6257ef82170e703e8",
+      "commitTime": "2026-01-17 00:17:18 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 新增版本更新提醒和下载功能"
+    },
+    {
+      "commitId": "4f0acdfcc703fc5c383a3c56079f18d19298ab95",
+      "commitTime": "2026-01-16 19:55:42 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): AI日志分析服务支持选择模型"
+    },
+    {
+      "commitId": "9d1b313b80b3cbd3be548704d43edbfd9b71b4db",
+      "commitTime": "2026-01-16 18:43:14 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复二进制文件读取的问题"
+    },
+    {
+      "commitId": "ba9bd6b21c539e44627d92f0ee979cbc88a5cf8d",
+      "commitTime": "2026-01-16 17:59:26 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(webpanel): 修正日志分析页面的样式"
+    },
+    {
+      "commitId": "c5a74507a581a77bd91d2614eacdc814387dd716",
+      "commitTime": "2026-01-16 17:56:14 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 对接MSL用户中心AI错误日志分析功能"
+    },
+    {
+      "commitId": "f93fb20fd7cd29175aed9a99434154b2c0f7ee5f",
+      "commitTime": "2026-01-16 17:52:09 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复文件管理器文件内容误判问题"
+    },
+    {
+      "commitId": "8a7c0ed7165880d888d2e941a6c686eae256b2f0",
+      "commitTime": "2026-01-16 15:40:14 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 调整服务端实例控制台样式"
+    },
+    {
+      "commitId": "0414b0f703272d68b9ec6c0b3427f48e2f85fffd",
+      "commitTime": "2026-01-16 15:03:42 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "deps(webpanel): 更新依赖版本"
+    },
+    {
+      "commitId": "f0959e703f98b3a54aae3be01862c35dd9a9b13a",
+      "commitTime": "2026-01-15 18:11:29 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #15 from MSLTeam/dev"
+    },
+    {
+      "commitId": "a76d827eb9854cd9b0bc1a23de884104590570c1",
+      "commitTime": "2026-01-15 18:10:54 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v0.5.6-beta 版本前端资源"
+    },
     {
       "commitId": "e621896c4eeb6d679395b8b13b2b0c562202154c",
       "commitTime": "2026-01-15 18:09:58 +0800",
@@ -305,72 +371,6 @@
       "commitTime": "2025-12-27 22:35:22 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "chore(daemon): 优化创建服务端默认编码设置"
-    },
-    {
-      "commitId": "3e927a740f49e9b3ad54bcbd5eb7ba8c4c2daf7e",
-      "commitTime": "2025-12-27 21:49:34 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #12 from MSLTeam/dev"
-    },
-    {
-      "commitId": "45f8aad12850bb99cfbb2f16f92599499d1363b2",
-      "commitTime": "2025-12-27 21:48:58 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(daemon): 嵌入 v0.5.3.1-beta 前端资源"
-    },
-    {
-      "commitId": "e7baa436a39186b4b40029ff0f55352c34ca435e",
-      "commitTime": "2025-12-27 21:48:07 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.3.1-beta"
-    },
-    {
-      "commitId": "34781aace4e296280f4efebf6c9e92d5e3857980",
-      "commitTime": "2025-12-27 21:47:35 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(webpanel): 默认新增用户权限为admin"
-    },
-    {
-      "commitId": "3fefd6ff215481428a6328639696fc7c743f8a1f",
-      "commitTime": "2025-12-27 21:45:13 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge remote-tracking branch 'origin/master' into dev"
-    },
-    {
-      "commitId": "a89c0b15955e41b715dc9988794e7b632e88c722",
-      "commitTime": "2025-12-27 21:41:36 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复原本支持的GBK编码"
-    },
-    {
-      "commitId": "7310d5b7933d2765a4b7527f59353e19f135a176",
-      "commitTime": "2025-12-27 21:08:49 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复Docker入口文件错误"
-    },
-    {
-      "commitId": "6ad17c168d1768a443ee18c2b387f411030516fb",
-      "commitTime": "2025-12-26 15:19:03 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge branch 'master' of https://github.com/MSLTeam/MSLX"
-    },
-    {
-      "commitId": "158688416baed766e0398bf87b0e750f04bb47f1",
-      "commitTime": "2025-12-26 15:18:46 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(daemon): 修改Docker发布仓库名"
-    },
-    {
-      "commitId": "553a89228933403fe1a0362a91f9678f04afb013",
-      "commitTime": "2025-12-26 15:07:53 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #11 from MSLTeam/dev"
-    },
-    {
-      "commitId": "c3aea1daf88da128e03bfd63ea318358d457d385",
-      "commitTime": "2025-12-26 15:06:55 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复忽略Eula的配置保存问题"
     }
   ]
 }
