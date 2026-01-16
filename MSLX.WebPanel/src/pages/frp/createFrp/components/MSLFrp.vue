@@ -1,16 +1,9 @@
 <script setup lang="ts">
-import {
-  UserCircleIcon,
-  UserAddIcon,
-  ServerIcon,
-  CloudIcon,
-  AddIcon,
-  PlayCircleIcon
-} from 'tdesign-icons-vue-next';
+import { UserCircleIcon, UserAddIcon, ServerIcon, CloudIcon, AddIcon, PlayCircleIcon } from 'tdesign-icons-vue-next';
 import { changeUrl } from '@/router';
 import { onMounted, onUnmounted, ref, computed } from 'vue';
 import { request } from '@/utils/request';
-import { generateRandomString } from '@/utils/tools';
+import { formatTime, generateRandomString } from '@/utils/tools';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { openLoginPopup } from '@/utils/popup';
 import { createFrpTunnel } from '@/pages/frp/createFrp/utils/create';
@@ -58,7 +51,7 @@ const selectedTunnelId = ref<number | null>(null); // 当前选中的隧道ID
 
 // 计算属性：当前选中的隧道对象
 const currentTunnel = computed(() => {
-  return tunnels.value.find(t => t.id === selectedTunnelId.value) || null;
+  return tunnels.value.find((t) => t.id === selectedTunnelId.value) || null;
 });
 
 // 计算属性：当前选中隧道的节点名称
@@ -68,7 +61,7 @@ const currentNodeName = computed(() => {
 });
 
 onMounted(() => {
-  const token = localStorage.getItem("msl-user-token");
+  const token = localStorage.getItem('msl-user-token');
   if (token) {
     mslUserToken.value = token;
     initDashboardData();
@@ -114,7 +107,7 @@ async function pollLoginStatus(csrf: string, ssid: string) {
       if (popupWindow.value) popupWindow.value.close();
       MessagePlugin.success('登录成功');
       mslUserToken.value = res.data.token;
-      localStorage.setItem("msl-user-token", res.data.token);
+      localStorage.setItem('msl-user-token', res.data.token);
 
       // 登录成功后，初始化数据
       initDashboardData();
@@ -127,7 +120,6 @@ async function pollLoginStatus(csrf: string, ssid: string) {
   setTimeout(() => pollLoginStatus(csrf, ssid), 1000);
 }
 
-
 // 格式化流量
 const formatBytes = (bytes: number) => {
   if (bytes === 0) return '0 B';
@@ -137,27 +129,30 @@ const formatBytes = (bytes: number) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-// 格式化时间戳
-const formatTime = (timestamp: number) => {
-  return new Date(timestamp * 1000).toLocaleString();
-};
-
 // 加载所有数据
 async function initDashboardData() {
   loading.value = true;
   try {
     // 并行获取 用户信息和节点列表
     const [userRes, nodeRes] = await Promise.all([
-      request.get({ url: '/api/frp/userInfo', baseURL: 'https://user.mslmc.net', headers: { Authorization: `Bearer ${mslUserToken.value}` } }),
-      request.get({ url: '/api/frp/nodeList', baseURL: 'https://user.mslmc.net', headers: { Authorization: `Bearer ${mslUserToken.value}` } })
+      request.get({
+        url: '/api/frp/userInfo',
+        baseURL: 'https://user.mslmc.net',
+        headers: { Authorization: `Bearer ${mslUserToken.value}` },
+      }),
+      request.get({
+        url: '/api/frp/nodeList',
+        baseURL: 'https://user.mslmc.net',
+        headers: { Authorization: `Bearer ${mslUserToken.value}` },
+      }),
     ]);
 
-    if (userRes.code === 200){
+    if (userRes.code === 200) {
       userInfo.value = userRes.data;
-    }else{
+    } else {
       MessagePlugin.warning('登录已过期，请重新登录～');
       mslUserToken.value = '';
-      localStorage.removeItem("msl-user-token");
+      localStorage.removeItem('msl-user-token');
       return;
     }
 
@@ -173,7 +168,7 @@ async function initDashboardData() {
     const tunnelRes = await request.get({
       url: '/api/frp/getTunnelList',
       baseURL: 'https://user.mslmc.net',
-      headers: { Authorization: `Bearer ${mslUserToken.value}` }
+      headers: { Authorization: `Bearer ${mslUserToken.value}` },
     });
 
     if (tunnelRes.code === 200) {
@@ -182,7 +177,6 @@ async function initDashboardData() {
         selectedTunnelId.value = tunnels.value[0].id;
       }
     }
-
   } catch (e: any) {
     MessagePlugin.error('数据加载失败: ' + e.message);
   } finally {
@@ -201,7 +195,7 @@ async function handleUseTunnel() {
       url: '/api/frp/getTunnelConfig',
       baseURL: 'https://user.mslmc.net',
       params: { id: currentTunnel.value.id },
-      headers: { Authorization: `Bearer ${mslUserToken.value}` }
+      headers: { Authorization: `Bearer ${mslUserToken.value}` },
     });
 
     if (res.code === 200) {
@@ -219,12 +213,10 @@ const handleAddTunnel = () => {
   MessagePlugin.info('请前往 MSL用户中心 创建新隧道');
   changeUrl('https://user.mslmc.net/frp/createTunnel');
 };
-
 </script>
 
 <template>
   <div class="page-container">
-
     <div v-if="mslUserToken === ''" class="login-container">
       <div class="login-card">
         <div class="icon-wrapper">
@@ -237,7 +229,13 @@ const handleAddTunnel = () => {
             <template #icon><user-circle-icon /></template>
             跳转用户中心登录
           </t-button>
-          <t-button theme="default" variant="outline" block size="large" @click="changeUrl('https://user.mslmc.net/register')">
+          <t-button
+            theme="default"
+            variant="outline"
+            block
+            size="large"
+            @click="changeUrl('https://user.mslmc.net/register')"
+          >
             <template #icon><user-add-icon /></template>
             注册 MSL 账户
           </t-button>
@@ -249,7 +247,6 @@ const handleAddTunnel = () => {
       <t-loading attach="#app-space" :loading="loading" text="加载数据中..." />
 
       <t-space id="app-space" direction="vertical" size="large" style="width: 100%">
-
         <t-card v-if="userInfo" :bordered="false" title="MSLFrp 用户信息" class="info-card">
           <template #actions>
             <t-tag theme="primary" variant="light">{{ userInfo.user_group_name }}</t-tag>
@@ -270,7 +267,7 @@ const handleAddTunnel = () => {
             <t-col :xs="6" :sm="3">
               <div class="stat-item">
                 <div class="label">速率限制</div>
-                <div class="value">{{ userInfo.boundLimit / 1024 * 8 }} Mbps</div>
+                <div class="value">{{ (userInfo.boundLimit / 1024) * 8 }} Mbps</div>
               </div>
             </t-col>
             <t-col :xs="6" :sm="3">
@@ -283,7 +280,6 @@ const handleAddTunnel = () => {
         </t-card>
 
         <t-row :gutter="[16, 16]">
-
           <t-col :xs="12" :md="5" :lg="4">
             <t-card :bordered="false" class="full-height-card">
               <template #title>
@@ -317,9 +313,7 @@ const handleAddTunnel = () => {
                   </div>
                 </div>
 
-                <div v-if="tunnels.length === 0" class="empty-state">
-                  暂无隧道
-                </div>
+                <div v-if="tunnels.length === 0" class="empty-state">暂无隧道</div>
               </div>
             </t-card>
           </t-col>
@@ -393,7 +387,6 @@ const handleAddTunnel = () => {
               </div>
             </t-card>
           </t-col>
-
         </t-row>
       </t-space>
     </div>
@@ -422,8 +415,16 @@ const handleAddTunnel = () => {
   box-shadow: var(--td-shadow-2);
   text-align: center;
 }
-.title { font-size: 24px; font-weight: 600; margin: 16px 0 8px; }
-.subtitle { color: var(--td-text-color-secondary); margin-bottom: 32px; font-size: 14px; }
+.title {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 16px 0 8px;
+}
+.subtitle {
+  color: var(--td-text-color-secondary);
+  margin-bottom: 32px;
+  font-size: 14px;
+}
 
 // --- 仪表盘样式 ---
 
@@ -431,9 +432,19 @@ const handleAddTunnel = () => {
 .info-card {
   .stat-item {
     text-align: left;
-    .label { font-size: 12px; color: var(--td-text-color-secondary); margin-bottom: 4px; }
-    .value { font-size: 16px; font-weight: 600; color: var(--td-text-color-primary); }
-    .date-text { font-size: 14px; }
+    .label {
+      font-size: 12px;
+      color: var(--td-text-color-secondary);
+      margin-bottom: 4px;
+    }
+    .value {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--td-text-color-primary);
+    }
+    .date-text {
+      font-size: 14px;
+    }
   }
 }
 
@@ -456,8 +467,13 @@ const handleAddTunnel = () => {
   margin: 0 -16px;
   padding: 0 8px;
 
-  &::-webkit-scrollbar { width: 4px; }
-  &::-webkit-scrollbar-thumb { background: var(--td-scrollbar-color); border-radius: 2px; }
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--td-scrollbar-color);
+    border-radius: 2px;
+  }
 }
 
 .tunnel-item {
@@ -477,7 +493,9 @@ const handleAddTunnel = () => {
   &.active {
     background-color: var(--td-brand-color-light); // 选中态背景浅色
     border-color: var(--td-brand-color); // 选中边框
-    .item-title { color: var(--td-brand-color); }
+    .item-title {
+      color: var(--td-brand-color);
+    }
   }
 
   .item-icon {
@@ -489,8 +507,17 @@ const handleAddTunnel = () => {
   .item-content {
     flex: 1;
     overflow: hidden;
-    .item-title { font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
-    .item-subtitle { font-size: 12px; color: var(--td-text-color-secondary); }
+    .item-title {
+      font-weight: 500;
+      font-size: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .item-subtitle {
+      font-size: 12px;
+      color: var(--td-text-color-secondary);
+    }
   }
 }
 
@@ -499,17 +526,39 @@ const handleAddTunnel = () => {
   padding: 8px 0;
 
   .detail-header {
-    h3 { margin: 0 0 8px; font-size: 20px; }
-    .remarks { color: var(--td-text-color-secondary); font-size: 14px; margin: 0; }
+    h3 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+    .remarks {
+      color: var(--td-text-color-secondary);
+      font-size: 14px;
+      margin: 0;
+    }
   }
 
   .detail-grid {
     display: flex;
     flex-direction: column;
-    .label { font-size: 12px; color: var(--td-text-color-secondary); margin-bottom: 4px; }
-    .val { font-size: 14px; color: var(--td-text-color-primary); font-weight: 500; word-break: break-all;}
-    .highlight { color: var(--td-brand-color); font-weight: 700; font-size: 16px; }
-    .uppercase { text-transform: uppercase; }
+    .label {
+      font-size: 12px;
+      color: var(--td-text-color-secondary);
+      margin-bottom: 4px;
+    }
+    .val {
+      font-size: 14px;
+      color: var(--td-text-color-primary);
+      font-weight: 500;
+      word-break: break-all;
+    }
+    .highlight {
+      color: var(--td-brand-color);
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .uppercase {
+      text-transform: uppercase;
+    }
   }
 
   .action-area {
@@ -524,6 +573,8 @@ const handleAddTunnel = () => {
   justify-content: center;
   height: 300px;
   color: var(--td-text-color-disabled);
-  p { margin-top: 16px; }
+  p {
+    margin-top: 16px;
+  }
 }
 </style>

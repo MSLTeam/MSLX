@@ -18,10 +18,12 @@ import {
   CloseCircleIcon,
   CloudIcon,
   MoreIcon,
+  AnalyticsIcon,
 } from 'tdesign-icons-vue-next';
 import { InstanceInfoModel } from '@/api/model/instance';
 import InstanceSettings from './InstanceSettings.vue';
 import InstanceMonitor from './InstanceMonitor.vue';
+import LogAnalysisDialog from './LogAnalysis.vue';
 import { changeUrl } from '@/router';
 
 // --- Props & Emits ---
@@ -41,6 +43,8 @@ const emits = defineEmits<{
   'force-exit': [];
   restart: [];
 }>();
+
+const showLogAnalysisDialog = ref(false);
 
 const settingsRef = ref<InstanceType<typeof InstanceSettings> | null>(null);
 const activeTab = ref('info');
@@ -183,6 +187,10 @@ onUnmounted(() => {
               <template #prefix-icon><cloud-icon /></template>
               立即备份
             </t-dropdown-item>
+            <t-dropdown-item @click="showLogAnalysisDialog = true">
+              <template #prefix-icon><analytics-icon /></template>
+              日志分析
+            </t-dropdown-item>
           </t-dropdown-menu>
         </t-dropdown>
       </div>
@@ -263,6 +271,7 @@ onUnmounted(() => {
     </t-card>
 
     <instance-settings ref="settingsRef" :server-id="serverId" @success="handleSettingsSaved" />
+    <log-analysis-dialog :server-id="serverId" v-model:visible="showLogAnalysisDialog" />
   </div>
 </template>
 
