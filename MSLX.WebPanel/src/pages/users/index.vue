@@ -82,7 +82,7 @@ const handleAdd = () => {
   formData.username = '';
   formData.name = '';
   formData.password = '';
-  formData.role = 'user';
+  formData.role = 'admin';
   formData.resetApiKey = false;
   dialogVisible.value = true;
 };
