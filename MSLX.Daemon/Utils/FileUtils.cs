@@ -59,21 +59,21 @@ public class FileUtils
             return (false, string.Empty, $"路径解析错误: {ex.Message}");
         }
     }
-    
+
     // 是否二进制文件
     public static bool IsBinaryFile(string filePath)
     {
-        const int bufferSize = 8192; // 读取前 8KB
+        const int bufferSize = 8192;
         var buffer = new char[bufferSize];
-    
-        try 
+
+        try
         {
-            using (var reader = new StreamReader(filePath))
+            using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var reader = new StreamReader(fs))
             {
                 int charsRead = reader.Read(buffer, 0, bufferSize);
                 for (int i = 0; i < charsRead; i++)
                 {
-                    // 如果遇到空字符 (NUL)，通常意味着这是二进制文件
                     if (buffer[i] == '\0')
                     {
                         return true;
@@ -81,12 +81,11 @@ public class FileUtils
                 }
             }
         }
-        catch 
-        { 
-            // 如果读取出错，保守起见认为是二进制
-            return true; 
+        catch (Exception ex)
+        {
+            return true;
         }
-    
+
         return false;
     }
 }
