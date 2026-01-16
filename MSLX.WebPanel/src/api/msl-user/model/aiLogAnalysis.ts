@@ -17,3 +17,13 @@ export interface AIAnalysisResultModel {
     rate: number;
   };
 }
+
+export interface AIAnalysisModelsListModel {
+  code: number;
+  data: ModelInfoModel[];
+}
+
+export interface ModelInfoModel{
+  name: string;
+  rate: number;
+}

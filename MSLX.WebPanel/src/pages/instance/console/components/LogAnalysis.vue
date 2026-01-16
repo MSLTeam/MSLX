@@ -4,12 +4,13 @@ import { AppIcon, AnalyticsFilledIcon, BrowseIcon, ExtensionIcon, FileIcon, Time
 import { MessagePlugin } from 'tdesign-vue-next';
 import { getInstanceInfo } from '@/api/instance';
 import { getFileContent, getPluginsOrModsList } from '@/api/files';
-import { getAIServiceUsage, postAIAnalysis } from '@/api/msl-user/aiLogAnalysis';
+import { getAIServiceModelsList, getAIServiceUsage, postAIAnalysis } from '@/api/msl-user/aiLogAnalysis';
 import { changeUrl } from '@/router';
 import { MdPreview, type Themes } from 'md-editor-v3';
 import 'md-editor-v3/lib/preview.css';
 import { useDark } from '@vueuse/core';
 import { formatTime } from '@/utils/tools';
+import { ModelInfoModel } from '@/api/msl-user/model/aiLogAnalysis';
 
 // 定义 Props
 const props = defineProps<{
@@ -28,7 +29,9 @@ const formData = reactive({
   pluginsList: '',
   logContent: '',
   result: '> ✨ 等待日志分析开始······',
+  selectedModel: 'qwen-flash',
 });
+const modelList = ref<ModelInfoModel[]>([]);
 
 // 统计数据
 const stats = reactive({
@@ -62,6 +65,18 @@ async function initInstanceInfo() {
     loading.value = true;
     // 获取用量信息
     await getUsage();
+    // 模型列表
+    try {
+      const res_models = await getAIServiceModelsList(localStorage.getItem('msl-user-token') || '');
+      if (res_models.code === 200) {
+        modelList.value = res_models.data;
+        if (!formData.selectedModel && modelList.value.length > 0) {
+          formData.selectedModel = modelList.value[0].name;
+        }
+      }
+    } catch (e) {
+      MessagePlugin.error('获取模型列表失败' + e.message);
+    }
     // 获取服务端名字
     const res_info = await getInstanceInfo(props.serverId);
     formData.coreVersion = res_info.core;
@@ -113,6 +128,10 @@ const onClose = () => {
 // 提交 AI 诊断
 async function handleAnalyze() {
   if (!formData.logContent) return;
+  if (!formData.selectedModel) {
+    MessagePlugin.warning('请先选择分析模型');
+    return;
+  }
   analysing.value = true;
   formData.result = `> ⌛️ 分析日志中··· 请稍等`;
   try {
@@ -122,7 +141,7 @@ async function handleAnalyze() {
       formData.pluginsList,
       formData.coreVersion,
       formData.logContent,
-      'qwen-flash',
+      formData.selectedModel,
     );
     formData.result = res.data.content;
   } catch (e) {
@@ -158,6 +177,18 @@ watch(isDark, () => {
     <t-loading :loading="loading">
       <div class="analysis-container">
         <div class="panel-left">
+          <div class="form-group">
+            <div class="label">选择分析模型</div>
+            <t-select v-model="formData.selectedModel" placeholder="请选择AI模型" filterable>
+              <t-option v-for="item in modelList" :key="item.name" :value="item.name" :label="item.name">
+                <div class="model-option-item">
+                  <span>{{ item.name }}</span>
+                  <t-tag size="small" variant="light" theme="default"> 倍率: {{ item.rate }}x </t-tag>
+                </div>
+              </t-option>
+            </t-select>
+          </div>
+
           <div class="form-group">
             <div class="label">服务端核心/版本</div>
             <t-input v-model="formData.coreVersion" readonly placeholder="例如: Arclight 1.21.1">
@@ -401,6 +432,14 @@ watch(isDark, () => {
       margin-top: 4px;
     }
   }
+}
+
+.model-option-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 10px;
 }
 
 .report-content {

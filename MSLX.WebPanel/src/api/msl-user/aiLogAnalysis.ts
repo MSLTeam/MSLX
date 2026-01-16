@@ -1,11 +1,23 @@
 import { request } from '@/utils/request';
-import { AIAnalysisResultModel, AIServiceUsageModel } from '@/api/msl-user/model/aiLogAnalysis';
+import {
+  AIAnalysisModelsListModel,
+  AIAnalysisResultModel,
+  AIServiceUsageModel,
+} from '@/api/msl-user/model/aiLogAnalysis';
 
 export async function getAIServiceUsage(token: string) {
   return await request.get<AIServiceUsageModel>({
     url: `/api/tools/ai/usage`,
     baseURL: 'https://user.mslmc.net',
     headers: { Authorization: `Bearer ${token}` }
+  });
+}
+
+export async function getAIServiceModelsList(token: string) {
+  return await request.get<AIAnalysisModelsListModel>({
+    url: `/api/tools/ai/models`,
+    baseURL: 'https://user.mslmc.net',
+    headers: { Authorization: `Bearer ${token}` },
   });
 }
 
