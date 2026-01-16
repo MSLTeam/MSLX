@@ -39,7 +39,7 @@
     "pinia": "^2.1.7",
     "pinia-plugin-persistedstate": "^3.2.1",
     "qrcode.vue": "^3.4.1",
-    "qs": "^6.13.0",
+    "qs": "6.14.1",
     "tdesign-icons-vue-next": "^0.4.1",
     "tdesign-vue-next": "^1.17.1",
     "tvision-color": "^1.6.0",
