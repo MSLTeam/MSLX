@@ -355,7 +355,6 @@ watch(isDark, () => {
 }
 
 /* 右侧头部 */
-/* 右侧头部 */
 .panel-header {
   padding: 16px 24px;
   border-bottom: 1px solid var(--td-component-border);
@@ -364,7 +363,7 @@ watch(isDark, () => {
   align-items: center;
   background-color: var(--td-bg-color-container);
 
-  /* 新增：允许内容过多时自动换行，避免挤压 */
+  /* 内容过多时自动换行 */
   flex-wrap: wrap;
   gap: 12px; /* 换行后的行间距 */
 
@@ -373,9 +372,9 @@ watch(isDark, () => {
     font-weight: 700;
     color: var(--td-text-color-primary);
 
-    /* 核心修复：强制不换行，防止出现竖排文字 */
+    /* 防止出现竖排文字 */
     white-space: nowrap;
-    flex-shrink: 0; /* 防止宽度被压缩 */
+    flex-shrink: 0;
   }
 
   .stats-tags {
@@ -383,19 +382,16 @@ watch(isDark, () => {
     gap: 8px;
     align-items: center;
 
-    /* 新增：确保标签组靠右（配合 flex-wrap 使用） */
     margin-left: auto;
 
-    /* 移动端标签可能太挤，缩小间距或换行 */
     @media (max-width: 500px) {
-      /* 修改策略：小屏时不需要强制竖排，允许标签自身换行即可 */
       flex-wrap: wrap;
       justify-content: flex-end;
-      width: 100%; /* 占满宽度 */
+      width: 100%;
     }
   }
 
-  /* 针对极小屏幕（如手机竖屏）的整体布局优化 */
+  /* 移动端 */
   @media (max-width: 500px) {
     align-items: flex-start; /* 左对齐 */
 
