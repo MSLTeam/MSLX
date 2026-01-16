@@ -8,3 +8,8 @@ export function generateRandomString(length: number): string {
 
   return result;
 }
+
+// 格式化时间戳
+export function formatTime (timestamp: number)  {
+  return new Date(timestamp * 1000).toLocaleString();
+}

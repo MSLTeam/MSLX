@@ -75,8 +75,8 @@ importers:
         specifier: ^3.4.1
         version: 3.6.0(vue@3.5.22(typescript@5.9.3))
       qs:
-        specifier: ^6.13.0
-        version: 6.14.0
+        specifier: 6.14.1
+        version: 6.14.1
       tdesign-icons-vue-next:
         specifier: ^0.4.1
         version: 0.4.1(vue@3.5.22(typescript@5.9.3))
@@ -3023,8 +3023,8 @@ packages:
     peerDependencies:
       vue: ^3.0.0
 
-  qs@6.14.0:
-    resolution: {integrity: sha512-YWWTjgABSKcvs/nWBi9PycY/JiPJqOD4JA6o9Sej2AtvSGarXxKC3OQSk4pAarbdQlKAh5D4FCQkJNkW+GAn3w==}
+  qs@6.14.1:
+    resolution: {integrity: sha512-4EK3+xJl8Ts67nLYNwqw/dsFVnCf+qR7RgXSK9jEEm9unao3njwMDdmsdvoKBKHzxd7tCYz5e5M+SnMjdtXGQQ==}
     engines: {node: '>=0.6'}
 
   querystringify@2.2.0:
@@ -6910,7 +6910,7 @@ snapshots:
     dependencies:
       vue: 3.5.22(typescript@5.9.3)
 
-  qs@6.14.0:
+  qs@6.14.1:
     dependencies:
       side-channel: 1.1.0
 

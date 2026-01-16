@@ -1,10 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
-using Newtonsoft.Json.Linq;
 using MSLX.Daemon.Utils;
-using System.Runtime.InteropServices;
-using Microsoft.AspNetCore.Authorization;
 using MSLX.Daemon.Utils.ConfigUtils;
+using Newtonsoft.Json.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace MSLX.Daemon.Controllers;
 
@@ -83,7 +84,7 @@ public class AppInfoController : ControllerBase
                 ["targetFrontendVersion"] = new JObject
                 {
                     ["desktop"] = "0.0.0",
-                    ["panel"] = "0.5.6"
+                    ["panel"] = "0.5.7"
                 },
                 ["systemInfo"] = systemInfo
             };
@@ -106,7 +107,126 @@ public class AppInfoController : ControllerBase
             });
         }
     }
-    
+
+    [HttpGet("api/update/info")]
+    public async Task<IActionResult> GetUpdateInfoAsync()
+    {
+        try
+        {
+            var localVerObj = Assembly.GetEntryAssembly()?.GetName().Version ?? new Version("0.0.0.0");
+            HttpService.HttpResponse res = await MSLApi.GetAsync("/query/update?software=MSLX", null);
+
+            if (res.IsSuccessStatusCode)
+            {
+                JObject remoteJObj = JObject.Parse(res.Content ?? "{}");
+                string remoteVerStr = remoteJObj["data"]?["daemonLatestVersion"]?.ToString() ?? "0.0.0";
+                if (!Version.TryParse(remoteVerStr, out Version remoteVerObj))
+                {
+                    remoteVerObj = new Version("0.0.0.0");
+                }
+
+                // 版本归一化
+                Version normalizedLocal = NormalizeVersion(localVerObj);
+                Version normalizedRemote = NormalizeVersion(remoteVerObj);
+
+                // 判定状态
+                bool needUpdate = normalizedRemote > normalizedLocal;
+                string status = "release"; // 默认为最新正式版
+
+                if (needUpdate)
+                {
+                    status = "outdated";
+                }
+                else if (normalizedLocal > normalizedRemote)
+                {
+                    status = "beta"; // 本地版本比服务器还新，说明是测试版
+                }
+
+                var responseData = new
+                {
+                    needUpdate = needUpdate,
+                    currentVersion = localVerObj.ToString(),
+                    latestVersion = remoteVerStr,
+                    status = status, // release / beta / outdated
+                    log = remoteJObj["data"]?["log"]?.ToString()
+                };
+
+                return Ok(new ApiResponse<object>()
+                {
+                    Code = 200,
+                    Message = "获取更新信息成功",
+                    Data = responseData
+                });
+            }
+            else
+            {
+                return BadRequest(new ApiResponse<object>()
+                {
+                    Code = 500,
+                    Message = "获取更新信息失败: " + res.StatusCode,
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<object>()
+            {
+                Code = 400,
+                Message = "获取更新信息失败: " + ex.Message,
+            });
+        }
+    }
+
+    // === 辅助方法：版本归一化 ===
+    private Version NormalizeVersion(Version v)
+    {
+        return new Version(
+            v.Major < 0 ? 0 : v.Major,
+            v.Minor < 0 ? 0 : v.Minor,
+            v.Build < 0 ? 0 : v.Build,
+            v.Revision < 0 ? 0 : v.Revision
+        );
+    }
+
+    [HttpGet("api/update/download")]
+    public async Task<IActionResult> GetUpdateDownloadLinkAsync()
+    {
+        try
+        {
+            HttpService.HttpResponse res = await MSLApi.GetAsync($"/download/update?software=MSLX&system={PlatFormServices.GetOs().Replace("MacOS","macOS")}&arch={PlatFormServices.GetOsArch().Replace("amd64","x64")}", null);
+            if (res.IsSuccessStatusCode)
+            {
+                JObject remoteJObj = JObject.Parse(res.Content ?? "{}");
+                return Ok(new ApiResponse<object>()
+                {
+                    Code = 200,
+                    Message = "获取更新下载链接成功",
+                    Data = new
+                    {
+                        web = remoteJObj["data"]?["web"]?.ToString() ?? "",
+                        file = remoteJObj["data"]?["file"]?.ToString() ?? ""
+                    }
+                });
+            }
+            else
+            {
+                return BadRequest(new ApiResponse<object>()
+                {
+                    Code = 400,
+                    Message = "获取更新下载链接失败: " + res.StatusCode,
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<object>()
+            {
+                Code = 400,
+                Message = "获取更新下载链接失败: " + ex.Message,
+            });
+        }
+    }
+
     [HttpGet("api/ping")]
     [AllowAnonymous]
     public IActionResult Ping()

@@ -63,13 +63,23 @@ public class FileContentController : ControllerBase
         }
 
         // 内容采样
-        if (FileUtils.IsBinaryFile(targetPath))
+        // 文本文件白名单
+        var textExtensions = new HashSet<string>
         {
-            return BadRequest(new ApiResponse<object>
+            ".log", ".txt", ".json", ".yml", ".yaml",
+            ".properties", ".toml", ".xml", ".cfg", ".ini", ".md"
+        };
+
+        if (!textExtensions.Contains(ext))
+        {
+            if (FileUtils.IsBinaryFile(targetPath))
             {
-                Code = 400,
-                Message = "检测到二进制内容，不支持在线编辑。"
-            });
+                return BadRequest(new ApiResponse<object>
+                {
+                    Code = 400,
+                    Message = "检测到二进制内容，不支持在线编辑。"
+                });
+            }
         }
 
         try

@@ -1,0 +1,1 @@
+function a(t){const e="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";let r="";for(let n=0;n<t;n++)r+=e.charAt(Math.floor(Math.random()*e.length));return r}function o(t){return new Date(t*1e3).toLocaleString()}export{o as f,a as g};
