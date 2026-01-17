@@ -53,7 +53,7 @@ jobs:
           ARTIFACT_NAME="MSLX-Daemon_${{ env.VERSION_NAME }}_${{ matrix.rid }}"
           OUTPUT_PATH="./publish/$ARTIFACT_NAME"
 
-          dotnet publish ./MSLX/MSLX.Daemon/MSLX.Daemon.csproj \
+          dotnet publish ./MSLX.Daemon/MSLX.Daemon.csproj \
             -c Release \
             -r ${{ matrix.rid }} \
             --no-self-contained \
