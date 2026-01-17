@@ -1,20 +1,10 @@
-<atom:Window xmlns="https://github.com/avaloniaui"
-		xmlns:atom="using:AtomUI.Desktop.Controls"
+<suki:SukiWindow xmlns="https://github.com/avaloniaui"
+		xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="MSLX.Desktop.MainWindow"
         Title="MSLX.Desktop">
-    <atom:NavMenu Mode="Vertical" Width="300" Margin="0, 0, 0, 20">
-    <atom:NavMenuItem Header="Navigation One"/>
-    <atom:NavMenuItem Header="Navigation Two"
-                      IsEnabled="False" />
-    <atom:NavMenuItem Header="Navigation Three - Submenu">
-        <atom:NavMenuItem Header="Item 1"/>
 
-        <atom:NavMenuItem Header="Item 2"/>
-    </atom:NavMenuItem>
-    <atom:NavMenuItem Header="Navigation Four" />
-</atom:NavMenu>
-</atom:Window>
+</suki:SukiWindow>

@@ -1,11 +1,16 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.2.11408.102 d18.0
+VisualStudioVersion = 18.2.11408.102
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MSLX.Daemon", "MSLX.Daemon\MSLX.Daemon.csproj", "{10E7BCBB-73FE-40E2-87AB-06CE41BB0EB6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MSLX.Desktop", "MSLX.Desktop\MSLX.Desktop.csproj", "{46289062-33D8-4BF3-9007-E0806777BCBB}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E1BFAE3D-08CF-5322-3DCC-A88E0863D9C2} = {E1BFAE3D-08CF-5322-3DCC-A88E0863D9C2}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SukiUI", "SukiUI\SukiUI\SukiUI.csproj", "{E1BFAE3D-08CF-5322-3DCC-A88E0863D9C2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +26,10 @@ Global
 		{46289062-33D8-4BF3-9007-E0806777BCBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{46289062-33D8-4BF3-9007-E0806777BCBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{46289062-33D8-4BF3-9007-E0806777BCBB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E1BFAE3D-08CF-5322-3DCC-A88E0863D9C2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E1BFAE3D-08CF-5322-3DCC-A88E0863D9C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E1BFAE3D-08CF-5322-3DCC-A88E0863D9C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E1BFAE3D-08CF-5322-3DCC-A88E0863D9C2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
