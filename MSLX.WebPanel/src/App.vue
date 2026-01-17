@@ -62,7 +62,7 @@ const checkAppUpdate = async () => {
 // 处理“跳过此版本”
 const handleSkipVersion = () => {
   if (updateInfo.value?.latestVersion) {
-    localStorage.setItem('mslx_skip_version', updateInfo.value.latestVersion);
+    localStorage.setItem('mslx-skip-version', updateInfo.value.latestVersion);
     MessagePlugin.success('已跳过该版本，下次将不再提醒');
     showUpdateModal.value = false;
   }

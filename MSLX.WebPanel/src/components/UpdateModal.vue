@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import { DownloadIcon, BrowseIcon, CloseIcon, CloudDownloadIcon } from 'tdesign-icons-vue-next';
 
-// 定义接口，确保类型安全
+// 定义接口
 export interface UpdateInfoModel {
   needUpdate: boolean;
   currentVersion: string;
@@ -109,7 +109,6 @@ const handleSkip = () => {
 </template>
 
 <style scoped lang="less">
-/* 使用 Less 以便嵌套，也可以用 SCSS 或普通 CSS */
 .update-modal {
   /* 移动端适配：宽度在手机上自动变宽 */
   @media (max-width: 768px) {
@@ -167,7 +166,7 @@ const handleSkip = () => {
     overflow-y: auto;
     border: 1px solid var(--td-component-border);
 
-    /* 滚动条美化 (可选) */
+    /* 滚动条美化 */
     &::-webkit-scrollbar {
       width: 6px;
     }
