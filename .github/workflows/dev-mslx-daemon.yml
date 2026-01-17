@@ -47,12 +47,13 @@ jobs:
             echo "Current version: dev"
           fi
 
-      - name: 发布 (Framework Dependent & Single File)
+      - name: 发布并打包
         run: |
-          # 构造文件名变量
-          ARTIFACT_NAME="MSLX-Daemon_${{ env.VERSION_NAME }}_${{ matrix.rid }}"
-          OUTPUT_PATH="./publish/$ARTIFACT_NAME"
-
+          # 定义基础名称
+          BASE_NAME="MSLX-Daemon_${{ env.VERSION_NAME }}_${{ matrix.rid }}"
+          PUBLISH_DIR="./publish_temp"
+          
+          # 执行 .NET 发布
           dotnet publish ./MSLX.Daemon/MSLX.Daemon.csproj \
             -c Release \
             -r ${{ matrix.rid }} \
@@ -63,10 +64,29 @@ jobs:
             -p:CopyContentFiles=false \
             -p:IsWebConfigTransformDisabled=true \
             -p:GenerateStaticWebAssetsPublishManifest=false \
-            -o "$OUTPUT_PATH"
+            -o "$PUBLISH_DIR"
+
+          # 根据系统类型进行打包处理
+          mkdir -p dist
           
-          echo "ARTIFACT_PATH=$OUTPUT_PATH" >> $GITHUB_ENV
-          echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
+          if [[ "${{ matrix.os }}" == "windows" ]]; then
+            # Windows: 打包为 .zip
+            ARCHIVE_NAME="$BASE_NAME.zip"
+            # 进入目录打包，避免压缩包里包含 publish_temp 文件夹层级
+            cd "$PUBLISH_DIR"
+            zip -r "../dist/$ARCHIVE_NAME" .
+            
+          else
+            # Linux/macOS: 打包为 .tar.gz
+            ARCHIVE_NAME="$BASE_NAME.tar.gz"
+            cd "$PUBLISH_DIR"
+            # 确保有执行权限
+            chmod +x MSLX-Daemon
+            tar -czvf "../dist/$ARCHIVE_NAME" .
+          fi
+
+          echo "ARCHIVE_PATH=./dist/$ARCHIVE_NAME" >> $GITHUB_ENV
+          echo "ARTIFACT_NAME=$BASE_NAME" >> $GITHUB_ENV
 
       - name: 上传构建结果
         uses: actions/upload-artifact@v4
