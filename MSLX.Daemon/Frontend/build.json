@@ -1,6 +1,6 @@
 {
-  "version": "0.5.7",
-  "buildTime": "2026-01-17 00:19:20",
+  "version": "1.0.0",
+  "buildTime": "2026-01-17 12:27:13",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,94 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "4195692aad66c17d5b1c0b390b52de099d486380",
-  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.7-beta",
+  "commitId": "d1d9c4fd671835d1eaeb14bfc75390941ffca3ea",
+  "commitMsg": "bumpver(daemon & webpanel): 发布 v1.0.0 正式版本",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "d1d9c4fd671835d1eaeb14bfc75390941ffca3ea",
+      "commitTime": "2026-01-17 12:26:51 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 发布 v1.0.0 正式版本"
+    },
+    {
+      "commitId": "9a872e2f5674b083f3d9124397e6e4bcd911e679",
+      "commitTime": "2026-01-17 12:19:23 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "actions(daemon): 新增发布版本工作流"
+    },
+    {
+      "commitId": "841f6aff338ce5b2c52d6a4ea0ceec889a915eee",
+      "commitTime": "2026-01-17 12:10:07 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "actions(daemon): 仅输出单文件"
+    },
+    {
+      "commitId": "a6d06cf76e7b51632d43e2b03b5116fe94ca2e49",
+      "commitTime": "2026-01-17 12:04:14 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "actions(daemon): 修正构建结果上传路径"
+    },
+    {
+      "commitId": "5e4318ebedca71a1a523817f89c88ad87b721b12",
+      "commitTime": "2026-01-17 12:02:24 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "actions(daemon): 修改打包逻辑"
+    },
+    {
+      "commitId": "63fbc490368fe96bb9e5060246f8a2fb43530c95",
+      "commitTime": "2026-01-17 12:00:41 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "actions(daemon): 减少多余文件的输出"
+    },
+    {
+      "commitId": "7dd4ccd33c4b0c1538ea5afcddfb2a3dded4655d",
+      "commitTime": "2026-01-17 11:56:54 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "actions(daemon): 修正构建路径错误"
+    },
+    {
+      "commitId": "2ef58cef2c8ca1999386933625042082df54260b",
+      "commitTime": "2026-01-17 11:54:35 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "actions(daemon): 新增MSLX Daemon Dev版本自动构建"
+    },
+    {
+      "commitId": "d58fc272c9dc978e9e7a05bec56869e0e829022d",
+      "commitTime": "2026-01-17 11:42:04 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
+    },
+    {
+      "commitId": "0de9e1f8f274051c79a2ebf06c049da55d1681f4",
+      "commitTime": "2026-01-17 11:41:30 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 关于页面新增从MSLAPI3获取的更新日志"
+    },
+    {
+      "commitId": "382060b6713e252eb3ffc659c2ed9a64e86285da",
+      "commitTime": "2026-01-17 11:26:22 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 新增 MSL OAuth 2.0 文档入口"
+    },
+    {
+      "commitId": "19d1e8b554373d4e715644c87903efa793531ba2",
+      "commitTime": "2026-01-17 00:41:03 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修改默认角色为管理员"
+    },
+    {
+      "commitId": "813bd79b1a262b4ebdb1f506f07518038af2aab1",
+      "commitTime": "2026-01-17 00:20:43 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #16 from MSLTeam/dev"
+    },
+    {
+      "commitId": "93ac02fc35983cf7fbf037fe368b80fb102420e8",
+      "commitTime": "2026-01-17 00:19:28 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v0.5.7-beta 版本前端资源"
+    },
     {
       "commitId": "4195692aad66c17d5b1c0b390b52de099d486380",
       "commitTime": "2026-01-17 00:18:57 +0800",
@@ -287,90 +371,6 @@
       "commitTime": "2026-01-09 16:56:02 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "feat(webpanel & daemon): 新增仅客户端模组的检测功能"
-    },
-    {
-      "commitId": "8e4c6408b3b7bb68bf17586a6dc0a5424ef2fde4",
-      "commitTime": "2026-01-09 16:23:59 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 实现直接重启功能"
-    },
-    {
-      "commitId": "2588126442672d8b5f48c2b2d3433a10644a33af",
-      "commitTime": "2026-01-09 16:09:13 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 新增强制结束进程功能"
-    },
-    {
-      "commitId": "2634879dc4b7bcba5e64c66a5eaad527e083592f",
-      "commitTime": "2026-01-04 16:57:19 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(daemon): 移除TCR的新加坡地域推送"
-    },
-    {
-      "commitId": "ed0ffcba69b721019d3079a6285444ddc127e579",
-      "commitTime": "2026-01-04 15:32:13 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(daemon): docker版本新增TCR新加坡地域推送"
-    },
-    {
-      "commitId": "f82b06a7190e454a1fd1b49e0e56d528d7908fe3",
-      "commitTime": "2026-01-03 22:45:46 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "buid(daemon): 放弃了喵 还算用TCR HK Region吧~"
-    },
-    {
-      "commitId": "3993404fbf8a88dddae5d0dd8b643780f306af74",
-      "commitTime": "2026-01-03 22:14:53 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(daemon): 再次测试TCR广州地域"
-    },
-    {
-      "commitId": "726c31222f7e0b1dc94f57408ca2693a3cafa771",
-      "commitTime": "2026-01-03 19:51:40 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(daemon): 更改腾讯云TCR服务到香港区域"
-    },
-    {
-      "commitId": "8f31ac86e2ffbe50107c7bab39fe514a99bacdfa",
-      "commitTime": "2026-01-03 19:35:50 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(daemon): 新增腾讯云TCR推送"
-    },
-    {
-      "commitId": "63bacac2dbad3951123d77b7739dbfef90562d22",
-      "commitTime": "2025-12-29 12:07:28 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(daemon): 优化Dockerfile"
-    },
-    {
-      "commitId": "162f76f8cf4282353ef3bca1e564e092693e174c",
-      "commitTime": "2025-12-29 11:55:44 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(daemon): 移除本地多余构建步骤"
-    },
-    {
-      "commitId": "76d0de012dea3e226ab4caa13c2605e402e3cbb7",
-      "commitTime": "2025-12-29 00:14:08 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "actions(daemon): 优化工作流"
-    },
-    {
-      "commitId": "9f07378f4c4c12da8a9ff0063555c15d8f4aa8f9",
-      "commitTime": "2025-12-28 23:58:05 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "actions(daemon): 守护进程端的Docker自动推送"
-    },
-    {
-      "commitId": "b67eb505846b36faa6d8cbd8f21d8754073ba371",
-      "commitTime": "2025-12-27 22:57:32 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(daemon): 移除依赖包警告"
-    },
-    {
-      "commitId": "ef3401d52c2b014c0faa9856c918b8baf7e06571",
-      "commitTime": "2025-12-27 22:35:22 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(daemon): 优化创建服务端默认编码设置"
     }
   ]
 }

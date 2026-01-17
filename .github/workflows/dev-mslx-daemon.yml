@@ -1,0 +1,97 @@
+name: 构建 MSLX-Daemon Dev 版本 (依赖框架)
+
+on:
+  push:
+    branches: [ "dev" ]
+  pull_request:
+    branches: [ "dev" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: 构建发布
+    
+    strategy:
+      matrix:
+        include:
+          # 定义输出的程序文件名
+          - { os: linux,   arch: x64,   rid: linux-x64,   bin: 'MSLX-Daemon' }
+          - { os: linux,   arch: arm64, rid: linux-arm64, bin: 'MSLX-Daemon' }
+          - { os: windows, arch: x64,   rid: win-x64,     bin: 'MSLX-Daemon.exe' }
+          - { os: windows, arch: arm64, rid: win-arm64,   bin: 'MSLX-Daemon.exe' }
+          - { os: osx,     arch: x64,   rid: osx-x64,     bin: 'MSLX-Daemon' }
+          - { os: osx,     arch: arm64, rid: osx-arm64,   bin: 'MSLX-Daemon' }
+
+    steps:
+      - name: 签出代码
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: 设置 .NET 10 环境
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: 确定版本号名称
+        id: version
+        shell: bash
+        run: |
+          if [[ $GITHUB_REF_TYPE == 'tag' ]]; then
+            echo "VERSION_NAME=$GITHUB_REF_NAME" >> $GITHUB_ENV
+          else
+            echo "VERSION_NAME=dev" >> $GITHUB_ENV
+          fi
+
+      - name: 发布并提取单文件
+        run: |
+          # 定义路径
+          BASE_NAME="MSLX-Daemon_${{ env.VERSION_NAME }}_${{ matrix.rid }}"
+          PUBLISH_DIR="./publish_temp"
+          DIST_DIR="./dist"
+          mkdir -p $DIST_DIR
+          
+          # 执行发布
+          dotnet publish ./MSLX.Daemon/MSLX.Daemon.csproj \
+            -c Release \
+            -r ${{ matrix.rid }} \
+            --no-self-contained \
+            -p:PublishSingleFile=true \
+            -p:DebugType=None \
+            -p:DebugSymbols=false \
+            -o "$PUBLISH_DIR"
+
+          # 只提取可执行文件
+          echo "正在处理纯净文件..."
+          
+          if [[ "${{ matrix.os }}" == "windows" ]]; then
+            # --- Windows ---
+            # 直接把 .exe 复制到 dist 目录
+            # 上传后 GitHub 会自动包一层 zip，解压即用
+            cp "$PUBLISH_DIR/${{ matrix.bin }}" "$DIST_DIR/${{ matrix.bin }}"
+            
+            # 设置上传路径为具体的文件
+            echo "UPLOAD_PATH=$DIST_DIR/${{ matrix.bin }}" >> $GITHUB_ENV
+            
+          else
+            # --- Linux / macOS ---
+            # 打包成 tar.gz 以保留 chmod +x 权限
+            # 但我们只打包那一个文件
+            
+            cd "$PUBLISH_DIR"
+            chmod +x "${{ matrix.bin }}"
+            tar -czvf "../$DIST_DIR/$BASE_NAME.tar.gz" "${{ matrix.bin }}"
+            cd ..
+            
+            echo "UPLOAD_PATH=$DIST_DIR/$BASE_NAME.tar.gz" >> $GITHUB_ENV
+          fi
+
+          echo "ARTIFACT_NAME=$BASE_NAME" >> $GITHUB_ENV
+
+      - name: 上传构建结果
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.UPLOAD_PATH }}
+          if-no-files-found: error

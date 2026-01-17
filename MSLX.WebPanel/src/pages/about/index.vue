@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import {
+  BulletpointIcon,
   CheckCircleIcon,
   CodeIcon,
   GitCommitIcon,
@@ -13,6 +14,8 @@ import { MessagePlugin } from 'tdesign-vue-next';
 
 import type { BuildInfoModel } from '@/api/model/buildInfo';
 import { getBuildInfo } from '@/api/buildInfo';
+import { UpdateLogDetailModel } from '@/api/mslapi/model/updateLog';
+import { getMSLXUpdateLog } from '@/api/mslapi/updateLog';
 
 const developers = [
   {
@@ -59,6 +62,10 @@ const testers = [
 const loading = ref(true);
 const buildInfo = ref<BuildInfoModel | null>(null);
 
+// 更新日志的状态
+const logLoading = ref(true);
+const updateLogs = ref<UpdateLogDetailModel[]>([]);
+
 const fetchBuildInfo = async () => {
   try {
     loading.value = true;
@@ -73,6 +80,21 @@ const fetchBuildInfo = async () => {
   }
 };
 
+// 获取更新日志的方法
+const fetchUpdateLogs = async () => {
+  try {
+    logLoading.value = true;
+    const res = await getMSLXUpdateLog();
+    if (res) {
+      updateLogs.value = res as unknown as UpdateLogDetailModel[];
+    }
+  } catch (e) {
+    console.error('获取更新日志失败:', e);
+  } finally {
+    logLoading.value = false;
+  }
+};
+
 const dependenciesList = computed(() => {
   if (!buildInfo.value?.dependencies) return [];
   return Object.entries(buildInfo.value.dependencies).map(([k, v]) => ({ name: k, version: v }));
@@ -80,6 +102,7 @@ const dependenciesList = computed(() => {
 
 onMounted(() => {
   fetchBuildInfo();
+  fetchUpdateLogs();
 });
 </script>
 
@@ -141,6 +164,37 @@ onMounted(() => {
         </t-row>
       </t-card>
 
+      <t-card :bordered="false" title="更新日志" :loading="logLoading">
+        <template #header-icon>
+          <bulletpoint-icon />
+        </template>
+
+        <div v-if="updateLogs.length > 0" class="history-timeline">
+          <t-timeline>
+            <t-timeline-item v-for="(log, index) in updateLogs" :key="index" dot-color="primary">
+              <div class="timeline-content">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px">
+                  <t-tag size="small" variant="light" theme="primary">
+                    {{ log.version }}
+                  </t-tag>
+
+                  <div class="commit-time" style="margin-bottom: 0">
+                    <time-icon style="margin-right: 4px; font-size: 12px" />
+                    {{ log.time }}
+                  </div>
+                </div>
+
+                <div class="msg" style="white-space: pre-wrap; margin-bottom: 0">{{ log.changes }}</div>
+              </div>
+            </t-timeline-item>
+          </t-timeline>
+        </div>
+
+        <div v-else-if="!logLoading" style="text-align: center; color: var(--td-text-color-placeholder); padding: 20px">
+          暂无更新日志
+        </div>
+      </t-card>
+
       <t-card :bordered="false" title="构建信息" :loading="loading">
         <template #actions>
           <t-tag v-if="buildInfo" theme="success" variant="light">
@@ -189,7 +243,7 @@ onMounted(() => {
           <t-collapse :borderless="true">
             <t-collapse-panel value="history">
               <template #header>
-                <div class="panel-header"><history-icon /> 更新日志 (Commit History)</div>
+                <div class="panel-header"><history-icon /> 提交日志 (Commit History)</div>
               </template>
 
               <div class="history-timeline">
@@ -201,9 +255,7 @@ onMounted(() => {
                       <div class="msg">{{ item.commitMsg }}</div>
 
                       <div class="meta">
-                        <t-tag size="small" style="padding: 0">
-                          <user-circle-icon /> {{ item.commitAuthor }}
-                        </t-tag>
+                        <t-tag size="small" style="padding: 0"> <user-circle-icon /> {{ item.commitAuthor }} </t-tag>
                         <span class="hash">#{{ item.commitId.substring(0, 7) }}</span>
                       </div>
                     </div>
