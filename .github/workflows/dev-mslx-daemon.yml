@@ -1,26 +1,27 @@
-name: Build MSLX Daemon Dev
+name: 构建 MSLX-Daemon Dev 版本 (依赖框架)
 
 on:
   push:
     branches: [ "dev" ]
   pull_request:
     branches: [ "dev" ]
-  workflow_dispatch: # 允许手动触发
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest 
+    runs-on: ubuntu-latest
     name: 构建发布
     
     strategy:
       matrix:
         include:
-          - { os: linux,   arch: x64,   rid: linux-x64 }
-          - { os: linux,   arch: arm64, rid: linux-arm64 }
-          - { os: windows, arch: x64,   rid: win-x64 }
-          - { os: windows, arch: arm64, rid: win-arm64 }
-          - { os: osx,     arch: x64,   rid: osx-x64 }
-          - { os: osx,     arch: arm64, rid: osx-arm64 }
+          # 定义输出的程序文件名
+          - { os: linux,   arch: x64,   rid: linux-x64,   bin: 'MSLX-Daemon' }
+          - { os: linux,   arch: arm64, rid: linux-arm64, bin: 'MSLX-Daemon' }
+          - { os: windows, arch: x64,   rid: win-x64,     bin: 'MSLX-Daemon.exe' }
+          - { os: windows, arch: arm64, rid: win-arm64,   bin: 'MSLX-Daemon.exe' }
+          - { os: osx,     arch: x64,   rid: osx-x64,     bin: 'MSLX-Daemon' }
+          - { os: osx,     arch: arm64, rid: osx-arm64,   bin: 'MSLX-Daemon' }
 
     steps:
       - name: 签出代码
@@ -37,23 +38,21 @@ jobs:
         id: version
         shell: bash
         run: |
-          # 如果是 tag 触发，使用 tag 名称 (e.g., v0.5.7)
           if [[ $GITHUB_REF_TYPE == 'tag' ]]; then
             echo "VERSION_NAME=$GITHUB_REF_NAME" >> $GITHUB_ENV
-            echo "Current version: $GITHUB_REF_NAME"
           else
-            # 否则使用 dev
             echo "VERSION_NAME=dev" >> $GITHUB_ENV
-            echo "Current version: dev"
           fi
 
-      - name: 发布并打包
+      - name: 发布并提取单文件
         run: |
-          # 定义基础名称
+          # 定义路径
           BASE_NAME="MSLX-Daemon_${{ env.VERSION_NAME }}_${{ matrix.rid }}"
           PUBLISH_DIR="./publish_temp"
+          DIST_DIR="./dist"
+          mkdir -p $DIST_DIR
           
-          # 执行 .NET 发布
+          # 执行发布
           dotnet publish ./MSLX.Daemon/MSLX.Daemon.csproj \
             -c Release \
             -r ${{ matrix.rid }} \
@@ -61,37 +60,38 @@ jobs:
             -p:PublishSingleFile=true \
             -p:DebugType=None \
             -p:DebugSymbols=false \
-            -p:CopyContentFiles=false \
-            -p:IsWebConfigTransformDisabled=true \
-            -p:GenerateStaticWebAssetsPublishManifest=false \
             -o "$PUBLISH_DIR"
 
-          # 根据系统类型进行打包处理
-          mkdir -p dist
+          # 只提取可执行文件
+          echo "正在处理纯净文件..."
           
           if [[ "${{ matrix.os }}" == "windows" ]]; then
-            # Windows: 打包为 .zip
-            ARCHIVE_NAME="$BASE_NAME.zip"
-            # 进入目录打包，避免压缩包里包含 publish_temp 文件夹层级
-            cd "$PUBLISH_DIR"
-            zip -r "../dist/$ARCHIVE_NAME" .
+            # --- Windows ---
+            # 直接把 .exe 复制到 dist 目录
+            # 上传后 GitHub 会自动包一层 zip，解压即用
+            cp "$PUBLISH_DIR/${{ matrix.bin }}" "$DIST_DIR/${{ matrix.bin }}"
+            
+            # 设置上传路径为具体的文件
+            echo "UPLOAD_PATH=$DIST_DIR/${{ matrix.bin }}" >> $GITHUB_ENV
             
           else
-            # Linux/macOS: 打包为 .tar.gz
-            ARCHIVE_NAME="$BASE_NAME.tar.gz"
+            # --- Linux / macOS ---
+            # 打包成 tar.gz 以保留 chmod +x 权限
+            # 但我们只打包那一个文件
+            
             cd "$PUBLISH_DIR"
-            # 确保有执行权限
-            chmod +x MSLX-Daemon
-            tar -czvf "../dist/$ARCHIVE_NAME" .
+            chmod +x "${{ matrix.bin }}"
+            tar -czvf "../$DIST_DIR/$BASE_NAME.tar.gz" "${{ matrix.bin }}"
+            cd ..
+            
+            echo "UPLOAD_PATH=$DIST_DIR/$BASE_NAME.tar.gz" >> $GITHUB_ENV
           fi
 
-          echo "ARCHIVE_PATH=./dist/$ARCHIVE_NAME" >> $GITHUB_ENV
           echo "ARTIFACT_NAME=$BASE_NAME" >> $GITHUB_ENV
 
       - name: 上传构建结果
         uses: actions/upload-artifact@v4
         with:
-          # 使用不带后缀的名字作为 Artifact 显示名称
           name: ${{ env.ARTIFACT_NAME }}
-          path: ${{ env.ARCHIVE_PATH }}
+          path: ${{ env.UPLOAD_PATH }}
           if-no-files-found: error
