@@ -1,0 +1,75 @@
+name: Build MSLX Daemon Dev
+
+on:
+  push:
+    branches: [ "dev" ]
+  pull_request:
+    branches: [ "dev" ]
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest 
+    name: 构建发布
+    
+    strategy:
+      matrix:
+        include:
+          - { os: linux,   arch: x64,   rid: linux-x64 }
+          - { os: linux,   arch: arm64, rid: linux-arm64 }
+          - { os: windows, arch: x64,   rid: win-x64 }
+          - { os: windows, arch: arm64, rid: win-arm64 }
+          - { os: osx,     arch: x64,   rid: osx-x64 }
+          - { os: osx,     arch: arm64, rid: osx-arm64 }
+
+    steps:
+      - name: 签出代码
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: 设置 .NET 10 环境
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: 确定版本号名称
+        id: version
+        shell: bash
+        run: |
+          # 如果是 tag 触发，使用 tag 名称 (e.g., v0.5.7)
+          if [[ $GITHUB_REF_TYPE == 'tag' ]]; then
+            echo "VERSION_NAME=$GITHUB_REF_NAME" >> $GITHUB_ENV
+            echo "Current version: $GITHUB_REF_NAME"
+          else
+            # 否则使用 dev
+            echo "VERSION_NAME=dev" >> $GITHUB_ENV
+            echo "Current version: dev"
+          fi
+
+      - name: 发布 (Framework Dependent & Single File)
+        run: |
+          # 构造文件名变量
+          ARTIFACT_NAME="MSLX-Daemon_${{ env.VERSION_NAME }}_${{ matrix.rid }}"
+          OUTPUT_PATH="./publish/$ARTIFACT_NAME"
+
+          dotnet publish ./MSLX/MSLX.Daemon/MSLX.Daemon.csproj \
+            -c Release \
+            -r ${{ matrix.rid }} \
+            --no-self-contained \
+            -p:PublishSingleFile=true \
+            -p:DebugType=None \
+            -p:DebugSymbols=false \
+            -o "$OUTPUT_PATH"
+          
+          echo "ARTIFACT_PATH=$OUTPUT_PATH" >> $GITHUB_ENV
+          echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
+
+      - name: 上传构建结果
+        uses: actions/upload-artifact@v4
+        with:
+          # Artifact 的名称，下载后就是这个名字的压缩包
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACT_PATH }}
+          # 排除不必要的文件
+          if-no-files-found: error
