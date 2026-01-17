@@ -112,11 +112,22 @@ onMounted(() => {
         <t-input :value="callbackUrl" readonly placeholder="正在获取当前域名...">
           <template #prefix-icon><link-icon /></template>
           <template #suffix>
-            <t-button variant="text" shape="square" @click="copyText(callbackUrl,true,'回调地址复制成功')">
+            <t-button variant="text" shape="square" @click="copyText(callbackUrl, true, '回调地址复制成功')">
               <t-icon name="file-copy" />
             </t-button>
           </template>
         </t-input>
+      </t-form-item>
+
+      <t-form-item style="margin-top: 6px" label="配置教程">
+        <t-space align="center">
+          <t-button theme="default" @click="changeUrl(DOC_URLS.msl_oauth)">
+            <template #icon>
+              <book-icon />
+            </template>
+            配置MSL账号快捷登录教程</t-button
+          >
+        </t-space>
       </t-form-item>
 
       <t-divider dashed />
