@@ -91,8 +91,7 @@ jobs:
       - name: 上传构建结果
         uses: actions/upload-artifact@v4
         with:
-          # Artifact 的名称，下载后就是这个名字的压缩包
+          # 使用不带后缀的名字作为 Artifact 显示名称
           name: ${{ env.ARTIFACT_NAME }}
-          path: ${{ env.ARTIFACT_PATH }}
-          # 排除不必要的文件
+          path: ${{ env.ARCHIVE_PATH }}
           if-no-files-found: error
