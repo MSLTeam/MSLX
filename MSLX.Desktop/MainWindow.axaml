@@ -18,6 +18,14 @@
                     <local:HomePage/>
                 </suki:SukiSideMenuItem.PageContent>
             </suki:SukiSideMenuItem>
+            <suki:SukiSideMenuItem Header="Servers" Classes="Compact">
+                <suki:SukiSideMenuItem.Icon>
+					<micon:MaterialIcon Kind="ListBox"/>
+                </suki:SukiSideMenuItem.Icon>
+                <suki:SukiSideMenuItem.PageContent>
+                    <TextBlock Text="Welcome to MSLX Desktop!" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24"/>
+                </suki:SukiSideMenuItem.PageContent>
+            </suki:SukiSideMenuItem>
             <suki:SukiSideMenuItem Header="Settings" Classes="Compact">
                 <suki:SukiSideMenuItem.Icon>
 					<micon:MaterialIcon Kind="Settings"/>

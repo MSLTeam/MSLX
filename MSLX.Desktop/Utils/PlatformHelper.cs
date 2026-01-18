@@ -77,14 +77,14 @@ namespace MSLX.Desktop.Utils
         }
 
         #region Linux/macOS 获取用户 ID
-        [LibraryImport("libc", EntryPoint = "getuid")]
-        private static partial uint Getuid();
+        [DllImport("libc")]
+        private static extern uint getuid();
 
         private static string GetUnixUserId()
         {
             try
             {
-                return Getuid().ToString();
+                return getuid().ToString();
             }
             catch
             {

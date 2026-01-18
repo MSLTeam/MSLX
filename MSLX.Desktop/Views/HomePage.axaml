@@ -10,7 +10,10 @@
              x:Class="MSLX.Desktop.HomePage">
     <Grid RowDefinitions="*,auto">
         <suki:GlassCard Margin="10">
-			<markdown:MarkdownScrollViewer x:Name="AnnouncementViewer" Margin="10" Markdown="# Welcome to MSLX Desktop!"/>
+            <Grid RowDefinitions="auto,*">
+				<TextBlock Text="公告" Classes="h3"/>
+                <markdown:MarkdownScrollViewer x:Name="AnnouncementViewer" Grid.Row="1" Markdown="# Welcome to MSLX Desktop!"/>
+            </Grid>
         </suki:GlassCard>
         <UniformGrid Grid.Row="1" Columns="3" Height="64" Margin="10,0,10,10" HorizontalAlignment="Right" VerticalAlignment="Center" >
             <Button Content="Documentation" Margin="5"/>
