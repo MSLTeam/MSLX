@@ -17,7 +17,7 @@ public partial class HomePage : UserControl
 
     private async void HomePage_Loaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        var (Success, Data, Message) = await MSLAPIService.GetJsonDataAsync("/query/notice", queryParameters: new Dictionary<string, string> { { "query", "noticeMd" } });
+        var (Success, Data, Message) = await MSLAPIService.GetJsonDataAsync("/query/notice", queryParameters: new Dictionary<string, string> { { "query", "mslxNotice" } });
         if (Data == null || Message == null)
         {
             AnnouncementViewer.Markdown = "暂无公告";
