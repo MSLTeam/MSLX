@@ -1,6 +1,7 @@
 <suki:SukiWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:local="using:MSLX.Desktop"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
         xmlns:micon="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
@@ -14,7 +15,7 @@
 					<micon:MaterialIcon Kind="Home"/>
                 </suki:SukiSideMenuItem.Icon>
                 <suki:SukiSideMenuItem.PageContent>
-                    <TextBlock Text="Welcome to MSLX Desktop!" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24"/>
+                    <local:HomePage/>
                 </suki:SukiSideMenuItem.PageContent>
             </suki:SukiSideMenuItem>
             <suki:SukiSideMenuItem Header="Settings" Classes="Compact">
