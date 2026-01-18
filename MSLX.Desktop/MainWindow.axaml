@@ -8,6 +8,10 @@
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="MSLX.Desktop.MainWindow"
         Title="MSLX.Desktop">
+    <suki:SukiWindow.Hosts>
+		<suki:SukiDialogHost Name="DialogManager"/>
+		<suki:SukiToastHost Name="ToastManager" Position="TopRight"/>
+	</suki:SukiWindow.Hosts>
     <suki:SukiSideMenu IsSelectedItemContentMovable="False">
         <suki:SukiSideMenu.Items>
             <suki:SukiSideMenuItem Header="Home" Classes="Compact">
