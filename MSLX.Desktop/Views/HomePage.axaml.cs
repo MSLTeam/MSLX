@@ -25,7 +25,7 @@ public partial class HomePage : UserControl
         }
         if (Success)
         {
-            AnnouncementViewer.Markdown = ((JObject)Data)["noticeMd"]?.ToString() ?? "暂无公告";
+            AnnouncementViewer.Markdown = ((JObject)Data)["mslxNotice"]?.ToString() ?? "暂无公告";
         }
         else
         {
