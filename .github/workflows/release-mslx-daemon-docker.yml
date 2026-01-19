@@ -55,7 +55,7 @@ jobs:
             type=raw,value=dev,enable=${{ github.event_name == 'workflow_dispatch' }}
 
       - name: 构建并推送
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./MSLX.Daemon/Dockerfile
@@ -66,4 +66,3 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           provenance: false
           sbom: false
-          outputs: type=registry,oci-mediatypes=false
