@@ -1,0 +1,3 @@
+[submodule "SukiUI"]
+	path = SukiUI
+	url = https://github.com/Waheal/SukiUI

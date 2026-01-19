@@ -12,3 +12,9 @@ export async function getDaemonUpdateDownloadInfo() {
     url: '/api/update/download',
   });
 }
+
+export async function postUpdateDaemon(){
+  return request.post({
+    url: '/api/update',
+  });
+}

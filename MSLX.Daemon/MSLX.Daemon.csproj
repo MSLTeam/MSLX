@@ -6,15 +6,15 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
 		<ApplicationIcon>icon.ico</ApplicationIcon>
-		<Version>1.0.0-release</Version>
-		<FileVersion>1.0.0</FileVersion>
-		<AssemblyVersion>1.0.0</AssemblyVersion>
-		<Copyright>Copyright © 2021 - 2025 MSLTeam</Copyright>
+		<Version>1.0.1-release</Version>
+		<FileVersion>1.0.1</FileVersion>
+		<AssemblyVersion>1.0.1</AssemblyVersion>
+		<Copyright>Copyright © 2021 - 2026 MSLTeam</Copyright>
 		<AssemblyName>MSLX-Daemon</AssemblyName>
 		<AssemblyTitle>MSLX.Daemon</AssemblyTitle>
 		<AssemblyDescription>MSLX Daemon</AssemblyDescription>
 		<AssemblyCompany>MSLTeam</AssemblyCompany>
-		<AssemblyCopyright>Copyright © 2021 - 2025 MSLTeam</AssemblyCopyright>
+		<AssemblyCopyright>Copyright © 2021 - 2026 MSLTeam</AssemblyCopyright>
 		<AssemblyTrademark>MSLTeam</AssemblyTrademark>
 		<AssemblyCulture>zh-CN</AssemblyCulture>
 		<NeutralLanguage>zh-CN</NeutralLanguage>
@@ -28,15 +28,15 @@
 		<PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
 		<PackageReference Include="Cronos" Version="0.11.1" />
 		<PackageReference Include="Downloader" Version="4.0.3" />
-		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.1" />
-		<PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="10.0.1" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.2" />
+		<PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="10.0.2" />
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.23.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="10.1.0" />
 		<PackageReference Include="System.Diagnostics.PerformanceCounters" Version="1.0.21-alpha" />
 		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.15.0" />
-		<PackageReference Include="System.Management" Version="10.0.1" />
-		<PackageReference Include="System.Text.Encoding.CodePages" Version="10.0.1" NoWarn="NU1510"/>
+		<PackageReference Include="System.Management" Version="10.0.2" />
+		<PackageReference Include="System.Text.Encoding.CodePages" Version="10.0.2" NoWarn="NU1510" />
 		<PackageReference Include="Tomlyn" Version="0.19.0" />
 	</ItemGroup>
 

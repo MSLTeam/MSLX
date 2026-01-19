@@ -180,6 +180,7 @@ app.MapHub<UpdateProgressHub>("/api/hubs/updateProgressHub");
 app.MapHub<FrpConsoleHub>("/api/hubs/frpLogsHub");
 app.MapHub<InstanceConsoleHub>("/api/hubs/instanceControlHub");
 app.MapHub<SystemMonitorHub>("/api/hubs/system");
+app.MapHub<DaemonUpdateHub>("/api/hubs/daemonUpdate");
 app.MapControllers();
 
 // SPA

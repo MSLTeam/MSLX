@@ -1,26 +1,61 @@
-<atom:Window xmlns="https://github.com/avaloniaui"
-		xmlns:atom="using:AtomUI.Desktop.Controls"
+<suki:SukiWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:local="using:MSLX.Desktop"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+        xmlns:micon="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="MSLX.Desktop.MainWindow"
         Title="MSLX.Desktop">
-    <atom:NavMenu Mode="Vertical" Width="300" Margin="0, 0, 0, 20">
-    <atom:NavMenuItem Header="Navigation One"/>
-    <atom:NavMenuItem Header="Navigation Two"
-                      IsEnabled="False" />
-    <atom:NavMenuItem Header="Navigation Three - Submenu">
-        <atom:NavMenuItem Header="Item 1">
-            <atom:NavMenuItem Header="Option 1" />
-            <atom:NavMenuItem Header="Option 2" />
-        </atom:NavMenuItem>
+    <suki:SukiWindow.Hosts>
+		<suki:SukiDialogHost Name="DialogManager"/>
+		<suki:SukiToastHost Name="ToastManager" Position="TopRight"/>
+	</suki:SukiWindow.Hosts>
+    <suki:SukiSideMenu IsSelectedItemContentMovable="False">
+        <suki:SukiSideMenu.Items>
+            <suki:SukiSideMenuItem Header="Home" Classes="Compact">
+                <suki:SukiSideMenuItem.Icon>
+					<micon:MaterialIcon Kind="Home"/>
+                </suki:SukiSideMenuItem.Icon>
+                <suki:SukiSideMenuItem.PageContent>
+                    <local:HomePage/>
+                </suki:SukiSideMenuItem.PageContent>
+            </suki:SukiSideMenuItem>
+            <suki:SukiSideMenuItem Header="Servers" Classes="Compact">
+                <suki:SukiSideMenuItem.Icon>
+					<micon:MaterialIcon Kind="ListBox"/>
+                </suki:SukiSideMenuItem.Icon>
+                <suki:SukiSideMenuItem.PageContent>
+                    <TextBlock Text="Welcome to MSLX Desktop!" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24"/>
+                </suki:SukiSideMenuItem.PageContent>
+            </suki:SukiSideMenuItem>
+            <suki:SukiSideMenuItem Header="Settings" Classes="Compact">
+                <suki:SukiSideMenuItem.Icon>
+					<micon:MaterialIcon Kind="Settings"/>
+                </suki:SukiSideMenuItem.Icon>
+                <suki:SukiSideMenuItem.PageContent>
+                    <TextBlock Text="Welcome to MSLX Desktop!" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24"/>
+                </suki:SukiSideMenuItem.PageContent>
+            </suki:SukiSideMenuItem>
+            <suki:SukiSideMenuItem Header="About" Classes="Compact">
+                <suki:SukiSideMenuItem.Icon>
+					<micon:MaterialIcon Kind="Info"/>
+                </suki:SukiSideMenuItem.Icon>
+                <suki:SukiSideMenuItem.PageContent>
+                    <TextBlock Text="Welcome to MSLX Desktop!" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24"/>
+                </suki:SukiSideMenuItem.PageContent>
+            </suki:SukiSideMenuItem>
+        </suki:SukiSideMenu.Items>
 
-        <atom:NavMenuItem Header="Item 2">
-            <atom:NavMenuItem Header="Option 3" />
-            <atom:NavMenuItem Header="Option 4" />
-        </atom:NavMenuItem>
-    </atom:NavMenuItem>
-    <atom:NavMenuItem Header="Navigation Four" />
-</atom:NavMenu>
-</atom:Window>
+        <suki:SukiSideMenu.HeaderContent>
+			<Grid RowDefinitions="*,auto">
+				<Image Source="avares://MSLX.Desktop/Assets/icon.ico" Width="72" Height="72" Margin="5"/>
+                <StackPanel Grid.Row="1">
+					<TextBlock Grid.Row="1" Text="MSLX" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock Text="海内存知己，天涯若比邻" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,5,0,20"/>
+                </StackPanel>
+            </Grid>
+        </suki:SukiSideMenu.HeaderContent>
+    </suki:SukiSideMenu>
+</suki:SukiWindow>

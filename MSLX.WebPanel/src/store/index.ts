@@ -9,5 +9,6 @@ export { store };
 export * from './modules/permission';
 export * from './modules/user';
 export * from './modules/setting';
+export * from './modules/update';
 
 export default store;

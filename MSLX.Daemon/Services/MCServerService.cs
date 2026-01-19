@@ -79,6 +79,15 @@ public class MCServerService
     }
 
     /// <summary>
+    /// 检查是否有任何服务器实例处于活动状态
+    /// </summary>
+    public bool HasRunningServers()
+    {
+        return !_activeServers.IsEmpty;
+    }
+
+
+    /// <summary>
     /// 启动 MC 服务器 (非阻塞模式)
     /// </summary>
     public (bool success, string message) StartServer(uint instanceId,
