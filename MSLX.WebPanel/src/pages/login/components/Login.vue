@@ -103,8 +103,7 @@ const handleMSLLogin = async () => {
 
     const callbackUrl = `${window.location.origin}/oauth/callback?mode=login`;
 
-    // 3. 请求后端获取 OAuth 跳转链接
-    // 注意：request 库通常会自动对 params 的 value 进行 URL 编码
+    // 请求后端获取 OAuth 跳转链接
     const res: any = await request.get({
       url: '/api/auth/oauth/url',
       params: {
