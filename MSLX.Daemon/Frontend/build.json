@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "buildTime": "2026-01-17 12:27:13",
+  "version": "1.0.1",
+  "buildTime": "2026-01-19 13:34:35",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,124 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "d1d9c4fd671835d1eaeb14bfc75390941ffca3ea",
-  "commitMsg": "bumpver(daemon & webpanel): 发布 v1.0.0 正式版本",
+  "commitId": "2742776347f5e2a3d6b4ace48be9b96b638cd7be",
+  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.0.1",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "2742776347f5e2a3d6b4ace48be9b96b638cd7be",
+      "commitTime": "2026-01-19 13:34:07 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.0.1"
+    },
+    {
+      "commitId": "185ea94ce94d8cef193e3e227c7bcf49317cd43f",
+      "commitTime": "2026-01-19 13:29:58 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 新增登录后自动检查更新 & 设置页面的手动检查更新功能"
+    },
+    {
+      "commitId": "9869cba6da062673f4494aaf81b7cae67e4b6e8c",
+      "commitTime": "2026-01-19 13:12:31 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 完善对 macOS 和 Linux 平台的自动更新逻辑"
+    },
+    {
+      "commitId": "2b09f392321772c9c6a17e09023c0981a8ca4c4f",
+      "commitTime": "2026-01-19 12:14:21 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 新增MSLX Daemon本体自我更新的功能"
+    },
+    {
+      "commitId": "f20306224479cedaa4f88f1c920727222131bc70",
+      "commitTime": "2026-01-18 23:53:48 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "update submodule"
+    },
+    {
+      "commitId": "51042f8fe935251c01644a093d4fa8aa0f40a8e1",
+      "commitTime": "2026-01-18 23:53:21 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "perf(desktop): 部分功能优化（Dialog、Toast） fix(desktop): 修复SukiUI的部分bug"
+    },
+    {
+      "commitId": "8fdfab15a9c1b66ba228c95447c8e4cbb6cc8587",
+      "commitTime": "2026-01-18 16:43:52 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "fix(desktop): data的公告键名也要进行更改（）"
+    },
+    {
+      "commitId": "f99c59140ad544bab33c964b476678651502f705",
+      "commitTime": "2026-01-18 16:42:34 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "perf(desktop): 更换公告url"
+    },
+    {
+      "commitId": "04957701566f108fde2ff53ce18614117fbb34ad",
+      "commitTime": "2026-01-18 16:40:33 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "perf(desktop): 页面布局、功能优化"
+    },
+    {
+      "commitId": "106acc1067ea4c960150663af3988f60559be3ab",
+      "commitTime": "2026-01-18 16:20:46 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "feat(desktop): 基础代码、主页、公告功能"
+    },
+    {
+      "commitId": "6dc22e362821b0012cc1da5d130943d85303c19c",
+      "commitTime": "2026-01-17 20:18:18 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "feat(desktop): 完善sidemenu"
+    },
+    {
+      "commitId": "1327575fe10baac90bad7777ec0359fa8c7f343c",
+      "commitTime": "2026-01-17 18:52:21 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "update submodule"
+    },
+    {
+      "commitId": "e213b64678a38f2564fae91e040501ba1b67d750",
+      "commitTime": "2026-01-17 18:49:57 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "update nuget packages"
+    },
+    {
+      "commitId": "155ae9cd3ef19e53515350d8bfd738f8eb243b25",
+      "commitTime": "2026-01-17 18:49:22 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "feat(desktop): 换用sukiui库"
+    },
+    {
+      "commitId": "047591de13ad09e1c87964fd7b5a7cbc949b84e9",
+      "commitTime": "2026-01-17 17:17:41 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "perf(desktop): add sukiui submodule"
+    },
+    {
+      "commitId": "f91f4a7e1dfb280de7ab38f7afa22d327b49db25",
+      "commitTime": "2026-01-17 17:09:45 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "test"
+    },
+    {
+      "commitId": "6c550f52c71e8233b2523371d52d209f039906f0",
+      "commitTime": "2026-01-17 13:55:37 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复更新弹窗的跳过版本功能失效问题"
+    },
+    {
+      "commitId": "4fb2e6b2c1c1f85cf44199983b1c3e86e16925e2",
+      "commitTime": "2026-01-17 12:28:26 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #17 from MSLTeam/dev"
+    },
+    {
+      "commitId": "7a9512f229d93f43e1fca84d454835f0ced653c7",
+      "commitTime": "2026-01-17 12:27:24 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v1.0.0 版本前端资源"
+    },
     {
       "commitId": "d1d9c4fd671835d1eaeb14bfc75390941ffca3ea",
       "commitTime": "2026-01-17 12:26:51 +0800",
@@ -257,120 +371,6 @@
       "commitTime": "2026-01-15 10:36:39 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "fix(daemon): 仅自动打开可被访问的本地控制台地址"
-    },
-    {
-      "commitId": "fa68e12bb86f33a8bd106522e63ef7aad19bf861",
-      "commitTime": "2026-01-15 10:29:19 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 新增快捷设置Java强制文件编码为UTF8功能"
-    },
-    {
-      "commitId": "14f9d778aa487403e414933a8a6f5e7f639695e7",
-      "commitTime": "2026-01-15 10:14:18 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon & webpanel): 修复在发送指令时控制台状态异常刷新的问题"
-    },
-    {
-      "commitId": "ed5ce56aa24c55be9e3f8148427daa3a72053f9c",
-      "commitTime": "2026-01-14 00:01:40 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复编辑文件编码设置不生效的问题"
-    },
-    {
-      "commitId": "86ba8525c174310b4218413e1be79901a58cfc3e",
-      "commitTime": "2026-01-13 12:38:49 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #14 from MSLTeam/dev"
-    },
-    {
-      "commitId": "d1f9d5f5ccd6875c6f97b036e8aa351e59c82622",
-      "commitTime": "2026-01-13 12:37:48 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(daemon): 嵌入 v0.5.5-beta 版本前端资源"
-    },
-    {
-      "commitId": "858fee1f90095d53bc9f067c81c2be5ca24d26cb",
-      "commitTime": "2026-01-13 12:36:46 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.5-beta"
-    },
-    {
-      "commitId": "49653c92d6cf68d85d1d23be5a1b61c0d3c8c38d",
-      "commitTime": "2026-01-13 12:33:39 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(daemon): 创建服务端下载文件时新增速度显示"
-    },
-    {
-      "commitId": "16a7e5a1d56fd33b5e879d11a29c3909c947556e",
-      "commitTime": "2026-01-13 12:22:43 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(daemon): 下调Jwt Token有效期至一天"
-    },
-    {
-      "commitId": "74bd3c8c3f251459e758c58f37caa66a77721670",
-      "commitTime": "2026-01-13 12:21:34 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 新增自动下载原版服务端作为依赖的功能"
-    },
-    {
-      "commitId": "c5d695722bf2e78d5272c1381b0a744c24e050ca",
-      "commitTime": "2026-01-12 10:46:14 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复检测客户端模组的误判问题"
-    },
-    {
-      "commitId": "173a882a95905dd86ffbf284509d637022266e88",
-      "commitTime": "2026-01-11 20:01:33 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "fix(daemon): 修复创建实例时ignoreEula设置项不生效的bug"
-    },
-    {
-      "commitId": "9e8a6c6a851177b5fab3d94e25a6f62959a3752f",
-      "commitTime": "2026-01-09 22:46:18 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 回退对模组/插件分页的修改"
-    },
-    {
-      "commitId": "e871f670fabbafec80a710d3b225ad3497c40d92",
-      "commitTime": "2026-01-09 21:47:26 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #13 from MSLTeam/dev"
-    },
-    {
-      "commitId": "67efc50cf9d8563808b13d4c2718113b48877d1d",
-      "commitTime": "2026-01-09 21:46:33 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(daemon): 嵌入 v0.5.4-beta 版本前端资源"
-    },
-    {
-      "commitId": "b86a0a00634e010fe0b49621c7d61af685c00f97",
-      "commitTime": "2026-01-09 21:45:20 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到v0.5.4-beta"
-    },
-    {
-      "commitId": "3cc7d2bf5fb6ee3775297001f9e6893fba13e58e",
-      "commitTime": "2026-01-09 21:43:22 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 自动勾选检测到的客户端模组"
-    },
-    {
-      "commitId": "d17aec774132d1889dc870ddf060e6b4be6cf967",
-      "commitTime": "2026-01-09 21:41:37 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复模组/插件管理界面首次加载分页失效的问题"
-    },
-    {
-      "commitId": "4bcc3dcc13e07bd2bd03ab5e4df492a776f43346",
-      "commitTime": "2026-01-09 16:56:15 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复控制台按钮丢了"
-    },
-    {
-      "commitId": "6f6e9b7bf1a04807daba9fb60475523489418d2c",
-      "commitTime": "2026-01-09 16:56:02 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel & daemon): 新增仅客户端模组的检测功能"
     }
   ]
 }
