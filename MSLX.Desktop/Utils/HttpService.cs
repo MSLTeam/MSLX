@@ -17,7 +17,7 @@ namespace MSLX.Desktop.Utils
     {
         public HttpStatusCode StatusCode { get; set; }
         public string Content { get; set; }
-        public Exception? Exception { get; set; }
+        public Exception? Exception { get; set; } = null;
         public bool IsSuccess => StatusCode == HttpStatusCode.OK && Exception == null;
 
         public HttpResponse()

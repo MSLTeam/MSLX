@@ -1,0 +1,17 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="MSLX.Desktop.Views.LinkDaemon.WelcomePage">
+  <suki:GlassCard Margin="10">
+      <Grid HorizontalAlignment="Center" VerticalAlignment="Center" RowDefinitions="*,auto" RowSpacing="20">
+		  <StackPanel>
+			  <Image Source="avares://MSLX.Desktop/Assets/icon.ico" Width="128" Height="128"/>
+              <TextBlock Text="欢迎使用 MSLX !" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,10,0,0"/>
+          </StackPanel>
+          <Button x:Name="Next" Content="下一步" Classes="Flat" Grid.Row="1" IsVisible="False"/>
+      </Grid>
+  </suki:GlassCard>
+</UserControl>

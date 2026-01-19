@@ -44,6 +44,8 @@ WORKDIR /app
 EXPOSE 1027
 
 ENV host=*
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
 
 # --platform=$BUILDPLATFORM 使用本机架构运行 SDK
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build

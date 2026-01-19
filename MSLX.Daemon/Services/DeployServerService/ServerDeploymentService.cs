@@ -1,10 +1,11 @@
-﻿using System.Formats.Tar;
-using System.IO.Compression;
-using System.Text.RegularExpressions;
-using Downloader;
+﻿using Downloader;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Formats.Tar;
+using System.IO.Compression;
+using System.Text.RegularExpressions;
 
 namespace MSLX.Daemon.Services;
 
@@ -285,21 +286,30 @@ public class ServerDeploymentService
                     PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java");
             }
 
-            bool success = await installer.InstallNeoForge(baseDir, coreName, javaPath);
+            (bool success, string? mcVersion) = await installer.InstallNeoForge(baseDir, coreName, javaPath);
             installer.OnLog -= logHandler;
 
             if (success)
             {
                 await report("NeoForge/Forge 安装程序执行完毕！", 100);
 
-                // 提取启动参数
+                // 新版本Neoforge/Forge启动参数
                 string runScript = Path.Combine(baseDir, PlatFormServices.GetOs() == "Windows" ? "run.bat" : "run.sh");
-                string launchArgs = ExtractNeoForgeArgsPath(runScript);
+                string launchArgs = ExtractNeoForgeArgsPath(runScript) ?? string.Empty;
+                if (!string.IsNullOrEmpty(launchArgs))
+                {
+                    return launchArgs;
+                }
 
-                if (string.IsNullOrEmpty(launchArgs))
-                    throw new Exception("安装成功但未找到启动文件参数！");
+                // 旧版本
+                string legacyJar = FindLegacyForgeJar(baseDir, mcVersion, coreName);
 
-                return launchArgs;
+                if (!string.IsNullOrEmpty(legacyJar))
+                {
+                    return legacyJar;
+                }
+
+                throw new Exception("安装成功，但无法找到启动参数文件(run.bat)或旧版启动核心(forge-xxx.jar)！");
             }
             else
             {
@@ -488,4 +498,56 @@ public class ServerDeploymentService
         }
         catch { return null; }
     }
+
+    /// <summary>
+    /// 寻找旧版 Forge 的启动核心 Jar 
+    /// </summary>
+    /// <param name="dirPath">服务器根目录 (_base)</param>
+    /// <param name="mcVer">游戏版本，如 1.12.2 (用于过滤)</param>
+    /// <param name="installerName">安装包文件名 (用于排除)</param>
+    /// <returns>相对路径文件名 或 null</returns>
+    public static string? FindLegacyForgeJar(string dirPath, string mcVer, string installerName)
+    {
+        try
+        {
+            DirectoryInfo directoryInfo = new DirectoryInfo(dirPath);
+            if (!directoryInfo.Exists) return null;
+
+            FileInfo[] files = directoryInfo.GetFiles();
+
+            bool IsCandidate(FileInfo f)
+            {
+                return f.Name.Contains(mcVer) &&
+                       f.Name.EndsWith(".jar") &&
+                       f.Name.Contains("forge", StringComparison.OrdinalIgnoreCase) &&
+                       f.Name != installerName &&
+                       !f.Name.Contains("installer") &&
+                       !f.Name.Contains("shim") && // 新版 shim
+                       !f.Name.Contains("server");
+            }
+
+            foreach (FileInfo file in files)
+            {
+                if (IsCandidate(file) && !file.Name.Contains("universal"))
+                {
+                    return file.FullName.Replace(dirPath + Path.DirectorySeparatorChar, "").Replace(dirPath + "\\", ""); // 返回相对路径
+                }
+            }
+
+            foreach (FileInfo file in files)
+            {
+                if (IsCandidate(file)) 
+                {
+                    return file.FullName.Replace(dirPath + Path.DirectorySeparatorChar, "").Replace(dirPath + "\\", "");
+                }
+            }
+
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
 }

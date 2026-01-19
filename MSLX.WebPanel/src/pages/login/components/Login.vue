@@ -18,6 +18,7 @@ const REMEMBER_USER = 'remembered_username';
 
 // 状态控制
 const loading = ref(false);
+const allowOAuth = ref(false);
 const showPsw = ref(false);
 const isLocalBackend = ref(false); // 是否是同源后端
 const isChecking = ref(true); // 是否正在检测连接
@@ -57,6 +58,14 @@ const initCheck = async () => {
     formData.url = '';
   } else {
     isLocalBackend.value = false;
+  }
+
+  // 检查是否允许OAuth登录
+  const res: any = await request.get({
+    url: '/api/auth/oauth/status',
+  });
+  if(res.allowOAuth){
+    allowOAuth.value = true;
   }
   isChecking.value = false;
 };
@@ -177,7 +186,7 @@ onMounted(() => {
         <div class="btn-wrapper">
           <t-button block size="large" type="submit" class="login-btn" :loading="loading"> 登 录 </t-button>
 
-          <div class="msl-login-wrapper">
+          <div v-if="allowOAuth" class="msl-login-wrapper">
             <a class="msl-link-btn" @click="handleMSLLogin">
               <t-icon name="user-transmit" />
               <span>使用 MSL 账户登录</span>
