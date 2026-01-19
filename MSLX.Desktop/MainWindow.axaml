@@ -12,42 +12,8 @@
 		<suki:SukiDialogHost Name="DialogManager"/>
 		<suki:SukiToastHost Name="ToastManager" Position="TopRight"/>
 	</suki:SukiWindow.Hosts>
-    <suki:SukiSideMenu IsSelectedItemContentMovable="False">
-        <suki:SukiSideMenu.Items>
-            <suki:SukiSideMenuItem Header="Home" Classes="Compact">
-                <suki:SukiSideMenuItem.Icon>
-					<micon:MaterialIcon Kind="Home"/>
-                </suki:SukiSideMenuItem.Icon>
-                <suki:SukiSideMenuItem.PageContent>
-                    <local:HomePage/>
-                </suki:SukiSideMenuItem.PageContent>
-            </suki:SukiSideMenuItem>
-            <suki:SukiSideMenuItem Header="Servers" Classes="Compact">
-                <suki:SukiSideMenuItem.Icon>
-					<micon:MaterialIcon Kind="ListBox"/>
-                </suki:SukiSideMenuItem.Icon>
-                <suki:SukiSideMenuItem.PageContent>
-                    <TextBlock Text="Welcome to MSLX Desktop!" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24"/>
-                </suki:SukiSideMenuItem.PageContent>
-            </suki:SukiSideMenuItem>
-            <suki:SukiSideMenuItem Header="Settings" Classes="Compact">
-                <suki:SukiSideMenuItem.Icon>
-					<micon:MaterialIcon Kind="Settings"/>
-                </suki:SukiSideMenuItem.Icon>
-                <suki:SukiSideMenuItem.PageContent>
-                    <TextBlock Text="Welcome to MSLX Desktop!" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24"/>
-                </suki:SukiSideMenuItem.PageContent>
-            </suki:SukiSideMenuItem>
-            <suki:SukiSideMenuItem Header="About" Classes="Compact">
-                <suki:SukiSideMenuItem.Icon>
-					<micon:MaterialIcon Kind="Info"/>
-                </suki:SukiSideMenuItem.Icon>
-                <suki:SukiSideMenuItem.PageContent>
-                    <TextBlock Text="Welcome to MSLX Desktop!" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="24"/>
-                </suki:SukiSideMenuItem.PageContent>
-            </suki:SukiSideMenuItem>
-        </suki:SukiSideMenu.Items>
-
+    <suki:SukiSideMenu x:Name="MainSideMenu"
+                       IsSelectedItemContentMovable="False">
         <suki:SukiSideMenu.HeaderContent>
 			<Grid RowDefinitions="*,auto">
 				<Image Source="avares://MSLX.Desktop/Assets/icon.ico" Width="72" Height="72" Margin="5"/>

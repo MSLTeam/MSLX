@@ -1,0 +1,25 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="MSLX.Desktop.Views.LinkDaemon.LinkDaemonPage">
+  <suki:GlassCard Margin="10">
+      <Grid HorizontalAlignment="Center" VerticalAlignment="Center" RowDefinitions="*,auto" RowSpacing="20">
+          <StackPanel Spacing="10">
+              <TextBlock Text="链接守护程序" Classes="h3" HorizontalAlignment="Center"/>
+              <TextBlock Text="请输入MSLX Daemon的连接信息" Classes="h5" FontWeight="Bold" HorizontalAlignment="Center"/>
+              <StackPanel Spacing="5" VerticalAlignment="Center">
+                  <TextBlock Text="地址：" VerticalAlignment="Center" FontWeight="DemiBold"/>
+                  <TextBox x:Name="DaemonAddressTextBox" Width="300" Text="http://localhost:1027"/>
+              </StackPanel>
+              <StackPanel Spacing="5" VerticalAlignment="Center">
+                  <TextBlock Text="API Key：" VerticalAlignment="Center" FontWeight="DemiBold"/>
+                  <TextBox x:Name="DaemonKeyTextBox" Width="300" Watermark="请输入API Key"/>
+              </StackPanel>
+          </StackPanel>
+          <Button x:Name="DoneBtn" Content="确定" Classes="Flat" Grid.Row="1"/>
+      </Grid>
+    </suki:GlassCard>
+</UserControl>

@@ -3,14 +3,13 @@ using Avalonia.Controls;
 using MSLX.Desktop.Utils;
 using MSLX.Desktop.Utils.API;
 using Newtonsoft.Json.Linq;
-using SukiUI;
+using SukiUI.Controls;
 using SukiUI.Dialogs;
-using SukiUI.Enums;
 using SukiUI.Toasts;
 using System;
 using System.Collections.Generic;
 
-namespace MSLX.Desktop;
+namespace MSLX.Desktop.Views;
 
 public partial class HomePage : UserControl
 {
@@ -67,7 +66,17 @@ public partial class HomePage : UserControl
 
     private void DocsBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        SukiTheme.GetInstance().ChangeColorTheme(SukiColor.Orange);
-        SukiTheme.GetInstance().SwitchBaseTheme();
+        // SukiTheme.GetInstance().ChangeColorTheme(SukiColor.Orange);
+        // SukiTheme.GetInstance().SwitchBaseTheme();
+        SideMenuHelper.MainSideMenuHelper?.NavigateTo(new SukiSideMenuItem
+        {
+            Header = "123",
+            Icon = new Material.Icons.Avalonia.MaterialIcon()
+            {
+                Kind = Material.Icons.MaterialIconKind.Home,
+            },
+            PageContent = new HomePage(),
+            IsContentMovable = false,
+        }, true);
     }
 }
