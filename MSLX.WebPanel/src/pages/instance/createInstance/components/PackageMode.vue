@@ -852,7 +852,6 @@ const viewDetails = () => {
   padding-top: 0;
 }
 .step-content {
-  max-width: 600px;
   margin: 0;
   padding: 16px 0;
 }
