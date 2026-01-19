@@ -64,3 +64,4 @@ jobs:
           # tags 会自动包含 Docker Hub 和 香港 两个目标
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          provenance: false
