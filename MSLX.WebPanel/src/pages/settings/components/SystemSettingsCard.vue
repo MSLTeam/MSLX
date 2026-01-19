@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { ServerIcon, ControlPlatformIcon, BookIcon, LinkIcon } from 'tdesign-icons-vue-next';
+import { ServerIcon, ControlPlatformIcon, BookIcon, LinkIcon, CloudDownloadIcon } from 'tdesign-icons-vue-next';
 import { getSettings, updateSettings } from '@/api/settings';
 import type { SettingsModel } from '@/api/model/settings';
 import { changeUrl } from '@/router';
 import { DOC_URLS } from '@/api/docs';
 import { copyText } from '@/utils/clipboard';
+import { useUpdateStore } from '@/store';
+
+const updateStore = useUpdateStore();
 
 const loading = ref(false);
 const submitLoading = ref(false);
@@ -75,6 +78,17 @@ onMounted(() => {
 
     <t-form ref="sysForm" :data="sysData" :label-width="120" label-align="left" @submit="onSysSubmit">
       <div class="group-title">守护进程</div>
+
+      <t-form-item label="软件更新" style="margin-top: 6px">
+        <t-button
+          theme="default"
+          :loading="updateStore.loading"
+          @click="updateStore.checkAppUpdate(true)"
+        >
+          <template #icon><cloud-download-icon /></template>
+          检查更新
+        </t-button>
+      </t-form-item>
 
       <t-form-item label="自动打开控制台" help="MSLX 守护进程启动成功后，是否自动登录网页端控制台。">
         <t-switch v-model="sysData.openWebConsoleOnLaunch" />
