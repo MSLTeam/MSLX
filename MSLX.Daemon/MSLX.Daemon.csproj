@@ -6,15 +6,15 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
 		<ApplicationIcon>icon.ico</ApplicationIcon>
-		<Version>1.0.0-release</Version>
-		<FileVersion>1.0.0</FileVersion>
-		<AssemblyVersion>1.0.0</AssemblyVersion>
-		<Copyright>Copyright © 2021 - 2025 MSLTeam</Copyright>
+		<Version>1.0.1-release</Version>
+		<FileVersion>1.0.1</FileVersion>
+		<AssemblyVersion>1.0.1</AssemblyVersion>
+		<Copyright>Copyright © 2021 - 2026 MSLTeam</Copyright>
 		<AssemblyName>MSLX-Daemon</AssemblyName>
 		<AssemblyTitle>MSLX.Daemon</AssemblyTitle>
 		<AssemblyDescription>MSLX Daemon</AssemblyDescription>
 		<AssemblyCompany>MSLTeam</AssemblyCompany>
-		<AssemblyCopyright>Copyright © 2021 - 2025 MSLTeam</AssemblyCopyright>
+		<AssemblyCopyright>Copyright © 2021 - 2026 MSLTeam</AssemblyCopyright>
 		<AssemblyTrademark>MSLTeam</AssemblyTrademark>
 		<AssemblyCulture>zh-CN</AssemblyCulture>
 		<NeutralLanguage>zh-CN</NeutralLanguage>

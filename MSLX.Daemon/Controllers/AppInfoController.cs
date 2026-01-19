@@ -104,7 +104,7 @@ public class AppInfoController : ControllerBase
                 ["targetFrontendVersion"] = new JObject
                 {
                     ["desktop"] = "0.0.0",
-                    ["panel"] = "1.0.0"
+                    ["panel"] = "1.0.1"
                 },
                 ["systemInfo"] = systemInfo
             };
@@ -164,10 +164,10 @@ public class AppInfoController : ControllerBase
 
                 var responseData = new
                 {
-                    needUpdate = needUpdate,
+                    needUpdate,
                     currentVersion = localVerObj.ToString(),
                     latestVersion = remoteVerStr,
-                    status = status, // release / beta / outdated
+                    status, // release / beta / outdated
                     log = remoteJObj["data"]?["log"]?.ToString()
                 };
 
@@ -197,7 +197,7 @@ public class AppInfoController : ControllerBase
         }
     }
 
-    // === 辅助方法：版本归一化 ===
+    // 辅助方法：版本归一化
     private Version NormalizeVersion(Version v)
     {
         return new Version(
