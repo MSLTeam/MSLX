@@ -17,14 +17,17 @@ import {
 import { MessagePlugin } from 'tdesign-vue-next';
 import { finishUpload, initUpload, saveUploadedFile, uploadChunk } from '@/api/files';
 
-const props = withDefaults(defineProps<{
-  visible: boolean;
-  instanceId: number;
-  currentPath: string;
-  allowFolder?: boolean;
-}>(), {
-  allowFolder: true
-});
+const props = withDefaults(
+  defineProps<{
+    visible: boolean;
+    instanceId: number;
+    currentPath: string;
+    allowFolder?: boolean;
+  }>(),
+  {
+    allowFolder: true,
+  },
+);
 
 const emit = defineEmits(['update:visible', 'success']);
 
@@ -141,13 +144,13 @@ const traverseFileTree = async (entry: any, queue: { file: File; path: string }[
     const relativePath = entry.fullPath.startsWith('/') ? entry.fullPath.slice(1) : entry.fullPath;
     queue.push({ file, path: relativePath });
   } else if (entry.isDirectory) {
-    if(props.allowFolder){
+    if (props.allowFolder) {
       const dirReader = entry.createReader();
       const entries = await readAllDirectoryEntries(dirReader);
       for (const subEntry of entries) {
         await traverseFileTree(subEntry, queue);
       }
-    }else{
+    } else {
       MessagePlugin.error('此处不支持上传文件夹');
     }
   }
@@ -207,26 +210,89 @@ const uploadSingleFile = async (task: UploadTask) => {
   try {
     const initRes = await initUpload();
     const uploadId = initRes.uploadId;
-    const CHUNK_SIZE = 2 * 1024 * 1024;
+
+    // 动态调整分片大小 (大于 200MB 使用 50MB 分片，否则 10MB)
+    const isLargeFile = task.file.size > 200 * 1024 * 1024;
+    const CHUNK_SIZE = isLargeFile ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
     const totalChunks = Math.ceil(task.file.size / CHUNK_SIZE);
 
-    for (let i = 0; i < totalChunks; i++) {
-      if (task.abortController.signal.aborted) throw new Error('已取消');
-      const start = i * CHUNK_SIZE;
+    // 并发与重试配置
+    const maxConcurrency = 4; // 并发数
+    const maxRetries = 5; // 重试次数
+
+    // 构建任务索引队列
+    const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i);
+    let completedCount = 0;
+
+    // 定义单个分片上传逻辑
+    const processChunk = async (index: number) => {
+      // 检查取消状态
+      if (task.abortController?.signal.aborted) throw new Error('已取消');
+
+      const start = index * CHUNK_SIZE;
       const end = Math.min(task.file.size, start + CHUNK_SIZE);
       const chunk = task.file.slice(start, end);
-      await uploadChunk(uploadId, i, chunk);
 
-      task.progress = Math.floor(((i + 1) / totalChunks) * 90);
-      const elapsed = (Date.now() - startTime) / 1000;
-      if (elapsed > 0) {
-        const speed = end / 1024 / 1024 / elapsed;
-        task.speed = speed.toFixed(1) + ' MB/s';
+      let lastError: any;
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        // 每次重试前检查取消状态
+        if (task.abortController?.signal.aborted) throw new Error('已取消');
+
+        try {
+          await uploadChunk(uploadId, index, chunk);
+          return; // 成功返回
+        } catch (err: any) {
+          lastError = err;
+          if (attempt < maxRetries) {
+            // 指数退避延迟
+            await new Promise((r) => setTimeout(r, 1000 * attempt));
+          }
+        }
       }
-    }
+      throw lastError || new Error(`分片 ${index} 失败`);
+    };
 
+    // 定义 Worker 消费者
+    const worker = async () => {
+      while (chunkIndices.length > 0) {
+        if (task.abortController?.signal.aborted) break;
+
+        const index = chunkIndices.shift();
+        if (index === undefined) break;
+
+        await processChunk(index);
+
+        // 更新进度
+        completedCount++;
+        // 预留 10% 给合并阶段
+        task.progress = Math.floor((completedCount / totalChunks) * 90);
+
+        // 计算实时速度
+        const elapsed = (Date.now() - startTime) / 1000;
+        if (elapsed > 0) {
+          // 估算已传大小
+          const uploadedBytes = Math.min(completedCount * CHUNK_SIZE, task.file.size);
+          const speedVal = uploadedBytes / 1024 / 1024 / elapsed;
+          task.speed = speedVal.toFixed(1) + ' MB/s';
+        }
+      }
+    };
+
+    // 启动并发 Worker
+    const workers = Array(Math.min(maxConcurrency, totalChunks))
+      .fill(null)
+      .map(() => worker());
+
+    await Promise.all(workers);
+
+    // 最终检查是否被中途取消
+    if (task.abortController.signal.aborted) throw new Error('已取消');
+
+    // 合并文件
     task.status = 'merging';
+    task.speed = '合并中...'; // 更新状态文字
     task.progress = 95;
+
     await finishUpload(uploadId, totalChunks);
     await saveUploadedFile(props.instanceId, uploadId, task.path, props.currentPath);
 
@@ -234,9 +300,10 @@ const uploadSingleFile = async (task: UploadTask) => {
     task.progress = 100;
     task.speed = '完成';
   } catch (err: any) {
-    if (err.message === '已取消') {
+    if (err.message === '已取消' || task.abortController?.signal.aborted) {
       task.status = 'pending';
       task.speed = '已取消';
+      task.progress = 0;
     } else {
       task.status = 'error';
       task.errorMsg = err.message || '失败';
