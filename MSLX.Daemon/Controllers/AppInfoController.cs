@@ -247,7 +247,8 @@ public class AppInfoController : ControllerBase
         }
     }
 
-    #region 更新自身程序
+#region 更新自身程序
+
     /// <summary>
     /// 检测是否在 Docker 容器内
     /// </summary>
@@ -271,6 +272,7 @@ public class AppInfoController : ControllerBase
             });
         }
 
+        // 运行状态预检
         if (_serverService.HasRunningServers())
         {
             return BadRequest(new ApiResponse<object>
@@ -340,18 +342,12 @@ public class AppInfoController : ControllerBase
 
             if (!success) throw new Exception($"下载失败: {errorMsg}");
 
-            // 解压
+            //解压
             await SendUpdateProgressAsync(100, "0 KB/s", "extracting", "下载完成，正在解压核心文件...");
-
-            // 执行内部解压
             ExtractCoreFile(archivePath, newFilePath, isWindows);
 
-            // 重启
-            await SendUpdateProgressAsync(100, "0 KB/s", "restarting", "解压完成，即将重启应用...");
-            await Task.Delay(2000);
-
-            // 生成脚本并重启
-            StartUpdateScriptAndExit(newFileTempName, isWindows);
+            // 启动更新脚本
+            await StartUpdateScriptAndExitAsync(newFileTempName, isWindows);
         }
         catch (Exception ex)
         {
@@ -367,7 +363,6 @@ public class AppInfoController : ControllerBase
     {
         if (isWindows)
         {
-            // 处理 ZIP
             using (ZipArchive archive = ZipFile.OpenRead(archivePath))
             {
                 var entry = archive.Entries.FirstOrDefault(e => e.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
@@ -385,26 +380,22 @@ public class AppInfoController : ControllerBase
             using (GZipStream gzipStream = new GZipStream(fs, CompressionMode.Decompress))
             {
                 System.Formats.Tar.TarReader reader = new System.Formats.Tar.TarReader(gzipStream);
-
                 System.Formats.Tar.TarEntry entry;
                 while ((entry = reader.GetNextEntry()) != null)
                 {
-                    // 跳过目录
                     if (entry.EntryType == System.Formats.Tar.TarEntryType.Directory) continue;
                     entry.ExtractToFile(destinationPath, overwrite: true);
-                    break; // 只取第一个文件
+                    break;
                 }
             }
         }
-
-        // 解压完删除压缩包
         System.IO.File.Delete(archivePath);
     }
 
     /// <summary>
     /// 生成更新脚本，运行脚本，并关闭当前应用
     /// </summary>
-    private void StartUpdateScriptAndExit(string newFileTempName, bool isWindows)
+    private async Task StartUpdateScriptAndExitAsync(string newFileTempName, bool isWindows)
     {
         string appPath = AppDomain.CurrentDomain.BaseDirectory;
         string scriptPath;
@@ -414,20 +405,19 @@ public class AppInfoController : ControllerBase
         string currentExeName = Path.GetFileName(currentModuleFileName);
 
         bool isDotnetDll = currentModuleFileName != null && currentModuleFileName.EndsWith(".dll");
-
-        string startCommand;
-        if (isDotnetDll)
-        {
-            startCommand = $"start \"\" \"dotnet\" \"{currentExeName}\"";
-        }
-        else
-        {
-            startCommand = $"start \"\" \"{currentExeName}\"";
-        }
+        bool isMacOS = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
 
         if (isWindows)
         {
+            // === Windows 逻辑 ===
+            await SendUpdateProgressAsync(100, "0 KB/s", "restarting", "解压完成，即将重启应用...");
+            await Task.Delay(2000);
+
             scriptPath = Path.Combine(appPath, "update_script.bat");
+            string startCommand = isDotnetDll
+                ? $"start \"\" \"dotnet\" \"{currentExeName}\""
+                : $"start \"\" \"{currentExeName}\"";
+
             string batchContent = $@"
 @echo off
 cd /d ""{appPath}""
@@ -435,13 +425,10 @@ timeout /t 3 /nobreak > NUL
 echo Installing update...
 move /Y ""{newFileTempName}"" ""{currentExeName}""
 if %errorlevel% neq 0 exit /b %errorlevel%
-
-REM === 清除开发环境污染 ===
+REM Clear Env
 set ASPNETCORE_HOSTINGSTARTUPASSEMBLIES=
 set DOTNET_MODIFIABLE_ASSEMBLIES=
-set DOTNET_STARTUP_HOOKS=
 set ASPNETCORE_ENVIRONMENT=Production
-
 {startCommand}
 del ""%~f0"" & exit
 ";
@@ -456,36 +443,159 @@ del ""%~f0"" & exit
                 WorkingDirectory = appPath
             });
         }
-        else
+        else if (isMacOS)
         {
+            // === macOS 逻辑 ===
+            await SendUpdateProgressAsync(100, "0 KB/s", "permission_check", "正在请求终端控制权限，请在服务端确认...");
+
             scriptPath = Path.Combine(appPath, "update_script.sh");
-            string executionCmd = isDotnetDll ? $"dotnet ./{Path.GetFileName(currentModuleFileName)}" : $"./{currentExeName}";
+            string executionCmd = isDotnetDll
+                ? $"dotnet ./{Path.GetFileName(currentModuleFileName)}"
+                : $"./{currentExeName}";
+
+            // Shell 脚本
             string shellContent = $@"
 #!/bin/bash
+# 切换到脚本所在目录
+cd ""$(dirname ""$0"")""
+
+echo ""----------------------------------------""
+echo ""[MSLX] 自动更新程序已启动""
+echo ""----------------------------------------""
+echo ""正在等待旧进程退出...""
 sleep 3
+
+echo ""正在覆盖文件...""
 mv -f ./{newFileTempName} ./{currentExeName}
 chmod +x ./{currentExeName}
 
-# 清除环境变量并启动
-ASPNETCORE_HOSTINGSTARTUPASSEMBLIES= DOTNET_MODIFIABLE_ASSEMBLIES= ASPNETCORE_ENVIRONMENT=Production nohup {executionCmd} > /dev/null 2>&1 &
+# 清除环境
+export ASPNETCORE_HOSTINGSTARTUPASSEMBLIES=
+export DOTNET_MODIFIABLE_ASSEMBLIES=
+export ASPNETCORE_ENVIRONMENT=Production
+
+echo ""正在启动新版本...""
+# 直接运行
+{executionCmd}
+
+# 运行结束后删除脚本
+rm -- ""$0""
+";
+            shellContent = shellContent.Replace("\r\n", "\n");
+            System.IO.File.WriteAllText(scriptPath, shellContent);
+            
+            Process.Start("/bin/chmod", $"+x \"{scriptPath}\"").WaitForExit();
+
+            // 生成 AppleScript 临时文件
+            string appleScriptPath = Path.Combine(appPath, "update_launcher.scpt");
+            string appleScriptContent = $@"
+tell application ""Terminal""
+    do script ""'{scriptPath}'""
+    activate
+end tell
+";
+            System.IO.File.WriteAllText(appleScriptPath, appleScriptContent);
+
+            try
+            {
+                // 执行 osascript (阻塞等待用户授权)
+                var osaProc = Process.Start(new ProcessStartInfo
+                {
+                    FileName = "/usr/bin/osascript",
+                    Arguments = $"\"{appleScriptPath}\"",
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                });
+
+                // 等待权限确认完成
+                osaProc?.WaitForExit();
+
+                // 权限确认完毕，发送重启信号
+                await SendUpdateProgressAsync(100, "0 KB/s", "restarting", "权限已确认，正在重启...");
+                await Task.Delay(2000); 
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Update] 唤起终端失败: {ex.Message}");
+            }
+            finally
+            {
+                try { System.IO.File.Delete(appleScriptPath); } catch { }
+            }
+        }
+        else
+        {
+            // === Linux 逻辑 ===
+            await SendUpdateProgressAsync(100, "0 KB/s", "restarting", "解压完成，即将重启应用...");
+            await Task.Delay(2000);
+
+            scriptPath = Path.Combine(appPath, "update_script.sh");
+            string executionCmd = isDotnetDll
+                ? $"dotnet ./{Path.GetFileName(currentModuleFileName)}"
+                : $"./{currentExeName}";
+            
+            string serviceName = "mslx"; 
+
+            string shellContent = $@"
+#!/bin/bash
+cd ""$(dirname ""$0"")""
+sleep 3
+
+# 1. 无论 Systemd 是否重启了进程，Linux 都允许我们强制覆盖文件
+#    此时：磁盘上是新版，内存里可能是 Systemd 刚拉起的旧版
+mv -f ./{newFileTempName} ./{currentExeName}
+chmod +x ./{currentExeName}
+
+# 清除临时变量
+ASPNETCORE_HOSTINGSTARTUPASSEMBLIES= DOTNET_MODIFIABLE_ASSEMBLIES= ASPNETCORE_ENVIRONMENT=Production
+
+# === Systemd 智能处理 ===
+SERVICE_NAME=""{serviceName}""
+
+# 检查是否存在名为 mslx.service 的服务
+if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files --full | grep -q ""$SERVICE_NAME.service""; then
+    echo ""Detected Systemd service: $SERVICE_NAME""
+    
+    # 尝试重启服务 (这将强制加载刚才覆盖的新文件)
+    # 即使 Systemd 刚才自动重启了旧版，这一步也会把它杀掉并启动新版
+    sudo systemctl restart ""$SERVICE_NAME""
+    
+    if [ $? -eq 0 ]; then
+        echo ""Systemd restart success.""
+    else
+        echo ""Systemd restart failed (Permission denied?).""
+        echo ""WARNING: Systemd has likely auto-restarted the OLD version.""
+        echo ""Please run 'sudo systemctl restart $SERVICE_NAME' manually to apply update.""
+    fi
+    
+    # 【关键】只要检测到 Systemd，无论重启成功与否，都直接退出
+    # 绝对不要降级到 nohup，否则会导致双重进程冲突！
+    rm -- ""$0""
+    exit 0
+fi
+
+# === 仅在非 Systemd 环境下使用 Nohup ===
+echo ""Systemd not detected, falling back to nohup...""
+nohup {executionCmd} < /dev/null > /dev/null 2>&1 &
 
 rm -- ""$0""
 ";
             shellContent = shellContent.Replace("\r\n", "\n");
             System.IO.File.WriteAllText(scriptPath, shellContent);
 
-            Process.Start("chmod", $"+x {scriptPath}").WaitForExit();
+            Process.Start("/bin/chmod", $"+x \"{scriptPath}\"").WaitForExit();
 
             Process.Start(new ProcessStartInfo
             {
                 FileName = "/bin/bash",
-                Arguments = scriptPath,
+                Arguments = $"\"{scriptPath}\"",
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 WorkingDirectory = appPath
             });
         }
-
+        
+        Thread.Sleep(500);
         _appLifetime.StopApplication();
     }
 
@@ -499,6 +609,7 @@ rm -- ""$0""
             status = message
         });
     }
+
     #endregion
 
     [HttpGet("api/ping")]
