@@ -3,11 +3,12 @@ import { ref, reactive, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { MessagePlugin } from 'tdesign-vue-next';
 import type { FormInstanceFunctions, FormRule } from 'tdesign-vue-next';
-import { useUserStore } from '@/store';
+import { useUpdateStore, useUserStore } from '@/store';
 import NotificationPlugin from 'tdesign-vue-next/es/notification/plugin';
 import { request } from '@/utils/request';
 
 const userStore = useUserStore();
+const updateStore = useUpdateStore();
 const router = useRouter();
 const route = useRoute();
 
@@ -84,6 +85,9 @@ const onSubmit = async ({ validateResult }) => {
         content: `欢迎回来！${userStore.userInfo.name}`,
         title: 'MSLX 控制台',
       });
+
+      // 检查更新
+      updateStore.checkAppUpdate(false);
     } catch (e: any) {
       MessagePlugin.error(e.message || '登录失败，请检查账号密码');
     } finally {

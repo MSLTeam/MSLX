@@ -2,12 +2,12 @@
 import { computed, ref, onUnmounted } from 'vue';
 import {
   DownloadIcon,
-  BrowseIcon,
   CloseIcon,
   CloudDownloadIcon,
   ErrorCircleIcon,
   CheckCircleIcon,
   StopCircleIcon,
+  LinkIcon,
 } from 'tdesign-icons-vue-next';
 import { HubConnectionBuilder, LogLevel, HubConnection } from '@microsoft/signalr';
 import { MessagePlugin } from 'tdesign-vue-next';
@@ -55,7 +55,6 @@ const isLinux = computed(() => {
   const osType = userStore.userInfo?.systemInfo?.osType || '';
   return osType.toLowerCase().includes('linux');
 });
-
 
 // === 方法 ===
 
@@ -113,31 +112,25 @@ const startSignalR = async () => {
     .withAutomaticReconnect([0, 2000, 5000, 10000])
     .build();
 
-// 监听进度事件
+  // 监听进度事件
   hubConnection.on('UpdateProgress', (data: any) => {
     updateProgress.value = data.progress || 0;
     updateSpeed.value = data.speed || '';
 
-    // === 新增：权限检查状态 ===
+    // macos权限检查状态
     if (data.stage === 'permission_check') {
-      // 此时不要断开连接，而是显示提示
       updateStatusText.value = '等待服务端确认权限...';
-      // 你可以在这里加一个特殊的标志位，让 UI 显示那个 macOS 的 Alert
-      // 例如：isWaitingPermission.value = true;
     }
-    // === 原有：重启状态 ===
+    // 重启状态
     else if (data.stage === 'restarting') {
       console.log('[Update] 收到重启信号，准备轮询...');
       updateStatusText.value = '服务正在重启...';
 
       stopSignalR();
-
-      // 现在后端确保了脚本启动后才发信号，这里的延时可以适当缩短，或者保留以求稳
       setTimeout(() => {
         startPollingPing();
       }, 3000);
-    }
-    else {
+    } else {
       // 普通进度状态
       updateStatusText.value = data.status || '正在处理...';
     }
@@ -304,14 +297,11 @@ onUnmounted(() => {
       </div>
 
       <div v-else-if="updateStatusText.includes('等待服务端确认权限')" class="status-container permission-wait">
-        <div class="warn-icon-wrapper">
-          <t-loading size="40px" text="等待中..." />
-        </div>
         <p class="warn-title">请在服务端确认权限</p>
         <p class="warn-desc">
           macOS 系统已弹出提示：
-          <br><strong>“MSLX-Daemon 想要控制应用程序 终端.app”</strong>
-          <br>请务必点击 <strong>【好/OK】</strong> 以继续更新。
+          <br /><strong>“MSLX-Daemon 想要控制应用程序 终端.app”</strong> <br />请务必点击
+          <strong>【好/OK】</strong> 以继续更新。
         </p>
       </div>
 
@@ -347,20 +337,24 @@ onUnmounted(() => {
         <t-alert v-if="isLinux" theme="info" variant="outline" class="macos-alert">
           <template #message>
             <strong>Linux 用户提示：</strong>
-            <ul style="margin: 4px 0 0 0; line-height: 1.6;">
+            <ul style="margin: 4px 0 0 0; line-height: 1.6">
               <li>
                 如使用一键脚本部署，推荐优先参考
-                <t-link theme="primary" href="https://mslx.mslmc.cn/docs/install/linux/" target="_blank" style="vertical-align: baseline;">
+                <t-link
+                  theme="primary"
+                  href="https://mslx.mslmc.cn/docs/install/linux/"
+                  target="_blank"
+                  style="vertical-align: baseline"
+                >
                   官方文档
                 </t-link>
                 使用脚本进行更新。
               </li>
               <li>
-                若启用 <strong>Systemd</strong> 托管，请确保服务名称为 <code>mslx</code>，否则自动更新后可能无法自动重启。
+                若启用 <strong>Systemd</strong> 托管，请确保服务名称为
+                <code>mslx</code>，否则自动更新后可能无法自动重启。
               </li>
-              <li>
-                如果更新完成后仍然是旧版本，请尝试手动重启服务或手动更新！
-              </li>
+              <li>如果更新完成后仍然是旧版本，请尝试手动重启服务或手动更新！</li>
             </ul>
           </template>
         </t-alert>
@@ -394,14 +388,20 @@ onUnmounted(() => {
             :disabled="!downloadInfo?.web || isUpdating"
             @click="openLink(downloadInfo?.web || '')"
           >
-            <template #icon><browse-icon /></template>
+            <template #icon><link-icon /></template>
             前往下载页
           </t-button>
         </div>
       </div>
 
       <div v-if="!isUpdating" class="sub-actions">
-        <t-link theme="default" hover="color" size="small" @click="handleSkip"> 跳过此版本 </t-link>
+        <t-popconfirm
+          content="确定要跳过此版本吗？跳过后将不再提示该版本的更新。若跳过后需要更新也可以前往设置页面进行更新哦~"
+          theme="warning"
+          @confirm="handleSkip"
+        >
+          <t-link theme="default" hover="color" size="small"> 跳过此版本 </t-link>
+        </t-popconfirm>
       </div>
     </div>
 
