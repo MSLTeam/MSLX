@@ -31,7 +31,7 @@ public class NeoForgeInstallerService
         _logger = logger;
     }
 
-    public async Task<bool> InstallNeoForge(string basePath, string installerPath, string javaEnvPath)
+    public async Task<(bool IsSuccess, string? McVersion)> InstallNeoForge(string basePath, string installerPath, string javaEnvPath)
     {
         // 编译输出日志的缓存变量
         string logTemp = "";
@@ -104,7 +104,7 @@ public class NeoForgeInstallerService
             if (!unzip)
             {
                 ReportLog($"解压 {InstallName} 安装器失败，安装失败！");
-                return false;
+                return (false,InstallMcVersion);
             }
 
             ReportLog($"{InstallName} 安装器解压成功！");
@@ -150,7 +150,7 @@ public class NeoForgeInstallerService
                 if (string.IsNullOrEmpty(InstallMcVersion))
                 {
                     ReportLog($"无法读取 {InstallName} 安装器对应的MC版本号，安装失败！");
-                    return false;
+                    return (false, InstallMcVersion);
                 }
             }
 
@@ -180,7 +180,7 @@ public class NeoForgeInstallerService
             if (string.IsNullOrEmpty(vanillaUrl))
             {
                 ReportLog("获取原版服务端失败，安装失败！");
-                return false;
+                return (false, InstallMcVersion);
             }
 
             if (InstallMirrorsName == "Official") // 是否使用镜像源 不用镜像就替换回原版
@@ -205,7 +205,7 @@ public class NeoForgeInstallerService
             else
             {
                 ReportLog($"{InstallMcVersion} 原版服务端核心下载失败！");
-                return false;
+                return (false, InstallMcVersion);
             }
 
             // 解压原版服务端核心
@@ -241,7 +241,7 @@ public class NeoForgeInstallerService
                     {
                         ReportLog("原版服务端核心资源解压失败！" + ex.Message);
                         await Task.Delay(1000);
-                        return false;
+                        return (false, InstallMcVersion);
                     }
                 }
             }
@@ -437,7 +437,7 @@ public class NeoForgeInstallerService
                 catch
                 {
                     ReportLog("复制Shim.jar失败！");
-                    return false;
+                    return (false, InstallMcVersion);
                 }
             }
             else if (InstallVersionType == 4)
@@ -462,7 +462,7 @@ public class NeoForgeInstallerService
                 if (installJobj["processors"] is not JArray processors)
                 {
                     ReportLog($"[ {InstallName} ]错误：无法获取 processors 数组");
-                    return false;
+                    return (false, InstallMcVersion);
                 }
 
                 foreach (JObject processor in processors.Cast<JObject>())
@@ -501,7 +501,7 @@ public class NeoForgeInstallerService
                         if (string.IsNullOrEmpty(mainclass))
                         {
                             ReportLog("未能捕获到入口文件的主类，安装失败！");
-                            return false;
+                            return (false, InstallMcVersion);
                         }
 
                         ReportLog("捕获到入口文件的主类：" + mainclass);
@@ -582,7 +582,7 @@ public class NeoForgeInstallerService
                         if (string.IsNullOrEmpty(versionUrl))
                         {
                             ReportLog($"错误：未能在版本清单中找到版本号为 '{InstallMcVersion}' 的详细信息。请检查版本号是否正确。");
-                            return false;
+                            return (false, InstallMcVersion);
                         }
                         else
                         {
@@ -627,21 +627,21 @@ public class NeoForgeInstallerService
                         else
                         {
                             ReportLog("无法获取MC元信息，请重试，或改用命令行安装。");
-                            return false;
+                            return (false, InstallMcVersion);
                         }
                     }
                     else
                     {
                         ReportLog("无法获取MC元信息，请重试，或改用命令行安装。");
                         ReportLog(res_metadata.Content ?? "");
-                        return false;
+                        return (false, InstallMcVersion);
                     }
                 }
                 catch (Exception ex)
                 {
                     ReportLog("自动下载MOJMAPS失败！" + ex.Message);
                     ReportLog("无法获取MC元信息，请重试，或改用命令行安装。");
-                    return false;
+                    return (false, InstallMcVersion);
                 }
             }
 
@@ -683,13 +683,13 @@ public class NeoForgeInstallerService
             {
             }
 
-            return true;
+            return (true, InstallMcVersion);
         }
         catch (Exception ex)
         {
             ReportLog($"安装失败：{ex.Message}");
             _logger.LogError("安装失败 {0}", ex.ToString());
-            return false;
+            return (false, InstallMcVersion);
         }
 
         // 回报日志的方法

@@ -54,6 +54,37 @@ public class OAuthController : ControllerBase
         }
     }
 
+    [HttpGet("status")]
+    [AllowAnonymous]
+    public IActionResult GetOAuthConfigStatus()
+    {
+        var clientId = IConfigBase.Config.ReadConfig()["oAuthMSLClientID"]?.ToString();
+        if (string.IsNullOrEmpty(clientId) || clientId.Length != 27)
+        {
+            return Ok(new ApiResponse<object>
+            {
+                Code = 200,
+                Message = "",
+                Data = new
+                {
+                    allowOAuth = false,
+                }
+            });
+        }
+        else
+        {
+            return Ok(new ApiResponse<object>
+            {
+                Code = 200,
+                Message = "",
+                Data = new
+                {
+                    allowOAuth = true,
+                }
+            });
+        }
+    }
+
     [HttpPost("login")]
     [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] OAuthCodeRequest request)

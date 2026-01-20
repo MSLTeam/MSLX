@@ -1,6 +1,6 @@
 {
-  "version": "1.0.1",
-  "buildTime": "2026-01-19 13:34:35",
+  "version": "1.0.2",
+  "buildTime": "2026-01-20 00:15:37",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,82 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "2742776347f5e2a3d6b4ace48be9b96b638cd7be",
-  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.0.1",
+  "commitId": "2c98d5b6553395081bbd59b94cd2a26d7c01c127",
+  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.0.2",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "2c98d5b6553395081bbd59b94cd2a26d7c01c127",
+      "commitTime": "2026-01-20 00:15:09 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.0.2"
+    },
+    {
+      "commitId": "5320b7b3f38c52afa6d42aebecbece24bf03d105",
+      "commitTime": "2026-01-20 00:14:12 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 未配置 MSL OAuth 2.0 时登录页将隐藏\"使用MSL账号登录\"的选项"
+    },
+    {
+      "commitId": "63b3f37a34d8d92c860c23694a734e13305d7228",
+      "commitTime": "2026-01-20 00:02:50 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(webpanel): 优化创建整合包界面的布局"
+    },
+    {
+      "commitId": "345f149b1d5ba17d19377d573f9482f4777bae7c",
+      "commitTime": "2026-01-20 00:02:26 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(webpanel): 整合包上传和文件上传独立模块支持并发上传 & 调整上传的分片大小"
+    },
+    {
+      "commitId": "284eb9a63a32826f55e72a28f7b9f4ed22909419",
+      "commitTime": "2026-01-19 23:44:17 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复整合包创建服务端模式下进度不回显的问题"
+    },
+    {
+      "commitId": "5b26812a6f961e6068a29e38ba7c01354dfeb018",
+      "commitTime": "2026-01-19 23:28:18 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复了 MC1.16.5- 版本的forge启动参数错误的问题"
+    },
+    {
+      "commitId": "193a340f0aace0f6c2408051b7771ae531b6d9ec",
+      "commitTime": "2026-01-19 22:09:59 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
+    },
+    {
+      "commitId": "3045ab58c494a09a2b78dffcd9fb97c76444c831",
+      "commitTime": "2026-01-19 22:09:00 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "update submodule"
+    },
+    {
+      "commitId": "aa538a7df3f2c5d7f20f3d7c632d64c296730e40",
+      "commitTime": "2026-01-19 22:08:28 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "feat(desktop): 基础的链接daemon功能实现 perf: 一些小巧思QWQ"
+    },
+    {
+      "commitId": "3bf0aebe78f7620c134306b1eb820e74bccad497",
+      "commitTime": "2026-01-19 19:01:08 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(daemon): 修复了Docker环境下中文编码的问题"
+    },
+    {
+      "commitId": "78ef3a759dff60b8535125caeea6554a59f94722",
+      "commitTime": "2026-01-19 13:49:56 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #18 from MSLTeam/dev"
+    },
+    {
+      "commitId": "d03cdcbc45502a28f333a416c10f76717def8035",
+      "commitTime": "2026-01-19 13:35:02 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v1.0.0 版本前端资源"
+    },
     {
       "commitId": "2742776347f5e2a3d6b4ace48be9b96b638cd7be",
       "commitTime": "2026-01-19 13:34:07 +0800",
@@ -299,78 +371,6 @@
       "commitTime": "2026-01-16 17:59:26 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "chore(webpanel): 修正日志分析页面的样式"
-    },
-    {
-      "commitId": "c5a74507a581a77bd91d2614eacdc814387dd716",
-      "commitTime": "2026-01-16 17:56:14 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 对接MSL用户中心AI错误日志分析功能"
-    },
-    {
-      "commitId": "f93fb20fd7cd29175aed9a99434154b2c0f7ee5f",
-      "commitTime": "2026-01-16 17:52:09 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复文件管理器文件内容误判问题"
-    },
-    {
-      "commitId": "8a7c0ed7165880d888d2e941a6c686eae256b2f0",
-      "commitTime": "2026-01-16 15:40:14 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 调整服务端实例控制台样式"
-    },
-    {
-      "commitId": "0414b0f703272d68b9ec6c0b3427f48e2f85fffd",
-      "commitTime": "2026-01-16 15:03:42 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "deps(webpanel): 更新依赖版本"
-    },
-    {
-      "commitId": "f0959e703f98b3a54aae3be01862c35dd9a9b13a",
-      "commitTime": "2026-01-15 18:11:29 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #15 from MSLTeam/dev"
-    },
-    {
-      "commitId": "a76d827eb9854cd9b0bc1a23de884104590570c1",
-      "commitTime": "2026-01-15 18:10:54 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(daemon): 嵌入 v0.5.6-beta 版本前端资源"
-    },
-    {
-      "commitId": "e621896c4eeb6d679395b8b13b2b0c562202154c",
-      "commitTime": "2026-01-15 18:09:58 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v0.5.6-beta"
-    },
-    {
-      "commitId": "9a2f1e73b19e01d6905e8240e4b804d302a2140f",
-      "commitTime": "2026-01-15 17:37:21 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(webpanel): 优化设置页面一些表述"
-    },
-    {
-      "commitId": "8ddb148670e1c64ffbd84c39531aa95afe9f61a2",
-      "commitTime": "2026-01-15 17:36:04 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 新增OAuth Callback页面的设置面板样式适配"
-    },
-    {
-      "commitId": "2de52b1083fa75c48abe890cbd72b2f8f11f359b",
-      "commitTime": "2026-01-15 17:34:53 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemnon & webpanel): 支持配置 MSL OAuth 2.0 登录"
-    },
-    {
-      "commitId": "801aa3be45ffe859f8ba88786a27fb373de15494",
-      "commitTime": "2026-01-15 10:37:03 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 仅自动打开可被访问的本地控制台地址"
-    },
-    {
-      "commitId": "2faed8dfc1908041412e274f967eec8e2c7d4d1c",
-      "commitTime": "2026-01-15 10:36:39 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 仅自动打开可被访问的本地控制台地址"
     }
   ]
 }

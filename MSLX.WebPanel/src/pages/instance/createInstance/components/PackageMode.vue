@@ -279,21 +279,72 @@ const onFileChange = async (event: Event) => {
 const handleUpload = async (file: File) => {
   isUploading.value = true;
   uploadProgress.value = 0;
-  const chunkSize = 5 * 1024 * 1024; // 5MB
+
+  const chunkSize = 50 * 1024 * 1024; // 50MB
   const totalChunks = Math.ceil(file.size / chunkSize);
 
+  const maxConcurrency = 5; // 并发请求数
+  const maxRetries = 5; // 错误重试次数
+
   try {
+    // 获取上传 ID
     const initRes = await initUpload();
     const uploadId = (initRes as any).uploadId;
     if (!uploadId) throw new Error('无法获取上传凭证');
 
-    for (let i = 0; i < totalChunks; i++) {
-      const start = i * chunkSize;
-      const end = Math.min(file.size, start + chunkSize);
-      await uploadChunk(uploadId, i, file.slice(start, end));
-      uploadProgress.value = Math.floor(((i + 1) / totalChunks) * 100);
-    }
+    // 准备分片索引队列
+    const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i);
+    let completedCount = 0; // 已完成计数器
 
+    // 单个分片处理函数
+    const processChunk = async (index: number) => {
+      const start = index * chunkSize;
+      const end = Math.min(file.size, start + chunkSize);
+      const chunkBlob = file.slice(start, end);
+
+      let lastError: any;
+
+      // 重试循环
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          await uploadChunk(uploadId, index, chunkBlob);
+          return; // 成功则直接返回
+        } catch (err) {
+          lastError = err;
+          console.warn(`分片 ${index} 第 ${attempt} 次上传失败`, err);
+
+          if (attempt < maxRetries) {
+            await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+          }
+        }
+      }
+      // 重试耗尽
+      throw new Error(`分片 ${index} 失败 (已重试${maxRetries}次): ${(lastError as any)?.message}`);
+    };
+
+    // 定义 Worker
+    const worker = async () => {
+      while (chunkIndices.length > 0) {
+        const index = chunkIndices.shift(); // 取出一个任务
+        if (index === undefined) break;
+
+        await processChunk(index); // 执行上传
+
+        // 任务完成后更新进度
+        completedCount++;
+        uploadProgress.value = Math.floor((completedCount / totalChunks) * 100);
+      }
+    };
+
+    // 启动并发 Worker
+    const workers = Array(Math.min(maxConcurrency, totalChunks))
+      .fill(null)
+      .map(() => worker());
+
+    // 等待所有 worker 完成
+    await Promise.all(workers);
+
+    // 请求合并
     const finishRes = await finishUpload(uploadId, totalChunks);
     const finalKey = (finishRes as any).uploadId;
 
@@ -307,6 +358,8 @@ const handleUpload = async (file: File) => {
     MessagePlugin.error(`上传失败: ${error.message || '未知错误'}`);
     uploadedFileName.value = '';
     uploadProgress.value = 0;
+    // 失败时尝试清理后端临时文件（可选，后端通常也有定期清理）
+    if (formData.value.packageFileKey) deleteUpload(formData.value.packageFileKey).catch(() => {});
   } finally {
     isUploading.value = false;
   }
@@ -409,7 +462,6 @@ const onSubmit = async () => {
 
 const startSignalRConnection = async (serverId: string) => {
   const { baseUrl, token } = userStore;
-  if (!baseUrl || !token) return;
 
   const hubUrl = new URL('/api/hubs/creationProgressHub', baseUrl || window.location.origin);
   hubUrl.searchParams.append('x-user-token', token);
@@ -800,7 +852,6 @@ const viewDetails = () => {
   padding-top: 0;
 }
 .step-content {
-  max-width: 600px;
   margin: 0;
   padding: 16px 0;
 }
