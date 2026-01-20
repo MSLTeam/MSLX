@@ -66,3 +66,4 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           provenance: false
           sbom: false
+          outputs: type=registry,oci-mediatypes=true
