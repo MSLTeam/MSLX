@@ -1,0 +1,36 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             xmlns:controls="using:MSLX.Desktop.Controls"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="MSLX.Desktop.Views.LinkDaemon.DownloadDaemonPage">
+    <suki:GlassCard Margin="10">
+        <Grid HorizontalAlignment="Center" VerticalAlignment="Center" RowDefinitions="*,auto,auto,auto" RowSpacing="15">
+            <StackPanel Spacing="10">
+                <TextBlock Text="下载守护程序" Classes="h3" HorizontalAlignment="Center"/>
+                <TextBlock Text="请输入系统信息" Classes="h5" FontWeight="Bold" HorizontalAlignment="Center"/>
+                <StackPanel Spacing="5" VerticalAlignment="Center">
+                    <TextBlock Text="系统类型：" VerticalAlignment="Center" FontWeight="DemiBold"/>
+                    <ComboBox x:Name="SysType" SelectedIndex="0" Width="300">
+                        <ComboBoxItem Content="Windows"/>
+                        <ComboBoxItem Content="Linux"/>
+                        <ComboBoxItem Content="macOS"/>
+                    </ComboBox>
+                </StackPanel>
+                <StackPanel Spacing="5" VerticalAlignment="Center">
+                    <TextBlock Text="系统架构：" VerticalAlignment="Center" FontWeight="DemiBold"/>
+                    <ComboBox x:Name="ArchType" SelectedIndex="0" Width="300">
+                        <ComboBoxItem Content="x64"/>
+                        <ComboBoxItem Content="arm64"/>
+                    </ComboBox>
+                </StackPanel>
+            </StackPanel>
+            <controls:DownloadDisplayControl x:Name="DwnDisplay" IsVisible="False" Grid.Row="1"/>
+            <Button x:Name="DoneBtn" Content="确定下载" Classes="Flat" Grid.Row="2"/>
+            <Button x:Name="LinkDaemonBtn" Content="已有守护程序？点我链接！" Classes="Basic" Grid.Row="3"/>
+      </Grid>
+    </suki:GlassCard>
+  
+</UserControl>

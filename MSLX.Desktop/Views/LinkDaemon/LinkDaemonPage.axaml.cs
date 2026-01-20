@@ -1,9 +1,10 @@
-using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
+using Material.Icons;
+using Material.Icons.Avalonia;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils;
 using MSLX.Desktop.Utils.API;
+using SukiUI.Controls;
 using SukiUI.Dialogs;
 using SukiUI.Toasts;
 using System;
@@ -19,6 +20,7 @@ public partial class LinkDaemonPage : UserControl
         InitializeComponent();
 
         this.DoneBtn.Click += DoneBtn_Click;
+        this.DownloadDaemonBtn.Click += DownloadDaemonBtn_Click;
     }
 
     private async void DoneBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -75,7 +77,23 @@ public partial class LinkDaemonPage : UserControl
                 .OfType(Avalonia.Controls.Notifications.NotificationType.Error)
                 .WithTitle("验证失败")
                 .WithContent("API Key无效，请重新输入。")
+                .WithActionButton("确定", _ => { }, true)
                 .TryShow();
         }
+    }
+
+    private void DownloadDaemonBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        SideMenuHelper.MainSideMenuHelper?.NavigateRemove<LinkDaemonPage>();
+        SideMenuHelper.MainSideMenuHelper?.NavigateTo(new SukiSideMenuItem
+        {
+            Header = "下载守护程序",
+            Icon = new MaterialIcon()
+            {
+                Kind = MaterialIconKind.Download,
+            },
+            IsContentMovable = false,
+            PageContent = new DownloadDaemonPage()
+        }, true);
     }
 }

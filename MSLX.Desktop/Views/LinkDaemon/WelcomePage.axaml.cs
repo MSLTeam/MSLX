@@ -85,16 +85,17 @@ public partial class WelcomePage : UserControl
 
     private void Next_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
         SideMenuHelper.MainSideMenuHelper?.NavigateTo(new SukiSideMenuItem
         {
-            Header = "链接守护程序",
+            Header = "下载守护程序",
             Icon = new MaterialIcon()
             {
-                Kind = MaterialIconKind.LinkVariant,
+                Kind = MaterialIconKind.Download,
             },
             IsContentMovable = false,
-            PageContent = new LinkDaemonPage()
+            PageContent = new DownloadDaemonPage()
         },true);
-        SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
+        
     }
 }

@@ -1,0 +1,47 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:MSLX.Desktop.Controls"
+        xmlns:utils="using:MSLX.Desktop.Utils">
+
+  <!--
+    Additional resources 
+    Using Control Themes:
+         https://docs.avaloniaui.net/docs/basics/user-interface/styling/control-themes
+    Using Theme Variants:
+         https://docs.avaloniaui.net/docs/guides/styles-and-resources/how-to-use-theme-variants
+  -->
+  
+  <Design.PreviewWith>
+    <StackPanel Spacing="10">      
+        <StackPanel Background="{DynamicResource SystemRegionBrush}">
+          <controls:DownloadDisplayControl />
+        </StackPanel>
+    </StackPanel>
+  </Design.PreviewWith>
+ 
+  <ControlTheme x:Key="{x:Type controls:DownloadDisplayControl}" TargetType="controls:DownloadDisplayControl">
+      <Setter Property="Template">
+      <ControlTemplate>
+        <ListBox Classes="WithoutCheck" ItemsSource="{Binding Downloads, RelativeSource={RelativeSource TemplatedParent}}">
+            <ListBox.ItemTemplate>
+                <DataTemplate  DataType="utils:DownloadItem">
+                    <StackPanel Margin="10">
+                        <TextBlock Text="{Binding Filename}" FontWeight="Bold"/>
+                        
+                        <ProgressBar Value="{Binding Progress.ProgressPercentage}" Maximum="100" Height="20"/>
+                        
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <TextBlock Text="{Binding Status}"/>
+                            <TextBlock Text="{Binding Progress.BytesPerSecond, StringFormat='{}{0:N0} B/s'}"/>
+                            <TextBlock Text="{Binding Progress.EstimatedTimeRemaining, StringFormat='剩余时间: {0:hh\\:mm\\:ss}'}"/>
+                        </StackPanel>
+                        
+                        <TextBlock Text="{Binding ErrorMessage}" Foreground="Red" IsVisible="{Binding ErrorMessage, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+</ResourceDictionary>
