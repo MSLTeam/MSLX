@@ -40,45 +40,12 @@ public partial class LinkDaemonPage : UserControl
 
         ConfigStore.DaemonLink = ip + "/api";
         ConfigStore.DaemonApiKey = key;
-        await VerifyDaemonApiKey();
-    }
-
-    private async Task VerifyDaemonApiKey()
-    {
-        // 关闭先前对话框并显示验证中对话框
-        DialogService.DialogManager.DismissDialog();
-        DialogService.DialogManager.CreateDialog()
-            .WithTitle("验证中...")
-            .WithContent("请稍候，正在验证Daemon API Key的有效性。")
-            .TryShow();
-        var (isSuccess, msg, clientName, version, serverTime) = await DaemonAPIService.VerifyDaemonApiKey();
-        DialogService.DialogManager.DismissDialog();
+        bool isSuccess= await DaemonManager.VerifyDaemonApiKey();
         if (isSuccess)
         {
             // 验证成功，跳转到主页面
             SideMenuHelper.MainSideMenuHelper?.ShowMainPages();
             SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
-
-            DialogService.ToastManager.CreateToast()
-                        .WithTitle(msg)
-                        .WithContent(new TextBlock
-                        {
-                            Text = $"Client Name: {clientName}\nVersion: {version}\nServer Time: {serverTime}",
-                        })
-                        .Dismiss().After(TimeSpan.FromSeconds(5))
-                        .Queue();
-        }
-        else
-        {
-            // 验证失败，提示用户并让其重新输入
-            // API Key无效
-            ConfigStore.DaemonApiKey = string.Empty;
-            DialogService.DialogManager.CreateDialog()
-                .OfType(Avalonia.Controls.Notifications.NotificationType.Error)
-                .WithTitle("验证失败")
-                .WithContent("API Key无效，请重新输入。")
-                .WithActionButton("确定", _ => { }, true)
-                .TryShow();
         }
     }
 

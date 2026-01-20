@@ -32,5 +32,4 @@
             <Button x:Name="LinkDaemonBtn" Content="已有守护程序？点我链接！" Classes="Basic" Grid.Row="3"/>
       </Grid>
     </suki:GlassCard>
-  
 </UserControl>

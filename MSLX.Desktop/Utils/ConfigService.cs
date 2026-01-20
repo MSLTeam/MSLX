@@ -32,27 +32,32 @@ namespace MSLX.Desktop.Utils
             ConfigStore.DaemonApiKey = Config.ReadDaemonConfigKey("apiKey")?.ToString() ?? Config.ReadConfigKey("ApiKey")?.ToString() ?? string.Empty;
         }
 
+        public static void GetDaemonApiKey()
+        {
+            ConfigStore.DaemonApiKey = Config.ReadDaemonConfigKey("apiKey")?.ToString() ?? Config.ReadConfigKey("ApiKey")?.ToString() ?? string.Empty;
+        }
+
         public class IConfigService : IDisposable
         {
             private readonly string _configPath = Path.Combine(GetAppDataPath(), "Configs", "config.json");
-            private readonly string _daemonConfigPath = Path.Combine(GetDaemonDataPath(), "Configs", "config.json");
+            private readonly string _daemonConfigPath = Path.Combine(GetDaemonDataPath(), "Configs", "Config.json");
 
             // 缓存对象
             private JObject _configCache;
-            private JObject _daemonConfigCache;
+            // private JObject _daemonConfigCache;
 
             // 读写锁
             private readonly ReaderWriterLockSlim _configLock = new ReaderWriterLockSlim();
-            private readonly ReaderWriterLockSlim _daemonConfigLock = new ReaderWriterLockSlim();
+            // private readonly ReaderWriterLockSlim _daemonConfigLock = new ReaderWriterLockSlim();
 
             public IConfigService()
             {
                 InitializeFile(_configPath, "{}");
-                InitializeFile(_daemonConfigPath, "{}");
+                // InitializeFile(_daemonConfigPath, "{}");
 
                 // 初始化缓存
                 _configCache = LoadJson<JObject>(_configPath);
-                _daemonConfigCache = LoadJson<JObject>(_daemonConfigPath);
+                // _daemonConfigCache = LoadJson<JObject>(_daemonConfigPath);
             }
 
             private void InitializeFile(string path, string defaultContent)
@@ -98,27 +103,26 @@ namespace MSLX.Desktop.Utils
             #region Daemon Config Read
             public JObject ReadDaemonConfig()
             {
-                _daemonConfigLock.EnterReadLock();
-                try
+                var dir = Path.GetDirectoryName(_daemonConfigPath);
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir!);
+
+                if (File.Exists(_daemonConfigPath))
                 {
-                    return (JObject)_daemonConfigCache.DeepClone();
+                        return JObject.Parse(File.ReadAllText(_daemonConfigPath));
                 }
-                finally
-                {
-                    _daemonConfigLock.ExitReadLock();
-                }
+                return JObject.Parse("{}");
             }
 
             public JToken? ReadDaemonConfigKey(string key)
             {
-                _daemonConfigLock.EnterReadLock();
+                var jsonData= ReadDaemonConfig();
                 try
                 {
-                    return _daemonConfigCache.TryGetValue(key, out var value) ? value : null;
+                    return jsonData.TryGetValue(key, out var value) ? value : null;
                 }
-                finally
+                catch
                 {
-                    _daemonConfigLock.ExitReadLock();
+                    return null;
                 }
             }
             #endregion
@@ -167,7 +171,7 @@ namespace MSLX.Desktop.Utils
             public void Dispose()
             {
                 _configLock?.Dispose();
-                _daemonConfigLock?.Dispose();
+                // _daemonConfigLock?.Dispose();
             }
         }
     }

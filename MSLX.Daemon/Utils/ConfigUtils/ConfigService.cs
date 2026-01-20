@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Utils.ConfigUtils
@@ -72,6 +72,21 @@ namespace MSLX.Daemon.Utils.ConfigUtils
             {
                 var content = File.ReadAllText(path);
                 var config = JObject.Parse(content);
+                bool needWrite = false;
+                if (config["apiKey"] == null)
+                {
+                    string apikey = StringServices.GenerateRandomString(64);
+                    config["apiKey"] = apikey;
+                    _logger.LogInformation("您的默认 API Key 是: {ApiKey}", apikey);
+                    needWrite = true;
+                }
+                if (config["avatar"] == null)
+                {
+                    config["avatar"] = "https://www.mslmc.cn/logo.png";
+                    needWrite = true;
+                }
+                if (needWrite)
+                    WriteConfig(config);
                 _logger.LogInformation("成功加载配置文件");
                 return config;
             }

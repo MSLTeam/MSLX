@@ -1,0 +1,287 @@
+using Avalonia.Controls;
+using MSLX.Desktop.Models;
+using MSLX.Desktop.Utils.API;
+using SukiUI.Dialogs;
+using SukiUI.Toasts;
+using System;
+using System.Diagnostics;
+using System.IO;
+using System.IO.Compression;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace MSLX.Desktop.Utils
+{
+    /// <summary>
+    /// Daemon程序管理器，负责解压、安装和启动Daemon程序
+    /// </summary>
+    public static class DaemonManager
+    {
+        private static Process? DaemonProcess { get; set; }
+        public static async Task<bool> VerifyDaemonApiKey()
+        {
+            // 关闭先前对话框并显示验证中对话框
+            DialogService.DialogManager.DismissDialog();
+            DialogService.DialogManager.CreateDialog()
+                .WithTitle("验证中...")
+                .WithContent("请稍候，正在验证Daemon API Key的有效性。")
+                .TryShow();
+            var (isSuccess, msg, clientName, version, serverTime) = await DaemonAPIService.VerifyDaemonApiKey();
+            DialogService.DialogManager.DismissDialog();
+            if (isSuccess)
+            {
+                // 验证成功
+                DialogService.ToastManager.CreateToast()
+                            .WithTitle(msg)
+                            .WithContent(new TextBlock
+                            {
+                                Text = $"Client Name: {clientName}\nVersion: {version}\nServer Time: {serverTime}",
+                            })
+                            .Dismiss().After(TimeSpan.FromSeconds(5))
+                            .Queue();
+                return true;
+            }
+            else
+            {
+                // 验证失败，提示用户并让其重新输入
+                // API Key无效
+                ConfigStore.DaemonApiKey = string.Empty;
+
+                DialogService.DialogManager.CreateDialog()
+                    .OfType(Avalonia.Controls.Notifications.NotificationType.Error)
+                    .WithTitle("API Key无效")
+                    .WithContent(new TextBlock
+                    {
+                        Text = "请重新输入有效的Daemon API Key。",
+                        FontSize = 14,
+                    })
+                    .WithActionButton("重试", async _ => { await VerifyDaemonApiKey(); }, true)
+                    .WithActionButton("关闭", _ => { }, true)
+                    .TryShow();
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 解压并启动Daemon程序
+        /// </summary>
+        /// <param name="zipFilePath">下载的压缩包路径</param>
+        /// <returns>是否成功启动</returns>
+        public static async Task<(bool Success, string Message)> UnzipAndStartDaemon(string zipFilePath)
+        {
+            try
+            {
+                // 验证文件是否存在
+                if (!File.Exists(zipFilePath))
+                {
+                    return (false, "压缩包文件不存在！");
+                }
+
+                // 获取解压目标路径
+                string daemonPath = ConfigService.GetAppDataPath();
+
+                // 确保目标目录存在
+                if (!Directory.Exists(daemonPath))
+                {
+                    Directory.CreateDirectory(daemonPath);
+                }
+
+                // 解压文件
+                await ZipFile.ExtractToDirectoryAsync(zipFilePath, daemonPath, overwriteFiles: true);
+
+                // 查找并启动Daemon可执行文件
+                var (started, message) = await StartDaemon(daemonPath);
+
+                // 清理下载的压缩包
+                try
+                {
+                    File.Delete(zipFilePath);
+                }
+                catch { }
+
+                return (started, message);
+            }
+            catch (Exception ex)
+            {
+                return (false, $"解压或启动Daemon失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 启动Daemon程序
+        /// </summary>
+        /// <param name="daemonPath">Daemon程序所在目录</param>
+        /// <returns>是否成功启动</returns>
+        public static async Task<(bool Success, string Message)> StartDaemon(string daemonPath)
+        {
+            try
+            {
+                // 确保目标目录存在
+                if (!Directory.Exists(daemonPath))
+                {
+                    Directory.CreateDirectory(daemonPath);
+                }
+
+                // 根据操作系统确定可执行文件名
+                string executableName = GetDaemonExecutableName();
+
+                // 查找可执行文件
+                string executablePath = FindExecutable(daemonPath, executableName);
+
+                if (string.IsNullOrEmpty(executablePath))
+                {
+                    return (false, $"未找到Daemon可执行文件: {executableName}");
+                }
+
+                // 在Linux和macOS上设置执行权限
+                if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
+                    RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                {
+                    await SetExecutablePermission(executablePath);
+                }
+
+                // 启动进程
+                var processStartInfo = new ProcessStartInfo
+                {
+                    FileName = executablePath,
+                    Arguments="/nobroswer true",
+                    WorkingDirectory = Path.GetDirectoryName(executablePath),
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+
+                DaemonProcess = Process.Start(processStartInfo);
+
+                if (DaemonProcess == null)
+                {
+                    return (false, "无法启动Daemon进程");
+                }
+
+                // 等待一小段时间确认进程正常启动
+                await Task.Delay(1000);
+
+                if (DaemonProcess.HasExited)
+                {
+                    return (false, $"Daemon进程启动后立即退出，退出代码: {DaemonProcess.ExitCode}");
+                }
+
+                return (true, "Daemon启动成功");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"启动Daemon失败: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// 停止正在运行的Daemon进程
+        /// </summary>
+        public static void StopRunningDaemon()
+        {
+            try
+            {
+                if (DaemonProcess != null)
+                    ProcessHelper.SendCtrlC(DaemonProcess);
+            }
+            catch
+            {
+                Debug.WriteLine("Close DaemonProcess Failed!");
+            }
+        }
+
+        /// <summary>
+        /// 获取Daemon可执行文件名
+        /// </summary>
+        private static string GetDaemonExecutableName()
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                return "MSLX-Daemon.exe";
+            }
+            else
+            {
+                return "MSLX-Daemon";
+            }
+        }
+
+        /// <summary>
+        /// 获取Daemon进程名（不含扩展名）
+        /// </summary>
+        private static string GetDaemonProcessName()
+        {
+            return "MSLX-Daemon";
+        }
+
+        /// <summary>
+        /// 在目录中查找可执行文件
+        /// </summary>
+        private static string FindExecutable(string directory, string executableName)
+        {
+            try
+            {
+                string directPath = Path.Combine(directory, executableName);
+                if (File.Exists(directPath))
+                {
+                    return directPath;
+                }
+                else
+                    return string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// 为文件设置可执行权限（Linux/macOS）
+        /// </summary>
+        private static async Task SetExecutablePermission(string filePath)
+        {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
+                RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                try
+                {
+                    var process = new Process
+                    {
+                        StartInfo = new ProcessStartInfo
+                        {
+                            FileName = "chmod",
+                            Arguments = $"+x \"{filePath}\"",
+                            UseShellExecute = false,
+                            CreateNoWindow = true
+                        }
+                    };
+                    process.Start();
+                    await process.WaitForExitAsync();
+                }
+                catch
+                {
+                    // 权限设置失败，忽略错误
+                }
+            }
+        }
+
+        /// <summary>
+        /// 检查Daemon是否正在运行
+        /// </summary>
+        public static bool IsDaemonRunning()
+        {
+            try
+            {
+                string processName = GetDaemonProcessName();
+                var processes = Process.GetProcessesByName(processName);
+                return processes.Length > 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
+}
