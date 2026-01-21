@@ -156,7 +156,19 @@ public partial class WelcomePage : UserControl
 
     private async void WelcomePage_Loaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+#if DEBUG
+        DialogService.ToastManager.CreateToast()
+            .WithTitle("Debug")
+            .WithContent("继续操作？")
+            .WithActionButton("继续", async _ =>
+            {
+                await MethodA();
+            }, true)
+            .Queue();
+        return;
+#else
         await MethodA();
+#endif
     }
 
     private void Next_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

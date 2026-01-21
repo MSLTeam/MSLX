@@ -2,7 +2,6 @@ using Avalonia;
 using Avalonia.Controls;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils.API;
-using MSLX.Desktop.Views;
 using SukiUI.Dialogs;
 using SukiUI.Toasts;
 using System;
@@ -11,7 +10,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace MSLX.Desktop.Utils
