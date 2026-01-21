@@ -372,7 +372,7 @@ private async Task<bool> DownloadFrpcAsync(int id, FrpContext context)
             {
                 if (context.Process != null && !context.Process.HasExited)
                 {
-                    context.Process.Kill(); 
+                    context.Process.Kill(true); 
                     context.Process.WaitForExit(1000); 
                 }
                 RecordLog(id, context, "[MSLX] Frpc进程已经退出...");
@@ -403,7 +403,7 @@ private async Task<bool> DownloadFrpcAsync(int id, FrpContext context)
             try
             {
                 var context = kvp.Value;
-                if (context.Process != null && !context.Process.HasExited) context.Process.Kill();
+                if (context.Process != null && !context.Process.HasExited) context.Process.Kill(true);
             }
             catch { }
         }
