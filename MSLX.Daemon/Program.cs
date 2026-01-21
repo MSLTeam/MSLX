@@ -30,7 +30,7 @@ using (var bootstrapLoggerFactory = LoggerFactory.Create(logging => logging.AddC
 // 检查启动参数
 var argHost = builder.Configuration["host"]; // 支持 --host 或 /host
 var argPort = builder.Configuration["port"]; // 支持 --port 或 /port
-var argNoBroswer = builder.Configuration["nobroswer"]; // 支持 --nobroser 或 /nobroser
+var argNoBrowser = builder.Configuration["nobrowser"]; // 支持 --nobrowser 或 /nobrowser
 bool configUpdated = false;
 
 //传入了 host 参数，更新配置
@@ -47,11 +47,11 @@ if (!string.IsNullOrWhiteSpace(argPort))
     configUpdated = true;
 }
 
-if (!string.IsNullOrWhiteSpace(argNoBroswer))
+if (!string.IsNullOrWhiteSpace(argNoBrowser))
 {
-    if (argNoBroswer == "true")
+    if (argNoBrowser == "true")
     {
-        IConfigBase.Config.WriteConfigKey("openWebConsoleOnLaunch", !bool.Parse(argNoBroswer));
+        IConfigBase.Config.WriteConfigKey("openWebConsoleOnLaunch", !bool.Parse(argNoBrowser));
         configUpdated = true;
     }
 }

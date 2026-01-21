@@ -34,16 +34,16 @@ namespace MSLX.Daemon.Utils.ConfigUtils
                 _logger.LogInformation($"账号: mslx \n密码: {defaultPassword}");
 
                 // 这里打开带初始化信息提示的登录页面
-                OpenWebBroswer(true);
+                OpenWebBrowser(true);
             }
             else
             {
-                OpenWebBroswer();
+                OpenWebBrowser();
             }
             _hasInitialized = true;
         }
 
-        private void OpenWebBroswer(bool isInitialize = false)
+        private void OpenWebBrowser(bool isInitialize = false)
         {
             if (_hasInitialized)
             {

@@ -147,7 +147,7 @@ namespace MSLX.Desktop.Utils
                 var processStartInfo = new ProcessStartInfo
                 {
                     FileName = executablePath,
-                    Arguments="/nobroswer true",
+                    Arguments="/nobrowser true",
                     WorkingDirectory = Path.GetDirectoryName(executablePath),
                     UseShellExecute = false,
                     CreateNoWindow = true,
