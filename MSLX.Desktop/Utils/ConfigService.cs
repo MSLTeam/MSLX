@@ -14,7 +14,7 @@ namespace MSLX.Desktop.Utils
         {
             if (PlatformHelper.GetOS() == PlatformHelper.TheOSPlatform.OSX)
             {
-                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MSLXData");
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MSLX", "MSLXData");
             }
             else
             {
