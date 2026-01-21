@@ -37,7 +37,7 @@ public partial class MainWindow : SukiWindow
         // 创建输入框
         var ipInputBox = new TextBox
         {
-            Text = ConfigStore.DaemonLink.Replace("/api", string.Empty),
+            Text = ConfigStore.DaemonAddress.Replace("/api", string.Empty),
         };
         var keyInputBox = new TextBox
         {
@@ -85,8 +85,8 @@ public partial class MainWindow : SukiWindow
             if (!string.IsNullOrEmpty(ipText))
             {
                 ipText += "/api";
-                if (ipText != ConfigStore.DaemonLink)
-                    ConfigStore.DaemonLink = ipText;
+                if (ipText != ConfigStore.DaemonAddress)
+                    ConfigStore.DaemonAddress = ipText;
             }
             ConfigStore.DaemonApiKey = keyInputBox.Text ?? string.Empty; await VerifyDaemonApiKey();
         })

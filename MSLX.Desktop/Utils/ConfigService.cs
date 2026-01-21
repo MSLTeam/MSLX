@@ -3,6 +3,7 @@ using System.IO;
 using Newtonsoft.Json.Linq;
 using System.Threading;
 using MSLX.Desktop.Models;
+using System.Diagnostics;
 
 namespace MSLX.Desktop.Utils
 {
@@ -108,14 +109,21 @@ namespace MSLX.Desktop.Utils
 
                 if (File.Exists(_daemonConfigPath))
                 {
+                    try
+                    {
                         return JObject.Parse(File.ReadAllText(_daemonConfigPath));
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(ex);
+                    }
                 }
                 return JObject.Parse("{}");
             }
 
             public JToken? ReadDaemonConfigKey(string key)
             {
-                var jsonData= ReadDaemonConfig();
+                var jsonData = ReadDaemonConfig();
                 try
                 {
                     return jsonData.TryGetValue(key, out var value) ? value : null;

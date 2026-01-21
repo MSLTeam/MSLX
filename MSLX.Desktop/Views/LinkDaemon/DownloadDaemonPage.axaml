@@ -26,6 +26,7 @@
                         <ComboBoxItem Content="arm64"/>
                     </ComboBox>
                 </StackPanel>
+                <CheckBox x:Name="RememberDaemonInfo" IsChecked="True" Content="记住守护程序信息，以后自动链接"/>
             </StackPanel>
             <controls:DownloadDisplayControl x:Name="DwnDisplay" IsVisible="False" Grid.Row="1"/>
             <Button x:Name="DoneBtn" Content="确定下载" Classes="Flat" Grid.Row="2"/>

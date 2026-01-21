@@ -6,6 +6,7 @@ using MSLX.Desktop.Utils;
 using SukiUI.Controls;
 using SukiUI.Dialogs;
 using SukiUI.Toasts;
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace MSLX.Desktop.Views.LinkDaemon;
@@ -20,61 +21,174 @@ public partial class WelcomePage : UserControl
         this.Next.Click += Next_Click;
     }
 
-    private async void WelcomePage_Loaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    // Method A: 载入Welcome界面后，读取MSLX.Desktop配置（若检测失败，进入Method B），检测是否存储Address和ApiKey，若有则进入验证方法，没有则进入Method B
+    // 验证: 读取配置文件是否写有AutoRunDaemon标记，若有则尝试启动守护程序（即MSLXData目录下的守护程序，若启动失败则进入Method C），
+    // 并验证ApiKey，成功跳转主页面，失败进入Method D
+    // 若配置文件无AutoRunDaemon标记，则直接验证ApiKey，成功跳转主页面，失败进入Method D
+
+    // Method B: 检测MSLXData目录下的Daemon程序，若存在则尝试启动Daemon程序并尝试获取ApiKey进行验证，验证成功跳转主页面，失败进入Method C
+    // Method C: 显示“下一步”按钮，用户点击后跳转到下载守护程序页面
+    // Method D: 显示“下一步”按钮，用户点击后跳转到链接守护程序页面
+
+    // 上述说明仅供参考，因为后续写代码时对部分不完善的逻辑进行了补充调整，请以代码逻辑为准。
+
+    private async Task MethodA()
     {
-        // 加载配置文件，尝试自动获取Daemon API Key
-        ConfigService.GetDaemonApiKey();
+        Debug.WriteLine("WelcomePage: MethodA Start");
 
-        if (!string.IsNullOrEmpty(ConfigStore.DaemonApiKey))
+        string DaemonAddress=ConfigService.Config.ReadConfigKey("DaemonAddress")?.ToString() ?? string.Empty;
+        string daemonApiKey=ConfigService.Config.ReadConfigKey("DaemonApiKey")?.ToString() ?? string.Empty;
+
+        bool autuoRunDaemon = ConfigService.Config.ReadConfigKey("AutoRunDaemon")?.ToObject<bool>() ?? false;
+
+        if (!string.IsNullOrEmpty(DaemonAddress) && !string.IsNullOrEmpty(daemonApiKey))
         {
-            var (Success, Msg) = await DaemonManager.StartDaemon(ConfigService.GetAppDataPath());
-            if(!Success)
-            {
-                Next.IsVisible = true;
-                return;
-            }
+            ConfigStore.DaemonAddress = DaemonAddress;
+            ConfigStore.DaemonApiKey = daemonApiKey;
 
+            if (DaemonManager.FindDaemonProcess() == null)
+            {
+                if (autuoRunDaemon)
+                {
+                    // 尝试启动守护程序
+                    var (Success, Msg) = await DaemonManager.StartDaemon(ConfigService.GetAppDataPath());
+                    if (Success)
+                    {
+                        // 启动成功，尝试验证
+                        bool isSuccess = await DaemonManager.VerifyDaemonApiKey();
+                        if (isSuccess)
+                        {
+                            // 验证成功，跳转到主页面
+                            SideMenuHelper.MainSideMenuHelper?.ShowMainPages();
+                            SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
+                            SideMenuHelper.MainSideMenuHelper?.NavigateTo<HomePage>();
+                        }
+                        else
+                        {
+                            MethodD();
+                        }
+                    }
+                    else
+                    {
+                        MethodC();
+                    }
+                }
+                else
+                {
+                    if(await DaemonManager.GetKeyAndLinkDaemon(false))
+                    {
+                        // 验证成功，跳转到主页面
+                        SideMenuHelper.MainSideMenuHelper?.ShowMainPages();
+                        SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
+                        SideMenuHelper.MainSideMenuHelper?.NavigateTo<HomePage>();
+                    }
+                    else
+                    {
+                        MethodD();
+                    }
+                }
+            }
+            else
+            {
+                // 直接验证
+                bool isSuccess = await DaemonManager.VerifyDaemonApiKey();
+                if (isSuccess)
+                {
+                    // 验证成功，跳转到主页面
+                    SideMenuHelper.MainSideMenuHelper?.ShowMainPages();
+                    SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
+                    SideMenuHelper.MainSideMenuHelper?.NavigateTo<HomePage>();
+                }
+                else
+                {
+                    MethodD();
+                }
+            }
+            
+        }
+        else
+        {
+            await MethodB();
+        }
+    }
+
+    private async Task MethodB()
+    {
+        Debug.WriteLine("WelcomePage: MethodB Start");
+
+        var (Success, Msg) = await DaemonManager.StartDaemon(ConfigService.GetAppDataPath());
+        if (Success)
+        {
+            DialogService.DialogManager.DismissDialog();
             DialogService.DialogManager.CreateDialog()
-                .WithTitle("正在启动守护程序")
-                .WithContent("检测到MSLXData目录中的守护程序\n正在自动启动。")
+                .WithTitle("守护程序启动成功")
+                .WithContent("已成功启动守护程序，正在尝试获取API Key进行验证。")
                 .TryShow();
-            await Task.Delay(5000);
+            await Task.Delay(2500);
             DialogService.DialogManager.DismissDialog();
 
-            // 已经有ApiKey，直接验证
-            bool isSuccess = await DaemonManager.VerifyDaemonApiKey();
+            bool isSuccess = await DaemonManager.GetKeyAndLinkDaemon();
             if (isSuccess)
             {
                 // 验证成功，跳转到主页面
                 SideMenuHelper.MainSideMenuHelper?.ShowMainPages();
                 SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
                 SideMenuHelper.MainSideMenuHelper?.NavigateTo<HomePage>();
-            }
-            else
-            {
-                Next.IsVisible = true;
+                return;
             }
         }
-        else
-        {
-            // 没有获取到ApiKey，让用户输入
-            Next.IsVisible = true;
-        }
+        MethodC();
+    }
+
+    private void MethodC()
+    {
+        Debug.WriteLine("WelcomePage: MethodC Start");
+        Next.Tag = 0;
+        Next.IsVisible = true;
+    }
+
+    private void MethodD()
+    {
+        Debug.WriteLine("WelcomePage: MethodD Start");
+        Next.Tag = 1;
+        Next.IsVisible = true;
+    }
+
+    private async void WelcomePage_Loaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        await MethodA();
     }
 
     private void Next_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
-        SideMenuHelper.MainSideMenuHelper?.NavigateTo(new SukiSideMenuItem
+        int tag = (int)(Next.Tag ?? 0);
+        if (tag == 0)
         {
-            Header = "下载守护程序",
-            Icon = new MaterialIcon()
+            SideMenuHelper.MainSideMenuHelper?.NavigateTo(new SukiSideMenuItem
             {
-                Kind = MaterialIconKind.Download,
-            },
-            IsContentMovable = false,
-            PageContent = new DownloadDaemonPage()
-        },true);
-        
+                Header = "下载守护程序",
+                Icon = new MaterialIcon()
+                {
+                    Kind = MaterialIconKind.Download,
+                },
+                IsContentMovable = false,
+                PageContent = new DownloadDaemonPage()
+            }, true);
+        }
+        else
+        {
+            SideMenuHelper.MainSideMenuHelper?.NavigateTo(new SukiSideMenuItem
+            {
+                Header = "链接守护程序",
+                Icon = new MaterialIcon()
+                {
+                    Kind = MaterialIconKind.LinkVariant,
+                },
+                IsContentMovable = false,
+                PageContent = new LinkDaemonPage()
+            }, true);
+        }
+
     }
 }

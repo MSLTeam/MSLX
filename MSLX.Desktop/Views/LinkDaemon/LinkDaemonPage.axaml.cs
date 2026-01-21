@@ -3,13 +3,11 @@ using Material.Icons;
 using Material.Icons.Avalonia;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils;
-using MSLX.Desktop.Utils.API;
 using SukiUI.Controls;
 using SukiUI.Dialogs;
 using SukiUI.Toasts;
 using System;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace MSLX.Desktop.Views.LinkDaemon;
 
@@ -38,11 +36,17 @@ public partial class LinkDaemonPage : UserControl
             return;
         }
 
-        ConfigStore.DaemonLink = ip + "/api";
+        ConfigStore.DaemonAddress = ip;
         ConfigStore.DaemonApiKey = key;
         bool isSuccess= await DaemonManager.VerifyDaemonApiKey();
         if (isSuccess)
         {
+            if(RememberLinkInfo.IsChecked == true)
+            {
+                // 记住Daemon地址和API Key
+                ConfigService.Config.WriteConfigKey("DaemonAddress", ip);
+                ConfigService.Config.WriteConfigKey("DaemonApiKey", key);
+            }
             // 验证成功，跳转到主页面
             SideMenuHelper.MainSideMenuHelper?.ShowMainPages();
             SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);

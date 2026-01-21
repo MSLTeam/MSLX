@@ -21,7 +21,7 @@ namespace MSLX.Desktop.Utils.API
         /// <returns>HTTP响应对象</returns>
         public static async Task<HttpResponse> GetApiAsync(string path, object? queryParameters = null)
         {
-            string url = ConfigStore.DaemonLink;
+            string url = ConfigStore.DaemonAddress;
 
             // 确保路径以 "/" 开头
             if (!path.StartsWith("/"))
@@ -104,7 +104,7 @@ namespace MSLX.Desktop.Utils.API
         /// <returns></returns>
         public async static Task<HttpResponse> PostApiAsync(string path,HttpService.PostContentType contentType, object? postData = null)
         {
-            string url = ConfigStore.DaemonLink;
+            string url = ConfigStore.DaemonAddress;
             // 确保路径以 "/" 开头
             if (!path.StartsWith("/"))
                 path = "/" + path;
@@ -121,7 +121,7 @@ namespace MSLX.Desktop.Utils.API
         #region 常用方法
         public static async Task<(bool IsSuccess,string Msg,string ClientName,string Version,string ServerTime)> VerifyDaemonApiKey()
         {
-            var response = await GetApiAsync("/status");
+            var response = await GetApiAsync("/api/status");
             DialogService.DialogManager.DismissDialog();
             if (response.IsSuccess)
             {

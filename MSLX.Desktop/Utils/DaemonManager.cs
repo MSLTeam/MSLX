@@ -1,6 +1,8 @@
+using Avalonia;
 using Avalonia.Controls;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils.API;
+using MSLX.Desktop.Views;
 using SukiUI.Dialogs;
 using SukiUI.Toasts;
 using System;
@@ -55,7 +57,6 @@ namespace MSLX.Desktop.Utils
                     .WithContent(new TextBlock
                     {
                         Text = "请重新输入有效的Daemon API Key。",
-                        FontSize = 14,
                     })
                     .WithActionButton("重试", async _ => { await VerifyDaemonApiKey(); }, true)
                     .WithActionButton("关闭", _ => { }, true)
@@ -208,12 +209,120 @@ namespace MSLX.Desktop.Utils
             }
         }
 
+        public static async Task<bool> GetKeyAndLinkDaemon(bool isGetKey=true)
+        {
+            if (isGetKey)
+            {
+                // 加载配置文件，尝试自动获取Daemon API Key
+                ConfigService.GetDaemonApiKey();
+                await Task.Delay(500);
+            }
+            string errInfo= string.Empty;
+            if (!string.IsNullOrEmpty(ConfigStore.DaemonApiKey))
+            {
+                var addressBox = new TextBox
+                {
+                    Text = ConfigStore.DaemonAddress,
+                    Margin = new Thickness(0, 0, 0, 10)
+                };
+                var apiKeyBox = new TextBox
+                {
+                    Text = ConfigStore.DaemonApiKey,
+                };
+                var dialogContent = new StackPanel
+                {
+                    Children =
+                    {
+                        new TextBlock
+                        {
+                            Text="将使用以下信息链接守护程序：",
+                            Margin=new Thickness(0,0,0,10)
+                        },
+                        new TextBlock
+                        {
+                            Text=$"地址：",
+                            Margin=new Thickness(0,0,0,5)
+                        },
+                        addressBox,
+                        new TextBlock
+                        {
+                            Text=$"API Key：",
+                            Margin=new Thickness(0,0,0,5)
+                        },
+                        apiKeyBox
+                    }
+                };
+                var dialogBuilder = DialogService.DialogManager.CreateDialog()
+                    .OfType(Avalonia.Controls.Notifications.NotificationType.Information)
+                    .WithTitle("链接守护程序")
+                    .WithContent(dialogContent);
+                dialogBuilder.Completion = new TaskCompletionSource<bool>();
+                dialogBuilder.WithActionButton("确认并链接", dialog =>
+                {
+                    dialogBuilder.Completion.TrySetResult(true);
+                }, true);
+
+                dialogBuilder.WithActionButton("取消", dialog =>
+                {
+                    dialogBuilder.Completion.TrySetResult(false);
+                }, true);
+                var dialog = await dialogBuilder.TryShowAsync();
+                if (!dialog)
+                {
+                    return false;
+                }
+                // 验证
+                ConfigStore.DaemonAddress = addressBox.Text;
+                ConfigStore.DaemonApiKey = apiKeyBox.Text;
+                bool isSuccess = await DaemonManager.VerifyDaemonApiKey();
+                if (isSuccess)
+                {
+                    return true;
+                }
+                errInfo = "Daemon API Key验证失败！";
+            }
+            else
+            {
+                errInfo = "未获取到Daemon API Key！";
+            }
+
+            DialogService.DialogManager.DismissDialog();
+            // 未获取到密钥或验证失败
+            var dialogBuilder1 = DialogService.DialogManager.CreateDialog()
+                .OfType(Avalonia.Controls.Notifications.NotificationType.Error)
+                .WithTitle("验证失败！")
+                .WithContent($"验证失败：{errInfo}\n请重试！");
+            dialogBuilder1.Completion = new TaskCompletionSource<bool>();
+            dialogBuilder1.WithActionButton("重试", dialog =>
+            {
+                dialogBuilder1.Completion.TrySetResult(true);
+            }, true);
+
+            dialogBuilder1.WithActionButton("取消", dialog =>
+            {
+                dialogBuilder1.Completion.TrySetResult(false);
+            }, true);
+            var dialog1 = await dialogBuilder1.TryShowAsync();
+            if (dialog1)
+            {
+                return await GetKeyAndLinkDaemon();
+            }
+
+            return false;
+        }
+
         /// <summary>
         /// 获取Daemon进程名（不含扩展名）
         /// </summary>
         private static string GetDaemonProcessName()
         {
             return "MSLX-Daemon";
+        }
+
+        public static Process? FindDaemonProcess()
+        {
+            var processes = Process.GetProcessesByName(GetDaemonProcessName());
+            return processes?.FirstOrDefault();
         }
 
         /// <summary>

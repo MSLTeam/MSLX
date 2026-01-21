@@ -140,6 +140,8 @@ public partial class DownloadDaemonPage : UserControl
                 .WithContent($"正在解压: {task.Filename}")
                 .TryShow();
 
+            DwnDisplay.RemoveTaskFromUIDisplay(taskid);
+
             // 解压并启动Daemon
             string downloadedFilePath = Path.Combine(ConfigService.GetAppDataPath(), task.Filename);
             if (await UnzipAndStartDaemon(downloadedFilePath))
@@ -150,9 +152,21 @@ public partial class DownloadDaemonPage : UserControl
                         .WithContent("解压和启动完成，开始尝试链接至Daemon程序！")
                         .Dismiss().After(TimeSpan.FromSeconds(5))
                         .Queue();
-                await Task.Delay(5000);
+                await Task.Delay(2500);
 
-                await GetKeyAndLinkDaemon();
+                if(await DaemonManager.GetKeyAndLinkDaemon())
+                {
+                    if(RememberDaemonInfo.IsChecked == true)
+                    {
+                        ConfigService.Config.WriteConfigKey("DaemonAddress", ConfigStore.DaemonAddress);
+                        ConfigService.Config.WriteConfigKey("DaemonApiKey", ConfigStore.DaemonApiKey);
+                        ConfigService.Config.WriteConfigKey("AutoRunDaemon", true);
+                    }
+                    // 验证成功，跳转到主页面
+                    SideMenuHelper.MainSideMenuHelper?.ShowMainPages();
+                    SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
+                    SideMenuHelper.MainSideMenuHelper?.NavigateTo<HomePage>();
+                }
             }
         }
         else
@@ -222,35 +236,7 @@ public partial class DownloadDaemonPage : UserControl
         }
     }
 
-    private async Task GetKeyAndLinkDaemon()
-    {
-        // 加载配置文件，尝试自动获取Daemon API Key
-        ConfigService.GetDaemonApiKey();
-        await Task.Delay(500);
-        if (!string.IsNullOrEmpty(ConfigStore.DaemonApiKey))
-        {
-            // 已经有ApiKey，直接验证
-            bool isSuccess = await DaemonManager.VerifyDaemonApiKey();
-            if (isSuccess)
-            {
-                // 验证成功，跳转到主页面
-                SideMenuHelper.MainSideMenuHelper?.ShowMainPages();
-                SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
-                SideMenuHelper.MainSideMenuHelper?.NavigateTo<HomePage>();
-                return;
-            }
-        }
-
-        DialogService.DialogManager.DismissDialog();
-        // 未获取到密钥或验证失败
-        DialogService.DialogManager.CreateDialog()
-            .OfType(Avalonia.Controls.Notifications.NotificationType.Error)
-            .WithTitle("验证失败！")
-            .WithContent("未获取到API Key，或验证失败！\n请重试！")
-            .WithActionButton("重试", async _ => { await GetKeyAndLinkDaemon(); }, true)
-            .WithActionButton("取消", _ => { }, true)
-            .TryShow();
-    }
+    
 
     private void LinkDaemonBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs? e)
     {

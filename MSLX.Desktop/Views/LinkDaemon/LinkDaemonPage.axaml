@@ -18,6 +18,7 @@
                   <TextBlock Text="API Key：" VerticalAlignment="Center" FontWeight="DemiBold"/>
                   <TextBox x:Name="DaemonKeyTextBox" Width="300" Watermark="请输入API Key"/>
               </StackPanel>
+              <CheckBox x:Name="RememberLinkInfo" IsChecked="True" Content="记住连接信息，以后自动链接"/>
           </StackPanel>
           <Button x:Name="DoneBtn" Content="确定" Classes="Flat" Grid.Row="1"/>
           <Button x:Name="DownloadDaemonBtn" Content="没有守护程序？点我下载！" Classes="Basic" Grid.Row="2"/>
