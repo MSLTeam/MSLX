@@ -143,6 +143,19 @@ namespace MSLX.Daemon.Utils.ConfigUtils
             }
         }
 
+        public bool IsFrpIdValid(int id)
+        {
+            _frpListLock.EnterReadLock();
+            try
+            {
+                return _frpListCache.Any(s => s["ID"]?.Value<int>() == id);
+            }
+            finally
+            {
+                _frpListLock.ExitReadLock();
+            }
+        }
+
         public int GenerateFrpId()
         {
             _frpListLock.EnterReadLock();

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import { ChevronRightIcon, CloudIcon, ServerIcon, DeleteIcon } from 'tdesign-icons-vue-next';
 
 import Result from '@/components/result/index.vue';
@@ -7,13 +7,52 @@ import Result from '@/components/result/index.vue';
 import type { FrpListModel } from '@/api/model/frp';
 import { changeUrl } from '@/router';
 import { useTunnelsStore } from '@/store/modules/frp';
-import { postDeleteFrpTunnel } from '@/api/frp';
+import { getFrpAutoStartList, postChangeFrpAutoStartList, postDeleteFrpTunnel } from '@/api/frp';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 
 const tunnelsStore = useTunnelsStore();
 
 const loading = ref(true);
 const isError = ref(false);
+
+// 自启动列表数据
+const autoStartState = reactive({
+  visible: false,
+  loading: false,
+  submitting: false,
+  selectedIds: [] as number[],
+});
+
+// 打开设置弹窗
+const openAutoStartSettings = async () => {
+  autoStartState.visible = true;
+  autoStartState.loading = true;
+  try {
+    if (tunnelsStore.frpList.length === 0) {
+      await tunnelsStore.getTunnels();
+    }
+    const res = await getFrpAutoStartList();
+    autoStartState.selectedIds = res || [];
+  } catch (error) {
+    MessagePlugin.error('获取自启动配置失败 ' + error.message);
+  } finally {
+    autoStartState.loading = false;
+  }
+};
+
+// 保存设置
+const handleSaveAutoStart = async () => {
+  autoStartState.submitting = true;
+  try {
+    await postChangeFrpAutoStartList(autoStartState.selectedIds);
+    MessagePlugin.success('自启动设置已更新');
+    autoStartState.visible = false;
+  } catch (error: any) {
+    MessagePlugin.error('保存失败: ' + error.message);
+  } finally {
+    autoStartState.submitting = false;
+  }
+};
 
 // 配置文件 → 颜色
 const getConfigTheme = (type: string) => {
@@ -72,6 +111,15 @@ onMounted(() => {
 <template>
   <div class="dashboard-wrapper">
     <div class="content-container">
+      <div class="page-header">
+        <h2 class="title">隧道列表</h2>
+        <t-space>
+          <t-button theme="primary" variant="dashed" @click="getList"> 刷新列表 </t-button>
+          <t-button theme="default" variant="outline" @click="openAutoStartSettings"> 设置自启动 </t-button>
+          <t-button theme="primary" @click="changeUrl('/frp/create')"> 创建隧道 </t-button>
+        </t-space>
+      </div>
+
       <!-- 加载状态 -->
       <t-loading v-if="loading" size="medium" text="加载中..." class="loading-box" />
 
@@ -123,7 +171,13 @@ onMounted(() => {
                   {{ item.configType }}
                 </t-tag>
 
-                <t-button shape="circle" theme="danger" size="small" @click="handleDelete(item.id)" @click.stop="() => {}">
+                <t-button
+                  shape="circle"
+                  theme="danger"
+                  size="small"
+                  @click="handleDelete(item.id)"
+                  @click.stop="() => {}"
+                >
                   <template #icon> <delete-icon /></template>
                 </t-button>
               </div>
@@ -136,10 +190,113 @@ onMounted(() => {
         </t-col>
       </t-row>
     </div>
+    <t-dialog
+      v-model:visible="autoStartState.visible"
+      header="设置开机自启动隧道"
+      width="600px"
+      :confirm-btn="{ content: '保存设置', loading: autoStartState.submitting }"
+      @confirm="handleSaveAutoStart"
+    >
+      <t-loading :loading="autoStartState.loading" text="正在读取配置..." size="small">
+        <div class="auto-start-content">
+          <t-alert theme="info" message="勾选的隧道将在守护进程启动时自动运行" style="margin-bottom: 16px" />
+
+          <t-checkbox-group v-model="autoStartState.selectedIds" class="tunnel-checkbox-group">
+            <t-row :gutter="[16, 16]">
+              <t-col v-for="item in tunnelsStore.frpList" :key="item.id" :span="12">
+                <t-checkbox :value="item.id" class="tunnel-item">
+                  <div class="tunnel-label">
+                    <span class="tag"
+                      ><t-tag theme="primary">{{ item.service }}</t-tag></span
+                    >
+                    <span class="name">{{ item.name }}</span>
+                    <span class="id">#{{ item.id }}</span>
+                  </div>
+                </t-checkbox>
+              </t-col>
+            </t-row>
+          </t-checkbox-group>
+
+          <div v-if="tunnelsStore.frpList.length === 0" class="empty-tip">暂无可用隧道</div>
+        </div>
+      </t-loading>
+    </t-dialog>
   </div>
 </template>
 
 <style scoped lang="less">
+.content-container {
+  padding: 12px;
+}
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+
+  .title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--td-text-color-primary);
+    margin: 0;
+  }
+}
+
+// 设置自启动弹窗内样式
+.auto-start-content {
+  max-height: 400px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.tunnel-checkbox-group {
+  width: 100%;
+}
+
+.tunnel-item {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background 0.2s;
+
+  &:hover {
+    background: var(--td-bg-color-secondarycontainer);
+  }
+
+  :deep(.t-checkbox__label) {
+    width: 100%;
+  }
+
+  .tunnel-label {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+
+    .name {
+      font-weight: 500;
+      color: var(--td-text-color-primary);
+      margin-left: 5px;
+    }
+
+    .name {
+      font-weight: 500;
+      color: var(--td-text-color-primary);
+    }
+
+    .id {
+      font-size: 12px;
+      color: var(--td-text-color-placeholder);
+      margin-left: 5px;
+    }
+  }
+}
+
+.empty-tip {
+  text-align: center;
+  color: var(--td-text-color-placeholder);
+  padding: 20px 0;
+}
+
 .dashboard-wrapper {
   min-height: 100vh;
   width: 100%;

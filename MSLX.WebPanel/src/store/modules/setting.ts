@@ -9,6 +9,7 @@ const state = {
   showSettingPanel: false,
   colorList: COLOR_TOKEN,
   chartColors: LIGHT_CHART_COLORS,
+  systemTheme: window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
 };
 
 export type TState = typeof state;
@@ -21,11 +22,7 @@ export const useSettingStore = defineStore('setting', {
     showHeaderLogo: (state) => state.layout !== 'side',
     displayMode: (state): 'dark' | 'light' => {
       if (state.mode === 'auto') {
-        const media = window.matchMedia('(prefers-color-scheme:dark)');
-        if (media.matches) {
-          return 'dark';
-        }
-        return 'light';
+        return state.systemTheme as 'dark' | 'light';
       }
       return state.mode as 'dark' | 'light';
     },
@@ -35,18 +32,19 @@ export const useSettingStore = defineStore('setting', {
       let theme = mode;
 
       if (mode === 'auto') {
-        const media = window.matchMedia('(prefers-color-scheme:dark)');
-        if (media.matches) {
-          theme = 'dark';
-        } else {
-          theme = 'light';
-        }
+        theme = this.systemTheme as 'dark' | 'light';
       }
       const isDarkMode = theme === 'dark';
 
       document.documentElement.setAttribute('theme-mode', isDarkMode ? 'dark' : '');
 
       this.chartColors = isDarkMode ? DARK_CHART_COLORS : LIGHT_CHART_COLORS;
+    },
+    setSystemTheme(theme: 'dark' | 'light') {
+      this.systemTheme = theme;
+      if (this.mode === 'auto') {
+        this.changeMode('auto');
+      }
     },
     changeBrandTheme(brandTheme: string) {
       document.documentElement.setAttribute('theme-color', brandTheme);

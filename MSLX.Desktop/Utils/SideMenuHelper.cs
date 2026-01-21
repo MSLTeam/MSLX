@@ -17,13 +17,6 @@ namespace MSLX.Desktop.Utils
                 SideMenu.SelectedItem = page;
         }
 
-        public void NavigateTo(UserControl userControl)
-        {
-            var page = PageStore.MainPages.FirstOrDefault(p => p.PageContent.GetType() == userControl.GetType());
-            if (page != null)
-                SideMenu.SelectedItem = page;
-        }
-
         public void NavigateTo(SukiSideMenuItem sukiSideMenuItem, bool addToSideMenu = true, int insert = -1)
         {
             if (addToSideMenu)

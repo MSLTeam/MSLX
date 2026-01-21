@@ -16,6 +16,8 @@ public partial class MainWindow : SukiWindow
     {
         InitializeComponent();
 
+        this.Closing += MainWindow_Closing;
+
         this.DialogManager.Manager = DialogService.DialogManager;
         this.ToastManager.Manager = DialogService.ToastManager;
         SideMenuHelper.MainSideMenuHelper = new SideMenuHelper();
@@ -24,13 +26,18 @@ public partial class MainWindow : SukiWindow
         SideMenuHelper.MainSideMenuHelper?.HideMainPages(0);
     }
 
+    private void MainWindow_Closing(object? sender, WindowClosingEventArgs e)
+    {
+        DaemonManager.StopRunningDaemon();
+    }
+
     private void InputDaemonApiKey()
     {
         // 弹出对话框，让用户手动输入ApiKey
         // 创建输入框
         var ipInputBox = new TextBox
         {
-            Text = ConfigStore.DaemonLink.Replace("/api", string.Empty),
+            Text = ConfigStore.DaemonAddress.Replace("/api", string.Empty),
         };
         var keyInputBox = new TextBox
         {
@@ -78,8 +85,8 @@ public partial class MainWindow : SukiWindow
             if (!string.IsNullOrEmpty(ipText))
             {
                 ipText += "/api";
-                if (ipText != ConfigStore.DaemonLink)
-                    ConfigStore.DaemonLink = ipText;
+                if (ipText != ConfigStore.DaemonAddress)
+                    ConfigStore.DaemonAddress = ipText;
             }
             ConfigStore.DaemonApiKey = keyInputBox.Text ?? string.Empty; await VerifyDaemonApiKey();
         })

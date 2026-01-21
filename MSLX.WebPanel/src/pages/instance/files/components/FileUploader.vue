@@ -44,6 +44,7 @@ interface UploadTask {
 
 const tasks = ref<UploadTask[]>([]);
 const isUploading = ref(false);
+const isCancelAction = ref(false);
 const dragOver = ref(false);
 const fileInputRef = ref<HTMLInputElement>();
 const folderInputRef = ref<HTMLInputElement>();
@@ -186,16 +187,23 @@ const addTasksToQueue = (items: { file: File; path: string }[]) => {
 const processQueue = async () => {
   if (isUploading.value) return;
   isUploading.value = true;
+  isCancelAction.value = false;
   const CONCURRENCY = 3;
   const pendingTasks = tasks.value.filter((t) => t.status === 'pending' || t.status === 'error');
 
   for (let i = 0; i < pendingTasks.length; i += CONCURRENCY) {
+    if (isCancelAction.value && tasks.value.length === 0) break;
+
     const batch = pendingTasks.slice(i, i + CONCURRENCY);
-    await Promise.all(batch.map((task) => uploadSingleFile(task)));
+    const activeBatch = batch.filter((t) => tasks.value.some((item) => item.id === t.id));
+
+    if (activeBatch.length > 0) {
+      await Promise.all(activeBatch.map((task) => uploadSingleFile(task)));
+    }
   }
 
   isUploading.value = false;
-  if (tasks.value.every((t) => t.status === 'success')) {
+  if (!isCancelAction.value && tasks.value.length > 0 && tasks.value.every((t) => t.status === 'success')) {
     MessagePlugin.success('上传完成');
     emit('success');
   }
@@ -206,27 +214,51 @@ const uploadSingleFile = async (task: UploadTask) => {
   task.progress = 0;
   task.abortController = new AbortController();
   const startTime = Date.now();
+  let lastUpdate = 0; // 用于节流 UI 更新
 
   try {
     const initRes = await initUpload();
     const uploadId = initRes.uploadId;
 
-    // 动态调整分片大小 (大于 200MB 使用 50MB 分片，否则 10MB)
+    // 动态调整分片大小
     const isLargeFile = task.file.size > 200 * 1024 * 1024;
     const CHUNK_SIZE = isLargeFile ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
     const totalChunks = Math.ceil(task.file.size / CHUNK_SIZE);
 
     // 并发与重试配置
-    const maxConcurrency = 4; // 并发数
-    const maxRetries = 5; // 重试次数
+    const maxConcurrency = 4;
+    const maxRetries = 5;
 
-    // 构建任务索引队列
+    // 任务队列
     const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i);
-    let completedCount = 0;
 
-    // 定义单个分片上传逻辑
+    // 分片已上传的字节
+    const chunkProgressMap = new Map<number, number>();
+
+    // 更新进度和速度
+    const updateProgress = () => {
+      const now = Date.now();
+      // 100ms/once
+      if (now - lastUpdate < 100) return;
+      lastUpdate = now;
+
+      // 计算所有分片已上传的总字节数
+      const loadedBytes = Array.from(chunkProgressMap.values()).reduce((sum, val) => sum + val, 0);
+
+      // 计算百分比  剩下5%是合并
+      const percent = Math.min((loadedBytes / task.file.size) * 95, 95);
+      task.progress = Number(percent.toFixed(1));
+
+      // 计算速度
+      const elapsed = (now - startTime) / 1000;
+      if (elapsed > 0) {
+        const speedVal = loadedBytes / 1024 / 1024 / elapsed;
+        task.speed = speedVal.toFixed(1) + ' MB/s';
+      }
+    };
+
+    // 单个分片处理逻辑
     const processChunk = async (index: number) => {
-      // 检查取消状态
       if (task.abortController?.signal.aborted) throw new Error('已取消');
 
       const start = index * CHUNK_SIZE;
@@ -234,17 +266,35 @@ const uploadSingleFile = async (task: UploadTask) => {
       const chunk = task.file.slice(start, end);
 
       let lastError: any;
+
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        // 每次重试前检查取消状态
         if (task.abortController?.signal.aborted) throw new Error('已取消');
 
         try {
-          await uploadChunk(uploadId, index, chunk);
-          return; // 成功返回
+          // 回调单个进度
+          await uploadChunk(
+            uploadId,
+            index,
+            chunk,
+            (e: any) => {
+              if (e && e.loaded) {
+                chunkProgressMap.set(index, e.loaded);
+                updateProgress(); // 触发 UI 更新
+              }
+            },
+            task.abortController?.signal,
+          );
+
+          // 确保完整进度
+          chunkProgressMap.set(index, chunk.size);
+          updateProgress();
+          return;
         } catch (err: any) {
           lastError = err;
           if (attempt < maxRetries) {
-            // 指数退避延迟
+            // 失败重试 reset掉
+            chunkProgressMap.set(index, 0);
+            updateProgress();
             await new Promise((r) => setTimeout(r, 1000 * attempt));
           }
         }
@@ -252,46 +302,30 @@ const uploadSingleFile = async (task: UploadTask) => {
       throw lastError || new Error(`分片 ${index} 失败`);
     };
 
-    // 定义 Worker 消费者
+    // Worker 消费者
     const worker = async () => {
       while (chunkIndices.length > 0) {
         if (task.abortController?.signal.aborted) break;
-
         const index = chunkIndices.shift();
         if (index === undefined) break;
-
         await processChunk(index);
-
-        // 更新进度
-        completedCount++;
-        // 预留 10% 给合并阶段
-        task.progress = Math.floor((completedCount / totalChunks) * 90);
-
-        // 计算实时速度
-        const elapsed = (Date.now() - startTime) / 1000;
-        if (elapsed > 0) {
-          // 估算已传大小
-          const uploadedBytes = Math.min(completedCount * CHUNK_SIZE, task.file.size);
-          const speedVal = uploadedBytes / 1024 / 1024 / elapsed;
-          task.speed = speedVal.toFixed(1) + ' MB/s';
-        }
       }
     };
 
-    // 启动并发 Worker
+    // 启动并发
     const workers = Array(Math.min(maxConcurrency, totalChunks))
       .fill(null)
       .map(() => worker());
 
     await Promise.all(workers);
 
-    // 最终检查是否被中途取消
     if (task.abortController.signal.aborted) throw new Error('已取消');
 
-    // 合并文件
+    // 合并阶段
     task.status = 'merging';
-    task.speed = '合并中...'; // 更新状态文字
-    task.progress = 95;
+    task.speed = '合并中...';
+    // 此时已经是 95% 以上了，稍微再推一下
+    task.progress = 98;
 
     await finishUpload(uploadId, totalChunks);
     await saveUploadedFile(props.instanceId, uploadId, task.path, props.currentPath);

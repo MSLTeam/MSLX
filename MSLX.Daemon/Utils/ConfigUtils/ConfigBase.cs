@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Utils.ConfigUtils
@@ -6,10 +6,10 @@ namespace MSLX.Daemon.Utils.ConfigUtils
     public static class IConfigBase
     {
         public static IConfigService Config { get; private set; } = null!;
-        public static ServerListConfig ServerList { get; private set; } = null!;
-        public static FrpListConfig FrpList { get; private set; } = null!;
-        public static TaskListConfig TaskList { get; private set; } = null!;
-        public static UserListConfig UserList { get; private set; } = null!;
+        public static ServerListConfig ServerList { get; set; } = null!;
+        public static FrpListConfig FrpList { get; set; } = null!;
+        public static TaskListConfig TaskList { get; set; } = null!;
+        public static UserListConfig UserList { get; set; } = null!;
         public static string JwtSecret { get; private set; } = string.Empty;
 
         public static void Initialize(ILoggerFactory loggerFactory)
@@ -26,11 +26,6 @@ namespace MSLX.Daemon.Utils.ConfigUtils
                 Config.WriteConfigKey("JwtSecret", secret);
             }
             JwtSecret = secret;
-
-            ServerList = new ServerListConfig();
-            FrpList = new FrpListConfig();
-            TaskList = new TaskListConfig();
-            UserList = new UserListConfig();
         }
 
         public static string GetAppDataPath()

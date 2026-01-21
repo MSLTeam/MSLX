@@ -6,7 +6,7 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="MSLX.Desktop.Views.LinkDaemon.LinkDaemonPage">
   <suki:GlassCard Margin="10">
-      <Grid HorizontalAlignment="Center" VerticalAlignment="Center" RowDefinitions="*,auto" RowSpacing="20">
+      <Grid HorizontalAlignment="Center" VerticalAlignment="Center" RowDefinitions="*,auto,auto" RowSpacing="20">
           <StackPanel Spacing="10">
               <TextBlock Text="链接守护程序" Classes="h3" HorizontalAlignment="Center"/>
               <TextBlock Text="请输入MSLX Daemon的连接信息" Classes="h5" FontWeight="Bold" HorizontalAlignment="Center"/>
@@ -18,8 +18,10 @@
                   <TextBlock Text="API Key：" VerticalAlignment="Center" FontWeight="DemiBold"/>
                   <TextBox x:Name="DaemonKeyTextBox" Width="300" Watermark="请输入API Key"/>
               </StackPanel>
+              <CheckBox x:Name="RememberLinkInfo" IsChecked="True" Content="记住连接信息，以后自动链接"/>
           </StackPanel>
           <Button x:Name="DoneBtn" Content="确定" Classes="Flat" Grid.Row="1"/>
+          <Button x:Name="DownloadDaemonBtn" Content="没有守护程序？点我下载！" Classes="Basic" Grid.Row="2"/>
       </Grid>
     </suki:GlassCard>
 </UserControl>

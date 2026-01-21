@@ -276,15 +276,41 @@ const onFileChange = async (event: Event) => {
   input.value = '';
 };
 
+// 上传分片
+let abortController: AbortController | null = null;
 const handleUpload = async (file: File) => {
+  if (abortController) {
+    abortController.abort();
+  }
+  abortController = new AbortController();
+
   isUploading.value = true;
   uploadProgress.value = 0;
 
-  const chunkSize = 50 * 1024 * 1024; // 50MB
+  // 动态计算分片大小
+  const isLargeFile = file.size > 200 * 1024 * 1024; // >200MB
+  const chunkSize = isLargeFile ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
   const totalChunks = Math.ceil(file.size / chunkSize);
 
-  const maxConcurrency = 5; // 并发请求数
-  const maxRetries = 5; // 错误重试次数
+  const maxConcurrency = 4; // 并发数
+  const maxRetries = 5; // 重试次数
+
+  // 每个分片已上传的字节数
+  const chunkProgressMap = new Map<number, number>();
+  let lastUpdateTime = 0;
+
+  // 更新进度条
+  const updateProgress = () => {
+    const now = Date.now();
+    // 100ms/onece
+    if (now - lastUpdateTime < 100) return;
+    lastUpdateTime = now;
+
+    const loadedBytes = Array.from(chunkProgressMap.values()).reduce((sum, val) => sum + val, 0);
+    // 2% 合并阶段
+    const percent = Math.min((loadedBytes / file.size) * 98, 98);
+    uploadProgress.value = Number(percent.toFixed(1));
+  };
 
   try {
     // 获取上传 ID
@@ -292,47 +318,63 @@ const handleUpload = async (file: File) => {
     const uploadId = (initRes as any).uploadId;
     if (!uploadId) throw new Error('无法获取上传凭证');
 
-    // 准备分片索引队列
+    // 准备分片索引
     const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i);
-    let completedCount = 0; // 已完成计数器
 
     // 单个分片处理函数
     const processChunk = async (index: number) => {
+      if (abortController?.signal.aborted) throw new Error('已取消');
+
       const start = index * chunkSize;
       const end = Math.min(file.size, start + chunkSize);
       const chunkBlob = file.slice(start, end);
 
       let lastError: any;
 
-      // 重试循环
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        if (abortController?.signal.aborted) throw new Error('已取消');
+
         try {
-          await uploadChunk(uploadId, index, chunkBlob);
-          return; // 成功则直接返回
-        } catch (err) {
+          // 传入进度回调
+          await uploadChunk(
+            uploadId,
+            index,
+            chunkBlob,
+            (e: any) => {
+              if (e && e.loaded) {
+                chunkProgressMap.set(index, e.loaded);
+                updateProgress();
+              }
+            },
+            abortController?.signal,
+          );
+
+          // 强制设置为该分片完整大小
+          chunkProgressMap.set(index, chunkBlob.size);
+          updateProgress();
+          return;
+        } catch (err: any) {
           lastError = err;
-          console.warn(`分片 ${index} 第 ${attempt} 次上传失败`, err);
+          // 失败 分片进度归零
+          chunkProgressMap.set(index, 0);
+          updateProgress();
 
           if (attempt < maxRetries) {
             await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
           }
         }
       }
-      // 重试耗尽
-      throw new Error(`分片 ${index} 失败 (已重试${maxRetries}次): ${(lastError as any)?.message}`);
+      throw new Error(`分片 ${index} 失败: ${(lastError as any)?.message}`);
     };
 
-    // 定义 Worker
+    // 定义 Worker 消费者
     const worker = async () => {
       while (chunkIndices.length > 0) {
-        const index = chunkIndices.shift(); // 取出一个任务
-        if (index === undefined) break;
-
-        await processChunk(index); // 执行上传
-
-        // 任务完成后更新进度
-        completedCount++;
-        uploadProgress.value = Math.floor((completedCount / totalChunks) * 100);
+        if (abortController?.signal.aborted) break;
+        const index = chunkIndices.shift();
+        if (index !== undefined) {
+          await processChunk(index);
+        }
       }
     };
 
@@ -341,27 +383,44 @@ const handleUpload = async (file: File) => {
       .fill(null)
       .map(() => worker());
 
-    // 等待所有 worker 完成
     await Promise.all(workers);
 
+    if (abortController?.signal.aborted) throw new Error('已取消');
+
     // 请求合并
+    // 既然都传完了，给点心理安慰，进度条拉满一点
+    uploadProgress.value = 99;
+
     const finishRes = await finishUpload(uploadId, totalChunks);
     const finalKey = (finishRes as any).uploadId;
 
+    // 完成
+    uploadProgress.value = 100;
     formData.value.packageFileKey = finalKey;
     MessagePlugin.success('上传成功，正在分析整合包内容...');
 
     // 立即调用分析接口
     await analyzePackage(finalKey);
   } catch (error: any) {
+    // 忽略手动取消的报错
+    if (error.message === '已取消') return;
+
+    abortController?.abort(); // 停止所有请求
     console.error(error);
     MessagePlugin.error(`上传失败: ${error.message || '未知错误'}`);
     uploadedFileName.value = '';
     uploadProgress.value = 0;
-    // 失败时尝试清理后端临时文件（可选，后端通常也有定期清理）
-    if (formData.value.packageFileKey) deleteUpload(formData.value.packageFileKey).catch(() => {});
+
+    // 清理逻辑
+    if (formData.value.packageFileKey) {
+      deleteUpload(formData.value.packageFileKey).catch(() => {});
+      formData.value.packageFileKey = ''; // 清空 key
+    }
   } finally {
-    isUploading.value = false;
+    // 非取消状态下才关闭 loading
+    if (!abortController?.signal.aborted) {
+      isUploading.value = false;
+    }
   }
 };
 

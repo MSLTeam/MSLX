@@ -1,14 +1,15 @@
-﻿using System.Reflection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
 using MSLX.Daemon.Hubs;
-using MSLX.Daemon.Utils;
-using MSLX.Daemon.Utils.BackgroundTasks;
-using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.Daemon.Middleware;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Services;
+using MSLX.Daemon.Utils;
+using MSLX.Daemon.Utils.BackgroundTasks;
+using MSLX.Daemon.Utils.ConfigUtils;
+using System.Diagnostics;
+using System.Reflection;
 
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
@@ -29,6 +30,7 @@ using (var bootstrapLoggerFactory = LoggerFactory.Create(logging => logging.AddC
 // 检查启动参数
 var argHost = builder.Configuration["host"]; // 支持 --host 或 /host
 var argPort = builder.Configuration["port"]; // 支持 --port 或 /port
+var argNoBrowser = builder.Configuration["nobrowser"]; // 支持 --nobrowser 或 /nobrowser
 bool configUpdated = false;
 
 //传入了 host 参数，更新配置
@@ -43,6 +45,15 @@ if (!string.IsNullOrWhiteSpace(argPort))
 {
     IConfigBase.Config.WriteConfigKey("listenPort", argPort);
     configUpdated = true;
+}
+
+if (!string.IsNullOrWhiteSpace(argNoBrowser))
+{
+    if (argNoBrowser == "true")
+    {
+        IConfigBase.Config.WriteConfigKey("openWebConsoleOnLaunch", !bool.Parse(argNoBrowser));
+        configUpdated = true;
+    }
 }
 
 if (configUpdated)
@@ -144,6 +155,11 @@ logger.LogInformation($"MSLX.Daemon 守护进程正在启动... 监听地址: {l
 logger.LogInformation($"将使用 {IConfigBase.GetAppDataPath()} 作为应用程序数据目录。");
 logger.LogInformation("欢迎使用MSLX！");
 
+IConfigBase.ServerList = new ServerListConfig();
+IConfigBase.FrpList = new FrpListConfig();
+IConfigBase.TaskList = new TaskListConfig();
+IConfigBase.UserList = new UserListConfig();
+
 app.UseForwardedHeaders();
 app.UseCors("AllowAll");
 
@@ -195,5 +211,9 @@ lifetime.ApplicationStarted.Register(() =>
     // 启动事件
     // 咦？怎么什么也没有？
 });
+
+// 显示实例化服务
+app.Services.GetService<FrpProcessService>();
+app.Services.GetService<MCServerService>();
 
 app.Run();
