@@ -22,7 +22,7 @@ export async function uploadChunk(uploadId: string, index: number, file: Blob) {
     url: `/api/files/upload/chunk/${uploadId}`,
     data: formData,
     headers: { 'Content-Type': 'multipart/form-data' },
-    timeout: 120 * 1000, // 120秒够上传5mb了吧
+    timeout: 300 * 1000,
   });
 }
 
@@ -30,6 +30,7 @@ export async function finishUpload(uploadId: string, totalChunks: number) {
   return await request.post<UploadFinishResponse>({
     url: `/api/files/upload/finish/${uploadId}`,
     data: { totalChunks },
+    timeout: 120 * 1000,
   });
 }
 
@@ -41,7 +42,8 @@ export async function deleteUpload(uploadId: string) {
 
 export async function checkPackageJarList(uploadId: string){
   return await request.get<UploadPackageCheckJarResponse>({
-    url: `/api/files/upload/inspect/${uploadId}`
+    url: `/api/files/upload/inspect/${uploadId}`,
+    timeout: 60 * 1000,
   });
 }
 
