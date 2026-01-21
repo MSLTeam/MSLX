@@ -6,6 +6,7 @@ import {
   UploadInitResponse,
   UploadPackageCheckJarResponse,
 } from '@/api/model/files';
+import { AxiosProgressEvent } from 'axios';
 
 export async function initUpload() {
   return await request.post<UploadInitResponse>({
@@ -13,7 +14,13 @@ export async function initUpload() {
   });
 }
 
-export async function uploadChunk(uploadId: string, index: number, file: Blob) {
+export async function uploadChunk(
+  uploadId: string,
+  index: number,
+  file: Blob,
+  onProgress?: (_e: AxiosProgressEvent) => void,
+  signal?: AbortSignal,
+) {
   const formData = new FormData();
   formData.append('index', index.toString());
   formData.append('file', file);
@@ -23,6 +30,8 @@ export async function uploadChunk(uploadId: string, index: number, file: Blob) {
     data: formData,
     headers: { 'Content-Type': 'multipart/form-data' },
     timeout: 300 * 1000,
+    onUploadProgress: onProgress,
+    signal,
   });
 }
 
