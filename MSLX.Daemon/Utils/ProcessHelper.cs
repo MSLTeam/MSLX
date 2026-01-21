@@ -50,7 +50,6 @@ namespace MSLX.Daemon.Utils
                 using (var killer = Process.Start(psi))
                 {
                     killer.WaitForExit(2000); // 等待 taskkill 执行完毕
-                    Console.WriteLine(killer.ExitCode);
                     return killer.ExitCode == 0; // 0 表示发送成功
                 }
             }
