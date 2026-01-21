@@ -18,3 +18,4 @@ export interface TunnelInfoModel{
   isRunning: boolean;
   proxies: ProxyInfoModel[];
 }
+
