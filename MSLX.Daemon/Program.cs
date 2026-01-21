@@ -212,4 +212,8 @@ lifetime.ApplicationStarted.Register(() =>
     // 咦？怎么什么也没有？
 });
 
+// 显示实例化服务
+app.Services.GetService<FrpProcessService>();
+app.Services.GetService<MCServerService>();
+
 app.Run();

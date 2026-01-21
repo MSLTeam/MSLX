@@ -46,7 +46,9 @@ public class FrpProcessService
         _toolsDir = Path.Combine(baseDir, "Tools");
         _frpcExecutablePath = Path.Combine(_toolsDir, exeName);
 
+        // 生命周期事件（启动/退出）
         _appLifetime.ApplicationStopping.Register(StopAllFrp);
+        _appLifetime.ApplicationStarted.Register(OnAppStarted);
     }
 
     public bool IsFrpRunning(int id)
@@ -406,6 +408,56 @@ private async Task<bool> DownloadFrpcAsync(int id, FrpContext context)
             catch { }
         }
         _activeProcesses.Clear();
+    }
+
+    private void OnAppStarted()
+    {
+        Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(3000);
+
+                _logger.LogInformation("[AutoStart] 正在检查 FRP 隧道自启动配置...");
+
+                var configToken = IConfigBase.Config.ReadConfigKey("frpAutoStartList");
+                var autoStartIds = configToken?.ToObject<List<int>>() ?? new List<int>();
+
+                if (autoStartIds.Count == 0) return;
+
+                int count = 0;
+                foreach (var id in autoStartIds)
+                {
+                    // id，你在吗~
+                    if (!IConfigBase.FrpList.IsFrpIdValid(id))
+                    {
+                        _logger.LogWarning($"[AutoStart] 跳过 ID [{id}]：隧道配置不存在。");
+                        continue;
+                    }
+
+                    _logger.LogInformation($"[AutoStart] 正在启动 FRP 隧道 [{id}]...");
+
+                    var (success, msg) = StartFrp(id);
+
+                    if (success)
+                    {
+                        count++;
+                        await Task.Delay(1000);
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"[AutoStart] 隧道 [{id}] 启动失败: {msg}");
+                    }
+                }
+
+                if (count > 0)
+                    _logger.LogInformation($"[AutoStart] FRP 自启动流程完成，共启动 {count} 个隧道。");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[AutoStart] FRP 自启动流程发生异常");
+            }
+        });
     }
 
     private void RecordLog(int frpId, FrpContext context, string? data)
