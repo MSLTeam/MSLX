@@ -61,13 +61,17 @@ const initCheck = async () => {
   }
 
   // 检查是否允许OAuth登录
-  const res: any = await request.get({
-    url: '/api/auth/oauth/status',
-  });
-  if(res.allowOAuth){
-    allowOAuth.value = true;
+  try {
+    const res: any = await request.get({
+      url: '/api/auth/oauth/status',
+    });
+    if (res.allowOAuth) {
+      allowOAuth.value = true;
+    }
+    isChecking.value = false;
+  } catch {
+    isChecking.value = false;
   }
-  isChecking.value = false;
 };
 
 // 提交登录

@@ -58,7 +58,7 @@ namespace MSLX.Daemon.Middleware
             bool isAuthenticated = false;
             string authErrorMessage = "未授权";
 
-            // 1. Token 验证
+            // Token 验证
             if (!context.Request.Headers.TryGetValue(TokenHeaderName, out var extractedToken))
             {
                 context.Request.Query.TryGetValue(TokenHeaderName, out extractedToken);
@@ -70,8 +70,7 @@ namespace MSLX.Daemon.Middleware
                 var principal = JwtUtils.ValidateToken(token);
                 if (principal != null)
                 {
-                    // ★★★ 核心修改：改为校验 UserId ★★★
-                    // 必须确保 JwtUtils.GenerateToken 时加入了 new Claim("UserId", user.Id)
+                    // 验证userid是否存在于本地
                     var userId = principal.FindFirst("UserId")?.Value;
                     
                     if (!string.IsNullOrEmpty(userId) && IConfigBase.UserList.GetUserById(userId) != null)
@@ -90,7 +89,7 @@ namespace MSLX.Daemon.Middleware
                 }
             }
 
-            // 2. API Key 验证 (兜底)
+            // APIKEY验证
             if (!isAuthenticated)
             {
                 if (!context.Request.Headers.TryGetValue(ApiKeyHeaderName, out var extractedApiKey))
@@ -102,7 +101,7 @@ namespace MSLX.Daemon.Middleware
 
                 if (!string.IsNullOrEmpty(inputKey))
                 {
-                    // A. 全局 Admin Key
+                    // 全局APIKey
                     string globalApiKey = IConfigBase.Config.ReadConfigKey("apiKey")?.ToString() ?? "";
                     
                     if (!string.IsNullOrEmpty(globalApiKey) && globalApiKey.Equals(inputKey))
@@ -110,12 +109,12 @@ namespace MSLX.Daemon.Middleware
                         var claims = new List<Claim> { 
                             new Claim(ClaimTypes.Name, "SystemAdmin"),
                             new Claim(ClaimTypes.Role, "Admin"),
-                            new Claim("UserId", "system-admin-uuid") // 给全局管理员一个虚拟ID
+                            new Claim("UserId", "system-admin-uuid") 
                         };
                         context.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "ApiKey"));
                         isAuthenticated = true;
                     }
-                    // B. 用户独立 Key
+                    // 用户级别 APIKey
                     else
                     {
                         var user = IConfigBase.UserList.GetUserByApiKey(inputKey);
@@ -144,10 +143,23 @@ namespace MSLX.Daemon.Middleware
                 return;
             }
 
-            if (!isLocalIp)
+            // 验证token是否只是过期了
+            bool isExpiredSafe = false;
+            if (!string.IsNullOrEmpty(token) && !isAuthenticated)
+            {
+                if (JwtUtils.IsTokenExpiredButTrusted(token))
+                {
+                    isExpiredSafe = true;
+                    authErrorMessage = "TokenExpired";
+                }
+            }
+
+            // 不是本地IP & 签名错误的Token 计入封禁拦截
+            if (!isLocalIp && !isExpiredSafe)
             {
                 await ProcessFailureAsync(clientIp, countKey, banKey);
             }
+
             
             await HandleErrorAsync(context, 401, authErrorMessage);
         }
