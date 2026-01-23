@@ -107,9 +107,9 @@ namespace MSLX.Daemon.Middleware
                     if (!string.IsNullOrEmpty(globalApiKey) && globalApiKey.Equals(inputKey))
                     {
                         var claims = new List<Claim> { 
-                            new Claim(ClaimTypes.Name, "SystemAdmin"),
-                            new Claim(ClaimTypes.Role, "Admin"),
-                            new Claim("UserId", "system-admin-uuid") 
+                            new Claim(ClaimTypes.Name, "全局管理员"),
+                            new Claim(ClaimTypes.Role, "admin"),
+                            new Claim("UserId", "system-admin") 
                         };
                         context.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "ApiKey"));
                         isAuthenticated = true;
