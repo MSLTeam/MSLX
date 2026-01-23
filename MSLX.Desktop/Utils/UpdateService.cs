@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 using SukiUI.Dialogs;
 using SukiUI.Toasts;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace MSLX.Desktop.Utils
@@ -46,7 +47,16 @@ namespace MSLX.Desktop.Utils
             switch (status)
             {
                 case "outdated":
-                    ShowUpdateDialog(currentVersion, latestVersion, updateLog);
+                    DialogService.DialogManager.CreateDialog()
+                .OfType(Avalonia.Controls.Notifications.NotificationType.Information)
+                .WithTitle("守护程序：新版本")
+                .WithContent($"检测到守护程序需要进行新版本更新！\n当前版本：{currentVersion}\n最新版本：{latestVersion}\n更新日志：\n{updateLog}")
+                .WithActionButton("更新", async _ =>
+                {
+                    await StartUpdateProcessAsync(false);
+                }, true)
+                .WithActionButton("关闭", _ => { }, true, "Standard")
+                .TryShow();
                     break;
                 case "release":
                     DialogService.ToastManager.CreateToast()
@@ -71,27 +81,11 @@ namespace MSLX.Desktop.Utils
             return (true, null);
         }
 
-        /// <summary>
-        /// 显示更新对话框
-        /// </summary>
-        private static void ShowUpdateDialog(string? currentVersion, string? latestVersion, string? updateLog)
-        {
-            DialogService.DialogManager.CreateDialog()
-                .OfType(Avalonia.Controls.Notifications.NotificationType.Information)
-                .WithTitle("守护程序：新版本")
-                .WithContent($"检测到守护程序需要进行新版本更新！\n当前版本：{currentVersion}\n最新版本：{latestVersion}\n更新日志：\n{updateLog}")
-                .WithActionButton("更新", async _ =>
-                {
-                    await StartUpdateProcessAsync();
-                }, true)
-                .WithActionButton("关闭", _ => { }, true, "Standard")
-                .TryShow();
-        }
 
         /// <summary>
         /// 启动更新流程并显示实时进度
         /// </summary>
-        private static async Task StartUpdateProcessAsync()
+        private static async Task StartUpdateProcessAsync(bool autoRestart)
         {
             try
             {
@@ -183,6 +177,10 @@ namespace MSLX.Desktop.Utils
                 // 发起更新请求
                 var response = await DaemonAPIService.PostApiAsync(
                     "/api/update",
+                    new Dictionary<string, string>
+                    {
+                        {"autoRestart",autoRestart.ToString().ToLower() }
+                    },
                     HttpService.PostContentType.Json,
                     null
                 );
@@ -222,7 +220,6 @@ namespace MSLX.Desktop.Utils
                     }
                 }
 
-                // 更新请求成功，开始更新
             }
             catch (Exception ex)
             {

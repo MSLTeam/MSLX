@@ -100,7 +100,7 @@ namespace MSLX.Desktop.Utils.API
         /// <param name="contentType">内容类型，如Json</param>
         /// <param name="postData">Post内容</param>
         /// <returns></returns>
-        public async static Task<HttpResponse> PostApiAsync(string path,HttpService.PostContentType contentType, object? postData = null)
+        public async static Task<HttpResponse> PostApiAsync(string path,object? query,HttpService.PostContentType contentType, object? postData = null)
         {
             string url = ConfigStore.DaemonAddress;
             // 确保路径以 "/" 开头
@@ -108,6 +108,7 @@ namespace MSLX.Desktop.Utils.API
                 path = "/" + path;
             return await HttpService.PostAsync(
                 url + path,
+                query,
                 contentType,
                 postData,
                 headers => headers.Add("x-api-key", ConfigStore.DaemonApiKey),
