@@ -1,8 +1,6 @@
-using Avalonia.Controls;
 using MSLX.Desktop.Models;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using SukiUI.Dialogs;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -119,7 +117,7 @@ namespace MSLX.Desktop.Utils.API
         #endregion
 
         #region 常用方法
-        public static async Task<(bool IsSuccess,string Msg,string ClientName,string Version,string ServerTime)> VerifyDaemonApiKey()
+        public static async Task<(bool IsSuccess, string Msg, JObject? Data)> VerifyDaemonApiKey()
         {
             var response = await GetApiAsync("/api/status");
             DialogService.DialogManager.DismissDialog();
@@ -130,16 +128,10 @@ namespace MSLX.Desktop.Utils.API
                 {
                     string msg = jsonContent["message"]?.Value<string>() ?? "200";
                     var data = jsonContent["data"] as JObject;
-                    string clientName = data?["clientName"]?.Value<string>() ?? "Unknown";
-                    string version = data?["version"]?.Value<string>() ?? "Unknown";
-                    string serverTime = data?["serverTime"]?.Value<string>() ?? "Unknown";
-
-                    return (true, msg, clientName, version, serverTime);
-
+                    return (true, msg, data);
                 }
             }
-            return (false, "API Key无效", string.Empty, string.Empty, string.Empty);
-            
+            return (false, "API Key无效", null);
         }
         #endregion
     }

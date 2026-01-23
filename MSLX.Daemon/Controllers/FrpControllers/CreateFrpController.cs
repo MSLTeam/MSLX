@@ -30,10 +30,10 @@ public class CreateFrpController : ControllerBase
 
         return Ok(response);
     }
-    
+
     [HttpPost("delete")]
     public IActionResult DeleteTunnel([FromBody] DeleteFrpRequest request)
-    { 
+    {
         bool running = _frpService.IsFrpRunning(request.id);
         if (running)
         {
@@ -43,12 +43,36 @@ public class CreateFrpController : ControllerBase
                 Message = "请先停止该隧道！"
             });
         }
+
         bool suc = IConfigBase.FrpList.DeleteFrpConfig(request.id);
+
+        // 清除自启动列表ID
+        if (suc)
+        {
+            try
+            {
+                string autoStartKey = "frpAutoStartList";
+
+                var currentConfig = IConfigBase.Config.ReadConfigKey(autoStartKey);
+                var list = currentConfig?.ToObject<List<int>>() ?? new List<int>();
+
+                if (list.Contains(request.id))
+                {
+                    list.Remove(request.id);
+                    IConfigBase.Config.WriteConfigKey(autoStartKey, JArray.FromObject(list));
+                }
+            }
+            catch
+            {
+                // 忽略！
+            }
+        }
+
         var response = new ApiResponse<JObject>
         {
             Code = suc ? 200 : 400,
-            Message = suc ? $"隧道 {request.id} 删除成功！" : "删除失败！", 
+            Message = suc ? $"隧道 {request.id} 删除成功！" : "删除失败！",
         };
-        return suc  ? Ok(response) : BadRequest(response);
+        return suc ? Ok(response) : BadRequest(response);
     }
 }

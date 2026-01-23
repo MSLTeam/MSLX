@@ -1,6 +1,6 @@
 {
-  "version": "1.0.3",
-  "buildTime": "2026-01-21 20:14:00",
+  "version": "1.1.0",
+  "buildTime": "2026-01-23 17:10:45",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -18,7 +18,7 @@
     "cron-parser": "^5.4.0",
     "dayjs": "^1.11.11",
     "echarts": "^5.5.1",
-    "lodash": "^4.17.21",
+    "lodash": "4.17.23",
     "md-editor-v3": "^6.1.0",
     "nprogress": "^0.2.0",
     "pinia": "^2.1.7",
@@ -68,10 +68,82 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "088a3c09042d59753916fcaa18a3fd5cb6c86803",
-  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.0.3-release",
+  "commitId": "ee01fb5a84f1318cd589083f294a90840ed6e360",
+  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.1.0-release",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "ee01fb5a84f1318cd589083f294a90840ed6e360",
+      "commitTime": "2026-01-23 17:10:18 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.1.0-release"
+    },
+    {
+      "commitId": "380a505698d1fdb54007e1960386173afae90e14",
+      "commitTime": "2026-01-23 17:04:44 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
+    },
+    {
+      "commitId": "d4bb7e10ed73afc2a93e278d4cf087574a01715a",
+      "commitTime": "2026-01-23 17:04:34 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 微调Frp自启动隧道窗口的样式"
+    },
+    {
+      "commitId": "99eb38d7792a718aba866f3101b99ce7a576cf9a",
+      "commitTime": "2026-01-23 16:54:35 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "deps(webpanel): 更新依赖版本"
+    },
+    {
+      "commitId": "0516dbaface4f9cac1f9b35d317ed720398fe0d7",
+      "commitTime": "2026-01-23 16:52:26 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复Frp自启动配置可能存在删除的隧道导致保存不成功"
+    },
+    {
+      "commitId": "f117c3b580ba40c7372b5c3dfdad581571e6225d",
+      "commitTime": "2026-01-22 16:43:35 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "style(desktop): 删除无用代码"
+    },
+    {
+      "commitId": "deba3e634623b32918ce6d75b38519a90268ee31",
+      "commitTime": "2026-01-22 16:30:41 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "merge"
+    },
+    {
+      "commitId": "63e96e49ef09860f1611eb7657cf1a9fabb3c26b",
+      "commitTime": "2026-01-22 16:29:14 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "feat(desktop): 新增与守护程序的兼容性警告"
+    },
+    {
+      "commitId": "480e1715b043e420523ccda51f9f48834f431430",
+      "commitTime": "2026-01-21 23:30:19 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(daemon): 移除无用日志输出"
+    },
+    {
+      "commitId": "e565ddadd33f95b83fe8b1bc59eab0a489f42308",
+      "commitTime": "2026-01-21 23:16:32 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(daemon): 对于非MC服务器进程，尝试采用更优雅的结束方式 & 修复部分进程强制结束不掉进程树的问题"
+    },
+    {
+      "commitId": "b090b8f4cad48ccc464779c72305f588b37be955",
+      "commitTime": "2026-01-21 20:16:21 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #26 from MSLTeam/dev"
+    },
+    {
+      "commitId": "1bed8887c95223d7856ae2f00b3b6ffd97772c6c",
+      "commitTime": "2026-01-21 20:14:33 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v1.0.3 版本前端资源"
+    },
     {
       "commitId": "088a3c09042d59753916fcaa18a3fd5cb6c86803",
       "commitTime": "2026-01-21 20:13:31 +0800",
@@ -299,78 +371,6 @@
       "commitTime": "2026-01-19 22:09:00 +0800",
       "commitAuthor": "Waheal",
       "commitMsg": "update submodule"
-    },
-    {
-      "commitId": "aa538a7df3f2c5d7f20f3d7c632d64c296730e40",
-      "commitTime": "2026-01-19 22:08:28 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "feat(desktop): 基础的链接daemon功能实现 perf: 一些小巧思QWQ"
-    },
-    {
-      "commitId": "3bf0aebe78f7620c134306b1eb820e74bccad497",
-      "commitTime": "2026-01-19 19:01:08 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(daemon): 修复了Docker环境下中文编码的问题"
-    },
-    {
-      "commitId": "78ef3a759dff60b8535125caeea6554a59f94722",
-      "commitTime": "2026-01-19 13:49:56 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #18 from MSLTeam/dev"
-    },
-    {
-      "commitId": "d03cdcbc45502a28f333a416c10f76717def8035",
-      "commitTime": "2026-01-19 13:35:02 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(daemon): 嵌入 v1.0.0 版本前端资源"
-    },
-    {
-      "commitId": "2742776347f5e2a3d6b4ace48be9b96b638cd7be",
-      "commitTime": "2026-01-19 13:34:07 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.0.1"
-    },
-    {
-      "commitId": "185ea94ce94d8cef193e3e227c7bcf49317cd43f",
-      "commitTime": "2026-01-19 13:29:58 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel & daemon): 新增登录后自动检查更新 & 设置页面的手动检查更新功能"
-    },
-    {
-      "commitId": "9869cba6da062673f4494aaf81b7cae67e4b6e8c",
-      "commitTime": "2026-01-19 13:12:31 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 完善对 macOS 和 Linux 平台的自动更新逻辑"
-    },
-    {
-      "commitId": "2b09f392321772c9c6a17e09023c0981a8ca4c4f",
-      "commitTime": "2026-01-19 12:14:21 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel & daemon): 新增MSLX Daemon本体自我更新的功能"
-    },
-    {
-      "commitId": "f20306224479cedaa4f88f1c920727222131bc70",
-      "commitTime": "2026-01-18 23:53:48 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "update submodule"
-    },
-    {
-      "commitId": "51042f8fe935251c01644a093d4fa8aa0f40a8e1",
-      "commitTime": "2026-01-18 23:53:21 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "perf(desktop): 部分功能优化（Dialog、Toast） fix(desktop): 修复SukiUI的部分bug"
-    },
-    {
-      "commitId": "8fdfab15a9c1b66ba228c95447c8e4cbb6cc8587",
-      "commitTime": "2026-01-18 16:43:52 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "fix(desktop): data的公告键名也要进行更改（）"
-    },
-    {
-      "commitId": "f99c59140ad544bab33c964b476678651502f705",
-      "commitTime": "2026-01-18 16:42:34 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "perf(desktop): 更换公告url"
     }
   ]
 }

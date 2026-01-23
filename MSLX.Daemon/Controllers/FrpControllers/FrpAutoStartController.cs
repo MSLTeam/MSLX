@@ -31,35 +31,19 @@ public class FrpAutoStartController : ControllerBase
     {
         try
         {
-            // 去重
-            var distinctIds = req.FrpIds.Distinct().ToList();
+            // 去重并过滤无效 ID
+            var validIds = req.FrpIds
+                .Distinct()
+                .Where(id => IConfigBase.FrpList.IsFrpIdValid(id))
+                .ToList();
 
-            // 验证ID
-            var notFoundIds = new List<int>();
-            foreach (var id in distinctIds)
-            {
-                if (!IConfigBase.FrpList.IsFrpIdValid(id))
-                {
-                    notFoundIds.Add(id);
-                }
-            }
-
-            if (notFoundIds.Count > 0)
-            {
-                return Ok(new ApiResponse<object>
-                {
-                    Code = 400,
-                    Message = $"保存失败：以下 FRP ID 不存在: {string.Join(", ", notFoundIds)}",
-                    Data = null
-                });
-            }
-
-            IConfigBase.Config.WriteConfigKey(ConfigKey, JArray.FromObject(distinctIds));
+            IConfigBase.Config.WriteConfigKey(ConfigKey, JArray.FromObject(validIds));
 
             return Ok(new ApiResponse<object>
             {
                 Code = 200,
-                Message = "修改成功"
+                Message = $"修改成功，已保存 {validIds.Count} 个有效配置",
+                Data = validIds
             });
         }
         catch (Exception ex)

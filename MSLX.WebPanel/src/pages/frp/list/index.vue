@@ -246,6 +246,7 @@ onMounted(() => {
 .auto-start-content {
   max-height: 400px;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 4px;
 }
 
@@ -269,7 +270,7 @@ onMounted(() => {
 
   .tunnel-label {
     display: flex;
-    justify-content: space-between;
+    align-items: center;
     width: 100%;
 
     .name {
@@ -281,6 +282,10 @@ onMounted(() => {
     .name {
       font-weight: 500;
       color: var(--td-text-color-primary);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .id {

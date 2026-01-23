@@ -372,40 +372,49 @@ public class MCServerService
         {
             try
             {
-                context.IsStopping = true; // 标记正在停止
+                context.IsStopping = true;
+
                 if (context.Process != null && !context.Process.HasExited)
                 {
                     var server = IConfigBase.ServerList.GetServer(instanceId);
+                    int waitTimeMs = (server?.ForceExitDelay ?? 10) * 1000;
+
                     try
                     {
-                        if (server != null && server.Java == "none" && !(server.Args ?? "").Contains("bedrock"))
+                        bool isMcServer = server != null && server.Java != "none";
+
+                        if (isMcServer)
                         {
-                            context.Process.StandardInput.Close(); // 关闭输入流 不结束就等10s吧
-                        }
-                        else
-                        {
+                            // MC服务器：发送 stop 命令
                             context.Process.StandardInput.WriteLine("stop");
                             context.Process.StandardInput.Flush();
                         }
-
-                        // 等待 10 秒
-                        if (!context.Process.WaitForExit(server.ForceExitDelay * 1000))
+                        else
                         {
-                            // 如果 10 秒后还没关闭，强制结束
-                            context.Process.Kill();
-                            RecordLog(instanceId, context, "[MSLX] 服务器未能正常关闭，已强制结束");
+                            // 其他类型
+                            if (!ProcessHelper.SendCtrlC(context.Process))
+                            {
+                                context.Process.StandardInput.Close();
+                            }
+                        }
+
+                        // 等待进程退出
+                        if (!context.Process.WaitForExit(waitTimeMs))
+                        {
+                            // 超时未退出 -> 强制树形结束
+                            context.Process.Kill(true);
+                            RecordLog(instanceId, context, "[MSLX] 服务器超时，已强制结束进程树");
                         }
                         else
                         {
                             RecordLog(instanceId, context, "[MSLX] 服务器已正常关闭");
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        // 如果发送命令失败，直接强制结束
-                        context.Process.Kill();
-                        context.Process.WaitForExit(server.ForceExitDelay * 1000);
-                        RecordLog(instanceId, context, "[MSLX] 服务器进程已强制结束");
+                        // 发生任何异常直接强杀
+                        try { context.Process.Kill(true); } catch { }
+                        RecordLog(instanceId, context, $"[MSLX] 停止过程出错，已强制结束: {ex.Message}");
                     }
                 }
 
@@ -415,13 +424,12 @@ public class MCServerService
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"停止服务器 [{instanceId}] 时出错");
-                RecordLog(instanceId, context, $">>> [MSLX-MCServer] 停止进程时出错: {ex.Message}");
+                RecordLog(instanceId, context, $">>> [MSLX] 停止失败: {ex.Message}");
             }
         }
-
         return false;
     }
-    
+
     /// <summary>
     /// 强制终止服务器进程
     /// </summary>
@@ -435,13 +443,14 @@ public class MCServerService
 
                 if (context.Process != null && !context.Process.HasExited)
                 {
-                    // 干掉进程！
-                    context.Process.Kill();
-                    RecordLog(instanceId, context, "[MSLX] 正在强制结束进程······");
-                    
-                    context.Process.WaitForExit(1000); 
+                    // 强制结束进程树
+                    context.Process.Kill(true);
+                    RecordLog(instanceId, context, "[MSLX] 已强制结束进程及其子进程");
+
+                    // 喝一杯一秒钟的茶
+                    context.Process.WaitForExit(1000);
                 }
-                
+
                 _activeServers.TryRemove(instanceId, out _);
                 return true;
             }
@@ -453,7 +462,7 @@ public class MCServerService
         }
         return false;
     }
-    
+
     /// <summary>
     /// 重启服务器 (停止 -> 等待 -> 启动)
     /// </summary>
