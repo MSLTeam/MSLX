@@ -61,7 +61,8 @@ jobs:
             -p:DebugType=None \
             -p:DebugSymbols=false \
             -o "$PUBLISH_DIR" \
-            -p:IncludeNativeLibrariesForSelfExtract=true
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -p:EnableCompressionInSingleFile=true
 
           # 只提取可执行文件
           echo "正在处理纯净文件..."
