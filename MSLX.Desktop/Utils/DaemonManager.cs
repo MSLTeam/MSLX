@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils.API;
+using Newtonsoft.Json.Linq;
 using SukiUI.Dialogs;
 using SukiUI.Toasts;
 using System;
@@ -28,7 +29,28 @@ namespace MSLX.Desktop.Utils
                 .WithTitle("验证中...")
                 .WithContent("请稍候，正在验证Daemon API Key的有效性。")
                 .TryShow();
-            var (isSuccess, msg, clientName, version, serverTime) = await DaemonAPIService.VerifyDaemonApiKey();
+            var (isSuccess, msg, data) = await DaemonAPIService.VerifyDaemonApiKey();
+            string clientName = data?["clientName"]?.Value<string>() ?? "Unknown";
+            string version = data?["version"]?.Value<string>() ?? "Unknown";
+            string serverTime = data?["serverTime"]?.Value<string>() ?? "Unknown";
+            string targetFrontendVersion = data?["targetFrontendVersion"]?["desktop"]?.Value<string>() ?? "0.0.0";
+            Version targetVersion = Version.Parse(targetFrontendVersion);
+            Version currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0, 0);
+            // 截取前三位版本号进行比较
+            Version targetVersionTrimmed = new Version(targetVersion.Major, targetVersion.Minor, targetVersion.Build);
+            Version currentVersionTrimmed = new Version(currentVersion.Major, currentVersion.Minor, currentVersion.Build);
+
+            // 比较版本号
+            if (currentVersionTrimmed != targetVersionTrimmed)
+            {
+                DialogService.ToastManager.CreateToast()
+                    .OfType(Avalonia.Controls.Notifications.NotificationType.Warning)
+                    .WithTitle("与守护程序的兼容性警告")
+                    .WithContent($"您的版本号({currentVersionTrimmed})与守护程序要求的版本号({targetVersionTrimmed})不一致，可能会出现兼容性问题！")
+                    .Dismiss().After(TimeSpan.FromSeconds(10))
+                    .Queue();
+            }
+
             DialogService.DialogManager.DismissDialog();
             if (isSuccess)
             {
