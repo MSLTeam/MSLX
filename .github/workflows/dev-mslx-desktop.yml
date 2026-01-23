@@ -60,7 +60,8 @@ jobs:
             -p:PublishSingleFile=true \
             -p:DebugType=None \
             -p:DebugSymbols=false \
-            -o "$PUBLISH_DIR"
+            -o "$PUBLISH_DIR" \
+            -p:IncludeNativeLibrariesForSelfExtract=true
 
           # 只提取可执行文件
           echo "正在处理纯净文件..."
