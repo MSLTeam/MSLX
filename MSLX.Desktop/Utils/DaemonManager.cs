@@ -35,10 +35,10 @@ namespace MSLX.Desktop.Utils
             string serverTime = data?["serverTime"]?.Value<string>() ?? "Unknown";
             string targetFrontendVersion = data?["targetFrontendVersion"]?["desktop"]?.Value<string>() ?? "0.0.0";
             Version targetVersion = Version.Parse(targetFrontendVersion);
-            Version currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0, 0);
+            ConfigStore.Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0, 0);
             // 截取前三位版本号进行比较
             Version targetVersionTrimmed = new Version(targetVersion.Major, targetVersion.Minor, targetVersion.Build);
-            Version currentVersionTrimmed = new Version(currentVersion.Major, currentVersion.Minor, currentVersion.Build);
+            Version currentVersionTrimmed = new(ConfigStore.Version.Major, ConfigStore.Version.Minor, ConfigStore.Version.Build);
 
             // 比较版本号
             if (currentVersionTrimmed != targetVersionTrimmed)
@@ -63,6 +63,8 @@ namespace MSLX.Desktop.Utils
                             })
                             .Dismiss().After(TimeSpan.FromSeconds(5))
                             .Queue();
+
+                await UpdateService.UpdateDaemonApp();
                 return true;
             }
             else
