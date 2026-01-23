@@ -2,6 +2,7 @@
 import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
 import { Codemirror } from 'vue-codemirror';
 import { oneDark } from '@codemirror/theme-one-dark';
+import { EditorState } from '@codemirror/state';
 import { json } from '@codemirror/lang-json';
 import { yaml } from '@codemirror/lang-yaml';
 import { javascript } from '@codemirror/lang-javascript';
@@ -128,6 +129,26 @@ const extensions = computed(() => {
   if (isDarkMode.value) {
     result.push(oneDark);
   }
+
+  // 汉化配置
+  result.push(
+    EditorState.phrases.of({
+      // 搜索框占位符
+      Find: '查找内容...',
+      Replace: '替换为...',
+
+      // 按钮/选项
+      next: '下一个',
+      previous: '上一个',
+      all: '选中所有',
+      'match case': '区分大小写',
+      'by word': '全字匹配',
+      regexp: '正则表达式',
+      replace: '替换',
+      'replace all': '替换全部',
+      close: '关闭',
+    }),
+  );
 
   // 匹配语言
   const ext = props.fileName?.split('.').pop()?.toLowerCase();
