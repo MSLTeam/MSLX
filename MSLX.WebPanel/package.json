@@ -33,7 +33,7 @@
     "cron-parser": "^5.4.0",
     "dayjs": "^1.11.11",
     "echarts": "^5.5.1",
-    "lodash": "^4.17.21",
+    "lodash": "4.17.23",
     "md-editor-v3": "^6.1.0",
     "nprogress": "^0.2.0",
     "pinia": "^2.1.7",
