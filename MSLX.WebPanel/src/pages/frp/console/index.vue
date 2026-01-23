@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import { MessagePlugin } from 'tdesign-vue-next';
+import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 
 // 子组件
 import ConsoleTerminal from './components/ConsoleTerminal.vue';
 import ControlPanel from './components/ControlPanel.vue';
+import FileEditor from '@/pages/instance/files/components/FileEditor.vue';
 
 import { getTunnelInfo, postFrpAction } from '@/api/frp';
 import { TunnelInfoModel } from '@/api/model/frp';
 import { useTunnelsStore } from '@/store/modules/frp';
+import { getFileContent, saveFileContent } from '@/api/files';
 
 const tunnelsStore = useTunnelsStore();
 const route = useRoute();
@@ -19,6 +21,12 @@ const frpId = ref(parseInt(route.params.frpId as string) || 0);
 const isRunning = ref(false);
 const loading = ref(false);
 const tunnelInfo = ref<TunnelInfoModel | null>(null);
+
+// 编辑器状态
+const showEditor = ref(false);
+const editorFileName = ref('');
+const editorContent = ref('');
+const isSaving = ref(false);
 
 // 引用终端组件实例
 const terminalRef = ref<InstanceType<typeof ConsoleTerminal> | null>(null);
@@ -73,6 +81,63 @@ const handleClearLog = () => {
   terminalRef.value?.clear();
 };
 
+const handleEditConfig = () => {
+  const confirmDialog = DialogPlugin.confirm({
+    header: '警告',
+    body: '直接编辑配置文件可能会导致服务无法启动或异常。正常情况在线服务商提供的配置文件也不能修改。请确保您了解配置文件的格式和内容。\n\n是否继续？',
+    theme: 'warning',
+    onConfirm: async () => {
+      confirmDialog.hide();
+      await openConfigFile();
+    },
+  });
+};
+
+const openConfigFile = async () => {
+  const msg = MessagePlugin.loading('正在读取配置文件...');
+  try {
+    let ext = 'toml';
+    const currentFrp = tunnelsStore.frpList.find((item) => item.id === frpId.value);
+
+    if (currentFrp && currentFrp.configType) {
+      ext = currentFrp.configType.toLowerCase();
+    }
+    const fileName = `frpc.${ext}`;
+    const fullPath = `${frpId.value}/${fileName}`;
+
+    // Instance ID 固定为 0
+    const content = await getFileContent(0, fullPath);
+
+    editorFileName.value = fileName;
+    editorContent.value = content;
+    showEditor.value = true;
+    MessagePlugin.close(msg);
+  } catch (err: any) {
+    MessagePlugin.close(msg);
+    MessagePlugin.error('读取配置文件失败: ' + err.message);
+    terminalRef.value?.writeln(`\x1b[1;31m[Error] 读取配置文件失败: ${err.message}\x1b[0m`);
+  }
+};
+
+const handleSaveConfig = async (newContent: string) => {
+  isSaving.value = true;
+  try {
+    const fullPath = `${frpId.value}/${editorFileName.value}`;
+    // Instance ID 固定为 0
+    await saveFileContent(0, fullPath, newContent);
+
+    MessagePlugin.success('配置文件保存成功');
+    showEditor.value = false;
+
+    terminalRef.value?.writeln('\x1b[1;32m[System] 配置文件已更新，请重启服务以生效。\x1b[0m');
+  } catch (err: any) {
+    MessagePlugin.error('保存失败');
+    terminalRef.value?.writeln(`\x1b[1;31m[Error] 保存失败: ${err.message}\x1b[0m`);
+  } finally {
+    isSaving.value = false;
+  }
+};
+
 // 监听路由参数变化
 watch(
   () => route.params.frpId,
@@ -98,13 +163,8 @@ onMounted(() => {
 <template>
   <div class="console-page">
     <div class="layout-container">
-
       <div class="main-terminal-area">
-        <console-terminal
-          ref="terminalRef"
-          :frp-id="frpId"
-          @update="fetchTunnelInfo()"
-        />
+        <console-terminal ref="terminalRef" :frp-id="frpId" @update="fetchTunnelInfo()" />
       </div>
 
       <div class="sidebar-area">
@@ -116,10 +176,17 @@ onMounted(() => {
           @start="handleStart"
           @stop="handleStop"
           @clear-log="handleClearLog"
+          @edit-config="handleEditConfig"
         />
       </div>
-
     </div>
+    <file-editor
+      v-model:visible="showEditor"
+      :file-name="editorFileName"
+      :content="editorContent"
+      :loading="isSaving"
+      @save="handleSaveConfig"
+    />
   </div>
 </template>
 
@@ -155,9 +222,22 @@ onMounted(() => {
 }
 
 @media (max-width: 768px) {
-  .console-page { height: auto; overflow-y: auto; padding: 16px; }
-  .layout-container { flex-direction: column; height: auto; }
-  .sidebar-area { width: 100%; height: auto; }
-  .main-terminal-area { min-height: 400px; margin-bottom: 16px; }
+  .console-page {
+    height: auto;
+    overflow-y: auto;
+    padding: 16px;
+  }
+  .layout-container {
+    flex-direction: column;
+    height: auto;
+  }
+  .sidebar-area {
+    width: 100%;
+    height: auto;
+  }
+  .main-terminal-area {
+    min-height: 400px;
+    margin-bottom: 16px;
+  }
 }
 </style>

@@ -8,6 +8,8 @@ import { yaml } from '@codemirror/lang-yaml';
 import { javascript } from '@codemirror/lang-javascript';
 import { css } from '@codemirror/lang-css';
 import { html } from '@codemirror/lang-html';
+import { StreamLanguage } from '@codemirror/language';
+import { toml } from '@codemirror/legacy-modes/mode/toml';
 
 // 代码格式化
 import prettier from 'prettier/standalone';
@@ -173,8 +175,12 @@ const extensions = computed(() => {
     case 'xml':
       result.push(html());
       break;
-    case 'properties':
+    case 'toml':
+    case 'ini':
     case 'conf':
+      result.push(StreamLanguage.define(toml));
+      break;
+    case 'properties':
     case 'log':
     case 'txt':
     default:

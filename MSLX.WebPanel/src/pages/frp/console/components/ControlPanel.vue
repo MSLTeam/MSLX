@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import {
-  CloudIcon, CodeIcon, InternetIcon, LinkIcon,
-  PlayCircleIcon, RefreshIcon, ServerIcon, StopCircleIcon,
+  CloudIcon,
+  CodeIcon,
+  InternetIcon,
+  LinkIcon,
+  PlayCircleIcon,
+  RefreshIcon,
+  ServerIcon,
+  StopCircleIcon,
+  Edit1Icon,
 } from 'tdesign-icons-vue-next';
 import { TunnelInfoModel } from '@/api/model/frp';
 import { copyText } from '@/utils/clipboard';
@@ -16,9 +23,10 @@ defineProps<{
 
 // 定义 Emits
 defineEmits<{
-  start: [],
-  stop: [],
-  'clear-log': []
+  start: [];
+  stop: [];
+  'clear-log': [];
+  'edit-config': [];
 }>();
 </script>
 
@@ -34,43 +42,47 @@ defineEmits<{
         </t-tag>
       </div>
       <div class="control-actions">
-        <t-button
-          v-if="!isRunning"
-          theme="primary"
-          size="large"
-          block
-          :loading="loading"
-          @click="$emit('start')"
-        >
+        <t-button v-if="!isRunning" theme="primary" size="large" block :loading="loading" @click="$emit('start')">
           <template #icon><play-circle-icon /></template>启动服务
         </t-button>
-        <t-button
-          v-else
-          theme="danger"
-          size="large"
-          block
-          :loading="loading"
-          @click="$emit('stop')"
-        >
+        <t-button v-else theme="danger" size="large" block :loading="loading" @click="$emit('stop')">
           <template #icon><stop-circle-icon /></template>停止服务
         </t-button>
-        <t-button
-          style="margin: 0"
-          class="glass-btn"
-          variant="outline"
-          theme="warning"
-          block
-          @click="$emit('clear-log')"
-        >
-          <template #icon><refresh-icon /></template>清空日志
-        </t-button>
+        <div class="action-row">
+          <t-button class="glass-btn" variant="outline" theme="warning" @click="$emit('clear-log')">
+            <template #icon><refresh-icon /></template>清空日志
+          </t-button>
+          <t-button variant="outline" theme="default" @click="$emit('edit-config')">
+            <template #icon><edit1-icon /></template>配置文件
+          </t-button>
+        </div>
       </div>
     </t-card>
 
     <t-card title="隧道概览" class="info-card" :bordered="false">
       <template #actions>
-        <t-tag v-if="tunnelInfo && tunnelInfo.proxies && tunnelInfo.proxies.length > 0 && tunnelInfo.proxies.some(proxy => proxy.type === 'xtcp')" variant="light-outline" theme="primary">联机房间 - 房主</t-tag>
-        <t-tag v-else-if="tunnelInfo && tunnelInfo.proxies && tunnelInfo.proxies.length > 0 && tunnelInfo.proxies.some(proxy => proxy.type === 'xtcp - Visitors')" variant="light-outline" theme="primary">联机房间 - 访客</t-tag>
+        <t-tag
+          v-if="
+            tunnelInfo &&
+            tunnelInfo.proxies &&
+            tunnelInfo.proxies.length > 0 &&
+            tunnelInfo.proxies.some((proxy) => proxy.type === 'xtcp')
+          "
+          variant="light-outline"
+          theme="primary"
+          >联机房间 - 房主</t-tag
+        >
+        <t-tag
+          v-else-if="
+            tunnelInfo &&
+            tunnelInfo.proxies &&
+            tunnelInfo.proxies.length > 0 &&
+            tunnelInfo.proxies.some((proxy) => proxy.type === 'xtcp - Visitors')
+          "
+          variant="light-outline"
+          theme="primary"
+          >联机房间 - 访客</t-tag
+        >
         <t-button v-else shape="circle" variant="text"><code-icon /></t-button>
       </template>
 
@@ -85,9 +97,16 @@ defineEmits<{
             <div v-if="tunnelInfo.proxies.length > 1" class="proxy-header">配置 #{{ index + 1 }}</div>
 
             <div class="info-item">
-              <div class="label"><cloud-icon /> {{ proxy.type.includes('xtcp') ? '房间号':'隧道名称'}}</div>
-              <t-tooltip :content="proxy.proxyName" placement="top" show-arrow destroy-on-close >
-                <div @click="copyText(proxy.proxyName,true,`${proxy.type.includes('xtcp') ? '房间号':'隧道名称'}已复制！`)" class="value remote-addr pointer">{{ proxy.proxyName }}</div>
+              <div class="label"><cloud-icon /> {{ proxy.type.includes('xtcp') ? '房间号' : '隧道名称' }}</div>
+              <t-tooltip :content="proxy.proxyName" placement="top" show-arrow destroy-on-close>
+                <div
+                  @click="
+                    copyText(proxy.proxyName, true, `${proxy.type.includes('xtcp') ? '房间号' : '隧道名称'}已复制！`)
+                  "
+                  class="value remote-addr pointer"
+                >
+                  {{ proxy.proxyName }}
+                </div>
               </t-tooltip>
             </div>
 
@@ -97,16 +116,35 @@ defineEmits<{
             </div>
 
             <div class="info-item">
-              <div class="label"><link-icon /> {{ proxy.type.includes('xtcp') ? '房间密钥':'连接地址'}}</div>
-              <t-tooltip :content="proxy.remoteAddressMain" placement="top" show-arrow destroy-on-close >
-                <div class="value remote-addr pointer" @click="copyText(proxy.remoteAddressMain,true,`${proxy.type.includes('xtcp') ? '房间密钥':'连接地址'}已复制！`)">{{ proxy.remoteAddressMain || '获取中...' }}</div>
+              <div class="label"><link-icon /> {{ proxy.type.includes('xtcp') ? '房间密钥' : '连接地址' }}</div>
+              <t-tooltip :content="proxy.remoteAddressMain" placement="top" show-arrow destroy-on-close>
+                <div
+                  class="value remote-addr pointer"
+                  @click="
+                    copyText(
+                      proxy.remoteAddressMain,
+                      true,
+                      `${proxy.type.includes('xtcp') ? '房间密钥' : '连接地址'}已复制！`,
+                    )
+                  "
+                >
+                  {{ proxy.remoteAddressMain || '获取中...' }}
+                </div>
               </t-tooltip>
             </div>
 
-            <div v-if="proxy.remoteAddressBackup && proxy.remoteAddressBackup !== proxy.remoteAddressMain" class="info-item">
+            <div
+              v-if="proxy.remoteAddressBackup && proxy.remoteAddressBackup !== proxy.remoteAddressMain"
+              class="info-item"
+            >
               <div class="label"><link-icon /> 备用地址</div>
               <t-tooltip :content="proxy.remoteAddressBackup" placement="top" show-arrow destroy-on-close>
-                <div class="value remote-addr pointer" @click="copyText(proxy.remoteAddressBackup,true,'备用连接地址已复制！')">{{ proxy.remoteAddressBackup }}</div>
+                <div
+                  class="value remote-addr pointer"
+                  @click="copyText(proxy.remoteAddressBackup, true, '备用连接地址已复制！')"
+                >
+                  {{ proxy.remoteAddressBackup }}
+                </div>
               </t-tooltip>
             </div>
 
@@ -139,22 +177,37 @@ defineEmits<{
   background: var(--td-bg-color-container);
 
   .control-header {
-    display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
     .status-indicator {
-      display: flex; align-items: center; gap: 10px; font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
       color: var(--td-text-color-secondary);
       .pulse {
-        width: 8px; height: 8px; border-radius: 50%;
-        background: var(--td-bg-color-component-disabled); transition: all 0.3s;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--td-bg-color-component-disabled);
+        transition: all 0.3s;
       }
       &.running {
         color: var(--td-success-color);
-        .pulse { background: var(--td-success-color); box-shadow: 0 0 8px var(--td-success-color); }
+        .pulse {
+          background: var(--td-success-color);
+          box-shadow: 0 0 8px var(--td-success-color);
+        }
       }
     }
   }
   .control-actions {
-    display: flex; flex-direction: column; width: 100%; gap: 16px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 16px;
 
     .glass-btn {
       backdrop-filter: blur(4px);
@@ -171,6 +224,17 @@ defineEmits<{
         }
       }
     }
+
+    .action-row {
+      display: flex;
+      gap: 16px;
+      width: 100%;
+
+      .t-button {
+        flex: 1;
+        margin: 0;
+      }
+    }
   }
 }
 
@@ -180,30 +244,69 @@ defineEmits<{
   background: var(--td-bg-color-container);
 
   .info-list {
-    display: flex; flex-direction: column; gap: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 
     .proxy-group {
-      display: flex; flex-direction: column; gap: 12px; padding-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-top: 12px;
       border-top: 1px dashed var(--td-component-stroke);
-      &:first-child { border-top: none; padding-top: 0; }
-    }
-    .proxy-header { font-size: 12px; font-weight: bold; color: var(--td-text-color-secondary); }
-
-    .info-item {
-      display: flex; justify-content: space-between; align-items: center;
-      .label { display: flex; align-items: center; gap: 8px; color: var(--td-text-color-placeholder); font-size: 13px; }
-      .value {
-        font-family: var(--td-font-family-number); font-weight: 500;
-        color: var(--td-text-color-primary); font-size: 13px;
-        &.highlight { color: var(--td-brand-color); background: var(--td-brand-color-light); padding: 2px 8px; border-radius: 4px; font-size: 12px; }
-        &.remote-addr {
-          max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
-          &:hover { color: var(--td-brand-color); }
-        }
-        &.pointer { cursor: pointer; }
+      &:first-child {
+        border-top: none;
+        padding-top: 0;
       }
     }
-    .empty-state { padding: 12px 0; color: var(--td-text-color-placeholder); }
+    .proxy-header {
+      font-size: 12px;
+      font-weight: bold;
+      color: var(--td-text-color-secondary);
+    }
+
+    .info-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      .label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--td-text-color-placeholder);
+        font-size: 13px;
+      }
+      .value {
+        font-family: var(--td-font-family-number);
+        font-weight: 500;
+        color: var(--td-text-color-primary);
+        font-size: 13px;
+        &.highlight {
+          color: var(--td-brand-color);
+          background: var(--td-brand-color-light);
+          padding: 2px 8px;
+          border-radius: 4px;
+          font-size: 12px;
+        }
+        &.remote-addr {
+          max-width: 140px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          cursor: pointer;
+          &:hover {
+            color: var(--td-brand-color);
+          }
+        }
+        &.pointer {
+          cursor: pointer;
+        }
+      }
+    }
+    .empty-state {
+      padding: 12px 0;
+      color: var(--td-text-color-placeholder);
+    }
   }
 }
 </style>
