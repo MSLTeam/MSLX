@@ -18,6 +18,8 @@ jobs:
           # 定义输出的程序文件名
           - { os: linux,   arch: x64,   rid: linux-x64,   bin: 'MSLX-Daemon' }
           - { os: linux,   arch: arm64, rid: linux-arm64, bin: 'MSLX-Daemon' }
+          - { os: linux,   arch: musl-x64,   rid: linux-musl-x64,   bin: 'MSLX-Daemon' }
+          - { os: linux,   arch: musl-arm64, rid: linux-musl-arm64, bin: 'MSLX-Daemon' }
           - { os: windows, arch: x64,   rid: win-x64,     bin: 'MSLX-Daemon.exe' }
           - { os: windows, arch: arm64, rid: win-arm64,   bin: 'MSLX-Daemon.exe' }
           - { os: osx,     arch: x64,   rid: osx-x64,     bin: 'MSLX-Daemon' }
