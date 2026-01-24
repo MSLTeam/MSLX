@@ -253,6 +253,35 @@ async function handleRefresh() {
   await initDashboardData();
   MessagePlugin.success('数据已更新');
 }
+
+// 删除隧道逻辑
+const isDeleting = ref(false);
+
+async function handleDeleteTunnel() {
+  if (!currentTunnel.value) return;
+  isDeleting.value = true;
+
+  try {
+    const res = await request.post({
+      url: '/api/frp/deleteTunnel',
+      baseURL: 'https://user.mslmc.net',
+      data: { id: currentTunnel.value.id },
+      headers: { Authorization: `Bearer ${mslUserToken.value}` },
+    });
+
+    if (res.code === 200) {
+      MessagePlugin.success('隧道删除成功');
+      selectedTunnelId.value = null; // 清空当前选中
+      await initDashboardData(); // 重新刷新列表
+    } else {
+      MessagePlugin.error(res.msg || '删除失败');
+    }
+  } catch (e: any) {
+    MessagePlugin.error('操作失败: ' + e.message);
+  } finally {
+    isDeleting.value = false;
+  }
+}
 </script>
 
 <template>
@@ -379,6 +408,17 @@ async function handleRefresh() {
             <t-card :bordered="false" class="full-height-card">
               <template #title>
                 <span>隧道详情</span>
+              </template>
+
+              <template #actions v-if="currentTunnel">
+                <t-popconfirm
+                  content="确认删除此隧道吗？"
+                  theme="danger"
+                  placement="bottom-right"
+                  @confirm="handleDeleteTunnel"
+                >
+                  <t-button theme="danger" variant="text" :loading="isDeleting"> 删除隧道 </t-button>
+                </t-popconfirm>
               </template>
 
               <div v-if="currentTunnel" class="detail-content">
