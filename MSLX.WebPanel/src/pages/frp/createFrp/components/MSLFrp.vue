@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { UserCircleIcon, UserAddIcon, ServerIcon, CloudIcon, AddIcon, PlayCircleIcon } from 'tdesign-icons-vue-next';
+import {
+  UserCircleIcon,
+  UserAddIcon,
+  ServerIcon,
+  CloudIcon,
+  AddIcon,
+  PlayCircleIcon,
+  RefreshIcon,
+} from 'tdesign-icons-vue-next';
 import { changeUrl } from '@/router';
 import { onMounted, onUnmounted, ref, computed } from 'vue';
 import { request } from '@/utils/request';
@@ -233,6 +241,11 @@ async function handleLogout() {
     MessagePlugin.error('退出失败: ' + e.message);
   }
 }
+
+async function handleRefresh() {
+  await initDashboardData();
+  MessagePlugin.success('数据已更新');
+}
 </script>
 
 <template>
@@ -310,10 +323,16 @@ async function handleLogout() {
               <template #title>
                 <div class="list-header">
                   <span>我的隧道</span>
-                  <t-button size="small" variant="text" @click="handleAddTunnel">
-                    <template #icon><add-icon /></template>
-                    新建
-                  </t-button>
+                  <t-space size="4px">
+                    <t-button style="margin-left: 3px;" size="small" variant="text" :loading="loading" @click="handleRefresh">
+                      <template #icon><refresh-icon /></template>
+                      刷新
+                    </t-button>
+                    <t-button size="small" variant="text" @click="handleAddTunnel">
+                      <template #icon><add-icon /></template>
+                      新建
+                    </t-button>
+                  </t-space>
                 </div>
               </template>
 
