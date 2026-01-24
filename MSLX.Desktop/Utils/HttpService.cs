@@ -15,6 +15,7 @@ namespace MSLX.Desktop.Utils
     /// </summary>
     public class HttpResponse
     {
+        
         public HttpStatusCode StatusCode { get; set; }
         public string Content { get; set; }
         public Exception? Exception { get; set; } = null;
@@ -33,7 +34,7 @@ namespace MSLX.Desktop.Utils
     /// </summary>
     public class HttpService : IDisposable
     {
-        private static readonly HttpClient _sharedHttpClient = new HttpClient();
+        // private static readonly HttpClient _HttpClient = new HttpClient();
         private bool _disposed = false;
 
         /// <summary>
@@ -128,7 +129,7 @@ namespace MSLX.Desktop.Utils
                 Console.WriteLine($"HTTP GET异常: {ex.Message} - URL: {url}");
                 // LogHelper.Write.Error($"HTTP GET异常: {ex.Message} - URL: {url}");
             }
-
+            httpClient.Dispose();
             return httpResponse;
         }
 
@@ -148,6 +149,7 @@ namespace MSLX.Desktop.Utils
         /// <returns>HTTP响应对象</returns>
         public static async Task<HttpResponse> PostAsync(
             string url,
+            object? queryParameters = null,
             PostContentType contentType = PostContentType.Json,
             object? parameterData = null,
             Action<HttpRequestHeaders>? configureHeaders = null,
@@ -161,6 +163,11 @@ namespace MSLX.Desktop.Utils
             {
                 // 配置User-Agent
                 ConfigureUserAgent(httpClient, uaType, customUA);
+
+                if (queryParameters != null)
+                {
+                    url = AppendQueryParameters(url, queryParameters);
+                }
 
                 // 创建请求内容
                 var content = CreateHttpContent(contentType, parameterData, httpClient);
@@ -188,6 +195,7 @@ namespace MSLX.Desktop.Utils
                 Console.WriteLine($"HTTP POST异常: {ex.Message} - URL: {url}");
             }
 
+            httpClient.Dispose();
             return httpResponse;
         }
 
@@ -345,7 +353,6 @@ namespace MSLX.Desktop.Utils
                 if (disposing)
                 {
                     // 清理托管资源
-                    // 注意: _sharedHttpClient 是静态的，不在此处释放
                 }
                 _disposed = true;
             }

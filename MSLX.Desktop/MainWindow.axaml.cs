@@ -1,12 +1,7 @@
 using Avalonia.Controls;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils;
-using MSLX.Desktop.Utils.API;
-using Newtonsoft.Json.Linq;
 using SukiUI.Controls;
-using SukiUI.Dialogs;
-using SukiUI.Toasts;
-using System.Threading.Tasks;
 
 namespace MSLX.Desktop;
 
@@ -28,6 +23,6 @@ public partial class MainWindow : SukiWindow
 
     private void MainWindow_Closing(object? sender, WindowClosingEventArgs e)
     {
-        DaemonManager.StopRunningDaemon();
+        _ = DaemonManager.StopRunningDaemon();
     }
 }

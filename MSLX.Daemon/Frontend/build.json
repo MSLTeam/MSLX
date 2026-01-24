@@ -1,10 +1,12 @@
 {
-  "version": "1.1.0",
-  "buildTime": "2026-01-23 17:10:45",
+  "version": "1.1.1",
+  "buildTime": "2026-01-24 15:58:53",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
     "@codemirror/lang-yaml": "^6.1.2",
+    "@codemirror/language": "^6.12.1",
+    "@codemirror/legacy-modes": "^6.5.2",
     "@codemirror/state": "^6.5.2",
     "@codemirror/theme-one-dark": "^6.1.3",
     "@codemirror/view": "^6.39.2",
@@ -68,10 +70,178 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "ee01fb5a84f1318cd589083f294a90840ed6e360",
-  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.1.0-release",
+  "commitId": "3ccc016670dc1ac450a2204e0c38b4e3ec9c542a",
+  "commitMsg": "bumpver(daemon & desktop): 更新版本号到 v1.1.1-release",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "3ccc016670dc1ac450a2204e0c38b4e3ec9c542a",
+      "commitTime": "2026-01-24 15:58:27 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & desktop): 更新版本号到 v1.1.1-release"
+    },
+    {
+      "commitId": "f8c72753bfb04d5aa747b2602518f5152f4a528a",
+      "commitTime": "2026-01-24 15:52:30 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "lint(webpanel): 优化MSLFrp组件代码格式"
+    },
+    {
+      "commitId": "75a205c34b092ef48b37c09a35c0bd61e1bff19c",
+      "commitTime": "2026-01-24 15:51:42 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): MSLFrp新增内置删除隧道功能"
+    },
+    {
+      "commitId": "18bcff3397c97d66845e3a8019130bbf83d60599",
+      "commitTime": "2026-01-24 15:46:49 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): MSLFrp新增内置创建隧道功能"
+    },
+    {
+      "commitId": "906e2a49c14eb286b1baa922e6273af3d82466df",
+      "commitTime": "2026-01-24 15:12:08 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): MSLFrp新增刷新功能"
+    },
+    {
+      "commitId": "1ed3136a1686f19343a33bae0e8a16b4584d7c0a",
+      "commitTime": "2026-01-24 15:05:20 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): MSLFrp新增退出登录功能"
+    },
+    {
+      "commitId": "e80a5a263e0a171970bcdda1854e9d50c364daca",
+      "commitTime": "2026-01-24 14:28:02 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(daemon): 新增linux-musl版本构建"
+    },
+    {
+      "commitId": "06b32688884f997f0bdf4a1e03cf5983b9dfdb41",
+      "commitTime": "2026-01-23 22:46:11 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(desktop): 回退工作流"
+    },
+    {
+      "commitId": "937e3bb852b74a2fce561f8226f08046326c446c",
+      "commitTime": "2026-01-23 22:43:36 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(desktop): Desktop压缩测试"
+    },
+    {
+      "commitId": "0ec9d7f6efffd63b451817f03142973c13e96804",
+      "commitTime": "2026-01-23 22:32:31 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(desktop): 修正Desktop发布参数"
+    },
+    {
+      "commitId": "e3211d47385c144a04ffb657132ac15974694a93",
+      "commitTime": "2026-01-23 22:05:32 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(desktop): 新增MSLX-Desktop发布工作流"
+    },
+    {
+      "commitId": "d127a58d152b032e212fd3a2778d712afa3f6197",
+      "commitTime": "2026-01-23 22:03:25 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(desktop): 新增MSLX-Desktop的构建工作流"
+    },
+    {
+      "commitId": "e73255c4f961d8dc67d0c8c6edfc4d16b8e19ffb",
+      "commitTime": "2026-01-23 22:01:01 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(desktop): 修正程序集名称"
+    },
+    {
+      "commitId": "4427d7bfdbfc3d3b1320200ac3f5bcd2a5f42e23",
+      "commitTime": "2026-01-23 21:50:03 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
+    },
+    {
+      "commitId": "8b61ff45a4b60587f1a3b175003eaca109a5b876",
+      "commitTime": "2026-01-23 21:49:14 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "feat: 优化daemon更新功能，新增desktop前端控制daemon更新功能（还没完善完）"
+    },
+    {
+      "commitId": "bc5321a8f2528ff59945779044fa4ceb45581a82",
+      "commitTime": "2026-01-23 21:43:35 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(desktop): 新增Desktop程序集信息"
+    },
+    {
+      "commitId": "8149fad98284b2abb725fd3ab624082a42161dd3",
+      "commitTime": "2026-01-23 21:28:20 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
+    },
+    {
+      "commitId": "d42728b1b660f544efdf88f5964fee2f7ae25942",
+      "commitTime": "2026-01-23 21:26:00 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 文件编辑器新增toml高亮支持 #24 #29"
+    },
+    {
+      "commitId": "30db576843594c58f006d8bd5406be749f585a01",
+      "commitTime": "2026-01-23 21:26:00 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 新增编辑隧道配置文件支持 #24 #29"
+    },
+    {
+      "commitId": "fba570271a9d7f438b5af1e4fc89793e65a58db8",
+      "commitTime": "2026-01-23 20:27:39 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
+    },
+    {
+      "commitId": "e82c45e9ee81009225cf6a2482a6af74b7f49e79",
+      "commitTime": "2026-01-23 20:27:31 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "update"
+    },
+    {
+      "commitId": "fe5ab8be1c8be20df51dbe4f2c20a522f8123474",
+      "commitTime": "2026-01-23 20:27:23 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "feat(desktop): daemon更新功能"
+    },
+    {
+      "commitId": "9f72b8b1926ce699f248c5a866bdd16dce8facb7",
+      "commitTime": "2026-01-23 20:20:39 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修正全局APIKey权限错误"
+    },
+    {
+      "commitId": "f48e2034a62ba44750a1fcdcafe775ebf7c32a02",
+      "commitTime": "2026-01-23 19:40:45 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 文本编辑器查找和替换功能文本汉化 #28"
+    },
+    {
+      "commitId": "1201e2573cbbe0cc269d0a70a01b4da8f94c3d4b",
+      "commitTime": "2026-01-23 19:38:59 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 文本编辑器支持代码自动格式化 #28"
+    },
+    {
+      "commitId": "a325c8e355da850702f0ca1ee2b59a4d91723d8d",
+      "commitTime": "2026-01-23 18:01:48 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "docs(issues): 更新issues模板"
+    },
+    {
+      "commitId": "8280d45a4984672c916bf6eaef98d9cba0270fa3",
+      "commitTime": "2026-01-23 17:11:56 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #27 from MSLTeam/dev"
+    },
+    {
+      "commitId": "a077fca6f50e5bfe95f2545dbdcb03c7c4c46d45",
+      "commitTime": "2026-01-23 17:11:17 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v1.1.0-release 版本前端资源"
+    },
     {
       "commitId": "ee01fb5a84f1318cd589083f294a90840ed6e360",
       "commitTime": "2026-01-23 17:10:18 +0800",
@@ -203,174 +373,6 @@
       "commitTime": "2026-01-21 17:00:20 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "feat(daemon & webpanel): 新增Frp隧道自启动功能 #24"
-    },
-    {
-      "commitId": "fec54cbbe1f536f87a829fb536815c94f555ff21",
-      "commitTime": "2026-01-21 16:58:14 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "feat(desktop): 链接守护程序功能完美可用"
-    },
-    {
-      "commitId": "a7545e3cfc4dcb27d2241d169b808058d00684e6",
-      "commitTime": "2026-01-21 10:14:39 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(desktop): 修正在macOS下数据目录路径"
-    },
-    {
-      "commitId": "c19f385198b531cfa4a924ae5fb0447455090bc6",
-      "commitTime": "2026-01-20 23:18:17 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
-    },
-    {
-      "commitId": "deef307ed1df6ae854de44a5031211b4dc5aa12d",
-      "commitTime": "2026-01-20 23:18:01 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "feat: 链接守护程序功能完善和优化"
-    },
-    {
-      "commitId": "df4865e05c1065f002206b7223a55a5bce16db9a",
-      "commitTime": "2026-01-20 22:07:10 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 更优雅的方式处理主题自动变更"
-    },
-    {
-      "commitId": "6cfea490f491f39b38e6d044dc0e38e687feb95d",
-      "commitTime": "2026-01-20 21:58:20 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 在UI主题设置为自动的时候，监听系统颜色主题的切换并自动切换UI的主题"
-    },
-    {
-      "commitId": "fad748537c9db34f6e075d578384f6c503803235",
-      "commitTime": "2026-01-20 16:37:29 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
-    },
-    {
-      "commitId": "84765182e848783eda0abae1c938501a5d98d285",
-      "commitTime": "2026-01-20 16:37:12 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "feat(desktop): 下载Daemon功能"
-    },
-    {
-      "commitId": "db7ec28e55d21b76a8ecb78abcb834a48b114653",
-      "commitTime": "2026-01-20 11:57:28 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "docs(issues): 修正ISSUES模板"
-    },
-    {
-      "commitId": "e2871654a52d500a23375282f14a25847be799a6",
-      "commitTime": "2026-01-20 11:55:49 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "docs(issues): 新增ISSUE TEMPLATE"
-    },
-    {
-      "commitId": "0a98f318fd55ab207395c1d515bf4ddab40d5075",
-      "commitTime": "2026-01-20 09:02:35 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #22 from MSLTeam/dev"
-    },
-    {
-      "commitId": "5f8020c0a76a0d05a35bebd5945c12ae854667ca",
-      "commitTime": "2026-01-20 09:02:06 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(daemon): docker oci types"
-    },
-    {
-      "commitId": "e1e4e94b2125571cd01d98b868e85a3c7af2d299",
-      "commitTime": "2026-01-20 08:09:58 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #21 from MSLTeam/dev"
-    },
-    {
-      "commitId": "a1bbde3b241b6be0f5c5e7f86f2244fe234dce01",
-      "commitTime": "2026-01-20 08:06:44 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(docs): 新增README"
-    },
-    {
-      "commitId": "29ad7c208f62d37b8e4a6a8ebcbed62283f27cfa",
-      "commitTime": "2026-01-20 07:58:52 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(daemon): Dockerfile新增映射目录指定 & 搬回OCI构建信息"
-    },
-    {
-      "commitId": "0f3156e5bf7d65cdd36be85e203591833216cf0f",
-      "commitTime": "2026-01-20 01:20:12 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #20 from MSLTeam/dev"
-    },
-    {
-      "commitId": "e81582b7ef210fc6ab1372fda81926ac70d3df2c",
-      "commitTime": "2026-01-20 01:19:49 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(daemon): docker构建移除OCI特性"
-    },
-    {
-      "commitId": "0faf7cbaa2cca0f70b490eff6aa62249d02107a9",
-      "commitTime": "2026-01-20 01:06:45 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(daemon): docker push 关闭 provenance"
-    },
-    {
-      "commitId": "b51919a54c8b3e27a957ae8da0e3cdf1db8499e4",
-      "commitTime": "2026-01-20 00:16:49 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #19 from MSLTeam/dev"
-    },
-    {
-      "commitId": "d493609d227855390f0f08d7e6ce259b3c02a788",
-      "commitTime": "2026-01-20 00:15:54 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(daemon): 嵌入 v1.0.2 版本前端资源"
-    },
-    {
-      "commitId": "2c98d5b6553395081bbd59b94cd2a26d7c01c127",
-      "commitTime": "2026-01-20 00:15:09 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.0.2"
-    },
-    {
-      "commitId": "5320b7b3f38c52afa6d42aebecbece24bf03d105",
-      "commitTime": "2026-01-20 00:14:12 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel & daemon): 未配置 MSL OAuth 2.0 时登录页将隐藏\"使用MSL账号登录\"的选项"
-    },
-    {
-      "commitId": "63b3f37a34d8d92c860c23694a734e13305d7228",
-      "commitTime": "2026-01-20 00:02:50 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 优化创建整合包界面的布局"
-    },
-    {
-      "commitId": "345f149b1d5ba17d19377d573f9482f4777bae7c",
-      "commitTime": "2026-01-20 00:02:26 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 整合包上传和文件上传独立模块支持并发上传 & 调整上传的分片大小"
-    },
-    {
-      "commitId": "284eb9a63a32826f55e72a28f7b9f4ed22909419",
-      "commitTime": "2026-01-19 23:44:17 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复整合包创建服务端模式下进度不回显的问题"
-    },
-    {
-      "commitId": "5b26812a6f961e6068a29e38ba7c01354dfeb018",
-      "commitTime": "2026-01-19 23:28:18 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复了 MC1.16.5- 版本的forge启动参数错误的问题"
-    },
-    {
-      "commitId": "193a340f0aace0f6c2408051b7771ae531b6d9ec",
-      "commitTime": "2026-01-19 22:09:59 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
-    },
-    {
-      "commitId": "3045ab58c494a09a2b78dffcd9fb97c76444c831",
-      "commitTime": "2026-01-19 22:09:00 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "update submodule"
     }
   ]
 }

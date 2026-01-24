@@ -14,12 +14,28 @@ public class FileContentController : ControllerBase
     [HttpGet("instance/{id}/content")]
     public async Task<IActionResult> GetFileContent(uint id, [FromQuery] string path)
     {
-        var server = IConfigBase.ServerList.GetServer(id);
-        if (server == null)
-            return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
+        string basePath;
+        Encoding encoding;
+
+        if (id == 0)
+        {
+            // ID为0时，指向 Configs/Frpc，默认 UTF8
+            basePath = Path.Combine(IConfigBase.GetAppConfigPath(), "Frpc");
+            encoding = Encoding.UTF8;
+        }
+        else
+        {
+            // 正常服务端文件
+            var server = IConfigBase.ServerList.GetServer(id);
+            if (server == null)
+                return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
+
+            basePath = server.Base;
+            encoding = server.FileEncoding == "gbk" ? Encoding.GetEncoding("gbk") : Encoding.UTF8;
+        }
 
         // 安全检查
-        var check = FileUtils.GetSafePath(server.Base, path);
+        var check = FileUtils.GetSafePath(basePath, path);
         if (!check.IsSafe)
             return BadRequest(new ApiResponse<object> { Code = 403, Message = check.Message });
 
@@ -86,7 +102,7 @@ public class FileContentController : ControllerBase
         {
             // 文件流读取文件内容
             using (var fileStream = new FileStream(targetPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            using (var streamReader = new StreamReader(fileStream, server.FileEncoding == "gbk" ? Encoding.GetEncoding("gbk") : Encoding.UTF8))
+            using (var streamReader = new StreamReader(fileStream, encoding))
             {
                 string content = await streamReader.ReadToEndAsync();
 
@@ -180,14 +196,30 @@ public class FileContentController : ControllerBase
             return BadRequest(new ApiResponse<object> { Code = 400, Message = "文件路径不能为空" });
         }
 
-        var server = IConfigBase.ServerList.GetServer(id);
-        if (server == null)
+
+        string basePath;
+        Encoding encoding;
+
+        if (id == 0)
         {
-            return NotFound(new ApiResponse<object> { Code = 404, Message = "找不到指定的实例" });
+            basePath = Path.Combine(IConfigBase.GetAppConfigPath(), "Frpc");
+            encoding = Encoding.UTF8;
+
+            if (!Directory.Exists(basePath)) Directory.CreateDirectory(basePath);
+        }
+        else
+        {
+            var server = IConfigBase.ServerList.GetServer(id);
+            if (server == null)
+            {
+                return NotFound(new ApiResponse<object> { Code = 404, Message = "找不到指定的实例" });
+            }
+            basePath = server.Base;
+            encoding = server.FileEncoding == "gbk" ? Encoding.GetEncoding("gbk") : Encoding.UTF8;
         }
 
         // check
-        var check = FileUtils.GetSafePath(server.Base, request.Path);
+        var check = FileUtils.GetSafePath(basePath, request.Path);
         if (!check.IsSafe)
         {
             return BadRequest(new ApiResponse<object> { Code = 403, Message = check.Message });
@@ -204,7 +236,7 @@ public class FileContentController : ControllerBase
         // 写入文件
         try
         {
-            await System.IO.File.WriteAllTextAsync(targetPath, request.Content, server.FileEncoding == "gbk" ? Encoding.GetEncoding("gbk") : Encoding.UTF8);
+            await System.IO.File.WriteAllTextAsync(targetPath, request.Content, encoding);
 
             return Ok(new ApiResponse<object>
             {
@@ -218,7 +250,7 @@ public class FileContentController : ControllerBase
             return StatusCode(500, new ApiResponse<object>
             {
                 Code = 500,
-                Message = $"文件正如被占用或无法写入: {ex.Message}"
+                Message = $"文件正被占用或无法写入: {ex.Message}"
             });
         }
         catch (Exception ex)

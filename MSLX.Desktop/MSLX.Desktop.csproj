@@ -1,31 +1,40 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net10.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
+		<AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+		<ApplicationIcon>Assets\icon.ico</ApplicationIcon>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<FileVersion>1.0.0.0</FileVersion>
+		<AssemblyName>MSLX-Desktop</AssemblyName>
+		<AssemblyTitle>MSLX.Desktop</AssemblyTitle>
+		<AssemblyDescription>MSLX Desktop</AssemblyDescription>
+		<AssemblyCompany>MSLTeam</AssemblyCompany>
+		<AssemblyCopyright>Copyright © 2021 - 2026 MSLTeam</AssemblyCopyright>
+		<AssemblyTrademark>MSLTeam</AssemblyTrademark>
+		<AssemblyCulture>zh-CN</AssemblyCulture>
+		<NeutralLanguage>zh-CN</NeutralLanguage>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Avalonia" Version="11.3.11" />
-    <PackageReference Include="Avalonia.Desktop" Version="11.3.11" />
-    <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-    <PackageReference Include="Avalonia.Diagnostics" Version="11.3.11">
-      <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
-      <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
-    </PackageReference>
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.11" />
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-    <PackageReference Include="Downloader" Version="4.0.3" />
-    <PackageReference Include="Markdown.Avalonia" Version="11.0.2" />
-    <PackageReference Include="Material.Icons.Avalonia" Version="2.4.1" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Avalonia" Version="11.3.11" />
+		<PackageReference Include="Avalonia.Desktop" Version="11.3.11" />
+		<!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
+		<PackageReference Include="Avalonia.Diagnostics" Version="11.3.11">
+			<IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
+			<PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.11" />
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+		<PackageReference Include="Downloader" Version="4.0.3" />
+		<PackageReference Include="Markdown.Avalonia" Version="11.0.2" />
+		<PackageReference Include="Material.Icons.Avalonia" Version="2.4.1" />
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.2" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<AvaloniaResource Include="Assets\**" />
@@ -33,7 +42,7 @@
 		<Folder Include="Styles\" />
 	</ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\SukiUI\SukiUI\SukiUI.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\SukiUI\SukiUI\SukiUI.csproj" />
+	</ItemGroup>
 </Project>

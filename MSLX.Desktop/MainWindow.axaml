@@ -16,7 +16,7 @@
                        IsSelectedItemContentMovable="False">
         <suki:SukiSideMenu.HeaderContent>
 			<Grid RowDefinitions="*,auto">
-				<Image Source="avares://MSLX.Desktop/Assets/icon.ico" Width="72" Height="72" Margin="5"/>
+				<Image Source="avares://MSLX-Desktop/Assets/icon.ico" Width="72" Height="72" Margin="5"/>
                 <StackPanel Grid.Row="1">
 					<TextBlock Grid.Row="1" Text="MSLX" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     <TextBlock Text="海内存知己，天涯若比邻" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,5,0,20"/>

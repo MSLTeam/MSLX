@@ -104,7 +104,7 @@ public class AppInfoController : ControllerBase
                 ["targetFrontendVersion"] = new JObject
                 {
                     ["desktop"] = "1.0.0",
-                    ["panel"] = "1.1.0"
+                    ["panel"] = "1.1.1"
                 },
                 ["systemInfo"] = systemInfo
             };
@@ -260,7 +260,7 @@ public class AppInfoController : ControllerBase
 
     [HttpPost("api/update")]
     [Authorize(Roles = "admin")]
-    public IActionResult PostUpdate()
+    public IActionResult PostUpdate([FromQuery] bool autoRestart = true)
     {
         // 环境预检
         if (IsRunningInContainer())
@@ -283,7 +283,7 @@ public class AppInfoController : ControllerBase
         }
 
         // 启动后台更新任务
-        _ = Task.Run(async () => await PerformUpdateProcessAsync());
+        _ = Task.Run(async () => await PerformUpdateProcessAsync(autoRestart));
 
         return Ok(new ApiResponse<object>
         {
@@ -295,7 +295,7 @@ public class AppInfoController : ControllerBase
     /// <summary>
     /// 后台执行完整的更新流程
     /// </summary>
-    private async Task PerformUpdateProcessAsync()
+    private async Task PerformUpdateProcessAsync(bool autoRestart)
     {
         try
         {
@@ -344,10 +344,29 @@ public class AppInfoController : ControllerBase
 
             //解压
             await SendUpdateProgressAsync(100, "0 KB/s", "extracting", "下载完成，正在解压核心文件...");
-            ExtractCoreFile(archivePath, newFilePath, isWindows);
+            // 启动更新脚本并自动重启
+            await ExtractCoreFile(archivePath, newFilePath, isWindows);
 
-            // 启动更新脚本
-            await StartUpdateScriptAndExitAsync(newFileTempName, isWindows);
+            if (autoRestart)
+            {
+                await SendUpdateProgressAsync(100, "0 KB/s", "restarting", "准备重启守护进程...");
+                await StartUpdateScriptAndExitAsync(newFileTempName, isWindows);
+            }
+            else
+            {
+                // 不自动重启，只通知前端更新完成
+                await SendUpdateProgressAsync(100, "0 KB/s", "completed", "更新文件准备完成，等待重启...");
+
+                // 发送更新完成通知（包含新文件路径信息）
+                await _updateHubContext.Clients.All.SendAsync("UpdateCompleted", new
+                {
+                    newFilePath = newFileTempName,
+                    message = "更新文件已准备完成，请手动重启守护进程以应用更新。",
+                    autoRestart = false
+                });
+            }
+
+            
         }
         catch (Exception ex)
         {
@@ -359,7 +378,7 @@ public class AppInfoController : ControllerBase
     /// <summary>
     /// 解压核心文件
     /// </summary>
-    private void ExtractCoreFile(string archivePath, string destinationPath, bool isWindows)
+    private async Task ExtractCoreFile(string archivePath, string destinationPath, bool isWindows)
     {
         if (isWindows)
         {
@@ -370,7 +389,7 @@ public class AppInfoController : ControllerBase
 
                 if (entry == null) throw new Exception("更新包为空或格式错误");
 
-                entry.ExtractToFile(destinationPath, overwrite: true);
+                await entry.ExtractToFileAsync(destinationPath, overwrite: true);
             }
         }
         else
@@ -384,7 +403,7 @@ public class AppInfoController : ControllerBase
                 while ((entry = reader.GetNextEntry()) != null)
                 {
                     if (entry.EntryType == System.Formats.Tar.TarEntryType.Directory) continue;
-                    entry.ExtractToFile(destinationPath, overwrite: true);
+                    await entry.ExtractToFileAsync(destinationPath, overwrite: true);
                     break;
                 }
             }

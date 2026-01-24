@@ -1,0 +1,107 @@
+name: 发布 MSLX-Desktop
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch: # 允许手动触发
+
+permissions:
+  contents: write 
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    name: 构建并发布
+    
+    strategy:
+      matrix:
+        include:
+          # 定义输出的程序文件名
+          - { os: linux,   arch: x64,   rid: linux-x64,   bin: 'MSLX-Desktop' }
+          - { os: linux,   arch: arm64, rid: linux-arm64, bin: 'MSLX-Desktop' }
+          - { os: windows, arch: x64,   rid: win-x64,     bin: 'MSLX-Desktop.exe' }
+          - { os: windows, arch: arm64, rid: win-arm64,   bin: 'MSLX-Desktop.exe' }
+          - { os: osx,     arch: x64,   rid: osx-x64,     bin: 'MSLX-Desktop' }
+          - { os: osx,     arch: arm64, rid: osx-arm64,   bin: 'MSLX-Desktop' }
+
+    steps:
+      - name: 签出代码
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: 设置 .NET 10 环境
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: 确定版本号 (Tag vs Manual)
+        id: version
+        shell: bash
+        run: |
+          # 判断触发类型
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            # 如果是 Tag 触发，使用 Tag 名称 (去掉 refs/tags/)
+            echo "VERSION_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
+            echo "这是正式 Release 构建: ${{ github.ref_name }}"
+          else
+            # 如果是手动触发，强制使用 beta
+            echo "VERSION_NAME=beta" >> $GITHUB_ENV
+            echo "这是手动触发构建，使用版本号: beta"
+          fi
+
+      - name: 编译发布文件
+        run: |
+          # 定义临时目录
+          PUBLISH_DIR="./publish_temp"
+          DIST_DIR="./dist"
+          mkdir -p $PUBLISH_DIR
+          mkdir -p $DIST_DIR
+          
+          # 执行 dotnet publish
+          dotnet publish ./MSLX.Desktop/MSLX.Desktop.csproj \
+            -c Release \
+            -r ${{ matrix.rid }} \
+            --no-self-contained \
+            -p:PublishSingleFile=true \
+            -p:DebugType=None \
+            -p:DebugSymbols=false \
+            -p:CopyContentFiles=false \
+            -o "$PUBLISH_DIR" \
+            -p:IncludeNativeLibrariesForSelfExtract=true
+
+          # 打包处理
+          BASE_NAME="MSLX-Desktop_${{ env.VERSION_NAME }}_${{ matrix.rid }}"
+          
+          if [[ "${{ matrix.os }}" == "windows" ]]; then
+            # --- Windows: 打包成 ZIP ---
+            ARCHIVE_NAME="$BASE_NAME.zip"
+            
+            # 进入目录打包
+            # -j 参数：不包含目录路径 (Junk paths)，解压直接看到 exe
+            cd "$PUBLISH_DIR"
+            zip -j "../$DIST_DIR/$ARCHIVE_NAME" "${{ matrix.bin }}"
+            
+          else
+            # --- Linux/macOS: 打包成 TAR.GZ ---
+            ARCHIVE_NAME="$BASE_NAME.tar.gz"
+            
+            cd "$PUBLISH_DIR"
+            chmod +x "${{ matrix.bin }}"
+            # 打包
+            # -C 切换目录，确保包内没有多余层级
+            tar -czvf "../$DIST_DIR/$ARCHIVE_NAME" "${{ matrix.bin }}"
+          fi
+          
+          # 将生成的包路径保存到环境变量
+          echo "ASSET_PATH=./dist/$ARCHIVE_NAME" >> $GITHUB_ENV
+
+      - name: 上传到 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # 指定上传的文件
+          files: ${{ env.ASSET_PATH }}
+          tag_name: ${{ env.VERSION_NAME }}
+          # 如果是 beta 版本，标记为预发布
+          prerelease: ${{ env.VERSION_NAME == 'beta' }}
