@@ -15,6 +15,14 @@ import { formatTime, generateRandomString } from '@/utils/tools';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { openLoginPopup } from '@/utils/popup';
 import { createFrpTunnel } from '@/pages/frp/createFrp/utils/create';
+import CreateTunnelDialog from './components/CreateTunnelDialog.vue';
+
+const showCreateDialog = ref(false);
+
+// 创建成功后的回调
+const handleCreateSuccess = () => {
+  initDashboardData(); // 刷新列表
+};
 
 interface UserInfo {
   uid: number;
@@ -207,7 +215,7 @@ async function handleUseTunnel() {
     });
 
     if (res.code === 200) {
-      await createFrpTunnel(currentTunnel.value.name, res.data, 'MSLFrp'); // 错误会抛出 这个函数会自动跳转+成功提示
+      await createFrpTunnel(currentTunnel.value.name, res.data, 'Index'); // 错误会抛出 这个函数会自动跳转+成功提示
     } else {
       MessagePlugin.error(res.msg);
     }
@@ -218,8 +226,7 @@ async function handleUseTunnel() {
 }
 
 const handleAddTunnel = () => {
-  MessagePlugin.info('请前往 MSL用户中心 创建新隧道');
-  changeUrl('https://user.mslmc.net/frp/createTunnel');
+  showCreateDialog.value = true;
 };
 
 // 退出登录
@@ -324,7 +331,13 @@ async function handleRefresh() {
                 <div class="list-header">
                   <span>我的隧道</span>
                   <t-space size="4px">
-                    <t-button style="margin-left: 3px;" size="small" variant="text" :loading="loading" @click="handleRefresh">
+                    <t-button
+                      style="margin-left: 3px"
+                      size="small"
+                      variant="text"
+                      :loading="loading"
+                      @click="handleRefresh"
+                    >
                       <template #icon><refresh-icon /></template>
                       刷新
                     </t-button>
@@ -434,6 +447,12 @@ async function handleRefresh() {
         </t-row>
       </t-space>
     </div>
+    <create-tunnel-dialog
+      v-if="showCreateDialog"
+      v-model:visible="showCreateDialog"
+      :token="mslUserToken"
+      @success="handleCreateSuccess"
+    />
   </div>
 </template>
 
