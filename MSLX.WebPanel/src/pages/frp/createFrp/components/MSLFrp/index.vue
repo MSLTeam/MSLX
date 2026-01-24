@@ -410,8 +410,9 @@ async function handleDeleteTunnel() {
                 <span>隧道详情</span>
               </template>
 
-              <template v-if="currentTunnel" #actions>
+              <template #actions>
                 <t-popconfirm
+                  v-if="currentTunnel"
                   content="确认删除此隧道吗？"
                   theme="danger"
                   placement="bottom-right"
