@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { UserCircleIcon, UserAddIcon, ServerIcon, CloudIcon, AddIcon, PlayCircleIcon } from 'tdesign-icons-vue-next';
+import {
+  UserCircleIcon,
+  UserAddIcon,
+  ServerIcon,
+  CloudIcon,
+  AddIcon,
+  PlayCircleIcon,
+  RefreshIcon,
+} from 'tdesign-icons-vue-next';
 import { changeUrl } from '@/router';
 import { onMounted, onUnmounted, ref, computed } from 'vue';
 import { request } from '@/utils/request';
@@ -7,6 +15,14 @@ import { formatTime, generateRandomString } from '@/utils/tools';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { openLoginPopup } from '@/utils/popup';
 import { createFrpTunnel } from '@/pages/frp/createFrp/utils/create';
+import CreateTunnelDialog from './components/CreateTunnelDialog.vue';
+
+const showCreateDialog = ref(false);
+
+// 创建成功后的回调
+const handleCreateSuccess = () => {
+  initDashboardData(); // 刷新列表
+};
 
 interface UserInfo {
   uid: number;
@@ -199,7 +215,7 @@ async function handleUseTunnel() {
     });
 
     if (res.code === 200) {
-      await createFrpTunnel(currentTunnel.value.name, res.data, 'MSLFrp'); // 错误会抛出 这个函数会自动跳转+成功提示
+      await createFrpTunnel(currentTunnel.value.name, res.data, 'Index'); // 错误会抛出 这个函数会自动跳转+成功提示
     } else {
       MessagePlugin.error(res.msg);
     }
@@ -210,9 +226,62 @@ async function handleUseTunnel() {
 }
 
 const handleAddTunnel = () => {
-  MessagePlugin.info('请前往 MSL用户中心 创建新隧道');
-  changeUrl('https://user.mslmc.net/frp/createTunnel');
+  showCreateDialog.value = true;
 };
+
+// 退出登录
+async function handleLogout() {
+  try {
+    await request.get({
+      url: '/api/user/logout',
+      baseURL: 'https://user.mslmc.net',
+      headers: { Authorization: `Bearer ${mslUserToken.value}` },
+    });
+
+    mslUserToken.value = '';
+    userInfo.value = null;
+    tunnels.value = [];
+    localStorage.removeItem('msl-user-token');
+
+    MessagePlugin.success('已退出登录');
+  } catch (e: any) {
+    MessagePlugin.error('退出失败: ' + e.message);
+  }
+}
+
+async function handleRefresh() {
+  await initDashboardData();
+  MessagePlugin.success('数据已更新');
+}
+
+// 删除隧道逻辑
+const isDeleting = ref(false);
+
+async function handleDeleteTunnel() {
+  if (!currentTunnel.value) return;
+  isDeleting.value = true;
+
+  try {
+    const res = await request.post({
+      url: '/api/frp/deleteTunnel',
+      baseURL: 'https://user.mslmc.net',
+      data: { id: currentTunnel.value.id },
+      headers: { Authorization: `Bearer ${mslUserToken.value}` },
+    });
+
+    if (res.code === 200) {
+      MessagePlugin.success('隧道删除成功');
+      selectedTunnelId.value = null; // 清空当前选中
+      await initDashboardData(); // 重新刷新列表
+    } else {
+      MessagePlugin.error(res.msg || '删除失败');
+    }
+  } catch (e: any) {
+    MessagePlugin.error('操作失败: ' + e.message);
+  } finally {
+    isDeleting.value = false;
+  }
+}
 </script>
 
 <template>
@@ -249,7 +318,12 @@ const handleAddTunnel = () => {
       <t-space id="app-space" direction="vertical" size="large" style="width: 100%">
         <t-card v-if="userInfo" :bordered="false" title="MSLFrp 用户信息" class="info-card">
           <template #actions>
-            <t-tag theme="primary" variant="light">{{ userInfo.user_group_name }}</t-tag>
+            <t-space size="small">
+              <t-tag theme="primary" variant="light">{{ userInfo.user_group_name }}</t-tag>
+              <t-popconfirm content="确认退出登录吗？" @confirm="handleLogout">
+                <t-button variant="text" theme="danger" size="small"> 退出登录 </t-button>
+              </t-popconfirm>
+            </t-space>
           </template>
           <t-row :gutter="[16, 16]">
             <t-col :xs="6" :sm="3">
@@ -285,10 +359,22 @@ const handleAddTunnel = () => {
               <template #title>
                 <div class="list-header">
                   <span>我的隧道</span>
-                  <t-button size="small" variant="text" @click="handleAddTunnel">
-                    <template #icon><add-icon /></template>
-                    新建
-                  </t-button>
+                  <t-space size="4px">
+                    <t-button
+                      style="margin-left: 3px"
+                      size="small"
+                      variant="text"
+                      :loading="loading"
+                      @click="handleRefresh"
+                    >
+                      <template #icon><refresh-icon /></template>
+                      刷新
+                    </t-button>
+                    <t-button size="small" variant="text" @click="handleAddTunnel">
+                      <template #icon><add-icon /></template>
+                      新建
+                    </t-button>
+                  </t-space>
                 </div>
               </template>
 
@@ -322,6 +408,17 @@ const handleAddTunnel = () => {
             <t-card :bordered="false" class="full-height-card">
               <template #title>
                 <span>隧道详情</span>
+              </template>
+
+              <template v-if="currentTunnel" #actions>
+                <t-popconfirm
+                  content="确认删除此隧道吗？"
+                  theme="danger"
+                  placement="bottom-right"
+                  @confirm="handleDeleteTunnel"
+                >
+                  <t-button theme="danger" variant="text" :loading="isDeleting"> 删除隧道 </t-button>
+                </t-popconfirm>
               </template>
 
               <div v-if="currentTunnel" class="detail-content">
@@ -390,6 +487,12 @@ const handleAddTunnel = () => {
         </t-row>
       </t-space>
     </div>
+    <create-tunnel-dialog
+      v-if="showCreateDialog"
+      v-model:visible="showCreateDialog"
+      :token="mslUserToken"
+      @success="handleCreateSuccess"
+    />
   </div>
 </template>
 

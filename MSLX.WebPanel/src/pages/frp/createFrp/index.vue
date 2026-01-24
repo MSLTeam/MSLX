@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import Custom from '@/pages/frp/createFrp/components/Custom.vue';
-import MSLFrp from '@/pages/frp/createFrp/components/MSLFrp.vue';
+import Index from '@/pages/frp/createFrp/components/MSLFrp/index.vue';
 import MSLP2P from '@/pages/frp/createFrp/components/MSLP2P.vue';
 
 const value = ref(1);
@@ -12,7 +12,7 @@ const value = ref(1);
     <t-card direction="vertical">
       <t-tabs v-model="value">
         <t-tab-panel :value="1" label="MSLFrp" :destroy-on-hide="false">
-          <m-s-l-frp style="margin: 15px;"/>
+          <index style="margin: 15px;"/>
         </t-tab-panel>
         <t-tab-panel :value="2" label="MSL 联机" :destroy-on-hide="false">
           <m-s-l-p2-p style="margin: 15px;"/>
