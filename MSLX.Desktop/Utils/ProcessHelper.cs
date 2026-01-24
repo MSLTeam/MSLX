@@ -1,18 +1,19 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace MSLX.Desktop.Utils
 {
     internal class ProcessHelper
     {
-        public static bool SendCtrlC(Process process)
+        public static async Task<bool> SendCtrlC(Process process)
         {
             if (process == null || process.HasExited)
                 return false;
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                return SendCtrlCWindows(process);
+                return await SendCtrlCWindows(process);
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
                      RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
@@ -33,16 +34,32 @@ namespace MSLX.Desktop.Utils
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool FreeConsole();
 
-        private static bool SendCtrlCWindows(Process process)
+        [DllImport("kernel32.dll")]
+        private static extern bool SetConsoleCtrlHandler(ConsoleCtrlDelegate? HandlerRoutine, bool Add);
+        private delegate bool ConsoleCtrlDelegate(uint CtrlType);
+
+        private async static Task<bool> SendCtrlCWindows(Process process)
         {
-            FreeConsole();
-            if (AttachConsole((uint)process.Id))
+            // 临时忽略主进程的 Ctrl+C 信号
+            SetConsoleCtrlHandler(null, true);
+
+            try
             {
-                GenerateConsoleCtrlEvent(0, 0);
                 FreeConsole();
-                return true;
+                if (AttachConsole((uint)process.Id))
+                {
+                    GenerateConsoleCtrlEvent(0, 0);
+                    await Task.Delay(150);
+                    FreeConsole();
+                    return true;
+                }
+                return false;
             }
-            return false;
+            finally
+            {
+                // 恢复主进程的 Ctrl+C 处理
+                SetConsoleCtrlHandler(null, false);
+            }
         }
 
         // Unix 实现

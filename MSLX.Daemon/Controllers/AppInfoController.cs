@@ -355,7 +355,7 @@ public class AppInfoController : ControllerBase
             else
             {
                 // 不自动重启，只通知前端更新完成
-                await SendUpdateProgressAsync(100, "0 KB/s", "completed", "更新文件准备完成，等待手动重启...");
+                await SendUpdateProgressAsync(100, "0 KB/s", "completed", "更新文件准备完成，等待重启...");
 
                 // 发送更新完成通知（包含新文件路径信息）
                 await _updateHubContext.Clients.All.SendAsync("UpdateCompleted", new

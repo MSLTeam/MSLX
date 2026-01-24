@@ -1,13 +1,18 @@
 using Avalonia.Controls;
 using Avalonia.Threading;
+using Material.Icons;
+using Material.Icons.Avalonia;
 using Microsoft.AspNetCore.SignalR.Client;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils.API;
+using MSLX.Desktop.Views.LinkDaemon;
 using Newtonsoft.Json.Linq;
+using SukiUI.Controls;
 using SukiUI.Dialogs;
 using SukiUI.Toasts;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace MSLX.Desktop.Utils
@@ -22,7 +27,7 @@ namespace MSLX.Desktop.Utils
         }
 
         private static DaemonUpdateService? _updateService;
-        public static async Task<(bool isSuccess,string? msg)> UpdateDaemonApp()
+        public static async Task<(bool isSuccess, string? msg)> UpdateDaemonApp()
         {
             var (Success, Data, Msg) = await DaemonAPIService.GetJsonDataAsync("/api/update/info");
             if (!Success)
@@ -48,15 +53,15 @@ namespace MSLX.Desktop.Utils
             {
                 case "outdated":
                     DialogService.DialogManager.CreateDialog()
-                .OfType(Avalonia.Controls.Notifications.NotificationType.Information)
-                .WithTitle("守护程序：新版本")
-                .WithContent($"检测到守护程序需要进行新版本更新！\n当前版本：{currentVersion}\n最新版本：{latestVersion}\n更新日志：\n{updateLog}")
-                .WithActionButton("更新", async _ =>
-                {
-                    await StartUpdateProcessAsync(false);
-                }, true)
-                .WithActionButton("关闭", _ => { }, true, "Standard")
-                .TryShow();
+                        .OfType(Avalonia.Controls.Notifications.NotificationType.Information)
+                        .WithTitle("守护程序：新版本")
+                        .WithContent($"检测到守护程序需要进行新版本更新！\n当前版本：{currentVersion}\n最新版本：{latestVersion}\n更新日志：\n{updateLog}")
+                        .WithActionButton("更新", async _ =>
+                        {
+                            await StartUpdateProcessAsync(false);
+                        }, true)
+                        .WithActionButton("关闭", _ => { }, true, "Standard")
+                        .TryShow();
                     break;
                 case "release":
                     DialogService.ToastManager.CreateToast()
@@ -124,7 +129,7 @@ namespace MSLX.Desktop.Utils
                 _updateService = new DaemonUpdateService();
 
                 // 订阅更新进度事件
-                _updateService.OnUpdateProgress += (data) =>
+                _updateService.OnUpdateProgress += async (data) =>
                 {
                     Dispatcher.UIThread.Post(() =>
                     {
@@ -136,10 +141,83 @@ namespace MSLX.Desktop.Utils
                         {
                             "downloading" => $"下载中... {data.Progress:F1}%",
                             "extracting" => "解压核心文件中...",
-                            "installing" => "安装更新中...",
                             _ => data.Status
                         };
                     });
+                    if (data.Stage == "restarting")
+                    {
+                        await _updateService.DisconnectAsync();
+                        _updateService.Dispose();
+                        await Task.Delay(1500);
+                        DialogService.ToastManager.Dismiss(toast);
+                        SideMenuHelper.MainSideMenuHelper?.NavigateTo(new SukiSideMenuItem
+                        {
+                            Header = "欢迎",
+                            Icon = new MaterialIcon()
+                            {
+                                Kind = MaterialIconKind.HandWave,
+                            },
+                            PageContent = new WelcomePage(),
+                            IsContentMovable = false
+                        }, true, 0);
+                        SideMenuHelper.MainSideMenuHelper?.HideMainPages(0);
+                    }
+                    else if (!autoRestart && data.Stage == "completed")
+                    {
+                        await _updateService.DisconnectAsync();
+                        _updateService.Dispose();
+                        await Task.Delay(1500);
+                        DialogService.ToastManager.Dismiss(toast);
+                        await DaemonManager.StopRunningDaemon();
+                        await Task.Delay(1500);
+                        string currentFileName;
+                        string newFileName;
+                        switch (PlatformHelper.GetOS())
+                        {
+                            case PlatformHelper.TheOSPlatform.Windows:
+                                currentFileName = Path.Combine(ConfigService.GetAppDataPath(), "MSLX-Daemon.exe");
+                                newFileName = Path.Combine(ConfigService.GetAppDataPath(), "MSLX-Daemon.exe.new");
+                                if (!(File.Exists(currentFileName) && File.Exists(newFileName)))
+                                {
+                                    DialogService.DialogManager.CreateDialog()
+                                        .OfType(Avalonia.Controls.Notifications.NotificationType.Error)
+                                        .WithTitle("更新失败")
+                                        .WithContent($"文件不存在！")
+                                        .WithActionButton("确定", _ => { }, true)
+                                        .TryShow();
+                                }
+                                File.Delete(currentFileName);
+                                File.Copy(newFileName, currentFileName);
+                                break;
+                            default:
+                                currentFileName = Path.Combine(ConfigService.GetAppDataPath(), "MSLX-Daemon");
+                                newFileName = Path.Combine(ConfigService.GetAppDataPath(), "MSLX-Daemon.new");
+                                if (!(File.Exists(currentFileName) && File.Exists(newFileName)))
+                                {
+                                    DialogService.DialogManager.CreateDialog()
+                                        .OfType(Avalonia.Controls.Notifications.NotificationType.Error)
+                                        .WithTitle("更新失败")
+                                        .WithContent($"文件不存在！")
+                                        .WithActionButton("确定", _ => { }, true)
+                                        .TryShow();
+                                }
+                                File.Delete(currentFileName);
+                                File.Copy(newFileName, currentFileName);
+                                break;
+                        }
+
+                        SideMenuHelper.MainSideMenuHelper?.NavigateTo(new SukiSideMenuItem
+                        {
+                            Header = "欢迎",
+                            Icon = new MaterialIcon()
+                            {
+                                Kind = MaterialIconKind.HandWave,
+                            },
+                            PageContent = new WelcomePage(),
+                            IsContentMovable = false
+                        }, true, 0);
+                        SideMenuHelper.MainSideMenuHelper?.HideMainPages(0);
+                    }
                 };
 
                 // 订阅更新失败事件
@@ -148,7 +226,6 @@ namespace MSLX.Desktop.Utils
                     Dispatcher.UIThread.Post(() =>
                     {
                         DialogService.ToastManager.Dismiss(toast);
-
                         DialogService.DialogManager.CreateDialog()
                             .OfType(Avalonia.Controls.Notifications.NotificationType.Error)
                             .WithTitle("更新失败")
@@ -244,7 +321,6 @@ namespace MSLX.Desktop.Utils
         // 更新进度事件
         public event Action<UpdateProgressData>? OnUpdateProgress;
         public event Action<string>? OnUpdateFailed;
-        public event Action? OnUpdateCompleted;
 
         /// <summary>
         /// 连接到更新进度Hub
