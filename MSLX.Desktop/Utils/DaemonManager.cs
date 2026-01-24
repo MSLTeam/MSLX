@@ -203,12 +203,12 @@ namespace MSLX.Desktop.Utils
         /// <summary>
         /// 停止正在运行的Daemon进程
         /// </summary>
-        public static void StopRunningDaemon()
+        public static async Task StopRunningDaemon()
         {
             try
             {
                 if (DaemonProcess != null)
-                    ProcessHelper.SendCtrlC(DaemonProcess);
+                    await ProcessHelper.SendCtrlC(DaemonProcess);
             }
             catch
             {
