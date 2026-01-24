@@ -213,6 +213,26 @@ const handleAddTunnel = () => {
   MessagePlugin.info('请前往 MSL用户中心 创建新隧道');
   changeUrl('https://user.mslmc.net/frp/createTunnel');
 };
+
+// 退出登录
+async function handleLogout() {
+  try {
+    await request.get({
+      url: '/api/user/logout',
+      baseURL: 'https://user.mslmc.net',
+      headers: { Authorization: `Bearer ${mslUserToken.value}` },
+    });
+
+    mslUserToken.value = '';
+    userInfo.value = null;
+    tunnels.value = [];
+    localStorage.removeItem('msl-user-token');
+
+    MessagePlugin.success('已退出登录');
+  } catch (e: any) {
+    MessagePlugin.error('退出失败: ' + e.message);
+  }
+}
 </script>
 
 <template>
@@ -249,7 +269,12 @@ const handleAddTunnel = () => {
       <t-space id="app-space" direction="vertical" size="large" style="width: 100%">
         <t-card v-if="userInfo" :bordered="false" title="MSLFrp 用户信息" class="info-card">
           <template #actions>
-            <t-tag theme="primary" variant="light">{{ userInfo.user_group_name }}</t-tag>
+            <t-space size="small">
+              <t-tag theme="primary" variant="light">{{ userInfo.user_group_name }}</t-tag>
+              <t-popconfirm content="确认退出登录吗？" @confirm="handleLogout">
+                <t-button variant="text" theme="danger" size="small"> 退出登录 </t-button>
+              </t-popconfirm>
+            </t-space>
           </template>
           <t-row :gutter="[16, 16]">
             <t-col :xs="6" :sm="3">
