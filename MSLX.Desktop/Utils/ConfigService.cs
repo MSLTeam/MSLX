@@ -7,9 +7,9 @@ using System.Diagnostics;
 
 namespace MSLX.Desktop.Utils
 {
-    internal class ConfigService
+    public static class ConfigService
     {
-        public static IConfigService Config { get; } = new IConfigService();
+        public static IConfigService Config { get; } = new();
 
         public static string GetAppDataPath()
         {
@@ -26,11 +26,6 @@ namespace MSLX.Desktop.Utils
         public static string GetDaemonDataPath()
         {
             return Path.Combine(GetAppDataPath(), "DaemonData");
-        }
-
-        public static void InitConfig()
-        {
-            ConfigStore.DaemonApiKey = Config.ReadDaemonConfigKey("apiKey")?.ToString() ?? Config.ReadConfigKey("ApiKey")?.ToString() ?? string.Empty;
         }
 
         public static void GetDaemonApiKey()

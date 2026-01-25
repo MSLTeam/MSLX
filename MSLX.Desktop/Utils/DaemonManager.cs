@@ -35,25 +35,26 @@ namespace MSLX.Desktop.Utils
             string serverTime = data?["serverTime"]?.Value<string>() ?? "Unknown";
             string targetFrontendVersion = data?["targetFrontendVersion"]?["desktop"]?.Value<string>() ?? "0.0.0";
             Version targetVersion = Version.Parse(targetFrontendVersion);
-            ConfigStore.Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0, 0);
-            // 截取前三位版本号进行比较
-            Version targetVersionTrimmed = new Version(targetVersion.Major, targetVersion.Minor, targetVersion.Build);
-            Version currentVersionTrimmed = new(ConfigStore.Version.Major, ConfigStore.Version.Minor, ConfigStore.Version.Build);
-
-            // 比较版本号
-            if (currentVersionTrimmed != targetVersionTrimmed)
-            {
-                DialogService.ToastManager.CreateToast()
-                    .OfType(Avalonia.Controls.Notifications.NotificationType.Warning)
-                    .WithTitle("与守护程序的兼容性警告")
-                    .WithContent($"您的版本号({currentVersionTrimmed})与守护程序要求的版本号({targetVersionTrimmed})不一致，可能会出现兼容性问题！")
-                    .Dismiss().After(TimeSpan.FromSeconds(10))
-                    .Queue();
-            }
 
             DialogService.DialogManager.DismissDialog();
             if (isSuccess)
             {
+                ConfigStore.Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0, 0);
+                // 截取前三位版本号进行比较
+                Version targetVersionTrimmed = new Version(targetVersion.Major, targetVersion.Minor, targetVersion.Build);
+                Version currentVersionTrimmed = new(ConfigStore.Version.Major, ConfigStore.Version.Minor, ConfigStore.Version.Build);
+
+                // 比较版本号
+                if (currentVersionTrimmed != targetVersionTrimmed)
+                {
+                    DialogService.ToastManager.CreateToast()
+                        .OfType(Avalonia.Controls.Notifications.NotificationType.Warning)
+                        .WithTitle("与守护程序的兼容性警告")
+                        .WithContent($"您的版本号({currentVersionTrimmed})与守护程序要求的版本号({targetVersionTrimmed})不一致，可能会出现兼容性问题！")
+                        .Dismiss().After(TimeSpan.FromSeconds(10))
+                        .Queue();
+                }
+
                 // 验证成功
                 DialogService.ToastManager.CreateToast()
                             .WithTitle(msg)
@@ -80,7 +81,6 @@ namespace MSLX.Desktop.Utils
                     {
                         Text = "请重新输入有效的Daemon API Key。",
                     })
-                    .WithActionButton("重试", async _ => { await VerifyDaemonApiKey(); }, true)
                     .WithActionButton("关闭", _ => { }, true)
                     .TryShow();
                 return false;

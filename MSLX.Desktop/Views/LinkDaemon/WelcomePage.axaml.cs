@@ -18,6 +18,7 @@ public partial class WelcomePage : UserControl
         InitializeComponent();
 
         this.Loaded += WelcomePage_Loaded;
+        this.Retry.Click += Retry_Click;
         this.Next.Click += Next_Click;
     }
 
@@ -29,6 +30,7 @@ public partial class WelcomePage : UserControl
     // Method B: 检测MSLXData目录下的Daemon程序，若存在则尝试启动Daemon程序并尝试获取ApiKey进行验证，验证成功跳转主页面，失败进入Method C
     // Method C: 显示“下一步”按钮，用户点击后跳转到下载守护程序页面
     // Method D: 显示“下一步”按钮，用户点击后跳转到链接守护程序页面
+    // Method E: 显示“Retry”按钮
 
     // 上述说明仅供参考，因为后续写代码时对部分不完善的逻辑进行了补充调整，请以代码逻辑为准。
 
@@ -36,19 +38,19 @@ public partial class WelcomePage : UserControl
     {
         Debug.WriteLine("WelcomePage: MethodA Start");
 
-        string DaemonAddress=ConfigService.Config.ReadConfigKey("DaemonAddress")?.ToString() ?? string.Empty;
-        string daemonApiKey=ConfigService.Config.ReadConfigKey("DaemonApiKey")?.ToString() ?? string.Empty;
+        string daemonAddress = ConfigService.Config.ReadConfigKey("DaemonAddress")?.ToString() ?? string.Empty;
+        string daemonApiKey = ConfigService.Config.ReadConfigKey("DaemonApiKey")?.ToString() ?? string.Empty;
 
-        bool autuoRunDaemon = ConfigService.Config.ReadConfigKey("AutoRunDaemon")?.ToObject<bool>() ?? false;
+        bool autoRunDaemon = ConfigService.Config.ReadConfigKey("AutoRunDaemon")?.ToObject<bool>() ?? false;
 
-        if (!string.IsNullOrEmpty(DaemonAddress) && !string.IsNullOrEmpty(daemonApiKey))
+        if (!string.IsNullOrEmpty(daemonAddress) && !string.IsNullOrEmpty(daemonApiKey))
         {
-            ConfigStore.DaemonAddress = DaemonAddress;
+            ConfigStore.DaemonAddress = daemonAddress;
             ConfigStore.DaemonApiKey = daemonApiKey;
-
+            await Task.Delay(150);
             if (DaemonManager.FindDaemonProcess() == null)
             {
-                if (autuoRunDaemon)
+                if (autoRunDaemon)
                 {
                     // 尝试启动守护程序
                     var (Success, Msg) = await DaemonManager.StartDaemon(ConfigService.GetAppDataPath());
@@ -66,6 +68,7 @@ public partial class WelcomePage : UserControl
                         else
                         {
                             MethodD();
+                            MethodE();
                         }
                     }
                     else
@@ -75,7 +78,7 @@ public partial class WelcomePage : UserControl
                 }
                 else
                 {
-                    if(await DaemonManager.GetKeyAndLinkDaemon(false))
+                    if (await DaemonManager.GetKeyAndLinkDaemon(false))
                     {
                         // 验证成功，跳转到主页面
                         SideMenuHelper.MainSideMenuHelper?.ShowMainPages();
@@ -102,9 +105,10 @@ public partial class WelcomePage : UserControl
                 else
                 {
                     MethodD();
+                    MethodE();
                 }
             }
-            
+
         }
         else
         {
@@ -152,6 +156,12 @@ public partial class WelcomePage : UserControl
         Debug.WriteLine("WelcomePage: MethodD Start");
         Next.Tag = 1;
         Next.IsVisible = true;
+    }
+
+    private void MethodE()
+    {
+        Debug.WriteLine("WelcomePage: MethodE Start");
+        Retry.IsVisible = true;
     }
 
     private async void WelcomePage_Loaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -202,5 +212,10 @@ public partial class WelcomePage : UserControl
             }, true);
         }
 
+    }
+
+    private async void Retry_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        await MethodA();
     }
 }
