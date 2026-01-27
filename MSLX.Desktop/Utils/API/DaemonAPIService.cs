@@ -3,6 +3,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -121,6 +122,11 @@ namespace MSLX.Desktop.Utils.API
         public static async Task<(bool IsSuccess, string Msg, JObject? Data)> VerifyDaemonApiKey()
         {
             var response = await GetApiAsync("/api/status");
+
+            Debug.WriteLine(ConfigStore.DaemonApiKey);
+            Debug.WriteLine(response.StatusCode);
+            Debug.WriteLine(response.Content);
+
             DialogService.DialogManager.DismissDialog();
             if (response.IsSuccess)
             {
