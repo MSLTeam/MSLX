@@ -416,7 +416,7 @@ private async Task<bool> DownloadFrpcAsync(int id, FrpContext context)
         {
             try
             {
-                await Task.Delay(3000);
+                await Task.Delay(500);
 
                 _logger.LogInformation("[AutoStart] 正在检查 FRP 隧道自启动配置...");
 
