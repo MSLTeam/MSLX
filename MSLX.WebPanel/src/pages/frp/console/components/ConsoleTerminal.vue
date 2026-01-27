@@ -12,7 +12,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  update: []
+  update: [];
 }>();
 
 const userStore = useUserStore();
@@ -28,21 +28,49 @@ let hubConnection: HubConnection | null = null;
 // 主题配置
 const termThemes = {
   dark: {
-    background: 'transparent', foreground: '#cccccc', cursor: 'transparent', selectionBackground: '#264f78',
-    black: '#000000', red: '#cd3131', green: '#0dbc79', yellow: '#e5e510',
-    blue: '#2472c8', magenta: '#bc3fbc', cyan: '#11a8cd', white: '#e5e5e5',
-    brightBlack: '#666666', brightRed: '#f14c4c', brightGreen: '#23d18b',
-    brightYellow: '#f5f543', brightBlue: '#3b8eea', brightMagenta: '#d670d6',
-    brightCyan: '#29b8db', brightWhite: '#e5e5e5',
+    background: 'transparent',
+    foreground: '#cccccc',
+    cursor: 'transparent',
+    selectionBackground: '#264f78',
+    black: '#000000',
+    red: '#cd3131',
+    green: '#0dbc79',
+    yellow: '#e5e510',
+    blue: '#2472c8',
+    magenta: '#bc3fbc',
+    cyan: '#11a8cd',
+    white: '#e5e5e5',
+    brightBlack: '#666666',
+    brightRed: '#f14c4c',
+    brightGreen: '#23d18b',
+    brightYellow: '#f5f543',
+    brightBlue: '#3b8eea',
+    brightMagenta: '#d670d6',
+    brightCyan: '#29b8db',
+    brightWhite: '#e5e5e5',
   },
   light: {
-    background: 'transparent', foreground: '#333333', cursor: 'transparent', selectionBackground: '#add6ff',
-    black: '#000000', red: '#cd3131', green: '#00bc79', yellow: '#9d9d10',
-    blue: '#2472c8', magenta: '#bc3fbc', cyan: '#11a8cd', white: '#e5e5e5',
-    brightBlack: '#666666', brightRed: '#f14c4c', brightGreen: '#23d18b',
-    brightYellow: '#f5f543', brightBlue: '#3b8eea', brightMagenta: '#d670d6',
-    brightCyan: '#29b8db', brightWhite: '#e5e5e5',
-  }
+    background: 'transparent',
+    foreground: '#333333',
+    cursor: 'transparent',
+    selectionBackground: '#add6ff',
+    black: '#000000',
+    red: '#cd3131',
+    green: '#00bc79',
+    yellow: '#9d9d10',
+    blue: '#2472c8',
+    magenta: '#bc3fbc',
+    cyan: '#11a8cd',
+    white: '#e5e5e5',
+    brightBlack: '#666666',
+    brightRed: '#f14c4c',
+    brightGreen: '#23d18b',
+    brightYellow: '#f5f543',
+    brightBlue: '#3b8eea',
+    brightMagenta: '#d670d6',
+    brightCyan: '#29b8db',
+    brightWhite: '#e5e5e5',
+  },
 };
 
 // 日志染色
@@ -72,15 +100,17 @@ const initTerminal = () => {
 
   const isDark = document.documentElement.getAttribute('theme-mode') === 'dark';
   term = new Terminal({
-    cursorBlink: false, // 关闭光标闪烁
+    cursorBlink: false,
     cursorStyle: 'bar',
-    fontSize: 13,
-    fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+    fontSize: 14,
+    fontFamily:
+      '"Maple Mono", "Maple Mono CN", "Cascadia Code", Consolas, Menlo, "PingFang SC", "Microsoft YaHei", monospace',
     lineHeight: 1.4,
     theme: isDark ? termThemes.dark : termThemes.light,
     allowTransparency: true,
     disableStdin: true,
     convertEol: true,
+    overviewRulerWidth: 0,
   });
 
   fitAddon = new FitAddon();
@@ -89,7 +119,11 @@ const initTerminal = () => {
 
   const fitTerminal = () => {
     if (terminalBody.value && terminalBody.value.clientWidth > 0 && terminalBody.value.clientHeight > 0) {
-      try { fitAddon?.fit(); } catch (e) { console.warn(e); }
+      try {
+        fitAddon?.fit();
+      } catch (e) {
+        console.warn(e);
+      }
     }
   };
 
@@ -117,7 +151,9 @@ const stopSignalR = async () => {
     try {
       await hubConnection.stop();
       hubConnection = null;
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   }
 };
 
@@ -128,7 +164,7 @@ const startSignalR = async () => {
   const { baseUrl, token } = userStore;
   const hubUrl = new URL('/api/hubs/frpLogsHub', baseUrl || window.location.origin);
   if (token) hubUrl.searchParams.append('x-user-token', token);
-  console.log(hubUrl.toString())
+  console.log(hubUrl.toString());
 
   hubConnection = new HubConnectionBuilder()
     .withUrl(hubUrl.toString(), { withCredentials: false })
@@ -139,8 +175,8 @@ const startSignalR = async () => {
   hubConnection.on('ReceiveLog', (message: string) => {
     term?.writeln(colorizeLog(message));
     // 包含MSLX的信息应当检查隧道状态
-    if(message.includes('[MSLX]')){
-      setTimeout(()=>{
+    if (message.includes('[MSLX]')) {
+      setTimeout(() => {
         emit('update');
       }, 2000);
     }
@@ -171,7 +207,6 @@ const startSignalR = async () => {
     }
   });
 
-
   try {
     await hubConnection.start();
     term?.writeln('\x1b[1;32m[System] 成功连接到Frpc日志服务\x1b[0m');
@@ -191,12 +226,15 @@ const clear = () => {
 defineExpose({ writeln, clear });
 
 // 监听 ID 变化重连
-watch(() => props.frpId, async (newVal) => {
-  if (newVal) {
-    initTerminal();
-    await startSignalR();
-  }
-});
+watch(
+  () => props.frpId,
+  async (newVal) => {
+    if (newVal) {
+      initTerminal();
+      await startSignalR();
+    }
+  },
+);
 
 onMounted(async () => {
   await nextTick();
@@ -260,11 +298,23 @@ onUnmounted(async () => {
     z-index: 10;
 
     .dots {
-      display: flex; gap: 6px; margin-right: 16px;
-      .dot { width: 10px; height: 10px; border-radius: 50%; }
-      .red { background: #ff5f56; }
-      .yellow { background: #ffbd2e; }
-      .green { background: #27c93f; }
+      display: flex;
+      gap: 6px;
+      margin-right: 16px;
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+      .red {
+        background: #ff5f56;
+      }
+      .yellow {
+        background: #ffbd2e;
+      }
+      .green {
+        background: #27c93f;
+      }
     }
     .tab-title {
       color: var(--td-text-color-placeholder);
@@ -275,7 +325,10 @@ onUnmounted(async () => {
 
   .terminal-body {
     position: absolute;
-    top: 38px; bottom: 0; left: 0; right: 0;
+    top: 38px;
+    bottom: 0;
+    left: 0;
+    right: 0;
     padding: 6px 0 0 10px;
     z-index: 1;
 
