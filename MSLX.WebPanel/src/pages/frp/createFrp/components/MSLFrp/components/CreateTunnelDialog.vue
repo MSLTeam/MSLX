@@ -154,97 +154,105 @@ onMounted(() => {
     @confirm="handleConfirm"
     @close="emit('update:visible', false)"
   >
-    <t-form :data="form" label-align="right" :label-width="100" class="dialog-inner-form">
-      <t-form-item label="选择节点" name="nodeId">
-        <t-row :gutter="8" style="width: 100%">
-          <t-col flex="auto">
-            <t-select v-model="form.nodeId" placeholder="请选择节点" @change="generateRandomData">
-              <t-option-group v-for="group in groupedNodes" :key="group.value" :label="group.label">
-                <t-option v-for="node in group.children" :key="node.id" :value="node.id" :label="node.node">
-                  <div class="custom-option-item">
-                    <span class="node-name-text">{{ node.node }}</span>
-                    <div class="node-tag-group">
-                      <t-tag size="small" variant="outline" theme="primary">{{ node.bandwidth }}M</t-tag>
-                      <t-tag size="small" :theme="node.status === 1 ? 'success' : 'danger'">
-                        {{ node.status === 1 ? '在线' : '离线' }}
-                      </t-tag>
+    <t-loading :loading="loading">
+      <t-form :data="form" label-align="right" :label-width="100" class="dialog-inner-form">
+        <t-form-item label="选择节点" name="nodeId">
+          <t-row :gutter="8" style="width: 100%">
+            <t-col flex="auto">
+              <t-select v-model="form.nodeId" placeholder="请选择节点" @change="generateRandomData">
+                <t-option-group v-for="group in groupedNodes" :key="group.value" :label="group.label">
+                  <t-option v-for="node in group.children" :key="node.id" :value="node.id" :label="node.node">
+                    <div class="custom-option-item">
+                      <span class="node-name-text">{{ node.node }}</span>
+                      <div class="node-tag-group">
+                        <t-tag size="small" variant="outline" theme="primary">{{ node.bandwidth }}M</t-tag>
+                        <t-tag size="small" :theme="node.status === 1 ? 'success' : 'danger'">
+                          {{ node.status === 1 ? '在线' : '离线' }}
+                        </t-tag>
+                      </div>
                     </div>
-                  </div>
-                </t-option>
-              </t-option-group>
-            </t-select>
+                  </t-option>
+                </t-option-group>
+              </t-select>
+            </t-col>
+            <t-col flex="none">
+              <t-button variant="outline" @click="changeUrl('https://user.mslmc.net/frp/createTunnel')">
+                前往源站创建
+              </t-button>
+            </t-col>
+          </t-row>
+        </t-form-item>
+
+        <t-form-item v-if="selectedNode" label="节点详情">
+          <div class="node-detail-area">
+            <div class="detail-tags-row">
+              <t-tag size="small" variant="outline" theme="primary">{{ selectedNode.bandwidth }}Mbps</t-tag>
+              <t-tag size="small" :theme="selectedNode.need_real_name ? 'success' : 'warning'">
+                {{ selectedNode.need_real_name ? '需要实名认证' : '无需实名认证' }}
+              </t-tag>
+              <t-tag size="small" :theme="selectedNode.status === 1 ? 'success' : 'danger'">
+                节点状态：{{ selectedNode.status === 1 ? '在线' : '离线' }}
+              </t-tag>
+            </div>
+            <div class="remarks-box">
+              <pre>{{ selectedNode.remarks || '此节点暂无备注' }}</pre>
+            </div>
+          </div>
+        </t-form-item>
+
+        <t-form-item label="隧道类型">
+          <t-select v-model="form.type">
+            <t-option label="TCP" value="tcp" />
+            <t-option v-if="selectedNode?.udp_support" label="UDP" value="udp" />
+            <t-option v-if="selectedNode?.http_support" label="HTTP" value="http" />
+            <t-option v-if="selectedNode?.http_support" label="HTTPS" value="https" />
+          </t-select>
+        </t-form-item>
+
+        <t-row :gutter="[16, 20]">
+          <t-col :span="6">
+            <t-form-item label="隧道名称">
+              <t-input v-model="form.name" />
+            </t-form-item>
           </t-col>
-          <t-col flex="none">
-            <t-button variant="outline" @click="changeUrl('https://user.mslmc.net/frp/createTunnel')"> 前往源站创建 </t-button>
+          <t-col :span="6">
+            <t-form-item label="远程端口">
+              <t-input v-model="form.remotePort">
+                <template #suffix>
+                  <t-button variant="text" size="small" @click="generateRandomData">随机</t-button>
+                </template>
+              </t-input>
+            </t-form-item>
+          </t-col>
+          <t-col :span="6">
+            <t-form-item label="本地IP">
+              <t-input v-model="form.localIP" />
+            </t-form-item>
+          </t-col>
+          <t-col :span="6">
+            <t-form-item label="本地端口">
+              <t-input v-model="form.localPort" />
+            </t-form-item>
           </t-col>
         </t-row>
-      </t-form-item>
 
-      <t-form-item v-if="selectedNode" label="节点详情">
-        <div class="node-detail-area">
-          <div class="detail-tags-row">
-            <t-tag size="small" variant="outline" theme="primary">{{ selectedNode.bandwidth }}Mbps</t-tag>
-            <t-tag size="small" :theme="selectedNode.need_real_name ? 'success' : 'warning'">
-              {{ selectedNode.need_real_name ? '需要实名认证' : '无需实名认证' }}
-            </t-tag>
-            <t-tag size="small" :theme="selectedNode.status === 1 ? 'success' : 'danger'">
-              节点状态：{{ selectedNode.status === 1 ? '在线' : '离线' }}
-            </t-tag>
-          </div>
-          <div class="remarks-box">
-            <pre>{{ selectedNode.remarks || '此节点暂无备注' }}</pre>
-          </div>
-        </div>
-      </t-form-item>
+        <t-form-item v-if="form.type.includes('http')" label="绑定域名" class="spacing-item">
+          <t-input v-model="form.bindDomain" placeholder="输入已解析的域名" />
+        </t-form-item>
 
-      <t-form-item label="隧道类型">
-        <t-select v-model="form.type">
-          <t-option label="TCP" value="tcp" />
-          <t-option v-if="selectedNode?.udp_support" label="UDP" value="udp" />
-          <t-option v-if="selectedNode?.http_support" label="HTTP" value="http" />
-          <t-option v-if="selectedNode?.http_support" label="HTTPS" value="https" />
-        </t-select>
-      </t-form-item>
+        <t-form-item label="备注说明" class="spacing-item">
+          <t-input v-model="form.remarks" />
+        </t-form-item>
 
-      <t-row :gutter="[16, 20]">
-        <t-col :span="6">
-          <t-form-item label="隧道名称">
-            <t-input v-model="form.name" />
-          </t-form-item>
-        </t-col>
-        <t-col :span="6">
-          <t-form-item label="远程端口">
-            <t-input v-model="form.remotePort">
-              <template #suffix>
-                <t-button variant="text" size="small" @click="generateRandomData">随机</t-button>
-              </template>
-            </t-input>
-          </t-form-item>
-        </t-col>
-        <t-col :span="6">
-          <t-form-item label="本地IP">
-            <t-input v-model="form.localIP" />
-          </t-form-item>
-        </t-col>
-        <t-col :span="6">
-          <t-form-item label="本地端口">
-            <t-input v-model="form.localPort" />
-          </t-form-item>
-        </t-col>
-      </t-row>
-
-      <t-form-item v-if="form.type.includes('http')" label="绑定域名" class="spacing-item">
-        <t-input v-model="form.bindDomain" placeholder="输入已解析的域名" />
-      </t-form-item>
-
-      <t-form-item label="备注说明" class="spacing-item">
-        <t-input v-model="form.remarks" />
-      </t-form-item>
-
-      <t-form-item label="额外参数" class="spacing-item">
-        <t-textarea v-model="form.extra_config" :autosize="{ minRows: 2 }" placeholder="选填，高级配置参数（不懂清留空！！！）" />
-      </t-form-item>
-    </t-form>
+        <t-form-item label="额外参数" class="spacing-item">
+          <t-textarea
+            v-model="form.extra_config"
+            :autosize="{ minRows: 2 }"
+            placeholder="选填，高级配置参数（不懂清留空！！！）"
+          />
+        </t-form-item>
+      </t-form>
+    </t-loading>
   </t-dialog>
 </template>
 
