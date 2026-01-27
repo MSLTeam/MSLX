@@ -12,7 +12,7 @@ const props = defineProps<{
 }>();
 
 const emits = defineEmits<{
-  update: []
+  update: [];
 }>();
 
 // 使用 Store
@@ -37,21 +37,49 @@ const inputCommand = ref('');
 // 主题配置
 const termThemes = {
   dark: {
-    background: 'transparent', foreground: '#cccccc', cursor: '#cccccc', selectionBackground: '#264f78',
-    black: '#000000', red: '#cd3131', green: '#0dbc79', yellow: '#e5e510',
-    blue: '#2472c8', magenta: '#bc3fbc', cyan: '#11a8cd', white: '#e5e5e5',
-    brightBlack: '#666666', brightRed: '#f14c4c', brightGreen: '#23d18b',
-    brightYellow: '#f5f543', brightBlue: '#3b8eea', brightMagenta: '#d670d6',
-    brightCyan: '#29b8db', brightWhite: '#e5e5e5',
+    background: 'transparent',
+    foreground: '#cccccc',
+    cursor: '#cccccc',
+    selectionBackground: '#264f78',
+    black: '#000000',
+    red: '#cd3131',
+    green: '#0dbc79',
+    yellow: '#e5e510',
+    blue: '#2472c8',
+    magenta: '#bc3fbc',
+    cyan: '#11a8cd',
+    white: '#e5e5e5',
+    brightBlack: '#666666',
+    brightRed: '#f14c4c',
+    brightGreen: '#23d18b',
+    brightYellow: '#f5f543',
+    brightBlue: '#3b8eea',
+    brightMagenta: '#d670d6',
+    brightCyan: '#29b8db',
+    brightWhite: '#e5e5e5',
   },
   light: {
-    background: 'transparent', foreground: '#333333', cursor: '#333333', selectionBackground: '#add6ff',
-    black: '#000000', red: '#cd3131', green: '#00bc79', yellow: '#9d9d10',
-    blue: '#2472c8', magenta: '#bc3fbc', cyan: '#11a8cd', white: '#e5e5e5',
-    brightBlack: '#666666', brightRed: '#f14c4c', brightGreen: '#23d18b',
-    brightYellow: '#f5f543', brightBlue: '#3b8eea', brightMagenta: '#d670d6',
-    brightCyan: '#29b8db', brightWhite: '#e5e5e5',
-  }
+    background: 'transparent',
+    foreground: '#333333',
+    cursor: '#333333',
+    selectionBackground: '#add6ff',
+    black: '#000000',
+    red: '#cd3131',
+    green: '#00bc79',
+    yellow: '#9d9d10',
+    blue: '#2472c8',
+    magenta: '#bc3fbc',
+    cyan: '#11a8cd',
+    white: '#e5e5e5',
+    brightBlack: '#666666',
+    brightRed: '#f14c4c',
+    brightGreen: '#23d18b',
+    brightYellow: '#f5f543',
+    brightBlue: '#3b8eea',
+    brightMagenta: '#d670d6',
+    brightCyan: '#29b8db',
+    brightWhite: '#e5e5e5',
+  },
 };
 
 // 日志染色
@@ -69,15 +97,17 @@ const initTerminal = () => {
 
   const isDark = document.documentElement.getAttribute('theme-mode') === 'dark';
   term = new Terminal({
-    cursorBlink: true,
-    cursorStyle: 'block',
-    fontSize: 13,
-    fontFamily: 'Menlo, Monaco, "Courier New", monospace',
+    cursorBlink: false,
+    cursorStyle: 'bar',
+    fontSize: 14,
+    fontFamily:
+      '"Maple Mono", "Maple Mono CN", "Cascadia Code", Consolas, Menlo, "PingFang SC", "Microsoft YaHei", monospace',
     lineHeight: 1.4,
     theme: isDark ? termThemes.dark : termThemes.light,
-    disableStdin: false,
-    convertEol: true,
     allowTransparency: true,
+    disableStdin: true,
+    convertEol: true,
+    overviewRulerWidth: 0,
   });
 
   fitAddon = new FitAddon();
@@ -88,7 +118,11 @@ const initTerminal = () => {
 
   const fitTerminal = () => {
     if (terminalBody.value && terminalBody.value.clientWidth > 0 && terminalBody.value.clientHeight > 0) {
-      try { fitAddon?.fit(); } catch (e) { console.warn(e); }
+      try {
+        fitAddon?.fit();
+      } catch (e) {
+        console.warn(e);
+      }
     }
   };
 
@@ -148,7 +182,6 @@ const writeWelcomeMsg = () => {
   term?.writeln('');
 };
 
-
 // 连接 Store
 const connectStore = async () => {
   if (!props.serverId) return;
@@ -160,7 +193,7 @@ const connectStore = async () => {
     if (term) {
       term.writeln(colorizeLog(msg));
     }
-    if(msg.startsWith('[MSLX]')){
+    if (msg.startsWith('[MSLX]')) {
       emits('update');
     }
   });
@@ -176,7 +209,6 @@ const connectStore = async () => {
   // 发起连接
   await hubStore.connect(props.serverId);
 };
-
 
 const disconnectStore = async () => {
   // 取消回调订阅
@@ -195,13 +227,16 @@ const clear = () => {
 defineExpose({ writeln, clear });
 
 // 监听 ServerId 变化
-watch(() => props.serverId, async (newVal, oldVal) => {
-  if (newVal !== oldVal) {
-    await disconnectStore(); // 断开旧的引用
-    initTerminal();
-    await connectStore(); // 建立新的引用
-  }
-});
+watch(
+  () => props.serverId,
+  async (newVal, oldVal) => {
+    if (newVal !== oldVal) {
+      await disconnectStore(); // 断开旧的引用
+      initTerminal();
+      await connectStore(); // 建立新的引用
+    }
+  },
+);
 
 onMounted(async () => {
   await nextTick();
@@ -231,12 +266,7 @@ onUnmounted(async () => {
     </div>
     <div ref="terminalBody" class="terminal-body"></div>
     <div class="terminal-footer">
-      <input
-        v-model="inputCommand"
-        class="cmd-input"
-        placeholder="发送控制台指令..."
-        @keyup.enter="handleSendInput"
-      />
+      <input v-model="inputCommand" class="cmd-input" placeholder="发送控制台指令..." @keyup.enter="handleSendInput" />
       <button class="send-btn" @click="handleSendInput">发送</button>
     </div>
   </div>
@@ -276,11 +306,23 @@ onUnmounted(async () => {
     user-select: none;
 
     .dots {
-      display: flex; gap: 6px; margin-right: 16px;
-      .dot { width: 10px; height: 10px; border-radius: 50%; }
-      .red { background: #ff5f56; }
-      .yellow { background: #ffbd2e; }
-      .green { background: #27c93f; }
+      display: flex;
+      gap: 6px;
+      margin-right: 16px;
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+      .red {
+        background: #ff5f56;
+      }
+      .yellow {
+        background: #ffbd2e;
+      }
+      .green {
+        background: #27c93f;
+      }
     }
     .tab-title {
       color: var(--td-text-color-placeholder);
@@ -294,7 +336,10 @@ onUnmounted(async () => {
 
   .terminal-body {
     position: absolute;
-    top: 38px; bottom: 50px; left: 0; right: 0;
+    top: 38px;
+    bottom: 50px;
+    left: 0;
+    right: 0;
     padding: 6px 0 6px 10px;
     z-index: 1;
 
@@ -312,7 +357,9 @@ onUnmounted(async () => {
 
   .terminal-footer {
     position: absolute;
-    bottom: 0; left: 0; right: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
     height: 50px;
     display: flex;
     align-items: center;
@@ -343,7 +390,9 @@ onUnmounted(async () => {
         border-color: var(--td-brand-color);
         background-color: color-mix(in srgb, var(--td-bg-color-secondarycontainer), transparent 50%);
       }
-      &::placeholder { color: var(--td-text-color-placeholder); }
+      &::placeholder {
+        color: var(--td-text-color-placeholder);
+      }
     }
 
     .send-btn {
@@ -356,8 +405,12 @@ onUnmounted(async () => {
       font-size: 13px;
       cursor: pointer;
       transition: all 0.2s;
-      &:hover { background-color: var(--td-brand-color-hover); }
-      &:active { background-color: var(--td-brand-color-active); }
+      &:hover {
+        background-color: var(--td-brand-color-hover);
+      }
+      &:active {
+        background-color: var(--td-brand-color-active);
+      }
     }
   }
 }

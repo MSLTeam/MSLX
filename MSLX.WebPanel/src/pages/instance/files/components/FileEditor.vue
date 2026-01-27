@@ -281,4 +281,26 @@ const handleConfirm = () => {
   display: flex;
   gap: 8px;
 }
+
+// 字体
+:deep(.cm-editor) {
+  font-family:
+    'Maple Mono', 'Maple Mono CN', 'Cascadia Code', Consolas, Menlo, 'PingFang SC', 'Microsoft YaHei', monospace;
+
+  font-variant-ligatures: common-ligatures;
+
+  font-size: 14px;
+
+  &.cm-focused {
+    outline: none;
+  }
+}
+
+:deep(.cm-scroller) {
+  font-family: inherit;
+}
+
+:deep(.cm-gutters) {
+  font-family: inherit;
+}
 </style>

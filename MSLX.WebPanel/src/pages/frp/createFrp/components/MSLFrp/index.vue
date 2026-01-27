@@ -215,7 +215,7 @@ async function handleUseTunnel() {
     });
 
     if (res.code === 200) {
-      await createFrpTunnel(currentTunnel.value.name, res.data, 'Index'); // 错误会抛出 这个函数会自动跳转+成功提示
+      await createFrpTunnel(currentTunnel.value.name, res.data, 'MSLFrp');
     } else {
       MessagePlugin.error(res.msg);
     }
@@ -410,8 +410,9 @@ async function handleDeleteTunnel() {
                 <span>隧道详情</span>
               </template>
 
-              <template v-if="currentTunnel" #actions>
+              <template #actions>
                 <t-popconfirm
+                  v-if="currentTunnel"
                   content="确认删除此隧道吗？"
                   theme="danger"
                   placement="bottom-right"
