@@ -51,4 +51,6 @@ public class UpdateWebPanelStyleSettingsRequest
     
     [Range(0.0, 50.0, ErrorMessage = "透明度仅支持设置0-50")]
     public double WebpPanelTerminalBlurDark { get; set; } = 5.0;
+    [Range(0, 2, ErrorMessage = "日志染色级别参数错误")]
+    public int WebPanelColorizeLogLevel { get; set; } = 1;
 }

@@ -65,6 +65,9 @@ public class SettingsController: ControllerBase
                 WebPanelStyleDarkComponentsOpacity = IConfigBase.Config.ReadConfig()["webPanelStyleDarkComponentsOpacity"]?? 0.6,
                 WebpPanelTerminalBlurLight = IConfigBase.Config.ReadConfig()["webpPanelTerminalBlurLight"]?? 5.0,
                 WebpPanelTerminalBlurDark = IConfigBase.Config.ReadConfig()["webpPanelTerminalBlurDark"]?? 5.0,
+
+                // 日志染色级别
+                WebPanelColorizeLogLevel = IConfigBase.Config.ReadConfig()["webPanelColorizeLogLevel"] ?? 1,
             }
         });
     }
@@ -80,6 +83,7 @@ public class SettingsController: ControllerBase
         IConfigBase.Config.WriteConfigKey("webPanelStyleDarkComponentsOpacity",request.WebPanelStyleDarkComponentsOpacity);
         IConfigBase.Config.WriteConfigKey("webpPanelTerminalBlurLight",request.WebpPanelTerminalBlurLight);
         IConfigBase.Config.WriteConfigKey("webpPanelTerminalBlurDark",request.WebpPanelTerminalBlurDark);
+        IConfigBase.Config.WriteConfigKey("webPanelColorizeLogLevel",request.WebPanelColorizeLogLevel);
         return Ok(new ApiResponse<object>
             {
                 Code = 200,

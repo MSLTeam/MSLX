@@ -25,7 +25,7 @@ const handleFileUpload = async (
   <t-card
     :bordered="false"
     title="面板自定义样式"
-    description="这里设置的样式需要在面板左上角的样式面板中启用背景美化才会生效哦！"
+    description="背景图相关的样式需要在面板左上角的样式面板中启用背景美化才会生效哦！"
     :loading="webpanelStore.loading"
     class="settings-card"
   >
@@ -34,7 +34,8 @@ const handleFileUpload = async (
         <template #icon>
           <book-icon />
         </template>
-        设置文档</t-button>
+        设置文档</t-button
+      >
     </template>
     <t-form :data="webpanelStore.settings" :label-width="120" label-align="left" @submit="webpanelStore.saveSettings">
       <div class="group-title">背景图片设置</div>
@@ -127,7 +128,7 @@ const handleFileUpload = async (
 
       <t-divider dashed />
 
-      <div class="group-title">终端毛玻璃强度 (Blur)</div>
+      <div class="group-title">终端设置(毛玻璃强度/染色设置)</div>
       <t-row :gutter="[32, 16]">
         <t-col :xs="24" :sm="12" :md="6">
           <t-form-item label="浅色模式模糊度">
@@ -153,6 +154,15 @@ const handleFileUpload = async (
             >
               <template #label="{ value }"> {{ value }}px </template>
             </t-slider>
+          </t-form-item>
+        </t-col>
+        <t-col :xs="24" :sm="12" :md="6">
+          <t-form-item label="日志染色等级">
+            <t-select v-model="webpanelStore.settings.webPanelColorizeLogLevel">
+              <t-option label="不染色" :value="0" />
+              <t-option label="简约染色" :value="1"/>
+              <t-option label="增强染色" :value="2" />
+            </t-select>
           </t-form-item>
         </t-col>
       </t-row>
