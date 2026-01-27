@@ -55,6 +55,9 @@ const handleStart = async () => {
     MessagePlugin.success('启动指令已发送');
     // 延迟刷新以等待服务端状态变更
     setTimeout(fetchTunnelInfo, 1500);
+    terminalRef.value?.writeln(
+      '\x1b[1;35m\x1b[1m[TIPS] 注意：日志可能包含您的在线服务商的Token信息，若需要截图，请将关键信息打码处理！\x1b[0m',
+    );
   } catch (e: any) {
     terminalRef.value?.writeln(`\x1b[1;31m[Error] Frpc启动失败: ${e.message}\x1b[0m`);
   } finally {
