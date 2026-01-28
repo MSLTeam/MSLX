@@ -17,4 +17,5 @@ export interface WebpanelSettingsModel {
   webPanelStyleDarkBackground: string;
   webpPanelTerminalBlurLight: number;
   webpPanelTerminalBlurDark: number;
+  webPanelColorizeLogLevel: number;
 }

@@ -31,6 +31,7 @@ interface UserInfo {
   outdated: number;
   maxTunnelCount: number;
   boundLimit: number;
+  realNameStatus: boolean;
 }
 
 interface Tunnel {
@@ -319,9 +320,17 @@ async function handleDeleteTunnel() {
         <t-card v-if="userInfo" :bordered="false" title="MSLFrp 用户信息" class="info-card">
           <template #actions>
             <t-space size="small">
-              <t-tag theme="primary" variant="light">{{ userInfo.user_group_name }}</t-tag>
+              <t-button
+                variant="outline"
+                theme="success"
+                size="small"
+                @click="changeUrl('https://user.mslmc.net/store/buy')"
+              >
+                订阅会员服务
+              </t-button>
+              <t-tag theme="primary" variant="light-outline">{{ userInfo.user_group_name }}</t-tag>
               <t-popconfirm content="确认退出登录吗？" @confirm="handleLogout">
-                <t-button variant="text" theme="danger" size="small"> 退出登录 </t-button>
+                <t-button variant="outline" theme="danger" size="small"> 退出登录 </t-button>
               </t-popconfirm>
             </t-space>
           </template>
@@ -329,7 +338,17 @@ async function handleDeleteTunnel() {
             <t-col :xs="6" :sm="3">
               <div class="stat-item">
                 <div class="label">用户昵称</div>
-                <div class="value">{{ userInfo.name }}</div>
+                <div class="value">
+                  {{ userInfo.name }}
+                  <t-tag
+                    :theme="userInfo.realNameStatus ? 'success' : 'warning'"
+                    variant="dark"
+                    size="small"
+                    style="cursor: pointer"
+                    @click="changeUrl('https://user.mslmc.net/user/profile')"
+                    >{{ userInfo.realNameStatus ? '已实名' : '未实名' }}</t-tag
+                  >
+                </div>
               </div>
             </t-col>
             <t-col :xs="6" :sm="3">
@@ -346,8 +365,8 @@ async function handleDeleteTunnel() {
             </t-col>
             <t-col :xs="6" :sm="3">
               <div class="stat-item">
-                <div class="label">到期时间</div>
-                <div class="value date-text">{{ formatTime(userInfo.outdated) }}</div>
+                <div class="label">会员到期时间</div>
+                <div class="value date-text">{{ userInfo.outdated === 3749682420 ? '长期有效' : formatTime(userInfo.outdated) }}</div>
               </div>
             </t-col>
           </t-row>

@@ -75,7 +75,6 @@
             </t-radio-button>
           </div>
         </t-radio-group>
-
       </t-form>
     </div>
   </t-drawer>
@@ -130,6 +129,9 @@ const initStyleConfig = () => {
 
 // 初始化表单数据
 const formData = ref({ ...initStyleConfig() });
+if (isMobile.value && formData.value.layout === 'side') {
+  formData.value.layout = 'top';
+}
 const isColoPickerDisplay = ref(false);
 
 const showSettingPanel = computed({

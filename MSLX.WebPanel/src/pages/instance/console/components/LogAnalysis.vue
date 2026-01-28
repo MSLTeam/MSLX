@@ -11,6 +11,9 @@ import 'md-editor-v3/lib/preview.css';
 import { useDark } from '@vueuse/core';
 import { formatTime } from '@/utils/tools';
 import { ModelInfoModel } from '@/api/msl-user/model/aiLogAnalysis';
+import { useRoute } from 'vue-router';
+
+const route = useRoute();
 
 // 定义 Props
 const props = defineProps<{
@@ -113,6 +116,9 @@ async function initInstanceInfo() {
 watch(
   () => props.visible,
   (val) => {
+    if (route.name !== 'InstanceConsole') {
+      return;
+    }
     dialogVisible.value = val;
     if (val) {
       initInstanceInfo();

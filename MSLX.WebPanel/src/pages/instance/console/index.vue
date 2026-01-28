@@ -225,7 +225,7 @@ onMounted(async () => {
 <style scoped lang="less">
 .console-page {
   padding-bottom: 12px;
-  height: calc(100vh - 64px);
+  height: 100%;
   box-sizing: border-box;
   overflow: hidden;
 }

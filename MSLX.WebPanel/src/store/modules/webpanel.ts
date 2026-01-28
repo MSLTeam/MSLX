@@ -19,6 +19,7 @@ export const useWebpanelStore = defineStore('webpanel', {
       webPanelStyleLightComponentsOpacity: 0.6,
       webpPanelTerminalBlurLight: 5.0,
       webPanelStyleDarkBackground: '',
+      webPanelColorizeLogLevel: 1,
     } as WebpanelSettingsModel,
     loading: false,
     submitLoading: false,
@@ -77,7 +78,7 @@ export const useWebpanelStore = defineStore('webpanel', {
         MessagePlugin.error('上传失败: ' + (e.message || '网络错误'));
         return null;
       }
-    }
+    },
   },
   persist: {
     key: 'webpanel-style-storage',
