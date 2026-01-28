@@ -1,6 +1,6 @@
 {
-  "version": "1.1.2",
-  "buildTime": "2026-01-27 13:02:02",
+  "version": "1.1.3",
+  "buildTime": "2026-01-28 10:40:27",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -70,10 +70,88 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "2b9d51c3ddaa4aac8f53d9e354c8da43f1b26c7a",
-  "commitMsg": "bumpver(daemon & webpanel;): 更新版本到v1.1.2-release",
+  "commitId": "be2fd2b7e04e219dc04ef884b9022ba9cf8d4d3f",
+  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.1.3-release",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "be2fd2b7e04e219dc04ef884b9022ba9cf8d4d3f",
+      "commitTime": "2026-01-28 10:39:58 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.1.3-release"
+    },
+    {
+      "commitId": "c8d6912997e03ad80e0571975232f83f0a70b748",
+      "commitTime": "2026-01-28 10:30:23 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 自定义模式的Frp下配置文件支持将INI转换为TOML"
+    },
+    {
+      "commitId": "05dbff1250db07d00b07811e9ce420b1b93e123f",
+      "commitTime": "2026-01-28 10:16:20 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 移动端下默认使用顶部菜单布局"
+    },
+    {
+      "commitId": "2f213a36bfce739f27f37499b931a80ff64a4a05",
+      "commitTime": "2026-01-28 10:06:57 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): FOOTER用大写！"
+    },
+    {
+      "commitId": "8a9a079892133079283f7fb66f1a60351b094ddc",
+      "commitTime": "2026-01-28 10:05:54 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 调整部分页面高度计算，使其不再超出页面高度"
+    },
+    {
+      "commitId": "0e7c0995ed8a50c99e735d18e6f66ee20786ba21",
+      "commitTime": "2026-01-28 10:05:20 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 重新设计页脚样式"
+    },
+    {
+      "commitId": "7b34519668d41945e247f0d41a277dc45049d2a5",
+      "commitTime": "2026-01-28 09:36:33 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复AI日志分析页面可能的异常获取信息错误"
+    },
+    {
+      "commitId": "7d0a25290eae998231f5f5539b138ec680a8493f",
+      "commitTime": "2026-01-28 09:33:41 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "docs(webpanel): 新增日志染色等级预览文档"
+    },
+    {
+      "commitId": "8597923ec814b6c7859900427dac863bd7c66d43",
+      "commitTime": "2026-01-28 09:15:24 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(webpanel): 更新自定义Frp配置文件的placeholder内容"
+    },
+    {
+      "commitId": "f6cb94c7e7e107974ae0914d179f6aacd84f38a6",
+      "commitTime": "2026-01-28 09:11:55 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(webpanel): 优化MSLFrp创建隧道页面的一些信息展示"
+    },
+    {
+      "commitId": "e233ef300f82506e422e105b49ebe1110e1df044",
+      "commitTime": "2026-01-27 21:53:05 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 优化日志染色的逻辑 & 新增设置日志染色等级的支持"
+    },
+    {
+      "commitId": "316b3a51861284124c69478bcec94272619b399f",
+      "commitTime": "2026-01-27 13:03:39 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #32 from MSLTeam/dev"
+    },
+    {
+      "commitId": "4f9899f2e809574f172520cca50e6aa755cf18dc",
+      "commitTime": "2026-01-27 13:02:37 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入v1.1.2-release版本前端资源"
+    },
     {
       "commitId": "2b9d51c3ddaa4aac8f53d9e354c8da43f1b26c7a",
       "commitTime": "2026-01-27 13:01:31 +0800",
@@ -295,84 +373,6 @@
       "commitTime": "2026-01-23 20:27:23 +0800",
       "commitAuthor": "Waheal",
       "commitMsg": "feat(desktop): daemon更新功能"
-    },
-    {
-      "commitId": "9f72b8b1926ce699f248c5a866bdd16dce8facb7",
-      "commitTime": "2026-01-23 20:20:39 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修正全局APIKey权限错误"
-    },
-    {
-      "commitId": "f48e2034a62ba44750a1fcdcafe775ebf7c32a02",
-      "commitTime": "2026-01-23 19:40:45 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 文本编辑器查找和替换功能文本汉化 #28"
-    },
-    {
-      "commitId": "1201e2573cbbe0cc269d0a70a01b4da8f94c3d4b",
-      "commitTime": "2026-01-23 19:38:59 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 文本编辑器支持代码自动格式化 #28"
-    },
-    {
-      "commitId": "a325c8e355da850702f0ca1ee2b59a4d91723d8d",
-      "commitTime": "2026-01-23 18:01:48 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "docs(issues): 更新issues模板"
-    },
-    {
-      "commitId": "8280d45a4984672c916bf6eaef98d9cba0270fa3",
-      "commitTime": "2026-01-23 17:11:56 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #27 from MSLTeam/dev"
-    },
-    {
-      "commitId": "a077fca6f50e5bfe95f2545dbdcb03c7c4c46d45",
-      "commitTime": "2026-01-23 17:11:17 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(daemon): 嵌入 v1.1.0-release 版本前端资源"
-    },
-    {
-      "commitId": "ee01fb5a84f1318cd589083f294a90840ed6e360",
-      "commitTime": "2026-01-23 17:10:18 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.1.0-release"
-    },
-    {
-      "commitId": "380a505698d1fdb54007e1960386173afae90e14",
-      "commitTime": "2026-01-23 17:04:44 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
-    },
-    {
-      "commitId": "d4bb7e10ed73afc2a93e278d4cf087574a01715a",
-      "commitTime": "2026-01-23 17:04:34 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 微调Frp自启动隧道窗口的样式"
-    },
-    {
-      "commitId": "99eb38d7792a718aba866f3101b99ce7a576cf9a",
-      "commitTime": "2026-01-23 16:54:35 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "deps(webpanel): 更新依赖版本"
-    },
-    {
-      "commitId": "0516dbaface4f9cac1f9b35d317ed720398fe0d7",
-      "commitTime": "2026-01-23 16:52:26 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复Frp自启动配置可能存在删除的隧道导致保存不成功"
-    },
-    {
-      "commitId": "f117c3b580ba40c7372b5c3dfdad581571e6225d",
-      "commitTime": "2026-01-22 16:43:35 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "style(desktop): 删除无用代码"
-    },
-    {
-      "commitId": "deba3e634623b32918ce6d75b38519a90268ee31",
-      "commitTime": "2026-01-22 16:30:41 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "merge"
     }
   ]
 }
