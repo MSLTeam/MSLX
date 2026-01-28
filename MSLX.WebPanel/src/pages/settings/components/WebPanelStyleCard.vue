@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { BookIcon, UploadIcon } from 'tdesign-icons-vue-next';
+import {
+  BookIcon,
+  QuestionnaireDoubleFilledIcon,
+  UploadIcon,
+} from 'tdesign-icons-vue-next';
 import { useWebpanelStore } from '@/store/modules/webpanel';
 import { changeUrl } from '@/router';
 import { DOC_URLS } from '@/api/docs';
@@ -157,13 +161,21 @@ const handleFileUpload = async (
           </t-form-item>
         </t-col>
         <t-col :xs="24" :sm="12" :md="6">
-          <t-form-item label="日志染色等级">
-            <t-select v-model="webpanelStore.settings.webPanelColorizeLogLevel">
-              <t-option label="不染色" :value="0" />
-              <t-option label="简约染色" :value="1"/>
-              <t-option label="增强染色" :value="2" />
-            </t-select>
-          </t-form-item>
+          <t-space>
+            <t-form-item label="日志染色等级">
+              <t-select v-model="webpanelStore.settings.webPanelColorizeLogLevel">
+                <t-option label="不染色" :value="0" />
+                <t-option label="简约染色" :value="1" />
+                <t-option label="增强染色" :value="2" />
+              </t-select>
+            </t-form-item>
+            <t-button theme="default" @click="changeUrl(DOC_URLS.style_log_colorizer)">
+              <template #icon>
+                <questionnaire-double-filled-icon />
+              </template>
+              有什么区别？</t-button
+            >
+          </t-space>
         </t-col>
       </t-row>
 
