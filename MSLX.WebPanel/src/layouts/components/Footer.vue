@@ -1,7 +1,7 @@
 <template>
   <footer :class="`${prefix}-footer-centered-lite`">
     <div class="glass-capsule design-card">
-      <span class="brand">MSLX-Webpanel</span>
+      <span class="brand">MSLX-WEBPANEL</span>
       <span class="divider">/</span>
       <span class="brand">MSLTEAM</span>
       <span class="divider">/</span>
