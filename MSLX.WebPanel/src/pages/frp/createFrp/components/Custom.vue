@@ -25,7 +25,7 @@ const rules: FormRules<FormData> = {
 
 const onSubmit: FormProps['onSubmit'] = async ({ validateResult }) => {
   if (validateResult === true) {
-    await createFrpTunnel(formData.name, formData.content,'Custom', formData.type);
+    await createFrpTunnel(formData.name, formData.content, 'Custom', formData.type);
   } else {
     MessagePlugin.warning('请检查表单填写');
   }
@@ -58,7 +58,7 @@ const onReset = () => {
         <t-form-item label="隧道配置内容" name="content">
           <t-textarea
             v-model="formData.content"
-            placeholder="[common]&#10;server_addr = 0.0.0.0&#10;server_port = 7000"
+            placeholder='serverAddr = "0.0.0.0"&#10;serverPort = 1027&#10;&#10;[[proxies]]&#10;name = "nahida_tcp"&#10;...'
             :autosize="{ minRows: 10, maxRows: 25 }"
             class="code-font-textarea"
           />
