@@ -219,8 +219,7 @@ defineExpose({ open });
 
   .panel-wrapper {
     .scrollbar-mixin();
-    padding: 16px;
-    padding-bottom: 80px;
+    padding: 16px 16px 80px;
   }
 }
 </style>
