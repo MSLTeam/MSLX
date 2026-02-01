@@ -1,6 +1,6 @@
 {
-  "version": "1.1.3",
-  "buildTime": "2026-01-28 10:40:27",
+  "version": "1.1.4",
+  "buildTime": "2026-02-01 13:52:44",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -70,10 +70,46 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "be2fd2b7e04e219dc04ef884b9022ba9cf8d4d3f",
-  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.1.3-release",
+  "commitId": "a4b5123683ad4bb1027d30248453cf4c5a7e203f",
+  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到v1.1.4",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "a4b5123683ad4bb1027d30248453cf4c5a7e203f",
+      "commitTime": "2026-02-01 13:52:17 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到v1.1.4"
+    },
+    {
+      "commitId": "bf9c96dbad730819aa39e76a066803c6c968a4ce",
+      "commitTime": "2026-02-01 13:50:46 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 新增MSLFrp免费子域名管理功能"
+    },
+    {
+      "commitId": "1778d055b7910566fc3882ac1d77892b638b64bb",
+      "commitTime": "2026-02-01 13:05:42 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 修复了MSLFrp一些界面在移动端的表现"
+    },
+    {
+      "commitId": "f902f4c019eadee5b3c089846464a4af96089f9a",
+      "commitTime": "2026-02-01 12:59:38 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复编辑Frpc配置文件可能导致的编码错误问题"
+    },
+    {
+      "commitId": "56d0241f38cea12f795a2652e031f1c1b3bfba5a",
+      "commitTime": "2026-01-28 10:41:29 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #33 from MSLTeam/dev"
+    },
+    {
+      "commitId": "9ba4d5b4528b1c83274027ee189b33bc0af4558d",
+      "commitTime": "2026-01-28 10:40:55 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v1.1.3-release 版本前端资源"
+    },
     {
       "commitId": "be2fd2b7e04e219dc04ef884b9022ba9cf8d4d3f",
       "commitTime": "2026-01-28 10:39:58 +0800",
@@ -337,42 +373,6 @@
       "commitTime": "2026-01-23 21:43:35 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "build(desktop): 新增Desktop程序集信息"
-    },
-    {
-      "commitId": "8149fad98284b2abb725fd3ab624082a42161dd3",
-      "commitTime": "2026-01-23 21:28:20 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
-    },
-    {
-      "commitId": "d42728b1b660f544efdf88f5964fee2f7ae25942",
-      "commitTime": "2026-01-23 21:26:00 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 文件编辑器新增toml高亮支持 #24 #29"
-    },
-    {
-      "commitId": "30db576843594c58f006d8bd5406be749f585a01",
-      "commitTime": "2026-01-23 21:26:00 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel & daemon): 新增编辑隧道配置文件支持 #24 #29"
-    },
-    {
-      "commitId": "fba570271a9d7f438b5af1e4fc89793e65a58db8",
-      "commitTime": "2026-01-23 20:27:39 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
-    },
-    {
-      "commitId": "e82c45e9ee81009225cf6a2482a6af74b7f49e79",
-      "commitTime": "2026-01-23 20:27:31 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "update"
-    },
-    {
-      "commitId": "fe5ab8be1c8be20df51dbe4f2c20a522f8123474",
-      "commitTime": "2026-01-23 20:27:23 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "feat(desktop): daemon更新功能"
     }
   ]
 }
