@@ -107,7 +107,6 @@ const initTerminal = () => {
     allowTransparency: true,
     disableStdin: true,
     convertEol: true,
-    overviewRulerWidth: 0,
   });
 
   fitAddon = new FitAddon();
@@ -279,12 +278,9 @@ onUnmounted(async () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-
-  // 透明+毛玻璃
   background-color: var(--td-bg-color-container);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-
   border: 1px solid var(--td-component-stroke);
   border-radius: 12px;
   overflow: hidden;
@@ -298,7 +294,6 @@ onUnmounted(async () => {
     flex-shrink: 0;
     background-color: transparent;
     border-bottom: 1px solid var(--td-component-stroke);
-
     display: flex;
     align-items: center;
     padding: 0 16px;
@@ -343,15 +338,36 @@ onUnmounted(async () => {
     padding: 6px 0 6px 10px;
     z-index: 1;
 
-    // 确保xterm透明
     :deep(.xterm),
     :deep(.xterm-viewport),
-    :deep(.xterm-screen) {
+    :deep(.xterm-screen),
+    :deep(.xterm-scrollable-element) {
       background-color: transparent !important;
     }
 
     :deep(.xterm-viewport) {
+      overflow-y: hidden !important;
+    }
+
+    :deep(.xterm-scrollable-element) {
+      overflow-y: auto !important;
+
       .scrollbar-mixin();
+
+      &::-webkit-scrollbar {
+        width: 12px !important;
+        background-color: transparent;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background-clip: content-box;
+        border: 3px solid transparent;
+        border-radius: 10px;
+      }
+
+      &::-webkit-scrollbar-thumb:hover {
+        border-width: 2px;
+      }
     }
   }
 
@@ -364,10 +380,7 @@ onUnmounted(async () => {
     display: flex;
     align-items: center;
     padding: 0 16px;
-
-    /* 底部也是全透明 */
     background-color: transparent;
-
     border-top: 1px solid var(--td-component-stroke);
     z-index: 10;
     gap: 12px;
@@ -375,9 +388,7 @@ onUnmounted(async () => {
     .cmd-input {
       flex: 1;
       height: 32px;
-
       background-color: color-mix(in srgb, var(--td-bg-color-secondarycontainer), transparent 70%);
-
       border: 1px solid var(--td-component-border);
       border-radius: 4px;
       padding: 0 12px;

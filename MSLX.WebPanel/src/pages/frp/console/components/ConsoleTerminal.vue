@@ -110,7 +110,6 @@ const initTerminal = () => {
     allowTransparency: true,
     disableStdin: true,
     convertEol: true,
-    overviewRulerWidth: 0,
   });
 
   fitAddon = new FitAddon();
@@ -121,6 +120,7 @@ const initTerminal = () => {
     if (terminalBody.value && terminalBody.value.clientWidth > 0 && terminalBody.value.clientHeight > 0) {
       try {
         fitAddon?.fit();
+        term?.scrollToBottom();
       } catch (e) {
         console.warn(e);
       }
@@ -287,10 +287,7 @@ onUnmounted(async () => {
   .terminal-header {
     height: 38px;
     flex-shrink: 0;
-
-    /* 头部透明 */
     background-color: transparent;
-
     border-bottom: 1px solid var(--td-component-stroke);
     display: flex;
     align-items: center;
@@ -326,22 +323,39 @@ onUnmounted(async () => {
   .terminal-body {
     position: absolute;
     top: 38px;
-    bottom: 0;
+    bottom: 50px;
     left: 0;
     right: 0;
-    padding: 6px 0 0 10px;
+    padding: 6px 0 6px 10px;
     z-index: 1;
 
-    /* 确保 xterm 的容器也是透明的 */
     :deep(.xterm),
     :deep(.xterm-viewport),
-    :deep(.xterm-screen) {
+    :deep(.xterm-screen),
+    :deep(.xterm-scrollable-element) {
       background-color: transparent !important;
     }
 
-    /* 针对 xterm 的滚动条应用 Mixin */
     :deep(.xterm-viewport) {
+      overflow-y: hidden !important;
+    }
+
+    :deep(.xterm-scrollable-element) {
+      overflow-y: auto !important;
       .scrollbar-mixin();
+
+      &::-webkit-scrollbar {
+        width: 12px !important;
+        background-color: transparent;
+      }
+      &::-webkit-scrollbar-thumb {
+        background-clip: content-box;
+        border: 3px solid transparent;
+        border-radius: 10px;
+      }
+      &::-webkit-scrollbar-thumb:hover {
+        border-width: 2px;
+      }
     }
   }
 }

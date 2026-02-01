@@ -1,3 +1,193 @@
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue';
+import { MessagePlugin } from 'tdesign-vue-next';
+import { getServerCoreClassify, getServerCoreGameVersion, getServerCoreDownloadInfo } from '@/api/mslapi/serverCore';
+import type { ServerCoreClassifyModel } from '@/api/mslapi/model/serverCore';
+
+const props = defineProps<{
+  visible: boolean;
+}>();
+
+const emit = defineEmits(['update:visible', 'confirm']);
+
+const isVisible = computed({
+  get: () => props.visible,
+  set: (val) => emit('update:visible', val),
+});
+
+// --- 状态数据 ---
+const loadingCategories = ref(false);
+const loadingVersions = ref(false);
+const categoryData = ref<Partial<ServerCoreClassifyModel>>({});
+
+const currentCategoryKey = ref('plugins');
+const selectedCore = ref('');
+const versionList = ref<string[]>([]);
+const searchText = ref('');
+
+// 分类映射
+const categoryConfig = [
+  {
+    key: 'plugins',
+    name: '插件服务端',
+    desc: '支持 Bukkit/Spigot/Paper 插件',
+    icon: 'app',
+    dataKey: 'pluginsCore' as keyof ServerCoreClassifyModel,
+  },
+  {
+    key: 'forge_hybrid',
+    name: 'NeoForge 系混合服务端',
+    desc: '同时支持 Neoforge/Forge模组 和 插件',
+    icon: 'layers',
+    dataKey: 'pluginsAndModsCore_Forge' as keyof ServerCoreClassifyModel,
+  },
+  {
+    key: 'fabric_hybrid',
+    name: 'Fabric 混合服务端',
+    desc: '同时支持 Fabric模组 和 插件',
+    icon: 'cpu',
+    dataKey: 'pluginsAndModsCore_Fabric' as keyof ServerCoreClassifyModel,
+  },
+  {
+    key: 'mod_forge',
+    name: 'NeoForge 模组服务端',
+    desc: '纯 NeoForge/Forge 模组支持',
+    icon: 'tools',
+    dataKey: 'modsCore_Forge' as keyof ServerCoreClassifyModel,
+  },
+  {
+    key: 'mod_fabric',
+    name: 'Fabric 模组服务端',
+    desc: '纯 Fabric 模组支持',
+    icon: 'ai-tool',
+    dataKey: 'modsCore_Fabric' as keyof ServerCoreClassifyModel,
+  },
+  {
+    key: 'vanilla',
+    name: '原版服务端',
+    desc: 'Minecraft 官方原版核心',
+    icon: 'tea',
+    dataKey: 'vanillaCore' as keyof ServerCoreClassifyModel,
+  },
+  {
+    key: 'bedrock',
+    name: '基岩版第三方端',
+    desc: '第三方的基岩版服务端',
+    icon: 'gift',
+    dataKey: 'bedrockCore' as keyof ServerCoreClassifyModel,
+  },
+  {
+    key: 'proxy',
+    name: '代理服务端',
+    desc: 'BungeeCord / Velocity 等 用于群组服',
+    icon: 'share',
+    dataKey: 'proxyCore' as keyof ServerCoreClassifyModel,
+  },
+];
+
+// 获取当前选中分类下的所有核心列表
+const currentCoreList = computed(() => {
+  const activeCat = categoryConfig.find((c) => c.key === currentCategoryKey.value);
+  if (!activeCat || !categoryData.value) return [];
+  return categoryData.value[activeCat.dataKey] || [];
+});
+
+// 过滤搜索结果
+const filteredCores = computed(() => {
+  if (!searchText.value) return currentCoreList.value;
+  return currentCoreList.value.filter((core) => core.toLowerCase().includes(searchText.value.toLowerCase()));
+});
+
+// 加载分类数据
+const fetchCategories = async () => {
+  loadingCategories.value = true;
+  try {
+    const res = await getServerCoreClassify();
+    if (Array.isArray(res) && res.length > 0) {
+      categoryData.value = res[0];
+    } else if (res && !Array.isArray(res)) {
+      categoryData.value = res as any;
+    }
+  } catch (error) {
+    MessagePlugin.error('获取服务端分类失败');
+    console.error(error);
+  } finally {
+    loadingCategories.value = false;
+  }
+};
+
+// 切换分类
+const handleCategoryChange = (key: string) => {
+  currentCategoryKey.value = key;
+  selectedCore.value = '';
+  versionList.value = [];
+  searchText.value = '';
+};
+
+// 选中核心 -> 获取版本
+const handleCoreSelect = (core: string) => {
+  if (selectedCore.value === core) return;
+  selectedCore.value = core;
+  fetchVersions(core);
+};
+
+const fetchVersions = async (coreName: string) => {
+  loadingVersions.value = true;
+  versionList.value = [];
+  try {
+    const res = await getServerCoreGameVersion(coreName);
+    if (Array.isArray(res) && res.length > 0) {
+      versionList.value = res[0].versionList || [];
+    } else if (res && !Array.isArray(res)) {
+      versionList.value = (res as any).versionList || [];
+    }
+  } catch (error) {
+    MessagePlugin.error(`获取 ${coreName} 版本列表失败`);
+    console.error(error);
+  } finally {
+    loadingVersions.value = false;
+  }
+};
+
+// 选中版本 -> 获取下载链接并返回给父组件
+const handleVersionSelect = async (version: string) => {
+  const loadingInstance = MessagePlugin.loading('正在获取核心版本信息...', 0);
+
+  try {
+    const res = await getServerCoreDownloadInfo(selectedCore.value, version);
+
+    // 构造返回数据
+    const result = {
+      core: selectedCore.value,
+      version: version,
+      url: res.url,
+      sha256: res.sha256 || '',
+      filename: `${selectedCore.value}-${version}.jar`,
+    };
+
+    MessagePlugin.close(loadingInstance);
+
+    emit('confirm', result);
+    isVisible.value = false; // 关闭弹窗
+  } catch (error) {
+    MessagePlugin.close(loadingInstance);
+
+    MessagePlugin.error('获取核心的版本信息失败');
+    console.error(error);
+  }
+};
+
+// 初始化
+watch(
+  () => props.visible,
+  (val) => {
+    if (val && !categoryData.value.pluginsCore) {
+      fetchCategories();
+    }
+  },
+);
+</script>
+
 <template>
   <t-dialog
     v-model:visible="isVisible"
@@ -73,17 +263,10 @@
 
           <t-loading :loading="loadingVersions" size="small" text="获取版本中..." class="loading-wrapper">
             <div class="version-grid">
-              <div
-                v-for="ver in versionList"
-                :key="ver"
-                class="version-item"
-                @click="handleVersionSelect(ver)"
-              >
+              <div v-for="ver in versionList" :key="ver" class="version-item" @click="handleVersionSelect(ver)">
                 {{ ver }}
               </div>
-              <div v-if="versionList.length === 0 && !loadingVersions" class="empty-text">
-                未找到该核心的版本信息
-              </div>
+              <div v-if="versionList.length === 0 && !loadingVersions" class="empty-text">未找到该核心的版本信息</div>
             </div>
           </t-loading>
         </div>
@@ -92,186 +275,8 @@
   </t-dialog>
 </template>
 
-<script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { MessagePlugin } from 'tdesign-vue-next';
-import {
-  getServerCoreClassify,
-  getServerCoreGameVersion,
-  getServerCoreDownloadInfo
-} from '@/api/mslapi/serverCore';
-import type { ServerCoreClassifyModel } from '@/api/mslapi/model/serverCore';
-
-const props = defineProps<{
-  visible: boolean;
-}>();
-
-const emit = defineEmits(['update:visible', 'confirm']);
-
-const isVisible = computed({
-  get: () => props.visible,
-  set: (val) => emit('update:visible', val),
-});
-
-// --- 状态数据 ---
-const loadingCategories = ref(false);
-const loadingVersions = ref(false);
-const categoryData = ref<Partial<ServerCoreClassifyModel>>({});
-
-const currentCategoryKey = ref('plugins');
-const selectedCore = ref('');
-const versionList = ref<string[]>([]);
-const searchText = ref('');
-
-// 分类映射
-const categoryConfig = [
-  {
-    key: 'plugins',
-    name: '插件服务端',
-    desc: '支持 Bukkit/Spigot/Paper 插件',
-    icon: 'app',
-    dataKey: 'pluginsCore' as keyof ServerCoreClassifyModel
-  },
-  {
-    key: 'forge_hybrid',
-    name: 'NeoForge 系混合服务端',
-    desc: '同时支持 Neoforge/Forge模组 和 插件',
-    icon: 'layers',
-    dataKey: 'pluginsAndModsCore_Forge' as keyof ServerCoreClassifyModel
-  },
-  {
-    key: 'fabric_hybrid',
-    name: 'Fabric 混合服务端',
-    desc: '同时支持 Fabric模组 和 插件',
-    icon: 'cpu',
-    dataKey: 'pluginsAndModsCore_Fabric' as keyof ServerCoreClassifyModel
-  },
-  {
-    key: 'vanilla',
-    name: '原版服务端',
-    desc: 'Mojang 官方原版核心',
-    icon: 'tea',
-    dataKey: 'vanillaCore' as keyof ServerCoreClassifyModel
-  },
-  {
-    key: 'mod_forge',
-    name: 'NeoForge 模组服务端',
-    desc: '纯 NeoForge/Forge 模组支持',
-    icon: 'tools',
-    dataKey: 'modsCore_Forge' as keyof ServerCoreClassifyModel
-  },
-  {
-    key: 'proxy',
-    name: '代理服务端',
-    desc: 'BungeeCord / Velocity 等',
-    icon: 'share',
-    dataKey: 'proxyCore' as keyof ServerCoreClassifyModel
-  },
-];
-
-// 获取当前选中分类下的所有核心列表
-const currentCoreList = computed(() => {
-  const activeCat = categoryConfig.find(c => c.key === currentCategoryKey.value);
-  if (!activeCat || !categoryData.value) return [];
-  return categoryData.value[activeCat.dataKey] || [];
-});
-
-// 过滤搜索结果
-const filteredCores = computed(() => {
-  if (!searchText.value) return currentCoreList.value;
-  return currentCoreList.value.filter(core =>
-    core.toLowerCase().includes(searchText.value.toLowerCase())
-  );
-});
-
-// 加载分类数据
-const fetchCategories = async () => {
-  loadingCategories.value = true;
-  try {
-    const res = await getServerCoreClassify();
-    if (Array.isArray(res) && res.length > 0) {
-      categoryData.value = res[0];
-    } else if (res && !Array.isArray(res)) {
-      categoryData.value = res as any;
-    }
-  } catch (error) {
-    MessagePlugin.error('获取服务端分类失败');
-    console.error(error);
-  } finally {
-    loadingCategories.value = false;
-  }
-};
-
-// 切换分类
-const handleCategoryChange = (key: string) => {
-  currentCategoryKey.value = key;
-  selectedCore.value = '';
-  versionList.value = [];
-  searchText.value = '';
-};
-
-// 选中核心 -> 获取版本
-const handleCoreSelect = (core: string) => {
-  if (selectedCore.value === core) return;
-  selectedCore.value = core;
-  fetchVersions(core);
-};
-
-const fetchVersions = async (coreName: string) => {
-  loadingVersions.value = true;
-  versionList.value = [];
-  try {
-    const res = await getServerCoreGameVersion(coreName);
-    if (Array.isArray(res) && res.length > 0) {
-      versionList.value = res[0].versionList || [];
-    } else if(res && !Array.isArray(res)) {
-      versionList.value = (res as any).versionList || [];
-    }
-  } catch (error) {
-    MessagePlugin.error(`获取 ${coreName} 版本列表失败`);
-    console.error(error);
-  } finally {
-    loadingVersions.value = false;
-  }
-};
-
-// 选中版本 -> 获取下载链接并返回给父组件
-const handleVersionSelect = async (version: string) => {
-  const loadingInstance = MessagePlugin.loading('正在获取核心版本信息...', 0);
-
-  try {
-    const res = await getServerCoreDownloadInfo(selectedCore.value, version);
-
-    // 构造返回数据
-    const result = {
-      core: selectedCore.value,
-      version: version,
-      url: res.url,
-      sha256: res.sha256 || '',
-      filename: `${selectedCore.value}-${version}.jar`
-    };
-
-    MessagePlugin.close(loadingInstance);
-
-    emit('confirm', result);
-    isVisible.value = false; // 关闭弹窗
-  } catch (error) {
-    MessagePlugin.close(loadingInstance);
-
-    MessagePlugin.error('获取核心的版本信息失败');
-    console.error(error);
-  }
-};
-
-// 初始化
-watch(() => props.visible, (val) => {
-  if (val && !categoryData.value.pluginsCore) {
-    fetchCategories();
-  }
-});
-</script>
-
 <style scoped lang="less">
+@import '@/style/scrollbar';
 .core-selector-layout {
   display: flex;
   height: 75vh; // 固定高度，内部滚动
@@ -280,7 +285,7 @@ watch(() => props.visible, (val) => {
 
 // 左侧侧边栏
 .sidebar {
-  width: 240px;
+  width: 300px;
   background-color: var(--td-bg-color-secondarycontainer);
   border-right: 1px solid var(--td-border-level-2-color);
   display: flex;
@@ -304,10 +309,12 @@ watch(() => props.visible, (val) => {
 
 .category-list {
   flex: 1;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  .scrollbar-mixin();
+  position: relative !important;
+  padding-right: 4px;
 }
 
 .category-item {
@@ -328,8 +335,12 @@ watch(() => props.visible, (val) => {
     background-color: var(--td-brand-color-light);
     border-color: var(--td-brand-color);
 
-    .cat-name { color: var(--td-brand-color); }
-    .cat-icon { color: var(--td-brand-color); }
+    .cat-name {
+      color: var(--td-brand-color);
+    }
+    .cat-icon {
+      color: var(--td-brand-color);
+    }
   }
 
   .cat-icon {

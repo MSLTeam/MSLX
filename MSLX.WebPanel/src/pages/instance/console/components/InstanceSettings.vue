@@ -1,16 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import {
-  StoreIcon,
-  SettingIcon,
-  TimeIcon,
-  Setting1Icon
-} from 'tdesign-icons-vue-next';
+import { StoreIcon, SettingIcon, TimeIcon, Setting1Icon } from 'tdesign-icons-vue-next';
 
 import GeneralSettings from './settingsComponents/GeneralSettings.vue';
 import ModsPluginsManager from './settingsComponents/ModsPluginsManager.vue';
-import ServerProperties from './settingsComponents/ServerProperties.vue'
-import CronTasks from './settingsComponents/CronTasks.vue'
+import ServerProperties from './settingsComponents/ServerProperties.vue';
+import CronTasks from './settingsComponents/CronTasks.vue';
 
 const visible = ref(false);
 const currentTab = ref(0);
@@ -26,7 +21,6 @@ const open = () => {
   visible.value = true;
 };
 
-
 defineExpose({ open });
 </script>
 
@@ -41,7 +35,6 @@ defineExpose({ open });
     class="settings-dialog"
   >
     <div class="layout-container">
-
       <div class="sidebar">
         <div
           v-for="(item, index) in menuItems"
@@ -56,27 +49,22 @@ defineExpose({ open });
       </div>
 
       <div class="main-content">
-
-
-
         <div v-if="currentTab === 0" class="panel-wrapper">
           <general-settings />
         </div>
 
         <div v-if="currentTab === 1" class="panel-wrapper">
-          <mods-plugins-manager/>
+          <mods-plugins-manager />
         </div>
 
         <div v-if="currentTab === 2" class="panel-wrapper">
-          <server-properties :instance-id="21"/>
+          <server-properties :instance-id="21" />
         </div>
 
         <div v-if="currentTab === 3" class="panel-wrapper">
-          <cron-tasks/>
+          <cron-tasks />
         </div>
-
       </div>
-
     </div>
   </t-dialog>
 </template>
@@ -172,6 +160,7 @@ defineExpose({ open });
   padding-left: 32px;
   padding-bottom: 50px;
   overflow-y: auto;
+  .scrollbar-mixin();
 }
 
 .panel-title {
@@ -181,10 +170,8 @@ defineExpose({ open });
   color: var(--td-text-color-primary);
 }
 
-
 // 移动端适配
 @media (max-width: 768px) {
-
   // 变成上下布局
   .layout-container {
     flex-direction: column;
@@ -210,7 +197,10 @@ defineExpose({ open });
     font-size: 12px;
     gap: 4px;
 
-    .nav-icon { margin-right: 0; font-size: 20px; }
+    .nav-icon {
+      margin-right: 0;
+      font-size: 20px;
+    }
 
     &.active {
       background-color: transparent;
@@ -229,8 +219,7 @@ defineExpose({ open });
 
   .panel-wrapper {
     .scrollbar-mixin();
-    padding: 16px;
-    padding-bottom: 80px;
+    padding: 16px 16px 80px;
   }
 }
 </style>

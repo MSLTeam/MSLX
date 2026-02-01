@@ -1,15 +1,13 @@
-import { ConfigEnv, UserConfig } from 'vite';
-import { viteMockServe } from 'vite-plugin-mock';
-import createVuePlugin from '@vitejs/plugin-vue';
+import { ConfigEnv, defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
 import vueJsx from '@vitejs/plugin-vue-jsx';
 import svgLoader from 'vite-svg-loader';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-import path from 'path';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const CWD = process.cwd();
-
-// https://vitejs.dev/config/
-export default ({ mode }: ConfigEnv): UserConfig => {
+export default defineConfig(({ mode }: ConfigEnv) => {
   return {
     base: '/',
     resolve: {
@@ -17,29 +15,18 @@ export default ({ mode }: ConfigEnv): UserConfig => {
         '@': path.resolve(__dirname, './src'),
       },
     },
-
     css: {
       preprocessorOptions: {
         less: {
           modifyVars: {
-            hack: `true; @import (reference) "${path.resolve('src/style/variables.less')}";`,
+            hack: `true; @import (reference) "${path.resolve(__dirname, 'src/style/variables.less')}";`,
           },
           math: 'strict',
           javascriptEnabled: true,
         },
       },
     },
-
-    plugins: [
-      createVuePlugin(),
-      vueJsx(),
-      viteMockServe({
-        mockPath: 'mock',
-        enable: true,
-      }),
-      svgLoader(),
-    ],
-
+    plugins: [vue(), vueJsx(), svgLoader()],
     server: {
       port: 1102,
       host: '0.0.0.0',
@@ -48,34 +35,47 @@ export default ({ mode }: ConfigEnv): UserConfig => {
           target: 'http://localhost:1027',
           changeOrigin: true,
           ws: true,
-        }
+        },
       },
     },
     build: {
-      chunkSizeWarningLimit: 1500, // 调整包的大小
+      chunkSizeWarningLimit: 2000,
       rollupOptions: {
+        onwarn(warning, warn) {
+          if (warning.code === 'INVALID_ANNOTATION' && warning.message.includes('signalr')) return;
+          warn(warning);
+        },
         output: {
-          // 最小化拆分包
-          manualChunks(id) {
+          manualChunks: (id: string) => {
             if (id.includes('node_modules')) {
-              const modulePath = id.toString().split('node_modules/')[1];
-              const parts = modulePath.split('/');
-
-              // pnpm 特殊逻辑
-              if (parts[0] === '.pnpm') {
-                return parts[1].split('@')[0];
+              if (
+                id.includes('vue') ||
+                id.includes('pinia') ||
+                id.includes('tdesign') ||
+                id.includes('axios') ||
+                id.includes('signalr')
+              ) {
+                return 'mslx-core';
               }
-
-              // npm/yarn 逻辑
-              return parts[0];
+              if (id.includes('echarts') || id.includes('zrender')) return 'mslx-charts';
+              if (id.includes('prettier')) return 'mslx-formatter';
+              if (id.includes('md-editor-v3') || id.includes('codemirror')) return 'mslx-editor';
+              return 'mslx-libs';
             }
+            if (id.includes('src/')) return 'mslx-app-main';
           },
-          // 用于从入口点创建的块的打包输出格式[name]表示文件名,[hash]表示该文件内容hash值
-          entryFileNames: 'assets/js/[name].[hash].js', // 用于命名代码拆分时创建的共享块的输出命名
-          chunkFileNames: 'assets/js/[name].[hash].js', // 用于输出静态资源的命名，[ext]表示文件扩展名
-          assetFileNames: 'assets/[ext]/[name].[hash].[ext]'
-        }
-      }
+
+          assetFileNames: (assetInfo) => {
+            const name = assetInfo.name || '';
+            return name.startsWith('mslx-')
+              ? 'assets/[ext]/[name].[hash].[ext]'
+              : 'assets/[ext]/mslx-[name].[hash].[ext]';
+          },
+
+          entryFileNames: 'assets/js/mslx-entry.[hash].js',
+          chunkFileNames: 'assets/js/[name].[hash].js',
+        },
+      },
     },
   };
-};
+});
