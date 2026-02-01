@@ -107,7 +107,6 @@ const initTerminal = () => {
     allowTransparency: true,
     disableStdin: true,
     convertEol: true,
-    overviewRulerWidth: 0,
   });
 
   fitAddon = new FitAddon();
