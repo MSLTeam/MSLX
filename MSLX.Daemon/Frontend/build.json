@@ -1,6 +1,6 @@
 {
   "version": "1.1.4",
-  "buildTime": "2026-02-01 13:52:44",
+  "buildTime": "2026-02-01 19:01:53",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -39,13 +39,13 @@
   "devDependencies": {
     "@commitlint/cli": "^19.3.0",
     "@commitlint/config-conventional": "^19.2.2",
-    "@types/lodash": "^4.17.7",
+    "@types/lodash": "^4.17.23",
     "@types/qs": "^6.9.15",
     "@types/ws": "^8.5.10",
     "@typescript-eslint/eslint-plugin": "^8.46.2",
     "@typescript-eslint/parser": "^8.46.2",
-    "@vitejs/plugin-vue": "^5.1.0",
-    "@vitejs/plugin-vue-jsx": "^4.0.0",
+    "@vitejs/plugin-vue": "^6.0.3",
+    "@vitejs/plugin-vue-jsx": "^5.1.3",
     "@vue/compiler-sfc": "^3.4.31",
     "@vue/eslint-config-typescript": "^14.6.0",
     "commitizen": "^4.3.0",
@@ -54,26 +54,60 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-prettier": "^5.1.3",
-    "eslint-plugin-vue": "^10.5.1",
-    "eslint-plugin-vue-scoped-css": "^2.6.0",
+    "eslint-plugin-vue": "^10.7.0",
+    "eslint-plugin-vue-scoped-css": "^2.12.0",
     "husky": "^9.1.1",
     "less": "^4.2.0",
     "lint-staged": "^15.2.7",
-    "mockjs": "^1.1.0",
     "prettier": "^3.3.3",
     "stylelint": "^16.25.0",
     "stylelint-less": "^3.0.0",
     "stylelint-order": "^6.0.4",
     "typescript": "^5.5.3",
-    "vite": "^5.3.3",
-    "vite-plugin-mock": "^3.0.1",
+    "vite": "^7.3.1",
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "a4b5123683ad4bb1027d30248453cf4c5a7e203f",
-  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到v1.1.4",
+  "commitId": "ffa48a4760e54802637caf6b48adb5e05f635191",
+  "commitMsg": "deps(webpanel): 更新依赖版本",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "ffa48a4760e54802637caf6b48adb5e05f635191",
+      "commitTime": "2026-02-01 18:17:44 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "deps(webpanel): 更新依赖版本"
+    },
+    {
+      "commitId": "37753cae5aa78ff73e36fc3615a719d644751176",
+      "commitTime": "2026-02-01 17:57:44 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(daemon): 优化Token过期的提示信息"
+    },
+    {
+      "commitId": "2c7349e5e48cb5b6fecb6844482d5f21fdb31f98",
+      "commitTime": "2026-02-01 17:54:36 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 设置通配符监听地址时，自动使用localhost作为本机打开的控制台地址"
+    },
+    {
+      "commitId": "ab99eaccd9f08a3e31477aa0cbafa7222f1a84a8",
+      "commitTime": "2026-02-01 17:37:26 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复服务端下载组件中纯Fabric端和第三方基岩版服务端丢失的问题 & 优化修复服务端下载组件分类模块滚动条样式"
+    },
+    {
+      "commitId": "118d01129d0852f9ea55d751943fca70ef766ed1",
+      "commitTime": "2026-02-01 13:53:38 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #35 from MSLTeam/dev"
+    },
+    {
+      "commitId": "adaae7b4575e2869ed10b4676f1a32b874cf081e",
+      "commitTime": "2026-02-01 13:52:50 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入v1.1.4版本前端资源"
+    },
     {
       "commitId": "a4b5123683ad4bb1027d30248453cf4c5a7e203f",
       "commitTime": "2026-02-01 13:52:17 +0800",
@@ -337,42 +371,6 @@
       "commitTime": "2026-01-23 22:32:31 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "build(desktop): 修正Desktop发布参数"
-    },
-    {
-      "commitId": "e3211d47385c144a04ffb657132ac15974694a93",
-      "commitTime": "2026-01-23 22:05:32 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(desktop): 新增MSLX-Desktop发布工作流"
-    },
-    {
-      "commitId": "d127a58d152b032e212fd3a2778d712afa3f6197",
-      "commitTime": "2026-01-23 22:03:25 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(desktop): 新增MSLX-Desktop的构建工作流"
-    },
-    {
-      "commitId": "e73255c4f961d8dc67d0c8c6edfc4d16b8e19ffb",
-      "commitTime": "2026-01-23 22:01:01 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(desktop): 修正程序集名称"
-    },
-    {
-      "commitId": "4427d7bfdbfc3d3b1320200ac3f5bcd2a5f42e23",
-      "commitTime": "2026-01-23 21:50:03 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
-    },
-    {
-      "commitId": "8b61ff45a4b60587f1a3b175003eaca109a5b876",
-      "commitTime": "2026-01-23 21:49:14 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "feat: 优化daemon更新功能，新增desktop前端控制daemon更新功能（还没完善完）"
-    },
-    {
-      "commitId": "bc5321a8f2528ff59945779044fa4ceb45581a82",
-      "commitTime": "2026-01-23 21:43:35 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(desktop): 新增Desktop程序集信息"
     }
   ]
 }
