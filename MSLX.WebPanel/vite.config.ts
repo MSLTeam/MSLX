@@ -27,6 +27,17 @@ export default defineConfig(({ mode }: ConfigEnv) => {
       },
     },
     plugins: [vue(), vueJsx(), svgLoader()],
+    server: {
+      port: 1102,
+      host: '0.0.0.0',
+      proxy: {
+        '/api': {
+          target: 'http://localhost:1027',
+          changeOrigin: true,
+          ws: true,
+        },
+      },
+    },
     build: {
       chunkSizeWarningLimit: 2000,
       rollupOptions: {
