@@ -150,7 +150,7 @@ namespace MSLX.Daemon.Middleware
                 if (JwtUtils.IsTokenExpiredButTrusted(token))
                 {
                     isExpiredSafe = true;
-                    authErrorMessage = "TokenExpired";
+                    authErrorMessage = "登录已过期，请重新登录~";
                 }
             }
 
