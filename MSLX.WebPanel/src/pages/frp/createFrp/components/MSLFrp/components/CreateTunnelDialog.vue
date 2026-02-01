@@ -210,12 +210,12 @@ onMounted(() => {
         </t-form-item>
 
         <t-row :gutter="[16, 20]">
-          <t-col :span="6">
+          <t-col :xs="12" :sm="6">
             <t-form-item label="隧道名称">
               <t-input v-model="form.name" />
             </t-form-item>
           </t-col>
-          <t-col :span="6">
+          <t-col :xs="12" :sm="6">
             <t-form-item label="远程端口">
               <t-input v-model="form.remotePort">
                 <template #suffix>
@@ -224,12 +224,12 @@ onMounted(() => {
               </t-input>
             </t-form-item>
           </t-col>
-          <t-col :span="6">
+          <t-col :xs="12" :sm="6">
             <t-form-item label="本地IP">
               <t-input v-model="form.localIP" />
             </t-form-item>
           </t-col>
-          <t-col :span="6">
+          <t-col :xs="12" :sm="6">
             <t-form-item label="本地端口">
               <t-input v-model="form.localPort" />
             </t-form-item>

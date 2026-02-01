@@ -366,7 +366,9 @@ async function handleDeleteTunnel() {
             <t-col :xs="6" :sm="3">
               <div class="stat-item">
                 <div class="label">会员到期时间</div>
-                <div class="value date-text">{{ userInfo.outdated === 3749682420 ? '长期有效' : formatTime(userInfo.outdated) }}</div>
+                <div class="value date-text">
+                  {{ userInfo.outdated === 3749682420 ? '长期有效' : formatTime(userInfo.outdated) }}
+                </div>
               </div>
             </t-col>
           </t-row>
@@ -699,5 +701,15 @@ async function handleDeleteTunnel() {
   p {
     margin-top: 16px;
   }
+}
+
+// 头部样式修复
+:deep(.t-card__header) {
+  overflow-x: auto;
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+:deep(.t-card__header)::-webkit-scrollbar {
+  display: none;
 }
 </style>
