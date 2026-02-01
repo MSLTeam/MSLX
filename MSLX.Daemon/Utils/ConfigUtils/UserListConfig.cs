@@ -49,12 +49,21 @@ namespace MSLX.Daemon.Utils.ConfigUtils
             {
                 return;
             }
-            if ((bool?)IConfigBase.Config.ReadConfig()["openWebConsoleOnLaunch"] ?? true)
+            var config = IConfigBase.Config.ReadConfig();
+
+            bool openOnLaunch = (bool?)config["openWebConsoleOnLaunch"] ?? true;
+            string rawHost = (config["listenHost"] ?? "localhost").ToString().Trim();
+            var port = config["listenPort"] ?? 1027;
+
+            if (openOnLaunch)
             {
-                if (!(IConfigBase.Config.ReadConfig()["listenHost"] ?? "localhost").Contains("0.0.0.0") && !(IConfigBase.Config.ReadConfig()["listenHost"] ?? "localhost").Contains("*"))
-                {
-                    PlatFormServices.OpenBrowser($"http://{IConfigBase.Config.ReadConfig()["listenHost"] ?? "localhost"}:{IConfigBase.Config.ReadConfig()["listenPort"] ?? 1027}" + (isInitialize ? "/login?initialize=true" : string.Empty));
-                }
+                bool isWildcard = rawHost == "*" || rawHost == "0.0.0.0" || rawHost == "[::]" || rawHost == "+";
+                string targetHost = isWildcard ? "localhost" : rawHost;
+                string suffix = isInitialize ? "/login?initialize=true" : string.Empty;
+                string url = $"http://{targetHost}:{port}{suffix}";
+
+                Console.WriteLine($"[WebConsole] 自动检测到监听地址为 {rawHost}，正在通过 {targetHost} 打开控制台...");
+                PlatFormServices.OpenBrowser(url);
             }
         }
 
