@@ -203,7 +203,7 @@ public class FileContentController : ControllerBase
         if (id == 0)
         {
             basePath = Path.Combine(IConfigBase.GetAppConfigPath(), "Frpc");
-            encoding = Encoding.UTF8;
+            encoding = new UTF8Encoding(false);
 
             if (!Directory.Exists(basePath)) Directory.CreateDirectory(basePath);
         }

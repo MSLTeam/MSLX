@@ -16,7 +16,9 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import { openLoginPopup } from '@/utils/popup';
 import { createFrpTunnel } from '@/pages/frp/createFrp/utils/create';
 import CreateTunnelDialog from './components/CreateTunnelDialog.vue';
+import DomainManagerDialog from './components/DomainManagerDialog.vue';
 
+const showDomainDialog = ref(false);
 const showCreateDialog = ref(false);
 
 // 创建成功后的回调
@@ -366,7 +368,9 @@ async function handleDeleteTunnel() {
             <t-col :xs="6" :sm="3">
               <div class="stat-item">
                 <div class="label">会员到期时间</div>
-                <div class="value date-text">{{ userInfo.outdated === 3749682420 ? '长期有效' : formatTime(userInfo.outdated) }}</div>
+                <div class="value date-text">
+                  {{ userInfo.outdated === 3749682420 ? '长期有效' : formatTime(userInfo.outdated) }}
+                </div>
               </div>
             </t-col>
           </t-row>
@@ -388,6 +392,10 @@ async function handleDeleteTunnel() {
                     >
                       <template #icon><refresh-icon /></template>
                       刷新
+                    </t-button>
+                    <t-button size="small" variant="text" @click="showDomainDialog = true">
+                      <template #icon><cloud-icon /></template>
+                      免费子域名
                     </t-button>
                     <t-button size="small" variant="text" @click="handleAddTunnel">
                       <template #icon><add-icon /></template>
@@ -512,6 +520,12 @@ async function handleDeleteTunnel() {
       v-model:visible="showCreateDialog"
       :token="mslUserToken"
       @success="handleCreateSuccess"
+    />
+    <domain-manager-dialog
+      v-if="showDomainDialog"
+      v-model:visible="showDomainDialog"
+      :token="mslUserToken"
+      :tunnels="tunnels"
     />
   </div>
 </template>
@@ -699,5 +713,15 @@ async function handleDeleteTunnel() {
   p {
     margin-top: 16px;
   }
+}
+
+// 头部样式修复
+:deep(.t-card__header) {
+  overflow-x: auto;
+  white-space: nowrap;
+  flex-wrap: nowrap;
+}
+:deep(.t-card__header)::-webkit-scrollbar {
+  display: none;
 }
 </style>
