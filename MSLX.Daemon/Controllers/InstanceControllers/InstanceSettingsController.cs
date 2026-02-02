@@ -106,6 +106,7 @@ public class InstanceSettingsController : ControllerBase
             server.BackupDelay = request.BackupDelay;
             server.BackupMaxCount = request.BackupMaxCount;
             server.BackupPath = request.BackupPath;
+            server.StopCommand = request.StopCommand;
             server.YggdrasilApiAddr = request.YggdrasilApiAddr;
             server.RunOnStartup = request.RunOnStartup;
             server.AutoRestart = request.AutoRestart;

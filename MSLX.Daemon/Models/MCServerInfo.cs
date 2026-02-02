@@ -16,6 +16,7 @@ namespace MSLX.Daemon.Models;
             public string? Args { get; set; }
             public int ForceExitDelay { get; set; } = 10;
             public string YggdrasilApiAddr { get; set; } = "";
+            public string StopCommand { get; set; } = "stop";
             public int BackupMaxCount { get; set; } = 20;
             public int BackupDelay { get; set; } = 10;
             public string BackupPath { get; set; } = "MSLX://Backup/Instance";

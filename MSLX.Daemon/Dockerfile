@@ -25,6 +25,8 @@ RUN \
 # 安装一些库和设置时区
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+    libcurl4 \
+    openssl \
     procps \
     libfreetype6 \
     fontconfig \
