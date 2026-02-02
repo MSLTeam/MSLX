@@ -1,6 +1,6 @@
 {
-  "version": "1.1.5",
-  "buildTime": "2026-02-01 21:37:55",
+  "version": "1.1.6",
+  "buildTime": "2026-02-02 16:22:15",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,40 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "8803d6c46f682efcc320ee751ec764a8768e849e",
-  "commitMsg": "fix(webpanel): 移除过时的Xterm配置项",
+  "commitId": "15f1d2b159a0ac50341a0208b9ccb9ed7701bcd2",
+  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到v1.1.6",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "15f1d2b159a0ac50341a0208b9ccb9ed7701bcd2",
+      "commitTime": "2026-02-02 16:21:46 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到v1.1.6"
+    },
+    {
+      "commitId": "18223003f55c4d82cd312e29157490bdda47063e",
+      "commitTime": "2026-02-02 16:17:06 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复Docker环境下基岩版服务器缺少环境的问题"
+    },
+    {
+      "commitId": "b6d04059eb0da8331a887d73de67ce397a66da4e",
+      "commitTime": "2026-02-02 16:07:08 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 新增支持设置停止实例的指令"
+    },
+    {
+      "commitId": "5c15ae40dd1644b2690c13a79ec89e7fbd100e1f",
+      "commitTime": "2026-02-01 21:38:44 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #36 from MSLTeam/dev"
+    },
+    {
+      "commitId": "b316e55fb06cb2ade65b60df1f6feff6f2b8254c",
+      "commitTime": "2026-02-01 21:38:06 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v1.1.5 版本前端资源"
+    },
     {
       "commitId": "8803d6c46f682efcc320ee751ec764a8768e849e",
       "commitTime": "2026-02-01 21:37:29 +0800",
@@ -341,36 +371,6 @@
       "commitTime": "2026-01-24 15:59:05 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "assets(daemon): 嵌入 v1.1.1 版本前端资源"
-    },
-    {
-      "commitId": "3ccc016670dc1ac450a2204e0c38b4e3ec9c542a",
-      "commitTime": "2026-01-24 15:58:27 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & desktop): 更新版本号到 v1.1.1-release"
-    },
-    {
-      "commitId": "f435a43e9faf2c383cf1d2ee39fb748a4ceb091c",
-      "commitTime": "2026-01-24 15:55:36 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
-    },
-    {
-      "commitId": "cfcf255fcff5695b5ad2b33d1a3ae86bf14a1f47",
-      "commitTime": "2026-01-24 15:55:22 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "feat(desktop): daemon更新功能基本完善！"
-    },
-    {
-      "commitId": "f8c72753bfb04d5aa747b2602518f5152f4a528a",
-      "commitTime": "2026-01-24 15:52:30 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "lint(webpanel): 优化MSLFrp组件代码格式"
-    },
-    {
-      "commitId": "75a205c34b092ef48b37c09a35c0bd61e1bff19c",
-      "commitTime": "2026-01-24 15:51:42 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): MSLFrp新增内置删除隧道功能"
     }
   ]
 }
