@@ -23,7 +23,7 @@ public partial class LinkDaemonPage : UserControl
 
     private async void DoneBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        var ip = DaemonAddressTextBox.Text?.Trim() ?? string.Empty;
+        var ip = DaemonAddressTextBox.Text?.Trim().TrimEnd('/') ?? string.Empty;
         var key = DaemonKeyTextBox.Text?.Trim() ?? string.Empty;
         if (string.IsNullOrEmpty(ip) || string.IsNullOrEmpty(key))
         {
