@@ -95,7 +95,7 @@
           </ItemsControl>
       </ScrollViewer>
       <StackPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" Spacing="5">
-        <Button Padding="10">
+        <Button Padding="10" x:Name="RefreshBtn" Click="RefreshBtn_Click">
           <micon:MaterialIcon Kind="Refresh"/>
         </Button>
         <Button Padding="10" Click="Button_Click">
