@@ -54,6 +54,7 @@ export interface UpdateInstanceModel {
   // 这些后端有默认值
   forceExitDelay?: number;
   yggdrasilApiAddr?: string;
+  stopCommand?: string;
   backupMaxCount?: number;
   backupDelay?: number;
   backupPath?: string;
@@ -81,6 +82,7 @@ export interface InstanceSettingsModel {
   minM: number;
   maxM: number;
   args?: string;
+  stopCommand?: string;
   yggdrasilApiAddr?: string;
   backupMaxCount?: number;
   backupDelay?: number;

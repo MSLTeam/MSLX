@@ -32,6 +32,8 @@ public class UpdateServerRequest : IValidatableObject
     [Range(10, 120, ErrorMessage = "强制退出延迟时间不能小于 10s 或大于 120s")]
     public int ForceExitDelay { get; set; } = 10;
 
+    public string StopCommand { get; set; } = "stop";
+
     public string YggdrasilApiAddr { get; set; } = "";
 
     [Range(1, 100, ErrorMessage = "备份数量限制必须在 1-100 之间")]

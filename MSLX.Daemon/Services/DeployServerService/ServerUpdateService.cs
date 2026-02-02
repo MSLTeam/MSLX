@@ -99,6 +99,7 @@ public class ServerUpdateService : BackgroundService
             server.BackupDelay = req.BackupDelay;
             server.BackupMaxCount = req.BackupMaxCount;
             server.BackupPath = req.BackupPath;
+            server.StopCommand = req.StopCommand;
             server.YggdrasilApiAddr = req.YggdrasilApiAddr;
             server.RunOnStartup = req.RunOnStartup;
             server.AutoRestart = req.AutoRestart;

@@ -737,6 +737,21 @@ onUnmounted(() => {
 
         <div class="setting-item">
           <div class="setting-info">
+            <div class="title">停止服务器指令</div>
+            <div class="desc">
+              设置正常停止时所发送的指令，默认为stop
+            </div>
+            <div class="desc">
+              设置为^c为发送Ctrl C (在部分环境可能无法发送成功)
+            </div>
+          </div>
+          <div class="setting-control">
+            <t-input v-model="formData.stopCommand" placeholder="请输入停止指令" />
+          </div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
             <div class="title">自动重启</div>
             <div class="desc">当服务器崩溃或意外停止时尝试自动重启</div>
             <div class="desc">熔断机制: 若5分钟内尝试重启次数达到 5 次，则停止尝试重启</div>

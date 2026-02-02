@@ -385,17 +385,31 @@ public class MCServerService
 
                         if (isMcServer)
                         {
-                            // MC服务器：发送 stop 命令
-                            context.Process.StandardInput.WriteLine("stop");
+                            // MC服务器：发送 stop / 自定义 命令
+                            if (string.IsNullOrEmpty(server?.StopCommand ?? ""))
+                            {
+                                context.Process.StandardInput.WriteLine("stop");
+                            }
+                            else
+                            {
+                                context.Process.StandardInput.WriteLine(server?.StopCommand ?? "stop");
+                            }
                             context.Process.StandardInput.Flush();
+
                         }
                         else
                         {
                             // 其他类型
-                            if (!ProcessHelper.SendCtrlC(context.Process))
+                            if (string.IsNullOrEmpty(server?.StopCommand ?? "") || (server?.StopCommand ?? "") == "^c")
                             {
-                                context.Process.StandardInput.Close();
+                                ProcessHelper.SendCtrlC(context.Process);
                             }
+                            else
+                            {
+                                context.Process.StandardInput.WriteLine(server?.StopCommand ?? "stop");
+                            }
+                            // 关闭输入流
+                            context.Process.StandardInput.Close();
                         }
 
                         // 等待进程退出
