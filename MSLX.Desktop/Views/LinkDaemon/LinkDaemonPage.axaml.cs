@@ -50,6 +50,8 @@ public partial class LinkDaemonPage : UserControl
             // 验证成功，跳转到主页面
             SideMenuHelper.MainSideMenuHelper?.ShowMainPages();
             SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
+
+            _ = UpdateService.UpdateDaemonApp(true);
         }
     }
 

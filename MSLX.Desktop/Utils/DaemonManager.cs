@@ -67,7 +67,6 @@ namespace MSLX.Desktop.Utils
                                 .Dismiss().After(TimeSpan.FromSeconds(5))
                                 .Queue();
 
-                    await UpdateService.UpdateDaemonApp();
                     return (true,"连接成功！");
                 }
                 else
@@ -82,7 +81,7 @@ namespace MSLX.Desktop.Utils
             {
                 ConfigStore.DaemonApiKey = string.Empty;
                 ConfigStore.DaemonAddress = string.Empty;
-                return (false, $"请检查MSLX守护进程端连接地址是否有效！");
+                return (false, $"请检查MSLX守护进程端连接地址是否有效！" + ex.Message);
             }
         }
 
@@ -230,7 +229,7 @@ namespace MSLX.Desktop.Utils
             }
         }
 
-        public static async Task<bool> GetKeyAndLinkDaemon(bool isGetKey=true)
+        public static async Task<bool> GetKeyAndLinkDaemon(bool isGetKey = true, bool showDialog = true)
         {
             if (isGetKey)
             {
@@ -241,18 +240,20 @@ namespace MSLX.Desktop.Utils
             string errInfo= string.Empty;
             if (!string.IsNullOrEmpty(ConfigStore.DaemonApiKey))
             {
-                var addressBox = new TextBox
+                if (showDialog)
                 {
-                    Text = ConfigStore.DaemonAddress,
-                    Margin = new Thickness(0, 0, 0, 10)
-                };
-                var apiKeyBox = new TextBox
-                {
-                    Text = ConfigStore.DaemonApiKey,
-                };
-                var dialogContent = new StackPanel
-                {
-                    Children =
+                    var addressBox = new TextBox
+                    {
+                        Text = ConfigStore.DaemonAddress,
+                        Margin = new Thickness(0, 0, 0, 10)
+                    };
+                    var apiKeyBox = new TextBox
+                    {
+                        Text = ConfigStore.DaemonApiKey,
+                    };
+                    var dialogContent = new StackPanel
+                    {
+                        Children =
                     {
                         new TextBlock
                         {
@@ -272,32 +273,35 @@ namespace MSLX.Desktop.Utils
                         },
                         apiKeyBox
                     }
-                };
-                var dialogBuilder = DialogService.DialogManager.CreateDialog()
-                    .OfType(Avalonia.Controls.Notifications.NotificationType.Information)
-                    .WithTitle("链接守护程序")
-                    .WithContent(dialogContent);
-                dialogBuilder.Completion = new TaskCompletionSource<bool>();
-                dialogBuilder.WithActionButton("确认并链接", dialog =>
-                {
-                    dialogBuilder.Completion.TrySetResult(true);
-                }, true);
+                    };
+                    var dialogBuilder = DialogService.DialogManager.CreateDialog()
+                        .OfType(Avalonia.Controls.Notifications.NotificationType.Information)
+                        .WithTitle("链接守护程序")
+                        .WithContent(dialogContent);
+                    dialogBuilder.Completion = new TaskCompletionSource<bool>();
+                    dialogBuilder.WithActionButton("确认并链接", dialog =>
+                    {
+                        dialogBuilder.Completion.TrySetResult(true);
+                    }, true);
 
-                dialogBuilder.WithActionButton("取消", dialog =>
-                {
-                    dialogBuilder.Completion.TrySetResult(false);
-                }, true);
-                var dialog = await dialogBuilder.TryShowAsync();
-                if (!dialog)
-                {
-                    return false;
+                    dialogBuilder.WithActionButton("取消", dialog =>
+                    {
+                        dialogBuilder.Completion.TrySetResult(false);
+                    }, true);
+                    var dialog = await dialogBuilder.TryShowAsync();
+                    if (!dialog)
+                    {
+                        return false;
+                    }
+                    ConfigStore.DaemonAddress = addressBox.Text;
+                    ConfigStore.DaemonApiKey = apiKeyBox.Text;
                 }
+                
                 // 验证
-                ConfigStore.DaemonAddress = addressBox.Text;
-                ConfigStore.DaemonApiKey = apiKeyBox.Text;
                 var(isSuccess,err) = await DaemonManager.VerifyDaemonApiKey();
                 if (isSuccess)
                 {
+                    _ = UpdateService.UpdateDaemonApp(false);
                     return true;
                 }
                 else

@@ -79,14 +79,21 @@ namespace MSLX.Desktop.Utils.API
                 var content = getResponse.Content;
                 if (content == null)
                     return (false, null, "内容为空");
-                var json = JObject.Parse(content);
-                if (json["code"]?.ToString() != "200")
-                    return (false, null, json["message"]?.ToString());
-                return (true, json[dataKey], json["message"]?.ToString());
+                try
+                {
+                    var json = JObject.Parse(content);
+                    if (json["code"]?.ToString() != "200")
+                        return (false, null, json["message"]?.ToString());
+                    return (true, json[dataKey], json["message"]?.ToString());
+                }
+                catch
+                {
+                    return (false, null, "API响应格式错误，转换Json失败！");
+                }
             }
             else
             {
-                return (false, null, "请求错误！");
+                return (false, null, "请求错误！\n" + getResponse.Exception?.Message);
             }
         }
 

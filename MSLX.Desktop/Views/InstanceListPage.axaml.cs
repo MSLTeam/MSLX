@@ -1,6 +1,4 @@
-using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Markup.Xaml;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils;
 using MSLX.Desktop.Utils.API;
@@ -24,14 +22,14 @@ public partial class InstanceListPage : UserControl
         InitializeComponent();
 
         _model = new MCServerModel();
-
         DataContext = this;
+
+        this.Loaded += InstanceListPage_Loaded;
     }
 
     // 页面加载后执行的内容
-    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    private void InstanceListPage_Loaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        base.OnAttachedToVisualTree(e);
         _ = LoadServersList();
     }
 

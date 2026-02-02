@@ -27,11 +27,20 @@ namespace MSLX.Desktop.Utils
         }
 
         private static DaemonUpdateService? _updateService;
-        public static async Task<(bool isSuccess, string? msg)> UpdateDaemonApp()
+        public static async Task<(bool isSuccess, string? msg)> UpdateDaemonApp(bool autoRestart)
         {
             var (Success, Data, Msg) = await DaemonAPIService.GetJsonDataAsync("/api/update/info");
             if (!Success)
             {
+                DialogService.ToastManager.CreateToast()
+                            .OfType(Avalonia.Controls.Notifications.NotificationType.Error)
+                            .WithTitle("更新失败")
+                            .WithContent(new TextBlock
+                            {
+                                Text = Msg,
+                            })
+                            .Dismiss().After(TimeSpan.FromSeconds(5))
+                            .Queue();
                 return (false, Msg);
             }
             if (Data is not JObject apiData)
@@ -58,7 +67,7 @@ namespace MSLX.Desktop.Utils
                         .WithContent($"检测到守护程序需要进行新版本更新！\n当前版本：{currentVersion}\n最新版本：{latestVersion}\n更新日志：\n{updateLog}")
                         .WithActionButton("更新", async _ =>
                         {
-                            await StartUpdateProcessAsync(false);
+                            await StartUpdateProcessAsync(autoRestart);
                         }, true)
                         .WithActionButton("关闭", _ => { }, true, "Standard")
                         .TryShow();
@@ -148,8 +157,14 @@ namespace MSLX.Desktop.Utils
                     {
                         await _updateService.DisconnectAsync();
                         _updateService.Dispose();
-                        await Task.Delay(1500);
+                        await Task.Delay(500);
                         DialogService.ToastManager.Dismiss(toast);
+                        DialogService.DialogManager.CreateDialog()
+                            .WithTitle("更新中")
+                            .WithContent($"请等待……")
+                            .TryShow();
+                        await Task.Delay(10000);
+                        DialogService.DialogManager.DismissDialog();
                         SideMenuHelper.MainSideMenuHelper?.NavigateTo(new SukiSideMenuItem
                         {
                             Header = "欢迎",
@@ -166,9 +181,13 @@ namespace MSLX.Desktop.Utils
                     {
                         await _updateService.DisconnectAsync();
                         _updateService.Dispose();
-                        await Task.Delay(1500);
+                        await Task.Delay(500);
                         DialogService.ToastManager.Dismiss(toast);
                         await DaemonManager.StopRunningDaemon();
+                        DialogService.DialogManager.CreateDialog()
+                            .WithTitle("更新中")
+                            .WithContent($"请等待……")
+                            .TryShow();
                         await Task.Delay(1500);
                         string currentFileName;
                         string newFileName;
@@ -179,6 +198,7 @@ namespace MSLX.Desktop.Utils
                                 newFileName = Path.Combine(ConfigService.GetAppDataPath(), "MSLX-Daemon.exe.new");
                                 if (!(File.Exists(currentFileName) && File.Exists(newFileName)))
                                 {
+                                    DialogService.DialogManager.DismissDialog();
                                     DialogService.DialogManager.CreateDialog()
                                         .OfType(Avalonia.Controls.Notifications.NotificationType.Error)
                                         .WithTitle("更新失败")
@@ -194,6 +214,7 @@ namespace MSLX.Desktop.Utils
                                 newFileName = Path.Combine(ConfigService.GetAppDataPath(), "MSLX-Daemon.new");
                                 if (!(File.Exists(currentFileName) && File.Exists(newFileName)))
                                 {
+                                    DialogService.DialogManager.DismissDialog();
                                     DialogService.DialogManager.CreateDialog()
                                         .OfType(Avalonia.Controls.Notifications.NotificationType.Error)
                                         .WithTitle("更新失败")
@@ -205,7 +226,7 @@ namespace MSLX.Desktop.Utils
                                 File.Copy(newFileName, currentFileName);
                                 break;
                         }
-
+                        DialogService.DialogManager.DismissDialog();
                         SideMenuHelper.MainSideMenuHelper?.NavigateTo(new SukiSideMenuItem
                         {
                             Header = "欢迎",

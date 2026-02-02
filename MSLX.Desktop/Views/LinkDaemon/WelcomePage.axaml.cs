@@ -64,6 +64,8 @@ public partial class WelcomePage : UserControl
                             SideMenuHelper.MainSideMenuHelper?.ShowMainPages();
                             SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
                             SideMenuHelper.MainSideMenuHelper?.NavigateTo<HomePage>();
+
+                            _ = UpdateService.UpdateDaemonApp(false);
                         }
                         else
                         {
@@ -78,7 +80,7 @@ public partial class WelcomePage : UserControl
                 }
                 else
                 {
-                    if (await DaemonManager.GetKeyAndLinkDaemon(false))
+                    if (await DaemonManager.GetKeyAndLinkDaemon(false,false))
                     {
                         // 验证成功，跳转到主页面
                         SideMenuHelper.MainSideMenuHelper?.ShowMainPages();
@@ -101,6 +103,8 @@ public partial class WelcomePage : UserControl
                     SideMenuHelper.MainSideMenuHelper?.ShowMainPages();
                     SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
                     SideMenuHelper.MainSideMenuHelper?.NavigateTo<HomePage>();
+
+                    _ = UpdateService.UpdateDaemonApp(true);
                 }
                 else
                 {
@@ -120,28 +124,35 @@ public partial class WelcomePage : UserControl
     {
         Debug.WriteLine("WelcomePage: MethodB Start");
 
-        var (Success, Msg) = await DaemonManager.StartDaemon(ConfigService.GetAppDataPath());
-        if (Success)
+        if (DaemonManager.FindDaemonProcess() != null)
         {
-            DialogService.DialogManager.DismissDialog();
-            DialogService.DialogManager.CreateDialog()
-                .WithTitle("守护程序启动成功")
-                .WithContent("已成功启动守护程序，正在尝试获取API Key进行验证。")
-                .TryShow();
-            await Task.Delay(2500);
-            DialogService.DialogManager.DismissDialog();
-
-            bool isSuccess = await DaemonManager.GetKeyAndLinkDaemon();
-            if (isSuccess)
-            {
-                // 验证成功，跳转到主页面
-                SideMenuHelper.MainSideMenuHelper?.ShowMainPages();
-                SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
-                SideMenuHelper.MainSideMenuHelper?.NavigateTo<HomePage>();
-                return;
-            }
+            MethodD();
         }
-        MethodC();
+        else
+        {
+            var (Success, Msg) = await DaemonManager.StartDaemon(ConfigService.GetAppDataPath());
+            if (Success)
+            {
+                DialogService.DialogManager.DismissDialog();
+                DialogService.DialogManager.CreateDialog()
+                    .WithTitle("守护程序启动成功")
+                    .WithContent("已成功启动守护程序，正在尝试获取API Key进行验证。")
+                    .TryShow();
+                await Task.Delay(2500);
+                DialogService.DialogManager.DismissDialog();
+
+                bool isSuccess = await DaemonManager.GetKeyAndLinkDaemon();
+                if (isSuccess)
+                {
+                    // 验证成功，跳转到主页面
+                    SideMenuHelper.MainSideMenuHelper?.ShowMainPages();
+                    SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
+                    SideMenuHelper.MainSideMenuHelper?.NavigateTo<HomePage>();
+                    return;
+                }
+            }
+            MethodC();
+        }
     }
 
     private void MethodC()
