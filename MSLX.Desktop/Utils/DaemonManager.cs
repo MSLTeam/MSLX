@@ -21,7 +21,7 @@ namespace MSLX.Desktop.Utils
     public static class DaemonManager
     {
         private static Process? DaemonProcess { get; set; }
-        public static async Task<bool> VerifyDaemonApiKey()
+        public static async Task<(bool Success, string Message)> VerifyDaemonApiKey()
         {
             // 关闭先前对话框并显示验证中对话框
             DialogService.DialogManager.DismissDialog();
@@ -29,61 +29,60 @@ namespace MSLX.Desktop.Utils
                 .WithTitle("验证中...")
                 .WithContent("请稍候，正在验证Daemon API Key的有效性。")
                 .TryShow();
-            var (isSuccess, msg, data) = await DaemonAPIService.VerifyDaemonApiKey();
-            string clientName = data?["clientName"]?.Value<string>() ?? "Unknown";
-            string version = data?["version"]?.Value<string>() ?? "Unknown";
-            string serverTime = data?["serverTime"]?.Value<string>() ?? "Unknown";
-            string targetFrontendVersion = data?["targetFrontendVersion"]?["desktop"]?.Value<string>() ?? "0.0.0";
-            Version targetVersion = Version.Parse(targetFrontendVersion);
-
-            DialogService.DialogManager.DismissDialog();
-            if (isSuccess)
+            try
             {
-                ConfigStore.Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0, 0);
-                // 截取前三位版本号进行比较
-                Version targetVersionTrimmed = new Version(targetVersion.Major, targetVersion.Minor, targetVersion.Build);
-                Version currentVersionTrimmed = new(ConfigStore.Version.Major, ConfigStore.Version.Minor, ConfigStore.Version.Build);
+                var (isSuccess, msg, data) = await DaemonAPIService.VerifyDaemonApiKey();
+                string clientName = data?["clientName"]?.Value<string>() ?? "Unknown";
+                string version = data?["version"]?.Value<string>() ?? "Unknown";
+                string serverTime = data?["serverTime"]?.Value<string>() ?? "Unknown";
+                string targetFrontendVersion = data?["targetFrontendVersion"]?["desktop"]?.Value<string>() ?? "0.0.0";
+                Version targetVersion = Version.Parse(targetFrontendVersion);
 
-                // 比较版本号
-                if (currentVersionTrimmed != targetVersionTrimmed)
+                DialogService.DialogManager.DismissDialog();
+                if (isSuccess)
                 {
-                    DialogService.ToastManager.CreateToast()
-                        .OfType(Avalonia.Controls.Notifications.NotificationType.Warning)
-                        .WithTitle("与守护程序的兼容性警告")
-                        .WithContent($"您的版本号({currentVersionTrimmed})与守护程序要求的版本号({targetVersionTrimmed})不一致，可能会出现兼容性问题！")
-                        .Dismiss().After(TimeSpan.FromSeconds(10))
-                        .Queue();
-                }
+                    ConfigStore.Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0, 0);
+                    // 截取前三位版本号进行比较
+                    Version targetVersionTrimmed = new Version(targetVersion.Major, targetVersion.Minor, targetVersion.Build);
+                    Version currentVersionTrimmed = new(ConfigStore.Version.Major, ConfigStore.Version.Minor, ConfigStore.Version.Build);
 
-                // 验证成功
-                DialogService.ToastManager.CreateToast()
-                            .WithTitle(msg)
-                            .WithContent(new TextBlock
-                            {
-                                Text = $"Client Name: {clientName}\nVersion: {version}\nServer Time: {serverTime}",
-                            })
-                            .Dismiss().After(TimeSpan.FromSeconds(5))
-                            .Queue();
-
-                await UpdateService.UpdateDaemonApp();
-                return true;
-            }
-            else
-            {
-                // 验证失败，提示用户并让其重新输入
-                // API Key无效
-                ConfigStore.DaemonApiKey = string.Empty;
-
-                DialogService.DialogManager.CreateDialog()
-                    .OfType(Avalonia.Controls.Notifications.NotificationType.Error)
-                    .WithTitle("API Key无效")
-                    .WithContent(new TextBlock
+                    // 比较版本号
+                    if (currentVersionTrimmed != targetVersionTrimmed)
                     {
-                        Text = "请重新输入有效的Daemon API Key。",
-                    })
-                    .WithActionButton("关闭", _ => { }, true)
-                    .TryShow();
-                return false;
+                        DialogService.ToastManager.CreateToast()
+                            .OfType(Avalonia.Controls.Notifications.NotificationType.Warning)
+                            .WithTitle("与守护程序的兼容性警告")
+                            .WithContent($"您的版本号({currentVersionTrimmed})与守护程序要求的版本号({targetVersionTrimmed})不一致，可能会出现兼容性问题！")
+                            .Dismiss().After(TimeSpan.FromSeconds(10))
+                            .Queue();
+                    }
+
+                    // 验证成功
+                    DialogService.ToastManager.CreateToast()
+                                .WithTitle(msg)
+                                .WithContent(new TextBlock
+                                {
+                                    Text = $"Client Name: {clientName}\nVersion: {version}\nServer Time: {serverTime}",
+                                })
+                                .Dismiss().After(TimeSpan.FromSeconds(5))
+                                .Queue();
+
+                    await UpdateService.UpdateDaemonApp();
+                    return (true,"连接成功！");
+                }
+                else
+                {
+                    // 验证失败，提示用户并让其重新输入
+                    // API Key无效
+                    ConfigStore.DaemonApiKey = string.Empty;
+                    return (false, "API Key无效");
+                }
+            }
+            catch (Exception ex)
+            {
+                ConfigStore.DaemonApiKey = string.Empty;
+                ConfigStore.DaemonAddress = string.Empty;
+                return (false, $"请检查MSLX守护进程端连接地址是否有效！");
             }
         }
 
@@ -296,12 +295,15 @@ namespace MSLX.Desktop.Utils
                 // 验证
                 ConfigStore.DaemonAddress = addressBox.Text;
                 ConfigStore.DaemonApiKey = apiKeyBox.Text;
-                bool isSuccess = await DaemonManager.VerifyDaemonApiKey();
+                var(isSuccess,err) = await DaemonManager.VerifyDaemonApiKey();
                 if (isSuccess)
                 {
                     return true;
                 }
-                errInfo = "Daemon API Key验证失败！";
+                else
+                {
+                    errInfo = err;
+                }
             }
             else
             {

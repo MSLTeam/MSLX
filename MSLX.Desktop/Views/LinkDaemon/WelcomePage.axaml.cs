@@ -57,7 +57,7 @@ public partial class WelcomePage : UserControl
                     if (Success)
                     {
                         // 启动成功，尝试验证
-                        bool isSuccess = await DaemonManager.VerifyDaemonApiKey();
+                        var (isSuccess, _) = await DaemonManager.VerifyDaemonApiKey();
                         if (isSuccess)
                         {
                             // 验证成功，跳转到主页面
@@ -94,7 +94,7 @@ public partial class WelcomePage : UserControl
             else
             {
                 // 直接验证
-                bool isSuccess = await DaemonManager.VerifyDaemonApiKey();
+                var (isSuccess, _) = await DaemonManager.VerifyDaemonApiKey();
                 if (isSuccess)
                 {
                     // 验证成功，跳转到主页面

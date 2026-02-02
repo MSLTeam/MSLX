@@ -38,7 +38,7 @@ public partial class LinkDaemonPage : UserControl
 
         ConfigStore.DaemonAddress = ip;
         ConfigStore.DaemonApiKey = key;
-        bool isSuccess= await DaemonManager.VerifyDaemonApiKey();
+        var (isSuccess,_) = await DaemonManager.VerifyDaemonApiKey();
         if (isSuccess)
         {
             if(RememberLinkInfo.IsChecked == true)
