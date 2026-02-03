@@ -15,13 +15,14 @@ public partial class HomePage : UserControl
     public HomePage()
     {
         InitializeComponent();
-        this.Loaded += HomePage_Loaded;
+        // this.Loaded += HomePage_Loaded;
+        this.Initialized += HomePage_Initialized;
         this.StartBtn.Click += StartBtn_Click;
         this.GithubBtn.Click += GithubBtn_Click;
         this.DocsBtn.Click += DocsBtn_Click;
     }
 
-    private async void HomePage_Loaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private async void HomePage_Initialized(object? sender, EventArgs e)
     {
         var (Success, Data, Message) = await MSLAPIService.GetJsonDataAsync("/query/notice", queryParameters: new Dictionary<string, string> { { "query", "mslxNotice" } });
         if (Data == null || Message == null)
@@ -40,6 +41,13 @@ public partial class HomePage : UserControl
         Console.WriteLine("数据目录：" + ConfigService.GetAppDataPath());
         Console.WriteLine("设备ID: " + PlatformHelper.GetDeviceID());
     }
+
+    /*
+    private async void HomePage_Loaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        
+    }
+    */
 
     private void StartBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {

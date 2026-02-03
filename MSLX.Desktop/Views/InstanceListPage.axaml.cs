@@ -1,7 +1,10 @@
 using Avalonia.Controls;
+using Material.Icons;
+using Material.Icons.Avalonia;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils;
 using MSLX.Desktop.Utils.API;
+using MSLX.Desktop.Views.CreateInstance;
 using Newtonsoft.Json.Linq;
 using SukiUI.Dialogs;
 using SukiUI.Toasts;
@@ -14,7 +17,7 @@ namespace MSLX.Desktop.Views;
 
 public partial class InstanceListPage : UserControl
 {
-    private MCServerModel _model;
+    private readonly MCServerModel _model;
     public ObservableCollection<MCServerModel.ServerInfo> ServerList => _model.ServerList;
 
     public InstanceListPage()
@@ -24,11 +27,10 @@ public partial class InstanceListPage : UserControl
         _model = new MCServerModel();
         DataContext = this;
 
-        this.Loaded += InstanceListPage_Loaded;
+        this.Initialized += InstanceListPage_Initialized;
     }
 
-    // 页面加载后执行的内容
-    private void InstanceListPage_Loaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void InstanceListPage_Initialized(object? sender, EventArgs e)
     {
         _ = LoadServersList();
     }
@@ -41,11 +43,10 @@ public partial class InstanceListPage : UserControl
             JArray servers = (JArray)res["data"]!;
             _model.ServerList.Clear();
 
-
             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
             {
                 _model.ServerList.Clear();
-                foreach (JObject server in servers)
+                foreach (JObject server in servers.Cast<JObject>())
                 {
                     _model.ServerList.Add(new MCServerModel.ServerInfo
                     {
@@ -131,6 +132,7 @@ public partial class InstanceListPage : UserControl
             System.Diagnostics.Debug.WriteLine($"打开服务器 {serverId} 的设置");
         }
     }
+
     private async void RefreshBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         await LoadServersList();
@@ -142,19 +144,17 @@ public partial class InstanceListPage : UserControl
                         .Queue();
     }
 
-
-    private void Button_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void CreateInstance_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        _model.ServerList.Add(new MCServerModel.ServerInfo
+        SideMenuHelper.MainSideMenuHelper?.NavigateTo(new SukiUI.Controls.SukiSideMenuItem
         {
-            ID = _model.ServerList.Count + 1,
-            Name = "新服务器",
-            Base = "1.20.1",
-            Java = "Java 17",
-            Core = "Paper",
-            IsRunning = false,
-            MinM = 1024,
-            MaxM = 4096
-        });
+            Header = "创建实例",
+            Icon = new MaterialIcon()
+            {
+                Kind = MaterialIconKind.AddCircle,
+            },
+            IsContentMovable = false,
+            PageContent = new CreateMCServer()
+        }, true, 2);
     }
 }

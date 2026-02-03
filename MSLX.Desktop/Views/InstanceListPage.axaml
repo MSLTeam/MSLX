@@ -98,7 +98,7 @@
         <Button Padding="10" x:Name="RefreshBtn" Click="RefreshBtn_Click">
           <micon:MaterialIcon Kind="Refresh"/>
         </Button>
-        <Button Padding="10" Click="Button_Click">
+        <Button Padding="10" x:Name="CreateInstance" Click="CreateInstance_Click">
           <micon:MaterialIcon Kind="Add"/>
         </Button>
       </StackPanel>
