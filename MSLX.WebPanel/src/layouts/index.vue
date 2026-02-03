@@ -151,7 +151,11 @@ watch(
     background: transparent !important;
     box-shadow: none !important;
     --td-bg-color-container: transparent !important;
-    --td-bg-color-secondarycontainer: color-mix(in srgb, var(--td-bg-color-container-hover) calc(var(--current-comp-op) * 100%), transparent) !important;
+    --td-bg-color-secondarycontainer: color-mix(
+      in srgb,
+      var(--td-bg-color-container-hover) calc(var(--current-comp-op) * 100%),
+      transparent
+    ) !important;
     --td-component-stroke: transparent !important;
     --td-gray-color-13: transparent !important;
   }
@@ -185,7 +189,7 @@ watch(
     border-color: var(--td-component-border) !important;
   }
   // 终端
-  :deep(.terminal-wrapper){
+  :deep(.terminal-wrapper) {
     background-color: rgba(255, 255, 255, var(--comp-op-light)) !important;
     border: 1px solid rgba(255, 255, 255, 0.3) !important;
     backdrop-filter: blur(var(--term-blur-light)) !important;
@@ -213,7 +217,7 @@ watch(
       border-color: var(--td-component-border) !important;
     }
     // 终端
-    :deep(.terminal-wrapper){
+    :deep(.terminal-wrapper) {
       background-color: rgba(20, 20, 20, var(--comp-op-dark)) !important;
       border: 1px solid rgba(255, 255, 255, 0.08) !important;
       backdrop-filter: blur(var(--term-blur-dark)) !important;
@@ -225,5 +229,11 @@ watch(
   :deep(.md-editor-preview blockquote) {
     background-color: color-mix(in srgb, var(--md-theme-quote-bg-color), transparent 50%) !important;
   }
+}
+
+:global(html[theme-mode='dark']),
+:global(html.dark) {
+  border: 0 !important;
+  outline: none !important;
 }
 </style>
