@@ -1,6 +1,6 @@
 {
-  "version": "1.1.6",
-  "buildTime": "2026-02-02 16:22:15",
+  "version": "1.1.7",
+  "buildTime": "2026-02-04 16:17:41",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,142 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "15f1d2b159a0ac50341a0208b9ccb9ed7701bcd2",
-  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到v1.1.6",
+  "commitId": "0189830c685d5de35db1fccfbb6a4943b570281d",
+  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到v1.1.7版本",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "0189830c685d5de35db1fccfbb6a4943b570281d",
+      "commitTime": "2026-02-04 16:17:11 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到v1.1.7版本"
+    },
+    {
+      "commitId": "e971712869067d9f30fa191e2085982d53202641",
+      "commitTime": "2026-02-04 16:16:00 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): Docker环境下运行时创建服务端禁止修改路径以保障数据安全"
+    },
+    {
+      "commitId": "0154adcd4cce2489451386220c6b7fdb4449ec51",
+      "commitTime": "2026-02-04 16:03:46 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复AI日志分析功能选择的默认模型错误的问题"
+    },
+    {
+      "commitId": "b8c2b2f67841cc3ca2719d6abe5b29252d3eb67d",
+      "commitTime": "2026-02-04 15:59:21 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 新增文件排序和搜索功能 #39"
+    },
+    {
+      "commitId": "ada542f7e9ea0160048e3e90c02e301ddced1760",
+      "commitTime": "2026-02-04 15:43:09 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(webpanel): 使用本地回环地址时不显示MSL OAuth 配置项"
+    },
+    {
+      "commitId": "12fbe270bd3ac4b79f4912150bdfcc1a1fa8dc0e",
+      "commitTime": "2026-02-04 15:37:28 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(daemon): 下调最低强制结束进程时间为1s"
+    },
+    {
+      "commitId": "7fd09b68ea6ecca385f6cd1418e63d950538c834",
+      "commitTime": "2026-02-04 15:36:42 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(daemon): 优化Docker运行方式的更新提示"
+    },
+    {
+      "commitId": "a0a68326c0ae97286304fc06cf77bc239d895a96",
+      "commitTime": "2026-02-04 15:26:04 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(webpanel): 修改apikey设置页面的提示文本"
+    },
+    {
+      "commitId": "e0b9f911298d653e582bcdc6d7838339f4bc1a43",
+      "commitTime": "2026-02-04 15:25:03 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 新增密码复杂度校验，增强账户安全性"
+    },
+    {
+      "commitId": "4768d49de8d5e1789124767014fabadaab65ed12",
+      "commitTime": "2026-02-04 15:17:26 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(daemon): 修改全局APIKey的用户信息"
+    },
+    {
+      "commitId": "e88fbf5a649a47539f819325fb0cd96a0d65459a",
+      "commitTime": "2026-02-04 15:13:56 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(webpanel): 优化增强染色模式下的染色逻辑 & 适配原彩染色"
+    },
+    {
+      "commitId": "f22fa9d296a3b5eeb167c375ada680b735bf2c46",
+      "commitTime": "2026-02-04 15:02:45 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 新增日志原彩显示功能，此功能默认开启 #41"
+    },
+    {
+      "commitId": "def2a40944ecbf871e0d6d0d7ca88d0a3ea13ba7",
+      "commitTime": "2026-02-03 23:05:50 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复黑暗模式下神秘的0.8外边框"
+    },
+    {
+      "commitId": "0aece550e83e578332bfbbaeaec8d9d63ab80292",
+      "commitTime": "2026-02-03 17:57:48 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "update submodule"
+    },
+    {
+      "commitId": "b0ba981860234ed790b08fb64a4210ed007fc5ba",
+      "commitTime": "2026-02-03 11:07:50 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "update submodule"
+    },
+    {
+      "commitId": "159020570170269f46ef2921ce76fcb1da01a064",
+      "commitTime": "2026-02-03 11:07:18 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "feat(dsktop): sidemenu样式修改，开始制作创建实例功能"
+    },
+    {
+      "commitId": "89d792531d2fbed269ce44aab2af3027321bbee7",
+      "commitTime": "2026-02-02 21:08:14 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "fix(desktop): 修复关于连接Daemon和更新Daemon部分的一些bug，完善功能"
+    },
+    {
+      "commitId": "1d6e7c785685c74dcdcec172edd9bbc22b6031ea",
+      "commitTime": "2026-02-02 17:25:52 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(desktop): 修复守护进程端连接地址错误导致的崩溃"
+    },
+    {
+      "commitId": "f62ac968ca5ec3f0b08f09b8a81675bec47f7b24",
+      "commitTime": "2026-02-02 17:12:43 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(desktop): 智能修正连接地址的结尾部分"
+    },
+    {
+      "commitId": "e963d05b48cdaa958e8f0fbd288ea21673fedaa6",
+      "commitTime": "2026-02-02 17:05:18 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): 完成服务端实例列表获取功能"
+    },
+    {
+      "commitId": "5fea0b093cc42075f880f01066920c43157e8bf8",
+      "commitTime": "2026-02-02 16:23:40 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #37 from MSLTeam/dev"
+    },
+    {
+      "commitId": "1ce377b7a68749ce325d1f13d191a535f417402e",
+      "commitTime": "2026-02-02 16:22:42 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v1.1.6 版本前端资源"
+    },
     {
       "commitId": "15f1d2b159a0ac50341a0208b9ccb9ed7701bcd2",
       "commitTime": "2026-02-02 16:21:46 +0800",
@@ -239,138 +371,6 @@
       "commitTime": "2026-01-28 10:06:57 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "style(webpanel): FOOTER用大写！"
-    },
-    {
-      "commitId": "8a9a079892133079283f7fb66f1a60351b094ddc",
-      "commitTime": "2026-01-28 10:05:54 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 调整部分页面高度计算，使其不再超出页面高度"
-    },
-    {
-      "commitId": "0e7c0995ed8a50c99e735d18e6f66ee20786ba21",
-      "commitTime": "2026-01-28 10:05:20 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 重新设计页脚样式"
-    },
-    {
-      "commitId": "7b34519668d41945e247f0d41a277dc45049d2a5",
-      "commitTime": "2026-01-28 09:36:33 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复AI日志分析页面可能的异常获取信息错误"
-    },
-    {
-      "commitId": "7d0a25290eae998231f5f5539b138ec680a8493f",
-      "commitTime": "2026-01-28 09:33:41 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "docs(webpanel): 新增日志染色等级预览文档"
-    },
-    {
-      "commitId": "8597923ec814b6c7859900427dac863bd7c66d43",
-      "commitTime": "2026-01-28 09:15:24 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(webpanel): 更新自定义Frp配置文件的placeholder内容"
-    },
-    {
-      "commitId": "f6cb94c7e7e107974ae0914d179f6aacd84f38a6",
-      "commitTime": "2026-01-28 09:11:55 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 优化MSLFrp创建隧道页面的一些信息展示"
-    },
-    {
-      "commitId": "e233ef300f82506e422e105b49ebe1110e1df044",
-      "commitTime": "2026-01-27 21:53:05 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 优化日志染色的逻辑 & 新增设置日志染色等级的支持"
-    },
-    {
-      "commitId": "316b3a51861284124c69478bcec94272619b399f",
-      "commitTime": "2026-01-27 13:03:39 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #32 from MSLTeam/dev"
-    },
-    {
-      "commitId": "4f9899f2e809574f172520cca50e6aa755cf18dc",
-      "commitTime": "2026-01-27 13:02:37 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(daemon): 嵌入v1.1.2-release版本前端资源"
-    },
-    {
-      "commitId": "2b9d51c3ddaa4aac8f53d9e354c8da43f1b26c7a",
-      "commitTime": "2026-01-27 13:01:31 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel;): 更新版本到v1.1.2-release"
-    },
-    {
-      "commitId": "965ad2c5a3ee1816d75e6880949dd63225f5fa49",
-      "commitTime": "2026-01-27 13:00:16 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
-    },
-    {
-      "commitId": "d44d7a61366cdc15d0384f14927c0afaabdc4c98",
-      "commitTime": "2026-01-27 13:00:03 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 优化终端和编辑器的字体样式"
-    },
-    {
-      "commitId": "6e5d9d7b76d2acac7ddea388461ac2afd6f82d65",
-      "commitTime": "2026-01-27 12:47:31 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 添加frp日志隐私信息警告"
-    },
-    {
-      "commitId": "0dfe8e23ac4dfc409f7db7c0c42bad25ddd686e7",
-      "commitTime": "2026-01-27 12:23:27 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): MSLFrp创建隧道页面添加加载状态"
-    },
-    {
-      "commitId": "6ad57876989887a67e272bbcc286383c60733576",
-      "commitTime": "2026-01-27 12:20:53 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(daemon): 优化启动等待时间"
-    },
-    {
-      "commitId": "5683a7a12a6bb239e1c7300e91bfef47bfc23870",
-      "commitTime": "2026-01-27 12:20:33 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复MSLFrp隧道添加失败的问题"
-    },
-    {
-      "commitId": "fb7c144f51e626db948a56c7a6f925b2887f34b6",
-      "commitTime": "2026-01-25 14:58:13 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
-    },
-    {
-      "commitId": "f683e2b7d31a8bbaedff64c0c07b94564f609f34",
-      "commitTime": "2026-01-25 14:58:03 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "fix(desktop): 可能修复偶现启动后无法连接Daemon的bug fix(desktop): typo \"autuoRunDaemon\" -> \"autoRunDaemon"
-    },
-    {
-      "commitId": "45c5e5d7b1a9b967213305c5f96e8f16fe4b90a6",
-      "commitTime": "2026-01-24 17:42:26 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复MSLFrp删除隧道按钮消失"
-    },
-    {
-      "commitId": "b0514d392da557e35d5cdf76e30082f7e0aed28a",
-      "commitTime": "2026-01-24 16:00:48 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #30 from MSLTeam/dev"
-    },
-    {
-      "commitId": "9abb6ca63887f0eb79fb5bb274cc3b7550bb0056",
-      "commitTime": "2026-01-24 15:59:15 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
-    },
-    {
-      "commitId": "0bc6f019aeb9764c3de713ff68a2c6e4f41daa6c",
-      "commitTime": "2026-01-24 15:59:05 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(daemon): 嵌入 v1.1.1 版本前端资源"
     }
   ]
 }
