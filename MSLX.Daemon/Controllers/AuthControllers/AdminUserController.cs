@@ -18,7 +18,7 @@ public class AdminUserController : ControllerBase
     public IActionResult GetList()
     {
         var users = IConfigBase.UserList.GetAllUsers();
-        
+
         var dtoList = users.Select(u => new UserDto
         {
             Id = u.Id,
@@ -31,11 +31,11 @@ public class AdminUserController : ControllerBase
             Resources = u.Resources
         }).ToList();
 
-        return Ok(new ApiResponse<List<UserDto>> 
-        { 
-            Code = 200, 
-            Message = "success", 
-            Data = dtoList 
+        return Ok(new ApiResponse<List<UserDto>>
+        {
+            Code = 200,
+            Message = "success",
+            Data = dtoList
         });
     }
 
@@ -49,6 +49,29 @@ public class AdminUserController : ControllerBase
         if (IConfigBase.UserList.GetUserByUsername(request.Username) != null)
         {
             return BadRequest(new ApiResponse<object> { Code = 400, Message = "用户名已存在" });
+        }
+
+        // 密码复杂度校验
+        // 长度校验
+        if (request.Password.Length < 8 || request.Password.Length > 32)
+        {
+            return BadRequest(new ApiResponse<object> { Code = 400, Message = "密码长度必须在 8-32 位之间" });
+        }
+
+        // 复杂度校验：大小写字母、数字、特殊字符 (4选3)
+        int score = 0;
+        if (request.Password.Any(char.IsUpper)) score++; // 包含大写字母
+        if (request.Password.Any(char.IsLower)) score++; // 包含小写字母
+        if (request.Password.Any(char.IsDigit)) score++; // 包含数字
+        if (request.Password.Any(ch => !char.IsLetterOrDigit(ch))) score++; // 包含特殊字符
+
+        if (score < 3)
+        {
+            return BadRequest(new ApiResponse<object>
+            {
+                Code = 400,
+                Message = "密码复杂度不足：大写字母、小写字母、数字、特殊字符中至少包含三种"
+            });
         }
 
         var newUser = new UserInfo
@@ -85,9 +108,31 @@ public class AdminUserController : ControllerBase
         if (request.Role != null) user.Role = request.Role;
         if (request.Resources != null) user.Resources = request.Resources;
 
-        // 修改密码
+        // 更新密码
         if (!string.IsNullOrEmpty(request.Password))
         {
+            // 长度校验
+            if (request.Password.Length < 8 || request.Password.Length > 32)
+            {
+                return BadRequest(new ApiResponse<object> { Code = 400, Message = "密码长度必须在 8-32 位之间" });
+            }
+
+            // 复杂度校验：大小写字母、数字、特殊字符 (4选3)
+            int score = 0;
+            if (request.Password.Any(char.IsUpper)) score++; // 包含大写字母
+            if (request.Password.Any(char.IsLower)) score++; // 包含小写字母
+            if (request.Password.Any(char.IsDigit)) score++; // 包含数字
+            if (request.Password.Any(ch => !char.IsLetterOrDigit(ch))) score++; // 包含特殊字符
+
+            if (score < 3)
+            {
+                return BadRequest(new ApiResponse<object>
+                {
+                    Code = 400,
+                    Message = "密码复杂度不足：大写字母、小写字母、数字、特殊字符中至少包含三种"
+                });
+            }
+
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
         }
 
