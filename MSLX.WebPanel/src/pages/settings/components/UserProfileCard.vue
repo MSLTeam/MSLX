@@ -264,7 +264,7 @@ const handleUnbindMSL = () => {
         <t-input v-model="userInfo.username" placeholder="登录唯一标识" />
       </t-form-item>
 
-      <t-form-item label="API Key" help="用于第三方工具连接的凭证，请妥善保管">
+      <t-form-item label="API Key" help="用于MSLX桌面版/第三方工具连接的凭证，请妥善保管">
         <t-input
           :value="userInfo.apiKey"
           :type="showApiKey ? 'text' : 'password'"
