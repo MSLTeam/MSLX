@@ -13,6 +13,13 @@ c.enabled = true;
 const colorizeServerLog = (log: string, mode: number = -1): string => {
   if (!log) return '';
 
+  // 原本已经包含了ANSI颜色 那么只进行简单url染色
+  // eslint-disable-next-line no-control-regex
+  if (/\u001b\[[\d;]*m/.test(log)) {
+    log = log.replace(/(https?:\/\/[^\s]+)/g, (match) => c.blue.underline(match));
+    return log;
+  }
+
   if(mode === -1){
     mode = webpanelStore.settings.webPanelColorizeLogLevel;
   }
@@ -88,7 +95,7 @@ const colorizeServerLog = (log: string, mode: number = -1): string => {
         break;
       case 'WARN':
       case 'WARNING':
-        levelColor = c.magenta.bold('WARN');
+        levelColor = c.yellow.bold('WARN');
         break;
       case 'ERROR':
       case 'FATAL':
@@ -113,7 +120,7 @@ const colorizeServerLog = (log: string, mode: number = -1): string => {
         levelColor = c.green('INFO');
         break;
       case 'WARN':
-        levelColor = c.magenta('WARN');
+        levelColor = c.yellow('WARN');
         break;
       case 'ERROR':
         levelColor = c.red.bold('ERROR');
