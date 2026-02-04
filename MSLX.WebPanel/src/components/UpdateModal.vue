@@ -277,12 +277,24 @@ onUnmounted(() => {
       </div>
 
       <div v-else-if="isDockerEnv" class="status-container docker-warn">
-        <t-alert
-          theme="warning"
-          title="检测到 Docker 环境"
-          message="当前程序运行在 Docker 容器内，不支持热更新。请使用以下命令更新："
-        />
-        <div class="code-block">docker pull docker.mslmc.cn/xiaoyululu/mslx-daemon:latest && docker-compose up -d</div>
+        <t-alert theme="warning" title="检测到 Docker 环境">
+          <template #message>
+            当前程序运行在
+            <b>Docker 容器</b> 内，不支持热更新。<br />请使用以下命令或者参照 <b>官方文档</b> 更新。<br />
+            <t-link
+              theme="primary"
+              href="https://mslx.mslmc.cn/docs/install/docker/"
+              target="_blank"
+              style="vertical-align: baseline"
+            >
+              <b>Docker安装/更新文档</b>
+            </t-link>
+          </template>
+        </t-alert>
+        <div class="code-block">
+          docker pull docker.mslmc.cn/xiaoyululu/mslx-daemon:latest && docker-compose up -d # 指令仅适用于Docker
+          Compose安装方式。
+        </div>
       </div>
 
       <div v-else-if="hasRunningServers" class="status-container server-running-warn">

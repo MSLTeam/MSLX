@@ -60,6 +60,7 @@ export interface UpdateInstanceModel {
   backupPath?: string;
   autoRestart?: boolean;
   forceAutoRestart?: boolean;
+  allowOriginASCIIColors?: boolean;
   ignoreEula?: boolean;
   forceJvmUTF8?: boolean;
   runOnStartup?: boolean;
@@ -88,6 +89,7 @@ export interface InstanceSettingsModel {
   backupDelay?: number;
   backupPath?: string;
   autoRestart?: boolean;
+  allowOriginASCIIColors?: boolean;
   forceAutoRestart?: boolean;
   ignoreEula?: boolean;
   forceJvmUTF8?: boolean;

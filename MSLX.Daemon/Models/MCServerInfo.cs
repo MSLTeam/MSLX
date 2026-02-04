@@ -20,6 +20,7 @@ namespace MSLX.Daemon.Models;
             public int BackupMaxCount { get; set; } = 20;
             public int BackupDelay { get; set; } = 10;
             public string BackupPath { get; set; } = "MSLX://Backup/Instance";
+            public bool AllowOriginASCIIColors { get; set; } = true;
             public bool AutoRestart { get; set; } = false;
             public bool ForceAutoRestart { get; set; } = true;
             public bool RunOnStartup { get; set; } = false;

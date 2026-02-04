@@ -74,7 +74,7 @@ const termThemes = {
     brightBlack: '#666666',
     brightRed: '#f14c4c',
     brightGreen: '#23d18b',
-    brightYellow: '#f5f543',
+    brightYellow: '#f3d61a',
     brightBlue: '#3b8eea',
     brightMagenta: '#d670d6',
     brightCyan: '#29b8db',

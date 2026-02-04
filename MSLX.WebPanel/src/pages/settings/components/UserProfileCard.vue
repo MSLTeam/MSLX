@@ -17,6 +17,7 @@ import { getSelfInfo, updateSelfInfo } from '@/api/user';
 import type { UserInfoModel, UpdateUserRequest } from '@/api/model/user';
 import { useUserStore } from '@/store';
 import { request } from '@/utils/request';
+import { isLoopback } from '@/utils/tools';
 
 const userStore = useUserStore();
 
@@ -264,7 +265,7 @@ const handleUnbindMSL = () => {
         <t-input v-model="userInfo.username" placeholder="登录唯一标识" />
       </t-form-item>
 
-      <t-form-item label="API Key" help="用于第三方工具连接的凭证，请妥善保管">
+      <t-form-item label="API Key" help="用于MSLX桌面版/第三方工具连接的凭证，请妥善保管">
         <t-input
           :value="userInfo.apiKey"
           :type="showApiKey ? 'text' : 'password'"
@@ -282,9 +283,9 @@ const handleUnbindMSL = () => {
         </t-input>
       </t-form-item>
 
-      <t-divider dashed />
+      <t-divider v-if="!isLoopback" dashed />
 
-      <t-form-item label="MSL 账户绑定" help="绑定后可使用 MSL 账户直接登录本控制台">
+      <t-form-item v-if="!isLoopback" label="MSL 账户绑定" help="绑定后可使用 MSL 账户直接登录本控制台">
         <div v-if="userInfo.openMSLID && userInfo.openMSLID !== '0'" class="bound-status">
           <t-tag theme="success" variant="light" size="medium">
             <template #icon><check-circle-icon /></template>

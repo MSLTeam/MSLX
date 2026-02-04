@@ -107,7 +107,7 @@ namespace MSLX.Daemon.Middleware
                     if (!string.IsNullOrEmpty(globalApiKey) && globalApiKey.Equals(inputKey))
                     {
                         var claims = new List<Claim> { 
-                            new Claim(ClaimTypes.Name, "全局管理员"),
+                            new Claim(ClaimTypes.Name, "MSLX Manager"),
                             new Claim(ClaimTypes.Role, "admin"),
                             new Claim("UserId", "system-admin") 
                         };

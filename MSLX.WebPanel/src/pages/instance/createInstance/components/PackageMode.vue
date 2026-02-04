@@ -631,8 +631,20 @@ const viewDetails = () => {
               <t-form-item label="实例名称" name="name">
                 <t-input v-model="formData.name" placeholder="为你的服务器起个名字" />
               </t-form-item>
-              <t-form-item label="实例路径" name="path" help="选填，留空将使用默认路径">
-                <t-input v-model="formData.path" placeholder="例如: D:\MyServer" />
+              <t-form-item
+                label="实例路径"
+                name="path"
+                :help="
+                  userStore.userInfo.systemInfo.docker
+                    ? '您正在使用Docker容器部署，为保数据安全，仅支持使用默认数据路径'
+                    : '选填，留空将使用默认路径'
+                "
+              >
+                <t-input
+                  v-model="formData.path"
+                  :disabled="userStore.userInfo.systemInfo.docker"
+                  placeholder="例如: D:\MyServer"
+                />
               </t-form-item>
             </div>
 

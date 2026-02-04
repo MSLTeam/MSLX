@@ -23,7 +23,7 @@ public partial class LinkDaemonPage : UserControl
 
     private async void DoneBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        var ip = DaemonAddressTextBox.Text?.Trim() ?? string.Empty;
+        var ip = DaemonAddressTextBox.Text?.Trim().TrimEnd('/') ?? string.Empty;
         var key = DaemonKeyTextBox.Text?.Trim() ?? string.Empty;
         if (string.IsNullOrEmpty(ip) || string.IsNullOrEmpty(key))
         {
@@ -38,7 +38,7 @@ public partial class LinkDaemonPage : UserControl
 
         ConfigStore.DaemonAddress = ip;
         ConfigStore.DaemonApiKey = key;
-        bool isSuccess= await DaemonManager.VerifyDaemonApiKey();
+        var (isSuccess,_) = await DaemonManager.VerifyDaemonApiKey();
         if (isSuccess)
         {
             if(RememberLinkInfo.IsChecked == true)
@@ -50,6 +50,8 @@ public partial class LinkDaemonPage : UserControl
             // 验证成功，跳转到主页面
             SideMenuHelper.MainSideMenuHelper?.ShowMainPages();
             SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
+
+            _ = UpdateService.UpdateDaemonApp(true);
         }
     }
 
