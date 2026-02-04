@@ -87,7 +87,8 @@ public class AppInfoController : ControllerBase
                 ["osType"] = osType,
                 ["osVersion"] = RuntimeInformation.OSDescription,
                 ["osArchitecture"] = RuntimeInformation.OSArchitecture.ToString(),
-                ["hostname"] = Environment.MachineName
+                ["hostname"] = Environment.MachineName,
+                ["docker"] = IsRunningInContainer(),
             };
             
             var statusData = new JObject

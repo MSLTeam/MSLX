@@ -4,6 +4,8 @@ import { CreateInstanceQucikModeModel } from '@/api/model/instance';
 import { type FormProps, FormRules, MessagePlugin } from 'tdesign-vue-next';
 import { postCreateInstanceQuickMode } from '@/api/instance';
 import { changeUrl } from '@/router';
+import { useUserStore } from '@/store';
+const userStore = useUserStore();
 
 const isSuccess = ref(false);
 const createdServerId = ref(0);
@@ -71,8 +73,16 @@ const goToHome = () => {
           <t-input v-model="formData.name" placeholder="给你的服务器起一个名字" />
         </t-form-item>
 
-        <t-form-item label="存储路径(可选)" name="path" help="不填写将使用默认的保存路径。">
-          <t-input v-model="formData.path" placeholder="请填写服务端保存位置" />
+        <t-form-item
+          label="存储路径(可选)"
+          name="path"
+          :help="
+            userStore.userInfo.systemInfo.docker
+              ? '您正在使用Docker容器部署，为保数据安全，仅支持使用默认数据路径'
+              : '选填，留空将使用默认路径'
+          "
+        >
+          <t-input v-model="formData.path" :disabled="userStore.userInfo.systemInfo.docker" placeholder="请填写服务端保存位置" />
         </t-form-item>
 
         <t-form-item label="启动指令" name="args" help="此模式不会自动帮您配置Java环境，您需要填写完整的启动命令。">

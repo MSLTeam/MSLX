@@ -19,7 +19,8 @@ const InitUserInfo = {
     osType: "",
     osVersion: "",
     osArchitecture: "",
-    hostname: ""
+    hostname: "",
+    docker: false,
   },
   targetFrontendVersion:{
     desktop:"",
