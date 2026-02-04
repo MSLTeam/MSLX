@@ -29,7 +29,7 @@ public class UpdateServerRequest : IValidatableObject
 
     public string? Args { get; set; }
     
-    [Range(10, 120, ErrorMessage = "强制退出延迟时间不能小于 10s 或大于 120s")]
+    [Range(1, 120, ErrorMessage = "强制退出延迟时间不能小于 1s 或大于 120s")]
     public int ForceExitDelay { get; set; } = 10;
 
     public string StopCommand { get; set; } = "stop";
