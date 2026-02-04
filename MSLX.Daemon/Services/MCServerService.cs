@@ -264,7 +264,7 @@ public class MCServerService
             await Task.Delay(100);
 
             string args =
-                $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{(serverInfo.ForceJvmUTF8? " -Dfile.encoding=UTF-8":"")} -jar {serverInfo.Core} nogui";
+                $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{(serverInfo.ForceJvmUTF8? " -Dfile.encoding=UTF-8":"")}{(serverInfo.AllowOriginASCIIColors ? " -Dterminal.jline=false -Dterminal.ansi=true" : "")} -jar {serverInfo.Core} nogui";
             string exec = serverInfo.Java;
 
             // 处理自定义模式参数
@@ -294,7 +294,7 @@ public class MCServerService
             if (serverInfo.Core.Contains("@libraries"))
             {
                 args =
-                    $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{(serverInfo.ForceJvmUTF8 ? " -Dfile.encoding=UTF-8" : "")} {serverInfo.Core} nogui";
+                    $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{(serverInfo.ForceJvmUTF8 ? " -Dfile.encoding=UTF-8" : "")}{(serverInfo.AllowOriginASCIIColors ? " -Dterminal.jline=false -Dterminal.ansi=true" : "")} {serverInfo.Core} nogui";
             }
 
             // 处理编码
@@ -319,6 +319,23 @@ public class MCServerService
                 StandardErrorEncoding = outputEncoding,
                 StandardInputEncoding = inputEncoding
             };
+
+            // 注入环境变量让终端输出原彩ASCII
+            if (serverInfo.AllowOriginASCIIColors)
+            {
+                if (!startInfo.EnvironmentVariables.ContainsKey("TERM"))
+                {
+                    startInfo.EnvironmentVariables.Add("TERM", "xterm-256color");
+                }
+                if (!startInfo.EnvironmentVariables.ContainsKey("COLORTERM"))
+                {
+                    startInfo.EnvironmentVariables.Add("COLORTERM", "truecolor");
+                }
+                if (!startInfo.EnvironmentVariables.ContainsKey("FORCE_COLOR"))
+                {
+                    startInfo.EnvironmentVariables.Add("FORCE_COLOR", "1");
+                }
+            }
 
             var process = new Process { StartInfo = startInfo };
 

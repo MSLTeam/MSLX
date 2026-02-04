@@ -738,15 +738,22 @@ onUnmounted(() => {
         <div class="setting-item">
           <div class="setting-info">
             <div class="title">停止服务器指令</div>
-            <div class="desc">
-              设置正常停止时所发送的指令，默认为stop
-            </div>
-            <div class="desc">
-              设置为^c为发送Ctrl C (在部分环境可能无法发送成功)
-            </div>
+            <div class="desc">设置正常停止时所发送的指令，默认为stop</div>
+            <div class="desc">设置为^c为发送Ctrl C (在部分环境可能无法发送成功)</div>
           </div>
           <div class="setting-control">
             <t-input v-model="formData.stopCommand" placeholder="请输入停止指令" />
+          </div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="title">日志原彩显示</div>
+            <div class="desc">开启此选项后，将注入相关环境变量，以让MC终端日志输出原有的色彩样式</div>
+            <div class="desc">此功能可以和日志染色功能搭配使用</div>
+          </div>
+          <div class="setting-control">
+            <t-switch v-model="formData.allowOriginASCIIColors" :label="['已开启', '已关闭']" />
           </div>
         </div>
 
