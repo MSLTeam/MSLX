@@ -13,14 +13,7 @@ c.enabled = true;
 const colorizeServerLog = (log: string, mode: number = -1): string => {
   if (!log) return '';
 
-  // 原本已经包含了ANSI颜色 那么只进行简单url染色
-  // eslint-disable-next-line no-control-regex
-  if (/\u001b\[[\d;]*m/.test(log)) {
-    log = log.replace(/(https?:\/\/[^\s]+)/g, (match) => c.blue.underline(match));
-    return log;
-  }
-
-  if(mode === -1){
+  if (mode === -1) {
     mode = webpanelStore.settings.webPanelColorizeLogLevel;
   }
 
@@ -86,6 +79,13 @@ const colorizeServerLog = (log: string, mode: number = -1): string => {
 
   // === 高级染色 ===
 
+  // 原本已经包含了ANSI颜色 那么只进行简单url染色
+  // eslint-disable-next-line no-control-regex
+  if (/\u001b\[[\d;]*m/.test(log)) {
+    log = log.replace(/(https?:\/\/[^\s]+)/g, (match) => c.blue.underline(match));
+    return log;
+  }
+
   // 核心格式 [Time Level]:
   log = log.replace(/^\[(\d{2}:\d{2}:\d{2})\s+(INFO|WARN|WARNING|ERROR|FATAL|DEBUG)\]:/, (_, time, level) => {
     let levelColor = level;
@@ -146,7 +146,8 @@ const colorizeServerLog = (log: string, mode: number = -1): string => {
 
   // 纯数字高亮
   // eslint-disable-next-line no-control-regex
-  log = log.replace(/(\u001b\[[\d;]*m)|((?<!\d:\d)(?<![.\-+])\b\d+\b(?![.\-+])(?!\s*:\s*\d))/g,
+  log = log.replace(
+    /(\u001b\[[\d;]*m)|((?<!\d:\d)(?<![.\-+])\b\d+\b(?![.\-+])(?!\s*:\s*\d))/g,
     (match, ansi, number) => {
       if (ansi) return match; // 保护原有的颜色代码
       if (number) {
@@ -173,6 +174,6 @@ const colorizeServerLog = (log: string, mode: number = -1): string => {
   log = log.replace(/'minecraft:[a-z_]+'/g, (match) => c.magenta(match));
 
   return log;
-};;;
+};;;;
 
 export default colorizeServerLog;
