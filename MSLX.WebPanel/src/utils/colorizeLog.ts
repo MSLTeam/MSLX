@@ -23,10 +23,14 @@ const colorizeServerLog = (log: string, mode: number = -1): string => {
 
   // === 两种模式的统一处理前缀和特殊语句 ===
 
-  // 优先处理特殊句式 (Done)
+  // 优先处理特殊句式 (Done/Started)
   if (log.includes('Done') && log.includes('!')) {
     log = log.replace(/Done \((.*?)\)!/g, (match, time) => `${c.green.bold('Done')} (${c.blue(time)})!`);
   }
+
+  // 基岩版关键词处理
+  log = log.replace(/\b(Server started|Starting Server)\b/g, (match) => c.green.bold(match));
+  log = log.replace(/\b(IPv4 supported|IPv6 supported)\b/g, (match) => c.cyan(match));
 
   // 启动器/系统前缀处理
   if (log.startsWith('[System]')) log = log.replace(/^\[System]/, `[${c.blue.bold('System')}]`);
@@ -38,7 +42,7 @@ const colorizeServerLog = (log: string, mode: number = -1): string => {
   // === 简约染色 ===
   if (mode === 1) {
     // 核心格式 [21:17:09 INFO] -> 整体根据等级变色
-    log = log.replace(/^\[\d{2}:\d{2}:\d{2}\s+(INFO|WARN|WARNING|ERROR|FATAL|DEBUG)\]/, (match, level) => {
+    log = log.replace(/^\[[^\]]+\s+(INFO|WARN|WARNING|ERROR|FATAL|DEBUG)\]/, (match, level) => {
       switch (level) {
         case 'INFO':
           return c.green(match); // [21:17:09 INFO] 全绿
@@ -145,8 +149,8 @@ const colorizeServerLog = (log: string, mode: number = -1): string => {
   log = log.replace(/\b\d+(\.\d+)?\s?(ms|s|%|MB|GB|KB)\b/gi, (match) => c.blue(match));
 
   // 纯数字高亮
-  // eslint-disable-next-line no-control-regex
   log = log.replace(
+    // eslint-disable-next-line no-control-regex
     /(\u001b\[[\d;]*m)|((?<!\d:\d)(?<![.\-+])\b\d+\b(?![.\-+])(?!\s*:\s*\d))/g,
     (match, ansi, number) => {
       if (ansi) return match; // 保护原有的颜色代码
@@ -174,6 +178,6 @@ const colorizeServerLog = (log: string, mode: number = -1): string => {
   log = log.replace(/'minecraft:[a-z_]+'/g, (match) => c.magenta(match));
 
   return log;
-};;;;
+};;;;;
 
 export default colorizeServerLog;
