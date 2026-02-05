@@ -38,6 +38,12 @@ export default [
         component: () => import('@/pages/instance/createInstance/index.vue'),
         meta: { title: '创建服务端', icon: 'add' },
       },
+      {
+        path: 'backup',
+        name: 'InstanceBackupManager',
+        component: () => import('@/pages/instance/backupManager/index.vue'),
+        meta: { title: '备份管理', icon: 'backup' },
+      },
     ],
   },
   {

@@ -13,14 +13,7 @@ c.enabled = true;
 const colorizeServerLog = (log: string, mode: number = -1): string => {
   if (!log) return '';
 
-  // 原本已经包含了ANSI颜色 那么只进行简单url染色
-  // eslint-disable-next-line no-control-regex
-  if (/\u001b\[[\d;]*m/.test(log)) {
-    log = log.replace(/(https?:\/\/[^\s]+)/g, (match) => c.blue.underline(match));
-    return log;
-  }
-
-  if(mode === -1){
+  if (mode === -1) {
     mode = webpanelStore.settings.webPanelColorizeLogLevel;
   }
 
@@ -30,10 +23,14 @@ const colorizeServerLog = (log: string, mode: number = -1): string => {
 
   // === 两种模式的统一处理前缀和特殊语句 ===
 
-  // 优先处理特殊句式 (Done)
+  // 优先处理特殊句式 (Done/Started)
   if (log.includes('Done') && log.includes('!')) {
     log = log.replace(/Done \((.*?)\)!/g, (match, time) => `${c.green.bold('Done')} (${c.blue(time)})!`);
   }
+
+  // 基岩版关键词处理
+  log = log.replace(/\b(Server started|Starting Server)\b/g, (match) => c.green.bold(match));
+  log = log.replace(/\b(IPv4 supported|IPv6 supported)\b/g, (match) => c.cyan(match));
 
   // 启动器/系统前缀处理
   if (log.startsWith('[System]')) log = log.replace(/^\[System]/, `[${c.blue.bold('System')}]`);
@@ -45,7 +42,7 @@ const colorizeServerLog = (log: string, mode: number = -1): string => {
   // === 简约染色 ===
   if (mode === 1) {
     // 核心格式 [21:17:09 INFO] -> 整体根据等级变色
-    log = log.replace(/^\[\d{2}:\d{2}:\d{2}\s+(INFO|WARN|WARNING|ERROR|FATAL|DEBUG)\]/, (match, level) => {
+    log = log.replace(/^\[[^\]]+\s+(INFO|WARN|WARNING|ERROR|FATAL|DEBUG)\]/, (match, level) => {
       switch (level) {
         case 'INFO':
           return c.green(match); // [21:17:09 INFO] 全绿
@@ -77,14 +74,30 @@ const colorizeServerLog = (log: string, mode: number = -1): string => {
           return match;
       }
     });
-
     // 插件/组件名称
-    log = log.replace(/(?<=:\s|^)\s*([([][a-zA-Z0-9_\-.\s]+[)\]])(?=\s)/g, (match) => c.cyan(match));
+    // 判断是否为错误日志的函数
+    const isErrorLog = (log) => {
+      // eslint-disable-next-line no-control-regex
+      const hasAnsiRed = /\u001b\[(0;)?31m/.test(log); // 检查是否包含红色代码
+      const hasErrorKeyword = /\b(ERROR|Exception|Caused by|at)\b/i.test(log); // 检查报错关键字
+      return hasAnsiRed || hasErrorKeyword;
+    };
+
+    if (!isErrorLog(log)) {
+      log = log.replace(/(?<=:\s|^)\s*([([][a-zA-Z0-9_\-.\s]+[)\]])(?=\s)/g, (match) => c.cyan(match));
+    }
 
     return log;
   }
 
   // === 高级染色 ===
+
+  // 原本已经包含了ANSI颜色 那么只进行简单url染色
+  // eslint-disable-next-line no-control-regex
+  if (/\u001b\[[\d;]*m/.test(log)) {
+    log = log.replace(/(https?:\/\/[^\s]+)/g, (match) => c.blue.underline(match));
+    return log;
+  }
 
   // 核心格式 [Time Level]:
   log = log.replace(/^\[(\d{2}:\d{2}:\d{2})\s+(INFO|WARN|WARNING|ERROR|FATAL|DEBUG)\]:/, (_, time, level) => {
@@ -145,8 +158,9 @@ const colorizeServerLog = (log: string, mode: number = -1): string => {
   log = log.replace(/\b\d+(\.\d+)?\s?(ms|s|%|MB|GB|KB)\b/gi, (match) => c.blue(match));
 
   // 纯数字高亮
-  // eslint-disable-next-line no-control-regex
-  log = log.replace(/(\u001b\[[\d;]*m)|((?<!\d:\d)(?<![.\-+])\b\d+\b(?![.\-+])(?!\s*:\s*\d))/g,
+  log = log.replace(
+    // eslint-disable-next-line no-control-regex
+    /(\u001b\[[\d;]*m)|((?<!\d:\d)(?<![.\-+])\b\d+\b(?![.\-+])(?!\s*:\s*\d))/g,
     (match, ansi, number) => {
       if (ansi) return match; // 保护原有的颜色代码
       if (number) {
@@ -173,6 +187,6 @@ const colorizeServerLog = (log: string, mode: number = -1): string => {
   log = log.replace(/'minecraft:[a-z_]+'/g, (match) => c.magenta(match));
 
   return log;
-};;;
+};
 
 export default colorizeServerLog;

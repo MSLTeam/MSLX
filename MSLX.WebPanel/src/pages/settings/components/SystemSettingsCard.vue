@@ -95,9 +95,9 @@ onMounted(() => {
         <t-select v-model="sysData.neoForgeInstallerMirrors" :options="mirrorOptions" />
       </t-form-item>
 
-      <t-divider v-if="!isLoopback" dashed />
+      <t-divider v-if="!isLoopback()" dashed />
 
-      <div v-if="!isLoopback">
+      <div v-if="!isLoopback()">
         <div class="group-title">MSL OAuth 2.0</div>
 
         <t-form-item label="Client ID" style="margin-top: 6px">

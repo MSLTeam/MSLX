@@ -20,7 +20,7 @@ export interface InstanceListModel {
   java: string;
   core: string;
   icon: string;
-  status: boolean;
+  status: number;
 }
 
 export interface InstanceInfoModel {
@@ -31,7 +31,7 @@ export interface InstanceInfoModel {
   core: string;
   minM: number;
   maxM: number;
-  status: boolean;
+  status: number;
   uptime: string;
   mcConfig: {
     difficulty: string;
@@ -100,4 +100,12 @@ export interface InstanceSettingsModel {
 
 export interface UpdateInstanceResponseModel {
   needListen: boolean;
+}
+
+export interface InstanceBackupFilesModel {
+  fileName: string;
+  fileSize: number;
+  fileSizeStr: string;
+  createTime: string;
+  timestamp: string;
 }

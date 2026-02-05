@@ -2,6 +2,7 @@ name: 功能请求
 description: 向我们报告一个功能请求以帮助我们改进MSLX
 title: "[Feat]: "
 labels: ["feature"]
+type: feature
 body:
   - type: markdown
     attributes:
