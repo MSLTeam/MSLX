@@ -29,7 +29,7 @@
       </template>
       <menu-content :nav-data="menu" />
       <template #operations>
-        <span class="version-container"> {{ !collapsed ? 'MSLX-WEBPANEL' : '' }} {{ pkg.version }} </span>
+        <span class="version-container"> {{ !collapsed ? 'MSLX-WEBPANEL' : '' }} v{{ pkg.version }} </span>
       </template>
     </t-menu>
     <div :class="`${prefix}-side-nav-placeholder${collapsed ? '-hidden' : ''}`"></div>
