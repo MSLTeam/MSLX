@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import {
-  BulletpointIcon,
   CheckCircleIcon,
   CodeIcon,
   GitCommitIcon,
@@ -288,6 +287,7 @@ onMounted(() => {
 </template>
 
 <style scoped lang="less">
+@import '@/style/scrollbar';
 .about-page {
   margin: 0 auto;
   padding-bottom: 24px;
@@ -401,7 +401,7 @@ onMounted(() => {
 .history-timeline {
   padding: 12px 0;
   max-height: 400px;
-  overflow-y: auto;
+  .scrollbar-mixin();
 
   // 隐藏左边留空
   :deep(.t-timeline-item__wrapper) {
