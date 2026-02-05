@@ -1,11 +1,15 @@
 import { request } from '@/utils/request';
 import {
   CreateInstanceQucikModeModel,
+  InstanceBackupFilesModel,
   InstanceInfoModel,
   InstanceListModel,
   InstanceSettingsModel,
   UpdateInstanceResponseModel,
 } from '@/api/model/instance';
+import { useUserStore } from '@/store';
+
+const userStore = useUserStore();
 
 export async function postCreateInstanceQuickMode(data:CreateInstanceQucikModeModel){
   return await request.post({
@@ -62,3 +66,21 @@ export async function postInstanceSettings(data:InstanceSettingsModel){
     data: data
   });
 }
+
+export async function getInstanceBackupFiles(id:number){
+  return await request.get<InstanceBackupFilesModel[]>({
+    url: `/api/instance/backups/${id}`,
+  })
+}
+
+export async function postDeleteBackupFiles(id:number,fileName:string){
+  return await request.post({
+    url: `/api/instance/backups/delete`,
+    data: {id,fileName},
+  })
+}
+export function getBackupDownloadUrl(id: number, fileName: string) {
+  const { baseUrl, token } = userStore;
+  return `${baseUrl || window.location.origin}/api/instance/backups/download?id=${id}&fileName=${encodeURIComponent(fileName)}&x-user-token=${token}`;
+}
+

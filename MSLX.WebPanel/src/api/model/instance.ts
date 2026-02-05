@@ -101,3 +101,11 @@ export interface InstanceSettingsModel {
 export interface UpdateInstanceResponseModel {
   needListen: boolean;
 }
+
+export interface InstanceBackupFilesModel {
+  fileName: string;
+  fileSize: number;
+  fileSizeStr: string;
+  createTime: string;
+  timestamp: string;
+}
