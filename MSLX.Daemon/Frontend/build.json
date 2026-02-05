@@ -1,6 +1,6 @@
 {
-  "version": "1.1.7",
-  "buildTime": "2026-02-04 16:17:41",
+  "version": "1.1.8",
+  "buildTime": "2026-02-05 18:20:41",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,82 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "0189830c685d5de35db1fccfbb6a4943b570281d",
-  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到v1.1.7版本",
+  "commitId": "b7b5d9389e4ad8f04d7dc69c7ac27fd839d61965",
+  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.1.8",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "b7b5d9389e4ad8f04d7dc69c7ac27fd839d61965",
+      "commitTime": "2026-02-05 18:20:11 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.1.8"
+    },
+    {
+      "commitId": "b704b84b87540edfea4ce544aa9a5d9e24dc798c",
+      "commitTime": "2026-02-05 18:18:56 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 新增实例内备份管理功能 #40"
+    },
+    {
+      "commitId": "159b4ddb2f0baaf88f130d7f541729ace18dac9c",
+      "commitTime": "2026-02-05 16:56:11 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 新增全局备份管理的预留页面 (催更页面 ((逃 #40"
+    },
+    {
+      "commitId": "9f16a2deb8e6f639113ad514c42c4de8c01a6bc5",
+      "commitTime": "2026-02-05 12:58:27 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复非本地回环地址访问时MSL OAuth 配置不显示的问题"
+    },
+    {
+      "commitId": "68d2c2d7b682cb2aa2ddc732ddc798d3743da254",
+      "commitTime": "2026-02-05 11:59:15 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "github(issues): 更新issues模板"
+    },
+    {
+      "commitId": "4019f85bf270d7a755fc890049359e83ca248f30",
+      "commitTime": "2026-02-05 11:58:54 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "github(issues): 更新issues模板"
+    },
+    {
+      "commitId": "71e478797510e2842665ec9d9af8b1b4549ea5f5",
+      "commitTime": "2026-02-05 11:30:17 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修正原彩日志显示和简约染色的适配问题"
+    },
+    {
+      "commitId": "2ddfeab4c556ec2e88e49a9867b042485da73535",
+      "commitTime": "2026-02-05 11:00:21 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "refactor(daemon & webpanel): 重构服务端实例状态管理，细化状态区分"
+    },
+    {
+      "commitId": "c9c9e158f36934d83a3189c2d77c899a96eac1b6",
+      "commitTime": "2026-02-04 18:39:44 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 新增基岩版的日志染色逻辑支持"
+    },
+    {
+      "commitId": "ae06bc2b48d49f96d49d8bbf85872b58ec39aac5",
+      "commitTime": "2026-02-04 18:20:11 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(webpanel): 优化简约日志染色模式遇到原始ANSI颜色代码时的显示样式"
+    },
+    {
+      "commitId": "e324db4b097448f3f7e94c9cdfadfa236005c1d1",
+      "commitTime": "2026-02-04 16:18:50 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #42 from MSLTeam/dev"
+    },
+    {
+      "commitId": "1136f4ace5bd0a3e2a24c9ff4a6e4b8f8da96ad2",
+      "commitTime": "2026-02-04 16:18:01 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v1.1.7 版本前端资源"
+    },
     {
       "commitId": "0189830c685d5de35db1fccfbb6a4943b570281d",
       "commitTime": "2026-02-04 16:17:11 +0800",
@@ -299,78 +371,6 @@
       "commitTime": "2026-02-01 17:37:26 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "fix(webpanel): 修复服务端下载组件中纯Fabric端和第三方基岩版服务端丢失的问题 & 优化修复服务端下载组件分类模块滚动条样式"
-    },
-    {
-      "commitId": "118d01129d0852f9ea55d751943fca70ef766ed1",
-      "commitTime": "2026-02-01 13:53:38 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #35 from MSLTeam/dev"
-    },
-    {
-      "commitId": "adaae7b4575e2869ed10b4676f1a32b874cf081e",
-      "commitTime": "2026-02-01 13:52:50 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(daemon): 嵌入v1.1.4版本前端资源"
-    },
-    {
-      "commitId": "a4b5123683ad4bb1027d30248453cf4c5a7e203f",
-      "commitTime": "2026-02-01 13:52:17 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到v1.1.4"
-    },
-    {
-      "commitId": "bf9c96dbad730819aa39e76a066803c6c968a4ce",
-      "commitTime": "2026-02-01 13:50:46 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 新增MSLFrp免费子域名管理功能"
-    },
-    {
-      "commitId": "1778d055b7910566fc3882ac1d77892b638b64bb",
-      "commitTime": "2026-02-01 13:05:42 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 修复了MSLFrp一些界面在移动端的表现"
-    },
-    {
-      "commitId": "f902f4c019eadee5b3c089846464a4af96089f9a",
-      "commitTime": "2026-02-01 12:59:38 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复编辑Frpc配置文件可能导致的编码错误问题"
-    },
-    {
-      "commitId": "56d0241f38cea12f795a2652e031f1c1b3bfba5a",
-      "commitTime": "2026-01-28 10:41:29 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #33 from MSLTeam/dev"
-    },
-    {
-      "commitId": "9ba4d5b4528b1c83274027ee189b33bc0af4558d",
-      "commitTime": "2026-01-28 10:40:55 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(daemon): 嵌入 v1.1.3-release 版本前端资源"
-    },
-    {
-      "commitId": "be2fd2b7e04e219dc04ef884b9022ba9cf8d4d3f",
-      "commitTime": "2026-01-28 10:39:58 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.1.3-release"
-    },
-    {
-      "commitId": "c8d6912997e03ad80e0571975232f83f0a70b748",
-      "commitTime": "2026-01-28 10:30:23 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 自定义模式的Frp下配置文件支持将INI转换为TOML"
-    },
-    {
-      "commitId": "05dbff1250db07d00b07811e9ce420b1b93e123f",
-      "commitTime": "2026-01-28 10:16:20 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 移动端下默认使用顶部菜单布局"
-    },
-    {
-      "commitId": "2f213a36bfce739f27f37499b931a80ff64a4a05",
-      "commitTime": "2026-01-28 10:06:57 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): FOOTER用大写！"
     }
   ]
 }
