@@ -74,9 +74,18 @@ const colorizeServerLog = (log: string, mode: number = -1): string => {
           return match;
       }
     });
-
     // 插件/组件名称
-    log = log.replace(/(?<=:\s|^)\s*([([][a-zA-Z0-9_\-.\s]+[)\]])(?=\s)/g, (match) => c.cyan(match));
+    // 判断是否为错误日志的函数
+    const isErrorLog = (log) => {
+      // eslint-disable-next-line no-control-regex
+      const hasAnsiRed = /\u001b\[(0;)?31m/.test(log); // 检查是否包含红色代码
+      const hasErrorKeyword = /\b(ERROR|Exception|Caused by|at)\b/i.test(log); // 检查报错关键字
+      return hasAnsiRed || hasErrorKeyword;
+    };
+
+    if (!isErrorLog(log)) {
+      log = log.replace(/(?<=:\s|^)\s*([([][a-zA-Z0-9_\-.\s]+[)\]])(?=\s)/g, (match) => c.cyan(match));
+    }
 
     return log;
   }
@@ -178,6 +187,6 @@ const colorizeServerLog = (log: string, mode: number = -1): string => {
   log = log.replace(/'minecraft:[a-z_]+'/g, (match) => c.magenta(match));
 
   return log;
-};;;;;
+};
 
 export default colorizeServerLog;
