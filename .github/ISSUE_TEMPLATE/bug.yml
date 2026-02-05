@@ -2,6 +2,7 @@ name: Bug提交
 description: 向我们报告一个Bug以帮助我们改进MSLX
 title: "[Bug]: "
 labels: ["bug"]
+type: bug
 body:
   - type: markdown
     attributes:
