@@ -78,6 +78,7 @@ public class InstanceInfoController : ControllerBase
         {
             McServerInfo.ServerInfo server =
                 IConfigBase.ServerList.GetServer(id) ?? throw new Exception("找不到指定的服务器");
+            var (serverStatus, serverStatusText) = _mcServerService.GetServerStatus(id);
             if (System.IO.File.Exists(Path.Combine(server.Base, "server.properties")))
             {
                 dynamic config = ServerPropertiesLoader.Load(Path.Combine(server.Base, "server.properties"),Encoding.GetEncoding(server.FileEncoding));
@@ -119,7 +120,6 @@ public class InstanceInfoController : ControllerBase
                         gamemode = "未知";
                         break;
                 }
-                var (serverStatus, serverStatusText) = _mcServerService.GetServerStatus(id);
                 return Ok(new ApiResponse<object>
                 {
                     Code = 200,
@@ -160,7 +160,8 @@ public class InstanceInfoController : ControllerBase
                     minM = server.MinM,
                     maxM = server.MaxM,
                     core = server.Core,
-                    status = _mcServerService.IsServerRunning(id),
+                    status = serverStatus,
+                    statusText = serverStatusText,
                     uptime = _mcServerService.GetServerUptime(id),
                     mcConfig = new
                     {
