@@ -26,7 +26,7 @@ public class InstanceInfoController : ControllerBase
         var resultList = serverList.Select(item => 
         {
             uint id = item["ID"]?.Value<uint>() ?? 0;
-            bool isRunning = _mcServerService.IsServerRunning(id);
+            var (serverStatus,serverStatusText) = _mcServerService.GetServerStatus(id);
             string icon = "default";
 
             if ((item["Core"]?.Value<string>() ?? "").Contains("neoforge"))
@@ -58,7 +58,8 @@ public class InstanceInfoController : ControllerBase
                 java = item["Java"]?.Value<string>(),
                 core = item["Core"]?.Value<string>(),
                 icon,
-                status = isRunning,
+                status = serverStatus,
+                statusText = serverStatusText
             };
         }).OrderByDescending(x => x.id).ToList();
         
@@ -118,6 +119,7 @@ public class InstanceInfoController : ControllerBase
                         gamemode = "未知";
                         break;
                 }
+                var (serverStatus, serverStatusText) = _mcServerService.GetServerStatus(id);
                 return Ok(new ApiResponse<object>
                 {
                     Code = 200,
@@ -131,7 +133,8 @@ public class InstanceInfoController : ControllerBase
                         minM = server.MinM,
                         maxM = server.MaxM,
                         core = server.Core,
-                        status = _mcServerService.IsServerRunning(id),
+                        status = serverStatus,
+                        statusText = serverStatusText,
                         uptime = _mcServerService.GetServerUptime(id),
                         mcConfig = new
                         {

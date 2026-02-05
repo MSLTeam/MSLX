@@ -20,7 +20,7 @@ const hubStore = useInstanceHubStore();
 
 // 状态
 const serverId = ref(parseInt(route.params.serverId as string) || 0);
-const isRunning = ref(false);
+const status = ref(0); // 0:未启动, 1:启动中, 2:运行中, 3:停止中, 4:重启中
 const loading = ref(false);
 const serverInfo = ref<InstanceInfoModel>(null); // 占位数据对象
 
@@ -34,7 +34,7 @@ async function fetchServerInfo() {
     loading.value = true;
     const res = await getInstanceInfo(serverId.value);
     await instanceListStore.refreshInstanceList();
-    isRunning.value = res.status;
+    status.value = res.status;
     serverInfo.value = res;
     loading.value = false;
   } catch (error) {
@@ -55,28 +55,31 @@ const handleStart = async () => {
   } catch (e: any) {
     terminalRef.value?.writeln(`\x1b[1;31m[Error] 启动失败: ${e.message}\x1b[0m`);
     loading.value = false;
+    status.value = 0;
   }
 };
 
 // 停止
 const handleStop = async () => {
   loading.value = true;
+  status.value = 3;
   try {
     terminalRef.value?.writeln('\x1b[1;32m[System] 正在发送停止指令...\x1b[0m');
     await postInstanceAction(serverId.value, 'stop');
     // isRunning.value = false;
     MessagePlugin.warning('实例停止指令已发送');
     loading.value = false;
+    instanceListStore.refreshInstanceList();
   } catch (e: any) {
     terminalRef.value?.writeln(`\x1b[1;31m[Error] 停止失败: ${e.message}\x1b[0m`);
     loading.value = false;
   }
 };
 
-
 // 强制退出
 const handleForceExit = async () => {
   loading.value = true;
+  status.value = 3;
   try {
     terminalRef.value?.writeln('\x1b[1;32m[System] 正在发送强制退出指令...\x1b[0m');
     await postInstanceAction(serverId.value, 'forceExit');
@@ -92,12 +95,14 @@ const handleForceExit = async () => {
 // 重启
 const handleRestart = async () => {
   loading.value = true;
+  status.value = 4;
   try {
     terminalRef.value?.writeln('\x1b[1;32m[System] 正在发送重启指令...\x1b[0m');
     await postInstanceAction(serverId.value, 'restart');
     // isRunning.value = false;
     MessagePlugin.warning('重启执行成功');
     loading.value = false;
+    status.value = 2;
   } catch (e: any) {
     terminalRef.value?.writeln(`\x1b[1;31m[Error] 重启失败: ${e.message}\x1b[0m`);
     loading.value = false;
@@ -177,7 +182,7 @@ onMounted(async () => {
       <div class="sidebar-area">
         <server-control-panel
           :server-id="serverId"
-          :is-running="isRunning"
+          :status="status"
           :loading="loading"
           :server-info="serverInfo"
           @start="handleStart"
