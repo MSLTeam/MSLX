@@ -16,6 +16,7 @@ import type { BuildInfoModel } from '@/api/model/buildInfo';
 import { getBuildInfo } from '@/api/buildInfo';
 import { UpdateLogDetailModel } from '@/api/mslapi/model/updateLog';
 import { getMSLXUpdateLog } from '@/api/mslapi/updateLog';
+import HurryUpppppppp from '@/components/HurryUpppppppp.vue';
 
 const developers = [
   {
@@ -146,6 +147,10 @@ onMounted(() => {
         </t-row>
       </t-card>
 
+      <t-card :bordered="false" title="催更？">
+        <hurry-upppppppp />
+      </t-card>
+
       <t-card :bordered="false" title="鸣谢">
         <p class="about-desc">特别感谢参与内测并提供反馈的伙伴们：</p>
         <t-row :gutter="[16, 16]">
@@ -165,10 +170,6 @@ onMounted(() => {
       </t-card>
 
       <t-card :bordered="false" title="更新日志" :loading="logLoading">
-        <template #header-icon>
-          <bulletpoint-icon />
-        </template>
-
         <div v-if="updateLogs.length > 0" class="history-timeline">
           <t-timeline>
             <t-timeline-item v-for="(log, index) in updateLogs" :key="index" dot-color="primary">
