@@ -38,7 +38,12 @@
             </Grid>
         </suki:GlassCard>
         <UniformGrid Grid.Row="1" Columns="3" Height="64" Margin="10,0,10,10" HorizontalAlignment="Right" VerticalAlignment="Center" >
-            <Button x:Name="DocsBtn" Content="Documentation" Margin="5"/>
+            <Button x:Name="DocsBtn" Margin="5" Classes="Danger">
+                <StackPanel Orientation="Horizontal">
+                            <micon:MaterialIcon Kind="FolderOutline"/>
+                            <TextBlock Margin="3,0,0,0" Text="Documentation"/>
+                </StackPanel>
+            </Button>
             <Button x:Name="GithubBtn" Content="GitHub" Margin="5"/>
             <Button x:Name="StartBtn" Content="Get Started" Classes="Flat" Margin="5">
                 <sukitheme:ButtonExtensions.Icon>
