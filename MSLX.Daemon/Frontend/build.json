@@ -1,6 +1,6 @@
 {
-  "version": "1.1.8",
-  "buildTime": "2026-02-05 18:20:41",
+  "version": "1.1.9",
+  "buildTime": "2026-02-06 17:06:29",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,100 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "b7b5d9389e4ad8f04d7dc69c7ac27fd839d61965",
-  "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.1.8",
+  "commitId": "f9c7aa88403bdf58aac4bbaa6d92aff4b54e45af",
+  "commitMsg": "feat(webpanel & daemon): 登录页面新增自定义背景图支持",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "f9c7aa88403bdf58aac4bbaa6d92aff4b54e45af",
+      "commitTime": "2026-02-06 17:03:52 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 登录页面新增自定义背景图支持"
+    },
+    {
+      "commitId": "4b9b71d434e19da96f125901bbeecb1348daff13",
+      "commitTime": "2026-02-06 16:48:14 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修正首页资源监控的字体显示"
+    },
+    {
+      "commitId": "ced9302e3224ef71ad5cce2bbcda7063a49fbb63",
+      "commitTime": "2026-02-06 16:24:40 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 完成全局备份管理功能 #40"
+    },
+    {
+      "commitId": "ec412096d494acbe65063ed73a5c7beff30ccd32",
+      "commitTime": "2026-02-06 00:24:04 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(webpanel): 统一首页信息栏版本格式"
+    },
+    {
+      "commitId": "3c36bd71ba80c12fb73f10f52229c6fa819cace6",
+      "commitTime": "2026-02-06 00:23:19 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(webpanel): 更新侧边栏底部信息"
+    },
+    {
+      "commitId": "f3cb61d77dad31b0b9a3660e27083f8675f43247",
+      "commitTime": "2026-02-06 00:22:36 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(webpanel): 更新侧边栏底部信息"
+    },
+    {
+      "commitId": "1874a093592523812900f545869ef2649bce0466",
+      "commitTime": "2026-02-06 00:17:55 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复用户管理页面高度溢出"
+    },
+    {
+      "commitId": "f95af41c0a730b5732786258090f48f651f2c9a7",
+      "commitTime": "2026-02-06 00:16:11 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(webpanel): 优化滚动条MIXIN效果 & 优化关于页面的时间轴滚动条样式"
+    },
+    {
+      "commitId": "c0a353273e2acf81252e2a89524ec69deb2a7347",
+      "commitTime": "2026-02-06 00:04:11 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 将催更组件单独出来"
+    },
+    {
+      "commitId": "a13e2125df7564d36dc4067c7757855bee2faee1",
+      "commitTime": "2026-02-05 23:08:54 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 补全git丢失预留全局备份页面"
+    },
+    {
+      "commitId": "5c629e5c1ca2c92213bba90fb798a81d86742461",
+      "commitTime": "2026-02-05 18:33:43 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #44 from MSLTeam/dev"
+    },
+    {
+      "commitId": "1d7a3d9b54eff894ba1ffedc1aa8fa0ae6170abc",
+      "commitTime": "2026-02-05 18:32:55 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon): 更新到版本号v1.1.8.1-hotfix"
+    },
+    {
+      "commitId": "3f51d76cab0a099fe800066e7a65507302455f6c",
+      "commitTime": "2026-02-05 18:32:11 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复自定义模式下状态丢失的问题"
+    },
+    {
+      "commitId": "03bacae54b47c8d60a0361a7be81b1dd5ea48188",
+      "commitTime": "2026-02-05 18:22:03 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #43 from MSLTeam/dev"
+    },
+    {
+      "commitId": "878286a7664afe82edb5c874e970f8db2a502162",
+      "commitTime": "2026-02-05 18:21:24 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "assets(daemon): 嵌入 v1.1.8-release 版本前端资源"
+    },
     {
       "commitId": "b7b5d9389e4ad8f04d7dc69c7ac27fd839d61965",
       "commitTime": "2026-02-05 18:20:11 +0800",
@@ -281,96 +371,6 @@
       "commitTime": "2026-02-02 16:21:46 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "bumpver(daemon & webpanel): 更新版本号到v1.1.6"
-    },
-    {
-      "commitId": "18223003f55c4d82cd312e29157490bdda47063e",
-      "commitTime": "2026-02-02 16:17:06 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复Docker环境下基岩版服务器缺少环境的问题"
-    },
-    {
-      "commitId": "b6d04059eb0da8331a887d73de67ce397a66da4e",
-      "commitTime": "2026-02-02 16:07:08 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 新增支持设置停止实例的指令"
-    },
-    {
-      "commitId": "5c15ae40dd1644b2690c13a79ec89e7fbd100e1f",
-      "commitTime": "2026-02-01 21:38:44 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #36 from MSLTeam/dev"
-    },
-    {
-      "commitId": "b316e55fb06cb2ade65b60df1f6feff6f2b8254c",
-      "commitTime": "2026-02-01 21:38:06 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(daemon): 嵌入 v1.1.5 版本前端资源"
-    },
-    {
-      "commitId": "8803d6c46f682efcc320ee751ec764a8768e849e",
-      "commitTime": "2026-02-01 21:37:29 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 移除过时的Xterm配置项"
-    },
-    {
-      "commitId": "79eb6b38428c99685cfb0a1e5407f185d559a362",
-      "commitTime": "2026-02-01 21:35:22 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.1.5"
-    },
-    {
-      "commitId": "452df780dc9de508c6bbf34a6198ab188efebf1e",
-      "commitTime": "2026-02-01 21:34:07 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 优化了一个padding"
-    },
-    {
-      "commitId": "d19b49ce6931c1dc29c5e97107a4b830000818ec",
-      "commitTime": "2026-02-01 21:31:00 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 优化实例设置页面的滚动条状态"
-    },
-    {
-      "commitId": "59d10d2a60423d0b68ed0dc7740c9ca850a3b65c",
-      "commitTime": "2026-02-01 21:26:11 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复终端的滚动条位置和选中问题"
-    },
-    {
-      "commitId": "6aabf83d4e39f6af75170c48787d4c57908b1347",
-      "commitTime": "2026-02-01 19:02:33 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(daemon): 嵌入 v1.1.5-dev 版本前端资源测试"
-    },
-    {
-      "commitId": "1b2f98bcaa368ba24dd968deb24343c2f9e56e03",
-      "commitTime": "2026-02-01 19:02:04 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(webpanel): 更新Vite构建逻辑"
-    },
-    {
-      "commitId": "ffa48a4760e54802637caf6b48adb5e05f635191",
-      "commitTime": "2026-02-01 18:17:44 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "deps(webpanel): 更新依赖版本"
-    },
-    {
-      "commitId": "37753cae5aa78ff73e36fc3615a719d644751176",
-      "commitTime": "2026-02-01 17:57:44 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(daemon): 优化Token过期的提示信息"
-    },
-    {
-      "commitId": "2c7349e5e48cb5b6fecb6844482d5f21fdb31f98",
-      "commitTime": "2026-02-01 17:54:36 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 设置通配符监听地址时，自动使用localhost作为本机打开的控制台地址"
-    },
-    {
-      "commitId": "ab99eaccd9f08a3e31477aa0cbafa7222f1a84a8",
-      "commitTime": "2026-02-01 17:37:26 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复服务端下载组件中纯Fabric端和第三方基岩版服务端丢失的问题 & 优化修复服务端下载组件分类模块滚动条样式"
     }
   ]
 }
