@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { onMounted, reactive } from 'vue';
-import { DeleteIcon, CheckCircleFilledIcon, CloseCircleFilledIcon, CpuIcon } from 'tdesign-icons-vue-next';
+import {
+  DeleteIcon,
+  CheckCircleFilledIcon,
+  CloseCircleFilledIcon,
+  CpuIcon,
+  LoadingIcon,
+  MinusCircleFilledIcon,
+  RefreshIcon,
+} from 'tdesign-icons-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { useInstanceListStore } from '@/store/modules/instance';
 import type { InstanceListModel } from '@/api/model/instance';
@@ -19,6 +27,22 @@ const store = useInstanceListStore();
 onMounted(() => {
   store.refreshInstanceList();
 });
+
+const getStatusConfig = (status: number) => {
+  switch (status) {
+    case 1: // 启动中
+      return { label: '启动中', theme: 'primary', icon: LoadingIcon, loading: true };
+    case 2: // 运行中
+      return { label: '运行中', theme: 'success', icon: CheckCircleFilledIcon, loading: false };
+    case 3: // 停止中
+      return { label: '停止中', theme: 'warning', icon: MinusCircleFilledIcon, loading: false };
+    case 4: // 重启中
+      return { label: '重启中', theme: 'primary', icon: RefreshIcon, loading: true };
+    case 0: // 未启动
+    default:
+      return { label: '未启动', theme: 'default', icon: CloseCircleFilledIcon, loading: false };
+  }
+};
 
 const handleCardClick = (item: InstanceListModel) => {
   // 跳转服务器控制台
@@ -110,27 +134,27 @@ const handleConfirmDelete = async () => {
 
     <t-row :gutter="[24, 24]">
       <t-col v-for="item in store.instanceList" :key="item.id" :xs="12" :sm="6" :md="4" :lg="3" :xl="3">
-        <t-card class="server-card" :class="{ 'status-running': item.status }" :bordered="false" @click="handleCardClick(item)">
+        <t-card class="server-card" :class="`status-${item.status}`" :bordered="false" @click="handleCardClick(item)">
           <div class="card-header">
-            <div class="icon-wrapper" :class="{ 'is-running': item.status }">
+            <div class="icon-wrapper" :class="`status-${item.status}`">
               <t-avatar :image="getImageUrl(item.icon, item.id)" size="large" shape="round" class="server-icon" />
             </div>
 
             <div class="status-badge">
-              <t-tag v-if="item.status" theme="success" variant="light" shape="round">
-                <template #icon><check-circle-filled-icon /></template>
-                运行中
-              </t-tag>
-              <t-tag v-else theme="default" variant="light" shape="round">
-                <template #icon><close-circle-filled-icon /></template>
-                未启动
+              <t-tag :theme="getStatusConfig(item.status).theme as any" variant="light" shape="round">
+                <template #icon>
+                  <component
+                    :is="getStatusConfig(item.status).icon"
+                    :class="{ 'spin-icon': getStatusConfig(item.status).loading }"
+                  />
+                </template>
+                {{ getStatusConfig(item.status).label }}
               </t-tag>
             </div>
           </div>
 
           <div class="card-content">
             <h3 class="server-name text-ellipsis">{{ item.name }}</h3>
-
             <div class="server-info">
               <div class="info-item">
                 <cpu-icon class="info-icon" />
@@ -144,7 +168,6 @@ const handleConfirmDelete = async () => {
 
           <div class="card-actions">
             <span class="action-hint">点击管理</span>
-
             <t-button
               shape="circle"
               theme="danger"
@@ -218,7 +241,7 @@ const handleConfirmDelete = async () => {
 
   // 运行中绿色条
   &::before {
-    content: "";
+    content: '';
     position: absolute;
     top: 0;
     left: 0;
@@ -232,8 +255,22 @@ const handleConfirmDelete = async () => {
     border-top-right-radius: @card-radius;
   }
 
-  &.status-running::before {
+  // 状态 1: 启动中 (主色)
+  &.status-1::before,
+  &.status-4::before {
+    background: var(--td-brand-color);
+  }
+  // 状态 2: 运行中 (绿色/成功色)
+  &.status-2::before {
     background: var(--td-success-color);
+  }
+  // 状态 3: 停止中 (橙色/警告色)
+  &.status-3::before {
+    background: var(--td-warning-color);
+  }
+  // 状态 4: 重启中
+  &.status-4::before {
+    background: var(--td-brand-color-focus);
   }
 
   // 悬浮效果：上浮 + 阴影增强 + 边框高亮
@@ -275,15 +312,37 @@ const handleConfirmDelete = async () => {
     border: 2px solid transparent;
     transition: border-color 0.3s;
 
-    // 如果是运行状态，给头像加个绿色光环
-    &.is-running {
+    // 状态 1 & 4 (启动/重启): 蓝色光环
+    &.status-1,
+    &.status-4 {
+      border-color: var(--td-brand-color);
+    }
+    // 状态 2 (运行): 绿色光环
+    &.status-2 {
       border-color: var(--td-success-color);
+    }
+    // 状态 3 (停止): 橙色光环
+    &.status-3 {
+      border-color: var(--td-warning-color);
     }
 
     .server-icon {
       background-color: var(--td-bg-color-secondarycontainer);
       color: var(--td-brand-color);
     }
+  }
+}
+
+.spin-icon {
+  animation: t-spin 1s linear infinite;
+}
+
+@keyframes t-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 

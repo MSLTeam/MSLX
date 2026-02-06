@@ -8,6 +8,7 @@ import { changeUrl } from '@/router';
 import { DOC_URLS } from '@/api/docs';
 import { copyText } from '@/utils/clipboard';
 import { useUpdateStore } from '@/store';
+import { isLoopback } from '@/utils/tools';
 
 const updateStore = useUpdateStore();
 
@@ -80,11 +81,7 @@ onMounted(() => {
       <div class="group-title">守护进程</div>
 
       <t-form-item label="软件更新" style="margin-top: 6px">
-        <t-button
-          theme="default"
-          :loading="updateStore.loading"
-          @click="updateStore.checkAppUpdate(true)"
-        >
+        <t-button theme="default" :loading="updateStore.loading" @click="updateStore.checkAppUpdate(true)">
           <template #icon><cloud-download-icon /></template>
           检查更新
         </t-button>
@@ -98,51 +95,53 @@ onMounted(() => {
         <t-select v-model="sysData.neoForgeInstallerMirrors" :options="mirrorOptions" />
       </t-form-item>
 
-      <t-divider dashed />
+      <t-divider v-if="!isLoopback()" dashed />
 
-      <div class="group-title">MSL OAuth 2.0</div>
+      <div v-if="!isLoopback()">
+        <div class="group-title">MSL OAuth 2.0</div>
 
-      <t-form-item label="Client ID" style="margin-top: 6px">
-        <t-input v-model="sysData.oAuthMSLClientID" placeholder="请输入 Client ID">
-          <template #prefix-icon><server-icon /></template>
-        </t-input>
-      </t-form-item>
+        <t-form-item label="Client ID" style="margin-top: 6px">
+          <t-input v-model="sysData.oAuthMSLClientID" placeholder="请输入 Client ID">
+            <template #prefix-icon><server-icon /></template>
+          </t-input>
+        </t-form-item>
 
-      <t-form-item
-        label="Client Secret"
-        help="配置MSL OAuth 2.0后即可使用您的MSL账号一键登录您的MSLX控制台。"
-        style="margin-top: 16px"
-      >
-        <t-input v-model="sysData.oAuthMSLClientSecret" type="password" placeholder="请输入 Client Secret">
-          <template #prefix-icon><control-platform-icon /></template>
-        </t-input>
-      </t-form-item>
+        <t-form-item
+          label="Client Secret"
+          help="配置MSL OAuth 2.0后即可使用您的MSL账号一键登录您的MSLX控制台。"
+          style="margin-top: 16px"
+        >
+          <t-input v-model="sysData.oAuthMSLClientSecret" type="password" placeholder="请输入 Client Secret">
+            <template #prefix-icon><control-platform-icon /></template>
+          </t-input>
+        </t-form-item>
 
-      <t-form-item
-        label="回调地址"
-        help="请将此地址复制并填入 MSL用户中心 OAuth应用配置的 [回调地址] 中"
-        style="margin-top: 16px"
-      >
-        <t-input :value="callbackUrl" readonly placeholder="正在获取当前域名...">
-          <template #prefix-icon><link-icon /></template>
-          <template #suffix>
-            <t-button variant="text" shape="square" @click="copyText(callbackUrl, true, '回调地址复制成功')">
-              <t-icon name="file-copy" />
-            </t-button>
-          </template>
-        </t-input>
-      </t-form-item>
-
-      <t-form-item style="margin-top: 6px" label="配置教程">
-        <t-space align="center">
-          <t-button theme="default" @click="changeUrl(DOC_URLS.msl_oauth)">
-            <template #icon>
-              <book-icon />
+        <t-form-item
+          label="回调地址"
+          help="请将此地址复制并填入 MSL用户中心 OAuth应用配置的 [回调地址] 中"
+          style="margin-top: 16px"
+        >
+          <t-input :value="callbackUrl" readonly placeholder="正在获取当前域名...">
+            <template #prefix-icon><link-icon /></template>
+            <template #suffix>
+              <t-button variant="text" shape="square" @click="copyText(callbackUrl, true, '回调地址复制成功')">
+                <t-icon name="file-copy" />
+              </t-button>
             </template>
-            配置MSL账号快捷登录教程</t-button
-          >
-        </t-space>
-      </t-form-item>
+          </t-input>
+        </t-form-item>
+
+        <t-form-item style="margin-top: 6px" label="配置教程">
+          <t-space align="center">
+            <t-button theme="default" @click="changeUrl(DOC_URLS.msl_oauth)">
+              <template #icon>
+                <book-icon />
+              </template>
+              配置MSL账号快捷登录教程</t-button
+            >
+          </t-space>
+        </t-form-item>
+      </div>
 
       <t-divider dashed />
 

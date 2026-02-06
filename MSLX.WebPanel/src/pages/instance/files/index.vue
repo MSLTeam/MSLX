@@ -23,6 +23,8 @@ import {
   FileCopyIcon,
   SwapIcon,
   CloseIcon,
+  SearchIcon,
+  FilterIcon,
 } from 'tdesign-icons-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import {
@@ -44,7 +46,7 @@ import FileCompressor from './components/FileCompressor.vue';
 import FileDecompress from './components/FileDecompress.vue';
 import FilePermission from './components/FilePermission.vue';
 import { changeUrl } from '@/router';
-import {useUserStore} from "@/store";
+import { useUserStore } from '@/store';
 
 const route = useRoute();
 const router = useRouter();
@@ -375,10 +377,12 @@ const handleDownload = async (row?: any) => {
     const fullPath = currentPath.value ? `${currentPath.value}/${name}` : name;
 
     try {
-      const downloadUrl = new URL(`${apiBase || window.location.origin }/api/files/instance/${instanceId.value}/download`);
+      const downloadUrl = new URL(
+        `${apiBase || window.location.origin}/api/files/instance/${instanceId.value}/download`,
+      );
 
       downloadUrl.searchParams.append('path', fullPath);
-      downloadUrl.searchParams.append('x-user-token', token);  // 暂时先用token鉴权
+      downloadUrl.searchParams.append('x-user-token', token); // 暂时先用token鉴权
 
       const link = document.createElement('a');
       link.href = downloadUrl.toString();
@@ -389,7 +393,6 @@ const handleDownload = async (row?: any) => {
       link.click();
 
       document.body.removeChild(link);
-
     } catch (e) {
       console.error(e);
       MessagePlugin.error(`创建下载链接失败: ${name}`);
@@ -517,6 +520,49 @@ const handlePaste = async () => {
   }
 };
 
+// 搜索和排序
+// --- 状态变量 ---
+const searchKey = ref('');
+const sortType = ref('name'); // 默认按名称排序
+
+const sortOptions = [
+  { label: '名称 (A-Z)', value: 'name' },
+  { label: '时间 (最新)', value: 'time' },
+  { label: '大小 (从大到小)', value: 'size' },
+];
+
+// --- 计算属性 ---
+const filteredFileList = computed(() => {
+  let list = [...fileList.value]; // 浅拷贝
+
+  // 搜索过滤
+  if (searchKey.value) {
+    const key = searchKey.value.toLowerCase();
+    list = list.filter((item) => item.name.toLowerCase().includes(key));
+  }
+
+  // 排序逻辑
+  list.sort((a, b) => {
+    // 文件夹置顶优先级最高
+    if (a.type === 'folder' && b.type !== 'folder') return -1;
+    if (a.type !== 'folder' && b.type === 'folder') return 1;
+
+    // 具体排序规则
+    switch (sortType.value) {
+      case 'name':
+        return a.name.localeCompare(b.name, 'zh-CN', { numeric: true });
+      case 'time':
+        return new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime();
+      case 'size':
+        return b.size - a.size;
+      default:
+        return 0;
+    }
+  });
+
+  return list;
+});
+
 // —————— 生命周期 ——————
 
 watch(currentPath, (newPath) => {
@@ -563,6 +609,18 @@ onUnmounted(() => {
           </t-breadcrumb>
         </div>
         <div class="actions-area">
+          <t-input v-model="searchKey" placeholder="搜索文件..." :style="{ width: isMobile ? '120px' : '200px' }">
+            <template #prefix-icon><search-icon /></template>
+          </t-input>
+
+          <t-select
+            v-model="sortType"
+            :options="sortOptions"
+            :style="{ width: isMobile ? '110px' : '140px' }"
+            placeholder="排序"
+          >
+            <template #prefixIcon><filter-icon /></template>
+          </t-select>
           <t-button variant="outline" size="medium" @click="changeUrl(`/instance/console/${instanceId}`)">
             <template #icon><rollback-icon /></template>
             <span v-if="!isMobile">控制台</span>
@@ -591,7 +649,7 @@ onUnmounted(() => {
       <div class="table-wrapper">
         <t-table
           v-model:selected-row-keys="selectedRowKeys"
-          :data="fileList"
+          :data="filteredFileList"
           :columns="columns as any"
           :row-key="'name'"
           :loading="loading"
@@ -697,11 +755,7 @@ onUnmounted(() => {
         </div>
 
         <div class="selection-actions">
-          <t-button
-            theme="primary"
-            :disabled="isPasteDisabled"
-            @click="handlePaste"
-          >
+          <t-button theme="primary" :disabled="isPasteDisabled" @click="handlePaste">
             <template #icon><file-paste-icon /></template>
             粘贴在此处
           </t-button>
@@ -793,7 +847,7 @@ onUnmounted(() => {
   flex-wrap: nowrap;
   overflow-x: auto;
   gap: 16px;
-  /* 隐藏滚动条但保留功能 */
+  /* 隐藏滚动条 */
   &::-webkit-scrollbar {
     display: none;
   }
@@ -815,10 +869,13 @@ onUnmounted(() => {
   }
   .actions-area {
     display: flex;
-    gap: 8px; /* 移动端缩小间距 */
+    gap: 8px;
     flex-shrink: 0;
     min-width: max-content;
     align-items: center;
+  }
+  .actions-area .t-button {
+    margin: 0 !important;
   }
 }
 

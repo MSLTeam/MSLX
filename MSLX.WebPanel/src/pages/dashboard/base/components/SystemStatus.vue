@@ -46,10 +46,10 @@ const getCssVar = (name: string): string => {
 const getChartOption = (color: string, name: string, data: number[]) => {
   return {
     grid: {
-      top: 10,    // 调小边距
+      top: 10, // 调小边距
       right: 10,
-      bottom: 0,  // 贴底
-      left: 0,    // 贴左
+      bottom: 0, // 贴底
+      left: 0, // 贴左
       containLabel: false, // 不包含坐标轴标签
     },
     tooltip: {
@@ -200,12 +200,8 @@ onUnmounted(async () => {
                 <span class="value">{{ currentStats.cpu }}</span>
                 <span class="unit">%</span>
               </div>
-              <t-tag v-if="isConnected" theme="success" variant="light" size="small" class="status-tag">
-                实时
-              </t-tag>
-              <t-tag v-else theme="danger" variant="light" size="small" class="status-tag">
-                离线
-              </t-tag>
+              <t-tag v-if="isConnected" theme="success" variant="light" size="small" class="status-tag"> 实时 </t-tag>
+              <t-tag v-else theme="danger" variant="light" size="small" class="status-tag"> 离线 </t-tag>
             </div>
             <div ref="cpuChartRef" class="chart-container"></div>
           </div>
@@ -272,7 +268,11 @@ onUnmounted(async () => {
       font-size: 28px;
       font-weight: 700;
       line-height: 1;
-      font-family: 'DIN Alternate', monospace;
+      font-family:
+        'Maple Mono',
+        'Maple Mono CN', Segoe UI,
+        Roboto,
+        sans-serif;
       color: var(--td-text-color-primary);
     }
     .unit {

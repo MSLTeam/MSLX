@@ -29,7 +29,7 @@ import { changeUrl } from '@/router';
 // --- Props & Emits ---
 const props = defineProps<{
   serverId: number;
-  isRunning: boolean;
+  status: number;
   loading: boolean;
   serverInfo?: InstanceInfoModel;
 }>();
@@ -43,6 +43,21 @@ const emits = defineEmits<{
   'force-exit': [];
   restart: [];
 }>();
+
+const statusConfig = computed(() => {
+  switch (props.status) {
+    case 1:
+      return { text: 'Starting', label: '启动中', theme: 'primary', pulse: true };
+    case 2:
+      return { text: 'Running', label: '运行中', theme: 'success', pulse: true };
+    case 3:
+      return { text: 'Stopping', label: '停止中', theme: 'warning', pulse: true };
+    case 4:
+      return { text: 'Restarting', label: '重启中', theme: 'primary', pulse: true };
+    default:
+      return { text: 'Stopped', label: '已停止', theme: 'default', pulse: false };
+  }
+});
 
 const showLogAnalysisDialog = ref(false);
 
@@ -83,10 +98,12 @@ watch(
   (v) => v && (runSeconds.value = parseTimeSpanToSeconds(v)),
   { immediate: true },
 );
+
+// 几时
 watch(
-  () => props.isRunning,
+  () => props.status,
   (v) => {
-    if (v) {
+    if (v === 2) {
       if (!timer) timer = window.setInterval(() => runSeconds.value++, 1000);
     } else {
       if (timer) {
@@ -107,17 +124,17 @@ onUnmounted(() => {
   <div class="sidebar-content">
     <t-card :bordered="false" class="control-card">
       <div class="control-header">
-        <div class="status-indicator" :class="{ running: isRunning }">
-          <span class="pulse"></span>{{ isRunning ? 'Running' : 'Stopped' }}
+        <div class="status-indicator" :class="statusConfig.theme">
+          <span class="pulse"></span>{{ statusConfig.text }}
         </div>
-        <t-tag :theme="isRunning ? 'success' : 'default'" variant="light" shape="round">
-          {{ isRunning ? '运行中' : '已停止' }}
+        <t-tag :theme="statusConfig.theme as any" variant="light" shape="round">
+          {{ statusConfig.label }}
         </t-tag>
       </div>
 
       <div class="control-actions">
         <t-button
-          v-if="!isRunning"
+          v-if="status === 0"
           theme="primary"
           size="large"
           block
@@ -131,34 +148,28 @@ onUnmounted(() => {
         </t-button>
 
         <template v-else>
-          <div class="running-action-group">
-            <t-button
-              class="stop-btn"
-              theme="danger"
-              size="large"
-              :loading="loading"
-              :variant="loading ? 'outline' : 'base'"
-              @click="!loading && $emit('stop')"
-            >
+          <div v-if="status === 2 && !loading" class="running-action-group">
+            <t-button class="stop-btn" theme="danger" size="large" @click="$emit('stop')">
               <template #icon><stop-circle-icon /></template>
-              {{ loading ? '停止中...' : '停止' }}
+              停止
             </t-button>
 
-            <t-button theme="warning" size="large" shape="square" :disabled="loading" @click="$emit('restart')">
+            <t-button theme="warning" size="large" shape="square" @click="$emit('restart')">
               <template #icon><refresh-icon /></template>
             </t-button>
           </div>
 
           <t-button
-            v-if="loading"
+            v-if="status === 3 || status === 4 || loading"
             class="force-kill-btn glass-btn"
-            theme="danger"
+            :theme="loading?'primary':'danger'"
             variant="outline"
             block
+            :loading="loading"
             @click="$emit('force-exit')"
           >
-            <template #icon><close-circle-icon /></template>
-            强制结束
+            <template #icon><close-circle-icon v-if="!loading" /></template>
+            {{ loading ? '正在处理...' : '强制结束' }}
           </t-button>
         </template>
 
@@ -183,7 +194,7 @@ onUnmounted(() => {
               清空日志
             </t-dropdown-item>
 
-            <t-dropdown-item :disabled="!isRunning || loading" @click="$emit('backup')">
+            <t-dropdown-item :disabled="status !== 2 || loading" @click="$emit('backup')">
               <template #prefix-icon><cloud-icon /></template>
               立即备份
             </t-dropdown-item>
@@ -200,7 +211,7 @@ onUnmounted(() => {
       <template #actions>
         <t-radio-group v-model="activeTab" variant="default-filled" size="small">
           <t-radio-button value="info"><info-circle-icon /> 详情</t-radio-button>
-          <t-radio-button value="monitor" :disabled="!isRunning"><chart-bar-icon /> 监控</t-radio-button>
+          <t-radio-button value="monitor"><chart-bar-icon /> 监控</t-radio-button>
         </t-radio-group>
       </template>
 
@@ -254,15 +265,15 @@ onUnmounted(() => {
           <div class="proxy-group"></div>
           <div class="info-item">
             <div class="label"><time-icon /> 运行时长</div>
-            <div class="value">{{ isRunning ? formattedUptime : '--:--:--' }}</div>
+            <div class="value">{{ status === 2 ? formattedUptime : '--:--:--' }}</div>
           </div>
         </div>
 
         <div v-else-if="activeTab === 'monitor'" class="monitor-view">
           <instance-monitor
-            v-if="serverInfo && isRunning"
+            v-if="serverInfo && status !== 0"
             :server-id="serverId"
-            :is-running="isRunning"
+            :is-running="status === 2"
             :max-memory="serverInfo.java === 'none' ? 0 : serverInfo.maxM || 4096"
           />
           <div v-else class="monitor-placeholder">实例未运行</div>
@@ -336,11 +347,31 @@ onUnmounted(() => {
       background: var(--td-bg-color-component-disabled);
       transition: all 0.3s;
     }
-    &.running {
+
+    /* 状态 2: 运行中 (绿色) */
+    &.success {
       color: var(--td-success-color);
       .pulse {
         background: var(--td-success-color);
         box-shadow: 0 0 8px var(--td-success-color);
+      }
+    }
+
+    /* 状态 3: 停止中  */
+    &.warning {
+      color: var(--td-warning-color);
+      .pulse {
+        background: var(--td-warning-color);
+        box-shadow: 0 0 8px var(--td-warning-color);
+      }
+    }
+
+    /* 状态 1 & 4: 启动/重启中 */
+    &.primary {
+      color: var(--td-brand-color);
+      .pulse {
+        background: var(--td-brand-color);
+        box-shadow: 0 0 8px var(--td-brand-color);
       }
     }
   }

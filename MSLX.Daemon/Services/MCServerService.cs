@@ -39,7 +39,8 @@ public class MCServerService
         public int LastMonitoredPid { get; set; } = -1;
     }
 
-    private readonly ConcurrentDictionary<uint, ServerContext> _activeServers = new();
+    private readonly ConcurrentDictionary<uint, ServerContext> _activeServers = new(); // 存储运行中实例的状态数据
+    private readonly ConcurrentDictionary<uint, bool> _restartingServers = new(); // 存储正在重启的实例ID
     private const int MaxLogLines = 1000;
 
     public MCServerService(
@@ -76,6 +77,38 @@ public class MCServerService
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// 获取服务器详细状态
+    /// 0:未启动, 1:启动中, 2:运行中, 3:停止中, 4:重启中
+    /// </summary>
+    public (int status, string description) GetServerStatus(uint instanceId)
+    {
+        if (_restartingServers.ContainsKey(instanceId))
+        {
+            return (4, "重启中");
+        }
+
+        if (_activeServers.TryGetValue(instanceId, out var context))
+        {
+            if (context.IsStopping)
+            {
+                return (3, "停止中");
+            }
+
+            if (context.IsInitializing)
+            {
+                return (1, "启动中");
+            }
+
+            if (context.Process != null && !context.Process.HasExited)
+            {
+                return (2, "运行中");
+            }
+        }
+
+        return (0, "未启动");
     }
 
     /// <summary>
@@ -264,7 +297,7 @@ public class MCServerService
             await Task.Delay(100);
 
             string args =
-                $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{(serverInfo.ForceJvmUTF8? " -Dfile.encoding=UTF-8":"")} -jar {serverInfo.Core} nogui";
+                $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{(serverInfo.ForceJvmUTF8? " -Dfile.encoding=UTF-8":"")}{(serverInfo.AllowOriginASCIIColors ? " -Dterminal.jline=false -Dterminal.ansi=true" : "")} -jar {serverInfo.Core} nogui";
             string exec = serverInfo.Java;
 
             // 处理自定义模式参数
@@ -294,7 +327,7 @@ public class MCServerService
             if (serverInfo.Core.Contains("@libraries"))
             {
                 args =
-                    $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{(serverInfo.ForceJvmUTF8 ? " -Dfile.encoding=UTF-8" : "")} {serverInfo.Core} nogui";
+                    $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{(serverInfo.ForceJvmUTF8 ? " -Dfile.encoding=UTF-8" : "")}{(serverInfo.AllowOriginASCIIColors ? " -Dterminal.jline=false -Dterminal.ansi=true" : "")} {serverInfo.Core} nogui";
             }
 
             // 处理编码
@@ -319,6 +352,23 @@ public class MCServerService
                 StandardErrorEncoding = outputEncoding,
                 StandardInputEncoding = inputEncoding
             };
+
+            // 注入环境变量让终端输出原彩ASCII
+            if (serverInfo.AllowOriginASCIIColors)
+            {
+                if (!startInfo.EnvironmentVariables.ContainsKey("TERM"))
+                {
+                    startInfo.EnvironmentVariables.Add("TERM", "xterm-256color");
+                }
+                if (!startInfo.EnvironmentVariables.ContainsKey("COLORTERM"))
+                {
+                    startInfo.EnvironmentVariables.Add("COLORTERM", "truecolor");
+                }
+                if (!startInfo.EnvironmentVariables.ContainsKey("FORCE_COLOR"))
+                {
+                    startInfo.EnvironmentVariables.Add("FORCE_COLOR", "1");
+                }
+            }
 
             var process = new Process { StartInfo = startInfo };
 
@@ -374,65 +424,78 @@ public class MCServerService
             {
                 context.IsStopping = true;
 
-                if (context.Process != null && !context.Process.HasExited)
+                _ = Task.Run(() =>
                 {
-                    var server = IConfigBase.ServerList.GetServer(instanceId);
-                    int waitTimeMs = (server?.ForceExitDelay ?? 10) * 1000;
-
                     try
                     {
-                        bool isMcServer = server != null && server.Java != "none";
+                        if (context.Process != null && !context.Process.HasExited)
+                        {
+                            var server = IConfigBase.ServerList.GetServer(instanceId);
+                            int waitTimeMs = (server?.ForceExitDelay ?? 10) * 1000;
 
-                        if (isMcServer)
-                        {
-                            // MC服务器：发送 stop / 自定义 命令
-                            if (string.IsNullOrEmpty(server?.StopCommand ?? ""))
+                            try
                             {
-                                context.Process.StandardInput.WriteLine("stop");
-                            }
-                            else
-                            {
-                                context.Process.StandardInput.WriteLine(server?.StopCommand ?? "stop");
-                            }
-                            context.Process.StandardInput.Flush();
+                                bool isMcServer = server != null && server.Java != "none";
 
-                        }
-                        else
-                        {
-                            // 其他类型
-                            if (string.IsNullOrEmpty(server?.StopCommand ?? "") || (server?.StopCommand ?? "") == "^c")
-                            {
-                                ProcessHelper.SendCtrlC(context.Process);
-                            }
-                            else
-                            {
-                                context.Process.StandardInput.WriteLine(server?.StopCommand ?? "stop");
-                            }
-                            // 关闭输入流
-                            context.Process.StandardInput.Close();
-                        }
+                                if (isMcServer)
+                                {
+                                    // MC服务器：发送 stop / 自定义 命令
+                                    if (string.IsNullOrEmpty(server?.StopCommand ?? ""))
+                                    {
+                                        context.Process.StandardInput.WriteLine("stop");
+                                    }
+                                    else
+                                    {
+                                        context.Process.StandardInput.WriteLine(server?.StopCommand ?? "stop");
+                                    }
+                                    context.Process.StandardInput.Flush();
 
-                        // 等待进程退出
-                        if (!context.Process.WaitForExit(waitTimeMs))
-                        {
-                            // 超时未退出 -> 强制树形结束
-                            context.Process.Kill(true);
-                            RecordLog(instanceId, context, "[MSLX] 服务器超时，已强制结束进程树");
-                        }
-                        else
-                        {
-                            RecordLog(instanceId, context, "[MSLX] 服务器已正常关闭");
+                                }
+                                else
+                                {
+                                    // 其他类型
+                                    if (string.IsNullOrEmpty(server?.StopCommand ?? "") || (server?.StopCommand ?? "") == "^c")
+                                    {
+                                        ProcessHelper.SendCtrlC(context.Process);
+                                    }
+                                    else
+                                    {
+                                        context.Process.StandardInput.WriteLine(server?.StopCommand ?? "stop");
+                                    }
+                                    // 关闭输入流
+                                    context.Process.StandardInput.Close();
+                                }
+
+                                // 等待进程退出
+                                if (!context.Process.WaitForExit(waitTimeMs))
+                                {
+                                    // 超时未退出 -> 强制树形结束
+                                    context.Process.Kill(true);
+                                    RecordLog(instanceId, context, "[MSLX] 服务器超时，已强制结束进程树");
+                                }
+                                else
+                                {
+                                    RecordLog(instanceId, context, "[MSLX] 服务器已正常关闭");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                // 发生任何异常直接强杀
+                                try { context.Process.Kill(true); } catch { }
+                                RecordLog(instanceId, context, $"[MSLX] 停止过程出错，已强制结束: {ex.Message}");
+                            }
                         }
                     }
                     catch (Exception ex)
                     {
-                        // 发生任何异常直接强杀
-                        try { context.Process.Kill(true); } catch { }
-                        RecordLog(instanceId, context, $"[MSLX] 停止过程出错，已强制结束: {ex.Message}");
+                        _logger.LogError(ex, $"停止服务器 [{instanceId}] 后台任务异常");
                     }
-                }
+                    finally
+                    {
+                        _activeServers.TryRemove(instanceId, out _);
+                    }
+                });
 
-                _activeServers.TryRemove(instanceId, out _);
                 return true;
             }
             catch (Exception ex)
@@ -482,38 +545,69 @@ public class MCServerService
     /// </summary>
     public async Task<(bool success, string message)> RestartServer(uint instanceId)
     {
-        if (IsServerRunning(instanceId))
-        {
-            if (_activeServers.TryGetValue(instanceId, out var context))
-            {
-                RecordLog(instanceId, context, "[MSLX] 正在执行重启...");
-            }
-            
-            bool stopSuccess = StopServer(instanceId);
+        _restartingServers.TryAdd(instanceId, true);
 
-            if (!stopSuccess)
+        try
+        {
+            // 如果服务器正在运行，先执行停止流程
+            if (IsServerRunning(instanceId))
             {
-                if (IsServerRunning(instanceId))
+                if (_activeServers.TryGetValue(instanceId, out var context))
+                {
+                    RecordLog(instanceId, context, "[MSLX] 正在执行重启...");
+                }
+
+                // 调用 StopServer
+                bool stopTriggered = StopServer(instanceId);
+
+                if (!stopTriggered)
                 {
                     return (false, "重启失败：无法停止当前正在运行的服务器实例。");
                 }
-            }
-            
-            await Task.Delay(1500); 
-        }
 
-        // 重新启动
-        var result = StartServer(instanceId);
-        
-        if (result.success)
-        {
-            if (_activeServers.TryGetValue(instanceId, out var newContext))
+                var serverInfo = IConfigBase.ServerList.GetServer(instanceId);
+                int maxWaitSeconds = (serverInfo?.ForceExitDelay ?? 30) + 5;
+                int waitedMs = 0;
+                int checkInterval = 500; // 每 0.5 秒检查一次
+
+                // 只要服务器还在运行，就一直等
+                while (IsServerRunning(instanceId))
+                {
+                    await Task.Delay(checkInterval);
+                    waitedMs += checkInterval;
+
+                    if (waitedMs >= maxWaitSeconds * 1000)
+                    {
+                        return (false, $"重启失败：等待服务器停止超时 ({maxWaitSeconds}s)。请尝试手动强制结束。");
+                    }
+                }
+
+                // 停止后稍微缓冲一下，释放端口
+                await Task.Delay(1000);
+            }
+
+            // 重新启动
+            var result = StartServer(instanceId);
+
+            if (result.success)
             {
-                RecordLog(instanceId, newContext, "[MSLX] 正在重新启动实例...");
+                if (_activeServers.TryGetValue(instanceId, out var newContext))
+                {
+                    RecordLog(instanceId, newContext, "[MSLX] 正在重新启动实例...");
+                }
             }
-        }
 
-        return result;
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"重启实例 {instanceId} 异常");
+            return (false, $"重启流程发生异常: {ex.Message}");
+        }
+        finally
+        {
+            _restartingServers.TryRemove(instanceId, out _);
+        }
     }
 
     /// <summary>
@@ -712,10 +806,14 @@ public class MCServerService
                             $">>> [MSLX] 检测到异常退出，正在准备第 {history.Count} 次尝试重启 (阈值: {MaxCrashCount}次/5分钟)...");
                     }
 
+                    _restartingServers.TryAdd(instanceId, true); // 标记重启中
+
                     _ = Task.Run(async () =>
                     {
                         // 等5秒是好习惯
                         await Task.Delay(5000);
+
+                        _restartingServers.TryRemove(instanceId, out _); // 移除重启标记
 
                         // 重新启动
                         var (success, msg) = StartServer(instanceId, true);

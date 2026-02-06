@@ -17,6 +17,7 @@ namespace MSLX.Desktop.Views;
 
 public partial class InstanceListPage : UserControl
 {
+    // 后端数据状态Status定义：0=未启动，1=启动中，2=运行中，3=停止中，4=重启中
     private readonly MCServerModel _model;
     public ObservableCollection<MCServerModel.ServerInfo> ServerList => _model.ServerList;
 
@@ -55,7 +56,8 @@ public partial class InstanceListPage : UserControl
                         Base = (string)server["basePath"]!,
                         Java = (string)server["java"]!,
                         Core = (string)server["core"]!,
-                        IsRunning = (bool)server["status"]!,
+                        Status = (int)server["status"]!,
+                        StatusStr = (string)server["statusText"]!,
                     });
                 }
             });
@@ -73,7 +75,7 @@ public partial class InstanceListPage : UserControl
         var server = _model.ServerList.FirstOrDefault(s => s.ID == serverId);
         if (server != null)
         {
-            server.IsRunning = !server.IsRunning;
+            server.Status = 2;
             // 这里添加你的服务器启动逻辑
             System.Diagnostics.Debug.WriteLine($"服务器 {server.Name} 状态切换");
         }

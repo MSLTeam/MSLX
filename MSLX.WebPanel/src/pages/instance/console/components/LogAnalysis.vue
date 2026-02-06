@@ -32,7 +32,7 @@ const formData = reactive({
   pluginsList: '',
   logContent: '',
   result: '> ✨ 等待日志分析开始······',
-  selectedModel: 'qwen-flash',
+  selectedModel: 'Qwen/Qwen3-14B',
 });
 const modelList = ref<ModelInfoModel[]>([]);
 

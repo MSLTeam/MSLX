@@ -26,7 +26,7 @@ public class InstanceInfoController : ControllerBase
         var resultList = serverList.Select(item => 
         {
             uint id = item["ID"]?.Value<uint>() ?? 0;
-            bool isRunning = _mcServerService.IsServerRunning(id);
+            var (serverStatus,serverStatusText) = _mcServerService.GetServerStatus(id);
             string icon = "default";
 
             if ((item["Core"]?.Value<string>() ?? "").Contains("neoforge"))
@@ -58,7 +58,8 @@ public class InstanceInfoController : ControllerBase
                 java = item["Java"]?.Value<string>(),
                 core = item["Core"]?.Value<string>(),
                 icon,
-                status = isRunning,
+                status = serverStatus,
+                statusText = serverStatusText
             };
         }).OrderByDescending(x => x.id).ToList();
         
@@ -77,6 +78,7 @@ public class InstanceInfoController : ControllerBase
         {
             McServerInfo.ServerInfo server =
                 IConfigBase.ServerList.GetServer(id) ?? throw new Exception("找不到指定的服务器");
+            var (serverStatus, serverStatusText) = _mcServerService.GetServerStatus(id);
             if (System.IO.File.Exists(Path.Combine(server.Base, "server.properties")))
             {
                 dynamic config = ServerPropertiesLoader.Load(Path.Combine(server.Base, "server.properties"),Encoding.GetEncoding(server.FileEncoding));
@@ -131,7 +133,8 @@ public class InstanceInfoController : ControllerBase
                         minM = server.MinM,
                         maxM = server.MaxM,
                         core = server.Core,
-                        status = _mcServerService.IsServerRunning(id),
+                        status = serverStatus,
+                        statusText = serverStatusText,
                         uptime = _mcServerService.GetServerUptime(id),
                         mcConfig = new
                         {
@@ -157,7 +160,8 @@ public class InstanceInfoController : ControllerBase
                     minM = server.MinM,
                     maxM = server.MaxM,
                     core = server.Core,
-                    status = _mcServerService.IsServerRunning(id),
+                    status = serverStatus,
+                    statusText = serverStatusText,
                     uptime = _mcServerService.GetServerUptime(id),
                     mcConfig = new
                     {

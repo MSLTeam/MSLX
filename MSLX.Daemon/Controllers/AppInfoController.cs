@@ -87,7 +87,8 @@ public class AppInfoController : ControllerBase
                 ["osType"] = osType,
                 ["osVersion"] = RuntimeInformation.OSDescription,
                 ["osArchitecture"] = RuntimeInformation.OSArchitecture.ToString(),
-                ["hostname"] = Environment.MachineName
+                ["hostname"] = Environment.MachineName,
+                ["docker"] = IsRunningInContainer(),
             };
             
             var statusData = new JObject
@@ -104,7 +105,7 @@ public class AppInfoController : ControllerBase
                 ["targetFrontendVersion"] = new JObject
                 {
                     ["desktop"] = "1.0.0",
-                    ["panel"] = "1.1.6"
+                    ["panel"] = "1.1.9"
                 },
                 ["systemInfo"] = systemInfo
             };
