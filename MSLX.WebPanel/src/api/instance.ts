@@ -1,5 +1,6 @@
 import { request } from '@/utils/request';
 import {
+  AllInstanceBackupFilesModel,
   CreateInstanceQucikModeModel,
   InstanceBackupFilesModel,
   InstanceInfoModel,
@@ -71,6 +72,12 @@ export async function getInstanceBackupFiles(id:number){
   return await request.get<InstanceBackupFilesModel[]>({
     url: `/api/instance/backups/${id}`,
   })
+}
+
+export async function getAllInstanceBackupFiles() {
+  return await request.get<AllInstanceBackupFilesModel[]>({
+    url: `/api/instance/backups/all`,
+  });
 }
 
 export async function postDeleteBackupFiles(id:number,fileName:string){
