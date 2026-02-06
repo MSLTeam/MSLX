@@ -15,8 +15,8 @@ namespace MSLX.Desktop.Models
             public required string Base { get; set; }
             public required string Java { get; set; }
             public required string Core { get; set; }
-            public bool IsRunning { get; set; } = false;
-            public string Status => IsRunning ? "运行中" : "已停止";
+            public required int Status { get; set; } = 0;
+            public required string StatusStr { get; set; }
             public int? MinM { get; set; }
             public int? MaxM { get; set; }
             public string? Args { get; set; }

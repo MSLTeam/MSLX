@@ -6,102 +6,118 @@
              xmlns:micon="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:models="clr-namespace:MSLX.Desktop.Models"
              xmlns:views="clr-namespace:MSLX.Desktop.Views"
+			 xmlns:views-utils="clr-namespace:MSLX.Desktop.Views.Utils"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="MSLX.Desktop.Views.InstanceListPage"
              x:DataType="views:InstanceListPage">
-  <suki:GlassCard Margin="10">
-    <Grid>
-      <Grid.RowDefinitions>
-        <RowDefinition Height="Auto"/>
-        <RowDefinition Height="*"/>
-      </Grid.RowDefinitions>
-      <TextBlock Classes="h3" Text="实例列表"/>
-      <ScrollViewer Grid.Row="1">
-          <ItemsControl ItemsSource="{Binding ServerList}">
-            <ItemsControl.ItemTemplate>
-              <DataTemplate DataType="models:MCServerModel+ServerInfo" >
-                <suki:GlassCard Margin="5">
-                  <StackPanel>
-                    <TextBlock FontSize="18" FontWeight="Bold">
-                      <Run Text="#"/>
-                      <Run Text="{Binding ID}"/>
-                      <Run Text=" "/>
-                      <Run Text="{Binding Name}"/>
-                    </TextBlock>
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                      <TextBlock Text="状态："/>
-                      <TextBlock Text="{Binding Status}"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                      <TextBlock Text="核心："/>
-                      <TextBlock Text="{Binding Core}"/>
-                    </StackPanel>
-                    <Grid Margin="0,10,0,0">
-                      <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                      </Grid.RowDefinitions>
-                      <Grid>
-                        <Grid.ColumnDefinitions>
-                          <ColumnDefinition Width="*"/>
-                          <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <Button Classes="Flat" 
-                                Padding="12,0,12,0" 
-                                Click="RunServerButton_Click"
-                                Tag="{Binding ID}">
-                            <StackPanel Orientation="Horizontal">
-            					<micon:MaterialIcon Kind="Play"/>
-                                <TextBlock Text="运行"/>
-                            </StackPanel>
-                        </Button>
-                        <Button Grid.Column="1" 
-                                Margin="5,0,0,0"
-                                Click="SettingsButton_Click"
-                                Tag="{Binding ID}">
-                          <micon:MaterialIcon Foreground="{DynamicResource SukiPrimaryColor}" Kind="Settings"/>
-                        </Button>
-                      </Grid>
-                      <Grid Grid.Row="1" Margin="0,5,0,0">
-                        <Grid.ColumnDefinitions>
-                          <ColumnDefinition Width="*"/>
-                          <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <Button Padding="12,0,12,0"
-                                Click="OpenFolderButton_Click"
-                                Tag="{Binding ID}">
-                          <StackPanel Orientation="Horizontal">
-                            <micon:MaterialIcon Foreground="{DynamicResource SukiPrimaryColor}" Kind="FolderOutline"/>
-                            <TextBlock Margin="3,0,0,0" Text="打开文件夹"/>
-                          </StackPanel>
-                        </Button>
-                        <Button Grid.Column="1" 
-                                Margin="5,0,0,0"
-                                Click="DeleteServerButton_Click"
-                                Tag="{Binding ID}">
-                          <micon:MaterialIcon Foreground="{DynamicResource SukiPrimaryColor}" Kind="Delete"/>
-                        </Button>
-                      </Grid>
-                    </Grid>
-                  </StackPanel>
-                </suki:GlassCard>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <WrapPanel/>
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-          </ItemsControl>
-      </ScrollViewer>
-      <StackPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" Spacing="5">
-        <Button Padding="10" x:Name="RefreshBtn" Click="RefreshBtn_Click">
-          <micon:MaterialIcon Kind="Refresh"/>
-        </Button>
-        <Button Padding="10" x:Name="CreateInstance" Click="CreateInstance_Click">
-          <micon:MaterialIcon Kind="Add"/>
-        </Button>
-      </StackPanel>
-    </Grid>
-  </suki:GlassCard>
+	<suki:GlassCard Margin="10">
+		<Grid>
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="*"/>
+			</Grid.RowDefinitions>
+			<TextBlock Classes="h3" Text="实例列表"/>
+			<ScrollViewer Grid.Row="1">
+				<ItemsControl ItemsSource="{Binding ServerList}">
+					<ItemsControl.ItemTemplate>
+						<DataTemplate DataType="models:MCServerModel+ServerInfo" >
+							<suki:GlassCard Margin="5">
+								<StackPanel>
+									<TextBlock FontSize="18" FontWeight="Bold">
+										<Run Text="#"/>
+										<Run Text="{Binding ID}"/>
+										<Run Text=" "/>
+										<Run Text="{Binding Name}"/>
+									</TextBlock>
+
+									<StackPanel Orientation="Horizontal" Margin="0,10,0,0" VerticalAlignment="Center">
+										<TextBlock Text="状态：" VerticalAlignment="Center"/>
+
+										<Border CornerRadius="6"
+												Padding="8,2"
+												VerticalAlignment="Center">
+											<Border.Background>
+												<MultiBinding Converter="{x:Static views-utils:StatusToBrushConverter.Instance}">
+													<Binding Path="Status"/>
+												</MultiBinding>
+											</Border.Background>
+
+											<TextBlock Text="{Binding StatusStr}"
+													   FontSize="12"
+													   Foreground="White"
+													   FontWeight="Bold"/>
+										</Border>
+									</StackPanel>
+									<StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+										<TextBlock Text="核心："/>
+										<TextBlock Text="{Binding Core, Converter={x:Static views-utils:CoreNameConverter.Instance}}"/>
+									</StackPanel>
+									<Grid Margin="0,10,0,0">
+										<Grid.RowDefinitions>
+											<RowDefinition Height="Auto"/>
+											<RowDefinition Height="Auto"/>
+										</Grid.RowDefinitions>
+										<Grid>
+											<Grid.ColumnDefinitions>
+												<ColumnDefinition Width="*"/>
+												<ColumnDefinition Width="Auto"/>
+											</Grid.ColumnDefinitions>
+											<Button Classes="Flat"
+													Padding="12,0,12,0"
+													Click="RunServerButton_Click"
+													Tag="{Binding ID}">
+												<StackPanel Orientation="Horizontal">
+													<micon:MaterialIcon Kind="Play"/>
+													<TextBlock Text="运行"/>
+												</StackPanel>
+											</Button>
+											<Button Grid.Column="1"
+													Margin="5,0,0,0"
+													Click="SettingsButton_Click"
+													Tag="{Binding ID}">
+												<micon:MaterialIcon Foreground="{DynamicResource SukiPrimaryColor}" Kind="Settings"/>
+											</Button>
+										</Grid>
+										<Grid Grid.Row="1" Margin="0,5,0,0">
+											<Grid.ColumnDefinitions>
+												<ColumnDefinition Width="*"/>
+												<ColumnDefinition Width="Auto"/>
+											</Grid.ColumnDefinitions>
+											<Button Padding="12,0,12,0"
+													Click="OpenFolderButton_Click"
+													Tag="{Binding ID}">
+												<StackPanel Orientation="Horizontal">
+													<micon:MaterialIcon Foreground="{DynamicResource SukiPrimaryColor}" Kind="FolderOutline"/>
+													<TextBlock Margin="3,0,0,0" Text="打开文件夹"/>
+												</StackPanel>
+											</Button>
+											<Button Grid.Column="1"
+													Margin="5,0,0,0"
+													Click="DeleteServerButton_Click" Classes="Accent"
+													Tag="{Binding ID}">
+												<micon:MaterialIcon Foreground="{DynamicResource SukiWarningColor}" Kind="Delete"/>
+											</Button>
+										</Grid>
+									</Grid>
+								</StackPanel>
+							</suki:GlassCard>
+						</DataTemplate>
+					</ItemsControl.ItemTemplate>
+					<ItemsControl.ItemsPanel>
+						<ItemsPanelTemplate>
+							<WrapPanel/>
+						</ItemsPanelTemplate>
+					</ItemsControl.ItemsPanel>
+				</ItemsControl>
+			</ScrollViewer>
+			<StackPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" Spacing="5">
+				<Button Padding="10" x:Name="RefreshBtn" Click="RefreshBtn_Click">
+					<micon:MaterialIcon Kind="Refresh"/>
+				</Button>
+				<Button Padding="10" x:Name="CreateInstance" Click="CreateInstance_Click">
+					<micon:MaterialIcon Kind="Add"/>
+				</Button>
+			</StackPanel>
+		</Grid>
+	</suki:GlassCard>
 </UserControl>
