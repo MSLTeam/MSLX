@@ -7,8 +7,30 @@ export default {
 import Login from './components/Login.vue';
 import LoginHeader from './components/Header.vue';
 import TdesignSetting from '@/layouts/setting.vue';
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, computed } from 'vue';
 import { CheckCircleIcon, LockOnIcon, UserCircleIcon } from 'tdesign-icons-vue-next';
+import { useUserStore, useWebpanelStore } from '@/store';
+import defaultLightBg from '@/assets/bg_light_new.jpg';
+import defaultDarkBg from '@/assets/bg_night_new.jpg';
+
+// 自定义背景相关
+const webpanelStore = useWebpanelStore();
+const userStore = useUserStore();
+
+const getImageUrl = (fileName: string, defaultImg: string) => {
+  if (!fileName) return defaultImg;
+  if (fileName.startsWith('http')) return fileName;
+  const baseUrl = userStore.baseUrl || window.location.origin;
+  return `${baseUrl}/api/static/images/${fileName}`;
+};
+
+const customBgVars = computed(() => {
+  const s = webpanelStore.settings;
+  return {
+    '--custom-bg-light': `url('${getImageUrl(s.webPanelStyleLightBackground, defaultLightBg)}')`,
+    '--custom-bg-dark': `url('${getImageUrl(s.webPanelStyleDarkBackground, defaultDarkBg)}')`,
+  };
+});
 
 // 简单的初始化弹窗
 const showInitDialog = ref(false);
@@ -21,6 +43,7 @@ const closeInitDialog = () => {
 };
 
 onMounted(() => {
+  webpanelStore.fetchSettings();
   const params = new URLSearchParams(window.location.search);
   if (params.get('initialize') === 'true') {
     showInitDialog.value = true;
@@ -28,7 +51,7 @@ onMounted(() => {
 });
 </script>
 <template>
-  <div class="login-wrapper">
+  <div class="login-wrapper" :style="customBgVars">
     <login-header class="login-header-fixed" />
 
     <div class="login-content">
@@ -77,7 +100,10 @@ onMounted(() => {
         </div>
 
         <t-alert theme="warning" class="security-alert">
-          <template #message> 安全提醒：请登录后<b><u>立即修改默认的账户名和密码</u></b>，保障您的服务安全。 </template>
+          <template #message>
+            安全提醒：请登录后<b><u>立即修改默认的账户名和密码</u></b
+            >，保障您的服务安全。
+          </template>
         </t-alert>
 
         <t-button block theme="primary" size="large" variant="base" @click="closeInitDialog">
@@ -103,11 +129,11 @@ onMounted(() => {
   background-position: center;
   background-repeat: no-repeat;
   transition: all 0.3s ease;
-  background-image: url('@/assets/bg_light_new.jpg');
+  background-image: var(--custom-bg-light, url('@/assets/bg_light_new.jpg'));
 }
 
 .dark.login-wrapper {
-  background-image: url('@/assets/bg_night_new.jpg');
+  background-image: var(--custom-bg-dark, url('@/assets/bg_night_new.jpg')) !important;
 }
 
 // 通用卡片样式
@@ -241,7 +267,6 @@ onMounted(() => {
     right: 10px;
   }
 }
-
 
 // 欢迎弹窗样式
 :deep(.welcome-dialog) {
