@@ -109,3 +109,11 @@ export interface InstanceBackupFilesModel {
   createTime: string;
   timestamp: string;
 }
+
+export interface AllInstanceBackupFilesModel{
+  id: number;
+  name: string;
+  core: string;
+  backupPath: string;
+  backups: InstanceBackupFilesModel[];
+}

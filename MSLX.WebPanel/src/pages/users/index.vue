@@ -1,17 +1,7 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref, computed } from 'vue';
-import {
-  MessagePlugin,
-  DialogPlugin,
-  type FormRules,
-  type PrimaryTableCol,
-  type TableRowData
-} from 'tdesign-vue-next';
-import {
-  AddIcon,
-  SearchIcon,
-  RefreshIcon
-} from 'tdesign-icons-vue-next';
+import { MessagePlugin, DialogPlugin, type FormRules, type PrimaryTableCol, type TableRowData } from 'tdesign-vue-next';
+import { AddIcon, SearchIcon, RefreshIcon } from 'tdesign-icons-vue-next';
 
 import { getUserList, createUser, updateUser, deleteUser } from '@/api/user';
 import type { AdminUserDto } from '@/api/model/user';
@@ -33,16 +23,21 @@ const formData = reactive({
   name: '',
   password: '',
   role: 'admin',
-  resetApiKey: false
+  resetApiKey: false,
 });
 
 const rules: FormRules = {
   username: [{ required: true, message: '请输入用户名', type: 'error' }],
   role: [{ required: true, message: '请选择角色', type: 'error' }],
-  password: [{ validator: (val) => {
-      if (dialogMode.value === 'create' && !val) return { result: false, message: '创建用户时密码必填', type: 'error' };
-      return true;
-    } }]
+  password: [
+    {
+      validator: (val) => {
+        if (dialogMode.value === 'create' && !val)
+          return { result: false, message: '创建用户时密码必填', type: 'error' };
+        return true;
+      },
+    },
+  ],
 };
 
 // 表格列定义
@@ -50,19 +45,17 @@ const columns = computed((): PrimaryTableCol<TableRowData>[] => [
   { colKey: 'info', title: '用户信息', width: 200, fixed: 'left', cell: 'info-slot' },
   { colKey: 'role', title: '角色', width: 100, cell: 'role-slot' },
   { colKey: 'lastLogin', title: '最后登录', width: 180, cell: 'time-slot', className: 'hidden-xs' },
-  { colKey: 'op', title: '操作', width: 140, fixed: 'right', cell: 'op-slot' }
+  { colKey: 'op', title: '操作', width: 140, fixed: 'right', cell: 'op-slot' },
 ]);
 
 // 过滤数据
 const displayData = computed(() => {
   if (!filterText.value) return tableData.value;
   const key = filterText.value.toLowerCase();
-  return tableData.value.filter(item =>
-    item.username.toLowerCase().includes(key) ||
-    (item.name && item.name.toLowerCase().includes(key))
+  return tableData.value.filter(
+    (item) => item.username.toLowerCase().includes(key) || (item.name && item.name.toLowerCase().includes(key)),
   );
 });
-
 
 const fetchData = async () => {
   loading.value = true;
@@ -108,7 +101,7 @@ const onSubmit = async ({ validateResult }: any) => {
         username: formData.username,
         password: formData.password,
         name: formData.name,
-        role: formData.role
+        role: formData.role,
       });
       MessagePlugin.success('用户创建成功');
     } else {
@@ -116,7 +109,7 @@ const onSubmit = async ({ validateResult }: any) => {
         name: formData.name,
         password: formData.password || undefined,
         role: formData.role,
-        resetApiKey: formData.resetApiKey
+        resetApiKey: formData.resetApiKey,
       });
       MessagePlugin.success('用户更新成功');
     }
@@ -143,7 +136,7 @@ const handleDelete = (row: AdminUserDto) => {
       } catch (e: any) {
         MessagePlugin.error(e.message || '删除失败');
       }
-    }
+    },
   });
 };
 
@@ -155,7 +148,6 @@ onMounted(() => {
 <template>
   <div class="user-manage">
     <t-card :bordered="false" class="main-card">
-
       <div class="toolbar">
         <div class="left-action">
           <t-button theme="primary" @click="handleAdd">
@@ -182,7 +174,7 @@ onMounted(() => {
         :pagination="{
           defaultPageSize: 20,
           total: displayData.length,
-          showJumper: true
+          showJumper: true,
         }"
         class="user-table"
         table-layout="auto"
@@ -211,9 +203,7 @@ onMounted(() => {
 
         <template #op-slot="{ row }">
           <div class="op-buttons">
-            <t-button variant="text" theme="primary" size="small" @click="handleEdit(row)">
-              编辑
-            </t-button>
+            <t-button variant="text" theme="primary" size="small" @click="handleEdit(row)"> 编辑 </t-button>
             <t-divider layout="vertical" />
             <t-button
               variant="text"
@@ -237,13 +227,8 @@ onMounted(() => {
       width="480px"
     >
       <t-form ref="formRef" :data="formData" :rules="rules" label-align="top" @submit="onSubmit">
-
         <t-form-item label="用户名" name="username">
-          <t-input
-            v-model="formData.username"
-            placeholder="登录账号"
-            :disabled="dialogMode === 'edit'"
-          />
+          <t-input v-model="formData.username" placeholder="登录账号" :disabled="dialogMode === 'edit'" />
         </t-form-item>
 
         <t-form-item label="昵称" name="name">
@@ -257,23 +242,13 @@ onMounted(() => {
           </t-radio-group>
         </t-form-item>
 
-        <t-form-item
-          label="密码"
-          name="password"
-          :help="dialogMode === 'edit' ? '留空则不修改密码' : ''"
-        >
-          <t-input
-            v-model="formData.password"
-            type="password"
-            placeholder="设置密码"
-            autocomplete="new-password"
-          />
+        <t-form-item label="密码" name="password" :help="dialogMode === 'edit' ? '留空则不修改密码' : ''">
+          <t-input v-model="formData.password" type="password" placeholder="设置密码" autocomplete="new-password" />
         </t-form-item>
 
         <t-form-item v-if="dialogMode === 'edit'" label="API 密钥">
           <t-checkbox v-model="formData.resetApiKey">重置该用户的 API Key</t-checkbox>
         </t-form-item>
-
       </t-form>
     </t-dialog>
   </div>
@@ -282,6 +257,7 @@ onMounted(() => {
 <style lang="less" scoped>
 .user-manage {
   padding: 0;
+  height: 100%;
   @media (min-width: 768px) {
     // padding: 24px;
   }
@@ -290,7 +266,7 @@ onMounted(() => {
 .main-card {
   border-radius: 8px;
   overflow: hidden;
-  min-height: calc(100vh - 120px);
+  height: 100%;
 }
 
 .toolbar {

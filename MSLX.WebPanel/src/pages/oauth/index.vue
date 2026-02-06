@@ -1,18 +1,37 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { CheckCircleFilledIcon, ErrorCircleFilledIcon } from 'tdesign-icons-vue-next';
 import LoginHeader from '../login/components/Header.vue';
 import TdesignSetting from '@/layouts/setting.vue';
-import { useUserStore } from '@/store';
+import { useUserStore, useWebpanelStore } from '@/store';
 import { request } from '@/utils/request';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { changeUrl } from '@/router';
+import defaultLightBg from '@/assets/bg_light_new.jpg';
+import defaultDarkBg from '@/assets/bg_night_new.jpg';
 
 // 路由与状态库
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
+const webpanelStore = useWebpanelStore();
+
+// 自定义背景相关
+const getImageUrl = (fileName: string, defaultImg: string) => {
+  if (!fileName) return defaultImg;
+  if (fileName.startsWith('http')) return fileName;
+  const baseUrl = userStore.baseUrl || window.location.origin;
+  return `${baseUrl}/api/static/images/${fileName}`;
+};
+
+const customBgVars = computed(() => {
+  const s = webpanelStore.settings;
+  return {
+    '--custom-bg-light': `url('${getImageUrl(s.webPanelStyleLightBackground, defaultLightBg)}')`,
+    '--custom-bg-dark': `url('${getImageUrl(s.webPanelStyleDarkBackground, defaultDarkBg)}')`,
+  };
+});
 
 // 页面状态
 type PageStatus = 'loading' | 'success' | 'error';
@@ -108,12 +127,13 @@ const goBack = () => {
 };
 
 onMounted(() => {
+  webpanelStore.fetchSettings();
   handleOAuth();
 });
 </script>
 
 <template>
-  <div class="login-wrapper">
+  <div class="login-wrapper" :style="customBgVars">
     <login-header class="login-header-fixed" />
 
     <div class="login-panel">
@@ -177,11 +197,11 @@ onMounted(() => {
   background-position: center;
   background-repeat: no-repeat;
   transition: all 0.3s ease;
-  background-image: url('@/assets/bg_light_new.jpg');
+  background-image: var(--custom-bg-light, url('@/assets/bg_light_new.jpg'));
 }
 
 .dark.login-wrapper {
-  background-image: url('@/assets/bg_night_new.jpg');
+  background-image: var(--custom-bg-dark, url('@/assets/bg_night_new.jpg')) !important;
 }
 
 // --- 卡片容器 ---

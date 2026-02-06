@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Settings;
@@ -49,6 +50,7 @@ public class SettingsController: ControllerBase
     }
 
     [HttpGet("webpanel/style")]
+    [AllowAnonymous]
     public IActionResult GetWebPanelStyle()
     {
         return Ok(new ApiResponse<object>

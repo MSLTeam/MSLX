@@ -9,85 +9,105 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
 [ApiController]
 public class BackupManagerController : ControllerBase
 {
+    #region 辅助方法封装
+    private string GetBackupDirectory(McServerInfo.ServerInfo server)
+    {
+        // 默认路径：实例根目录/mslx-backups
+        string backupDir = Path.Combine(server.Base, "mslx-backups");
+
+        if (server.BackupPath == "MSLX://Backup/Data")
+        {
+            backupDir = Path.Combine(IConfigBase.GetAppDataPath(), "Backups", $"Backups_{server.Name}_{server.ID}");
+        }
+        else if (server.BackupPath != "MSLX://Backup/Instance" && !string.IsNullOrEmpty(server.BackupPath))
+        {
+            backupDir = server.BackupPath;
+        }
+        return backupDir;
+    }
+
+    private List<object> GetBackupListFromPath(string backupDir)
+    {
+        if (!Directory.Exists(backupDir)) return new List<object>();
+
+        var dirInfo = new DirectoryInfo(backupDir);
+        var files = dirInfo.GetFiles("mslx-backup_*.zip");
+
+        return files.Select(file =>
+        {
+            long len = file.Length;
+            string formattedSize = len switch
+            {
+                >= 1073741824 => $"{len / 1024.0 / 1024.0 / 1024.0:F2} GB",
+                >= 1048576 => $"{len / 1024.0 / 1024.0:F2} MB",
+                >= 1024 => $"{len / 1024.0:F2} KB",
+                _ => $"{len} Bytes"
+            };
+
+            return new
+            {
+                FileName = file.Name,
+                FileSize = file.Length,
+                FileSizeStr = formattedSize,
+                CreateTime = file.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss"),
+                Timestamp = new DateTimeOffset(file.LastWriteTime).ToUnixTimeSeconds()
+            };
+        })
+        .OrderByDescending(x => x.Timestamp)
+        .Cast<object>()
+        .ToList();
+    }
+
+    private string GetCoreName(string core)
+    {
+        core = core?.ToLower() ?? "";
+        if (core.Contains("neoforge")) return "neoforge";
+        if (core.Contains("forge")) return "forge";
+        if (core == "none") return "custom";
+        return core;
+    }
+    #endregion
+
+    // 特定实例的备份列表
     [HttpGet("{id}")]
     public IActionResult GetInstanceBackups(uint id)
     {
         try
         {
-            McServerInfo.ServerInfo server =
-                IConfigBase.ServerList.GetServer(id) ?? throw new Exception("找不到指定的服务器实例");
+            var server = IConfigBase.ServerList.GetServer(id) ?? throw new Exception("找不到指定的服务器实例");
+            string backupDir = GetBackupDirectory(server);
+            var backups = GetBackupListFromPath(backupDir);
 
-            // 获取备份路径
-            string backupDir = Path.Combine(server.Base, "mslx-backups");
-            if (server.BackupPath != "MSLX://Backup/Instance")
-            {
-                if (server.BackupPath == "MSLX://Backup/Data")
-                {
-                    backupDir = Path.Combine(IConfigBase.GetAppDataPath(), "Backups",
-                        $"Backups_{server.Name}_{id}");
-                }
-                else if (!string.IsNullOrEmpty(server.BackupPath))
-                {
-                    backupDir = Path.Combine(server.BackupPath);
-                }
-            }
-
-            // 目录不存在
-            if (!Directory.Exists(backupDir))
-            {
-
-                return Ok(new ApiResponse<List<object>>
-                {
-                    Code = 200,
-                    Message = "获取成功",
-                    Data = new List<object>()
-                });
-            }
-
-            // 获取文件数据
-            var dirInfo = new DirectoryInfo(backupDir);
-
-            // mslx-backup_
-            var files = dirInfo.GetFiles("mslx-backup_*.zip");
-
-            var backupList = files.Select(file =>
-            {
-                // 文件大小
-                string formattedSize;
-                long len = file.Length;
-                if (len > 1024 * 1024 * 1024) formattedSize = $"{len / (1024.0 * 1024.0 * 1024.0):F2} GB";
-                else if (len > 1024 * 1024) formattedSize = $"{len / (1024.0 * 1024.0):F2} MB";
-                else if (len > 1024) formattedSize = $"{len / 1024.0:F2} KB";
-                else formattedSize = $"{len} Bytes";
-
-                return new
-                {
-                    FileName = file.Name,
-                    FileSize = file.Length,
-                    FileSizeStr = formattedSize,
-                    CreateTime = file.LastWriteTime.ToString("yyyy-MM-dd HH:mm:ss"),
-                    Timestamp = new DateTimeOffset(file.LastWriteTime).ToUnixTimeSeconds()
-                };
-            })
-            .OrderByDescending(x => x.Timestamp)
-            .ToList();
-
-            return Ok(new ApiResponse<object>
-            {
-                Code = 200,
-                Message = "获取成功",
-                Data = backupList
-            });
-
+            return Ok(new ApiResponse<object> { Code = 200, Message = "获取成功", Data = backups });
         }
         catch (Exception ex)
         {
-            return BadRequest(new ApiResponse<object>
+            return BadRequest(new ApiResponse<object> { Code = 400, Message = ex.Message });
+        }
+    }
+
+    // 所有实例的备份列表
+    [HttpGet("all")]
+    public IActionResult GetAllBackups()
+    {
+        try
+        {
+            var servers = IConfigBase.ServerList.GetServerList();
+
+            var result = servers.Select(server => new
             {
-                Code = 400,
-                Message = $"{ex.Message}",
-                Data = null
-            });
+                Id = server.ID,
+                Name = server.Name,
+                Core = GetCoreName(server.Core), 
+                BackupPath = GetBackupDirectory(server),
+                Backups = GetBackupListFromPath(GetBackupDirectory(server))
+            }).ToList();
+
+            return Ok(new ApiResponse<object> { Code = 200, Message = "获取成功", Data = result });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ApiResponse<object> { Code = 400, Message = $"获取列表失败: {ex.Message}" });
         }
     }
 

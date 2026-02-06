@@ -38,7 +38,7 @@ onMounted(() => {
         </span>
         <t-tooltip :content="pkg.version" :max-width="'400px'">
           <span class="info-value truncate-value">
-            {{ pkg.version }}
+            v{{ pkg.version }}
           </span>
         </t-tooltip>
       </div>
