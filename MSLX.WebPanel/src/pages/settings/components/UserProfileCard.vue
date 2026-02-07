@@ -17,7 +17,7 @@ import { getSelfInfo, updateSelfInfo } from '@/api/user';
 import type { UserInfoModel, UpdateUserRequest } from '@/api/model/user';
 import { useUserStore } from '@/store';
 import { request } from '@/utils/request';
-import { isLoopback } from '@/utils/tools';
+import { isInternalNetwork } from '@/utils/tools';
 
 const userStore = useUserStore();
 
@@ -283,9 +283,9 @@ const handleUnbindMSL = () => {
         </t-input>
       </t-form-item>
 
-      <t-divider v-if="!isLoopback()" dashed />
+      <t-divider v-if="!isInternalNetwork()" dashed />
 
-      <t-form-item v-if="!isLoopback()" label="MSL 账户绑定" help="绑定后可使用 MSL 账户直接登录本控制台">
+      <t-form-item v-if="!isInternalNetwork()" label="MSL 账户绑定" help="绑定后可使用 MSL 账户直接登录本控制台">
         <div v-if="userInfo.openMSLID && userInfo.openMSLID !== '0'" class="bound-status">
           <t-tag theme="success" variant="light" size="medium">
             <template #icon><check-circle-icon /></template>
