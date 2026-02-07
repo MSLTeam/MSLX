@@ -105,7 +105,6 @@ const initTerminal = () => {
     lineHeight: 1.4,
     theme: isDark ? termThemes.dark : termThemes.light,
     allowTransparency: true,
-    disableStdin: true,
     convertEol: true,
   });
 
@@ -322,7 +321,9 @@ onUnmounted(async () => {
     .tab-title {
       color: var(--td-text-color-placeholder);
       font-size: 12px;
-      font-family: Menlo, monospace;
+      font-family:
+        'Maple Mono', 'Maple Mono CN', 'Cascadia Code', Consolas, Menlo, 'PingFang SC', 'Microsoft YaHei', 'monospace',
+        serif;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -393,7 +394,9 @@ onUnmounted(async () => {
       border-radius: 4px;
       padding: 0 12px;
       color: var(--td-text-color-primary);
-      font-family: Menlo, monospace;
+      font-family:
+        'Maple Mono', 'Maple Mono CN', 'Cascadia Code', Consolas, Menlo, 'PingFang SC', 'Microsoft YaHei', 'monospace',
+        serif;
       font-size: 13px;
       outline: none;
       transition: all 0.2s;

@@ -8,7 +8,7 @@ import { changeUrl } from '@/router';
 import { DOC_URLS } from '@/api/docs';
 import { copyText } from '@/utils/clipboard';
 import { useUpdateStore } from '@/store';
-import { isLoopback } from '@/utils/tools';
+import { isInternalNetwork } from '@/utils/tools';
 
 const updateStore = useUpdateStore();
 
@@ -95,9 +95,9 @@ onMounted(() => {
         <t-select v-model="sysData.neoForgeInstallerMirrors" :options="mirrorOptions" />
       </t-form-item>
 
-      <t-divider v-if="!isLoopback()" dashed />
+      <t-divider v-if="!isInternalNetwork()" dashed />
 
-      <div v-if="!isLoopback()">
+      <div v-if="!isInternalNetwork()">
         <div class="group-title">MSL OAuth 2.0</div>
 
         <t-form-item label="Client ID" style="margin-top: 6px">
