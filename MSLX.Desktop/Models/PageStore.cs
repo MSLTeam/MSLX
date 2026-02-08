@@ -43,7 +43,7 @@ namespace MSLX.Desktop.Models
                 {
                     Kind = MaterialIconKind.NavigationVariant,
                 },
-                PageContent = new TextBlock{Text="Hello World!"},
+                PageContent = new TunnelListPage(),
             },
             new() {
                 Header = "点对点联机",
