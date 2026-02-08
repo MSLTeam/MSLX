@@ -1,7 +1,9 @@
 using Avalonia.Controls;
 using MSLX.Desktop.Models;
+using MSLX.Desktop.Utils;
 using MSLX.Desktop.Utils.API;
 using Newtonsoft.Json.Linq;
+using SukiUI.Toasts;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -11,15 +13,12 @@ namespace MSLX.Desktop.Views;
 
 public partial class TunnelListPage : UserControl
 {
-    private readonly TunnelModel _model;
-    public ObservableCollection<TunnelModel.TunnelInfo> TunnelList => _model.TunnelList;
+    public ObservableCollection<TunnelModel.TunnelInfo> Tunnels => TunnelModel.TunnelList;
 
     public TunnelListPage()
     {
         InitializeComponent();
-        _model = new TunnelModel();
         DataContext = this;
-
         this.Initialized += (s, e) => _ = LoadTunnelList();
     }
 
@@ -27,37 +26,39 @@ public partial class TunnelListPage : UserControl
     {
         try
         {
-            // 请求接口 /api/frp/list
             JObject res = await DaemonAPIService.GetJsonContentAsync("/api/frp/list");
-            if (res["code"]?.ToObject<int>() == 200)
-            {
-                JArray tunnels = (JArray)res["data"]!;
+            JArray tunnels = (JArray)res["data"]!;
 
-                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                TunnelModel.TunnelList.Clear();
+                foreach (JObject item in tunnels.Cast<JObject>())
                 {
-                    _model.TunnelList.Clear();
-                    foreach (JObject item in tunnels.Cast<JObject>())
+                    TunnelModel.TunnelList.Add(new TunnelModel.TunnelInfo
                     {
-                        _model.TunnelList.Add(new TunnelModel.TunnelInfo
-                        {
-                            ID = (int)item["id"]!,
-                            Name = (string)item["name"]!,
-                            Service = (string)item["service"]!,
-                            ConfigType = (string)item["configType"]!,
-                            Status = (bool)item["status"]!
-                        });
-                    }
-                });
-            }
+                        ID = (int)item["id"]!,
+                        Name = (string)item["name"]!,
+                        Service = (string)item["service"]!,
+                        ConfigType = (string)item["configType"]!,
+                        Status = (bool)item["status"]!
+                    });
+                }
+            });
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"加载隧道列表失败: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"隧道列表加载失败: {ex.Message}");
         }
     }
 
     private async void RefreshBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         await LoadTunnelList();
+        DialogService.ToastManager.CreateToast()
+                                .OfType(Avalonia.Controls.Notifications.NotificationType.Success)
+                                .WithTitle("刷新成功！")
+                                .WithContent($"隧道列表已成功刷新！")
+                                .Dismiss().After(TimeSpan.FromSeconds(5))
+                                .Queue();
     }
 }

@@ -4,7 +4,7 @@ namespace MSLX.Desktop.Models;
 
 public class TunnelModel
 {
-    public ObservableCollection<TunnelInfo> TunnelList { get; set; } = new();
+    public static ObservableCollection<TunnelInfo> TunnelList { get; } = new();
 
     public class TunnelInfo
     {

@@ -15,7 +15,7 @@
         </StackPanel>
 
         <ScrollViewer Grid.Row="1">
-            <ItemsControl ItemsSource="{Binding TunnelList}">
+            <ItemsControl ItemsSource="{Binding Tunnels}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <suki:GlassCard Margin="10">
