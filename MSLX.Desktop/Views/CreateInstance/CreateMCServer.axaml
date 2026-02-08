@@ -2,7 +2,316 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             xmlns:sukitheme="clr-namespace:SukiUI.Theme;assembly=SukiUI"
+             xmlns:micon="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="MSLX.Desktop.Views.CreateInstance.CreateMCServer">
-  Welcome to Avalonia!
+    <suki:GlassCard Margin="10">
+        <Grid RowDefinitions="auto,*,auto">
+			<TextBlock Text="创建服务器实例" Classes="h3"/>
+            <!-- 步骤内容 -->
+    <ScrollViewer Grid.Row="1">
+      <StackPanel Spacing="10">
+        
+        <!-- 步骤1: 基础配置 -->
+        <suki:GlassCard x:Name="Step1Panel">
+          <StackPanel Spacing="10">
+            <TextBlock Text="步骤 1: 基础配置" FontSize="18" FontWeight="SemiBold"/>
+            
+            <!-- 服务器名称 -->
+            <StackPanel Spacing="5">
+              <TextBlock Text="服务器名称 *" />
+              <TextBox x:Name="TxtServerName" 
+                       Watermark="输入服务器名称"
+                       MaxLength="50"/>
+            </StackPanel>
+            
+            <!-- 存储路径 -->
+            <StackPanel Spacing="5">
+              <TextBlock Text="存储路径" />
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBox x:Name="TxtStoragePath" 
+                         Watermark="留空将使用默认路径"
+                         Grid.Column="0"/>
+                <Button x:Name="BtnBrowsePath"
+                        Content="浏览"
+                        Grid.Column="1"
+                        Margin="5,0,0,0"
+                        Click="BtnBrowsePath_Click"/>
+              </Grid>
+            </StackPanel>
+            
+            <!-- Java路径 -->
+            <StackPanel Spacing="5">
+              <TextBlock Text="Java路径" />
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBox x:Name="TxtJavaPath" 
+                         Watermark="留空将使用系统环境变量Java"
+                         Grid.Column="0"/>
+                <Button x:Name="BtnBrowseJava"
+                        Content="浏览"
+                        Grid.Column="1"
+                        Margin="5,0,0,0"
+                        Click="BtnBrowseJava_Click"/>
+              </Grid>
+            </StackPanel>
+          </StackPanel>
+        </suki:GlassCard>
+        
+        <!-- 步骤2: 核心文件 -->
+        <suki:GlassCard x:Name="Step2Panel" IsVisible="False">
+          <StackPanel Spacing="10">
+            <TextBlock Text="步骤 2: 核心文件配置" FontSize="18" FontWeight="SemiBold"/>
+            
+            <!-- 核心来源选择 -->
+            <StackPanel Spacing="8">
+              <TextBlock Text="核心来源" FontWeight="SemiBold"/>
+              <RadioButton x:Name="RbLocalUpload" 
+                           Content="从本地上传核心文件"
+                           IsChecked="True"
+                           GroupName="CoreSource"
+                           IsCheckedChanged="CoreSourceChanged"/>
+              <RadioButton x:Name="RbDownloadCore" 
+                           Content="从URL下载核心文件"
+                           GroupName="CoreSource"
+                           IsCheckedChanged="CoreSourceChanged"/>
+              <RadioButton x:Name="RbCustomCore" 
+                           Content="手动设置文件名"
+                           GroupName="CoreSource"
+                           IsCheckedChanged="CoreSourceChanged"/>
+            </StackPanel>
+            
+            <!-- 本地上传配置 -->
+            <StackPanel x:Name="PanelLocalUpload" Spacing="8">
+              <Border CornerRadius="8" 
+                      Padding="15"
+                      BorderBrush="{DynamicResource SukiPrimaryColor}"
+                      BorderThickness="2">
+                <StackPanel Spacing="10">
+                  <Grid ColumnDefinitions="*,Auto">
+                    <StackPanel Grid.Column="0" Spacing="5">
+                      <TextBlock Text="选择核心文件" FontWeight="SemiBold"/>
+                      <TextBlock x:Name="TxtSelectedFile" 
+                                 Text="未选择文件"
+                                 Opacity="0.7"
+                                 TextWrapping="Wrap"/>
+                      <TextBlock x:Name="TxtFileSize" 
+                                 Text=""
+                                 FontSize="12"
+                                 Opacity="0.6"/>
+                    </StackPanel>
+                    <Button x:Name="BtnSelectFile"
+                            Content="选择文件"
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            Click="BtnSelectFile_Click"/>
+                  </Grid>
+                  
+                  <!-- 上传进度 -->
+                  <StackPanel x:Name="PanelUploadProgress" 
+                              Spacing="5" 
+                              IsVisible="False">
+                    <Grid ColumnDefinitions="*,Auto">
+                      <TextBlock x:Name="TxtUploadStatus" 
+                                 Text="准备上传..."
+                                 Grid.Column="0"/>
+                      <TextBlock x:Name="TxtUploadPercent" 
+                                 Text="0%"
+                                 Grid.Column="1"/>
+                    </Grid>
+                    <ProgressBar x:Name="ProgressUpload" 
+                                 Height="6"
+                                 Minimum="0"
+                                 Maximum="100"
+                                 Value="0"/>
+                  </StackPanel>
+                  
+                  <!-- 上传按钮 -->
+                  <Button x:Name="BtnUpload"
+                          Content="开始上传"
+                          HorizontalAlignment="Right"
+                          IsEnabled="False"
+                          Click="BtnUpload_Click"/>
+                  
+                  <!-- 上传成功后的信息 -->
+                  <StackPanel x:Name="PanelUploadSuccess" 
+                              Spacing="5" 
+                              IsVisible="False">
+                    <TextBlock Text="✓ 上传完成" 
+                               Foreground="Green"
+                               FontWeight="SemiBold"/>
+                    <TextBlock x:Name="TxtUploadId" 
+                               Text="Upload ID: "
+                               FontSize="12"
+                               Opacity="0.7"/>
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+            
+            <!-- 下载核心配置 -->
+            <StackPanel x:Name="PanelDownloadCore" 
+                        Spacing="5" 
+                        IsVisible="False">
+              <TextBlock Text="核心下载URL" />
+              <TextBox x:Name="TxtCoreUrl" 
+                       Watermark="https://example.com/server.jar"/>
+              
+              <TextBlock Text="SHA256校验值 (可选)" Margin="0,5,0,0"/>
+              <TextBox x:Name="TxtCoreSha256" 
+                       Watermark="核心文件的SHA256哈希值"/>
+            </StackPanel>
+            
+              <!-- 核心名称 -->
+            <StackPanel Spacing="5">
+              <TextBlock Text="核心文件名称 *" />
+              <TextBox x:Name="TxtCoreName" 
+                       IsEnabled="False"
+                       Watermark="例如: server.jar"
+                       MaxLength="100"/>
+                <TextBlock Text="💡 开服器将会读取服务器目录中以此为名的核心文件以开服"
+                       FontSize="12"
+                       Opacity="0.7"/>
+            </StackPanel>
+            
+
+          </StackPanel>
+        </suki:GlassCard>
+        
+        <!-- 步骤3: 内存配置 -->
+        <suki:GlassCard x:Name="Step3Panel" IsVisible="False">
+          <StackPanel Spacing="10">
+            <TextBlock Text="步骤 3: 内存配置" FontSize="18" FontWeight="SemiBold"/>
+            
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="15">
+              <!-- 最小内存 -->
+              <StackPanel Grid.Column="0" Spacing="5">
+                <TextBlock Text="最小内存 (MB) *" />
+                <NumericUpDown x:Name="NumMinMemory"
+                               Minimum="128"
+                               Maximum="65536"
+                               Value="1024"
+                               Increment="256"
+                               FormatString="0 MB"/>
+              </StackPanel>
+              
+              <!-- 最大内存 -->
+              <StackPanel Grid.Column="1" Spacing="5">
+                <TextBlock Text="最大内存 (MB) *" />
+                <NumericUpDown x:Name="NumMaxMemory"
+                               Minimum="128"
+                               Maximum="65536"
+                               Value="4096"
+                               Increment="256"
+                               FormatString="0 MB"/>
+              </StackPanel>
+            </Grid>
+            
+            <TextBlock Text="💡 建议最大内存至少是最小内存的2倍"
+                       FontSize="12"
+                       Opacity="0.7"/>
+            
+            <!-- 额外参数 -->
+            <StackPanel Spacing="5" Margin="0,10,0,0">
+              <TextBlock Text="额外JVM参数 (可选)" />
+              <TextBox x:Name="TxtExtraArgs" 
+                       Watermark="例如: -XX:+UseG1GC -XX:+ParallelRefProcEnabled"
+                       AcceptsReturn="True"
+                       TextWrapping="Wrap"
+                       Height="60"/>
+            </StackPanel>
+          </StackPanel>
+        </suki:GlassCard>
+        
+        <!-- 步骤4: 确认创建 -->
+        <suki:GlassCard x:Name="Step4Panel" IsVisible="False">
+          <StackPanel Spacing="10">
+            <TextBlock Text="步骤 4: 确认配置" FontSize="18" FontWeight="SemiBold"/>
+            
+            <TextBlock Text="请确认以下配置信息:" Opacity="0.8"/>
+            
+            <Border CornerRadius="8" 
+                    Padding="15">
+              <StackPanel Spacing="8">
+                <Grid ColumnDefinitions="120,*">
+                  <TextBlock Text="服务器名称:" Grid.Column="0" Opacity="0.7"/>
+                  <TextBlock x:Name="TxtConfirmServerName" Grid.Column="1" FontWeight="SemiBold"/>
+                </Grid>
+                
+                <Grid ColumnDefinitions="120,*">
+                  <TextBlock Text="核心名称:" Grid.Column="0" Opacity="0.7"/>
+                  <TextBlock x:Name="TxtConfirmCoreName" Grid.Column="1" FontWeight="SemiBold"/>
+                </Grid>
+                
+                <Grid ColumnDefinitions="120,*">
+                  <TextBlock Text="核心来源:" Grid.Column="0" Opacity="0.7"/>
+                  <TextBlock x:Name="TxtConfirmCoreSource" Grid.Column="1"/>
+                </Grid>
+                
+                <Grid ColumnDefinitions="120,*">
+                  <TextBlock Text="内存配置:" Grid.Column="0" Opacity="0.7"/>
+                  <TextBlock x:Name="TxtConfirmMemory" Grid.Column="1"/>
+                </Grid>
+                
+                <Grid ColumnDefinitions="120,*">
+                  <TextBlock Text="存储路径:" Grid.Column="0" Opacity="0.7"/>
+                  <TextBlock x:Name="TxtConfirmPath" Grid.Column="1" TextWrapping="Wrap"/>
+                </Grid>
+                
+                <Grid ColumnDefinitions="120,*">
+                  <TextBlock Text="Java路径:" Grid.Column="0" Opacity="0.7"/>
+                  <TextBlock x:Name="TxtConfirmJava" Grid.Column="1" TextWrapping="Wrap"/>
+                </Grid>
+              </StackPanel>
+            </Border>
+            
+            <!-- 创建状态 -->
+            <Border x:Name="StatusBorder"
+                    CornerRadius="8"
+                    Padding="12"
+                    IsVisible="False">
+              <StackPanel Spacing="8">
+                <TextBlock x:Name="TxtStatus" 
+                           Text="正在创建服务器..."
+                           TextWrapping="Wrap"/>
+                <ProgressBar x:Name="ProgressBar" 
+                             IsIndeterminate="True"
+                             Height="4"/>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </suki:GlassCard>
+        
+      </StackPanel>
+    </ScrollViewer>
+            <!-- 底部按钮 -->
+    <Border Grid.Row="2" 
+            BorderBrush="{DynamicResource SukiBorderBrush}"
+            BorderThickness="0,1,0,0"
+            Padding="10">
+      <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+        <Button x:Name="BtnCancel"
+                Content="取消"
+                Grid.Column="0"
+                MinWidth="100"
+                Click="BtnCancel_Click"/>
+        
+        <Button x:Name="BtnPrevious"
+                Content="上一步"
+                Grid.Column="2"
+                MinWidth="100"
+                IsVisible="False"
+                Click="BtnPrevious_Click"/>
+        
+        <Button x:Name="BtnNext"
+                Content="下一步"
+                Grid.Column="3"
+                MinWidth="100"
+                Classes="Flat"
+                Click="BtnNext_Click"/>
+      </Grid>
+    </Border>
+        </Grid>
+    </suki:GlassCard>
 </UserControl>

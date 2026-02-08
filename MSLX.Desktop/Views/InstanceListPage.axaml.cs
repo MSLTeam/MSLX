@@ -149,7 +149,7 @@ public partial class InstanceListPage : UserControl
                 Kind = MaterialIconKind.AddCircle,
             },
             IsContentMovable = false,
-            PageContent = new CreateMCServer()
+            PageContent = PageStore.CreateMCServerPage
         }, true, 2);
     }
 }
