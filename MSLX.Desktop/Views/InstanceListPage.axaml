@@ -18,7 +18,7 @@
 			</Grid.RowDefinitions>
 			<TextBlock Classes="h3" Text="实例列表"/>
 			<ScrollViewer Grid.Row="1">
-				<ItemsControl ItemsSource="{Binding ServerList}">
+				<ItemsControl ItemsSource="{x:Static models:MCServerModel.ServerList}">
 					<ItemsControl.ItemTemplate>
 						<DataTemplate DataType="models:MCServerModel+ServerInfo" >
 							<suki:GlassCard Margin="5">

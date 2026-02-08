@@ -7,7 +7,7 @@ namespace MSLX.Desktop.Models
 {
     public class MCServerModel
     {
-        public ObservableCollection<ServerInfo> ServerList { get; set; } = new ObservableCollection<ServerInfo>();
+        public static ObservableCollection<ServerInfo> ServerList { get; set; } = new ObservableCollection<ServerInfo>();
         public class ServerInfo
         {
             public int ID { get; set; }
