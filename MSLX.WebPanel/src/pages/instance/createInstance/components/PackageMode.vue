@@ -762,9 +762,16 @@ const viewDetails = () => {
                   <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 6px">
                     <t-space align="center" :size="12">
                       <t-tag theme="primary" variant="dark" style="width: 130px; justify-content: center"
-                        >MC 1.21.1 - 1.26+</t-tag
+                        >MC 26.1 - 最新版本</t-tag
                       >
-                      <t-tag theme="success" variant="light" shape="round">Java 21 / 25</t-tag>
+                      <t-tag theme="success" variant="light" shape="round">Java 25</t-tag>
+                    </t-space>
+
+                    <t-space align="center" :size="12">
+                      <t-tag theme="primary" variant="dark" style="width: 130px; justify-content: center"
+                        >MC 1.20.5 - 1.21.11</t-tag
+                      >
+                      <t-tag theme="success" variant="light" shape="round">Java 21</t-tag>
                     </t-space>
 
                     <t-space align="center" :size="12">
@@ -783,9 +790,9 @@ const viewDetails = () => {
 
                     <t-space align="center" :size="12">
                       <t-tag theme="default" variant="outline" style="width: 130px; justify-content: center"
-                        >MC 1.12.2 - 1.16.5</t-tag
+                        >MC 1.13 - 更低版本</t-tag
                       >
-                      <t-tag theme="default" variant="light" shape="round">Java 8 / 11</t-tag>
+                      <t-tag theme="default" variant="light" shape="round">Java 8</t-tag>
                     </t-space>
 
                     <div style="margin-top: 4px; color: var(--td-text-color-placeholder); font-size: 12px">
