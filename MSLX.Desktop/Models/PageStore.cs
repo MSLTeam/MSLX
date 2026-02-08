@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Material.Icons;
 using Material.Icons.Avalonia;
 using MSLX.Desktop.Views;
+using MSLX.Desktop.Views.CreateInstance;
 using MSLX.Desktop.Views.LinkDaemon;
 using SukiUI.Controls;
 using System.Collections.ObjectModel;
@@ -43,7 +44,7 @@ namespace MSLX.Desktop.Models
                 {
                     Kind = MaterialIconKind.NavigationVariant,
                 },
-                PageContent = new TextBlock{Text="Hello World!"},
+                PageContent = new TunnelListPage(),
             },
             new() {
                 Header = "点对点联机",
@@ -70,5 +71,7 @@ namespace MSLX.Desktop.Models
                 PageContent =new TextBlock{Text="Hello World!"},
             }
         };
+
+        public static CreateMCServer CreateMCServerPage = new();
     }
 }

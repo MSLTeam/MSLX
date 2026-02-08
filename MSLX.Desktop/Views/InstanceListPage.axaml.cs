@@ -17,16 +17,9 @@ namespace MSLX.Desktop.Views;
 
 public partial class InstanceListPage : UserControl
 {
-    // 后端数据状态Status定义：0=未启动，1=启动中，2=运行中，3=停止中，4=重启中
-    private readonly MCServerModel _model;
-    public ObservableCollection<MCServerModel.ServerInfo> ServerList => _model.ServerList;
-
     public InstanceListPage()
     {
         InitializeComponent();
-
-        _model = new MCServerModel();
-        DataContext = this;
 
         this.Initialized += InstanceListPage_Initialized;
     }
@@ -42,14 +35,14 @@ public partial class InstanceListPage : UserControl
         {
             JObject res = await DaemonAPIService.GetJsonContentAsync("/api/instance/list");
             JArray servers = (JArray)res["data"]!;
-            _model.ServerList.Clear();
+            MCServerModel.ServerList.Clear();
 
             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
             {
-                _model.ServerList.Clear();
+                MCServerModel.ServerList.Clear();
                 foreach (JObject server in servers.Cast<JObject>())
                 {
-                    _model.ServerList.Add(new MCServerModel.ServerInfo
+                    MCServerModel.ServerList.Add(new MCServerModel.ServerInfo
                     {
                         ID = (int)server["id"]!,
                         Name = (string)server["name"]!,
@@ -72,7 +65,7 @@ public partial class InstanceListPage : UserControl
     // 运行服务器命令
     public void RunServer(int serverId)
     {
-        var server = _model.ServerList.FirstOrDefault(s => s.ID == serverId);
+        var server = MCServerModel.ServerList.FirstOrDefault(s => s.ID == serverId);
         if (server != null)
         {
             server.Status = 2;
@@ -84,10 +77,10 @@ public partial class InstanceListPage : UserControl
     // 删除服务器命令
     public void DeleteServer(int serverId)
     {
-        var server = _model.ServerList.FirstOrDefault(s => s.ID == serverId);
+        var server = MCServerModel.ServerList.FirstOrDefault(s => s.ID == serverId);
         if (server != null)
         {
-            _model.ServerList.Remove(server);
+            MCServerModel.ServerList.Remove(server);
             System.Diagnostics.Debug.WriteLine($"删除服务器 {server.Name}");
         }
     }
@@ -95,7 +88,7 @@ public partial class InstanceListPage : UserControl
     // 打开文件夹命令
     public void OpenFolder(int serverId)
     {
-        var server = _model.ServerList.FirstOrDefault(s => s.ID == serverId);
+        var server = MCServerModel.ServerList.FirstOrDefault(s => s.ID == serverId);
         if (server != null)
         {
             // 这里添加打开文件夹的逻辑
@@ -156,7 +149,7 @@ public partial class InstanceListPage : UserControl
                 Kind = MaterialIconKind.AddCircle,
             },
             IsContentMovable = false,
-            PageContent = new CreateMCServer()
+            PageContent = PageStore.CreateMCServerPage
         }, true, 2);
     }
 }

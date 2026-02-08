@@ -56,6 +56,7 @@ public partial class WelcomePage : UserControl
                     var (Success, Msg) = await DaemonManager.StartDaemon(ConfigService.GetAppDataPath());
                     if (Success)
                     {
+                        await Task.Delay(500);
                         // 启动成功，尝试验证
                         var (isSuccess, _) = await DaemonManager.VerifyDaemonApiKey();
                         if (isSuccess)
