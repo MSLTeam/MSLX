@@ -9,7 +9,7 @@ const instanceListStore = useInstanceListStore();
 
 onMounted(() => {
   instanceListStore.refreshInstanceList();
-})
+});
 </script>
 
 <template>
@@ -20,7 +20,9 @@ onMounted(() => {
           <t-icon name="server" />
           <span>在线实例：</span>
         </span>
-        <span class="info-value">{{ instanceListStore.onlineInstanceCount }} / {{ instanceListStore.totalInstanceCount }}</span>
+        <span class="info-value"
+          >{{ instanceListStore.onlineInstanceCount }} / {{ instanceListStore.totalInstanceCount }}</span
+        >
       </div>
 
       <div class="info-item">
@@ -37,9 +39,7 @@ onMounted(() => {
           <span>面板版本：</span>
         </span>
         <t-tooltip :content="pkg.version" :max-width="'400px'">
-          <span class="info-value truncate-value">
-            v{{ pkg.version }}
-          </span>
+          <span class="info-value truncate-value"> v{{ pkg.version }} </span>
         </t-tooltip>
       </div>
 
@@ -49,9 +49,7 @@ onMounted(() => {
           <span>节点版本：</span>
         </span>
         <t-tooltip :content="`v${userStore.userInfo.version}`" :max-width="'400px'">
-          <span class="info-value truncate-value">
-            v{{ userStore.userInfo.version }}
-          </span>
+          <span class="info-value truncate-value"> v{{ userStore.userInfo.version }} </span>
         </t-tooltip>
       </div>
 
@@ -68,7 +66,9 @@ onMounted(() => {
           <t-icon name="system-code" />
           <span>系统类型：</span>
         </span>
-        <span class="info-value">{{ userStore.userInfo.systemInfo.osType }} ({{ userStore.userInfo.systemInfo.osArchitecture }})</span>
+        <span class="info-value"
+          >{{ userStore.userInfo.systemInfo.osType }} ({{ userStore.userInfo.systemInfo.osArchitecture }})</span
+        >
       </div>
 
       <div class="info-item">
@@ -89,7 +89,11 @@ onMounted(() => {
           <span>版本匹配：</span>
         </span>
         <span class="info-value">
-          <t-tag :theme="(userStore.userInfo.targetFrontendVersion.panel === pkg.version)? 'success' : 'danger'" variant="light">{{ (userStore.userInfo.targetFrontendVersion.panel === pkg.version)? '正确匹配' : '请更新' }}</t-tag>
+          <t-tag
+            :theme="pkg.version.startsWith(userStore.userInfo.targetFrontendVersion.panel) ? 'success' : 'danger'"
+            variant="light"
+            >{{ pkg.version.startsWith(userStore.userInfo.targetFrontendVersion.panel) ? '正确匹配' : '请更新' }}</t-tag
+          >
         </span>
       </div>
     </div>
@@ -102,7 +106,6 @@ onMounted(() => {
   transition: all 0.3s;
   border-radius: 6px;
   background-color: var(--td-bg-color-container);
-
 
   // 调整内边距
   :deep(.t-card__body) {
