@@ -424,10 +424,16 @@ namespace MSLX.Desktop.Utils
         {
             if (_hubConnection != null)
             {
-                await _hubConnection.StopAsync();
-                await _hubConnection.DisposeAsync();
-                _hubConnection = null;
-                _isConnected = false;
+                try
+                {
+                    await _hubConnection.StopAsync();
+                    await _hubConnection.DisposeAsync();
+                }
+                finally
+                {
+                    _hubConnection = null;
+                    _isConnected = false;
+                }
             }
         }
 
