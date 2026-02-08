@@ -757,18 +757,42 @@ const viewDetails = () => {
             </div>
 
             <div v-show="currentStep === 3" class="step-content">
-              <t-alert theme="info" title="如何选择 Java 版本?" class="java-alert">
+              <t-alert theme="info" title="Java 版本选择指南">
                 <template #message>
-                  <p>不同的 Minecraft 版本需要不同的 Java 版本。</p>
-                  <ul>
-                    <li>建议直接使用 <b>推荐版本</b> 超出版本可能存在兼容性问题。</li>
-                    <li>MC 26.1 - 最新版: 需要 Java 25 或更高版本。</li>
-                    <li>MC 1.20.5 - 1.21.10: 需要 Java 21 或更高版本。</li>
-                    <li>MC 1.18 - 1.20.4: 需要 Java 17 或更高版本。</li>
-                    <li>MC 1.17/1.17.1: 需要 Java 16。</li>
-                    <li>MC 1.13 - 1.16.5: 需要 Java 8 / 11。</li>
-                    <li>MC 1.12.2 及以下: 需要 Java 8。</li>
-                  </ul>
+                  <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 6px">
+                    <t-space align="center" :size="12">
+                      <t-tag theme="primary" variant="dark" style="width: 130px; justify-content: center"
+                        >MC 1.21.1 - 1.26+</t-tag
+                      >
+                      <t-tag theme="success" variant="light" shape="round">Java 21 / 25</t-tag>
+                    </t-space>
+
+                    <t-space align="center" :size="12">
+                      <t-tag theme="primary" variant="dark" style="width: 130px; justify-content: center"
+                        >MC 1.18 - 1.20.4</t-tag
+                      >
+                      <t-tag theme="success" variant="light" shape="round">Java 17</t-tag>
+                    </t-space>
+
+                    <t-space align="center" :size="12">
+                      <t-tag theme="primary" variant="dark" style="width: 130px; justify-content: center"
+                        >MC 1.17 / 1.17.1</t-tag
+                      >
+                      <t-tag theme="success" variant="light" shape="round">Java 16</t-tag>
+                    </t-space>
+
+                    <t-space align="center" :size="12">
+                      <t-tag theme="default" variant="outline" style="width: 130px; justify-content: center"
+                        >MC 1.12.2 - 1.16.5</t-tag
+                      >
+                      <t-tag theme="default" variant="light" shape="round">Java 8 / 11</t-tag>
+                    </t-space>
+
+                    <div style="margin-top: 4px; color: var(--td-text-color-placeholder); font-size: 12px">
+                      <t-icon name="info-circle" size="small" style="margin-right: 4px" />
+                      建议直接使用推荐版本，避免兼容性问题。
+                    </div>
+                  </div>
                 </template>
               </t-alert>
 

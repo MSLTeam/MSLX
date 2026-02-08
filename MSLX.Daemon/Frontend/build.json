@@ -1,6 +1,6 @@
 {
-  "version": "1.1.9",
-  "buildTime": "2026-02-06 17:06:29",
+  "version": "1.1.10",
+  "buildTime": "2026-02-07 13:12:02",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,64 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "f9c7aa88403bdf58aac4bbaa6d92aff4b54e45af",
-  "commitMsg": "feat(webpanel & daemon): 登录页面新增自定义背景图支持",
+  "commitId": "474ab87f160358d7ff476ad5916c8758d8a119c1",
+  "commitMsg": "perf(webpanel): 优化Java版本选择指南的样式",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "474ab87f160358d7ff476ad5916c8758d8a119c1",
+      "commitTime": "2026-02-07 13:09:25 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(webpanel): 优化Java版本选择指南的样式"
+    },
+    {
+      "commitId": "0c3e64853ea80932260a17d6358897e121901bd0",
+      "commitTime": "2026-02-07 12:56:39 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 在所有的内网地址下均隐藏MSL OAuth的配置显示"
+    },
+    {
+      "commitId": "353e9624d1264c5025b3022c42a524c078a9e92a",
+      "commitTime": "2026-02-06 23:59:06 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复实例终端无法直接输入命令的问题 & 优化终端上下文一些组件的字体表现"
+    },
+    {
+      "commitId": "18972ededdb4170b085b8aea68607d336e670248",
+      "commitTime": "2026-02-06 19:03:17 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
+    },
+    {
+      "commitId": "3a32011dda7b508f4d0a2253004c3007d4a7429e",
+      "commitTime": "2026-02-06 19:02:46 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "update submodule"
+    },
+    {
+      "commitId": "ccfb7f41d074f23055989feb7d22a3abedc24d5d",
+      "commitTime": "2026-02-06 19:02:37 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "feat(desktop): 优化按钮UI样式"
+    },
+    {
+      "commitId": "1bf519c8be272dc77145d86b7885263f6b8db0d0",
+      "commitTime": "2026-02-06 18:25:46 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): 适配新版本守护进程端状态显示"
+    },
+    {
+      "commitId": "0a8ee5cfb2bf6cd9d57451eaba88bc87914f587c",
+      "commitTime": "2026-02-06 17:09:16 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #46 from MSLTeam/dev"
+    },
+    {
+      "commitId": "6640b809aaa9fe34c788084f65b715fd8158dbf8",
+      "commitTime": "2026-02-06 17:06:43 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.1.9 - release & 嵌入前端资源"
+    },
     {
       "commitId": "f9c7aa88403bdf58aac4bbaa6d92aff4b54e45af",
       "commitTime": "2026-02-06 17:03:52 +0800",
@@ -317,60 +371,6 @@
       "commitTime": "2026-02-03 17:57:48 +0800",
       "commitAuthor": "Waheal",
       "commitMsg": "update submodule"
-    },
-    {
-      "commitId": "b0ba981860234ed790b08fb64a4210ed007fc5ba",
-      "commitTime": "2026-02-03 11:07:50 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "update submodule"
-    },
-    {
-      "commitId": "159020570170269f46ef2921ce76fcb1da01a064",
-      "commitTime": "2026-02-03 11:07:18 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "feat(dsktop): sidemenu样式修改，开始制作创建实例功能"
-    },
-    {
-      "commitId": "89d792531d2fbed269ce44aab2af3027321bbee7",
-      "commitTime": "2026-02-02 21:08:14 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "fix(desktop): 修复关于连接Daemon和更新Daemon部分的一些bug，完善功能"
-    },
-    {
-      "commitId": "1d6e7c785685c74dcdcec172edd9bbc22b6031ea",
-      "commitTime": "2026-02-02 17:25:52 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(desktop): 修复守护进程端连接地址错误导致的崩溃"
-    },
-    {
-      "commitId": "f62ac968ca5ec3f0b08f09b8a81675bec47f7b24",
-      "commitTime": "2026-02-02 17:12:43 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(desktop): 智能修正连接地址的结尾部分"
-    },
-    {
-      "commitId": "e963d05b48cdaa958e8f0fbd288ea21673fedaa6",
-      "commitTime": "2026-02-02 17:05:18 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(desktop): 完成服务端实例列表获取功能"
-    },
-    {
-      "commitId": "5fea0b093cc42075f880f01066920c43157e8bf8",
-      "commitTime": "2026-02-02 16:23:40 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #37 from MSLTeam/dev"
-    },
-    {
-      "commitId": "1ce377b7a68749ce325d1f13d191a535f417402e",
-      "commitTime": "2026-02-02 16:22:42 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(daemon): 嵌入 v1.1.6 版本前端资源"
-    },
-    {
-      "commitId": "15f1d2b159a0ac50341a0208b9ccb9ed7701bcd2",
-      "commitTime": "2026-02-02 16:21:46 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到v1.1.6"
     }
   ]
 }
