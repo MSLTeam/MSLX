@@ -291,10 +291,7 @@ onUnmounted(() => {
             </t-link>
           </template>
         </t-alert>
-        <div class="code-block">
-          docker pull docker.mslmc.cn/xiaoyululu/mslx-daemon:latest && docker-compose up -d # 指令仅适用于Docker
-          Compose安装方式。
-        </div>
+        <div class="code-block">sudo docker compose pull && docker compose up -d # 指令仅适用于Docker Compose安装方式。</div>
       </div>
 
       <div v-else-if="hasRunningServers" class="status-container server-running-warn">
