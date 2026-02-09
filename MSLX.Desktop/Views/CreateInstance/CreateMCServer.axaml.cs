@@ -218,17 +218,17 @@ public partial class CreateMCServer : UserControl
         {
             Title = "选择服务端核心文件",
             AllowMultiple = false,
-            FileTypeFilter = new[]
-            {
+            FileTypeFilter =
+            [
                 new FilePickerFileType("服务端文件")
                 {
-                    Patterns = new[] { "*.jar" }
+                    Patterns = ["*.jar"]
                 },
                 new FilePickerFileType("所有文件")
                 {
-                    Patterns = new[] { "*" }
+                    Patterns = ["*"]
                 }
-            }
+            ]
         });
 
         if (files.Count > 0)
@@ -393,17 +393,17 @@ public partial class CreateMCServer : UserControl
         {
             Title = "选择Java可执行文件",
             AllowMultiple = false,
-            FileTypeFilter = new[]
-            {
+            FileTypeFilter =
+            [
                 new FilePickerFileType("Java可执行文件")
                 {
-                    Patterns = new[] { "java", "java.exe" }
+                    Patterns = ["java", "java.exe"]
                 },
                 new FilePickerFileType("所有文件")
                 {
-                    Patterns = new[] { "*" }
+                    Patterns = ["*"]
                 }
-            }
+            ]
         });
 
         if (files.Count > 0)
