@@ -29,7 +29,7 @@ public partial class InstanceListPage : UserControl
         _ = LoadServersList();
     }
 
-    public async Task LoadServersList()
+    public static async Task LoadServersList()
     {
         try
         {

@@ -649,8 +649,12 @@ public partial class CreateMCServer : UserControl
         BtnNext.IsEnabled = true;
         BtnPrevious.IsEnabled = true;
         BottomActionBorder.IsVisible = true;
+
+        ResetForm();
         SideMenuHelper.MainSideMenuHelper?.NavigateTo<InstanceListPage>();
         SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
+
+        _ = InstanceListPage.LoadServersList();
     }
 
     private void BtnGoConsole_Click(object? sender, RoutedEventArgs e)
