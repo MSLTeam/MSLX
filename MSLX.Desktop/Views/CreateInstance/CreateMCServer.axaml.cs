@@ -16,11 +16,6 @@ using System.Threading.Tasks;
 
 namespace MSLX.Desktop.Views.CreateInstance;
 
-public class CreationLog
-{
-    public string Time { get; set; } = string.Empty;
-    public string Message { get; set; } = string.Empty;
-}
 public partial class CreateMCServer : UserControl
 {
     private int _currentStep = 0;
@@ -28,10 +23,14 @@ public partial class CreateMCServer : UserControl
     private string? _uploadId;
     private long _fileSize;
     private const int ChunkSize = 10240 * 1024; // 10MB per chunk
-    // 创建进度的日志Hub连接
-    private HubConnection? _hubConnection;
+    private HubConnection? _hubConnection; // 创建进度的日志Hub连接
     private string? _createdServerId;
     private ObservableCollection<CreationLog> _logCollection = new();
+    public class CreationLog // 创建实例进度日志格式
+    {
+        public string Time { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+    }
 
     public CreateMCServer()
     {
@@ -74,14 +73,14 @@ public partial class CreateMCServer : UserControl
                 BtnPrevious.IsVisible = true;
                 BtnNext.Content = "下一步";
                 break;
-            case 3: 
+            case 3:
                 Step4Panel.IsVisible = true;
                 BtnPrevious.IsVisible = true;
-                BtnNext.Content = "立即创建"; 
+                BtnNext.Content = "立即创建";
                 UpdateConfirmationInfo();
                 break;
 
-            case 4: 
+            case 4:
                 Step5Panel.IsVisible = true;
                 BottomActionBorder.IsVisible = false; // 锁定操作，隐藏底部按钮
                 break;
@@ -134,7 +133,7 @@ public partial class CreateMCServer : UserControl
                     TxtServerName.Focus();
                     return false;
                 }
-                
+
                 break;
 
             case 1: // 核心文件
@@ -161,7 +160,7 @@ public partial class CreateMCServer : UserControl
                         return false;
                     }
                 }
-                if(string.IsNullOrEmpty(TxtCoreName.Text) || string.IsNullOrWhiteSpace(TxtCoreName.Text))
+                if (string.IsNullOrEmpty(TxtCoreName.Text) || string.IsNullOrWhiteSpace(TxtCoreName.Text))
                 {
                     await ShowErrorMessage("验证失败", "请输入服务端核心文件名");
                     TxtCoreName.Focus();
@@ -290,7 +289,7 @@ public partial class CreateMCServer : UserControl
             ProgressUpload.IsIndeterminate = true;
 
             var initResult = await DaemonAPIService.InitFileUploadAsync();
-            if ((!initResult.Success)||string.IsNullOrEmpty(initResult.UploadId))
+            if ((!initResult.Success) || string.IsNullOrEmpty(initResult.UploadId))
             {
                 await ShowErrorMessage("上传失败", initResult.Message ?? "初始化上传失败");
                 return;
@@ -494,8 +493,8 @@ public partial class CreateMCServer : UserControl
             // 创建实例
             var request = BuildCreateRequest();
             var result = await DaemonAPIService.CreateServerInstanceAsync(request);
-
-            if (!result.Success)
+            _createdServerId = result.Data?["serverId"]?.ToString() ?? result.Data?["id"]?.ToString();
+            if ((!result.Success) || _createdServerId == null)
             {
                 await ShowErrorMessage("创建请求失败", result.Message ?? "未知错误");
                 // 恢复界面
@@ -505,8 +504,6 @@ public partial class CreateMCServer : UserControl
                 return;
             }
 
-            // 提交成功
-            _createdServerId = result.Data?["serverId"]?.ToString() ?? result.Data?["id"]?.ToString();
             _currentStep = 4; // 切换到进度页
             UpdateStepVisibility();
 
@@ -583,12 +580,15 @@ public partial class CreateMCServer : UserControl
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
                 AddLog($"连接失败: {ex.Message}");
-                ShowErrorMessage("连接失败", "无法连接到进度服务器，请稍后在列表查看结果。");
+                _ = ShowErrorMessage("连接失败", "无法连接到进度服务器，请稍后在列表查看结果。");
             });
+
+            // 停止连接
+            await DisposeSignalR();
         }
     }
 
-    // 添加日志辅助方法
+    // 显示日志
     private void AddLog(string message)
     {
         _logCollection.Add(new CreationLog
@@ -598,23 +598,21 @@ public partial class CreateMCServer : UserControl
         });
 
         // 自动滚动到底部
-        Dispatcher.UIThread.Post(() =>
+        if (ListLogs.ItemCount > 0)
         {
-            if (ListLogs.ItemCount > 0)
+            var lastItem = ListLogs.Items[ListLogs.ItemCount - 1];
+            if (lastItem != null) //避免传递 null
             {
-                ListLogs.ScrollIntoView(ListLogs.Items[ListLogs.ItemCount - 1]);
+                ListLogs.ScrollIntoView(lastItem);
             }
-        });
+        }
     }
 
     // 处理成功
     private async void HandleCreationSuccess()
     {
         // 停止连接
-        if (_hubConnection != null)
-        {
-            await _hubConnection.StopAsync();
-        }
+        await DisposeSignalR();
 
         TxtCreatedServerId.Text = $"Server ID: {_createdServerId}";
         PanelCreating.IsVisible = false;
@@ -625,13 +623,23 @@ public partial class CreateMCServer : UserControl
     // 处理错误
     private async void HandleCreationError(string message)
     {
-        if (_hubConnection != null) await _hubConnection.StopAsync();
+        // 停止连接
+        await DisposeSignalR();
 
         await ShowErrorMessage("创建失败", message);
 
         await Task.Delay(2000);
         _currentStep = 0;
         UpdateStepVisibility();
+    }
+
+    private async Task DisposeSignalR()
+    {
+        if (_hubConnection != null)
+        {
+            await _hubConnection.StopAsync();
+            await _hubConnection.DisposeAsync();
+        }
     }
 
     // 返回列表
@@ -650,16 +658,6 @@ public partial class CreateMCServer : UserControl
         // 导航到控制台
         // 控制台在哪里？我不知道喔~
 
-    }
-
-    // 组件卸载时清理资源
-    protected override async void OnUnloaded(RoutedEventArgs e)
-    {
-        base.OnUnloaded(e);
-        if (_hubConnection != null)
-        {
-            await _hubConnection.DisposeAsync();
-        }
     }
     #endregion
 
@@ -686,7 +684,7 @@ public partial class CreateMCServer : UserControl
     /// <summary>
     /// 重置表单
     /// </summary>
-    private void ResetForm()
+    private async void ResetForm()
     {
         // 重置步骤
         _currentStep = 0;
@@ -714,6 +712,8 @@ public partial class CreateMCServer : UserControl
 
         // 重置单选按钮
         RbLocalUpload.IsChecked = true;
+
+        await DisposeSignalR();
     }
 
     #endregion
@@ -743,6 +743,4 @@ public partial class CreateMCServer : UserControl
             .Dismiss().After(TimeSpan.FromSeconds(3))
             .Queue();
     }
-
-
 }

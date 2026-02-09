@@ -18,7 +18,7 @@ public partial class TunnelListPage : UserControl
     public TunnelListPage()
     {
         InitializeComponent();
-        DataContext = this;
+        
         this.Initialized += (s, e) => _ = LoadTunnelList();
     }
 
@@ -47,7 +47,7 @@ public partial class TunnelListPage : UserControl
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"ËíµÀÁĞ±í¼ÓÔØÊ§°Ü: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"éš§é“åˆ—è¡¨åŠ è½½å¤±è´¥: {ex.Message}");
         }
     }
 
@@ -56,8 +56,8 @@ public partial class TunnelListPage : UserControl
         await LoadTunnelList();
         DialogService.ToastManager.CreateToast()
                                 .OfType(Avalonia.Controls.Notifications.NotificationType.Success)
-                                .WithTitle("Ë¢ĞÂ³É¹¦£¡")
-                                .WithContent($"ËíµÀÁĞ±íÒÑ³É¹¦Ë¢ĞÂ£¡")
+                                .WithTitle("åˆ·æ–°æˆåŠŸï¼")
+                                .WithContent($"éš§é“åˆ—è¡¨å·²æˆåŠŸåˆ·æ–°ï¼")
                                 .Dismiss().After(TimeSpan.FromSeconds(5))
                                 .Queue();
     }

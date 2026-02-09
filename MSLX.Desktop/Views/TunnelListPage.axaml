@@ -1,15 +1,15 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
              xmlns:icons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              x:Class="MSLX.Desktop.Views.TunnelListPage"
              xmlns:vm="using:MSLX.Desktop.Views"
              x:DataType="vm:TunnelListPage">
-    
+  <suki:GlassCard Margin="10">
     <Grid RowDefinitions="Auto,*">
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="20">
-            <TextBlock Text="隧道列表" FontSize="20" FontWeight="Bold" VerticalAlignment="Center"/>
-            <Button Classes="Flat" Click="RefreshBtn_Click">
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="15">
+            <TextBlock Text="隧道列表" Classes="h3"/>
+            <Button Classes="Flat" VerticalAlignment="Center" Click="RefreshBtn_Click">
                 <icons:MaterialIcon Kind="Refresh"/>
             </Button>
         </StackPanel>
@@ -47,4 +47,5 @@
             </ItemsControl>
         </ScrollViewer>
     </Grid>
+  </suki:GlassCard>
 </UserControl>

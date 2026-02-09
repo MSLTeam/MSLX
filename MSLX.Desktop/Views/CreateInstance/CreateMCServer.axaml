@@ -1,4 +1,4 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
 			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 			 xmlns:local="using:MSLX.Desktop.Views.CreateInstance"
@@ -310,7 +310,7 @@
 										Margin="0,10,0,0">
 									<ListBox x:Name="ListLogs" Background="Transparent">
 										<ListBox.ItemTemplate>
-											<DataTemplate x:DataType="local:CreationLog">
+											<DataTemplate DataType="local:CreateMCServer+CreationLog">
 												<Grid ColumnDefinitions="Auto,*">
 													<TextBlock Text="{Binding Time}" Opacity="0.6" Margin="0,0,10,0" FontSize="12"/>
 													<TextBlock Grid.Column="1" Text="{Binding Message}" TextWrapping="Wrap" FontSize="12"/>
