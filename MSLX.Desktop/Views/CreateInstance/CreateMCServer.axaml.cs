@@ -3,15 +3,24 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
+using Microsoft.AspNetCore.SignalR.Client;
+using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils;
 using MSLX.Desktop.Utils.API;
 using SukiUI.Toasts;
 using System;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Threading.Tasks;
 
 namespace MSLX.Desktop.Views.CreateInstance;
 
+public class CreationLog
+{
+    public string Time { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+}
 public partial class CreateMCServer : UserControl
 {
     private int _currentStep = 0;
@@ -19,10 +28,15 @@ public partial class CreateMCServer : UserControl
     private string? _uploadId;
     private long _fileSize;
     private const int ChunkSize = 10240 * 1024; // 10MB per chunk
+    // 创建进度的日志Hub连接
+    private HubConnection? _hubConnection;
+    private string? _createdServerId;
+    private ObservableCollection<CreationLog> _logCollection = new();
 
     public CreateMCServer()
     {
         InitializeComponent();
+        ListLogs.ItemsSource = _logCollection;
         UpdateStepVisibility();
     }
 
@@ -38,6 +52,9 @@ public partial class CreateMCServer : UserControl
         Step2Panel.IsVisible = false;
         Step3Panel.IsVisible = false;
         Step4Panel.IsVisible = false;
+        Step5Panel.IsVisible = false;
+
+        BottomActionBorder.IsVisible = true;
 
         // 显示当前步骤
         switch (_currentStep)
@@ -57,11 +74,16 @@ public partial class CreateMCServer : UserControl
                 BtnPrevious.IsVisible = true;
                 BtnNext.Content = "下一步";
                 break;
-            case 3:
+            case 3: 
                 Step4Panel.IsVisible = true;
                 BtnPrevious.IsVisible = true;
-                BtnNext.Content = "创建服务器";
+                BtnNext.Content = "立即创建"; 
                 UpdateConfirmationInfo();
+                break;
+
+            case 4: 
+                Step5Panel.IsVisible = true;
+                BottomActionBorder.IsVisible = false; // 锁定操作，隐藏底部按钮
                 break;
         }
     }
@@ -83,7 +105,6 @@ public partial class CreateMCServer : UserControl
     /// </summary>
     private async void BtnNext_Click(object? sender, RoutedEventArgs e)
     {
-        // 验证当前步骤
         if (!await ValidateCurrentStep())
             return;
 
@@ -94,8 +115,8 @@ public partial class CreateMCServer : UserControl
         }
         else
         {
-            // 最后一步，创建服务器
-            await CreateServerAsync();
+            // 进入提交流程
+            await SubmitAndStartProgressAsync();
         }
     }
 
@@ -417,49 +438,6 @@ public partial class CreateMCServer : UserControl
     #region 创建服务器
 
     /// <summary>
-    /// 创建服务器
-    /// </summary>
-    private async Task CreateServerAsync()
-    {
-        StatusBorder.IsVisible = true;
-        TxtStatus.Text = "正在创建服务器实例...";
-        ProgressBar.IsIndeterminate = true;
-        BtnNext.IsEnabled = false;
-        BtnPrevious.IsEnabled = false;
-
-        try
-        {
-            // 构建请求
-            var request = BuildCreateRequest();
-
-            // 调用API
-            var result = await DaemonAPIService.CreateServerInstanceAsync(request);
-
-            if (result.Success)
-            {
-                await ShowSuccessMessage("创建成功", result.Message ?? "服务器实例创建成功");
-                ResetForm();
-            }
-            else
-            {
-                await ShowErrorMessage("创建失败", result.Message ?? "未知错误");
-            }
-        }
-        catch (Exception ex)
-        {
-            await ShowErrorMessage("创建失败", $"发生异常: {ex.Message}");
-        }
-        finally
-        {
-            StatusBorder.IsVisible = false;
-            BtnNext.IsEnabled = true;
-            BtnPrevious.IsEnabled = true;
-            SideMenuHelper.MainSideMenuHelper?.NavigateTo<InstanceListPage>();
-            SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
-        }
-    }
-
-    /// <summary>
     /// 构建创建请求
     /// </summary>
     private object BuildCreateRequest()
@@ -500,6 +478,190 @@ public partial class CreateMCServer : UserControl
             coreSha256
         };
     }
+
+    #region 提交与进度
+    private async Task SubmitAndStartProgressAsync()
+    {
+        try
+        {
+            // 锁定界面
+            StatusBorder.IsVisible = true;
+            TxtStatus.Text = "正在提交创建请求...";
+            ProgressBar.IsIndeterminate = true;
+            BtnNext.IsEnabled = false;
+            BtnPrevious.IsEnabled = false;
+
+            // 创建实例
+            var request = BuildCreateRequest();
+            var result = await DaemonAPIService.CreateServerInstanceAsync(request);
+
+            if (!result.Success)
+            {
+                await ShowErrorMessage("创建请求失败", result.Message ?? "未知错误");
+                // 恢复界面
+                StatusBorder.IsVisible = false;
+                BtnNext.IsEnabled = true;
+                BtnPrevious.IsEnabled = true;
+                return;
+            }
+
+            // 提交成功
+            _createdServerId = result.Data?["serverId"]?.ToString() ?? result.Data?["id"]?.ToString();
+            _currentStep = 4; // 切换到进度页
+            UpdateStepVisibility();
+
+            // 初始化进度页状态
+            PanelCreating.IsVisible = true;
+            PanelSuccess.IsVisible = false;
+            _logCollection.Clear();
+            ProgressCreation.Value = 0;
+
+            // 启动 SignalR 连接
+            await StartSignalRConnection(_createdServerId);
+
+        }
+        catch (Exception ex)
+        {
+            await ShowErrorMessage("系统错误", ex.Message);
+            // 恢复界面状态
+            StatusBorder.IsVisible = false;
+            BtnNext.IsEnabled = true;
+            BtnPrevious.IsEnabled = true;
+        }
+    }
+
+    // SignalR 连接与监听
+    private async Task StartSignalRConnection(string serverId)
+    {
+        try
+        {
+            AddLog("正在连接到实时进度服务...");
+
+            var baseUrl = ConfigStore.DaemonAddress;
+            var apiKey = ConfigStore.DaemonApiKey;
+
+            var hubUrl = $"{baseUrl}/api/hubs/creationProgressHub?x-api-key={apiKey}";
+
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl(hubUrl)
+                .WithAutomaticReconnect()
+                .Build();
+
+            // 监听状态更新
+            _hubConnection.On<string, string, double?>("StatusUpdate", async (id, message, progress) =>
+            {
+                if (id != serverId) return;
+
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    AddLog(message);
+
+                    if (progress.HasValue && progress.Value >= 0)
+                    {
+                        ProgressCreation.Value = progress.Value;
+                    }
+
+                    if (progress == 100)
+                    {
+                        HandleCreationSuccess();
+                    }
+                    else if (progress == -1)
+                    {
+                        HandleCreationError(message);
+                    }
+                });
+            });
+
+            await _hubConnection.StartAsync();
+            AddLog("连接成功，等待服务器响应...");
+
+            // 订阅任务
+            await _hubConnection.InvokeAsync("TrackServer", serverId);
+        }
+        catch (Exception ex)
+        {
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                AddLog($"连接失败: {ex.Message}");
+                ShowErrorMessage("连接失败", "无法连接到进度服务器，请稍后在列表查看结果。");
+            });
+        }
+    }
+
+    // 添加日志辅助方法
+    private void AddLog(string message)
+    {
+        _logCollection.Add(new CreationLog
+        {
+            Time = DateTime.Now.ToString("HH:mm:ss"),
+            Message = message
+        });
+
+        // 自动滚动到底部
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (ListLogs.ItemCount > 0)
+            {
+                ListLogs.ScrollIntoView(ListLogs.Items[ListLogs.ItemCount - 1]);
+            }
+        });
+    }
+
+    // 处理成功
+    private async void HandleCreationSuccess()
+    {
+        // 停止连接
+        if (_hubConnection != null)
+        {
+            await _hubConnection.StopAsync();
+        }
+
+        TxtCreatedServerId.Text = $"Server ID: {_createdServerId}";
+        PanelCreating.IsVisible = false;
+        PanelSuccess.IsVisible = true;
+
+    }
+
+    // 处理错误
+    private async void HandleCreationError(string message)
+    {
+        if (_hubConnection != null) await _hubConnection.StopAsync();
+
+        await ShowErrorMessage("创建失败", message);
+
+        await Task.Delay(2000);
+        _currentStep = 0;
+        UpdateStepVisibility();
+    }
+
+    // 返回列表
+    private void BtnReturnList_Click(object? sender, RoutedEventArgs e)
+    {
+        StatusBorder.IsVisible = false;
+        BtnNext.IsEnabled = true;
+        BtnPrevious.IsEnabled = true;
+        BottomActionBorder.IsVisible = true;
+        SideMenuHelper.MainSideMenuHelper?.NavigateTo<InstanceListPage>();
+        SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
+    }
+
+    private void BtnGoConsole_Click(object? sender, RoutedEventArgs e)
+    {
+        // 导航到控制台
+        // 控制台在哪里？我不知道喔~
+
+    }
+
+    // 组件卸载时清理资源
+    protected override async void OnUnloaded(RoutedEventArgs e)
+    {
+        base.OnUnloaded(e);
+        if (_hubConnection != null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
+    }
+    #endregion
 
     #endregion
 
@@ -581,4 +743,6 @@ public partial class CreateMCServer : UserControl
             .Dismiss().After(TimeSpan.FromSeconds(3))
             .Queue();
     }
+
+
 }
