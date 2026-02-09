@@ -639,6 +639,7 @@ public partial class CreateMCServer : UserControl
         {
             await _hubConnection.StopAsync();
             await _hubConnection.DisposeAsync();
+            _hubConnection = null;
         }
     }
 
