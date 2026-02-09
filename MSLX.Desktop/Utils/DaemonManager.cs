@@ -11,6 +11,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MSLX.Desktop.Utils
@@ -21,17 +22,27 @@ namespace MSLX.Desktop.Utils
     public static class DaemonManager
     {
         private static Process? DaemonProcess { get; set; }
+
+        /// <summary>
+        /// 验证DaemonApiKey
+        /// </summary>
+        /// <returns>Success：true代表成功，false代表失败或已取消</returns>
         public static async Task<(bool Success, string Message)> VerifyDaemonApiKey()
         {
+            CancellationTokenSource cts = new CancellationTokenSource();
             // 关闭先前对话框并显示验证中对话框
             DialogService.DialogManager.DismissDialog();
             DialogService.DialogManager.CreateDialog()
                 .WithTitle("验证中...")
                 .WithContent("请稍候，正在验证Daemon API Key的有效性。")
+                .WithActionButton("取消", _ =>
+                {
+                    cts.Cancel();
+                }, true, "Standard")
                 .TryShow();
             try
             {
-                var (isSuccess, msg, data) = await DaemonAPIService.VerifyDaemonApiKey();
+                var (isSuccess, msg, data) = await DaemonAPIService.VerifyDaemonApiKey(cts.Token);
                 string clientName = data?["clientName"]?.Value<string>() ?? "Unknown";
                 string version = data?["version"]?.Value<string>() ?? "Unknown";
                 string serverTime = data?["serverTime"]?.Value<string>() ?? "Unknown";
@@ -67,7 +78,7 @@ namespace MSLX.Desktop.Utils
                                 .Dismiss().After(TimeSpan.FromSeconds(5))
                                 .Queue();
 
-                    return (true,"连接成功！");
+                    return (true, "连接成功！");
                 }
                 else
                 {
@@ -76,6 +87,13 @@ namespace MSLX.Desktop.Utils
                     ConfigStore.DaemonApiKey = string.Empty;
                     return (false, "API Key无效");
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                ConfigStore.DaemonApiKey = string.Empty;
+                ConfigStore.DaemonAddress = string.Empty;
+                DialogService.DialogManager.DismissDialog();
+                return (false, "验证已取消");
             }
             catch (Exception ex)
             {
@@ -287,7 +305,7 @@ namespace MSLX.Desktop.Utils
                     dialogBuilder.WithActionButton("取消", dialog =>
                     {
                         dialogBuilder.Completion.TrySetResult(false);
-                    }, true);
+                    }, true, "Standard");
                     var dialog = await dialogBuilder.TryShowAsync();
                     if (!dialog)
                     {
@@ -296,9 +314,9 @@ namespace MSLX.Desktop.Utils
                     ConfigStore.DaemonAddress = addressBox.Text;
                     ConfigStore.DaemonApiKey = apiKeyBox.Text;
                 }
-                
+
                 // 验证
-                var(isSuccess,err) = await DaemonManager.VerifyDaemonApiKey();
+                var (isSuccess, err) = await DaemonManager.VerifyDaemonApiKey();
                 if (isSuccess)
                 {
                     _ = UpdateService.UpdateDaemonApp(false);

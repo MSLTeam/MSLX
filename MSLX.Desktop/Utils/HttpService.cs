@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MSLX.Desktop.Utils
@@ -91,43 +92,43 @@ namespace MSLX.Desktop.Utils
             object? queryParameters = null,
             Action<HttpRequestHeaders>? configureHeaders = null,
             UAManager.UAType uaType = UAManager.UAType.MSLX,
-            string? customUA = null)
+            string? customUA = null,
+            CancellationToken cancellationToken = default)
         {
             using var httpClient = new HttpClient();
             var httpResponse = new HttpResponse();
-
             try
             {
                 // 配置User-Agent
                 ConfigureUserAgent(httpClient, uaType, customUA);
-
                 // 拼接查询参数
                 if (queryParameters != null)
                 {
                     url = AppendQueryParameters(url, queryParameters);
                 }
-
                 // 应用自定义请求头
                 configureHeaders?.Invoke(httpClient.DefaultRequestHeaders);
-
                 Console.WriteLine($"HTTP GET: {url}");
-                // LogHelper.Write.Info($"HTTP GET: {url}");
 
-                var response = await httpClient.GetAsync(url);
+                // 传递 CancellationToken
+                var response = await httpClient.GetAsync(url, cancellationToken);
                 httpResponse.StatusCode = response.StatusCode;
                 httpResponse.Content = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)
                 {
                     Console.WriteLine($"HTTP GET 返回非成功状态码: {response.StatusCode} - {url}");
-                    // LogHelper.Write.Warning($"HTTP GET 返回非成功状态码: {response.StatusCode} - {url}");
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                httpResponse.Exception = new OperationCanceledException("请求已取消");
+                Console.WriteLine($"HTTP GET已取消 - URL: {url}");
             }
             catch (Exception ex)
             {
                 httpResponse.Exception = ex;
                 Console.WriteLine($"HTTP GET异常: {ex.Message} - URL: {url}");
-                // LogHelper.Write.Error($"HTTP GET异常: {ex.Message} - URL: {url}");
             }
             httpClient.Dispose();
             return httpResponse;
