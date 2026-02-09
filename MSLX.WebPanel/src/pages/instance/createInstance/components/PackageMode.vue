@@ -181,6 +181,7 @@ const stepValidationFields = [
   ['core', 'coreUrl', 'coreFileKey'], // Step 2: 核心配置
   ['java'], // Step 3: Java
   ['minM', 'maxM', 'args'], // Step 4: 资源
+  [],
 ];
 
 const prevStep = () => {
@@ -222,7 +223,7 @@ const nextStep = async () => {
 
   const validateResult = await formRef.value.validate();
   if (validateResult === true) {
-    if (currentStep.value < 4) currentStep.value += 1;
+    if (currentStep.value < 5) currentStep.value += 1;
     return;
   }
 
@@ -233,7 +234,7 @@ const nextStep = async () => {
   if (hasError) {
     MessagePlugin.warning('请检查当前步骤的输入');
   } else {
-    if (currentStep.value < 4) currentStep.value += 1;
+    if (currentStep.value < 5) currentStep.value += 1;
   }
 };
 
@@ -510,7 +511,7 @@ const onSubmit = async () => {
 
     createdServerId.value = serverId.toString();
     isCreating.value = true;
-    currentStep.value = 5; // 跳转到创建页
+    currentStep.value = 6; // 跳转到创建页
 
     await startSignalRConnection(createdServerId.value);
   } catch (error: any) {
@@ -551,7 +552,7 @@ const startSignalRConnection = async (serverId: string) => {
       hubConnection.value?.stop();
       isCreating.value = false;
       isSuccess.value = true;
-      currentStep.value = 6;
+      currentStep.value = 7;
       isSubmitting.value = false;
       instanceListStore.refreshInstanceList();
     } else if (prog === -1) {
@@ -612,6 +613,7 @@ const viewDetails = () => {
           <t-step-item title="核心配置" content="确认启动的服务端核心" />
           <t-step-item title="Java 环境" content="配置 Java 运行时" />
           <t-step-item title="资源配置" content="设置内存参数" />
+          <t-step-item title="确认信息" content="核对并提交" />
           <t-step-item title="创建实例" content="提交并等待解压" />
           <t-step-item title="完成" content="查看结果" />
         </t-steps>
@@ -870,17 +872,122 @@ const viewDetails = () => {
                 <t-textarea v-model="formData.args" placeholder="-XX:+UseG1GC" />
               </t-form-item>
             </div>
+            <div v-show="currentStep === 5" class="step-content">
+              <div class="confirm-container">
+                <div class="confirm-header">
+                  <div class="server-icon-placeholder">
+                    <t-icon name="server" size="32px" />
+                  </div>
+                  <div class="server-title-info">
+                    <div class="server-name">{{ formData.name }}</div>
+                    <div class="server-path">
+                      <t-icon name="folder-open" size="small" />
+                      {{ formData.path || '默认数据路径 (/DaemonData/Servers)' }}
+                    </div>
+                  </div>
+                </div>
+
+                <t-divider dashed style="margin: 16px 0" />
+
+                <t-row :gutter="[24, 24]">
+                  <t-col :span="6">
+                    <div class="confirm-item">
+                      <div class="label">服务端整合包</div>
+                      <div class="value-row">
+                        <span class="main-text text-truncate" :title="uploadedFileName">{{ uploadedFileName }}</span>
+                        <t-tag theme="primary" variant="light" size="small">ZIP</t-tag>
+                      </div>
+                      <div class="sub-text">大小: {{ uploadedFileSize || '未知' }}</div>
+                    </div>
+                  </t-col>
+
+                  <t-col :span="6">
+                    <div class="confirm-item">
+                      <div class="label">启动核心 (Jar)</div>
+                      <div class="value-row">
+                        <span class="main-text text-truncate" :title="formData.core">{{ formData.core }}</span>
+
+                        <t-tag v-if="detectedJars.length > 0" theme="success" variant="light" size="small">
+                          整合包内核心
+                        </t-tag>
+                        <t-tag v-else-if="downloadType === 'online'" theme="primary" variant="light" size="small">
+                          在线下载
+                        </t-tag>
+                        <t-tag v-else theme="warning" variant="light" size="small">手动配置</t-tag>
+                      </div>
+                      <div v-if="detectedJars.length > 0" class="sub-text">已从压缩包中选定启动文件</div>
+                      <div v-else-if="downloadType === 'online'" class="sub-text">
+                        来源: MSL 镜像源 ({{ formData.coreUrl ? '已匹配' : '未匹配' }})
+                      </div>
+                    </div>
+                  </t-col>
+
+                  <t-col :span="6">
+                    <div class="confirm-item">
+                      <div class="label">Java 运行时</div>
+                      <div class="value-row">
+                        <span v-if="javaType === 'online'" class="main-text"> Java {{ selectedJavaVersion }} </span>
+                        <span v-else class="main-text text-truncate" :title="formData.java">
+                          {{ formData.java }}
+                        </span>
+
+                        <t-tag v-if="javaType === 'online'" theme="success" variant="light" size="small">
+                          自动安装
+                        </t-tag>
+                        <t-tag v-else-if="javaType === 'local'" theme="primary" variant="light" size="small">
+                          本机环境
+                        </t-tag>
+                        <t-tag v-else theme="default" variant="light" size="small">自定义</t-tag>
+                      </div>
+                      <div v-if="javaType === 'online'" class="sub-text text-truncate">
+                        将自动从镜像源下载并解压 JDK
+                      </div>
+                    </div>
+                  </t-col>
+
+                  <t-col :span="6">
+                    <div class="confirm-item">
+                      <div class="label">内存分配 (JVM)</div>
+                      <div class="memory-viz">
+                        <div class="mem-block">
+                          <span class="mem-label">初始 (Xms)</span>
+                          <span class="mem-val">{{ minMComputed }} {{ minUnit }}</span>
+                        </div>
+                        <div class="mem-arrow"><t-icon name="arrow-right" /></div>
+                        <div class="mem-block">
+                          <span class="mem-label">最大 (Xmx)</span>
+                          <span class="mem-val">{{ maxMComputed }} {{ maxUnit }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </t-col>
+
+                  <t-col v-if="formData.args" :span="12">
+                    <div class="confirm-item">
+                      <div class="label">启动参数</div>
+                      <div class="args-box">{{ formData.args }}</div>
+                    </div>
+                  </t-col>
+                </t-row>
+
+                <t-alert style="margin-top: 24px" theme="info">
+                  <template #message> 确认无误后点击下方 <b>提交创建</b>，系统自动部署服务端。 </template>
+                </t-alert>
+              </div>
+            </div>
 
             <t-form-item class="step-actions" style="margin-top: 16px">
               <t-button v-if="currentStep > 0" theme="default" @click="prevStep">上一步</t-button>
+
               <t-button
-                v-if="currentStep < 4"
+                v-if="currentStep < 5"
                 type="button"
                 :loading="isUploading || isCheckingPackage"
                 @click="nextStep"
                 >下一步</t-button
               >
-              <t-button v-if="currentStep === 4" theme="primary" type="submit" :loading="isSubmitting"
+
+              <t-button v-if="currentStep === 5" theme="primary" type="submit" :loading="isSubmitting"
                 >提交创建</t-button
               >
             </t-form-item>
@@ -936,6 +1043,7 @@ const viewDetails = () => {
 </template>
 
 <style scoped lang="less">
+@import './ConfirmStep'; // 确认信息
 .main-layout-container {
   display: flex;
   gap: 32px;
@@ -1102,4 +1210,5 @@ const viewDetails = () => {
     min-height: 40vh;
   }
 }
+
 </style>

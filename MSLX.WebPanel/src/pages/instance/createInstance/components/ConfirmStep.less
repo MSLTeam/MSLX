@@ -1,0 +1,110 @@
+.confirm-container {
+  background-color: var(--td-bg-color-container);
+  border-radius: var(--td-radius-medium);
+}
+
+.confirm-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  .server-icon-placeholder {
+    width: 56px;
+    height: 56px;
+    background: var(--td-brand-color-light);
+    color: var(--td-brand-color);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .server-title-info {
+    .server-name {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--td-text-color-primary);
+      margin-bottom: 4px;
+    }
+    .server-path {
+      font-size: 13px;
+      color: var(--td-text-color-secondary);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+  }
+}
+
+.confirm-item {
+  .label {
+    font-size: 12px;
+    color: var(--td-text-color-placeholder);
+    margin-bottom: 8px;
+  }
+
+  .value-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+    flex-wrap: nowrap;
+
+    .main-text {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--td-text-color-primary);
+    }
+
+    .text-truncate {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 180px;
+    }
+  }
+
+  .sub-text {
+    font-size: 12px;
+    color: var(--td-text-color-secondary);
+
+    &.text-truncate {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+  }
+
+  .memory-viz {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--td-bg-color-secondarycontainer);
+    padding: 8px 12px;
+    border-radius: 6px;
+    width: fit-content;
+
+    .mem-block {
+      display: flex;
+      flex-direction: column;
+
+      .mem-label { font-size: 10px; color: var(--td-text-color-secondary); }
+      .mem-val { font-size: 14px; font-weight: 600; color: var(--td-text-color-primary); }
+    }
+
+    .mem-arrow {
+      color: var(--td-text-color-placeholder);
+    }
+  }
+
+  .args-box {
+    font-family: monospace;
+    background: var(--td-bg-color-secondarycontainer);
+    padding: 6px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--td-text-color-secondary);
+    word-break: break-all;
+  }
+}
