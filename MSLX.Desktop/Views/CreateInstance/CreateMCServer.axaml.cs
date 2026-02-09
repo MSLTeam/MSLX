@@ -454,7 +454,7 @@ public partial class CreateMCServer : UserControl
             StatusBorder.IsVisible = false;
             BtnNext.IsEnabled = true;
             BtnPrevious.IsEnabled = true;
-
+            SideMenuHelper.MainSideMenuHelper?.NavigateTo<InstanceListPage>();
             SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
         }
     }
@@ -517,6 +517,7 @@ public partial class CreateMCServer : UserControl
         }
 
         ResetForm();
+        SideMenuHelper.MainSideMenuHelper?.NavigateTo<InstanceListPage>();
         SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
     }
 
