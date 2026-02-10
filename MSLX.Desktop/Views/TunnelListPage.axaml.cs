@@ -18,7 +18,8 @@ public partial class TunnelListPage : UserControl
     public TunnelListPage()
     {
         InitializeComponent();
-        
+        DataContext = this;
+
         this.Initialized += (s, e) => _ = LoadTunnelList();
     }
 
