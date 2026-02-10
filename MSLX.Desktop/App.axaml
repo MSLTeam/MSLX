@@ -17,6 +17,5 @@
 	<Application.Styles>
 		<sukiUi:SukiTheme Locale="zh-CN" ThemeColor="Blue" />
 		<micon:MaterialIconStyles />
-		<StyleInclude Source="avares://MSLX-Desktop/Styles/MarkdownStyles.axaml" />
 	</Application.Styles>
 </Application>
