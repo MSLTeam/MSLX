@@ -27,16 +27,16 @@ public partial class HomePage : UserControl
         var (Success, Data, Message) = await MSLAPIService.GetJsonDataAsync("/query/notice", queryParameters: new Dictionary<string, string> { { "query", "mslxNotice" } });
         if (Data == null || Message == null)
         {
-            AnnouncementViewer.Markdown = "暂无公告";
+            MarkdownViewer.ChangeMarkdownContent("暂无公告");
             return;
         }
         if (Success)
         {
-            AnnouncementViewer.Markdown = ((JObject)Data)["mslxNotice"]?.ToString() ?? "暂无公告";
+            MarkdownViewer.ChangeMarkdownContent(((JObject)Data)["mslxNotice"]?.ToString() ?? "暂无公告");
         }
         else
         {
-            AnnouncementViewer.Markdown = Message;
+            MarkdownViewer.ChangeMarkdownContent(Message);
         }
         Console.WriteLine("数据目录：" + ConfigService.GetAppDataPath());
         Console.WriteLine("设备ID: " + PlatformHelper.GetDeviceID());

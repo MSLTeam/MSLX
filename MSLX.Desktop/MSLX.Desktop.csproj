@@ -44,4 +44,8 @@
 	<ItemGroup>
 		<ProjectReference Include="..\SukiUI\SukiUI\SukiUI.csproj" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Styles\" />
+	</ItemGroup>
 </Project>
