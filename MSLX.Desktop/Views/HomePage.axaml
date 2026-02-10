@@ -1,55 +1,176 @@
-<UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
-             xmlns:sukitheme="clr-namespace:SukiUI.Theme;assembly=SukiUI"
-             xmlns:micon="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
-             xmlns:markdown="clr-namespace:Markdown.Avalonia;assembly=Markdown.Avalonia"
-             xmlns:ctxt="clr-namespace:ColorTextBlock.Avalonia;assembly=ColorTextBlock.Avalonia"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="MSLX.Desktop.Views.HomePage">
-    <Grid RowDefinitions="*,auto">
-        <suki:GlassCard Margin="10">
-            <Grid RowDefinitions="auto,*">
-				<TextBlock Text="公告" Classes="h3"/>
-                <markdown:MarkdownScrollViewer x:Name="AnnouncementViewer" Grid.Row="1" Markdown="# Welcome to MSLX Desktop!">
-                    <markdown:MarkdownScrollViewer.Styles>
-                        <Style Selector="ctxt|CTextBlock.Heading1">
-                            <Setter Property="Foreground" Value="{DynamicResource SukiText}"/>
-                            <Setter Property="FontSize" Value="32"/>
-                            <Setter Property="FontWeight" Value="Bold"/>
-                        </Style>
-                        <Style Selector="ctxt|CTextBlock.Heading2">
-                            <Setter Property="Foreground" Value="{DynamicResource SukiText}"/>
-                            <Setter Property="FontWeight" Value="Bold"/>
-                        </Style>
-                        <Style Selector="ctxt|CTextBlock.Heading3">
-                            <Setter Property="Foreground" Value="{DynamicResource SukiText}"/>
-                        </Style>
-                        <Style Selector="ctxt|CTextBlock.Heading4">
-                            <Setter Property="Foreground" Value="{DynamicResource SukiText}"/>
-                        </Style>
-                        <Style Selector="ctxt|CTextBlock.Heading5">
-                            <Setter Property="Foreground" Value="{DynamicResource SukiText}"/>
-                        </Style>
-                    </markdown:MarkdownScrollViewer.Styles>
-                </markdown:MarkdownScrollViewer>
-            </Grid>
-        </suki:GlassCard>
-        <UniformGrid Grid.Row="1" Columns="3" Height="64" Margin="10,0,10,10" HorizontalAlignment="Right" VerticalAlignment="Center" >
-            <Button x:Name="DocsBtn" Margin="5" Classes="Danger">
-                <StackPanel Orientation="Horizontal">
-                            <micon:MaterialIcon Kind="FolderOutline"/>
-                            <TextBlock Margin="3,0,0,0" Text="Documentation"/>
-                </StackPanel>
-            </Button>
-            <Button x:Name="GithubBtn" Content="GitHub" Margin="5"/>
-            <Button x:Name="StartBtn" Content="Get Started" Classes="Flat" Margin="5">
-                <sukitheme:ButtonExtensions.Icon>
-                    <micon:MaterialIcon Kind="PlayCircleOutline" VerticalAlignment="Center"/>
-                </sukitheme:ButtonExtensions.Icon>
-            </Button>
-        </UniformGrid>
-    </Grid>
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+			 xmlns:sukitheme="clr-namespace:SukiUI.Theme;assembly=SukiUI"
+			 xmlns:micon="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+			 xmlns:markdown="clr-namespace:Markdown.Avalonia;assembly=Markdown.Avalonia"
+			 xmlns:ctxt="clr-namespace:ColorTextBlock.Avalonia;assembly=ColorTextBlock.Avalonia"
+			 xmlns:mdctl="clr-namespace:Markdown.Avalonia.Controls;assembly=Markdown.Avalonia"
+			 xmlns:avedit="https://github.com/avaloniaui/avaloniaedit"
+			 mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
+			 x:Class="MSLX.Desktop.Views.HomePage">
+
+	<UserControl.Styles>
+
+		<Style Selector="suki|GlassCard">
+			<Setter Property="TextElement.FontFamily" Value="Microsoft YaHei UI, PingFang SC, sans-serif"/>
+			<Setter Property="TextElement.FontSize" Value="15"/>
+		</Style>
+	</UserControl.Styles>
+
+	<Grid RowDefinitions="*,auto">
+		<suki:GlassCard Margin="12" Padding="20">
+			<Grid RowDefinitions="*">
+				<markdown:MarkdownScrollViewer x:Name="AnnouncementViewer"
+											   Grid.Row="1"
+											   Classes="MSLXMarkdownStyle"
+											   Markdown="# 🎉 欢迎使用 MSLX 开服器软件!&#x0a;&#x0a;> ✨正在加载公告内容，请稍候..." >
+
+					<markdown:MarkdownScrollViewer.Styles>
+						<Style Selector="ctxt|CTextBlock.Heading1">
+							<Setter Property="Foreground" Value="{DynamicResource SukiText}"/>
+							<Setter Property="FontSize" Value="28"/>
+							<Setter Property="FontWeight" Value="Bold"/>
+							<Setter Property="Margin" Value="0,15,0,10"/>
+						</Style>
+						<Style Selector="ctxt|CTextBlock.Heading2">
+							<Setter Property="Foreground" Value="{DynamicResource SukiText}"/>
+							<Setter Property="FontSize" Value="22"/>
+							<Setter Property="FontWeight" Value="SemiBold"/>
+							<Setter Property="Margin" Value="0,15,0,8"/>
+						</Style>
+						<Style Selector="ctxt|CTextBlock.Heading3">
+							<Setter Property="Foreground" Value="{DynamicResource SukiText}"/>
+							<Setter Property="FontSize" Value="18"/>
+							<Setter Property="FontWeight" Value="SemiBold"/>
+							<Setter Property="Margin" Value="0,10,0,5"/>
+						</Style>
+
+						<Style Selector="ctxt|CTextBlock.Heading4">
+							<Setter Property="Foreground" Value="{DynamicResource SukiText}"/>
+							<Setter Property="FontSize" Value="16"/>
+							<Setter Property="FontWeight" Value="Medium"/>
+							<Setter Property="Margin" Value="0,8,0,4"/>
+						</Style>
+
+						<Style Selector="ctxt|CHyperlink">
+							<Setter Property="Foreground" Value="{DynamicResource SukiPrimaryColor}"/>
+							<Setter Property="IsUnderline" Value="False"/>
+						</Style>
+						<Style Selector="ctxt|CHyperlink:pointerover">
+							<Setter Property="IsUnderline" Value="True"/>
+							<Setter Property="Foreground" Value="{DynamicResource SukiPrimaryColor}"/>
+						</Style>
+
+						<Style Selector="Border.Blockquote">
+							<Setter Property="BorderBrush" Value="{DynamicResource SukiPrimaryColor}"/>
+							<Setter Property="BorderThickness" Value="4,0,0,0"/>
+							<Setter Property="Background" Value="{DynamicResource SukiControlTouchBackground}"/>
+							<Setter Property="Padding" Value="15,10"/>
+							<Setter Property="Margin" Value="0,10"/>
+							<Setter Property="CornerRadius" Value="4"/>
+						</Style>
+						<Style Selector=".Blockquote ctxt|CTextBlock">
+							<Setter Property="Foreground" Value="{DynamicResource SukiText}"/>
+							<Setter Property="Opacity" Value="0.8"/>
+							<Setter Property="FontSize" Value="15"/>
+						</Style>
+						<Style Selector="ctxt|CCode">
+							<Setter Property="Foreground" Value="{DynamicResource SukiPrimaryColor}"/>
+
+							<Setter Property="Background" Value="Transparent"/>
+
+							<Setter Property="BorderBrush" Value="{DynamicResource SukiPrimaryColor}"/>
+							<Setter Property="BorderThickness" Value="1"/>
+
+							<Setter Property="Padding" Value="4,0"/>
+							<Setter Property="Margin" Value="2,0"/>
+
+							<Setter Property="CornerRadius" Value="3"/>
+
+							<Setter Property="FontFamily" Value="Maple Mono NF, Consolas, monospace"/>
+							<Setter Property="FontSize" Value="14"/>
+						</Style>
+
+
+						<Style Selector="Border.CodeBlock">
+							<Setter Property="Background" Value="{DynamicResource SukiCardBackground}"/>
+							<Setter Property="BorderBrush" Value="{DynamicResource SukiBorderBrush}"/>
+							<Setter Property="BorderThickness" Value="1"/>
+							<Setter Property="CornerRadius" Value="6"/>
+							<Setter Property="Padding" Value="12"/>
+							<Setter Property="Margin" Value="0,10"/>
+						</Style>
+
+						<Style Selector="Border.Table">
+							<Setter Property="BorderBrush" Value="{DynamicResource SukiBorderBrush}"/>
+							<Setter Property="BorderThickness" Value="1"/>
+							<Setter Property="CornerRadius" Value="8"/>
+							<Setter Property="Margin" Value="0,15"/>
+						</Style>
+						<Style Selector="Border.TableHeader">
+							<Setter Property="Background" Value="{DynamicResource SukiControlTouchBackground}"/>
+							<Setter Property="BorderThickness" Value="0,0,0,1"/>
+							<Setter Property="BorderBrush" Value="{DynamicResource SukiBorderBrush}"/>
+							<Setter Property="Padding" Value="12,8"/>
+						</Style>
+						<Style Selector="Border.TableHeader ctxt|CTextBlock">
+							<Setter Property="FontWeight" Value="Bold"/>
+							<Setter Property="Foreground" Value="{DynamicResource SukiText}"/>
+							<Setter Property="HorizontalAlignment" Value="Center"/>
+						</Style>
+						<Style Selector="Border.EvenTableRow">
+							<Setter Property="Background" Value="{DynamicResource SukiControlTouchBackground}"/>
+							<Setter Property="Opacity" Value="0.5"/>
+							<Setter Property="Padding" Value="12,8"/>
+						</Style>
+						<Style Selector="Border.OddTableRow">
+							<Setter Property="Background" Value="Transparent"/>
+							<Setter Property="Padding" Value="12,8"/>
+						</Style>
+
+						<Style Selector="mdctl|Rule">
+							<Setter Property="Foreground" Value="{DynamicResource SukiBorderBrush}"/>
+							<Setter Property="Opacity" Value="1.0"/> <Setter Property="Margin" Value="0,20"/> </Style>
+
+						<Style Selector="ctxt|CTextBlock.ListMarker">
+							<Setter Property="Foreground" Value="{DynamicResource SukiPrimaryColor}"/>
+							<Setter Property="FontWeight" Value="Bold"/>
+							<Setter Property="Margin" Value="0,0,8,0"/>
+						</Style>
+						<Style Selector="ctxt|CTextBlock">
+							<Setter Property="FontSize" Value="15"/> </Style>
+
+						<Style Selector=".List ctxt|CTextBlock">
+							<Setter Property="FontSize" Value="15"/>
+						</Style>
+
+					</markdown:MarkdownScrollViewer.Styles>
+				</markdown:MarkdownScrollViewer>
+			</Grid>
+		</suki:GlassCard>
+
+		<UniformGrid Grid.Row="1" Columns="3" Height="50" Margin="12,0,12,12" HorizontalAlignment="Right" VerticalAlignment="Center">
+			<Button x:Name="DocsBtn" Margin="5" Classes="Outlined" BorderThickness="1">
+				<StackPanel Orientation="Horizontal" Spacing="5">
+					<micon:MaterialIcon Kind="BookOpenOutline" Width="16" Height="16"/>
+					<TextBlock Text="文档" VerticalAlignment="Center" FontSize="14"/>
+				</StackPanel>
+			</Button>
+			<Button x:Name="GithubBtn" Margin="5" Classes="Outlined" BorderThickness="1">
+				<StackPanel Orientation="Horizontal" Spacing="5">
+					<micon:MaterialIcon Kind="Github" Width="16" Height="16"/>
+					<TextBlock Text="GitHub" VerticalAlignment="Center" FontSize="14"/>
+				</StackPanel>
+			</Button>
+			<Button x:Name="StartBtn" Classes="Flat" Margin="5">
+				<StackPanel Orientation="Horizontal" Spacing="5">
+					<micon:MaterialIcon Kind="RocketLaunchOutline" Width="16" Height="16"/>
+					<TextBlock Text="快速开始" VerticalAlignment="Center" FontSize="14" FontWeight="DemiBold"/>
+				</StackPanel>
+			</Button>
+		</UniformGrid>
+	</Grid>
 </UserControl>

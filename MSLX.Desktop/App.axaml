@@ -1,4 +1,4 @@
-<Application xmlns="https://github.com/avaloniaui"
+﻿<Application xmlns="https://github.com/avaloniaui"
 			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 			 xmlns:sukiUi="clr-namespace:SukiUI;assembly=SukiUI"
 			 xmlns:micon="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
@@ -17,5 +17,6 @@
 	<Application.Styles>
 		<sukiUi:SukiTheme Locale="zh-CN" ThemeColor="Blue" />
 		<micon:MaterialIconStyles />
+		<StyleInclude Source="avares://MSLX-Desktop/Styles/MarkdownStyles.axaml" />
 	</Application.Styles>
 </Application>

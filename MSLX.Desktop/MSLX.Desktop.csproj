@@ -39,7 +39,6 @@
 	<ItemGroup>
 		<AvaloniaResource Include="Assets\**" />
 		<Content Include="Assets\icon.ico" />
-		<Folder Include="Styles\" />
 	</ItemGroup>
 
 	<ItemGroup>
