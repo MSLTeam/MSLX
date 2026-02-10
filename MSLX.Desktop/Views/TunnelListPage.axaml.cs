@@ -1,4 +1,4 @@
-﻿using Avalonia.Controls;
+using Avalonia.Controls;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils;
 using MSLX.Desktop.Utils.API;
@@ -13,8 +13,6 @@ namespace MSLX.Desktop.Views;
 
 public partial class TunnelListPage : UserControl
 {
-    public ObservableCollection<TunnelModel.TunnelInfo> Tunnels => TunnelModel.TunnelList;
-
     public TunnelListPage()
     {
         InitializeComponent();
@@ -22,7 +20,7 @@ public partial class TunnelListPage : UserControl
         this.Initialized += (s, e) => _ = LoadTunnelList();
     }
 
-    public async Task LoadTunnelList()
+    public static async Task LoadTunnelList()
     {
         try
         {

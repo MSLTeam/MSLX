@@ -29,7 +29,7 @@
 		</PackageReference>
 		<PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.11" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
-		<PackageReference Include="Downloader" Version="4.0.3" />
+		<PackageReference Include="Downloader" Version="4.1.0" />
 		<PackageReference Include="Markdown.Avalonia" Version="11.0.2" />
 		<PackageReference Include="Material.Icons.Avalonia" Version="2.4.1" />
 		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.2" />

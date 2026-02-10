@@ -1,10 +1,10 @@
-﻿using Avalonia.Data.Converters;
+using Avalonia.Data.Converters;
 using Avalonia.Media;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace MSLX.Desktop.Views.Utils;
+namespace MSLX.Desktop.Converters;
 
 /// <summary>
 /// 状态数字转颜色

@@ -1,3 +1,4 @@
+using CommunityToolkit.Mvvm.ComponentModel;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -5,9 +6,13 @@ using System.Text;
 
 namespace MSLX.Desktop.Models
 {
-    public class MCServerModel
+    public partial class MCServerModel : ObservableObject
     {
-        public static ObservableCollection<ServerInfo> ServerList { get; set; } = new ObservableCollection<ServerInfo>();
+        public static MCServerModel Instance => _instance ??= new MCServerModel();
+        private static MCServerModel? _instance;
+        [ObservableProperty]
+        private ObservableCollection<ServerInfo> _serverList = new();
+
         public class ServerInfo
         {
             public int ID { get; set; }
