@@ -29,8 +29,6 @@ namespace MSLX.Daemon.Utils
                 ParallelDownload = true,
                 ParallelCount = parallelCount,
                 MaxTryAgainOnFailure = 5,
-                Timeout = 5000,
-                ReserveStorageSpaceBeforeStartingDownload = true,
                 RequestConfiguration =
                 {
                     UserAgent = "MSLTeam-MSLX/1.0 (Downloader)"
