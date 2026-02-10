@@ -1,4 +1,4 @@
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils;
 using MSLX.Desktop.Utils.API;
