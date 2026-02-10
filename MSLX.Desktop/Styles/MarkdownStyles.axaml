@@ -43,7 +43,6 @@
     <Style Selector=".MSLXMarkdownStyle Border.Blockquote">
         <Setter Property="BorderBrush" Value="{DynamicResource SukiPrimaryColor}"/>
         <Setter Property="BorderThickness" Value="4,0,0,0"/>
-        <Setter Property="Background" Value="{DynamicResource SukiControlTouchBackground}"/>
         <Setter Property="Padding" Value="15,10"/>
         <Setter Property="Margin" Value="0,10"/>
         <Setter Property="CornerRadius" Value="4"/>
