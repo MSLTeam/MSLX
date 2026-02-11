@@ -164,7 +164,6 @@ const startSignalR = async () => {
   const { baseUrl, token } = userStore;
   const hubUrl = new URL('/api/hubs/frpLogsHub', baseUrl || window.location.origin);
   if (token) hubUrl.searchParams.append('x-user-token', token);
-  console.log(hubUrl.toString());
 
   hubConnection = new HubConnectionBuilder()
     .withUrl(hubUrl.toString(), { withCredentials: false })
