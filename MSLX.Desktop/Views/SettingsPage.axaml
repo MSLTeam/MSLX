@@ -74,7 +74,7 @@
                                     <TextBlock Text="软件更新" Classes="SettingTitle"/>
                                     <TextBlock Text="检查并更新 MSLX 守护进程版本" Classes="SettingDesc"/>
                                 </StackPanel>
-                                <Button Grid.Column="2" Name="BtnCheckUpdate" Classes="Flat" Click="OnCheckUpdateClick">
+                                <Button Grid.Column="2" Name="BtnCheckUpdate" Classes="Outlined" Click="OnCheckUpdateClick">
                                     <StackPanel Orientation="Horizontal" Spacing="5">
                                         <TextBlock Text="检查更新"/>
                                         <icons:MaterialIcon Kind="ChevronRight"/>
@@ -148,7 +148,7 @@
                                     <TextBlock Text="远程访问" Classes="SettingTitle"/>
                                     <TextBlock Text="查看配置远程访问的官方文档" Classes="SettingDesc"/>
                                 </StackPanel>
-                                <Button Grid.Column="2" Classes="Flat" Click="OnRemoteAccessHelpClick">
+                                <Button Classes="Outlined" Grid.Column="2" Click="OnRemoteAccessHelpClick">
                                     <StackPanel Orientation="Horizontal">
 										<icons:MaterialIcon Kind="OpenInNew" Width="20" Height="20" Margin="0,0,5,0"/>
                                     <TextBlock Text="查看文档" FontWeight="Bold" FontSize="15"/>
