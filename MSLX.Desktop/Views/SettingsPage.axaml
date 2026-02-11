@@ -1,0 +1,177 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             xmlns:theme="clr-namespace:SukiUI.Theme;assembly=SukiUI"
+             xmlns:icons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="850"
+             x:Class="MSLX.Desktop.Views.SettingsPage">
+
+    <UserControl.Styles>
+        <Style Selector="Grid.SettingItem">
+            <Setter Property="Margin" Value="15,10"/>
+        </Style>
+        <Style Selector="TextBlock.SettingTitle">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="VerticalAlignment" Value="Bottom"/>
+        </Style>
+        <Style Selector="TextBlock.SettingDesc">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="{DynamicResource SukiLowText}"/>
+            <Setter Property="VerticalAlignment" Value="Top"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+            <Setter Property="Margin" Value="0,2,0,0"/>
+        </Style>
+        <Style Selector="icons|MaterialIcon.SettingIcon">
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
+            <Setter Property="Foreground" Value="{DynamicResource SukiPrimaryColor}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+        <Style Selector="Border.SectionCard">
+            <Setter Property="Background" Value="{DynamicResource SukiLightBackground}"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="0,5"/>
+            <Setter Property="Margin" Value="0,5,0,20"/>
+        </Style>
+    </UserControl.Styles>
+
+    <suki:GlassCard Margin="10">
+        <Grid RowDefinitions="Auto,*">
+
+            <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,20">
+                <StackPanel Orientation="Horizontal" Spacing="15" VerticalAlignment="Center">
+                    <TextBlock Text="设置" Classes="h3"/>
+                    <ProgressBar Name="LoadingBar" 
+                                 IsIndeterminate="True" 
+                                 IsVisible="False" 
+                                 Width="120" 
+                                 Height="2" 
+                                 VerticalAlignment="Bottom"
+                                 Margin="0,0,0,5"/>
+                </StackPanel>
+
+                <Button Grid.Column="1" 
+                        Name="BtnRefresh" 
+                        Classes="Flat" 
+                        Click="OnRefreshClick"
+                        ToolTip.Tip="刷新数据">
+                    <icons:MaterialIcon Kind="Refresh" Width="22" Height="22"/>
+                </Button>
+            </Grid>
+
+            <ScrollViewer Grid.Row="1" Padding="0,0,15,0">
+                <StackPanel>
+
+                    <TextBlock Text="守护进程设置 (DAEMON)" FontWeight="Bold" FontSize="12" Opacity="0.5" Margin="5,0,0,5"/>
+                    <Border Classes="SectionCard">
+                        <StackPanel>
+                            <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                                <icons:MaterialIcon Kind="CloudSync" Classes="SettingIcon"/>
+                                <StackPanel Grid.Column="1" Margin="15,0">
+                                    <TextBlock Text="软件更新" Classes="SettingTitle"/>
+                                    <TextBlock Text="检查并更新 MSLX 守护进程版本" Classes="SettingDesc"/>
+                                </StackPanel>
+                                <Button Grid.Column="2" Name="BtnCheckUpdate" Classes="Flat" Click="OnCheckUpdateClick">
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <TextBlock Text="检查更新"/>
+                                        <icons:MaterialIcon Kind="ChevronRight"/>
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+
+                            <Separator Opacity="0.1" Margin="15,0"/>
+
+                            <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                                <icons:MaterialIcon Kind="Web" Classes="SettingIcon"/>
+                                <StackPanel Grid.Column="1" Margin="15,0">
+                                    <TextBlock Text="自动打开控制台" Classes="SettingTitle"/>
+                                    <TextBlock Text="启动成功后自动打开网页控制台" Classes="SettingDesc"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="2" Name="SwitchWebConsole"/>
+                            </Grid>
+
+                            <Separator Opacity="0.1" Margin="15,0"/>
+
+                            <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                                <icons:MaterialIcon Kind="ServerNetwork" Classes="SettingIcon"/>
+                                <StackPanel Grid.Column="1" Margin="15,0">
+                                    <TextBlock Text="安装镜像源" Classes="SettingTitle"/>
+                                    <TextBlock Text="NeoForge / Forge 自动安装使用的下载源" Classes="SettingDesc"/>
+                                </StackPanel>
+                                <ComboBox Grid.Column="2" Name="ComboMirrors" Width="200">
+                                    <ComboBoxItem Content="官方源 (较慢)" Tag="Official"/>
+                                    <ComboBoxItem Content="MSL镜像源 (推荐)" Tag="MSL Mirrors"/>
+                                    <ComboBoxItem Content="MSL镜像源 - 备用" Tag="MSL Mirrors Backup"/>
+                                </ComboBox>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Text="网络与安全 (NETWORK)" FontWeight="Bold" FontSize="12" Opacity="0.5" Margin="5,10,0,5"/>
+                    <Border Classes="SectionCard">
+                        <StackPanel>
+                            <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                                <icons:MaterialIcon Kind="SecurityNetwork" Classes="SettingIcon"/>
+                                <StackPanel Grid.Column="1" Margin="15,0">
+                                    <TextBlock Text="禁止本地访问" Classes="SettingTitle"/>
+                                    <TextBlock Text="禁止本地回环地址访问以增强安全性" Classes="SettingDesc"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
+                                    <TextBlock Name="TxtFirewallStatus" Text="已关闭" VerticalAlignment="Center" FontSize="12" Opacity="0.7"/>
+                                    <ToggleSwitch Name="SwitchFirewall"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Separator Opacity="0.1" Margin="15,0"/>
+
+                            <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                                <icons:MaterialIcon Kind="IpNetwork" Classes="SettingIcon"/>
+                                <StackPanel Grid.Column="1" Margin="15,0">
+                                    <TextBlock Text="监听地址" Classes="SettingTitle"/>
+                                    <TextBlock Text="设置守护进程的监听 Host 和 Port (不知道这是什么请不要修改，需重启)" Classes="SettingDesc" Foreground="OrangeRed"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5">
+                                    <TextBox Name="TxtListenHost" Watermark="localhost" Width="140"/>
+                                    <TextBlock Text=":" VerticalAlignment="Center"/>
+                                    <NumericUpDown Name="NumListenPort" Minimum="1" Maximum="65535" Value="1027" Width="100"/>
+                                </StackPanel>
+                            </Grid>
+                            
+                            <Separator Opacity="0.1" Margin="15,0"/>
+
+                            <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                                <icons:MaterialIcon Kind="RemoteDesktop" Classes="SettingIcon"/>
+                                <StackPanel Grid.Column="1" Margin="15,0">
+                                    <TextBlock Text="远程访问" Classes="SettingTitle"/>
+                                    <TextBlock Text="查看配置远程访问的官方文档" Classes="SettingDesc"/>
+                                </StackPanel>
+                                <Button Grid.Column="2" Classes="Flat" Click="OnRemoteAccessHelpClick">
+                                    <StackPanel Orientation="Horizontal">
+										<icons:MaterialIcon Kind="OpenInNew" Width="20" Height="20" Margin="0,0,5,0"/>
+                                    <TextBlock Text="查看文档" FontWeight="Bold" FontSize="15"/>
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Button Name="BtnSave" 
+                            Classes="Flat Primary" 
+                            HorizontalAlignment="Right" 
+                            Margin="0,10,5,20"
+                            Padding="30,10"
+                            Click="OnSaveClick">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <icons:MaterialIcon Kind="ContentSaveOutline" Width="20" Height="20"/>
+                            <TextBlock Text="保存设置" FontWeight="Bold" FontSize="15"/>
+                        </StackPanel>
+                    </Button>
+
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </suki:GlassCard>
+</UserControl>
