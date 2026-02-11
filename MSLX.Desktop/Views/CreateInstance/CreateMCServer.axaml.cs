@@ -1,4 +1,4 @@
-using Avalonia;
+﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
@@ -8,8 +8,11 @@ using Microsoft.AspNetCore.SignalR.Client;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils;
 using MSLX.Desktop.Utils.API;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using SukiUI.Toasts;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Threading.Tasks;
@@ -23,20 +26,41 @@ public partial class CreateMCServer : UserControl
     private string? _uploadId;
     private long _fileSize;
     private const int ChunkSize = 10240 * 1024; // 10MB per chunk
+
     private HubConnection? _hubConnection; // 创建进度的日志Hub连接
     private string? _createdServerId;
     private ObservableCollection<CreationLog> _logCollection = new();
+
+
     public class CreationLog // 创建实例进度日志格式
     {
         public string Time { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
     }
 
+    // Java 选择相关数据
+    private ObservableCollection<string> _onlineJavaList = new();
+    private ObservableCollection<LocalJavaListModel> _localJavaList = new();
+
     public CreateMCServer()
     {
         InitializeComponent();
         ListLogs.ItemsSource = _logCollection;
+        ComboOnlineJava.ItemsSource = _onlineJavaList;
+        ComboLocalJava.ItemsSource = _localJavaList;
         UpdateStepVisibility();
+        this.Loaded += (s, e) =>
+        {
+            if (!_isOnlineJavaLoaded && TabJavaSelection.SelectedIndex == 0)
+            {
+                _ = LoadOnlineJavaList();
+                // 非本机环境隐藏浏览本地选择Java的功能
+                if (!PlatformHelper.IsLocalService())
+                {
+                    BtnBrowseJava.IsVisible = false;
+                }
+            }
+        };
     }
 
     #region 步骤控制
@@ -126,7 +150,7 @@ public partial class CreateMCServer : UserControl
     {
         switch (_currentStep)
         {
-            case 0: // 基础配置
+            case 0: // 基础配置 & Java
                 if (string.IsNullOrWhiteSpace(TxtServerName.Text))
                 {
                     await ShowErrorMessage("验证失败", "请输入服务器名称");
@@ -134,6 +158,31 @@ public partial class CreateMCServer : UserControl
                     return false;
                 }
 
+                // 验证 Java 选择
+                switch (TabJavaSelection.SelectedIndex)
+                {
+                    case 0: // 在线安装
+                        if (ComboOnlineJava.SelectedItem == null)
+                        {
+                            await ShowErrorMessage("验证失败", "请选择要下载的 Java 版本");
+                            return false;
+                        }
+                        break;
+                    case 1: // 本地版本
+                        if (ComboLocalJava.SelectedItem == null)
+                        {
+                            await ShowErrorMessage("验证失败", "请选择一个本地 Java 环境");
+                            return false;
+                        }
+                        break;
+                    case 3: // 自定义路径
+                        if (string.IsNullOrWhiteSpace(TxtJavaPath.Text))
+                        {
+                            await ShowErrorMessage("验证失败", "请输入自定义 Java 路径");
+                            return false;
+                        }
+                        break;
+                }
                 break;
 
             case 1: // 核心文件
@@ -196,16 +245,165 @@ public partial class CreateMCServer : UserControl
             TxtConfirmCoreSource.Text = $"从URL下载: {TxtCoreUrl.Text}";
 
         // 内存配置
-        TxtConfirmMemory.Text = $"{(int)(NumMinMemory.Value ?? 0)} MB - {(int)(NumMaxMemory.Value ?? 0)} MB";
+        TxtConfirmMemory.Text = $"{(int)(NumMinMemory.Value ?? 0)} MB - {(int)(NumMaxMemory.Value ?? 0)} MB"; // 修正了原本 MaxMemory 读取 MinMemory 的可能的bug
 
         // 路径
         TxtConfirmPath.Text = string.IsNullOrWhiteSpace(TxtStoragePath.Text)
             ? $"默认路径：{Path.Combine(ConfigService.GetAppDataPath(), "Server")}"
             : TxtStoragePath.Text;
 
-        TxtConfirmJava.Text = string.IsNullOrWhiteSpace(TxtJavaPath.Text)
-            ? "环境变量：java"
-            : TxtJavaPath.Text;
+        switch (TabJavaSelection.SelectedIndex)
+        {
+            case 0:
+                TxtConfirmJava.Text = $"在线安装: Java {ComboOnlineJava.SelectedItem}";
+                break;
+            case 1:
+                var local = ComboLocalJava.SelectedItem as LocalJavaListModel;
+                TxtConfirmJava.Text = $"本地环境: {local?.Version} ({local?.Vendor})";
+                break;
+            case 2:
+                TxtConfirmJava.Text = "系统环境变量 (java)";
+                break;
+            case 3:
+                TxtConfirmJava.Text = $"自定义路径: {TxtJavaPath.Text}";
+                break;
+        }
+    }
+
+    #endregion
+
+    #region Java 选择逻辑
+
+    private bool _isOnlineJavaLoaded = false;
+    private bool _isLocalJavaLoaded = false;
+
+    /// <summary>
+    /// Java 选项卡切换事件
+    /// </summary>
+    private async void TabJavaSelection_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (sender is not TabControl tabControl) return;
+
+        int index = tabControl.SelectedIndex;
+
+        if (index == 0 && !_isOnlineJavaLoaded)
+        {
+            await LoadOnlineJavaList();
+        }
+        else if (index == 1 && !_isLocalJavaLoaded)
+        {
+            await LoadLocalJavaList(false);
+        }
+    }
+
+    /// <summary>
+    /// 加载在线 Java 版本
+    /// </summary>
+    private async Task LoadOnlineJavaList()
+    {
+        if (ComboOnlineJava == null) return;
+        try
+        {
+            ComboOnlineJava.PlaceholderText = "正在获取云端列表...";
+
+            // 获取系统信息
+            string os = PlatformHelper.GetOS() switch
+            {
+                PlatformHelper.TheOSPlatform.Windows => "windows",
+                PlatformHelper.TheOSPlatform.Linux => "linux",
+                PlatformHelper.TheOSPlatform.OSX => "mac",
+                _ => "linux"
+            };
+
+            string arch = PlatformHelper.GetOSArch() switch
+            {
+                PlatformHelper.TheArchitecture.Arm64 => "arm64",
+                PlatformHelper.TheArchitecture.X64 => "x64",
+                _ => "x64"
+            };
+
+            var result = await MSLAPIService.GetJsonDataAsync("/query/jdk", "data", new Dictionary<string, string>
+            {
+                { "os", os },
+                { "arch", arch }
+            });
+
+            if (result.Success && result.Data is JArray jArray)
+            {
+                _onlineJavaList.Clear();
+                foreach (var item in jArray)
+                {
+                    _onlineJavaList.Add(item.ToString());
+                }
+
+                if (_onlineJavaList.Count > 0) ComboOnlineJava.SelectedIndex = 0;
+                ComboOnlineJava.PlaceholderText = "请选择版本";
+                _isOnlineJavaLoaded = true;
+            }
+            else
+            {
+                ComboOnlineJava.PlaceholderText = "获取失败: " + result.Msg;
+            }
+        }
+        catch (Exception ex)
+        {
+            ComboOnlineJava.PlaceholderText = "网络错误";
+            await ShowErrorMessage("获取Java列表失败", ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// 加载本地 Java 列表
+    /// </summary>
+    private async Task LoadLocalJavaList(bool forceRefresh)
+    {
+        if (ComboOnlineJava == null) return;
+        try
+        {
+            ComboLocalJava.PlaceholderText = "正在扫描本地环境...";
+            string path = "/api/java/list";
+            var dict = new Dictionary<string, string>();
+            if (forceRefresh) dict.Add("refresh", "true");
+
+            var result = await DaemonAPIService.GetJsonDataAsync(path, "data", dict);
+
+            if (result.Success && result.Data is JArray jArray)
+            {
+                _localJavaList.Clear();
+                var list = jArray.ToObject<List<LocalJavaListModel>>();
+                if (list != null)
+                {
+                    foreach (var item in list) _localJavaList.Add(item);
+                }
+
+                if (_localJavaList.Count > 0) ComboLocalJava.SelectedIndex = 0;
+                ComboLocalJava.PlaceholderText = "请选择...";
+                _isLocalJavaLoaded = true;
+                if (forceRefresh)
+                {
+                    DialogService.ToastManager.CreateToast()
+                        .OfType(Avalonia.Controls.Notifications.NotificationType.Success)
+                        .WithTitle("刷新成功！")
+                        .WithContent($"本地Java列表已成功刷新！")
+                        .Dismiss().After(TimeSpan.FromSeconds(5))
+                        .Queue();
+                }
+            }
+            else
+            {
+                ComboLocalJava.PlaceholderText = "扫描失败: " + result.Msg;
+            }
+        }
+        catch (Exception ex)
+        {
+            ComboLocalJava.PlaceholderText = "扫描出错";
+            await ShowErrorMessage("本地扫描失败", ex.Message);
+        }
+    }
+
+    private async void BtnRefreshLocalJava_Click(object? sender, RoutedEventArgs e)
+    {
+        await LoadLocalJavaList(true);
     }
 
     #endregion
@@ -457,18 +655,41 @@ public partial class CreateMCServer : UserControl
                 : TxtCoreSha256.Text.Trim();
         }
 
+        string javaCmd = "java";
+
+        switch (TabJavaSelection.SelectedIndex)
+        {
+            case 0: // 在线安装
+                var version = ComboOnlineJava.SelectedItem?.ToString();
+                if (!string.IsNullOrEmpty(version))
+                    javaCmd = $"MSLX://Java/{version}";
+                break;
+
+            case 1: // 本地版本
+                var selected = ComboLocalJava.SelectedItem as LocalJavaListModel;
+                if (selected != null)
+                    javaCmd = selected.Path;
+                break;
+
+            case 2: // 环境变量
+                javaCmd = "java";
+                break;
+
+            case 3: // 自定义路径
+                javaCmd = TxtJavaPath.Text?.Trim() ?? "java";
+                break;
+        }
+
         return new
         {
             name = TxtServerName.Text?.Trim(),
             path = string.IsNullOrWhiteSpace(TxtStoragePath.Text)
                 ? Path.Combine(ConfigService.GetAppDataPath(), "Server")
                 : TxtStoragePath.Text.Trim(),
-            java = string.IsNullOrWhiteSpace(TxtJavaPath.Text)
-                ? "java"
-                : TxtJavaPath.Text.Trim(),
+            java = javaCmd,
             core = TxtCoreName.Text?.Trim(),
             minM = (int)(NumMinMemory.Value ?? 0),
-            maxM = (int)(NumMinMemory.Value ?? 0),
+            maxM = (int)(NumMaxMemory.Value ?? 0), 
             args = string.IsNullOrWhiteSpace(TxtExtraArgs.Text)
                 ? null
                 : TxtExtraArgs.Text.Trim(),

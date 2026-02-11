@@ -1,7 +1,8 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
 			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 			 xmlns:local="using:MSLX.Desktop.Views.CreateInstance"
+			 xmlns:models="clr-namespace:MSLX.Desktop.Models;assembly=MSLX-Desktop"
 			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
 			 xmlns:sukitheme="clr-namespace:SukiUI.Theme;assembly=SukiUI"
@@ -45,17 +46,95 @@
 
 							<!-- Java路径 -->
 							<StackPanel Spacing="5">
-								<TextBlock Text="Java路径" />
-								<Grid ColumnDefinitions="*,Auto">
-									<TextBox x:Name="TxtJavaPath"
-											 Watermark="留空将使用系统环境变量Java"
-											 Grid.Column="0"/>
-									<Button x:Name="BtnBrowseJava"
-											Content="浏览"
-											Grid.Column="1"
-											Margin="5,0,0,0"
-											Click="BtnBrowseJava_Click"/>
-								</Grid>
+								<TextBlock Text="Java 环境配置 *" FontWeight="SemiBold"/>
+
+								<TabControl x:Name="TabJavaSelection" SelectionChanged="TabJavaSelection_SelectionChanged">
+									<TabControl.Styles>
+										<Style Selector="TabItem">
+											<Setter Property="FontSize" Value="13"/>
+											<Setter Property="Padding" Value="10,5"/>
+											<Setter Property="MinHeight" Value="32"/>
+										</Style>
+									</TabControl.Styles>
+
+									<TabItem Header="在线安装 (推荐)">
+										<StackPanel Spacing="10" Margin="5,10,5,5">
+											<TextBlock Text="选择要使用的 Java 版本 (将自动下载):" Opacity="0.8" FontSize="12"/>
+											<ComboBox x:Name="ComboOnlineJava" HorizontalAlignment="Stretch" PlaceholderText="正在获取版本列表..."/>
+											<TextBlock Text="💡 此选项将由 MSLX守护进程端 自动管理 Java 环境，最稳定。" FontSize="11" Opacity="0.6"/>
+										</StackPanel>
+									</TabItem>
+
+									<TabItem Header="本地版本">
+										<StackPanel Spacing="10" Margin="5,10,5,5">
+											<TextBlock Text="检测到的本地 Java 环境:" Opacity="0.8" FontSize="12"/>
+											<Grid ColumnDefinitions="*,Auto">
+												<ComboBox x:Name="ComboLocalJava" HorizontalAlignment="Stretch" PlaceholderText="正在扫描本地环境..." Grid.Column="0">
+													<ComboBox.ItemTemplate>
+														<DataTemplate DataType="{x:Type models:LocalJavaListModel}">
+															<StackPanel Orientation="Horizontal" Spacing="10">
+																<TextBlock Text="{Binding Version}" FontWeight="Bold"/>
+																<TextBlock Text="{Binding Vendor}" Opacity="0.7"/>
+																<TextBlock Text="{Binding Path}" Opacity="0.5" FontSize="11" VerticalAlignment="Center"/>
+															</StackPanel>
+														</DataTemplate>
+													</ComboBox.ItemTemplate>
+												</ComboBox>
+												<Button Content="刷新" Click="BtnRefreshLocalJava_Click" Classes="Flat" Grid.Column="1" Margin="5,0,0,0"/>
+											</Grid>
+										</StackPanel>
+									</TabItem>
+
+									<TabItem Header="环境变量">
+										<StackPanel Spacing="10" Margin="5,10,5,5">
+											<micon:MaterialIcon Kind="Console" Width="32" Height="32" Opacity="0.6" HorizontalAlignment="Center"/>
+											<TextBlock Text="将直接使用命令 'java' 启动服务器" HorizontalAlignment="Center" FontWeight="SemiBold"/>
+											<TextBlock Text="请确保服务器端的环境变量中已正确配置 Java 运行时。"
+													   FontSize="12" Opacity="0.6" TextWrapping="Wrap" HorizontalAlignment="Center"/>
+										</StackPanel>
+									</TabItem>
+
+									<TabItem Header="自定义路径">
+										<StackPanel Spacing="10" Margin="5,10,5,5">
+											<TextBlock Text="Java可执行文件绝对路径:" Opacity="0.8" FontSize="12"/>
+											<Grid ColumnDefinitions="*,Auto">
+												<TextBox x:Name="TxtJavaPath" Watermark="例如: C:\Program Files\Java\jdk-21\bin\java.exe" Grid.Column="0"/>
+												<Button x:Name="BtnBrowseJava" Content="浏览" Grid.Column="1" Margin="5,0,0,0" Click="BtnBrowseJava_Click"/>
+											</Grid>
+										</StackPanel>
+									</TabItem>
+								</TabControl>
+								<Border Background="{DynamicResource SukiBackground}"
+										BorderBrush="{DynamicResource SukiBorderBrush}"
+										BorderThickness="1"
+										CornerRadius="6"
+										Margin="0,5,0,0"
+										Padding="10">
+									<StackPanel Spacing="5">
+										<StackPanel Orientation="Horizontal" Spacing="5" Margin="0,0,0,3">
+											<micon:MaterialIcon Kind="InformationOutline" Width="14" Foreground="{DynamicResource SukiPrimaryColor}"/>
+											<TextBlock Text="Minecraft 版本与 Java 对应建议" FontSize="12" FontWeight="SemiBold"/>
+										</StackPanel>
+
+										<Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+											<TextBlock Grid.Row="0" Grid.Column="0" Text="MC 26.1 - 最新版本" FontSize="11" Opacity="0.7"/>
+											<TextBlock Grid.Row="0" Grid.Column="1" Text="Java 25" FontSize="11" FontWeight="Bold" Foreground="{DynamicResource SukiPrimaryColor}"/>
+
+											<TextBlock Grid.Row="1" Grid.Column="0" Text="MC 1.20.5 - 1.21.x" FontSize="11" Opacity="0.7"/>
+											<TextBlock Grid.Row="1" Grid.Column="1" Text="Java 21" FontSize="11" FontWeight="Bold"/>
+
+											<TextBlock Grid.Row="2" Grid.Column="0" Text="MC 1.18 - 1.20.4" FontSize="11" Opacity="0.7"/>
+											<TextBlock Grid.Row="2" Grid.Column="1" Text="Java 17" FontSize="11" FontWeight="Bold"/>
+
+											<TextBlock Grid.Row="3" Grid.Column="0" Text="MC 1.17 / 1.17.1" FontSize="11" Opacity="0.7"/>
+											<TextBlock Grid.Row="3" Grid.Column="1" Text="Java 16" FontSize="11" FontWeight="Bold"/>
+
+											<TextBlock Grid.Row="4" Grid.Column="0" Text="MC 1.13 - 更低版本" FontSize="11" Opacity="0.7"/>
+											<TextBlock Grid.Row="4" Grid.Column="1" Text="Java 8" FontSize="11" FontWeight="Bold"/>
+										</Grid>
+									</StackPanel>
+								</Border>
+
 							</StackPanel>
 						</StackPanel>
 					</suki:GlassCard>
