@@ -52,11 +52,9 @@ public partial class ServerCoreSelectorView : UserControl
         double parentWidth = topLevel.ClientSize.Width;
         double parentHeight = topLevel.ClientSize.Height;
 
-        this.MaxWidth = Math.Min(1000, parentWidth * 0.9); 
-        this.MaxHeight = parentHeight * 0.9;
+        this.Width = Math.Max(720, parentWidth * 0.88); 
+        this.Height = parentHeight * 0.66;
 
-        this.Width = double.NaN;
-        this.Height = double.NaN;
     }
 
     private void InitializeCategories()

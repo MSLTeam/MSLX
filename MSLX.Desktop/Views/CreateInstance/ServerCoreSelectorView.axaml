@@ -5,7 +5,8 @@
              xmlns:micon="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
              xmlns:local="using:MSLX.Desktop.Views.CreateInstance"
-             mc:Ignorable="d" 
+             mc:Ignorable="d" VerticalAlignment="Center"
+             HorizontalAlignment="Center"
              d:DesignWidth="960" d:DesignHeight="700"
              x:Class="MSLX.Desktop.Views.CreateInstance.ServerCoreSelectorView">
              
@@ -78,7 +79,7 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Button Classes="Outlined" Margin="0,0,8,8" Width="130" Height="45" Click="BtnCore_Click">
+                                <Button Classes="Outlined" Margin="0,0,8,8" Width="150" Height="45" Click="BtnCore_Click">
                                     <TextBlock Text="{Binding}" TextWrapping="Wrap" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Medium"/>
                                 </Button>
                             </DataTemplate>
