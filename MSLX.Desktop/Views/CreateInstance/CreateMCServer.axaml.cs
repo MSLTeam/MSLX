@@ -1,15 +1,14 @@
 ﻿using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
-using Avalonia.Markup.Xaml;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Microsoft.AspNetCore.SignalR.Client;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils;
 using MSLX.Desktop.Utils.API;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SukiUI.Dialogs;
 using SukiUI.Toasts;
 using System;
 using System.Collections.Generic;
@@ -51,6 +50,7 @@ public partial class CreateMCServer : UserControl
         UpdateStepVisibility();
         this.Loaded += (s, e) =>
         {
+            RbDownloadCore.IsChecked = true;
             if (!_isOnlineJavaLoaded && TabJavaSelection.SelectedIndex == 0)
             {
                 _ = LoadOnlineJavaList();
@@ -198,7 +198,7 @@ public partial class CreateMCServer : UserControl
                 {
                     if (string.IsNullOrWhiteSpace(TxtCoreUrl.Text))
                     {
-                        await ShowErrorMessage("验证失败", "请输入核心下载URL");
+                        await ShowErrorMessage("验证失败", "请选择一个核心");
                         TxtCoreUrl.Focus();
                         return false;
                     }
@@ -413,11 +413,80 @@ public partial class CreateMCServer : UserControl
     /// <summary>
     /// 核心来源改变
     /// </summary>
-    private void CoreSourceChanged(object? sender, RoutedEventArgs e)
+    private void CoreSourceChanged(object? sender, RoutedEventArgs? e)
     {
-        PanelLocalUpload.IsVisible = RbLocalUpload?.IsChecked == true;
-        TxtCoreName.IsEnabled = RbLocalUpload?.IsChecked == false;
-        PanelDownloadCore.IsVisible = RbDownloadCore?.IsChecked == true;
+        if (PanelLocalUpload == null || PanelDownloadCore == null) return;
+
+        PanelLocalUpload.IsVisible = RbLocalUpload.IsChecked == true;
+        PanelDownloadCore.IsVisible = RbDownloadCore.IsChecked == true;
+
+        // 清理隐藏的老数据
+        TxtCoreUrl.Text = string.Empty;
+        TxtCoreSha256.Text = string.Empty;
+        if (RbCustomCore.IsChecked != true)
+        {
+            TxtCoreName.Text = string.Empty;
+        }
+
+        if (RbDownloadCore.IsChecked == true)
+        {
+            TxtCoreName.IsEnabled = false; 
+            TxtCoreName.Watermark = "点击'在线选择'以确定文件名";
+        }
+        else if (RbCustomCore.IsChecked == true)
+        {
+            TxtCoreName.IsEnabled = true;
+            TxtCoreName.Watermark = "请输入文件名，如 server.jar";
+        }
+        else // 本地上传
+        {
+            TxtCoreName.IsEnabled = false;
+            TxtCoreName.Watermark = "上传文件后将自动显示文件名";
+        }
+    }
+
+    /// <summary>
+    /// 打开在线核心选择器
+    /// </summary>
+    private async void BtnSelectCoreOnline_Click(object? sender, RoutedEventArgs e)
+    {
+        var selectorView = new ServerCoreSelectorView();
+        var dialogBuilder = DialogService.DialogManager.CreateDialog()
+            .WithTitle("选择服务端核心")
+            .WithContent(selectorView);
+        dialogBuilder.Completion = new TaskCompletionSource<bool>();
+
+        // 订阅事件
+        selectorView.OnCoreSelected += (url, sha256, filename, coreName) =>
+        {
+            // 回填数据
+            TxtCoreUrl.Text = url;
+            TxtCoreSha256.Text = sha256;
+
+            if (string.IsNullOrWhiteSpace(TxtCoreName.Text) || TxtCoreName.Text.Contains(".jar"))
+            {
+                TxtCoreName.Text = filename;
+            }
+
+            // 提示
+            DialogService.ToastManager.CreateToast()
+                .OfType(Avalonia.Controls.Notifications.NotificationType.Success)
+                .WithTitle("已选择核心")
+                .WithContent($"已加载 {coreName} 的下载配置")
+                .Dismiss().After(TimeSpan.FromSeconds(3))
+                .Queue();
+
+            // 关闭弹窗
+            dialogBuilder.Completion.TrySetResult(true);
+            dialogBuilder.Dialog.Dismiss();
+        };
+
+        dialogBuilder.WithActionButton("取消", _ =>
+        {
+            dialogBuilder.Completion.TrySetResult(false);
+        }, true);
+
+        await dialogBuilder.TryShowAsync();
     }
 
     #endregion

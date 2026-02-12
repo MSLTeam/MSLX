@@ -230,29 +230,40 @@
 								</Border>
 							</StackPanel>
 
-							<!-- 下载核心配置 -->
-							<StackPanel x:Name="PanelDownloadCore"
-										Spacing="5"
-										IsVisible="False">
-								<TextBlock Text="核心下载URL" />
-								<TextBox x:Name="TxtCoreUrl"
-										 Watermark="https://example.com/server.jar"/>
+							<StackPanel x:Name="PanelDownloadCore" Spacing="10" IsVisible="False">
+								<StackPanel IsVisible="False">
+									<TextBlock Text="核心下载URL" />
+									<TextBox x:Name="TxtCoreUrl" Watermark="通过在线选择自动填充"/>
+									<TextBlock Text="SHA256校验值" />
+									<TextBox x:Name="TxtCoreSha256" Watermark="通过在线选择自动填充"/>
+								</StackPanel>
 
-								<TextBlock Text="SHA256校验值 (可选)" Margin="0,5,0,0"/>
-								<TextBox x:Name="TxtCoreSha256"
-										 Watermark="核心文件的SHA256哈希值"/>
+								<Border CornerRadius="8" Padding="15" BorderBrush="{DynamicResource SukiBorderBrush}" BorderThickness="1" Background="{DynamicResource SukiBackground}">
+									<StackPanel Spacing="10" HorizontalAlignment="Center">
+										<micon:MaterialIcon Kind="CloudDownloadOutline" Width="48" Height="48" Opacity="0.5"/>
+										<TextBlock Text="使用在线核心库" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+										<TextBlock Text="从MSL镜像源里挑一个你喜欢的开服核心。" FontSize="12" Opacity="0.6" TextAlignment="Center"/>
+										<Button x:Name="BtnSelectCoreOnline"
+												Margin="0,10,0,0"
+												Classes="Primary"
+												HorizontalAlignment="Center"
+												Click="BtnSelectCoreOnline_Click">
+											<StackPanel Orientation="Horizontal" Spacing="5">
+												<micon:MaterialIcon Kind="CloudSearch" Width="18" Height="18"/>
+												<TextBlock Text="立即在线选择核心" VerticalAlignment="Center"/>
+											</StackPanel>
+										</Button>
+									</StackPanel>
+								</Border>
 							</StackPanel>
 
-							<!-- 核心名称 -->
-							<StackPanel Spacing="5">
-								<TextBlock Text="核心文件名称 *" />
+							<StackPanel Spacing="5" Margin="0,10,0,0">
+								<TextBlock Text="核心文件名称 *" FontWeight="SemiBold"/>
 								<TextBox x:Name="TxtCoreName"
 										 IsEnabled="False"
-										 Watermark="例如: server.jar"
+										 Watermark="选择在线核心后自动生成..."
 										 MaxLength="100"/>
-								<TextBlock Text="💡 开服器将会读取服务器目录中以此为名的核心文件以开服"
-										   FontSize="12"
-										   Opacity="0.7"/>
+								<TextBlock Text="💡 实例启动时将自动检测并下载此核心文件" FontSize="12" Opacity="0.7"/>
 							</StackPanel>
 
 
