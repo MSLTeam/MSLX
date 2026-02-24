@@ -149,28 +149,36 @@ onUnmounted(() => {
 
         <template v-else>
           <div v-if="status === 2 && !loading" class="running-action-group">
-            <t-button class="stop-btn" theme="danger" size="large" @click="$emit('stop')">
-              <template #icon><stop-circle-icon /></template>
-              停止
-            </t-button>
+            <t-popconfirm content="确定要停止该实例吗？" @confirm="$emit('stop')">
+              <t-button class="stop-btn" theme="danger" size="large">
+                <template #icon><stop-circle-icon /></template>
+                停止
+              </t-button>
+            </t-popconfirm>
 
-            <t-button theme="warning" size="large" shape="square" @click="$emit('restart')">
-              <template #icon><refresh-icon /></template>
-            </t-button>
+            <t-popconfirm content="确定要重启该实例吗？" @confirm="$emit('restart')">
+              <t-button theme="warning" size="large" shape="square">
+                <template #icon><refresh-icon /></template>
+              </t-button>
+            </t-popconfirm>
           </div>
 
-          <t-button
+          <t-popconfirm
             v-if="status === 3 || status === 4 || loading"
-            class="force-kill-btn glass-btn"
-            :theme="loading?'primary':'danger'"
-            variant="outline"
-            block
-            :loading="loading"
-            @click="$emit('force-exit')"
+            content="确定要强制结束吗？可能会导致数据丢失！"
+            @confirm="$emit('force-exit')"
           >
-            <template #icon><close-circle-icon v-if="!loading" /></template>
-            {{ loading ? '正在处理...' : '强制结束' }}
-          </t-button>
+            <t-button
+              class="force-kill-btn glass-btn"
+              :theme="loading ? 'primary' : 'danger'"
+              variant="outline"
+              block
+              :loading="loading"
+            >
+              <template #icon><close-circle-icon v-if="!loading" /></template>
+              {{ loading ? '正在处理...' : '强制结束' }}
+            </t-button>
+          </t-popconfirm>
         </template>
 
         <div class="action-row">
