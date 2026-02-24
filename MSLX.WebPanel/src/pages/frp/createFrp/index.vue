@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import Custom from '@/pages/frp/createFrp/components/Custom.vue';
 import Index from '@/pages/frp/createFrp/components/MSLFrp/index.vue';
 import MSLP2P from '@/pages/frp/createFrp/components/MSLP2P.vue';
+import MEFrp from '@/pages/frp/createFrp/components/MEFrp/index.vue';
 
 const value = ref(1);
 </script>
@@ -12,16 +13,18 @@ const value = ref(1);
     <t-card direction="vertical">
       <t-tabs v-model="value">
         <t-tab-panel :value="1" label="MSLFrp" :destroy-on-hide="false">
-          <index style="margin: 15px;"/>
+          <index style="margin: 15px" />
         </t-tab-panel>
         <t-tab-panel :value="2" label="MSL 联机" :destroy-on-hide="false">
-          <m-s-l-p2-p style="margin: 15px;"/>
+          <m-s-l-p2-p style="margin: 15px" />
         </t-tab-panel>
-        <t-tab-panel :value="3" label="自定义Frp" :destroy-on-hide="false">
-          <custom style="margin: 15px;"/>
+        <t-tab-panel :value="3" label="ME Frp" :destroy-on-hide="false">
+          <m-e-frp style="margin: 15px" />
+        </t-tab-panel>
+        <t-tab-panel :value="888" label="自定义配置" :destroy-on-hide="false">
+          <custom style="margin: 15px" />
         </t-tab-panel>
       </t-tabs>
-
     </t-card>
   </div>
 </template>

@@ -4,7 +4,6 @@ using Material.Icons.Avalonia;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils;
 using MSLX.Desktop.Utils.API;
-using MSLX.Desktop.Views.CreateInstance;
 using Newtonsoft.Json.Linq;
 using SukiUI.Dialogs;
 using SukiUI.Toasts;
@@ -29,43 +28,39 @@ public partial class InstanceListPage : UserControl
         _ = LoadServersList();
     }
 
-    public async Task LoadServersList()
+    public static async Task LoadServersList()
     {
         try
         {
             JObject res = await DaemonAPIService.GetJsonContentAsync("/api/instance/list");
             JArray servers = (JArray)res["data"]!;
-            MCServerModel.ServerList.Clear();
 
-            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            // 使用 Select 进行投影 (Mapping)
+            var serverItems = servers.Cast<JObject>().Select(server => new MCServerModel.ServerInfo
             {
-                MCServerModel.ServerList.Clear();
-                foreach (JObject server in servers.Cast<JObject>())
-                {
-                    MCServerModel.ServerList.Add(new MCServerModel.ServerInfo
-                    {
-                        ID = (int)server["id"]!,
-                        Name = (string)server["name"]!,
-                        Base = (string)server["basePath"]!,
-                        Java = (string)server["java"]!,
-                        Core = (string)server["core"]!,
-                        Status = (int)server["status"]!,
-                        StatusStr = (string)server["statusText"]!,
-                    });
-                }
-            });
+                ID = (int)server["id"]!,
+                Name = (string)server["name"]!,
+                Base = (string)server["basePath"]!,
+                Java = (string)server["java"]!,
+                Core = (string)server["core"]!,
+                Status = (int)server["status"]!,
+                StatusStr = (string)server["statusText"]!,
+            }).Reverse();
+            // 直接传入构造函数，避免多次扩容
+            var _list = new ObservableCollection<MCServerModel.ServerInfo>(serverItems);
+
+            MCServerModel.Instance.ServerList = _list;
         }
-        catch (System.Exception ex)
+        catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"加载服务器列表失败: {ex.Message}");
         }
     }
 
-
     // 运行服务器命令
     public void RunServer(int serverId)
     {
-        var server = MCServerModel.ServerList.FirstOrDefault(s => s.ID == serverId);
+        var server = MCServerModel.Instance.ServerList.FirstOrDefault(s => s.ID == serverId);
         if (server != null)
         {
             server.Status = 2;
@@ -77,10 +72,10 @@ public partial class InstanceListPage : UserControl
     // 删除服务器命令
     public void DeleteServer(int serverId)
     {
-        var server = MCServerModel.ServerList.FirstOrDefault(s => s.ID == serverId);
+        var server = MCServerModel.Instance.ServerList.FirstOrDefault(s => s.ID == serverId);
         if (server != null)
         {
-            MCServerModel.ServerList.Remove(server);
+            MCServerModel.Instance.ServerList.Remove(server);
             System.Diagnostics.Debug.WriteLine($"删除服务器 {server.Name}");
         }
     }
@@ -88,7 +83,7 @@ public partial class InstanceListPage : UserControl
     // 打开文件夹命令
     public void OpenFolder(int serverId)
     {
-        var server = MCServerModel.ServerList.FirstOrDefault(s => s.ID == serverId);
+        var server = MCServerModel.Instance.ServerList.FirstOrDefault(s => s.ID == serverId);
         if (server != null)
         {
             // 这里添加打开文件夹的逻辑

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace MSLX.Desktop.Utils.API
@@ -18,7 +19,7 @@ namespace MSLX.Desktop.Utils.API
         /// </summary>
         /// <param name="path">API路径，如 "/notice"</param>
         /// <returns>HTTP响应对象</returns>
-        public static async Task<HttpResponse> GetApiAsync(string path, object? queryParameters = null)
+        public static async Task<HttpResponse> GetApiAsync(string path, object? queryParameters = null, CancellationToken cancellationToken = default)
         {
             string url = ConfigStore.DaemonAddress;
 
@@ -30,7 +31,8 @@ namespace MSLX.Desktop.Utils.API
                 url + path,
                 queryParameters,
                 headers => headers.Add("x-api-key", ConfigStore.DaemonApiKey),
-                UAManager.UAType.MSLX);
+                UAManager.UAType.MSLX,
+                cancellationToken: cancellationToken);
         }
 
         /// <summary>
@@ -159,14 +161,18 @@ namespace MSLX.Desktop.Utils.API
                     Exception = ex
                 };
             }
+            finally
+            {
+                httpClient.Dispose();
+            }
         }
 
         #endregion
 
         #region 常用方法
-        public static async Task<(bool IsSuccess, string Msg, JObject? Data)> VerifyDaemonApiKey()
+        public static async Task<(bool IsSuccess, string Msg, JObject? Data)> VerifyDaemonApiKey(CancellationToken cancellationToken = default)
         {
-            var response = await GetApiAsync("/api/status");
+            var response = await GetApiAsync("/api/status", cancellationToken: cancellationToken);
 
             Debug.WriteLine(ConfigStore.DaemonApiKey);
             Debug.WriteLine(response.StatusCode);
@@ -299,13 +305,11 @@ namespace MSLX.Desktop.Utils.API
             try
             {
                 // 构建 multipart/form-data
-                using var content = new MultipartFormDataContent();
-
-                // 添加 uploadId 字段
-                content.Add(new StringContent(uploadId), "uploadId");
-
-                // 添加 index 字段
-                content.Add(new StringContent(index.ToString()), "index");
+                using var content = new MultipartFormDataContent
+                {
+                    { new StringContent(uploadId), "uploadId" }, // 添加 uploadId 字段
+                    { new StringContent(index.ToString()), "index" } // 添加 index 字段
+                };
 
                 // 添加文件
                 var fileContent = new ByteArrayContent(fileData);

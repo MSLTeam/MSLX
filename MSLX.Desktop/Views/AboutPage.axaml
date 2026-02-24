@@ -1,0 +1,178 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             xmlns:local="clr-namespace:MSLX.Desktop.Views"
+             xmlns:models="clr-namespace:MSLX.Desktop.Models"
+             mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="1200"
+             x:Class="MSLX.Desktop.Views.AboutPage"
+             x:DataType="local:AboutPage"> <ScrollViewer>
+        <StackPanel Spacing="20" Margin="20">
+            
+            <suki:GlassCard>
+                <StackPanel Spacing="15">
+                    <TextBlock Text="关于 MSLX" FontSize="24" FontWeight="Bold"/>
+                    <Border Background="{DynamicResource SukiBackground}" 
+                            CornerRadius="8" Padding="15" 
+                            BorderBrush="{DynamicResource SukiPrimaryColor}" 
+                            BorderThickness="4,0,0,0">
+                        <StackPanel Spacing="10">
+                            <TextBlock TextWrapping="Wrap" LineHeight="24">
+                                <Run FontWeight="Bold" Foreground="{DynamicResource SukiPrimaryColor}">MSLX</Run>
+                                <Run>是由</Run>
+                                <Run FontWeight="Bold">MSL 原班团队 MSLTeam</Run>
+                                <Run>倾力打造的全新一代开服工具。基于</Run>
+                                <Run FontWeight="Bold">.NET 10.0</Run>
+                                <Run>环境。</Run>
+                            </TextBlock>
+                            <TextBlock TextWrapping="Wrap" LineHeight="24">
+                                它传承了 MSL 经典的 UI 设计语言，旨在让操作零门槛。
+                                MSLX 不仅 <Run FontWeight="Bold">完美支持跨平台</Run> (Windows / macOS / Linux)，
+                                相比前代，更引入了强大的 <Run FontWeight="Bold">远程访问</Run> 功能。
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </suki:GlassCard>
+
+            <suki:GlassCard>
+                <StackPanel Spacing="10">
+                    <TextBlock Text="版本信息" FontSize="18" FontWeight="SemiBold"/>
+                    <WrapPanel>
+                        <StackPanel Margin="0,0,40,10">
+                            <TextBlock Text="当前版本" FontSize="12" Opacity="0.6"/>
+                            <TextBlock x:Name="VersionNumText" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource SukiPrimaryColor}" Text="Loading..."/>
+                        </StackPanel>
+                        <StackPanel Margin="0,0,40,10">
+                            <TextBlock Text="运行环境" FontSize="12" Opacity="0.6"/>
+                            <StackPanel Orientation="Horizontal" Spacing="5">
+                                <TextBlock Text=".NET 10.0" Foreground="#512bd4" FontWeight="SemiBold"/>
+                                <TextBlock Text="|" Opacity="0.3"/>
+                                <TextBlock Text="AvaloniaUI" Opacity="0.8"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </WrapPanel>
+                </StackPanel>
+            </suki:GlassCard>
+
+            <suki:GlassCard>
+                <StackPanel Spacing="15">
+                    <TextBlock Text="开发团队" FontSize="18" FontWeight="SemiBold"/>
+                    <TextBlock Text="感谢以下开发者对本项目的杰出贡献：" FontSize="14" Opacity="0.7"/>
+                    
+                    <ItemsControl ItemsSource="{Binding Developers}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:MemberModel">
+                                <Border Width="260" Margin="0,0,15,15" Padding="10" 
+                                        Background="{DynamicResource SukiBackground}" 
+                                        CornerRadius="8" BoxShadow="0 2 5 0 #10000000">
+                                    <Grid ColumnDefinitions="Auto,*">
+                                        <Ellipse Width="56" Height="56" Margin="0,0,15,0" 
+                                                 RenderOptions.BitmapInterpolationMode="HighQuality">
+                                            <Ellipse.Fill>
+                                                <ImageBrush Source="{Binding AvatarBitmap}" />
+                                            </Ellipse.Fill>
+                                        </Ellipse>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="16"/>
+                                            <Border Background="{DynamicResource SukiPrimaryColor}" 
+                                                    CornerRadius="4" HorizontalAlignment="Left" 
+                                                    Padding="6,2" Margin="0,4">
+                                                <TextBlock Text="{Binding Role}" FontSize="10" Foreground="White"/>
+                                            </Border>
+                                            <TextBlock Text="{Binding Desc}" FontSize="12" Opacity="0.6" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </suki:GlassCard>
+
+            <suki:GlassCard>
+                <StackPanel Spacing="15">
+                    <TextBlock Text="鸣谢" FontSize="18" FontWeight="SemiBold"/>
+                    <TextBlock Text="特别感谢参与内测并提供反馈的伙伴们：" FontSize="14" Opacity="0.7"/>
+
+                    <ItemsControl ItemsSource="{Binding Testers}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                             <DataTemplate x:DataType="models:MemberModel">
+                                <Border Width="240" Margin="0,0,15,15" Padding="10"
+                                        Background="{DynamicResource SukiBackground}"
+                                        CornerRadius="8">
+                                    <Grid ColumnDefinitions="Auto,*">
+                                        <Ellipse Width="48" Height="48" Margin="0,0,12,0"
+                                                 RenderOptions.BitmapInterpolationMode="HighQuality">
+                                            <Ellipse.Fill>
+                                                <ImageBrush Source="{Binding AvatarBitmap}"/>
+                                            </Ellipse.Fill>
+                                        </Ellipse>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
+                                            <Border Background="#E8F5E9" CornerRadius="4" HorizontalAlignment="Left" Padding="4,1" Margin="0,2">
+                                                <TextBlock Text="{Binding Role}" FontSize="10" Foreground="#2E7D32"/>
+                                            </Border>
+                                            <TextBlock Text="{Binding Desc}" FontSize="11" Opacity="0.6" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </suki:GlassCard>
+
+            <suki:GlassCard>
+                <StackPanel Spacing="15">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="更新日志" FontSize="18" FontWeight="SemiBold"/>
+                        <suki:Loading x:Name="LogLoading" Grid.Column="1" Width="24" Height="24"/>
+                    </Grid>
+
+                    <TextBlock x:Name="LogEmptyText" 
+                               Text="暂无更新日志" 
+                               IsVisible="False"
+                               HorizontalAlignment="Center" Opacity="0.5" Margin="20"/>
+
+                    <ScrollViewer MaxHeight="400">
+                        <ItemsControl x:Name="LogItemsControl">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="models:UpdateLogModel">
+                                    <Grid ColumnDefinitions="30,*">
+                                        <Panel Grid.Column="0">
+                                            <Rectangle Width="2" HorizontalAlignment="Center" Fill="{DynamicResource SukiControlBorderBrush}" VerticalAlignment="Stretch"/>
+                                            <Ellipse Width="10" Height="10" Fill="{DynamicResource SukiPrimaryColor}" VerticalAlignment="Top" Margin="0,6,0,0"/>
+                                        </Panel>
+                                        
+                                        <StackPanel Grid.Column="1" Margin="0,0,0,20">
+                                            <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,0,0,5">
+                                                <Border Background="{DynamicResource SukiPrimaryColor}" CornerRadius="4" Padding="6,2">
+                                                    <TextBlock Text="{Binding Version}" Foreground="White" FontSize="12"/>
+                                                </Border>
+                                                <TextBlock Text="{Binding Time}" VerticalAlignment="Center" Opacity="0.6" FontSize="12" FontFamily="Consolas"/>
+                                            </StackPanel>
+                                            <TextBlock Text="{Binding Changes}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </StackPanel>
+            </suki:GlassCard>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

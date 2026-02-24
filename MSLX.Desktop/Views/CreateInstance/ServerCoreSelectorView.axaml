@@ -1,0 +1,127 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:micon="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             xmlns:local="using:MSLX.Desktop.Views.CreateInstance"
+             mc:Ignorable="d" VerticalAlignment="Center"
+             HorizontalAlignment="Center"
+             d:DesignWidth="960" d:DesignHeight="700"
+             x:Class="MSLX.Desktop.Views.CreateInstance.ServerCoreSelectorView">
+             
+    <Grid ColumnDefinitions="Auto,*"> <Border Grid.Column="0" 
+                Width="240"
+                BorderBrush="{DynamicResource SukiBorderBrush}" 
+                BorderThickness="0,0,1,0" 
+                Padding="0,0,10,0">
+            <Grid RowDefinitions="Auto,*">
+                <StackPanel Grid.Row="0" Margin="10,0,0,15">
+                    <TextBlock Text="服务端分类" Classes="h4" FontWeight="SemiBold"/>
+                    <TextBlock Text="选择服务端类型" Opacity="0.6" FontSize="12"/>
+                </StackPanel>
+                
+                <ListBox Grid.Row="1" 
+                         x:Name="ListCategories" 
+                         SelectionMode="Single" 
+                         Background="Transparent"
+                         SelectionChanged="ListCategories_SelectionChanged">
+                    <ListBox.Styles>
+                        <Style Selector="ListBoxItem">
+                            <Setter Property="Padding" Value="10"/>
+                            <Setter Property="CornerRadius" Value="8"/>
+                            <Setter Property="Margin" Value="0,2"/>
+                        </Style>
+                    </ListBox.Styles>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="local:ServerCoreSelectorView+CoreCategory">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <micon:MaterialIcon Kind="{Binding Icon}" Width="20" Height="20" Opacity="0.8"/>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding Name}" FontWeight="Medium"/>
+                                    <TextBlock Text="{Binding Description}" FontSize="10" Opacity="0.6" TextWrapping="NoWrap"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                
+                <ProgressBar Grid.Row="1" IsIndeterminate="True" x:Name="LoadingBar" IsVisible="False" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Column="1" Margin="15,0,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/> 
+                <RowDefinition Height="1.5*"/> 
+                <RowDefinition Height="Auto"/> 
+                <RowDefinition Height="1*"/>   
+            </Grid.RowDefinitions>
+            
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+                <TextBlock Text="选择核心" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                <TextBox x:Name="TxtSearch" Grid.Column="1" 
+                         MinWidth="150" MaxWidth="250" Width="NaN" 
+                         Watermark="搜索核心..." Classes="RevealPasswordButton" TextChanged="TxtSearch_TextChanged"/>
+            </Grid>
+
+            <Border Grid.Row="1" 
+                    BorderBrush="{DynamicResource SukiBorderBrush}" 
+                    BorderThickness="1" 
+                    CornerRadius="8" 
+                    Padding="10">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <ItemsControl x:Name="ItemsCores">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Classes="Outlined" Margin="0,0,8,8" Width="150" Height="45" Click="BtnCore_Click">
+                                    <TextBlock Text="{Binding}" TextWrapping="Wrap" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Medium"/>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Border>
+
+            <GridSplitter Grid.Row="2" Height="4" Background="Transparent" Margin="0,5" ResizeDirection="Rows"/>
+
+            <Grid Grid.Row="3" RowDefinitions="Auto,*">
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,10">
+                    <TextBlock x:Name="TxtSelectedCoreTitle" Text="请选择一个核心" FontWeight="SemiBold"/>
+                    <ProgressBar x:Name="ProgressVersions" IsIndeterminate="True" Width="20" Height="20" IsVisible="False"/>
+                </StackPanel>
+
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl x:Name="ItemsVersions">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Button Classes="Flat" Margin="0,0,5,5" Padding="15,8" Click="BtnVersion_Click">
+                                    <TextBlock Text="{Binding}" FontWeight="Bold"/>
+                                </Button>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+                
+                <TextBlock Grid.Row="1" x:Name="TxtVersionTip" Text="点击上方核心以加载可用版本列表" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.5"/>
+            </Grid>
+        </Grid>
+        
+        <Grid Grid.ColumnSpan="2" Background="#80000000" IsVisible="False" x:Name="MaskLoading">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
+                <suki:Loading />
+                <TextBlock Text="正在获取核心信息..." Foreground="White" FontWeight="SemiBold"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

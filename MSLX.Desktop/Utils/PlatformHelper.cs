@@ -1,3 +1,4 @@
+﻿using MSLX.Desktop.Models;
 using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -74,6 +75,19 @@ namespace MSLX.Desktop.Utils
             {
                 return null;
             }
+        }
+
+        public static bool IsLocalService()
+        {
+            var addr = ConfigStore.DaemonAddress.ToLower();
+
+            if (addr.Contains("localhost") ||
+                addr.Contains("127.0.0.1") ||
+                addr.Contains("[::1]"))
+            {
+                return true;
+            }
+            return false;
         }
 
         #region Linux/macOS 获取用户 ID

@@ -1,55 +1,41 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
-             xmlns:sukitheme="clr-namespace:SukiUI.Theme;assembly=SukiUI"
-             xmlns:micon="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
-             xmlns:markdown="clr-namespace:Markdown.Avalonia;assembly=Markdown.Avalonia"
-             xmlns:ctxt="clr-namespace:ColorTextBlock.Avalonia;assembly=ColorTextBlock.Avalonia"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="MSLX.Desktop.Views.HomePage">
-    <Grid RowDefinitions="*,auto">
-        <suki:GlassCard Margin="10">
-            <Grid RowDefinitions="auto,*">
-				<TextBlock Text="公告" Classes="h3"/>
-                <markdown:MarkdownScrollViewer x:Name="AnnouncementViewer" Grid.Row="1" Markdown="# Welcome to MSLX Desktop!">
-                    <markdown:MarkdownScrollViewer.Styles>
-                        <Style Selector="ctxt|CTextBlock.Heading1">
-                            <Setter Property="Foreground" Value="{DynamicResource SukiText}"/>
-                            <Setter Property="FontSize" Value="32"/>
-                            <Setter Property="FontWeight" Value="Bold"/>
-                        </Style>
-                        <Style Selector="ctxt|CTextBlock.Heading2">
-                            <Setter Property="Foreground" Value="{DynamicResource SukiText}"/>
-                            <Setter Property="FontWeight" Value="Bold"/>
-                        </Style>
-                        <Style Selector="ctxt|CTextBlock.Heading3">
-                            <Setter Property="Foreground" Value="{DynamicResource SukiText}"/>
-                        </Style>
-                        <Style Selector="ctxt|CTextBlock.Heading4">
-                            <Setter Property="Foreground" Value="{DynamicResource SukiText}"/>
-                        </Style>
-                        <Style Selector="ctxt|CTextBlock.Heading5">
-                            <Setter Property="Foreground" Value="{DynamicResource SukiText}"/>
-                        </Style>
-                    </markdown:MarkdownScrollViewer.Styles>
-                </markdown:MarkdownScrollViewer>
-            </Grid>
-        </suki:GlassCard>
-        <UniformGrid Grid.Row="1" Columns="3" Height="64" Margin="10,0,10,10" HorizontalAlignment="Right" VerticalAlignment="Center" >
-            <Button x:Name="DocsBtn" Margin="5" Classes="Danger">
-                <StackPanel Orientation="Horizontal">
-                            <micon:MaterialIcon Kind="FolderOutline"/>
-                            <TextBlock Margin="3,0,0,0" Text="Documentation"/>
-                </StackPanel>
-            </Button>
-            <Button x:Name="GithubBtn" Content="GitHub" Margin="5"/>
-            <Button x:Name="StartBtn" Content="Get Started" Classes="Flat" Margin="5">
-                <sukitheme:ButtonExtensions.Icon>
-                    <micon:MaterialIcon Kind="PlayCircleOutline" VerticalAlignment="Center"/>
-                </sukitheme:ButtonExtensions.Icon>
-            </Button>
-        </UniformGrid>
-    </Grid>
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+			 xmlns:sukitheme="clr-namespace:SukiUI.Theme;assembly=SukiUI"
+			 xmlns:micon="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+			 xmlns:ctrl="using:MSLX.Desktop.Controls"
+			 xmlns:avedit="https://github.com/avaloniaui/avaloniaedit"
+			 mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
+			 x:Class="MSLX.Desktop.Views.HomePage">
+	<Grid RowDefinitions="*,auto">
+		<suki:GlassCard Margin="12" Padding="20">
+			<Grid RowDefinitions="auto,*">
+				<TextBlock Classes="h3" Text="公告"/>
+				<ctrl:MagicMarkdown Grid.Row="1" x:Name="MarkdownViewer"/>
+			</Grid>
+		</suki:GlassCard>
+
+		<UniformGrid Grid.Row="1" Columns="3" Height="50" Margin="12,0,12,12" HorizontalAlignment="Right" VerticalAlignment="Center">
+			<Button x:Name="DocsBtn" Margin="5" Classes="Outlined" BorderThickness="1">
+				<StackPanel Orientation="Horizontal" Spacing="5">
+					<micon:MaterialIcon Kind="BookOpenOutline" Width="16" Height="16"/>
+					<TextBlock Text="文档" VerticalAlignment="Center" FontSize="14"/>
+				</StackPanel>
+			</Button>
+			<Button x:Name="GithubBtn" Margin="5" Classes="Outlined" BorderThickness="1">
+				<StackPanel Orientation="Horizontal" Spacing="5">
+					<micon:MaterialIcon Kind="Github" Width="16" Height="16"/>
+					<TextBlock Text="GitHub" VerticalAlignment="Center" FontSize="14"/>
+				</StackPanel>
+			</Button>
+			<Button x:Name="StartBtn" Classes="Flat" Margin="5">
+				<StackPanel Orientation="Horizontal" Spacing="5">
+					<micon:MaterialIcon Kind="RocketLaunchOutline" Width="16" Height="16"/>
+					<TextBlock Text="快速开始" VerticalAlignment="Center" FontSize="14" FontWeight="DemiBold"/>
+				</StackPanel>
+			</Button>
+		</UniformGrid>
+	</Grid>
 </UserControl>

@@ -133,14 +133,6 @@ namespace MSLX.Desktop.Utils
         private readonly ConcurrentDictionary<string, DownloadItem> _downloadItems = new ConcurrentDictionary<string, DownloadItem>();
         private readonly ConcurrentDictionary<string, DownloadService> _downloaders = new ConcurrentDictionary<string, DownloadService>();
 
-        // 用于备用下载的 HttpClient 实例（复用连接）
-        private static readonly HttpClient _httpClient = new HttpClient(new HttpClientHandler
-        {
-            AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate
-        })
-        {
-            Timeout = TimeSpan.FromMinutes(30)
-        };
         #endregion
 
         #region 公共属性
@@ -608,7 +600,7 @@ namespace MSLX.Desktop.Utils
                 {
                     request.Headers.TryAddWithoutValidation("User-Agent", userAgent);
                 }
-
+                HttpClient? _httpClient = new HttpClient();
                 // 发送请求并获取响应（使用 HttpCompletionOption.ResponseHeadersRead 以支持流式下载）
                 using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, item.CancellationTokenSource.Token);
                 response.EnsureSuccessStatusCode();
@@ -663,6 +655,8 @@ namespace MSLX.Desktop.Utils
                 await fileStream.FlushAsync(item.CancellationTokenSource.Token);
                 await fileStream.DisposeAsync();
                 fileStream = null;
+                _httpClient.Dispose();
+                _httpClient = null;
 
                 // 验证文件完整性
                 if (totalBytes > 0 && totalDownloaded != totalBytes)

@@ -227,7 +227,7 @@ watch(
   }
 
   :deep(.md-editor-preview blockquote) {
-    background-color: color-mix(in srgb, var(--md-theme-quote-bg-color), transparent 50%) !important;
+    background-color: color-mix(in srgb, var(--md-theme-quote-bg-color), transparent 80%) !important;
   }
 }
 

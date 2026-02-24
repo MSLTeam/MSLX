@@ -1,14 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
-import {
-  Card as TCard,
-  Loading as TLoading,
-  Icon as TIcon,
-} from 'tdesign-vue-next';
+import { Card as TCard, Loading as TLoading, Icon as TIcon } from 'tdesign-vue-next';
 import { request } from '@/utils/request';
 import { MdPreview, type Themes } from 'md-editor-v3';
 import 'md-editor-v3/lib/preview.css';
-import { useDark } from "@vueuse/core";
+import { useDark } from '@vueuse/core';
 
 const loading = ref(true);
 const notice = ref('');
@@ -22,11 +18,11 @@ watch(isDark, () => {
 
 async function fetchAnnouncement() {
   loading.value = true;
-  const fallbackMarkdown = "## 🔴 公告加载失败\n- 请检查网络连接或联系管理员。";
+  const fallbackMarkdown = '## 🔴 公告加载失败\n- 请检查网络连接或联系管理员。';
 
   try {
     const res = await request.get({
-      url: 'https://api.mslmc.cn/v3/query/notice?query=mslxNoticeMd'
+      url: 'https://api.mslmc.cn/v3/query/notice?query=mslxNoticeMd',
     });
 
     if (res && res.mslxNoticeMd) {
@@ -35,7 +31,7 @@ async function fetchAnnouncement() {
       notice.value = fallbackMarkdown;
     }
   } catch (err) {
-    console.error("获取公告失败:", err);
+    console.error('获取公告失败:', err);
     notice.value = fallbackMarkdown;
   } finally {
     loading.value = false;
@@ -117,7 +113,7 @@ onMounted(() => {
 }
 
 // 覆盖MD编辑器链接颜色
-:deep(.md-editor-preview a){
+:deep(.md-editor-preview a) {
   color: var(--td-brand-color);
   text-decoration: none;
   &:hover {
@@ -126,7 +122,7 @@ onMounted(() => {
 }
 
 // 覆盖代码块颜色
-:deep(.md-editor-preview code){
+:deep(.md-editor-preview code) {
   color: var(--td-brand-color);
   background-color: color-mix(in srgb, var(--td-brand-color), transparent 90%);
   border-radius: 4px;
@@ -134,19 +130,13 @@ onMounted(() => {
 }
 
 // 引用块左边框颜色
-:deep(.md-editor div.default-theme){
+:deep(.md-editor div.default-theme) {
   --md-theme-quote-border: 4px solid var(--td-brand-color);
 }
 
-// 暗黑模式适配
-:deep(.md-editor-dark) {
-  --md-color: var(--td-text-color-primary);
+// 颜色模式适配
+:deep(.md-editor-preview) {
+  --md-color: var(--td-text-color-primary) !important;
   --md-bk-color: transparent;
-}
-
-// 亮色模式适配
-:deep(.md-editor-light) {
-  --md-color: var(--td-text-color-primary);
-  --md-bk-color: transparent; // 设为透明
 }
 </style>

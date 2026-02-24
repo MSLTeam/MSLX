@@ -65,7 +65,7 @@ const termThemes = {
     brightBlack: '#666666',
     brightRed: '#f14c4c',
     brightGreen: '#23d18b',
-    brightYellow: '#f5f543',
+    brightYellow: '#aeae11',
     brightBlue: '#3b8eea',
     brightMagenta: '#d670d6',
     brightCyan: '#29b8db',
@@ -164,7 +164,6 @@ const startSignalR = async () => {
   const { baseUrl, token } = userStore;
   const hubUrl = new URL('/api/hubs/frpLogsHub', baseUrl || window.location.origin);
   if (token) hubUrl.searchParams.append('x-user-token', token);
-  console.log(hubUrl.toString());
 
   hubConnection = new HubConnectionBuilder()
     .withUrl(hubUrl.toString(), { withCredentials: false })

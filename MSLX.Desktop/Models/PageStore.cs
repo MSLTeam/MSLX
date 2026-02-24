@@ -1,4 +1,4 @@
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 using Material.Icons;
 using Material.Icons.Avalonia;
 using MSLX.Desktop.Views;
@@ -60,7 +60,7 @@ namespace MSLX.Desktop.Models
                 {
                     Kind = MaterialIconKind.Settings,
                 },
-                // PageContent = new TextBlock{Text="Hello World!"},
+                PageContent = new SettingsPage(),
             },
             new() {
                 Header = "关于",
@@ -68,7 +68,7 @@ namespace MSLX.Desktop.Models
                 {
                     Kind = MaterialIconKind.Info,
                 },
-                PageContent =new TextBlock{Text="Hello World!"},
+                PageContent =new AboutPage(),
             }
         };
 
