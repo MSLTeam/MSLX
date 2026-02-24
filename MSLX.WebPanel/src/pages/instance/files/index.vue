@@ -821,6 +821,10 @@ onUnmounted(() => {
 </template>
 
 <style scoped lang="less">
+:deep(.t-breadcrumb--text-overflow) {
+  background-color: transparent !important;
+}
+
 .file-manager-wrapper {
   padding-bottom: 20px;
 }
