@@ -484,15 +484,9 @@ watch(isDark, () => {
   --md-theme-quote-border: 4px solid var(--td-brand-color);
 }
 
-// 暗黑模式适配
-:deep(.md-editor-dark) {
-  --md-color: var(--td-text-color-primary);
+// 颜色模式适配
+:deep(.md-editor-preview) {
+  --md-color: var(--td-text-color-primary) !important;
   --md-bk-color: transparent;
-}
-
-// 亮色模式适配
-:deep(.md-editor-light) {
-  --md-color: var(--td-text-color-primary);
-  --md-bk-color: transparent; // 设为透明
 }
 </style>
