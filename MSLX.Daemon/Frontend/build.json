@@ -1,6 +1,6 @@
 {
-  "version": "1.2.0",
-  "buildTime": "2026-02-24 21:31:14",
+  "version": "1.2.1",
+  "buildTime": "2026-02-25 17:51:20",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,52 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "759a4093a1df5e5959a2beb08f6f9e10f0b2d6e2",
-  "commitMsg": "feat(webpanel): 隧道服务新增对 ME Frp 的支持",
+  "commitId": "af17ccb324ff413b4963cb7da423958563ba9200",
+  "commitMsg": "feat(daemon & webpanel): 新增服务器在线玩家管理功能 #38",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "af17ccb324ff413b4963cb7da423958563ba9200",
+      "commitTime": "2026-02-25 17:47:11 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 新增服务器在线玩家管理功能 #38"
+    },
+    {
+      "commitId": "62fa0528bfd24aa6868365d9cf7086115eae4fd1",
+      "commitTime": "2026-02-24 22:13:31 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复文件面包屑导航异常底色问题 #56"
+    },
+    {
+      "commitId": "f4d4481beed167e9fc1db0ec85d277bd8b648e63",
+      "commitTime": "2026-02-24 22:04:49 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 增加关键操作的二次确认气泡 #54"
+    },
+    {
+      "commitId": "2d3bc2b69c32fd532334c6a90fd2de9f9aee061f",
+      "commitTime": "2026-02-24 21:33:43 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #58 from MSLTeam/dev"
+    },
+    {
+      "commitId": "8ccddf0c095d82d9d533e4a59ab460bf674aaef8",
+      "commitTime": "2026-02-24 21:33:17 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.2.0"
+    },
+    {
+      "commitId": "43f138f98787b437e925fc9cd074b1675adccbcc",
+      "commitTime": "2026-02-24 21:32:52 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #57 from MSLTeam/dev"
+    },
+    {
+      "commitId": "8039bbf12a5c07e11aa7cd418ed88f15e549a230",
+      "commitTime": "2026-02-24 21:31:20 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.2.0"
+    },
     {
       "commitId": "759a4093a1df5e5959a2beb08f6f9e10f0b2d6e2",
       "commitTime": "2026-02-24 21:29:04 +0800",
@@ -327,48 +369,6 @@
     {
       "commitId": "2f60b7d1e9fca7d7c144ed9f8c35c0ff2f29ceb1",
       "commitTime": "2026-02-08 17:29:56 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
-    },
-    {
-      "commitId": "56e33322191519becd111d0de6dab3bd07acb8a1",
-      "commitTime": "2026-02-08 17:29:26 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "style(desktop): 优化多此一举的ServerList绑定代码"
-    },
-    {
-      "commitId": "9b90a74c65b2520c11767dc89fc3de97df038f57",
-      "commitTime": "2026-02-07 13:13:14 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #48 from MSLTeam/dev"
-    },
-    {
-      "commitId": "144aef4de7871680ab74a44853408c8326cee5fb",
-      "commitTime": "2026-02-07 13:12:10 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.1.10 - release & 嵌入前端资源"
-    },
-    {
-      "commitId": "474ab87f160358d7ff476ad5916c8758d8a119c1",
-      "commitTime": "2026-02-07 13:09:25 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 优化Java版本选择指南的样式"
-    },
-    {
-      "commitId": "0c3e64853ea80932260a17d6358897e121901bd0",
-      "commitTime": "2026-02-07 12:56:39 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 在所有的内网地址下均隐藏MSL OAuth的配置显示"
-    },
-    {
-      "commitId": "353e9624d1264c5025b3022c42a524c078a9e92a",
-      "commitTime": "2026-02-06 23:59:06 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复实例终端无法直接输入命令的问题 & 优化终端上下文一些组件的字体表现"
-    },
-    {
-      "commitId": "18972ededdb4170b085b8aea68607d336e670248",
-      "commitTime": "2026-02-06 19:03:17 +0800",
       "commitAuthor": "Waheal",
       "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
     }

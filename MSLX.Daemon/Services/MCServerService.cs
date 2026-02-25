@@ -46,15 +46,8 @@ public class MCServerService
     private const int MaxLogLines = 1000;
 
     // 匹配玩家进入/离开的正则表达式
-    // 匹配底层网络连接 (防止玩家聊天伪造，且不受静默进退服插件影响)
-    // 示例: [16:34:43 INFO]: xiaoyululu[/127.0.0.1:4288] logged in with entity id 1 at ...
     private static readonly Regex PlayerJoinedRegex = new Regex(@"\]:\s*(?<player>[a-zA-Z0-9_\-\.\* ]+)\[.*?\]\slogged\sin\swith\sentity\sid", RegexOptions.Compiled);
-
-    // 匹配底层网络断开
-    // 示例: [16:36:57 INFO]: xiaoyululu lost connection: Disconnected
     private static readonly Regex PlayerLeftRegex = new Regex(@"\]:\s*(?<player>[a-zA-Z0-9_\-\.\* ]+)\slost\sconnection:", RegexOptions.Compiled);
-
-    // 匹配并去除 ANSI 颜色和控制序列的正则 (比如 \x1B[32m 或 \x1B[0m)
     private static readonly Regex AnsiColorRegex = new Regex(@"\x1B\[[0-9;]*[a-zA-Z]", RegexOptions.Compiled);
 
     public MCServerService(
@@ -905,15 +898,14 @@ public class MCServerService
     // 解析玩家进入/离开日志
     private void ParsePlayerActivity(uint instanceId, ServerContext context, string logLine)
     {
-        // 1. 极其高效的预检：直接在原始（带可能颜色）的文本上做关键字过滤
-        // 绝大多数无关日志会瞬间在这里被 return 掉，根本不消耗正则性能
+        // 预检
         if (!logLine.Contains("logged in with entity id") && !logLine.Contains("lost connection:"))
             return;
 
-        // 2. 只有确认是目标日志后，才执行相对耗时的“正则去色”
+        // 去掉ansi颜色代码
         string cleanLog = AnsiColorRegex.Replace(logLine, "");
 
-        // 3. 匹配加入 (使用纯净文本)
+        // 匹配加入
         var joinMatch = PlayerJoinedRegex.Match(cleanLog);
         if (joinMatch.Success)
         {
@@ -925,7 +917,7 @@ public class MCServerService
             return;
         }
 
-        // 4. 匹配离开 (使用纯净文本)
+        // 匹配离开
         var leftMatch = PlayerLeftRegex.Match(cleanLog);
         if (leftMatch.Success)
         {
