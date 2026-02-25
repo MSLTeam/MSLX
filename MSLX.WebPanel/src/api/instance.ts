@@ -91,3 +91,9 @@ export function getBackupDownloadUrl(id: number, fileName: string) {
   return `${baseUrl || window.location.origin}/api/instance/backups/download?id=${id}&fileName=${encodeURIComponent(fileName)}&x-user-token=${token}`;
 }
 
+// 玩家管理相关
+export async function getOnlinePlayers(id:number) {
+  return await request.get<string[]>({
+    url: `/api/instance/players/online/${id}`,
+  });
+}

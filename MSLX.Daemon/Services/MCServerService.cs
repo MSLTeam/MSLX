@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Management;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace MSLX.Daemon.Services;
 
@@ -30,6 +31,7 @@ public class MCServerService
         public bool IsInitializing { get; set; } = false;
         public volatile bool IsStopping = false;
         public volatile bool IsBackuping = false;
+        public ConcurrentDictionary<string, bool> OnlinePlayers { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
         // 用于计算资源使用率
         public TimeSpan PreviousTotalProcessorTime { get; set; } = TimeSpan.Zero;
@@ -42,6 +44,11 @@ public class MCServerService
     private readonly ConcurrentDictionary<uint, ServerContext> _activeServers = new(); // 存储运行中实例的状态数据
     private readonly ConcurrentDictionary<uint, bool> _restartingServers = new(); // 存储正在重启的实例ID
     private const int MaxLogLines = 1000;
+
+    // 匹配玩家进入/离开的正则表达式
+    private static readonly Regex PlayerJoinedRegex = new Regex(@"\]:\s*(?<player>[a-zA-Z0-9_\-\.\* ]+)\[.*?\]\slogged\sin\swith\sentity\sid", RegexOptions.Compiled);
+    private static readonly Regex PlayerLeftRegex = new Regex(@"\]:\s*(?<player>[a-zA-Z0-9_\-\.\* ]+)\slost\sconnection:", RegexOptions.Compiled);
+    private static readonly Regex AnsiColorRegex = new Regex(@"\x1B\[[0-9;]*[a-zA-Z]", RegexOptions.Compiled);
 
     public MCServerService(
         ILogger<MCServerService> logger,
@@ -117,6 +124,19 @@ public class MCServerService
     public bool HasRunningServers()
     {
         return !_activeServers.IsEmpty;
+    }
+
+
+    /// <summary>
+    /// 获取指定实例当前的在线玩家列表
+    /// </summary>
+    public List<string> GetOnlinePlayers(uint instanceId)
+    {
+        if (_activeServers.TryGetValue(instanceId, out var context))
+        {
+            return context.OnlinePlayers.Keys.ToList();
+        }
+        return new List<string>();
     }
 
 
@@ -750,6 +770,10 @@ public class MCServerService
     {
         if (!_activeServers.TryGetValue(instanceId, out var context)) return;
 
+        // 清空在线玩家
+        context.OnlinePlayers.Clear();
+        _hubContext.Clients.Group(instanceId.ToString()).SendAsync("PlayerListCleared", instanceId);
+
         // 用户手动停止
         if (context.IsStopping)
         {
@@ -867,6 +891,42 @@ public class MCServerService
 
         // 通过 SignalR 推送日志
         _hubContext.Clients.Group(instanceId.ToString()).SendAsync("ReceiveLog", data);
+
+        ParsePlayerActivity(instanceId, context, data);
+    }
+
+    // 解析玩家进入/离开日志
+    private void ParsePlayerActivity(uint instanceId, ServerContext context, string logLine)
+    {
+        // 预检
+        if (!logLine.Contains("logged in with entity id") && !logLine.Contains("lost connection:"))
+            return;
+
+        // 去掉ansi颜色代码
+        string cleanLog = AnsiColorRegex.Replace(logLine, "");
+
+        // 匹配加入
+        var joinMatch = PlayerJoinedRegex.Match(cleanLog);
+        if (joinMatch.Success)
+        {
+            string playerName = joinMatch.Groups["player"].Value.Trim();
+            if (context.OnlinePlayers.TryAdd(playerName, true))
+            {
+                _hubContext.Clients.Group(instanceId.ToString()).SendAsync("PlayerJoined", instanceId, playerName);
+            }
+            return;
+        }
+
+        // 匹配离开
+        var leftMatch = PlayerLeftRegex.Match(cleanLog);
+        if (leftMatch.Success)
+        {
+            string playerName = leftMatch.Groups["player"].Value.Trim();
+            if (context.OnlinePlayers.TryRemove(playerName, out _))
+            {
+                _hubContext.Clients.Group(instanceId.ToString()).SendAsync("PlayerLeft", instanceId, playerName);
+            }
+        }
     }
 
     // 安装Authlib-Injector

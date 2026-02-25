@@ -821,8 +821,10 @@ onUnmounted(() => {
 </template>
 
 <style scoped lang="less">
-:deep(.t-breadcrumb--text-overflow) {
+/* 修复全局 .light 样式污染面包屑的问题 */
+:deep(.t-breadcrumb__item.light) {
   background-color: transparent !important;
+  color: unset !important;
 }
 
 .file-manager-wrapper {

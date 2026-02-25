@@ -26,6 +26,11 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
   const eulaHandlers = new Set<() => void>();
   const commandResultHandlers = new Set<(_success: boolean, _msg: string) => void>();
 
+  // 玩家状态管理
+  const playerJoinedHandlers = new Set<(_name: string) => void>();
+  const playerLeftHandlers = new Set<(_name: string) => void>();
+  const playerListClearedHandlers = new Set<() => void>();
+
 
   // 随时更新最大内存，无需重连
   const setMaxMemory = (mb: number) => {
@@ -84,8 +89,27 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
         stats.value = {
           cpu,
           memBytes,
-          memPercent // 没最大内存 0
+          memPercent, // 没最大内存 0
         };
+      });
+
+      // 玩家事件
+      newConnection.on('PlayerJoined', (id: number | string, name: string) => {
+        if (String(id) === String(serverId)) {
+          playerJoinedHandlers.forEach((handler) => handler(name));
+        }
+      });
+
+      newConnection.on('PlayerLeft', (id: number | string, name: string) => {
+        if (String(id) === String(serverId)) {
+          playerLeftHandlers.forEach((handler) => handler(name));
+        }
+      });
+
+      newConnection.on('PlayerListCleared', (id: number | string) => {
+        if (String(id) === String(serverId)) {
+          playerListClearedHandlers.forEach((handler) => handler());
+        }
       });
 
       newConnection.onreconnecting(() => logHandlers.forEach(h => h('\x1b[1;31m[System] 连接中断，尝试重连...\x1b[0m')));
@@ -159,6 +183,22 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
     return () => commandResultHandlers.delete(handler);
   };
 
+  // 玩家事件
+  const onPlayerJoined = (handler: (_name: string) => void) => {
+    playerJoinedHandlers.add(handler);
+    return () => playerJoinedHandlers.delete(handler);
+  };
+
+  const onPlayerLeft = (handler: (_name: string) => void) => {
+    playerLeftHandlers.add(handler);
+    return () => playerLeftHandlers.delete(handler);
+  };
+
+  const onPlayerListCleared = (handler: () => void) => {
+    playerListClearedHandlers.add(handler);
+    return () => playerListClearedHandlers.delete(handler);
+  };
+
   return {
     isConnected,
     stats,
@@ -169,6 +209,9 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
     sendCommand,
     onLog,
     onEula,
-    onCommandResult
+    onCommandResult,
+    onPlayerJoined,
+    onPlayerLeft,
+    onPlayerListCleared,
   };
 });
