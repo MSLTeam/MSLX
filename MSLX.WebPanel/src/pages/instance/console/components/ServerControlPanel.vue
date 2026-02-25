@@ -24,6 +24,7 @@ import { InstanceInfoModel } from '@/api/model/instance';
 import InstanceSettings from './InstanceSettings.vue';
 import InstanceMonitor from './InstanceMonitor.vue';
 import LogAnalysisDialog from './LogAnalysis.vue';
+import PlayerListCard from './PlayerManagerComponents/PlayerListCard.vue';
 import { changeUrl } from '@/router';
 
 // --- Props & Emits ---
@@ -289,8 +290,10 @@ onUnmounted(() => {
       </div>
     </t-card>
 
+    <player-list-card :server-id="serverId" :status="status" />
+
     <instance-settings ref="settingsRef" :server-id="serverId" @success="handleSettingsSaved" />
-    <log-analysis-dialog :server-id="serverId" v-model:visible="showLogAnalysisDialog" />
+    <log-analysis-dialog v-model:visible="showLogAnalysisDialog" :server-id="serverId" />
   </div>
 </template>
 

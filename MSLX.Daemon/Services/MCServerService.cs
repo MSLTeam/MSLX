@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Management;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace MSLX.Daemon.Services;
 
@@ -30,6 +31,7 @@ public class MCServerService
         public bool IsInitializing { get; set; } = false;
         public volatile bool IsStopping = false;
         public volatile bool IsBackuping = false;
+        public ConcurrentDictionary<string, bool> OnlinePlayers { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
         // 用于计算资源使用率
         public TimeSpan PreviousTotalProcessorTime { get; set; } = TimeSpan.Zero;
@@ -42,6 +44,18 @@ public class MCServerService
     private readonly ConcurrentDictionary<uint, ServerContext> _activeServers = new(); // 存储运行中实例的状态数据
     private readonly ConcurrentDictionary<uint, bool> _restartingServers = new(); // 存储正在重启的实例ID
     private const int MaxLogLines = 1000;
+
+    // 匹配玩家进入/离开的正则表达式
+    // 匹配底层网络连接 (防止玩家聊天伪造，且不受静默进退服插件影响)
+    // 示例: [16:34:43 INFO]: xiaoyululu[/127.0.0.1:4288] logged in with entity id 1 at ...
+    private static readonly Regex PlayerJoinedRegex = new Regex(@"\]:\s*(?<player>[a-zA-Z0-9_\-\.\* ]+)\[.*?\]\slogged\sin\swith\sentity\sid", RegexOptions.Compiled);
+
+    // 匹配底层网络断开
+    // 示例: [16:36:57 INFO]: xiaoyululu lost connection: Disconnected
+    private static readonly Regex PlayerLeftRegex = new Regex(@"\]:\s*(?<player>[a-zA-Z0-9_\-\.\* ]+)\slost\sconnection:", RegexOptions.Compiled);
+
+    // 匹配并去除 ANSI 颜色和控制序列的正则 (比如 \x1B[32m 或 \x1B[0m)
+    private static readonly Regex AnsiColorRegex = new Regex(@"\x1B\[[0-9;]*[a-zA-Z]", RegexOptions.Compiled);
 
     public MCServerService(
         ILogger<MCServerService> logger,
@@ -117,6 +131,19 @@ public class MCServerService
     public bool HasRunningServers()
     {
         return !_activeServers.IsEmpty;
+    }
+
+
+    /// <summary>
+    /// 获取指定实例当前的在线玩家列表
+    /// </summary>
+    public List<string> GetOnlinePlayers(uint instanceId)
+    {
+        if (_activeServers.TryGetValue(instanceId, out var context))
+        {
+            return context.OnlinePlayers.Keys.ToList();
+        }
+        return new List<string>();
     }
 
 
@@ -750,6 +777,10 @@ public class MCServerService
     {
         if (!_activeServers.TryGetValue(instanceId, out var context)) return;
 
+        // 清空在线玩家
+        context.OnlinePlayers.Clear();
+        _hubContext.Clients.Group(instanceId.ToString()).SendAsync("PlayerListCleared", instanceId);
+
         // 用户手动停止
         if (context.IsStopping)
         {
@@ -867,6 +898,43 @@ public class MCServerService
 
         // 通过 SignalR 推送日志
         _hubContext.Clients.Group(instanceId.ToString()).SendAsync("ReceiveLog", data);
+
+        ParsePlayerActivity(instanceId, context, data);
+    }
+
+    // 解析玩家进入/离开日志
+    private void ParsePlayerActivity(uint instanceId, ServerContext context, string logLine)
+    {
+        // 1. 极其高效的预检：直接在原始（带可能颜色）的文本上做关键字过滤
+        // 绝大多数无关日志会瞬间在这里被 return 掉，根本不消耗正则性能
+        if (!logLine.Contains("logged in with entity id") && !logLine.Contains("lost connection:"))
+            return;
+
+        // 2. 只有确认是目标日志后，才执行相对耗时的“正则去色”
+        string cleanLog = AnsiColorRegex.Replace(logLine, "");
+
+        // 3. 匹配加入 (使用纯净文本)
+        var joinMatch = PlayerJoinedRegex.Match(cleanLog);
+        if (joinMatch.Success)
+        {
+            string playerName = joinMatch.Groups["player"].Value.Trim();
+            if (context.OnlinePlayers.TryAdd(playerName, true))
+            {
+                _hubContext.Clients.Group(instanceId.ToString()).SendAsync("PlayerJoined", instanceId, playerName);
+            }
+            return;
+        }
+
+        // 4. 匹配离开 (使用纯净文本)
+        var leftMatch = PlayerLeftRegex.Match(cleanLog);
+        if (leftMatch.Success)
+        {
+            string playerName = leftMatch.Groups["player"].Value.Trim();
+            if (context.OnlinePlayers.TryRemove(playerName, out _))
+            {
+                _hubContext.Clients.Group(instanceId.ToString()).SendAsync("PlayerLeft", instanceId, playerName);
+            }
+        }
     }
 
     // 安装Authlib-Injector
