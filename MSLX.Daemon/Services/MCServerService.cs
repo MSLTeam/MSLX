@@ -31,6 +31,7 @@ public class MCServerService
         public bool IsInitializing { get; set; } = false;
         public volatile bool IsStopping = false;
         public volatile bool IsBackuping = false;
+        public volatile bool MonitorPlayers = true;
         public ConcurrentDictionary<string, bool> OnlinePlayers { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
         // 用于计算资源使用率
@@ -406,6 +407,9 @@ public class MCServerService
             process.ErrorDataReceived += (sender, e) => RecordLog(instanceId, context, e.Data);
 
             RecordLog(instanceId, context, "[MSLX-Daemon] 正在启动服务端实例...");
+
+            // 处理玩家监听
+            context.MonitorPlayers = serverInfo.MonitorPlayers;
 
             // 启动进程
             if (process.Start())
@@ -899,6 +903,8 @@ public class MCServerService
     private void ParsePlayerActivity(uint instanceId, ServerContext context, string logLine)
     {
         // 预检
+        if(!context.MonitorPlayers)
+            return;
         if (!logLine.Contains("logged in with entity id") && !logLine.Contains("lost connection:"))
             return;
 

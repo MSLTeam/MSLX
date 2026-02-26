@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Services;
@@ -136,6 +136,7 @@ public class InstanceInfoController : ControllerBase
                         status = serverStatus,
                         statusText = serverStatusText,
                         uptime = _mcServerService.GetServerUptime(id),
+                        monitorPlayers = server.MonitorPlayers,
                         mcConfig = new
                         {
                             difficulty,
@@ -163,6 +164,7 @@ public class InstanceInfoController : ControllerBase
                     status = serverStatus,
                     statusText = serverStatusText,
                     uptime = _mcServerService.GetServerUptime(id),
+                    monitorPlayers = server.MonitorPlayers,
                     mcConfig = new
                     {
                         difficulty = "未知",

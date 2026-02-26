@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace MSLX.Daemon.Models.Instance;
 
@@ -44,6 +44,7 @@ public class UpdateServerRequest : IValidatableObject
 
     public string BackupPath { get; set; } = "MSLX://Backup/Instance";
     public bool AllowOriginASCIIColors { get; set; } = true;
+    public bool MonitorPlayers { get; set; } = true;
     public bool AutoRestart { get; set; } = false;
     public bool ForceAutoRestart { get; set; } = true;
     public bool RunOnStartup { get; set; } = false;

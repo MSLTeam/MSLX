@@ -33,6 +33,7 @@ export interface InstanceInfoModel {
   maxM: number;
   status: number;
   uptime: string;
+  monitorPlayers: boolean;
   mcConfig: {
     difficulty: string;
     levelName: string;
@@ -58,6 +59,7 @@ export interface UpdateInstanceModel {
   backupMaxCount?: number;
   backupDelay?: number;
   backupPath?: string;
+  monitorPlayers?: boolean;
   autoRestart?: boolean;
   forceAutoRestart?: boolean;
   allowOriginASCIIColors?: boolean;
@@ -116,4 +118,40 @@ export interface AllInstanceBackupFilesModel{
   core: string;
   backupPath: string;
   backups: InstanceBackupFilesModel[];
+}
+
+// 玩家管理相关
+export interface WhitelistItem {
+  uuid: string;
+  name: string;
+}
+
+export interface OpItem {
+  uuid: string;
+  name: string;
+  level: number;
+  bypassesPlayerLimit: boolean;
+}
+
+export interface BannedIpItem {
+  ip: string;
+  created: string;
+  source: string;
+  expires: string;
+  reason: string;
+}
+
+export interface BannedPlayerItem {
+  uuid: string;
+  name: string;
+  created: string;
+  source: string;
+  expires: string;
+  reason: string;
+}
+
+export interface UserCacheItem {
+  name: string;
+  uuid: string;
+  expiresOn: string;
 }
