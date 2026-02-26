@@ -54,6 +54,8 @@ namespace MSLX.Desktop.Utils
                 // 初始化缓存
                 _configCache = LoadJson<JObject>(_configPath);
                 // _daemonConfigCache = LoadJson<JObject>(_daemonConfigPath);
+
+                ConfigStore.Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0, 0);
             }
 
             private void InitializeFile(string path, string defaultContent)
