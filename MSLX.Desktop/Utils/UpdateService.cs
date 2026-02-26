@@ -163,7 +163,7 @@ namespace MSLX.Desktop.Utils
                 await Task.Run(() =>
                 {
                     if (archivePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-                        System.IO.Compression.ZipFile.ExtractToDirectory(archivePath, extractDir, true);
+                        System.IO.Compression.ZipFile.ExtractToDirectory(archivePath, extractDir, true); // 若为zip格式，程序内直接解压处理
                     else
                         ExtractTarGz(archivePath, extractDir);
                 });
@@ -335,7 +335,7 @@ namespace MSLX.Desktop.Utils
         // tar.gz 解压（.NET 无内置支持，用 SharpCompress 或 tar 命令）
         private static void ExtractTarGz(string archivePath, string destDir)
         {
-            // 方案 A：调用系统 tar（Linux/macOS 均有，Windows 10 1803+ 也有）
+            // 调用系统 tar（Linux/macOS、Windows 10 1803+ 均有）
             var psi = new System.Diagnostics.ProcessStartInfo
             {
                 FileName = "tar",

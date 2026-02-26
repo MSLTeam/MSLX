@@ -9,6 +9,7 @@ using SukiUI.Dialogs;
 using SukiUI.Toasts;
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -53,7 +54,7 @@ public partial class InstanceListPage : UserControl
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"加载服务器列表失败: {ex.Message}");
+            Debug.WriteLine($"加载服务器列表失败: {ex.Message}");
         }
     }
 
@@ -64,19 +65,25 @@ public partial class InstanceListPage : UserControl
         if (server != null)
         {
             server.Status = 2;
-            // 这里添加你的服务器启动逻辑
-            System.Diagnostics.Debug.WriteLine($"服务器 {server.Name} 状态切换");
+            
+
         }
     }
 
     // 删除服务器命令
-    public void DeleteServer(int serverId)
+    public async Task DeleteServer(int serverId)
     {
         var server = MCServerModel.Instance.ServerList.FirstOrDefault(s => s.ID == serverId);
         if (server != null)
         {
-            MCServerModel.Instance.ServerList.Remove(server);
-            System.Diagnostics.Debug.WriteLine($"删除服务器 {server.Name}");
+            await DaemonAPIService.PostApiAsync("/api/instance/delete", new { id = serverId }, HttpService.PostContentType.Json);
+            await LoadServersList();
+            DialogService.ToastManager.CreateToast()
+                            .OfType(Avalonia.Controls.Notifications.NotificationType.Information)
+                            .WithTitle("已发送删除指令")
+                            .WithContent($"已向守护程序发送服务器 {server.Name} 的删除指令！")
+                            .Dismiss().After(TimeSpan.FromSeconds(5))
+                            .Queue();
         }
     }
 
@@ -86,8 +93,7 @@ public partial class InstanceListPage : UserControl
         var server = MCServerModel.Instance.ServerList.FirstOrDefault(s => s.ID == serverId);
         if (server != null)
         {
-            // 这里添加打开文件夹的逻辑
-            System.Diagnostics.Debug.WriteLine($"打开服务器 {server.Name} 的文件夹");
+            Process.Start(new ProcessStartInfo(server.Base) { UseShellExecute = true });
         }
     }
 

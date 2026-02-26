@@ -14,7 +14,16 @@
 				<RowDefinition Height="Auto"/>
 				<RowDefinition Height="*"/>
 			</Grid.RowDefinitions>
-			<TextBlock Classes="h3" Text="实例列表"/>
+			<StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="15">
+				<TextBlock Classes="h3" Text="实例列表"/>
+				<Button x:Name="RefreshBtn" Click="RefreshBtn_Click" VerticalAlignment="Center">
+					<micon:MaterialIcon Kind="Refresh"/>
+				</Button>
+				<Button x:Name="CreateInstance" Click="CreateInstance_Click" VerticalAlignment="Center">
+					<micon:MaterialIcon Kind="Add"/>
+				</Button>
+			</StackPanel>
+			
 			<ScrollViewer Grid.Row="1">
 				<ItemsControl ItemsSource="{Binding Source={x:Static models:MCServerModel.Instance}, Path=ServerList}">
 					<ItemsControl.ItemTemplate>
@@ -114,12 +123,7 @@
 				</ItemsControl>
 			</ScrollViewer>
 			<StackPanel Grid.Row="1" Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Right" Spacing="5">
-				<Button Padding="10" x:Name="RefreshBtn" Click="RefreshBtn_Click">
-					<micon:MaterialIcon Kind="Refresh"/>
-				</Button>
-				<Button Padding="10" x:Name="CreateInstance" Click="CreateInstance_Click">
-					<micon:MaterialIcon Kind="Add"/>
-				</Button>
+				
 			</StackPanel>
 		</Grid>
 	</suki:GlassCard>
