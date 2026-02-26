@@ -19,6 +19,7 @@ import {
   CloudIcon,
   MoreIcon,
   AnalyticsIcon,
+  MapIcon,
 } from 'tdesign-icons-vue-next';
 import { InstanceInfoModel } from '@/api/model/instance';
 import InstanceSettings from './InstanceSettings.vue';
@@ -26,6 +27,7 @@ import InstanceMonitor from './InstanceMonitor.vue';
 import LogAnalysisDialog from './LogAnalysis.vue';
 import PlayerListCard from './PlayerManagerComponents/PlayerListCard.vue';
 import { changeUrl } from '@/router';
+import MapRender from '@/pages/instance/console/components/MapRender.vue';
 
 // --- Props & Emits ---
 const props = defineProps<{
@@ -61,6 +63,7 @@ const statusConfig = computed(() => {
 });
 
 const showLogAnalysisDialog = ref(false);
+const showMapRenderDialog = ref(false);
 
 const settingsRef = ref<InstanceType<typeof InstanceSettings> | null>(null);
 const activeTab = ref('info');
@@ -207,6 +210,10 @@ onUnmounted(() => {
               <template #prefix-icon><cloud-icon /></template>
               立即备份
             </t-dropdown-item>
+            <t-dropdown-item @click="showMapRenderDialog = true">
+              <template #prefix-icon><map-icon /></template>
+              世界渲染图
+            </t-dropdown-item>
             <t-dropdown-item @click="showLogAnalysisDialog = true">
               <template #prefix-icon><analytics-icon /></template>
               日志分析
@@ -294,6 +301,7 @@ onUnmounted(() => {
 
     <instance-settings ref="settingsRef" :server-id="serverId" @success="handleSettingsSaved" />
     <log-analysis-dialog v-model:visible="showLogAnalysisDialog" :server-id="serverId" />
+    <map-render v-model:visible="showMapRenderDialog" :server-id="serverId" />
   </div>
 </template>
 

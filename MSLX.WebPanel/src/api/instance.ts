@@ -152,3 +152,10 @@ export async function removeBannedIp(id: number, ip: string) {
 export async function getHistoryPlayers(id: number) {
   return await request.get<UserCacheItem[]>({ url: `/api/instance/players/history/${id}` });
 }
+
+// 获取世界出生点
+export async function getWorldSpawn(id: number) {
+  return await request.get<{ x: number; z: number }>({
+    url: `/api/instance/map/spawn/${id}`,
+  });
+}

@@ -1,8 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using fNbt;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Instance;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils.ConfigUtils;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
+using System.IO.Compression;
 using System.Text.Json;
 
 namespace MSLX.Daemon.Controllers.InstanceControllers;
@@ -317,4 +323,6 @@ public class PlayerManagerController : ControllerBase
     }
 
     #endregion
+
+    
 }
