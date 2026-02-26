@@ -58,6 +58,7 @@ const formData = ref<UpdateInstanceModel>({
   backupMaxCount: 20,
   backupDelay: 10,
   backupPath: 'MSLX://Backup/Instance',
+  monitorPlayers: true,
   autoRestart: false,
   forceAutoRestart: true,
   ignoreEula: false,
@@ -754,6 +755,17 @@ onUnmounted(() => {
           </div>
           <div class="setting-control">
             <t-switch v-model="formData.allowOriginASCIIColors" :label="['已开启', '已关闭']" />
+          </div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-info">
+            <div class="title">玩家监控</div>
+            <div class="desc">开启此选项后，MSLX将自动为您监控在线的玩家列表</div>
+            <div class="desc">以及使用可视化黑白名单/管理员等功能</div>
+          </div>
+          <div class="setting-control">
+            <t-switch v-model="formData.monitorPlayers" :label="['已开启', '已关闭']" />
           </div>
         </div>
 

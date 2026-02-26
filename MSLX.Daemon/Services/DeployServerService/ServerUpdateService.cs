@@ -100,6 +100,7 @@ public class ServerUpdateService : BackgroundService
             server.BackupMaxCount = req.BackupMaxCount;
             server.BackupPath = req.BackupPath;
             server.StopCommand = req.StopCommand;
+            server.MonitorPlayers = req.MonitorPlayers;
             server.AllowOriginASCIIColors = req.AllowOriginASCIIColors;
             server.YggdrasilApiAddr = req.YggdrasilApiAddr;
             server.RunOnStartup = req.RunOnStartup;

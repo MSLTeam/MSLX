@@ -76,7 +76,7 @@ public class MapRenderController : ControllerBase
                     var heightmaps = level.Get<NbtCompound>("Heightmaps");
                     if (heightmaps == null) continue;
 
-                    // 🚨 终极强化：三图齐下！
+                    // 三个图进行渲染
                     var surfaceData = heightmaps.Get<NbtLongArray>("WORLD_SURFACE")?.Value;
                     var motionData = heightmaps.Get<NbtLongArray>("MOTION_BLOCKING")?.Value;
                     var floorData = heightmaps.Get<NbtLongArray>("OCEAN_FLOOR")?.Value;
@@ -94,15 +94,15 @@ public class MapRenderController : ControllerBase
                         {
                             int idx = z * 16 + x;
 
-                            // 获取真实的三层高度 (-65 是修正 1.18+ 的最低点偏移)
+                            // 获取真实的三层高度
                             int wsY = worldSurface[idx] - 65;
                             int mbY = motionBlocking[idx] - 65;
                             int ofY = oceanFloor[idx] - 65;
 
-                            // 1. 三层叠加渲染：算出地表、植被和水深的复合色彩
+                            // 三层叠加渲染
                             Rgba32 baseColor = GetUltraAdvancedColor(wsY, mbY, ofY);
 
-                            // 2. 3D 阴影算法 (基于物理碰撞层 MOTION_BLOCKING 算阴影最平滑)
+                            // D 阴影算法
                             int nwMbY = mbY;
                             if (x > 0 && z > 0) nwMbY = motionBlocking[(z - 1) * 16 + (x - 1)] - 65;
                             else if (x > 0) nwMbY = motionBlocking[z * 16 + (x - 1)] - 65;
@@ -135,15 +135,15 @@ public class MapRenderController : ControllerBase
         return File(ms.ToArray(), "image/png");
     }
 
-    // 🚀 终极地貌渲染引擎：结合了底表、水深与植被的点阵渲染
+    // 地貌渲染
     private Rgba32 GetUltraAdvancedColor(int wsY, int mbY, int ofY)
     {
         Rgba32 baseColor;
 
-        // 【判断一】：这里是水域还是陆地？
+        // 这里是水域还是陆地？
         if (mbY > ofY)
         {
-            // 是水域！计算水深
+            // 是水域
             int depth = mbY - ofY;
             if (depth > 25) baseColor = new Rgba32(10, 30, 80);    // 深海沟
             else if (depth > 12) baseColor = new Rgba32(15, 60, 150);   // 远洋深海
@@ -153,7 +153,7 @@ public class MapRenderController : ControllerBase
         }
         else
         {
-            // 是陆地！根据海拔生成底色
+            // 是陆地
             if (ofY <= 64) baseColor = new Rgba32(230, 210, 160);       // 海岸沙滩
             else if (ofY < 85) baseColor = new Rgba32(95, 175, 75);     // 低海拔平原
             else if (ofY < 110) baseColor = new Rgba32(65, 130, 55);    // 中海拔森林/丘陵
@@ -162,18 +162,18 @@ public class MapRenderController : ControllerBase
             else baseColor = new Rgba32(245, 250, 255);                 // 雪峰顶端
         }
 
-        // 【判断二】：陆地上有没有附着物（植被、花草、积雪层）？
+        // 陆地上有没有附着物（植被、花草、积雪层）？
         // 如果 WORLD_SURFACE > MOTION_BLOCKING 且这里是陆地，说明有花草或雪！
         if (wsY > mbY && mbY == ofY)
         {
             if (ofY > 100)
             {
-                // 高海拔的附着物，大概率是积雪，我们将底色向白色稍微混合，形成“斑驳的白雪点点”
+                // 高海拔的附着物，大概率是积雪
                 baseColor = BlendColor(baseColor, new Rgba32(255, 255, 255), 0.4f);
             }
             else
             {
-                // 低海拔的附着物，大概率是草丛/花朵，我们将底色向亮黄绿色混合，形成“茂盛的草丛质感”
+                // 低海拔的附着物，大概率是草丛/花朵
                 baseColor = BlendColor(baseColor, new Rgba32(160, 220, 60), 0.35f);
             }
         }
@@ -181,7 +181,7 @@ public class MapRenderController : ControllerBase
         return baseColor;
     }
 
-    // 颜色混合器（用于生成植被和积雪的半透明叠加效果）
+    // 颜色混合器
     private Rgba32 BlendColor(Rgba32 bottom, Rgba32 top, float ratio)
     {
         byte r = (byte)(bottom.R * (1 - ratio) + top.R * ratio);
@@ -190,7 +190,7 @@ public class MapRenderController : ControllerBase
         return new Rgba32(r, g, b, bottom.A);
     }
 
-    // 3D 光影遮蔽算法 (Hillshading)
+    // 3D 光影遮蔽算法
     private Rgba32 ApplyHillshading(Rgba32 color, int diff)
     {
         if (diff == 0) return color;

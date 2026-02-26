@@ -297,7 +297,7 @@ onUnmounted(() => {
       </div>
     </t-card>
 
-    <player-list-card :server-id="serverId" :status="status" />
+    <player-list-card v-if="serverInfo?.monitorPlayers" :server-id="serverId" :status="status" />
 
     <instance-settings ref="settingsRef" :server-id="serverId" @success="handleSettingsSaved" />
     <log-analysis-dialog v-model:visible="showLogAnalysisDialog" :server-id="serverId" />

@@ -107,6 +107,7 @@ public class InstanceSettingsController : ControllerBase
             server.BackupMaxCount = request.BackupMaxCount;
             server.BackupPath = request.BackupPath;
             server.StopCommand = request.StopCommand;
+            server.MonitorPlayers = request.MonitorPlayers;
             server.YggdrasilApiAddr = request.YggdrasilApiAddr;
             server.RunOnStartup = request.RunOnStartup;
             server.AllowOriginASCIIColors = request.AllowOriginASCIIColors;

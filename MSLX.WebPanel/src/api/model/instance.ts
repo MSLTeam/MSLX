@@ -33,6 +33,7 @@ export interface InstanceInfoModel {
   maxM: number;
   status: number;
   uptime: string;
+  monitorPlayers: boolean;
   mcConfig: {
     difficulty: string;
     levelName: string;
@@ -58,6 +59,7 @@ export interface UpdateInstanceModel {
   backupMaxCount?: number;
   backupDelay?: number;
   backupPath?: string;
+  monitorPlayers?: boolean;
   autoRestart?: boolean;
   forceAutoRestart?: boolean;
   allowOriginASCIIColors?: boolean;

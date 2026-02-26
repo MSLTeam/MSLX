@@ -95,6 +95,7 @@ public class ServerCreationService : BackgroundService
             IgnoreEula = request.ignoreEula,
             InputEncoding = "utf-8",
             StopCommand = request.java == "none" ? "^c" : "stop",
+            MonitorPlayers = request.java == "none" ? false : true,
             OutputEncoding = PlatFormServices.GetOs() == "Windows"? "gbk" : "utf-8",
             FileEncoding = PlatFormServices.GetOs() == "Windows"? "gbk" : "utf-8",
         };
