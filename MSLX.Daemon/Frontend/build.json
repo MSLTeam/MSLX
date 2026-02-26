@@ -1,6 +1,6 @@
 {
-  "version": "1.2.1",
-  "buildTime": "2026-02-25 17:51:20",
+  "version": "1.2.2",
+  "buildTime": "2026-02-26 09:59:48",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,40 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "af17ccb324ff413b4963cb7da423958563ba9200",
-  "commitMsg": "feat(daemon & webpanel): 新增服务器在线玩家管理功能 #38",
+  "commitId": "3b4ee76f0a5cf76c103b6f160bc6ab7484dd14f2",
+  "commitMsg": "feat(daemon & webpanel): 服务器玩家监控功能支持关闭 #38",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "3b4ee76f0a5cf76c103b6f160bc6ab7484dd14f2",
+      "commitTime": "2026-02-26 09:58:16 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 服务器玩家监控功能支持关闭 #38"
+    },
+    {
+      "commitId": "d0c89f7baca1533964be8beef2e0f311142c1957",
+      "commitTime": "2026-02-26 09:42:24 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 新增服务器存档像素图渲染器"
+    },
+    {
+      "commitId": "9d919a4f003616d77c9992270acc1a0fefd42017",
+      "commitTime": "2026-02-25 23:29:11 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 完成可视化玩家管理器（在线玩家/历史玩家/黑名单/白名单/管理员） #38"
+    },
+    {
+      "commitId": "10e24756d5a681bb0d450c2842d381d9ee18e0e3",
+      "commitTime": "2026-02-25 17:54:42 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #59 from MSLTeam/dev"
+    },
+    {
+      "commitId": "cfe0ab7d0ce0a884cb47c38d4e8213faa7aca86a",
+      "commitTime": "2026-02-25 17:53:35 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.2.1"
+    },
     {
       "commitId": "af17ccb324ff413b4963cb7da423958563ba9200",
       "commitTime": "2026-02-25 17:47:11 +0800",
@@ -339,36 +369,6 @@
     {
       "commitId": "f00ca47a19c0af68682956200ea89eaac4aeabae",
       "commitTime": "2026-02-08 21:18:23 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
-    },
-    {
-      "commitId": "28e269135941fadd984a6924dd6b6fabf6b9df5d",
-      "commitTime": "2026-02-08 21:18:06 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "feat(desktop): 创建MC服务器功能基本可用"
-    },
-    {
-      "commitId": "22516abe9a137806cb30a82d9eecd533dd2c4e66",
-      "commitTime": "2026-02-08 17:50:36 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(desktop): 优化数据绑定逻辑"
-    },
-    {
-      "commitId": "cab714c1ee87c117cf84dc278d68f13f54908540",
-      "commitTime": "2026-02-08 17:39:35 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
-    },
-    {
-      "commitId": "1993b6ca65ab54f667d315dafe6e8dea98ddc825",
-      "commitTime": "2026-02-08 17:39:30 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(desktop): 获取隧道列表功能"
-    },
-    {
-      "commitId": "2f60b7d1e9fca7d7c144ed9f8c35c0ff2f29ceb1",
-      "commitTime": "2026-02-08 17:29:56 +0800",
       "commitAuthor": "Waheal",
       "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
     }
