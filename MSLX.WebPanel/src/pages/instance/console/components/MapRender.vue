@@ -16,7 +16,6 @@ const emits = defineEmits<{
 const userStore = useUserStore();
 const { baseUrl, token } = userStore;
 
-// 地图拖拽与缩放状态
 const scale = ref(1);
 const translateX = ref(0);
 const translateY = ref(0);
@@ -24,11 +23,9 @@ let isDragging = false;
 let startX = 0;
 let startY = 0;
 
-// 定位输入框绑定的状态
 const inputX = ref<number | null>(0);
 const inputZ = ref<number | null>(0);
 
-// 瓦片数据结构
 interface RegionTile {
   x: number;
   z: number;
@@ -38,7 +35,6 @@ interface RegionTile {
 }
 const loadedRegions = ref<RegionTile[]>([]);
 
-// 计算当前视野中心的方块坐标和区块坐标
 const centerCoordinates = computed(() => {
   const worldX = -translateX.value / scale.value;
   const worldZ = -translateY.value / scale.value;
@@ -51,14 +47,12 @@ const centerCoordinates = computed(() => {
   };
 });
 
-// 跳转到指定方块坐标
 const jumpToCoordinates = (targetX: number, targetZ: number) => {
   translateX.value = -targetX * scale.value;
   translateY.value = -targetZ * scale.value;
   updateVisibleRegions();
 };
 
-// 点击手动定位按钮
 const handleSearchJump = () => {
   const x = Number(inputX.value) || 0;
   const z = Number(inputZ.value) || 0;
@@ -71,19 +65,16 @@ const jumpToSpawn = async () => {
     inputX.value = spawn.x;
     inputZ.value = spawn.z;
     jumpToCoordinates(spawn.x, spawn.z);
-  } catch (error) {
-    console.error('获取出生点失败，回退到 0,0', error);
+  } catch {
     inputX.value = 0;
     inputZ.value = 0;
     jumpToCoordinates(0, 0);
   }
 };
 
-// 按距离排队加载瓦片
 const updateVisibleRegions = () => {
   const cx = centerCoordinates.value.regionX;
   const cz = centerCoordinates.value.regionZ;
-
   const missingTiles = [];
 
   for (let dx = -1; dx <= 1; dx++) {
@@ -128,7 +119,6 @@ watch(
   },
 );
 
-// 拖拽控制
 const startDrag = (e: MouseEvent) => {
   isDragging = true;
   startX = e.clientX - translateX.value;
@@ -146,7 +136,6 @@ const stopDrag = () => {
   isDragging = false;
 };
 
-// 缩放控制
 const handleScroll = (e: WheelEvent) => {
   e.preventDefault();
   const zoomDirection = e.deltaY > 0 ? -0.1 : 0.1;
@@ -197,8 +186,9 @@ const handleClose = () => emits('update:visible', false);
             draggable="false"
           />
         </div>
-        <div class="center-crosshair"></div>
       </div>
+
+      <div class="center-crosshair"></div>
 
       <div class="search-panel" @mousedown.stop @wheel.stop>
         <t-space align="center" size="small">
@@ -223,7 +213,7 @@ const handleClose = () => emits('update:visible', false);
           <span class="value">r.{{ centerCoordinates.regionX }}.{{ centerCoordinates.regionZ }}</span>
         </div>
         <div class="coord-item">
-          <span class="label">缩放倍率:</span>
+          <span class="label">当前缩放:</span>
           <span class="value">{{ Math.round(scale * 100) }}%</span>
         </div>
         <div class="helper-text">🖱️ 滚轮缩放 | 按住拖拽</div>
@@ -247,7 +237,6 @@ const handleClose = () => emits('update:visible', false);
   cursor: grab;
   border-radius: var(--td-radius-default);
   border: 1px solid var(--td-component-stroke);
-
   user-select: none;
   -webkit-user-select: none;
 }
@@ -284,19 +273,19 @@ const handleClose = () => emits('update:visible', false);
   opacity: 0;
   transition: opacity 0.5s ease-out;
 }
-
 .pixel-map-tile.is-loaded {
   opacity: 1;
 }
 
+/* ================= 屏幕中心准星 ================= */
 .center-crosshair {
   position: absolute;
-  left: 0;
-  top: 0;
-  width: 10px;
-  height: 10px;
-  margin-left: -5px;
-  margin-top: -5px;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  margin-top: -7px;
+  margin-left: -7px;
   pointer-events: none;
   z-index: 10;
 
@@ -304,18 +293,19 @@ const handleClose = () => emits('update:visible', false);
   &::after {
     content: '';
     position: absolute;
-    background: var(--td-brand-color);
+    background: rgba(255, 60, 60, 0.8);
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
   }
   &::before {
-    left: 4px;
+    left: 6px;
     top: 0;
     width: 2px;
-    height: 10px;
+    height: 14px;
   }
   &::after {
     left: 0;
-    top: 4px;
-    width: 10px;
+    top: 6px;
+    width: 14px;
     height: 2px;
   }
 }
@@ -330,7 +320,6 @@ const handleClose = () => emits('update:visible', false);
   border: 1px solid var(--td-component-stroke);
   box-shadow: var(--td-shadow-2);
   z-index: 20;
-
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   background-color: rgba(var(--td-bg-color-container-rgb), 0.85);
@@ -351,7 +340,6 @@ const handleClose = () => emits('update:visible', false);
   border: 1px solid var(--td-component-stroke);
   box-shadow: var(--td-shadow-2);
   z-index: 20;
-
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   background-color: rgba(var(--td-bg-color-container-rgb), 0.85);

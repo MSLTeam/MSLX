@@ -1,6 +1,7 @@
 ﻿using fNbt;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
+using MSLX.Daemon.Models.Instance;
 using MSLX.Daemon.Utils.ConfigUtils;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -165,7 +166,7 @@ public class MapRenderController : ControllerBase
 
             var parser = new McaParser(mcaFilePath);
 
-            // 💡 初始化环境记忆色：默认给个草地绿，防止第一格就不认识
+            // 初始化环境记忆色：默认给个草地绿，防止第一格就不认识
             Rgba32 lastKnownColor = new Rgba32(121, 192, 90);
 
             for (int cx = 0; cx < 32; cx++)
@@ -201,7 +202,7 @@ public class MapRenderController : ControllerBase
                             string blockId = GetBlockNameAtY(sections, x, topY, z);
                             Rgba32 baseColor;
 
-                            // 🌊 核心 1：水深动态探测逻辑
+                            // 水深动态探测逻辑
                             if (blockId == "minecraft:water" || blockId == "minecraft:bubble_column")
                             {
                                 int depth = topY - floorY;
@@ -213,7 +214,7 @@ public class MapRenderController : ControllerBase
                             }
                             else
                             {
-                                // 🌳 核心 2：智能后缀截断
+                                // 智能后缀截断
                                 string baseId = blockId;
                                 if (baseId.EndsWith("_stairs")) baseId = baseId.Replace("_stairs", "");
                                 else if (baseId.EndsWith("_slab")) baseId = baseId.Replace("_slab", "");
@@ -221,7 +222,7 @@ public class MapRenderController : ControllerBase
                                 else if (baseId.EndsWith("_fence")) baseId = baseId.Replace("_fence", "");
                                 else if (baseId.EndsWith("_gate")) baseId = baseId.Replace("_gate", "");
 
-                                // 🔎 去字典里智能匹配
+                                // 去字典里智能匹配
                                 if (BlockColorMap.TryGetValue(blockId, out var color))
                                     baseColor = color;
                                 else if (BlockColorMap.TryGetValue(baseId, out color))
@@ -232,7 +233,7 @@ public class MapRenderController : ControllerBase
                                     baseColor = color;
                                 else
                                 {
-                                    // 🚨 核心改进：如果不认识这个方块，直接使用旁边方块的颜色伪装自己！
+                                    // 如果不认识这个方块，直接使用旁边方块的颜色伪装自己！
                                     baseColor = lastKnownColor;
                                 }
                             }
@@ -240,7 +241,7 @@ public class MapRenderController : ControllerBase
                             // 更新最后一次成功匹配的环境色
                             lastKnownColor = baseColor;
 
-                            // ⛰️ 核心 3：3D 阴影算法保留
+                            // 3D 阴影算法
                             int nwY = topY;
                             if (x > 0 && z > 0) nwY = topHeights[(z - 1) * 16 + (x - 1)] - 65;
                             else if (x > 0) nwY = topHeights[z * 16 + (x - 1)] - 65;
