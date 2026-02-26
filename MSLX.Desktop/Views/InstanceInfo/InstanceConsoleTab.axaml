@@ -1,0 +1,47 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:local="clr-namespace:MSLX.Desktop.Views.InstanceInfo"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="400"
+             x:Class="MSLX.Desktop.Views.InstanceInfo.InstanceConsoleTab">
+
+  <Grid RowDefinitions="*,Auto" Margin="0,4,0,0">
+
+    <!-- 日志输出区 -->
+    <Border Grid.Row="0"
+            BorderThickness="1"
+            CornerRadius="4">
+      <ScrollViewer x:Name="LogScroll"
+                    HorizontalScrollBarVisibility="Auto"
+                    VerticalScrollBarVisibility="Auto">
+        <ItemsControl x:Name="LogList">
+           <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+                <VirtualizingStackPanel />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="local:LogEntry">
+              <TextBlock Text="{Binding Text}"
+                         Foreground="{Binding Color}"
+                         TextWrapping="NoWrap"
+                         Margin="4,1"/>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Border>
+
+    <!-- 指令输入区 -->
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,6,0,0">
+      <TextBox x:Name="CmdInput"
+               Watermark="输入指令，回车发送..."
+               KeyDown="OnCmdInputKeyDown"/>
+      <Button Grid.Column="1"
+              Content="发送"
+              Click="OnSendCmdClick"/>
+    </Grid>
+
+  </Grid>
+</UserControl>

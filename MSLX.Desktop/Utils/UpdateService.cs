@@ -55,6 +55,7 @@ namespace MSLX.Desktop.Utils
                             .OfType(Avalonia.Controls.Notifications.NotificationType.Success)
                             .WithTitle("最新版本")
                             .WithContent("当前已是最新版本。")
+                            .WithActionButton("关闭", _ => { }, true)
                             .Dismiss().After(TimeSpan.FromSeconds(5))
                             .Queue();
                 return true;

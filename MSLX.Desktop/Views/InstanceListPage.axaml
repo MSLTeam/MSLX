@@ -25,9 +25,9 @@
 			</StackPanel>
 			
 			<ScrollViewer Grid.Row="1">
-				<ItemsControl ItemsSource="{Binding Source={x:Static models:MCServerModel.Instance}, Path=ServerList}">
+				<ItemsControl ItemsSource="{Binding Source={x:Static models:InstanceModel.Model}, Path=ServerList}">
 					<ItemsControl.ItemTemplate>
-						<DataTemplate DataType="models:MCServerModel+ServerInfo" >
+						<DataTemplate DataType="models:InstanceModel+InstanceInfo" >
 							<suki:GlassCard Margin="5">
 								<Grid ColumnDefinitions="auto,*,auto">
 									<Image Height="64" Margin="0,0,10,0" Source="avares://MSLX-Desktop/Assets/icon.ico"/>
@@ -48,7 +48,7 @@
 													</MultiBinding>
 												</Border.Background>
 
-												<TextBlock Text="{Binding StatusStr}"
+												<TextBlock Text="{Binding StatusText}"
 														   FontSize="12"
 														   Foreground="White"
 														   FontWeight="Bold"/>

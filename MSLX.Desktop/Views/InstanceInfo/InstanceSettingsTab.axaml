@@ -1,0 +1,121 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
+             x:Class="MSLX.Desktop.Views.InstanceInfo.InstanceSettingsTab">
+
+  <ScrollViewer Margin="0,4,0,0">
+    <StackPanel Spacing="10" Margin="2,0">
+
+      <!-- 基础信息 -->
+      <suki:GroupBox Header="基础信息">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="120,*" Margin="4">
+
+          <TextBlock Grid.Row="0" Grid.Column="0" Text="实例名称" VerticalAlignment="Center" Margin="0,0,0,6"/>
+          <TextBox   Grid.Row="0" Grid.Column="1" x:Name="NameBox" Margin="0,0,0,6"/>
+
+          <TextBlock Grid.Row="1" Grid.Column="0" Text="Java 路径" VerticalAlignment="Center" Margin="0,0,0,6"/>
+          <TextBox   Grid.Row="1" Grid.Column="1" x:Name="JavaBox" Margin="0,0,0,6"/>
+
+          <TextBlock Grid.Row="2" Grid.Column="0" Text="核心文件" VerticalAlignment="Center" Margin="0,0,0,6"/>
+          <TextBox   Grid.Row="2" Grid.Column="1" x:Name="CoreBox" Margin="0,0,0,6"/>
+
+          <TextBlock Grid.Row="3" Grid.Column="0" Text="工作目录" VerticalAlignment="Center"/>
+          <TextBox   Grid.Row="3" Grid.Column="1" x:Name="BaseBox" IsReadOnly="True" Opacity="0.6"/>
+        </Grid>
+      </suki:GroupBox>
+
+      <!-- 内存配置 -->
+      <suki:GroupBox Header="内存配置">
+        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="120,*" Margin="4">
+
+          <TextBlock Grid.Row="0" Grid.Column="0" Text="最小内存 (MB)" VerticalAlignment="Center" Margin="0,0,0,6"/>
+          <NumericUpDown Grid.Row="0" Grid.Column="1" x:Name="MinMBox"
+                         Minimum="128" Maximum="65536" Increment="256"
+                         Margin="0,0,0,6"/>
+
+          <TextBlock Grid.Row="1" Grid.Column="0" Text="最大内存 (MB)" VerticalAlignment="Center"/>
+          <NumericUpDown Grid.Row="1" Grid.Column="1" x:Name="MaxMBox"
+                         Minimum="128" Maximum="65536" Increment="256"/>
+        </Grid>
+      </suki:GroupBox>
+
+      <!-- 启动选项 -->
+      <suki:GroupBox Header="启动选项">
+        <StackPanel Spacing="6" Margin="4">
+          <TextBlock Text="附加 JVM 参数"/>
+          <TextBox x:Name="ArgsBox" Watermark="-Xms512m -Xmx4g ..."/>
+
+          <TextBlock Text="Yggdrasil API 地址" Margin="0,4,0,0"/>
+          <TextBox x:Name="YggdrasilBox" Watermark="留空则不启用"/>
+
+          <Grid ColumnDefinitions="*,*" Margin="0,6,0,0">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+              <CheckBox x:Name="AutoRestartBox" Content="崩溃自动重启"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+              <CheckBox x:Name="RunOnStartupBox" Content="随面板启动"/>
+            </StackPanel>
+          </Grid>
+        </StackPanel>
+      </suki:GroupBox>
+
+      <!-- 编码设置 -->
+      <suki:GroupBox Header="编码设置">
+        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="120,*" Margin="4">
+
+          <TextBlock Grid.Row="0" Grid.Column="0" Text="输入编码" VerticalAlignment="Center" Margin="0,0,0,6"/>
+          <ComboBox  Grid.Row="0" Grid.Column="1" x:Name="InputEncodingBox"
+                     Margin="0,0,0,6">
+            <ComboBoxItem Content="utf-8"/>
+            <ComboBoxItem Content="gbk"/>
+            <ComboBoxItem Content="gb2312"/>
+          </ComboBox>
+
+          <TextBlock Grid.Row="1" Grid.Column="0" Text="输出编码" VerticalAlignment="Center"/>
+          <ComboBox  Grid.Row="1" Grid.Column="1" x:Name="OutputEncodingBox">
+            <ComboBoxItem Content="utf-8"/>
+            <ComboBoxItem Content="gbk"/>
+            <ComboBoxItem Content="gb2312"/>
+          </ComboBox>
+        </Grid>
+      </suki:GroupBox>
+
+      <!-- 备份设置 -->
+      <suki:GroupBox Header="备份设置">
+        <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="120,*" Margin="4">
+
+          <TextBlock Grid.Row="0" Grid.Column="0" Text="备份路径" VerticalAlignment="Center" Margin="0,0,0,6"/>
+          <TextBox   Grid.Row="0" Grid.Column="1" x:Name="BackupPathBox" Margin="0,0,0,6"/>
+
+          <TextBlock Grid.Row="1" Grid.Column="0" Text="最大备份数" VerticalAlignment="Center" Margin="0,0,0,6"/>
+          <NumericUpDown Grid.Row="1" Grid.Column="1" x:Name="BackupMaxCountBox"
+                         Minimum="1" Maximum="100" Increment="1"
+                         Margin="0,0,0,6"/>
+
+          <TextBlock Grid.Row="2" Grid.Column="0" Text="备份间隔 (分)" VerticalAlignment="Center"/>
+          <NumericUpDown Grid.Row="2" Grid.Column="1" x:Name="BackupDelayBox"
+                         Minimum="1" Maximum="1440" Increment="5"/>
+        </Grid>
+      </suki:GroupBox>
+
+        <!-- 日志设置 -->
+      <suki:GroupBox Header="日志设置">
+        <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="120,*" Margin="4">
+          <TextBlock Grid.Row="0" Grid.Column="0" Text="日志原彩显示" VerticalAlignment="Center" Margin="0,0,0,6"/>
+          <ToggleSwitch Grid.Row="0" Grid.Column="1" x:Name="AllowOriginASCIIColorsToggle" Margin="0,0,0,6" IsChecked="true"/>
+        </Grid>
+      </suki:GroupBox>
+
+      <!-- 保存按钮 -->
+      <Button x:Name="SaveBtn"
+              Content="保存设置"
+              HorizontalAlignment="Right"
+              Click="OnSaveClick"
+              Margin="0,4,0,8"/>
+
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

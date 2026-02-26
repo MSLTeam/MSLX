@@ -74,6 +74,7 @@ namespace MSLX.Desktop.Utils
                                 {
                                     Text = $"Client Name: {clientName}\nVersion: {version}\nServer Time: {serverTime}",
                                 })
+                                .WithActionButton("关闭", _ => { },true)
                                 .Dismiss().After(TimeSpan.FromSeconds(5))
                                 .Queue();
                     // ConfigStore.DaemonVersion = Version.Parse(version.Contains('-') ? version.Substring(0, version.IndexOf('-')) : version);
