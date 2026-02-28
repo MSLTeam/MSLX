@@ -15,7 +15,7 @@ export const SERVER_PROPERTIES_SCHEMA: PropertySchema[] = [
   {
     key: 'motd',
     label: '服务器标语',
-    desc: '显示在多人游戏列表中的服务器介绍信息，支持颜色代码，不支持中文。',
+    desc: '显示在多人游戏列表中的服务器介绍信息。（支持中文 & 颜色代码，但是务必将文件编码修改为UTF-8并启用强制UTF8功能，否则会乱码）',
     type: 'string',
   },
   {
@@ -33,7 +33,7 @@ export const SERVER_PROPERTIES_SCHEMA: PropertySchema[] = [
   {
     key: 'online-mode',
     label: '正版验证',
-    desc: '开启后将验证玩家的正版账号。如果使用离线/皮肤站，请关闭此项。',
+    desc: '开启后将验证玩家的正版账号。如果使用离线模式/登录插件，请关闭此项。如果使用外置登录或者正版账户登录，请启用此项。',
     type: 'boolean',
   },
   {

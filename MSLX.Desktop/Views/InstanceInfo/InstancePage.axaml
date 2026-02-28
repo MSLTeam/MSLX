@@ -1,0 +1,73 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             xmlns:micon="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:local="clr-namespace:MSLX.Desktop.Views.InstanceInfo"
+             mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
+             x:Class="MSLX.Desktop.Views.InstanceInfo.InstancePage">
+
+  <Grid RowDefinitions="Auto,*" Margin="10">
+
+    <!-- 顶部实例信息栏 -->
+    <suki:GlassCard Grid.Row="0" Margin="0,0,0,8">
+      <Grid ColumnDefinitions="*,Auto" Margin="8,4">
+        <StackPanel Orientation="Horizontal" Spacing="15" VerticalAlignment="Center">
+          <!-- 状态点 -->
+          <Ellipse x:Name="StatusDot" Width="12" Height="12" Fill="Gray"/>
+          <!-- 实例名 -->
+          <TextBlock x:Name="InstanceNameText"
+                     FontSize="18" FontWeight="SemiBold"
+                     VerticalAlignment="Center"
+                     Text="加载中..."/>
+          <!-- 状态 -->
+          <TextBlock x:Name="StatusText"
+                     Opacity="0.6"
+                     VerticalAlignment="Center"
+                     Text="未运行"/>
+        </StackPanel>
+
+        <!-- 操作按钮 -->
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+          <Button x:Name="BackupBtn"
+                  ToolTip.Tip="备份存档"
+                  IsEnabled="False"
+                  Click="OnBackupClick">
+            <micon:MaterialIcon Kind="BackupRestore" Width="16" Height="16"/>
+          </Button>
+          <Button x:Name="ControlBtn"
+                  Content="启动"
+                  Click="OnControlClick"/>
+        </StackPanel>
+      </Grid>
+    </suki:GlassCard>
+
+    <!-- TabControl -->
+    <TabControl Grid.Row="1">
+
+      <!-- 控制台 Tab -->
+      <TabItem>
+        <TabItem.Header>
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <micon:MaterialIcon Kind="Console" Width="14" Height="14" VerticalAlignment="Center"/>
+            <TextBlock Text="控制台" VerticalAlignment="Center"/>
+          </StackPanel>
+        </TabItem.Header>
+        <local:InstanceConsoleTab x:Name="ConsoleTab"/>
+      </TabItem>
+
+      <!-- 设置 Tab -->
+      <TabItem>
+        <TabItem.Header>
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <micon:MaterialIcon Kind="Cog" Width="14" Height="14" VerticalAlignment="Center"/>
+            <TextBlock Text="设置" VerticalAlignment="Center"/>
+          </StackPanel>
+        </TabItem.Header>
+        <local:InstanceSettingsTab x:Name="SettingsTab"/>
+      </TabItem>
+
+    </TabControl>
+  </Grid>
+</UserControl>

@@ -1,4 +1,4 @@
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -8,9 +8,9 @@ namespace MSLX.Daemon.Utils;
     // MSLAPI3
     public class MSLApi
     {
-        public static string ApiUrl { get; } = "https://api.mslmc.cn/v3";
+    public static string ApiUrl { get; set; } = "https://api.mslmc.cn/v3";
 
-        public async static Task<(bool Success, object? Data, string? Msg)> GetDataAsync(string path, string dataKey = "data", Dictionary<string, string>? queryParameters = null)
+    public async static Task<(bool Success, object? Data, string? Msg)> GetDataAsync(string path, string dataKey = "data", Dictionary<string, string>? queryParameters = null)
         {
             var getResponse = await GetAsync(path, queryParameters);
             if (getResponse.IsSuccessStatusCode)
@@ -357,7 +357,7 @@ namespace MSLX.Daemon.Utils;
     }
 
     // ==========================================
-    // 5. UA 管理器 (保持不变)
+    // 5. UA 管理器
     // ==========================================
     public class UAManager
     {

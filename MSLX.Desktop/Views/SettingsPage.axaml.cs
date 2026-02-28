@@ -3,7 +3,7 @@ using Avalonia.Controls.Notifications;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using MSLX.Desktop.Models;
-using MSLX.Desktop.Utils;     // 确保你的 DialogService 在这里
+using MSLX.Desktop.Utils;
 using MSLX.Desktop.Utils.API;
 using Newtonsoft.Json.Linq;
 using SukiUI.Toasts;
@@ -169,9 +169,9 @@ public partial class SettingsPage : UserControl
         ShowToast("刷新成功", "设置数据已重新加载", NotificationType.Success);
     }
 
-    private void OnCheckUpdateClick(object? sender, RoutedEventArgs e)
+    private async void OnCheckUpdateClick(object? sender, RoutedEventArgs e)
     {
-        ShowToast("检查更新", "没写呢~", NotificationType.Information);
+        await UpdateService.UpdateDesktopApp();
     }
 
     private void OnRemoteAccessHelpClick(object? sender, RoutedEventArgs e)

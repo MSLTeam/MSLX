@@ -52,7 +52,6 @@ namespace MSLX.Desktop.Utils
                 DialogService.DialogManager.DismissDialog();
                 if (isSuccess)
                 {
-                    ConfigStore.Version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version ?? new Version(0, 0, 0, 0);
                     // 截取前三位版本号进行比较
                     Version targetVersionTrimmed = new Version(targetVersion.Major, targetVersion.Minor, targetVersion.Build);
                     Version currentVersionTrimmed = new(ConfigStore.Version.Major, ConfigStore.Version.Minor, ConfigStore.Version.Build);
@@ -75,9 +74,12 @@ namespace MSLX.Desktop.Utils
                                 {
                                     Text = $"Client Name: {clientName}\nVersion: {version}\nServer Time: {serverTime}",
                                 })
+                                .WithActionButton("关闭", _ => { },true)
                                 .Dismiss().After(TimeSpan.FromSeconds(5))
                                 .Queue();
-
+                    // ConfigStore.DaemonVersion = Version.Parse(version.Contains('-') ? version.Substring(0, version.IndexOf('-')) : version);
+                    ConfigStore.DaemonVersion = Version.Parse(version.Split('-')[0]);
+                    Debug.WriteLine(ConfigStore.DaemonVersion);
                     return (true, "连接成功！");
                 }
                 else
@@ -99,6 +101,12 @@ namespace MSLX.Desktop.Utils
             {
                 ConfigStore.DaemonApiKey = string.Empty;
                 ConfigStore.DaemonAddress = string.Empty;
+                DialogService.ToastManager.CreateToast()
+                            .OfType(Avalonia.Controls.Notifications.NotificationType.Error)
+                            .WithTitle("出现异常")
+                            .WithContent(ex.Message)
+                            .Dismiss().After(TimeSpan.FromSeconds(5))
+                            .Queue();
                 return (false, $"请检查MSLX守护进程端连接地址是否有效！" + ex.Message);
             }
         }

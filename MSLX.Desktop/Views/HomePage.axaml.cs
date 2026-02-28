@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils;
 using MSLX.Desktop.Utils.API;
 using Newtonsoft.Json.Linq;
@@ -7,6 +8,7 @@ using SukiUI.Dialogs;
 using SukiUI.Toasts;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace MSLX.Desktop.Views;
 
@@ -40,6 +42,8 @@ public partial class HomePage : UserControl
         }
         Console.WriteLine("数据目录：" + ConfigService.GetAppDataPath());
         Console.WriteLine("设备ID: " + PlatformHelper.GetDeviceID());
+        Debug.WriteLine(ConfigStore.Version);
+        await UpdateService.UpdateDesktopApp();
     }
 
     /*

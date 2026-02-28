@@ -1,6 +1,6 @@
 {
-  "version": "1.2.2",
-  "buildTime": "2026-02-26 09:59:48",
+  "version": "1.2.3",
+  "buildTime": "2026-02-28 18:09:18",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,70 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "3b4ee76f0a5cf76c103b6f160bc6ab7484dd14f2",
-  "commitMsg": "feat(daemon & webpanel): 服务器玩家监控功能支持关闭 #38",
+  "commitId": "d70b3376909d3f870fbb2055dcec4f4e3f2d5d9e",
+  "commitMsg": "feat(daemon): 守护进程端新增MSLAPI主备切换功能",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "d70b3376909d3f870fbb2055dcec4f4e3f2d5d9e",
+      "commitTime": "2026-02-28 18:08:01 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 守护进程端新增MSLAPI主备切换功能"
+    },
+    {
+      "commitId": "20207b1dac0f0f58a4f6e9c82f804be80d34a983",
+      "commitTime": "2026-02-26 23:28:46 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复服务器配置文件中文解释错误"
+    },
+    {
+      "commitId": "630053f0f96dea55cba07934850389f96aa09245",
+      "commitTime": "2026-02-26 23:24:50 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(desktop): 修复实例设置描述错误的问题"
+    },
+    {
+      "commitId": "35273755efe74319def8f5ebef54c156e6876610",
+      "commitTime": "2026-02-26 21:35:31 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "feat(desktop): 实例运行功能基本可用"
+    },
+    {
+      "commitId": "a93ef50335344444aad2186bd05e7a4c0ddba28d",
+      "commitTime": "2026-02-26 17:16:06 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "perf(desktop): 部分优化"
+    },
+    {
+      "commitId": "90a039958f6e3a4dea2425556b559930f431f2ca",
+      "commitTime": "2026-02-26 16:32:03 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "feat(desktop): 桌面程序检查更新功能完善"
+    },
+    {
+      "commitId": "9b905eca9e4fba32bdc76c958679b3b88d053cb9",
+      "commitTime": "2026-02-26 10:53:31 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(daemon & panel): 优化世界地图显示逻辑"
+    },
+    {
+      "commitId": "189450999b1c7a1ff1512b27a21b697f6db87ccb",
+      "commitTime": "2026-02-26 10:29:42 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(daemon): 优化世界地图材质渲染逻辑"
+    },
+    {
+      "commitId": "5a0a5e0b119fcf8cab6bb007fed14b23e3266408",
+      "commitTime": "2026-02-26 10:01:10 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #60 from MSLTeam/dev"
+    },
+    {
+      "commitId": "593b1351f0014e551447c12768a44f727893f63b",
+      "commitTime": "2026-02-26 10:00:00 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到v1.2.2"
+    },
     {
       "commitId": "3b4ee76f0a5cf76c103b6f160bc6ab7484dd14f2",
       "commitTime": "2026-02-26 09:58:16 +0800",
@@ -311,66 +371,6 @@
       "commitTime": "2026-02-09 16:36:21 +0800",
       "commitAuthor": "Waheal",
       "commitMsg": "fix(desktop): 创建实例界面移除后应显示实例列表界面，而不是主页"
-    },
-    {
-      "commitId": "dcb238ae5b5108245a5b3b846a55ac88f6008b75",
-      "commitTime": "2026-02-09 16:19:19 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
-    },
-    {
-      "commitId": "f53be7b7a7b39ead6eafb3a7ed6117171f2fc99b",
-      "commitTime": "2026-02-09 16:19:09 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(desktop): 新增提交创建服务端后的进度监听逻辑"
-    },
-    {
-      "commitId": "1b5ebeee08d06b58284234c0eeb8ffbfb1da30e3",
-      "commitTime": "2026-02-09 16:12:10 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "feat(desktop): 现在，链接daemon进程时，可以随地大小取消啦！"
-    },
-    {
-      "commitId": "e441448a723b905619ee449da465b04c59a66166",
-      "commitTime": "2026-02-09 12:25:42 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 创建服务端新增确认信息的步骤"
-    },
-    {
-      "commitId": "a9aef0fce6f832f655b0dee8d0905a2fa9ba1a51",
-      "commitTime": "2026-02-09 10:52:23 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修正Docker更新命令 #50"
-    },
-    {
-      "commitId": "6f34f4be50e8e5326685195d74b1fdfcb875ef88",
-      "commitTime": "2026-02-08 22:42:01 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #49 from MSLTeam/dev"
-    },
-    {
-      "commitId": "759ee3e61b4314fadb8acdaa1e3f7649e63c72a9",
-      "commitTime": "2026-02-08 22:38:03 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.1.10.1 & 嵌入前端资源"
-    },
-    {
-      "commitId": "a9d7afcb709e82c7ce48e79b148d2215b4336899",
-      "commitTime": "2026-02-08 22:36:52 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 优化前后端版本匹配逻辑"
-    },
-    {
-      "commitId": "a0816710a8c79f274b8898310a3bdfa367dfd772",
-      "commitTime": "2026-02-08 22:36:23 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修正Java版本选择指南描述不清的问题"
-    },
-    {
-      "commitId": "f00ca47a19c0af68682956200ea89eaac4aeabae",
-      "commitTime": "2026-02-08 21:18:23 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
     }
   ]
 }
