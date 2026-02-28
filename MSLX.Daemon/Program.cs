@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.HttpOverrides;
+﻿using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
 using MSLX.Daemon.Hubs;
@@ -210,10 +210,45 @@ lifetime.ApplicationStarted.Register(() =>
 {
     // 启动事件
     // 咦？怎么什么也没有？
+    logger.LogInformation("MSLX 守护进程服务已就绪！欢迎使用~");
 });
 
 // 显示实例化服务
 app.Services.GetService<FrpProcessService>();
 app.Services.GetService<MCServerService>();
+
+logger.LogInformation("正在检查 MSLAPI V3 主服务连通性...");
+try
+{
+    var (success, data, msg) = await MSLApi.GetDataAsync("/");
+
+    if (success && data is Newtonsoft.Json.Linq.JToken jsonData)
+    {
+        var uid = jsonData["userInfo"]?["uid"]?.ToString();
+        var regtime = jsonData["userInfo"]?["regTime"]?.ToString();
+        logger.LogInformation($"MSLAPI V3 主服务连接成功！当前设备 UID: {uid}，注册时间: {regtime}");
+    }
+    else
+    {
+        logger.LogWarning($"MSLAPI V3 主服务连接异常 ({msg})，尝试切换至备用 API...");
+
+        // 切换备用地址
+        MSLApi.ApiUrl = "https://api.mslmc.net/v3";
+
+        var (backupSuccess, _, backupMsg) = await MSLApi.GetDataAsync("/");
+        if (backupSuccess)
+        {
+            logger.LogInformation("已成功切换并连接到备用 API服务！");
+        }
+        else
+        {
+            logger.LogWarning($"备用 API 同样无法连接 ({backupMsg})，按现有配置继续运行。");
+        }
+    }
+}
+catch (Exception ex)
+{
+    logger.LogError($"API 检测阶段发生未捕获的异常: {ex.Message}。进程将继续运行。");
+}
 
 app.Run();
