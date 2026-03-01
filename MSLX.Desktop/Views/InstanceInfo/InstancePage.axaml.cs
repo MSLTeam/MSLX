@@ -68,7 +68,7 @@ public partial class InstancePage : UserControl
             return;
         }
 
-        var target = InstanceModel.Model.ServerList.FirstOrDefault(x => x.ID == _instanceId);
+        var target = InstanceModel.Current.ServerList.FirstOrDefault(x => x.ID == _instanceId);
         if (target != null)
         {
             target.Status = info.Status;

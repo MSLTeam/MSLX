@@ -54,7 +54,7 @@ public partial class InstanceListPage : UserControl
             // 直接传入构造函数，避免多次扩容
             var _list = new ObservableCollection<InstanceModel.InstanceInfo>(serverItems);
 
-            InstanceModel.Model.ServerList = _list;
+            InstanceModel.Current.ServerList = _list;
         }
         catch (Exception ex)
         {
@@ -65,7 +65,7 @@ public partial class InstanceListPage : UserControl
     // 运行服务器命令
     public void RunServer(int serverId)
     {
-        var server = InstanceModel.Model.ServerList.FirstOrDefault(s => s.ID == serverId);
+        var server = InstanceModel.Current.ServerList.FirstOrDefault(s => s.ID == serverId);
         if (server != null)
         {
             if (instancePages.TryGetValue(serverId, out SukiSideMenuItem? value))
@@ -91,7 +91,7 @@ public partial class InstanceListPage : UserControl
     // 删除服务器命令
     public async Task DeleteServer(int serverId)
     {
-        var server = InstanceModel.Model.ServerList.FirstOrDefault(s => s.ID == serverId);
+        var server = InstanceModel.Current.ServerList.FirstOrDefault(s => s.ID == serverId);
         if (server != null)
         {
             await DaemonAPIService.PostApiAsync("/api/instance/delete", new { id = serverId }, HttpService.PostContentType.Json);
@@ -108,7 +108,7 @@ public partial class InstanceListPage : UserControl
     // 打开文件夹命令
     public void OpenFolder(int serverId)
     {
-        var server = InstanceModel.Model.ServerList.FirstOrDefault(s => s.ID == serverId);
+        var server = InstanceModel.Current.ServerList.FirstOrDefault(s => s.ID == serverId);
         if (server != null)
         {
             Process.Start(new ProcessStartInfo(server.Base) { UseShellExecute = true });

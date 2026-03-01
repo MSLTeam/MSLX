@@ -1,15 +1,12 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Text;
 
 namespace MSLX.Desktop.Models;
 
 public partial class InstanceModel : ObservableObject
 {
-    public static InstanceModel Model => _instance ??= new InstanceModel(); // 单例Model，方便全局访问
+    public static InstanceModel Current => _instance ??= new InstanceModel(); // 单例Model，方便全局访问
     private static InstanceModel? _instance;
     [ObservableProperty]
     private ObservableCollection<InstanceInfo> _serverList = new(); // 单例Servers，可通过单例Model访问
@@ -27,19 +24,6 @@ public partial class InstanceModel : ObservableObject
         public int? MaxM { get; set; }
         public string? Args { get; set; }
 
-        /*
-        public ServerInfo(int _id, string _name, string _base, string _java, string _core, int _minM, int _maxM, string _args)
-        {
-            ID = _id;
-            Name = _name;
-            Base = _base;
-            Java = _java;
-            Core = _core;
-            MinM = _minM;
-            MaxM = _maxM;
-            Args = _args;
-        }
-        */
     }
 
     /// <summary>
