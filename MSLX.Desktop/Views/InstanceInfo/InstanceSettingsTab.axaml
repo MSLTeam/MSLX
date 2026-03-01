@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -71,14 +71,12 @@
                      Margin="0,0,0,6">
             <ComboBoxItem Content="utf-8"/>
             <ComboBoxItem Content="gbk"/>
-            <ComboBoxItem Content="gb2312"/>
           </ComboBox>
 
           <TextBlock Grid.Row="1" Grid.Column="0" Text="输出编码" VerticalAlignment="Center"/>
           <ComboBox  Grid.Row="1" Grid.Column="1" x:Name="OutputEncodingBox">
             <ComboBoxItem Content="utf-8"/>
             <ComboBoxItem Content="gbk"/>
-            <ComboBoxItem Content="gb2312"/>
           </ComboBox>
         </Grid>
       </suki:GroupBox>
@@ -95,7 +93,7 @@
                          Minimum="1" Maximum="100" Increment="1"
                          Margin="0,0,0,6"/>
 
-          <TextBlock Grid.Row="2" Grid.Column="0" Text="备份间隔 (分)" VerticalAlignment="Center"/>
+          <TextBlock Grid.Row="2" Grid.Column="0" Text="备份保存等待(秒)" VerticalAlignment="Center"/>
           <NumericUpDown Grid.Row="2" Grid.Column="1" x:Name="BackupDelayBox"
                          Minimum="1" Maximum="1440" Increment="5"/>
         </Grid>
