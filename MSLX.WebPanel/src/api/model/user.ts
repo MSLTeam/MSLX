@@ -15,6 +15,7 @@ export interface UpdateUserRequest {
   avatar?: string;
   password?: string;
   resetApiKey?: boolean;
+  resources?: string[];
 }
 
 // 用户数据模型
@@ -26,6 +27,7 @@ export interface AdminUserDto {
   role: 'admin' | 'user';
   apiKey: string;
   lastLoginTime?: string;
+  resources?: string[];
 }
 
 // 创建用户请求
@@ -34,6 +36,7 @@ export interface CreateUserRequest {
   password: string;
   name?: string;
   role: string;
+  resources?: string[];
 }
 
 // 更新用户请求
@@ -43,4 +46,5 @@ export interface UpdateUserRequest {
   password?: string; // 为空不修改
   role?: string;
   resetApiKey?: boolean;
+  resources?: string[];
 }

@@ -27,6 +27,7 @@ public class AdminUserController : ControllerBase
             Avatar = u.Avatar,
             Role = u.Role,
             ApiKey = u.ApiKey,
+            OpenMSLID = u.OAuthMSLOpenID ?? "0",
             LastLoginTime = u.LastLoginTime,
             Resources = u.Resources
         }).ToList();
@@ -45,25 +46,21 @@ public class AdminUserController : ControllerBase
     [HttpPost("create")]
     public IActionResult CreateUser([FromBody] AdminCreateUserRequest request)
     {
-        // 检查用户名是否存在
         if (IConfigBase.UserList.GetUserByUsername(request.Username) != null)
         {
             return BadRequest(new ApiResponse<object> { Code = 400, Message = "用户名已存在" });
         }
 
-        // 密码复杂度校验
-        // 长度校验
         if (request.Password.Length < 8 || request.Password.Length > 32)
         {
             return BadRequest(new ApiResponse<object> { Code = 400, Message = "密码长度必须在 8-32 位之间" });
         }
 
-        // 复杂度校验：大小写字母、数字、特殊字符 (4选3)
         int score = 0;
-        if (request.Password.Any(char.IsUpper)) score++; // 包含大写字母
-        if (request.Password.Any(char.IsLower)) score++; // 包含小写字母
-        if (request.Password.Any(char.IsDigit)) score++; // 包含数字
-        if (request.Password.Any(ch => !char.IsLetterOrDigit(ch))) score++; // 包含特殊字符
+        if (request.Password.Any(char.IsUpper)) score++; 
+        if (request.Password.Any(char.IsLower)) score++; 
+        if (request.Password.Any(char.IsDigit)) score++; 
+        if (request.Password.Any(ch => !char.IsLetterOrDigit(ch))) score++; 
 
         if (score < 3)
         {
@@ -74,12 +71,15 @@ public class AdminUserController : ControllerBase
             });
         }
 
+        // 清洗前端传来的资源列表
+        var validResources = ValidateAndCleanResources(request.Resources);
+
         var newUser = new UserInfo
         {
             Username = request.Username,
             Name = request.Name,
             Role = request.Role,
-            Resources = request.Resources,
+            Resources = validResources, // 清洗后的资源列表
             ApiKey = StringServices.GenerateRandomString(32),
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             Avatar = "https://www.mslmc.cn/logo.png"
@@ -102,27 +102,28 @@ public class AdminUserController : ControllerBase
         var user = IConfigBase.UserList.GetUserById(id);
         if (user == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "用户不存在" });
 
-        // 不允许修改用户名，只能修改属性
         if (request.Name != null) user.Name = request.Name;
         if (request.Avatar != null) user.Avatar = request.Avatar;
         if (request.Role != null) user.Role = request.Role;
-        if (request.Resources != null) user.Resources = request.Resources;
+        
+        // 清洗并更新资源列表
+        if (request.Resources != null)
+        {
+            user.Resources = ValidateAndCleanResources(request.Resources);
+        }
 
-        // 更新密码
         if (!string.IsNullOrEmpty(request.Password))
         {
-            // 长度校验
             if (request.Password.Length < 8 || request.Password.Length > 32)
             {
                 return BadRequest(new ApiResponse<object> { Code = 400, Message = "密码长度必须在 8-32 位之间" });
             }
 
-            // 复杂度校验：大小写字母、数字、特殊字符 (4选3)
             int score = 0;
-            if (request.Password.Any(char.IsUpper)) score++; // 包含大写字母
-            if (request.Password.Any(char.IsLower)) score++; // 包含小写字母
-            if (request.Password.Any(char.IsDigit)) score++; // 包含数字
-            if (request.Password.Any(ch => !char.IsLetterOrDigit(ch))) score++; // 包含特殊字符
+            if (request.Password.Any(char.IsUpper)) score++; 
+            if (request.Password.Any(char.IsLower)) score++; 
+            if (request.Password.Any(char.IsDigit)) score++; 
+            if (request.Password.Any(ch => !char.IsLetterOrDigit(ch))) score++; 
 
             if (score < 3)
             {
@@ -136,7 +137,6 @@ public class AdminUserController : ControllerBase
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
         }
 
-        // 重置 ApiKey
         if (request.ResetApiKey)
         {
             user.ApiKey = StringServices.GenerateRandomString(32);
@@ -156,7 +156,6 @@ public class AdminUserController : ControllerBase
     [HttpPost("delete/{id}")]
     public IActionResult DeleteUser(string id)
     {
-        // 不允许用户想不开
         var currentUserId = User.FindFirst("UserId")?.Value;
         if (currentUserId == id)
         {
@@ -169,5 +168,43 @@ public class AdminUserController : ControllerBase
         }
 
         return NotFound(new ApiResponse<object> { Code = 404, Message = "用户不存在或删除失败" });
+    }
+
+    /// <summary>
+    /// 辅助方法：校验并清洗资源列表，过滤掉不存在的资源
+    /// </summary>
+    private List<string> ValidateAndCleanResources(List<string> resources)
+    {
+        if (resources == null || !resources.Any()) return new List<string>();
+
+        var validResources = new List<string>();
+        foreach (var res in resources)
+        {
+            var parts = res.Split(':');
+            if (parts.Length != 2) continue;
+
+            string type = parts[0].ToLower();
+            string idStr = parts[1];
+
+            // 校验 Server 实例是否存在
+            if (type == "server" && uint.TryParse(idStr, out uint sId))
+            {
+                if (IConfigBase.ServerList.GetServer(sId) != null)
+                {
+                    validResources.Add(res);
+                }
+            }
+            // 校验 Frp 隧道是否存在
+            else if (type == "frp" && int.TryParse(idStr, out int fId))
+            {
+                if (IConfigBase.FrpList.GetFrpConfig(fId) != null)
+                {
+                    validResources.Add(res);
+                }
+            }
+        }
+
+        // 去重后返回
+        return validResources.Distinct().ToList();
     }
 }

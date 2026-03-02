@@ -15,8 +15,6 @@ import {
 } from '@/api/model/instance';
 import { useUserStore } from '@/store';
 
-const userStore = useUserStore();
-
 export async function postCreateInstanceQuickMode(data:CreateInstanceQucikModeModel){
   return await request.post({
     url: '/api/instance/createServer',
@@ -92,6 +90,7 @@ export async function postDeleteBackupFiles(id:number,fileName:string){
   })
 }
 export function getBackupDownloadUrl(id: number, fileName: string) {
+  const userStore = useUserStore();
   const { baseUrl, token } = userStore;
   return `${baseUrl || window.location.origin}/api/instance/backups/download?id=${id}&fileName=${encodeURIComponent(fileName)}&x-user-token=${token}`;
 }

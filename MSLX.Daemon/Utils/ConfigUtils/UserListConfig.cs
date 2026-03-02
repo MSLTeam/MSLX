@@ -1,8 +1,7 @@
 using MSLX.Daemon.Models;
 using Newtonsoft.Json.Linq;
 
-namespace MSLX.Daemon.Utils.ConfigUtils
-{
+namespace MSLX.Daemon.Utils.ConfigUtils;
     public class UserListConfig : IDisposable
     {
         private readonly string _userListPath = Path.Combine(IConfigBase.GetAppConfigPath(), "UserList.json");
@@ -268,5 +267,44 @@ namespace MSLX.Daemon.Utils.ConfigUtils
         }
 
         public void Dispose() => _userListLock?.Dispose();
+
+        /// <summary>
+        /// 全量覆盖用户的资源列表
+        /// </summary>
+        public bool UpdateUserResources(string userId, List<string> newResources)
+        {
+            _userListLock.EnterWriteLock();
+            try
+            {
+                var target = _userListCache.FirstOrDefault(u => u["Id"]?.ToString() == userId);
+                if (target == null) return false;
+                
+                target["Resources"] = JArray.FromObject(newResources ?? new List<string>());
+                IConfigBase.SaveJson(_userListPath, _userListCache);
+                return true;
+            }
+            finally { _userListLock.ExitWriteLock(); }
+        }
+
+        /// <summary>
+        /// 验证用户是否拥有某项资源权限
+        /// </summary>
+        public bool HasResourcePermission(string userId, string resource)
+        {
+            _userListLock.EnterReadLock();
+            try
+            {
+                var userToken = _userListCache.FirstOrDefault(u => u["Id"]?.ToString() == userId);
+                if (userToken == null) return false;
+
+                // 管理员默认放行
+                if (userToken["Role"]?.ToString() == "admin") return true;
+
+                var resourcesArray = userToken["Resources"] as JArray;
+                if (resourcesArray == null) return false;
+
+                return resourcesArray.Any(r => r.ToString() == resource);
+            }
+            finally { _userListLock.ExitReadLock(); }
+        }
     }
-}
