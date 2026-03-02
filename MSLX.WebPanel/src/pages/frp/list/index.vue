@@ -9,8 +9,10 @@ import { changeUrl } from '@/router';
 import { useTunnelsStore } from '@/store/modules/frp';
 import { getFrpAutoStartList, postChangeFrpAutoStartList, postDeleteFrpTunnel } from '@/api/frp';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
+import { useUserStore } from '@/store';
 
 const tunnelsStore = useTunnelsStore();
+const userStore = useUserStore();
 
 const loading = ref(true);
 const isError = ref(false);
@@ -115,8 +117,8 @@ onMounted(() => {
         <h2 class="title">隧道列表</h2>
         <t-space>
           <t-button theme="primary" variant="dashed" @click="getList"> 刷新列表 </t-button>
-          <t-button theme="default" variant="outline" @click="openAutoStartSettings"> 设置自启动 </t-button>
-          <t-button theme="primary" @click="changeUrl('/frp/create')"> 创建隧道 </t-button>
+          <t-button v-if="userStore.isAdmin" theme="default" variant="outline" @click="openAutoStartSettings"> 设置自启动 </t-button>
+          <t-button v-if="userStore.isAdmin" theme="primary" @click="changeUrl('/frp/create')"> 创建隧道 </t-button>
         </t-space>
       </div>
 
@@ -132,10 +134,10 @@ onMounted(() => {
       <result
         v-else-if="tunnelsStore.frpList.length === 0"
         title="暂无隧道"
-        tip="您还没有创建任何 Frp 隧道，快去创建一个吧"
+        :tip="userStore.isAdmin ? '您还没有创建任何 Frp 隧道，快去创建一个吧' : '管理员尚未给您分配任何Frp隧道哦！'"
         type="404"
       >
-        <t-button @click="changeUrl('/frp/create')">创建隧道</t-button>
+        <t-button v-if="userStore.isAdmin" @click="changeUrl('/frp/create')">创建隧道</t-button>
       </result>
 
       <!-- 列表展示 -->
@@ -172,6 +174,7 @@ onMounted(() => {
                 </t-tag>
 
                 <t-button
+                  v-if="userStore.isAdmin"
                   shape="circle"
                   theme="danger"
                   size="small"

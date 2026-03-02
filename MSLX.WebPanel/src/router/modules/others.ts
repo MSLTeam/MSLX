@@ -25,13 +25,14 @@ export default [
     meta: {
       title: '设置',
       icon: 'setting',
+      roleCode: ['admin', 'user']
     },
     children: [
       {
         path: '',
         name: 'settings',
         component: () => import('@/pages/settings/index.vue'),
-        meta: { title: '设置', hidden: true },
+        meta: { title: '设置', hidden: true,roleCode: ['admin', 'user'] },
       },
     ],
   },
@@ -42,13 +43,14 @@ export default [
     meta: {
       title: '关于面板',
       icon: 'info-circle',
+    roleCode: ['admin', 'user']
     },
     children: [
       {
         path: '',
         name: 'about',
         component: () => import('@/pages/about/index.vue'),
-        meta: { title: '关于面板', hidden: true },
+        meta: { title: '关于面板', hidden: true,roleCode: ['admin', 'user'] },
       },
     ],
   },

@@ -51,6 +51,9 @@ onMounted(() => {
         <h3 class="welcome-text">
           <t-icon name="sunny" class="welcome-icon" />
           你好, {{ userStore.userInfo.name }}
+          <t-tag :theme="userStore.isAdmin ? 'success' : 'primary'" shape="round">
+              {{ userStore.isAdmin ? '管理员' : '普通用户' }}
+          </t-tag>
         </h3>
         <p class="hitokoto-text">{{ oneMsg }}</p>
       </div>

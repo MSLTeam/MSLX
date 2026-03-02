@@ -78,6 +78,7 @@ public class StaticImagesController: ControllerBase
     }
     
     [HttpPost("upload")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> UploadImage([FromBody] UploadStaticFilesRequest request) 
     {
         try

@@ -3,24 +3,38 @@ import { RouteRecordRaw } from 'vue-router';
 import router, { asyncRouterList } from '@/router';
 import { store } from '@/store';
 
-function filterPermissionsRouters(routes: Array<RouteRecordRaw>, roles: Array<unknown>) {
+function filterPermissionsRouters(routes: Array<RouteRecordRaw>, roles: Array<any>) {
   const res = [];
   const removeRoutes = [];
+
   routes.forEach((route) => {
-    const children = [];
-    route.children?.forEach((childRouter) => {
-      const roleCode = childRouter.meta?.roleCode || childRouter.name;
-      if (roles.indexOf(roleCode) !== -1) {
-        children.push(childRouter);
-      } else {
-        removeRoutes.push(childRouter);
+    const tmpRoute = { ...route };
+
+    const hasPermission = (metaRole: any) => {
+      if (!metaRole) return false;
+
+      if (Array.isArray(metaRole)) {
+        return roles.some(role => metaRole.includes(role));
       }
-    });
-    if (children.length > 0) {
-      route.children = children;
-      res.push(route);
+
+      return roles.includes(metaRole);
+    };
+
+    // 先判断父级路由是否有权访问
+    if (hasPermission(tmpRoute.meta?.roleCode || tmpRoute.name)) {
+
+      // 递归过滤子路由
+      if (tmpRoute.children && tmpRoute.children.length > 0) {
+        const childrenFilter = filterPermissionsRouters(tmpRoute.children, roles);
+        tmpRoute.children = childrenFilter.accessedRouters;
+      }
+
+      res.push(tmpRoute);
+    } else {
+      removeRoutes.push(tmpRoute);
     }
   });
+
   return { accessedRouters: res, removeRoutes };
 }
 

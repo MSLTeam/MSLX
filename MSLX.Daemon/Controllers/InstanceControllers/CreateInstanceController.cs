@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Utils.ConfigUtils;
@@ -11,6 +12,7 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
 
 [ApiController]
 [Route("api/instance")]
+[Authorize(Roles = "admin")]
 public class CreateInstanceController : ControllerBase
 {
     private readonly IBackgroundTaskQueue<CreateServerTask> _taskQueue; // 注入后台队列

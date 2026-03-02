@@ -1,6 +1,6 @@
 {
-  "version": "1.2.3",
-  "buildTime": "2026-02-28 18:09:18",
+  "version": "1.2.4",
+  "buildTime": "2026-03-02 20:03:39",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,52 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "d70b3376909d3f870fbb2055dcec4f4e3f2d5d9e",
-  "commitMsg": "feat(daemon): 守护进程端新增MSLAPI主备切换功能",
+  "commitId": "99d9733db4659455f0791306602c92ab16eaacbf",
+  "commitMsg": "feat(daemon & webpanel): 接口完整实现用户权限等级控制和资源分配 & 前端网页面板根据用户权限隐藏一些入口 #47",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "99d9733db4659455f0791306602c92ab16eaacbf",
+      "commitTime": "2026-03-02 19:59:58 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 接口完整实现用户权限等级控制和资源分配 & 前端网页面板根据用户权限隐藏一些入口 #47"
+    },
+    {
+      "commitId": "40e4b6177d0ec20975109e40ddfa23c3c0a0e1d2",
+      "commitTime": "2026-03-02 17:17:13 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 面板适配普通用户下隐藏一些菜单项 #47"
+    },
+    {
+      "commitId": "e3dc1e1bae9ca7b93030d33015d18808faff1d19",
+      "commitTime": "2026-03-02 16:51:32 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 新增普通用户资源分配功能 #47"
+    },
+    {
+      "commitId": "5856277eceed1fe30178eacfc6b631ce85341ba3",
+      "commitTime": "2026-03-01 11:54:04 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
+    },
+    {
+      "commitId": "87c8d572067d03fd85a2727438a10b02bab2c8d4",
+      "commitTime": "2026-03-01 11:53:49 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "style(desktop): instancemodel.model-->instancemodel.current"
+    },
+    {
+      "commitId": "2f23fd57c478d56736f3a86aac24510f4512acd9",
+      "commitTime": "2026-02-28 18:12:38 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #61 from MSLTeam/dev"
+    },
+    {
+      "commitId": "1cb012a3b5a726eeeb93ec58a1b84bca12911e6c",
+      "commitTime": "2026-02-28 18:10:57 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到v1.2.3"
+    },
     {
       "commitId": "d70b3376909d3f870fbb2055dcec4f4e3f2d5d9e",
       "commitTime": "2026-02-28 18:08:01 +0800",
@@ -329,48 +371,6 @@
       "commitTime": "2026-02-10 15:21:10 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "style(desktop): 优化公告Markdown组件的样式"
-    },
-    {
-      "commitId": "f7a117aa707d7475f08f144281647428e960d9b2",
-      "commitTime": "2026-02-10 12:24:34 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(desktop): 修正隧道列表不显示的问题"
-    },
-    {
-      "commitId": "7763f9d3f707f6c57f447e14349531cab61879b4",
-      "commitTime": "2026-02-10 12:23:37 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(desktop): 完成关于页面"
-    },
-    {
-      "commitId": "96750e95b95b53bd64c478eb788be3e6468432b5",
-      "commitTime": "2026-02-09 17:26:55 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "fix(desktop): 修复多次销毁hubConnection导致报错的问题"
-    },
-    {
-      "commitId": "c486c3ed30b920665e909f9517b2ccbea809f170",
-      "commitTime": "2026-02-09 17:22:16 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "feat(desktop): 创建实例完毕返回列表后，应刷新列表"
-    },
-    {
-      "commitId": "19983cd667e3b8034b6587f1d399aa7c81b713e1",
-      "commitTime": "2026-02-09 17:17:05 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "style(desktop): 优化部分代码格式"
-    },
-    {
-      "commitId": "f83b9f3cd43f7647c389b6d66194e23c361e0e24",
-      "commitTime": "2026-02-09 16:38:51 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "merge"
-    },
-    {
-      "commitId": "d6dd2939e24e2d843789b8f26cd5605933c10ea9",
-      "commitTime": "2026-02-09 16:36:21 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "fix(desktop): 创建实例界面移除后应显示实例列表界面，而不是主页"
     }
   ]
 }

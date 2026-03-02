@@ -67,7 +67,7 @@ namespace MSLX.Daemon.Utils
         /// <summary>
         /// 404 NOT FOUND
         /// </summary>
-        public static ApiResponse<object> NotFound(string message = "NOTFOUND")
+        public static ApiResponse<object> NotFound(string message = "找不到资源")
         {
             return CreateResponse(404, message);
         }

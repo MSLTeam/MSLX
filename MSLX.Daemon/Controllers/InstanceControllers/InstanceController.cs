@@ -3,6 +3,7 @@ using MSLX.Daemon.Models.Instance;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
 using System.Threading.Tasks;
+using MSLX.Daemon.Utils.ConfigUtils;
 
 namespace MSLX.Daemon.Controllers.InstanceControllers;
 
@@ -20,6 +21,8 @@ public class InstanceController : ControllerBase
     [HttpPost("action")]
     public async Task<IActionResult> StartInstance([FromBody] ServerActionRequest request)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)request.ID))
+            return NotFound(ApiResponseService.NotFound());
         string requestAction = request.Action;
         string requestQuery = string.Empty;
         string[] parts = requestAction.Split('?'); // get query

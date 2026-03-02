@@ -9,13 +9,14 @@ export default [
     meta: {
       title: '仪表盘',
       icon: 'dashboard',
+      roleCode: ['admin', 'user']
     },
     children: [
       {
         path: 'base',
         name: 'DashboardBaseIndex',
         component: () => import('@/pages/dashboard/base/index.vue'),
-        meta: { title: '仪表盘', hidden: true },
+        meta: { title: '仪表盘', hidden: true,roleCode: ['admin', 'user'] },
       },
     ],
   },
@@ -24,13 +25,13 @@ export default [
     component: Layout,
     // redirect: '/instance/list',
     name: 'instance',
-    meta: { title: '服务端管理', icon: 'server' },
+    meta: { title: '服务端管理', icon: 'server',roleCode: ['admin', 'user'] },
     children: [
       {
         path: 'list',
         name: 'InstanceList',
         component: () => import('@/pages/instance/instanceList/index.vue'),
-        meta: { title: '服务端列表', icon: 'grid-view' },
+        meta: { title: '服务端列表', icon: 'grid-view',roleCode: ['admin', 'user'] },
       },
       {
         path: 'create',
@@ -42,7 +43,7 @@ export default [
         path: 'backup',
         name: 'InstanceBackupManager',
         component: () => import('@/pages/instance/backupManager/index.vue'),
-        meta: { title: '备份管理', icon: 'backup' },
+        meta: { title: '备份管理', icon: 'backup',roleCode: ['admin', 'user'] },
       },
     ],
   },
@@ -50,13 +51,13 @@ export default [
     path: '/frp',
     component: Layout,
     name: 'frp',
-    meta: { title: '隧道管理', icon: 'rocket' },
+    meta: { title: '隧道管理', icon: 'rocket',roleCode: ['admin', 'user'] },
     children: [
       {
         path: 'list',
         name: 'FrpList',
         component: () => import('@/pages/frp/list/index.vue'),
-        meta: { title: '隧道列表', icon: 'format-vertical-align-left' },
+        meta: { title: '隧道列表', icon: 'format-vertical-align-left',roleCode: ['admin', 'user'] },
       },
       {
         path: 'create',

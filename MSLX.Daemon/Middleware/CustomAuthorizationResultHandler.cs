@@ -23,7 +23,7 @@ public class CustomAuthorizationResultHandler : IAuthorizationMiddlewareResultHa
             var response = new ApiResponse<object>
             {
                 Code = 403,
-                Message = "权限不足：您无权访问此接口",
+                Message = "权限不足：您无权进行此操作",
                 Data = null
             };
 

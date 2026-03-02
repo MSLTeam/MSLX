@@ -4,6 +4,7 @@ import { ref } from 'vue';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { getDaemonUpdateInfo, getDaemonUpdateDownloadInfo } from '@/api/update';
 import type { UpdateInfoModel, UpdateDownloadInfoModel } from '@/api/model/update';
+import { useUserStore } from '@/store';
 
 export const useUpdateStore = defineStore('update', () => {
   // === State ===
@@ -16,9 +17,11 @@ export const useUpdateStore = defineStore('update', () => {
 
   /**
    * 检查更新
-   * @param force 是否强制检查（忽略跳过的版本）
+   * @param force 是否强制检查
    */
   const checkAppUpdate = async (force = false) => {
+    const userStore = useUserStore();
+    if(!userStore.isAdmin) return;
     if (loading.value) return;
     loading.value = true;
 

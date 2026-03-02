@@ -105,7 +105,7 @@ public class AppInfoController : ControllerBase
                 ["targetFrontendVersion"] = new JObject
                 {
                     ["desktop"] = "1.0.0",
-                    ["panel"] = "1.2.3"
+                    ["panel"] = "1.2.4"
                 },
                 ["systemInfo"] = systemInfo
             };
@@ -130,6 +130,7 @@ public class AppInfoController : ControllerBase
     }
 
     [HttpGet("api/update/info")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> GetUpdateInfoAsync()
     {
         try
@@ -210,6 +211,7 @@ public class AppInfoController : ControllerBase
     }
 
     [HttpGet("api/update/download")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> GetUpdateDownloadLinkAsync()
     {
         try

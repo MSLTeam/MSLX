@@ -2,6 +2,7 @@
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Frp;
 using MSLX.Daemon.Services;
+using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using Newtonsoft.Json.Linq;
 using Tomlyn;
@@ -24,22 +25,48 @@ public class FrpController : ControllerBase
     [HttpGet("list")]
     public IActionResult GetFrpList()
     {
+        var userId = User?.FindFirst("UserId")?.Value ?? "";
+        var currentUser = IConfigBase.UserList.GetUserById(userId);
+        if (currentUser == null) return Unauthorized(ApiResponseService.Error("用户不存在", 401));
+
+        bool isAdmin = currentUser.Role == "admin";
+
+        // 提取用户拥有的所有 frp 资源 ID
+        var allowedFrpIds = new HashSet<int>();
+        if (!isAdmin && currentUser.Resources != null)
+        {
+            foreach (var res in currentUser.Resources)
+            {
+                if (res.StartsWith("frp:") && int.TryParse(res.Substring(4), out int resId))
+                {
+                    allowedFrpIds.Add(resId);
+                }
+            }
+        }
+
         var configList = IConfigBase.FrpList.ReadFrpList();
         
-        var resultList = configList.Select(item => 
-        {
-            int id = item["ID"]?.Value<int>() ?? 0;
-            bool isRunning = _frpService.IsFrpRunning(id);
-
-            return new 
+        var resultList = configList
+            .Where(item => 
             {
-                id,
-                name = item["Name"]?.Value<string>(),
-                service = item["Service"]?.Value<string>(),
-                configType = item["ConfigType"]?.Value<string>(),
-                status = isRunning,
-            };
-        }).Reverse().ToList();
+                int id = item["ID"]?.Value<int>() ?? 0;
+                
+                return isAdmin || allowedFrpIds.Contains(id);
+            })
+            .Select(item => 
+            {
+                int id = item["ID"]?.Value<int>() ?? 0;
+                bool isRunning = _frpService.IsFrpRunning(id);
+
+                return new 
+                {
+                    id,
+                    name = item["Name"]?.Value<string>(),
+                    service = item["Service"]?.Value<string>(),
+                    configType = item["ConfigType"]?.Value<string>(),
+                    status = isRunning,
+                };
+            }).Reverse().ToList();
         
         return Ok(new ApiResponse<object>
         {
@@ -52,6 +79,8 @@ public class FrpController : ControllerBase
     [HttpPost("action")]
     public IActionResult OperatingFrp([FromBody] FrpActionRequest request)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "frp", (int)request.Id))
+            return NotFound(ApiResponseService.NotFound());
         if (request.Action == "start")
         {
             var (success, msg) = _frpService.StartFrp(request.Id);
@@ -78,6 +107,8 @@ public class FrpController : ControllerBase
     [HttpGet("info")]
     public IActionResult GetFrpInfo([FromQuery] int id)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "frp", (int)id))
+            return NotFound(ApiResponseService.NotFound());
         // 您在运行吗。jpg
         bool isRunning = _frpService.IsFrpRunning(id);
         var response = new FrpInfoResponse
@@ -221,6 +252,4 @@ public class FrpController : ControllerBase
             Data = response
         });
     }
-    
-    
 }

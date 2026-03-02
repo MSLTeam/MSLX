@@ -11,6 +11,7 @@ export default [
     meta: {
       icon: 'earth',
       title: '链接',
+      roleCode: ['admin', 'user']
     },
 
     children: [
@@ -23,6 +24,7 @@ export default [
           frameBlank: true,
           title: 'MSLX 文档',
           icon: 'book',
+          roleCode: ['admin', 'user']
         },
       },
       {
@@ -34,6 +36,7 @@ export default [
           frameBlank: true,
           title: 'MSL 用户中心',
           icon: 'user-arrow-left',
+          roleCode: ['admin', 'user']
         },
       },
     ],

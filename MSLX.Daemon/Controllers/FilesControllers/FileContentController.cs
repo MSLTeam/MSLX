@@ -14,6 +14,9 @@ public class FileContentController : ControllerBase
     [HttpGet("instance/{id}/content")]
     public async Task<IActionResult> GetFileContent(uint id, [FromQuery] string path)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
+        
         string basePath;
         Encoding encoding;
 
@@ -127,6 +130,9 @@ public class FileContentController : ControllerBase
     [HttpPost("instance/{id}/directory")]
     public IActionResult CreateDirectory(uint id, [FromBody] CreateDirectoryRequest request)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
+        
         if (string.IsNullOrWhiteSpace(request.Name))
         {
             return BadRequest(new ApiResponse<object> { Code = 400, Message = "文件夹名字不能为空" });
@@ -191,6 +197,9 @@ public class FileContentController : ControllerBase
     [HttpPost("instance/{id}/content")]
     public async Task<IActionResult> SaveFileContent(uint id, [FromBody] SaveFileRequest request)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
+        
         if (string.IsNullOrWhiteSpace(request.Path))
         {
             return BadRequest(new ApiResponse<object> { Code = 400, Message = "文件路径不能为空" });

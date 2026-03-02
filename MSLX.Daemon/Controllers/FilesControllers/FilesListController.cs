@@ -14,6 +14,9 @@ public class FilesListController : ControllerBase
     [HttpGet("instance/{id}/lists")]
     public IActionResult GetFilesList(uint id, [FromQuery] string? path = "")
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
+        
         var server = IConfigBase.ServerList.GetServer(id);
         if (server == null)
         {
@@ -112,6 +115,9 @@ public class FilesListController : ControllerBase
     [HttpPost("instance/{id}/chmod")]
     public IActionResult ChangeFileMode(uint id, [FromBody] ChmodRequest request)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
+        
         if (PlatFormServices.GetOs() == "Windows")
         {
             return BadRequest(new ApiResponse<object> { Code = 400, Message = "当前操作系统不支持修改文件权限" });
@@ -180,6 +186,9 @@ public class FilesListController : ControllerBase
     [HttpPost("instance/{id}/rename")]
     public IActionResult RenameFile(uint id, [FromBody] RenameFileRequest request)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
+        
         var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
         
@@ -216,6 +225,9 @@ public class FilesListController : ControllerBase
     [HttpPost("instance/{id}/delete")]
     public IActionResult DeleteFiles(uint id, [FromBody] DeleteFileRequest request)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
+        
         var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
 
@@ -264,6 +276,9 @@ public class FilesListController : ControllerBase
     [HttpPost("instance/{id}/upload")]
     public IActionResult SaveUploadedFile(uint id, [FromBody] SaveUploadRequest request)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
+        
         var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
 
@@ -323,6 +338,9 @@ public class FilesListController : ControllerBase
     [HttpGet("instance/{id}/download")]
     public IActionResult DownloadFile(uint id, [FromQuery] string path)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
+        
         var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound("实例不存在");
 
@@ -345,6 +363,9 @@ public class FilesListController : ControllerBase
     [HttpPost("instance/{id}/copy")]
     public IActionResult CopyFiles(uint id, [FromBody] BatchOperationRequest request)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
+        
         var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
 
@@ -433,6 +454,9 @@ public class FilesListController : ControllerBase
     [HttpPost("instance/{id}/move")]
     public IActionResult MoveFiles(uint id, [FromBody] BatchOperationRequest request)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
+        
         var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
 

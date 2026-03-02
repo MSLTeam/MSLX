@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Instance;
 using MSLX.Daemon.Models.Tasks;
@@ -26,6 +27,8 @@ public class InstanceSettingsController : ControllerBase
     [HttpGet("general/{id}")]
     public IActionResult GetGeneralSettings(uint id)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
         try
         {
             McServerInfo.ServerInfo serverInfo =
@@ -48,6 +51,7 @@ public class InstanceSettingsController : ControllerBase
     }
 
     [HttpPost("general/{id}")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> Update([FromRoute] uint id, [FromBody] UpdateServerRequest request)
     {
         // 校验ID

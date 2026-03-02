@@ -26,6 +26,9 @@ public class CompressController: ControllerBase
     [HttpPost("instance/{id}/compress")]
     public IActionResult StartCompress(uint id, [FromBody] CompressRequest request)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
+        
         var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
 
@@ -168,6 +171,9 @@ public class CompressController: ControllerBase
     [HttpPost("instance/{id}/decompress")]
     public IActionResult StartDecompress(uint id, [FromBody] DecompressRequest request)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
+        
         var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
 

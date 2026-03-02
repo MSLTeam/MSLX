@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
 
 namespace MSLX.Daemon.Hubs;
 
+[Authorize(Roles = "admin")]
 public class DaemonUpdateHub : Hub
 {
     public async Task JoinGroup(string serverId)

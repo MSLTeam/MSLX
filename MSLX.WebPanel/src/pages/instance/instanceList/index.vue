@@ -21,8 +21,10 @@ import forgeImg from '@/assets/serverLogos/150px-Anvil.png';
 import customImg from '@/assets/serverLogos/150px-MinecartWithCommandBlock.png';
 import defaultImg from '@/assets/serverLogos/150px-Allium.png';
 import { BASE_URL_NAME, TOKEN_NAME } from '@/config/global';
+import { useUserStore } from '@/store';
 
 const store = useInstanceListStore();
+const userStore = useUserStore();
 
 onMounted(() => {
   store.refreshInstanceList();
@@ -126,7 +128,7 @@ const handleConfirmDelete = async () => {
       <h2 class="title">服务端列表</h2>
       <t-space>
         <t-button theme="primary" variant="dashed" @click="store.refreshInstanceList"> 刷新列表 </t-button>
-        <t-button theme="primary" @click="changeUrl('/instance/create')"> 添加服务端 </t-button></t-space
+        <t-button v-if="userStore.isAdmin" theme="primary" @click="changeUrl('/instance/create')"> 添加服务端 </t-button></t-space
       >
     </div>
 
@@ -169,6 +171,7 @@ const handleConfirmDelete = async () => {
           <div class="card-actions">
             <span class="action-hint">点击管理</span>
             <t-button
+              v-if="userStore.isAdmin"
               shape="circle"
               theme="danger"
               variant="text"

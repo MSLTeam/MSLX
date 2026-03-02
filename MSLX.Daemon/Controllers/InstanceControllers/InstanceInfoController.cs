@@ -18,50 +18,83 @@ public class InstanceInfoController : ControllerBase
         _mcServerService = mcServerService;
     }
     
-    [HttpGet("list")]
+[HttpGet("list")]
     public IActionResult GetInstanceList()
     {
+        var userId = User?.FindFirst("UserId")?.Value ?? "";
+        var currentUser = IConfigBase.UserList.GetUserById(userId);
+        
+        if (currentUser == null) 
+            return Unauthorized(new ApiResponse<object> { Code = 401, Message = "用户不存在或登录已过期" });
+
+        bool isAdmin = currentUser.Role == "admin";
+        
+        var allowedServerIds = new HashSet<uint>();
+        if (!isAdmin && currentUser.Resources != null)
+        {
+            foreach (var res in currentUser.Resources)
+            {
+                if (res.StartsWith("server:") && uint.TryParse(res.Substring(7), out uint resId))
+                {
+                    allowedServerIds.Add(resId);
+                }
+            }
+        }
+
         ServerListConfig config = IConfigBase.ServerList;
         var serverList = config.ReadServerList();
-        var resultList = serverList.Select(item => 
-        {
-            uint id = item["ID"]?.Value<uint>() ?? 0;
-            var (serverStatus,serverStatusText) = _mcServerService.GetServerStatus(id);
-            string icon = "default";
+        
+        var resultList = serverList
+            .Where(item => 
+            {
+                uint id = item["ID"]?.Value<uint>() ?? 0;
+                return isAdmin || allowedServerIds.Contains(id);
+            })
+            .Select(item => 
+            {
+                uint id = item["ID"]?.Value<uint>() ?? 0;
+                var (serverStatus, serverStatusText) = _mcServerService.GetServerStatus(id);
+                string icon = "default";
 
-            if ((item["Core"]?.Value<string>() ?? "").Contains("neoforge"))
-            {
-                icon = "neoforge";
-            }else if ((item["Core"]?.Value<string>() ?? "").Contains("forge"))
-            {
-                icon = "forge";
-            }else if((item["Core"]?.Value<string>() ?? "") == "none")
-            {
-                icon = "custom";
-            }
-            try
-            {
-                if (Directory.Exists(item["Base"]?.Value<string>()))
+                if ((item["Core"]?.Value<string>() ?? "").Contains("neoforge"))
                 {
-                    if (System.IO.File.Exists(Path.Combine(item["Base"]?.Value<string>() ?? "", "server-icon.png")))
+                    icon = "neoforge";
+                }
+                else if ((item["Core"]?.Value<string>() ?? "").Contains("forge"))
+                {
+                    icon = "forge";
+                }
+                else if ((item["Core"]?.Value<string>() ?? "") == "none")
+                {
+                    icon = "custom";
+                }
+                
+                try
+                {
+                    if (Directory.Exists(item["Base"]?.Value<string>()))
                     {
-                        icon = "server-icon";
+                        if (System.IO.File.Exists(Path.Combine(item["Base"]?.Value<string>() ?? "", "server-icon.png")))
+                        {
+                            icon = "server-icon";
+                        }
                     }
                 }
-            }catch{}
+                catch { }
 
-            return new 
-            {
-                id,
-                name = item["Name"]?.Value<string>(),
-                basePath = item["Base"]?.Value<string>(),
-                java = item["Java"]?.Value<string>(),
-                core = item["Core"]?.Value<string>(),
-                icon,
-                status = serverStatus,
-                statusText = serverStatusText
-            };
-        }).OrderByDescending(x => x.id).ToList();
+                return new 
+                {
+                    id,
+                    name = item["Name"]?.Value<string>(),
+                    basePath = item["Base"]?.Value<string>(),
+                    java = item["Java"]?.Value<string>(),
+                    core = item["Core"]?.Value<string>(),
+                    icon,
+                    status = serverStatus,
+                    statusText = serverStatusText
+                };
+            })
+            .OrderByDescending(x => x.id)
+            .ToList();
         
         return Ok(new ApiResponse<object>
         {
@@ -74,6 +107,8 @@ public class InstanceInfoController : ControllerBase
     [HttpGet("info")]
     public IActionResult GetInstanceInfo(uint id)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
         try
         {
             McServerInfo.ServerInfo server =
@@ -188,6 +223,8 @@ public class InstanceInfoController : ControllerBase
     [HttpGet("icon/{id}.png")]
     public IActionResult GetInstanceIcon(uint id)
     { 
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
         try
         {
             McServerInfo.ServerInfo server =

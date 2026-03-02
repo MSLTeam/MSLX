@@ -5,13 +5,16 @@ import { AddIcon, SearchIcon, RefreshIcon } from 'tdesign-icons-vue-next';
 
 import { getUserList, createUser, updateUser, deleteUser } from '@/api/user';
 import type { AdminUserDto } from '@/api/model/user';
-import { useUserStore } from '@/store';
+import { useUserStore,useTunnelsStore,useInstanceListStore } from '@/store';
 
 // --- 状态定义 ---
 const loading = ref(false);
 const tableData = ref<AdminUserDto[]>([]);
 const filterText = ref('');
+
 const userStore = useUserStore();
+const tunnelsStore = useTunnelsStore();
+const instanceStore = useInstanceListStore();
 
 const dialogVisible = ref(false);
 const dialogMode = ref<'create' | 'edit'>('create');
@@ -24,6 +27,7 @@ const formData = reactive({
   password: '',
   role: 'admin',
   resetApiKey: false,
+  resources: [] as string[],
 });
 
 const rules: FormRules = {
@@ -39,6 +43,26 @@ const rules: FormRules = {
     },
   ],
 };
+
+// 资源分配选项
+const resourceOptions = computed(() => {
+  return [
+    {
+      label: '实例 (Server)',
+      children: instanceStore.instanceList.map((item: any) => ({
+        label: `[${item.id ?? item.ID}] ${item.name ?? item.Name}`,
+        value: `server:${item.id ?? item.ID}`,
+      })),
+    },
+    {
+      label: '隧道 (FRP)',
+      children: tunnelsStore.frpList.map((item: any) => ({
+        label: `[${item.id ?? item.ID}] ${item.name ?? item.Name}`,
+        value: `frp:${item.id ?? item.ID}`,
+      })),
+    },
+  ];
+});
 
 // 表格列定义
 const columns = computed((): PrimaryTableCol<TableRowData>[] => [
@@ -75,8 +99,9 @@ const handleAdd = () => {
   formData.username = '';
   formData.name = '';
   formData.password = '';
-  formData.role = 'admin';
+  formData.role = 'user';
   formData.resetApiKey = false;
+  formData.resources = [];
   dialogVisible.value = true;
 };
 
@@ -88,6 +113,7 @@ const handleEdit = (row: AdminUserDto) => {
   formData.password = '';
   formData.role = row.role;
   formData.resetApiKey = false;
+  formData.resources = row.resources ? [...row.resources] : [];
   dialogVisible.value = true;
 };
 
@@ -102,6 +128,7 @@ const onSubmit = async ({ validateResult }: any) => {
         password: formData.password,
         name: formData.name,
         role: formData.role,
+        resources: formData.role === 'admin' ? [] : formData.resources, // 管理员不需要分配，清空传过去
       });
       MessagePlugin.success('用户创建成功');
     } else {
@@ -110,6 +137,7 @@ const onSubmit = async ({ validateResult }: any) => {
         password: formData.password || undefined,
         role: formData.role,
         resetApiKey: formData.resetApiKey,
+        resources: formData.role === 'admin' ? [] : formData.resources, // 同上
       });
       MessagePlugin.success('用户更新成功');
     }
@@ -142,6 +170,8 @@ const handleDelete = (row: AdminUserDto) => {
 
 onMounted(() => {
   fetchData();
+  tunnelsStore.getTunnels();
+  instanceStore.refreshInstanceList();
 });
 </script>
 
@@ -237,9 +267,25 @@ onMounted(() => {
 
         <t-form-item label="角色" name="role">
           <t-radio-group v-model="formData.role" variant="default-filled">
-            <t-radio-button value="user" disabled>普通用户</t-radio-button>
+            <t-radio-button value="user">普通用户(测试功能)</t-radio-button>
             <t-radio-button value="admin">管理员</t-radio-button>
           </t-radio-group>
+        </t-form-item>
+
+        <t-form-item
+          v-if="formData.role === 'user'"
+          label="分配资源"
+          name="resources"
+          help="该用户将获得以下实例和隧道的完整控制权"
+        >
+          <t-select
+            v-model="formData.resources"
+            multiple
+            filterable
+            clearable
+            :options="resourceOptions"
+            placeholder="搜索或选择要分配的实例与隧道"
+          />
         </t-form-item>
 
         <t-form-item label="密码" name="password" :help="dialogMode === 'edit' ? '留空则不修改密码' : ''">
