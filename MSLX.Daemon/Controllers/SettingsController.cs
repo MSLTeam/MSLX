@@ -11,6 +11,7 @@ namespace MSLX.Daemon.Controllers;
 public class SettingsController: ControllerBase 
 {
     [HttpGet]
+    [Authorize(Roles = "admin")]
     public IActionResult GetSettings()
     {
         return Ok(new ApiResponse<object>
@@ -32,6 +33,7 @@ public class SettingsController: ControllerBase
     }
     
     [HttpPost]
+    [Authorize(Roles = "admin")]
     public IActionResult UpdateSettings([FromBody] UpdateSettingsRequest request)
     {
         IConfigBase.Config.WriteConfigKey("fireWallBanLocalAddr", request.FireWallBanLocalAddr);
@@ -75,6 +77,7 @@ public class SettingsController: ControllerBase
     }
 
     [HttpPost("webpanel/style")]
+    [Authorize(Roles = "admin")]
     public IActionResult UpdateWebPanelStyle([FromBody] UpdateWebPanelStyleSettingsRequest request)
     {
         IConfigBase.Config.WriteConfigKey("webPanelStyleLightBackground",request.WebPanelStyleLightBackground);

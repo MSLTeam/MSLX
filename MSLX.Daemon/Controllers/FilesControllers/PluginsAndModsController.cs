@@ -5,6 +5,7 @@ using MSLX.Daemon.Utils.ConfigUtils;
 using System.IO.Compression; 
 using System.Text.Json;  
 using System.Text.RegularExpressions;
+using MSLX.Daemon.Utils;
 
 namespace MSLX.Daemon.Controllers.FilesControllers;
 
@@ -15,6 +16,9 @@ public class PluginsAndModsController : ControllerBase
     [HttpGet("instance/{id}/list")]
     public IActionResult GetPluginsAndModsList(uint id, [FromQuery] string? mode = "plugins", [FromQuery] bool checkClient = false)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
+        
         try
         {
             var server = IConfigBase.ServerList.GetServer(id);
@@ -180,6 +184,9 @@ public class PluginsAndModsController : ControllerBase
     [HttpPost("instance/{id}/set")]
     public IActionResult SetPluginOrModState(uint id, [FromBody] SetPluginModStateRequest request)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
+        
         var server = IConfigBase.ServerList.GetServer(id);
         if (server == null)
             return NotFound(new ApiResponse<object> { Code = 404, Message = "服务器不存在" });

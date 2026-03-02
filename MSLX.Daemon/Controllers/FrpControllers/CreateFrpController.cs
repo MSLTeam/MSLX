@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Frp;
@@ -9,6 +10,7 @@ namespace MSLX.Daemon.Controllers.FrpControllers;
 
 [ApiController]
 [Route("api/frp")]
+[Authorize(Roles = "admin")]
 public class CreateFrpController : ControllerBase
 {
     private readonly FrpProcessService _frpService;

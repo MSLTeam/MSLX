@@ -10,6 +10,7 @@ using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using System.IO.Compression;
 using System.Text.Json;
+using MSLX.Daemon.Utils;
 
 namespace MSLX.Daemon.Controllers.InstanceControllers;
 
@@ -37,6 +38,8 @@ public class PlayerManagerController : ControllerBase
     [HttpGet("online/{id}")]
     public IActionResult GetOnlinePlayers(uint id)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
         try
         {
             var players = _mcServerService.GetOnlinePlayers(id);
@@ -53,6 +56,8 @@ public class PlayerManagerController : ControllerBase
     [HttpGet("history/{id}")]
     public IActionResult GetHistoryPlayers(uint id)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
         try
         {
             var basePath = GetServerBasePath(id);
@@ -69,6 +74,8 @@ public class PlayerManagerController : ControllerBase
     [HttpGet("whitelist/{id}")]
     public IActionResult GetWhitelist(uint id)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
         try
         {
             var path = Path.Combine(GetServerBasePath(id), "whitelist.json");
@@ -80,6 +87,8 @@ public class PlayerManagerController : ControllerBase
     [HttpPost("whitelist/add/{id}")]
     public IActionResult AddWhitelist(uint id, [FromBody] AddPlayerRequest req)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
         try
         {
             var basePath = GetServerBasePath(id);
@@ -100,6 +109,8 @@ public class PlayerManagerController : ControllerBase
     [HttpPost("whitelist/remove/{id}")]
     public IActionResult RemoveWhitelist(uint id, [FromBody] RemovePlayerRequest req)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
         try
         {
             var path = Path.Combine(GetServerBasePath(id), "whitelist.json");
@@ -119,6 +130,8 @@ public class PlayerManagerController : ControllerBase
     [HttpGet("ops/{id}")]
     public IActionResult GetOps(uint id)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
         try
         {
             var path = Path.Combine(GetServerBasePath(id), "ops.json");
@@ -130,6 +143,8 @@ public class PlayerManagerController : ControllerBase
     [HttpPost("ops/add/{id}")]
     public IActionResult AddOp(uint id, [FromBody] AddPlayerRequest req)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
         try
         {
             var basePath = GetServerBasePath(id);
@@ -150,6 +165,8 @@ public class PlayerManagerController : ControllerBase
     [HttpPost("ops/remove/{id}")]
     public IActionResult RemoveOp(uint id, [FromBody] RemovePlayerRequest req)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
         try
         {
             var path = Path.Combine(GetServerBasePath(id), "ops.json");
@@ -169,6 +186,8 @@ public class PlayerManagerController : ControllerBase
     [HttpGet("banip/{id}")]
     public IActionResult GetBannedIps(uint id)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
         try
         {
             var path = Path.Combine(GetServerBasePath(id), "banned-ips.json");
@@ -180,6 +199,8 @@ public class PlayerManagerController : ControllerBase
     [HttpPost("banip/add/{id}")]
     public IActionResult AddBannedIp(uint id, [FromBody] AddBannedIpRequest req)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
         try
         {
             var path = Path.Combine(GetServerBasePath(id), "banned-ips.json");
@@ -204,6 +225,8 @@ public class PlayerManagerController : ControllerBase
     [HttpPost("banip/remove/{id}")]
     public IActionResult RemoveBannedIp(uint id, [FromBody] RemoveBannedIpRequest req)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
         try
         {
             var path = Path.Combine(GetServerBasePath(id), "banned-ips.json");
@@ -223,6 +246,8 @@ public class PlayerManagerController : ControllerBase
     [HttpGet("banplayer/{id}")]
     public IActionResult GetBannedPlayers(uint id)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
         try
         {
             var path = Path.Combine(GetServerBasePath(id), "banned-players.json");
@@ -234,6 +259,8 @@ public class PlayerManagerController : ControllerBase
     [HttpPost("banplayer/add/{id}")]
     public IActionResult AddBannedPlayer(uint id, [FromBody] AddBannedPlayerRequest req)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
         try
         {
             var basePath = GetServerBasePath(id);
@@ -262,6 +289,8 @@ public class PlayerManagerController : ControllerBase
     [HttpPost("banplayer/remove/{id}")]
     public IActionResult RemoveBannedPlayer(uint id, [FromBody] RemovePlayerRequest req)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
         try
         {
             var path = Path.Combine(GetServerBasePath(id), "banned-players.json");

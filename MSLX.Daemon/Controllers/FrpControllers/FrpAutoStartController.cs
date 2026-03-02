@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Frp;
 using MSLX.Daemon.Utils.ConfigUtils;
@@ -8,6 +9,7 @@ namespace MSLX.Daemon.Controllers.FrpControllers;
 
 [ApiController]
 [Route("api/frp/autostart")]
+[Authorize(Roles = "admin")]
 public class FrpAutoStartController : ControllerBase
 {
     private const string ConfigKey = "frpAutoStartList";

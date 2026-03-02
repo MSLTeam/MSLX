@@ -12,6 +12,9 @@ import {
 } from 'tdesign-icons-vue-next';
 import { TunnelInfoModel } from '@/api/model/frp';
 import { copyText } from '@/utils/clipboard';
+import { useUserStore } from '@/store';
+
+const userStore = useUserStore();
 
 // 定义 Props
 defineProps<{
@@ -52,7 +55,7 @@ defineEmits<{
           <t-button class="glass-btn" variant="outline" theme="warning" @click="$emit('clear-log')">
             <template #icon><refresh-icon /></template>清空日志
           </t-button>
-          <t-button variant="outline" theme="default" @click="$emit('edit-config')">
+          <t-button v-if="userStore.isAdmin" variant="outline" theme="default" @click="$emit('edit-config')">
             <template #icon><edit1-icon /></template>配置文件
           </t-button>
         </div>

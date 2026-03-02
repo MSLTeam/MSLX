@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Instance;
+using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 
 namespace MSLX.Daemon.Controllers.InstanceControllers;
@@ -72,6 +73,8 @@ public class BackupManagerController : ControllerBase
     [HttpGet("{id}")]
     public IActionResult GetInstanceBackups(uint id)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
         try
         {
             var server = IConfigBase.ServerList.GetServer(id) ?? throw new Exception("找不到指定的服务器实例");
@@ -92,16 +95,40 @@ public class BackupManagerController : ControllerBase
     {
         try
         {
+            var userId = User?.FindFirst("UserId")?.Value ?? "";
+            var currentUser = IConfigBase.UserList.GetUserById(userId);
+            
+            if (currentUser == null) 
+                return Unauthorized(new ApiResponse<object> { Code = 401, Message = "用户不存在或登录已过期" });
+
+            bool isAdmin = currentUser.Role == "admin";
+            
+            var allowedServerIds = new HashSet<uint>();
+            if (!isAdmin && currentUser.Resources != null)
+            {
+                foreach (var res in currentUser.Resources)
+                {
+                    if (res.StartsWith("server:") && uint.TryParse(res.Substring(7), out uint resId))
+                    {
+                        allowedServerIds.Add(resId);
+                    }
+                }
+            }
+
+            // 获取所有服务器列表
             var servers = IConfigBase.ServerList.GetServerList();
 
-            var result = servers.Select(server => new
-            {
-                Id = server.ID,
-                Name = server.Name,
-                Core = GetCoreName(server.Core), 
-                BackupPath = GetBackupDirectory(server),
-                Backups = GetBackupListFromPath(GetBackupDirectory(server))
-            }).ToList();
+            //过滤并格式化返回结果
+            var result = servers
+                .Where(server => isAdmin || allowedServerIds.Contains((uint)server.ID))
+                .Select(server => new
+                {
+                    Id = server.ID,
+                    Name = server.Name,
+                    Core = GetCoreName(server.Core), 
+                    BackupPath = GetBackupDirectory(server),
+                    Backups = GetBackupListFromPath(GetBackupDirectory(server))
+                }).ToList();
 
             return Ok(new ApiResponse<object> { Code = 200, Message = "获取成功", Data = result });
         }
@@ -114,7 +141,8 @@ public class BackupManagerController : ControllerBase
     [HttpPost("delete")]
     public IActionResult DeleteBackup([FromBody] DeleteBackupRequest request)
     {
-
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)request.Id))
+            return NotFound(ApiResponseService.NotFound());
         try
         {
             McServerInfo.ServerInfo server =
@@ -170,6 +198,8 @@ public class BackupManagerController : ControllerBase
     [HttpGet("download")]
     public IActionResult DownloadBackup([FromQuery] uint id, [FromQuery] string fileName)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
         if (string.IsNullOrWhiteSpace(fileName))
         {
             return BadRequest(new ApiResponse<object>

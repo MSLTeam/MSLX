@@ -467,7 +467,7 @@ onUnmounted(() => {
 <template>
   <div class="settings-container">
     <t-loading :loading="loading" show-overlay>
-      <t-form ref="formRef" :data="formData" :rules="rules" label-width="0" @submit="onSubmit">
+      <t-form ref="formRef" :disabled="!userStore.isAdmin" :data="formData" :rules="rules" label-width="0" @submit="onSubmit">
         <div class="setting-group-title">基础设置</div>
 
         <div class="setting-item">
@@ -854,7 +854,7 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div class="form-actions">
+        <div v-if="userStore.isAdmin" class="form-actions">
           <t-button theme="primary" type="submit" size="large" :loading="submitting">保存设置</t-button>
           <t-button theme="default" variant="base" size="large" @click="initData">重置更改</t-button>
         </div>

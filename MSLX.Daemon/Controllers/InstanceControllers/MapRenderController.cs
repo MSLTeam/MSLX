@@ -7,6 +7,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using System.IO.Compression;
+using MSLX.Daemon.Utils;
 
 namespace MSLX.Daemon.Controllers.InstanceControllers;
 
@@ -129,6 +130,8 @@ public class MapRenderController : ControllerBase
     [HttpGet("spawn/{id}")]
     public IActionResult GetWorldSpawn(uint id)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
         try
         {
             var basePath = GetServerBasePath(id);
@@ -156,6 +159,8 @@ public class MapRenderController : ControllerBase
     [HttpGet("{id}/{regionX}/{regionZ}")]
     public IActionResult GetRegionMap(uint id, int regionX = 0, int regionZ = 0)
     {
+        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
+            return NotFound(ApiResponseService.NotFound());
         try
         {
             var basePath = GetServerBasePath(id);

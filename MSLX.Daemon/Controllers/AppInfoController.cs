@@ -130,6 +130,7 @@ public class AppInfoController : ControllerBase
     }
 
     [HttpGet("api/update/info")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> GetUpdateInfoAsync()
     {
         try
@@ -210,6 +211,7 @@ public class AppInfoController : ControllerBase
     }
 
     [HttpGet("api/update/download")]
+    [Authorize(Roles = "admin")]
     public async Task<IActionResult> GetUpdateDownloadLinkAsync()
     {
         try

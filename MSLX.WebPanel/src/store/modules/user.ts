@@ -38,7 +38,7 @@ export const useUserStore = defineStore('user', {
 
   getters: {
     roles: (state) => state.userInfo?.roles || [],
-    isAdmin: (state) => state.userInfo?.roles?.includes('admin') || false,
+    isAdmin: (state) => state.userInfo?.roles?.includes('all') || false,
   },
 
   actions: {
