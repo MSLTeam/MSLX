@@ -45,6 +45,12 @@ export default [
         component: () => import('@/pages/instance/backupManager/index.vue'),
         meta: { title: '备份管理', icon: 'backup',roleCode: ['admin', 'user'] },
       },
+      {
+        path: 'cron',
+        name: 'InstanceCronTasksManager',
+        component: () => import('@/pages/instance/cronTasksManager/index.vue'),
+        meta: { title: '定时任务', icon: 'time',roleCode: ['admin', 'user'] },
+      },
     ],
   },
   {

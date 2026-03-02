@@ -7,6 +7,12 @@ export async function getCronTasks(instanceId: number) {
   });
 }
 
+export async function getAllCronTasks() {
+  return await request.get<CronTaskItemModel[]>({
+    url: `/api/instance/tasks/list`,
+  });
+}
+
 export async function addCronTask(instanceId: number, name: string, cron: string, payload: string,type:string,enable: boolean) {
   return await request.post({
     url: `/api/instance/tasks/create`,
