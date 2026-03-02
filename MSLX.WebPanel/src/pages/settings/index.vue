@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { useWebpanelStore } from '@/store/modules/webpanel';
+import { useWebpanelStore,useUserStore } from '@/store';
 
 import UserProfileCard from './components/UserProfileCard.vue';
 import SystemSettingsCard from './components/SystemSettingsCard.vue';
 import WebPanelStyleCard from './components/WebPanelStyleCard.vue';
 
 const webpanelStore = useWebpanelStore();
+const userStore = useUserStore();
 
 // 组件引用
 const userCardRef = ref();
@@ -33,9 +34,9 @@ onMounted(() => {
 
       <user-profile-card ref="userCardRef" />
 
-      <system-settings-card ref="sysCardRef" @refresh="initAllData" />
+      <system-settings-card v-if="userStore.isAdmin" ref="sysCardRef" @refresh="initAllData" />
 
-      <web-panel-style-card />
+      <web-panel-style-card v-if="userStore.isAdmin"/>
 
     </t-space>
   </div>

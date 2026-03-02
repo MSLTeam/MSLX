@@ -25,6 +25,7 @@ export default [
     meta: {
       title: '设置',
       icon: 'setting',
+      roleCode: ['admin', 'user']
     },
     children: [
       {
@@ -42,6 +43,7 @@ export default [
     meta: {
       title: '关于面板',
       icon: 'info-circle',
+    roleCode: ['admin', 'user']
     },
     children: [
       {

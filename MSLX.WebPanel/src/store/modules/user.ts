@@ -38,6 +38,7 @@ export const useUserStore = defineStore('user', {
 
   getters: {
     roles: (state) => state.userInfo?.roles || [],
+    isAdmin: (state) => state.userInfo?.roles?.includes('admin') || false,
   },
 
   actions: {
@@ -136,7 +137,7 @@ export const useUserStore = defineStore('user', {
           ...InitUserInfo,
           ...resData,
           name: resData.user || resData.username, // 兼容字段
-          roles: ['all'],
+          roles: resData.roles || [],
         };
 
         // 初始化路由权限
