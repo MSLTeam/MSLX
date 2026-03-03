@@ -47,8 +47,12 @@ public class MCServerService
     private const int MaxLogLines = 1000;
 
     // 匹配玩家进入/离开的正则表达式
-    private static readonly Regex PlayerJoinedRegex = new Regex(@"\]:\s*(?<player>[a-zA-Z0-9_\-\.\* ]+)\[.*?\]\slogged\sin\swith\sentity\sid", RegexOptions.Compiled);
-    private static readonly Regex PlayerLeftRegex = new Regex(@"\]:\s*(?<player>[a-zA-Z0-9_\-\.\* ]+)\slost\sconnection:", RegexOptions.Compiled);
+    private static readonly Regex PlayerJoinedRegex =
+        new Regex(@"\]:\s*(?<player>[a-zA-Z0-9_\-\.\* ]+)\[.*?\]\slogged\sin\swith\sentity\sid", RegexOptions.Compiled);
+
+    private static readonly Regex PlayerLeftRegex =
+        new Regex(@"\]:\s*(?<player>[a-zA-Z0-9_\-\.\* ]+)\slost\sconnection:", RegexOptions.Compiled);
+
     private static readonly Regex AnsiColorRegex = new Regex(@"\x1B\[[0-9;]*[a-zA-Z]", RegexOptions.Compiled);
 
     public MCServerService(
@@ -137,6 +141,7 @@ public class MCServerService
         {
             return context.OnlinePlayers.Keys.ToList();
         }
+
         return new List<string>();
     }
 
@@ -145,7 +150,7 @@ public class MCServerService
     /// 启动 MC 服务器 (非阻塞模式)
     /// </summary>
     public (bool success, string message) StartServer(uint instanceId,
-        bool isAutoRestart = false,bool skipEulaCheck=false)
+        bool isAutoRestart = false, bool skipEulaCheck = false)
     {
         if (IsServerRunning(instanceId))
             return (false, "该服务器已经在运行中或正在启动中");
@@ -154,6 +159,7 @@ public class MCServerService
         {
             _crashHistory.TryRemove(instanceId, out _);
         }
+
         var serverInfo = IConfigBase.ServerList.GetServer(instanceId);
         if (serverInfo == null)
             return (false, "找不到指定的服务器配置");
@@ -162,12 +168,12 @@ public class MCServerService
         _activeServers[instanceId] = context;
 
         // 后台任务启动服务器
-        _ = Task.Run(async () => await InternalStartServerAsync(instanceId, context, serverInfo,skipEulaCheck));
+        _ = Task.Run(async () => await InternalStartServerAsync(instanceId, context, serverInfo, skipEulaCheck));
 
         return (true, "正在启动服务器...");
     }
 
-    public async Task<bool> AgreeEULA(uint instanseId,bool agree)
+    public async Task<bool> AgreeEULA(uint instanseId, bool agree)
     {
         var serverInfo = IConfigBase.ServerList.GetServer(instanseId);
         if (serverInfo == null)
@@ -187,6 +193,7 @@ public class MCServerService
                 return false;
             }
         }
+
         StartServer(instanseId, skipEulaCheck: true);
         return true;
     }
@@ -226,7 +233,7 @@ public class MCServerService
     /// 异步启动服务器
     /// </summary>
     private async Task InternalStartServerAsync(uint instanceId, ServerContext context,
-        McServerInfo.ServerInfo serverInfo,bool skipEulaCheck)
+        McServerInfo.ServerInfo serverInfo, bool skipEulaCheck)
     {
         try
         {
@@ -261,7 +268,6 @@ public class MCServerService
                     _activeServers.TryRemove(instanceId, out _);
                     return;
                 }
-                    
             }
 
             // 检查核心文件是否存在
@@ -318,7 +324,7 @@ public class MCServerService
             await Task.Delay(100);
 
             string args =
-                $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{(serverInfo.ForceJvmUTF8? " -Dfile.encoding=UTF-8":"")}{(serverInfo.AllowOriginASCIIColors ? " -Dterminal.jline=false -Dterminal.ansi=true" : "")} -jar {serverInfo.Core} nogui";
+                $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{(serverInfo.ForceJvmUTF8 ? " -Dfile.encoding=UTF-8" : "")}{(serverInfo.AllowOriginASCIIColors ? " -Dterminal.jline=false -Dterminal.ansi=true" : "")} -jar {serverInfo.Core} nogui";
             string exec = serverInfo.Java;
 
             // 处理自定义模式参数
@@ -381,10 +387,12 @@ public class MCServerService
                 {
                     startInfo.EnvironmentVariables.Add("TERM", "xterm-256color");
                 }
+
                 if (!startInfo.EnvironmentVariables.ContainsKey("COLORTERM"))
                 {
                     startInfo.EnvironmentVariables.Add("COLORTERM", "truecolor");
                 }
+
                 if (!startInfo.EnvironmentVariables.ContainsKey("FORCE_COLOR"))
                 {
                     startInfo.EnvironmentVariables.Add("FORCE_COLOR", "1");
@@ -472,13 +480,14 @@ public class MCServerService
                                     {
                                         context.Process.StandardInput.WriteLine(server?.StopCommand ?? "stop");
                                     }
-                                    context.Process.StandardInput.Flush();
 
+                                    context.Process.StandardInput.Flush();
                                 }
                                 else
                                 {
                                     // 其他类型
-                                    if (string.IsNullOrEmpty(server?.StopCommand ?? "") || (server?.StopCommand ?? "") == "^c")
+                                    if (string.IsNullOrEmpty(server?.StopCommand ?? "") ||
+                                        (server?.StopCommand ?? "") == "^c")
                                     {
                                         ProcessHelper.SendCtrlC(context.Process);
                                     }
@@ -486,6 +495,7 @@ public class MCServerService
                                     {
                                         context.Process.StandardInput.WriteLine(server?.StopCommand ?? "stop");
                                     }
+
                                     // 关闭输入流
                                     context.Process.StandardInput.Close();
                                 }
@@ -505,7 +515,14 @@ public class MCServerService
                             catch (Exception ex)
                             {
                                 // 发生任何异常直接强杀
-                                try { context.Process.Kill(true); } catch { }
+                                try
+                                {
+                                    context.Process.Kill(true);
+                                }
+                                catch
+                                {
+                                }
+
                                 RecordLog(instanceId, context, $"[MSLX] 停止过程出错，已强制结束: {ex.Message}");
                             }
                         }
@@ -528,6 +545,7 @@ public class MCServerService
                 RecordLog(instanceId, context, $">>> [MSLX] 停止失败: {ex.Message}");
             }
         }
+
         return false;
     }
 
@@ -561,6 +579,7 @@ public class MCServerService
                 RecordLog(instanceId, context, $">>> [MSLX] 强制终止失败: {ex.Message}");
             }
         }
+
         return false;
     }
 
@@ -903,7 +922,7 @@ public class MCServerService
     private void ParsePlayerActivity(uint instanceId, ServerContext context, string logLine)
     {
         // 预检
-        if(!context.MonitorPlayers)
+        if (!context.MonitorPlayers)
             return;
         if (!logLine.Contains("logged in with entity id") && !logLine.Contains("lost connection:"))
             return;
@@ -920,6 +939,7 @@ public class MCServerService
             {
                 _hubContext.Clients.Group(instanceId.ToString()).SendAsync("PlayerJoined", instanceId, playerName);
             }
+
             return;
         }
 
@@ -989,7 +1009,7 @@ public class MCServerService
                     // 下载
                     var downloader = new ParallelDownloader(parallelCount: 1);
                     var mirroredUrl = downloadUrl.Replace("authlib-injector.yushi.moe",
-                                                          "authlib-injector.mirrors.mslmc.cn");
+                        "authlib-injector.mirrors.mslmc.cn");
 
                     var (success, errorMsg) = await downloader.DownloadFileAsync(
                         mirroredUrl,
@@ -1021,6 +1041,7 @@ public class MCServerService
                         response.StatusCode);
                     return false;
                 }
+
                 _logger.LogWarning("获取元数据失败，将使用旧版本Authlib-Injector。");
             }
         }
@@ -1045,6 +1066,7 @@ public class MCServerService
     }
 
     #region 备份实例
+
     // —————— 备份相关 ——————
     public bool StartBackupServer(uint instanceId)
     {
@@ -1305,9 +1327,11 @@ public class MCServerService
             await CompressFolder(rootPath, folder, archive);
         }
     }
+
     #endregion
 
     #region 进程资源监控
+
     // —————— 进程资源占用推送 ——————
     private async Task StartResourceMonitoring()
     {
@@ -1337,10 +1361,10 @@ public class MCServerService
                         context.MonitorProcess = context.Process;
                     }
 
-                    // 针对Windows系统的查询诊断进程
+                    // 针对Windows / Linux系统的查询子进程
+                    var name = context.MonitorProcess.ProcessName.ToLower();
                     if (OperatingSystem.IsWindows())
                     {
-                        var name = context.MonitorProcess.ProcessName.ToLower();
                         bool needFindChild = false;
 
                         // cmd外壳
@@ -1372,7 +1396,22 @@ public class MCServerService
                             // 只有当找到了有效的子进程，且子进程ID不同时才切换
                             if (child != null && child.Id != context.MonitorProcess.Id)
                             {
-                                _logger.LogInformation($"[Monitor] 识别到 Wrapper 进程，切换监控目标: {context.MonitorProcess.Id} -> {child.Id}");
+                                _logger.LogInformation(
+                                    $"[Monitor] 识别到 Wrapper 进程，切换监控目标: {context.MonitorProcess.Id} -> {child.Id}");
+                                context.MonitorProcess = child;
+                            }
+                        }
+                    }
+                    else if (OperatingSystem.IsLinux())
+                    {
+                        // 常见 Linux Shell 壳
+                        if (name == "bash" || name == "sh" || name == "dash")
+                        {
+                            var child = GetChildProcessLinux(context.MonitorProcess.Id);
+                            if (child != null && child.Id != context.MonitorProcess.Id)
+                            {
+                                _logger.LogInformation(
+                                    $"[Monitor] Linux: 识别到 Shell Wrapper 进程，切换监控目标: {context.MonitorProcess.Id} -> {child.Id}");
                                 context.MonitorProcess = child;
                             }
                         }
@@ -1437,6 +1476,69 @@ public class MCServerService
     }
 
     /// <summary>
+    /// [Linux专用] 通过 pgrep 查找指定父进程启动的子进程
+    /// </summary>
+    private Process? GetChildProcessLinux(int parentPid)
+    {
+        if (!OperatingSystem.IsLinux()) return null;
+
+        try
+        {
+            // 使用 pgrep 查找直接子进程
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "pgrep",
+                Arguments = $"-P {parentPid}",
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(startInfo);
+            if (process == null) return null;
+
+            string output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit(1000);
+
+            var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                if (int.TryParse(line.Trim(), out int childPid))
+                {
+                    try
+                    {
+                        var childProcess = Process.GetProcessById(childPid);
+                        var name = childProcess.ProcessName.ToLower();
+
+                        // 找到了目标服务端进程
+                        if (name.Contains("java") || name.Contains("bedrock") || name.Contains("server"))
+                        {
+                            return childProcess;
+                        }
+
+                        // 如果子进程依然是个 shell ，递归往下挖
+                        if (name == "bash" || name == "sh" || name == "dash")
+                        {
+                            var grandChild = GetChildProcessLinux(childPid);
+                            if (grandChild != null) return grandChild;
+                        }
+                    }
+                    catch
+                    {
+                        // 进程可能瞬间退出了，忽略即可
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning($"Linux 查询子进程失败: {ex.Message}");
+        }
+
+        return null;
+    }
+
+    /// <summary>
     /// [Windows专用] 通过 WMI 查找指定父进程启动的子进程 (Java/Bedrock)
     /// </summary>
     private Process? GetChildJavaProcess(int parentPid)
@@ -1477,5 +1579,6 @@ public class MCServerService
 
         return null;
     }
+
     #endregion
 }
