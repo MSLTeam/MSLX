@@ -255,6 +255,7 @@ onMounted(() => {
       :confirm-btn="{ content: '提交', loading: submitLoading }"
       :on-confirm="() => ($refs.formRef as any).submit()"
       width="480px"
+      placement="center"
     >
       <t-form ref="formRef" :data="formData" :rules="rules" label-align="top" @submit="onSubmit">
         <t-form-item label="用户名" name="username">
@@ -267,9 +268,17 @@ onMounted(() => {
 
         <t-form-item label="角色" name="role">
           <t-radio-group v-model="formData.role" variant="default-filled">
-            <t-radio-button value="user">普通用户(测试功能)</t-radio-button>
+            <t-radio-button value="user">普通用户</t-radio-button>
             <t-radio-button value="admin">管理员</t-radio-button>
           </t-radio-group>
+        </t-form-item>
+
+        <t-form-item v-if="formData.role === 'user'">
+          <t-alert theme="warning" variant="light" title="资源权限限制说明">
+            <template #message>
+              资源分配仅实现基础权限隔离，实例文件系统并非物理隔离。用户可能通过程序路径穿越访问敏感数据，请仅在信任伙伴间使用，<strong style="color: var(--td-error-color);">严禁用于商业化用途</strong>。
+            </template>
+          </t-alert>
         </t-form-item>
 
         <t-form-item

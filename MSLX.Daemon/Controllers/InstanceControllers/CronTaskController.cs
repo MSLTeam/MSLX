@@ -9,11 +9,11 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
 
 [ApiController]
 [Route("api/instance/tasks")]
-public class TaskController : ControllerBase
+public class CronTaskController : ControllerBase
 {
-    private readonly ILogger<TaskController> _logger;
+    private readonly ILogger<CronTaskController> _logger;
 
-    public TaskController(ILogger<TaskController> logger)
+    public CronTaskController(ILogger<CronTaskController> logger)
     {
         _logger = logger;
     }

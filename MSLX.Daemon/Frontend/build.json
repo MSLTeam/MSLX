@@ -1,6 +1,6 @@
 {
-  "version": "1.2.4",
-  "buildTime": "2026-03-02 20:03:39",
+  "version": "1.2.5",
+  "buildTime": "2026-03-03 22:12:09",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -68,10 +68,52 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "99d9733db4659455f0791306602c92ab16eaacbf",
-  "commitMsg": "feat(daemon & webpanel): 接口完整实现用户权限等级控制和资源分配 & 前端网页面板根据用户权限隐藏一些入口 #47",
+  "commitId": "f2645dc0dc5b67cd47fb52aa9d40454123111df2",
+  "commitMsg": "fix(daemon): 尝试修复对使用sh脚本启动服务端资源监控错误的问题 #63",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "f2645dc0dc5b67cd47fb52aa9d40454123111df2",
+      "commitTime": "2026-03-03 22:09:05 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 尝试修复对使用sh脚本启动服务端资源监控错误的问题 #63"
+    },
+    {
+      "commitId": "4625bf3564e607bb3d3db4bddae532e2ff3021a2",
+      "commitTime": "2026-03-03 22:00:44 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 添加服务器图标快捷裁剪替换功能 #64"
+    },
+    {
+      "commitId": "9cb00fbd9b58e030982f3107f8acce5ac2e07224",
+      "commitTime": "2026-03-03 21:27:40 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复玩家管理弹窗无法正常滚动的问题 #62"
+    },
+    {
+      "commitId": "3ca2bfb4c921531dacd8e546614aa3d79ee7ff91",
+      "commitTime": "2026-03-03 21:14:12 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(webpanel): 新增普通用户创建的提示"
+    },
+    {
+      "commitId": "6932d481ee27d3aeae7ef2e36ab169b1d4b4e74b",
+      "commitTime": "2026-03-02 22:25:31 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 新增全局备份管理功能"
+    },
+    {
+      "commitId": "e74d4bd481baab9024135d585da283addf4954f0",
+      "commitTime": "2026-03-02 20:05:24 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #66 from MSLTeam/dev"
+    },
+    {
+      "commitId": "938bc96142cb769fc6226d2dd0c9c38dc2ffd930",
+      "commitTime": "2026-03-02 20:03:53 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.2.4"
+    },
     {
       "commitId": "99d9733db4659455f0791306602c92ab16eaacbf",
       "commitTime": "2026-03-02 19:59:58 +0800",
@@ -329,48 +371,6 @@
       "commitTime": "2026-02-10 18:58:51 +0800",
       "commitAuthor": "Waheal",
       "commitMsg": "fix(deamon): 修复更新nuget导致无法编译的bug"
-    },
-    {
-      "commitId": "a6a40adbe91d193d10a435a4355e623dec1285f8",
-      "commitTime": "2026-02-10 18:55:14 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "fix(desktop): app.axaml里的引用忘删了（"
-    },
-    {
-      "commitId": "6db6c0333a5c10cdf6f3e155c0948a3549a8896b",
-      "commitTime": "2026-02-10 18:54:27 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "style(desktop): 优化md控件封装方式"
-    },
-    {
-      "commitId": "a7cf1c2aead6e500860a665714788be22c2cea05",
-      "commitTime": "2026-02-10 17:40:37 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
-    },
-    {
-      "commitId": "8c0dd1156f9a0cfc9cc55e99c7f45282b80496a3",
-      "commitTime": "2026-02-10 17:39:14 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "update submodule"
-    },
-    {
-      "commitId": "f1c51206e6973fbdc5d04bcb7a3449f646425caf",
-      "commitTime": "2026-02-10 17:38:59 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "perf(desktop): 优化实例列表界面的性能"
-    },
-    {
-      "commitId": "adcc482a4973437292d44c4dedaafc7223fc59bc",
-      "commitTime": "2026-02-10 15:25:13 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(desktop): 调整markdown代码块显示样式"
-    },
-    {
-      "commitId": "15634800cf6efaa4a4d952724904b01a2c78738e",
-      "commitTime": "2026-02-10 15:21:10 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(desktop): 优化公告Markdown组件的样式"
     }
   ]
 }
