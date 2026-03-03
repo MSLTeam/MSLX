@@ -352,7 +352,6 @@ watch(() => route.params.serverId, (newId) => {
 
 <style scoped lang="less">
 .pm-container {
-  /* 保持与参考页面一致的背景处理，如果外部有 layout 这里可以去掉 padding */
   padding-bottom: 24px;
 }
 

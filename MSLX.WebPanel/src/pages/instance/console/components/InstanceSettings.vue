@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { StoreIcon, SettingIcon, TimeIcon, Setting1Icon, BackupIcon } from 'tdesign-icons-vue-next';
+import { StoreIcon, SettingIcon, TimeIcon, Setting1Icon, BackupIcon, MoreIcon } from 'tdesign-icons-vue-next';
 
 import GeneralSettings from './settingsComponents/GeneralSettings.vue';
 import ModsPluginsManager from './settingsComponents/ModsPluginsManager.vue';
 import ServerProperties from './settingsComponents/ServerProperties.vue';
 import CronTasks from './settingsComponents/CronTasks.vue';
 import BackupManager from './settingsComponents/BackupManager.vue';
+import More from './settingsComponents/More.vue';
 
 const visible = ref(false);
 const currentTab = ref(0);
@@ -17,6 +18,7 @@ const menuItems = [
   { label: '服务器属性', icon: Setting1Icon },
   { label: '定时任务', icon: TimeIcon },
   { label: '备份管理', icon: BackupIcon },
+  { label: '更多功能', icon: MoreIcon },
 ];
 
 const open = () => {
@@ -69,6 +71,9 @@ defineExpose({ open });
 
         <div v-if="currentTab === 4" class="panel-wrapper">
           <backup-manager />
+        </div>
+        <div v-if="currentTab === 5" class="panel-wrapper">
+          <more />
         </div>
       </div>
     </div>

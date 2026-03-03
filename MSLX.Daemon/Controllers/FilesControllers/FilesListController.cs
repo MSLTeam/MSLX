@@ -316,7 +316,7 @@ public class FilesListController : ControllerBase
                 System.IO.File.Delete(targetPath);
             }
 
-            System.IO.File.Move(tempFilePath, targetPath);
+            System.IO.File.Move(tempFilePath, targetPath,true);
 
             return Ok(new ApiResponse<object> 
             { 
