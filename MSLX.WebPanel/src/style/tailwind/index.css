@@ -1,0 +1,16 @@
+@import "tailwindcss";
+@custom-variant dark (&:where([theme-mode="dark"], [theme-mode="dark"] *));
+
+@theme {
+  --color-primary: var(--td-brand-color);
+  --color-primary-hover: var(--td-brand-color-hover);
+  --color-primary-active: var(--td-brand-color-active);
+  --color-primary-light: var(--td-brand-color-light);
+
+  --color-success: var(--td-success-color);
+  --color-warning: var(--td-warning-color);
+  --color-error: var(--td-error-color);
+  --color-info: var(--td-info-color);
+
+  --radius-td: var(--td-radius-default);
+}

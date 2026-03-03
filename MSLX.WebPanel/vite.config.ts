@@ -1,5 +1,6 @@
 import { ConfigEnv, defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
+import tailwindcss from '@tailwindcss/vite';
 import vueJsx from '@vitejs/plugin-vue-jsx';
 import svgLoader from 'vite-svg-loader';
 import path from 'node:path';
@@ -26,7 +27,7 @@ export default defineConfig(({ mode }: ConfigEnv) => {
         },
       },
     },
-    plugins: [vue(), vueJsx(), svgLoader()],
+    plugins: [vue(),tailwindcss(), vueJsx(), svgLoader()],
     server: {
       port: 1102,
       host: '0.0.0.0',
