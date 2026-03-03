@@ -396,6 +396,7 @@ onUnmounted(() => {
             variant="dashed"
             :disabled="!downloadInfo?.web || isUpdating"
             @click="openLink(downloadInfo?.web || '')"
+            style="margin-left: 0;"
           >
             <template #icon><link-icon /></template>
             前往下载页
