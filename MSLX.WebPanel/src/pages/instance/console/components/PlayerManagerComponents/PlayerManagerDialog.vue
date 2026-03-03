@@ -463,11 +463,19 @@ const handleClose = () => emits('update:visible', false);
   flex-direction: column;
 }
 
+:deep(.t-tab-panel) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;       /* 强制占满父容器高度 */
+  overflow: hidden;   /* 防止自身溢出 */
+}
+
+
+
 .panel-content {
   flex: 1;
-  height: 100%;
   overflow-y: auto;
-  overflow-x: hidden;
+  height: 0;
   padding: 16px 4px 16px 0;
   box-sizing: border-box;
 
