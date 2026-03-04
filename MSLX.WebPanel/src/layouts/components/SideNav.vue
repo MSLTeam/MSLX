@@ -5,7 +5,7 @@
       :class="[
         settingStore.enableCustomTheme
           ? 'border-r border-white/20 dark:border-white/5'
-          : 'border-r border-zinc-700/60 dark:border-zinc-700/60 shadow-[1px_0_12px_rgba(0,0,0,0.02)] dark:shadow-none'
+          : 'border-r border-white/20 dark:border-zinc-700/60 shadow-[1px_0_12px_rgba(0,0,0,0.02)] dark:shadow-none'
       ]"
     >
 
