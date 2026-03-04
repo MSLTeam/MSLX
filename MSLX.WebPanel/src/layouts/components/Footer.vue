@@ -1,79 +1,57 @@
 <template>
-  <footer :class="`${prefix}-footer-centered-lite`">
-    <div class="glass-capsule design-card">
-      <span class="brand">MSLX-WEBPANEL</span>
-      <span class="divider">/</span>
-      <span class="brand">MSLTEAM</span>
-      <span class="divider">/</span>
-      <span class="copyright">© 2021-{{ new Date().getFullYear() }}</span>
+  <footer class="w-full flex justify-center items-center">
+    <div class="glass-capsule design-card group flex items-center gap-3 px-6 py-2 rounded-full bg-white/80 dark:bg-zinc-800/80 backdrop-blur-[10px] border border-zinc-200/80 dark:border-zinc-700/60 shadow-sm transition-all duration-300 font-mono text-[13px] leading-none text-zinc-500 dark:text-zinc-400 cursor-default">
+
+      <span class="font-bold text-zinc-800 dark:text-zinc-200 tracking-[0.5px] transition-colors duration-300 group-hover:text-[var(--color-primary)]">
+        MSLX-WEBPANEL
+      </span>
+
+      <span class="font-light text-zinc-400 dark:text-zinc-600">/</span>
+
+      <span class="font-bold text-zinc-800 dark:text-zinc-200 tracking-[0.5px] transition-colors duration-300 group-hover:text-[var(--color-primary)]">
+        MSLTEAM
+      </span>
+
+      <span class="font-light text-zinc-400 dark:text-zinc-600">/</span>
+
+      <span class="font-medium opacity-80">
+        © 2021-{{ new Date().getFullYear() }}
+      </span>
+
     </div>
   </footer>
 </template>
 
 <script setup lang="ts">
-import { prefix } from '@/config/global';
+// 彻底干掉前缀引入，完全拥抱 Tailwind 原子类
 </script>
 
-<style lang="less" scoped>
-.@{starter-prefix}-footer-centered-lite {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+<style scoped>
+@reference "@/style/tailwind/index.css";
 
-  .glass-capsule {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px 24px;
-    background: var(--td-bg-color-container);
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--td-component-border);
-    border-radius: 32px;
-    box-shadow: var(--td-shadow-1);
-    font-family: 'SF Mono', 'Roboto Mono', Consolas, monospace;
-    font-size: 13px;
-    line-height: 1;
-    color: var(--td-text-color-secondary);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: default;
+/* 极致纯净的 Style 块：
+  布局、排版、基础颜色、边距已经全部在 Template 中用 Tailwind 原子类解决。
+  这里仅保留 Tailwind 任意值写法会非常丑陋的复杂多重光影混色逻辑。
+*/
 
-    .brand {
-      font-weight: 700;
-      color: var(--td-text-color-primary);
-      letter-spacing: 0.5px;
-      transition: color 0.3s;
-    }
+.glass-capsule:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--color-primary), transparent 50%);
 
-    .copyright {
-      font-weight: 500;
-      opacity: 0.8;
-    }
-    &:hover {
-      transform: translateY(-2px);
-      border-color: color-mix(in srgb, var(--td-brand-color), transparent 50%);
-
-      box-shadow:
-        0 6px 20px rgba(0, 0, 0, 0.08),
-        0 0 15px color-mix(in srgb, var(--td-brand-color), transparent 85%),
-        inset 0 0 8px color-mix(in srgb, var(--td-brand-color), transparent 90%); // 微弱内发光
-
-      .brand {
-        color: var(--td-brand-color);
-      }
-    }
-  }
+  /* 柔和的主题色外发光 + 微弱内发光 */
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.08),
+    0 0 15px color-mix(in srgb, var(--color-primary), transparent 85%),
+    inset 0 0 8px color-mix(in srgb, var(--color-primary), transparent 90%);
 }
 
-// 暗黑模式适配
-:deep([theme-mode='dark']) .@{starter-prefix}-footer-centered-lite .glass-capsule {
-  border-color: rgba(255, 255, 255, 0.08);
+/* 暗黑模式光影特调 */
+:global(html[theme-mode='dark']) .glass-capsule:hover {
+  border-color: color-mix(in srgb, var(--color-primary), transparent 60%);
 
-  &:hover {
-    border-color: color-mix(in srgb, var(--td-brand-color), transparent 60%);
-    box-shadow:
-      0 6px 20px rgba(0, 0, 0, 0.4),
-      0 0 20px color-mix(in srgb, var(--td-brand-color), transparent 80%);
-  }
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.4),
+    0 0 20px color-mix(in srgb, var(--color-primary), transparent 80%),
+    inset 0 0 8px color-mix(in srgb, var(--color-primary), transparent 85%);
 }
 </style>

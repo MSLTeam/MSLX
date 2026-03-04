@@ -1,65 +1,3 @@
-<template>
-  <div id="menu-wrapper" class="modern-menu-wrapper" :class="{ 'is-horizontal': isHorizontal }">
-    <template v-for="item in renderList" :key="item.path">
-      <template v-if="!item.children || !item.children.length || item.meta?.single">
-        <t-menu-item
-          v-if="getHref(item)"
-          :name="item.path"
-          :value="getPath(item)"
-          class="modern-menu-item"
-          @click="openHref(getHref(item)[0])"
-        >
-          <template #icon>
-            <t-icon v-if="beIcon(item)" :name="item.icon" />
-            <component :is="beRender(item).render" v-else-if="beRender(item).can" class="t-icon" />
-          </template>
-          <span class="menu-text">{{ item.title }}</span>
-        </t-menu-item>
-
-        <t-menu-item
-          v-else
-          :name="item.path"
-          :value="getPath(item)"
-          :to="item.path"
-          class="modern-menu-item"
-        >
-          <template #icon>
-            <t-icon v-if="beIcon(item)" :name="item.icon" />
-            <component :is="beRender(item).render" v-else-if="beRender(item).can" class="t-icon" />
-          </template>
-          <span class="menu-text">{{ item.title }}</span>
-        </t-menu-item>
-      </template>
-
-      <t-submenu
-        v-else
-        :name="item.path"
-        :value="item.path"
-        :title="item.title"
-        class="modern-submenu"
-      >
-        <template #icon>
-          <t-icon v-if="beIcon(item)" :name="item.icon" />
-          <component :is="beRender(item).render" v-else-if="beRender(item).can" class="t-icon" />
-        </template>
-        <menu-content v-if="item.children" :nav-data="item.children" :is-horizontal="false" />
-      </t-submenu>
-    </template>
-
-    <t-submenu
-      v-if="isHorizontal && overflowList.length > 0"
-      name="more-menu"
-      title="更多"
-      class="modern-submenu"
-    >
-      <template #icon>
-        <t-icon name="ellipsis" />
-      </template>
-      <menu-content :nav-data="overflowList" :is-horizontal="false" />
-    </t-submenu>
-  </div>
-</template>
-
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { PropType } from 'vue';
@@ -165,6 +103,68 @@ const openHref = (url: string) => {
   window.open(url);
 };
 </script>
+
+<template>
+  <div id="menu-wrapper" class="modern-menu-wrapper" :class="{ 'is-horizontal': isHorizontal }">
+    <template v-for="item in renderList" :key="item.path">
+      <template v-if="!item.children || !item.children.length || item.meta?.single">
+        <t-menu-item
+          v-if="getHref(item)"
+          :name="item.path"
+          :value="getPath(item)"
+          class="modern-menu-item"
+          @click="openHref(getHref(item)[0])"
+        >
+          <template #icon>
+            <t-icon v-if="beIcon(item)" :name="item.icon" />
+            <component :is="beRender(item).render" v-else-if="beRender(item).can" class="t-icon" />
+          </template>
+          <span class="menu-text">{{ item.title }}</span>
+        </t-menu-item>
+
+        <t-menu-item
+          v-else
+          :name="item.path"
+          :value="getPath(item)"
+          :to="item.path"
+          class="modern-menu-item"
+        >
+          <template #icon>
+            <t-icon v-if="beIcon(item)" :name="item.icon" />
+            <component :is="beRender(item).render" v-else-if="beRender(item).can" class="t-icon" />
+          </template>
+          <span class="menu-text">{{ item.title }}</span>
+        </t-menu-item>
+      </template>
+
+      <t-submenu
+        v-else
+        :name="item.path"
+        :value="item.path"
+        :title="item.title"
+        class="modern-submenu"
+      >
+        <template #icon>
+          <t-icon v-if="beIcon(item)" :name="item.icon" />
+          <component :is="beRender(item).render" v-else-if="beRender(item).can" class="t-icon" />
+        </template>
+        <menu-content v-if="item.children" :nav-data="item.children" :is-horizontal="false" />
+      </t-submenu>
+    </template>
+
+    <t-submenu
+      v-if="isHorizontal && overflowList.length > 0"
+      name="more-menu"
+      title="更多"
+      class="modern-submenu"
+    >
+      <template #icon>
+        <t-icon name="ellipsis" />
+      </template>
+      <menu-content :nav-data="overflowList" :is-horizontal="false" />
+    </t-submenu>
+  </div>
+</template>
 
 <style scoped>
 @reference "@/style/tailwind/index.css";
