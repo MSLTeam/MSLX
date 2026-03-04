@@ -178,7 +178,7 @@ onMounted(() => {
 
           <div class="flex items-center gap-8 px-0.5">
             <div class="flex flex-col gap-1.5">
-              <span class="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-widest font-black opacity-80">协议类型</span>
+              <span class="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-widest font-black opacity-80">提供商</span>
               <div class="flex items-center gap-2 text-zinc-800 dark:text-zinc-200">
                 <cloud-icon size="16px" class="text-[var(--color-primary)] opacity-70" />
                 <span class="text-sm font-bold leading-none">{{ item.service }}</span>
@@ -236,7 +236,7 @@ onMounted(() => {
             <div class="text-sm">
               <p class="text-zinc-900 dark:text-zinc-100 font-bold mb-1">自启动策略说明</p>
               <p class="text-zinc-500 dark:text-zinc-400 leading-relaxed m-0">
-                勾选的隧道将在 MSLFrp 守护进程启动时自动加载并运行。
+                勾选的隧道将在 MSLX 守护进程启动时自动加载并运行。
               </p>
             </div>
           </div>

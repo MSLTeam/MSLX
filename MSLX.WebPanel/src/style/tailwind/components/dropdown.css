@@ -1,8 +1,7 @@
-/* ================= 下拉菜单 (Dropdown) 统一风格 ================= */
-
+/* ================= 下拉菜单 (Dropdown) & 弹出菜单 ================= */
 .t-dropdown__menu,
 .t-menu__popup {
-  @apply !bg-white dark:!bg-zinc-800 !rounded-2xl !border !border-zinc-200/50 dark:!border-zinc-700/50 !shadow-xl !overflow-hidden !p-2;
+  @apply !bg-white/90 dark:!bg-zinc-800/90 !backdrop-blur-md !rounded-2xl !border !border-zinc-200/50 dark:!border-zinc-700/50 !shadow-xl !overflow-hidden !p-2;
   box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1) !important;
 }
 
@@ -11,44 +10,94 @@ html[theme-mode='dark'] .t-menu__popup {
   box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5) !important;
 }
 
-/* 彻底解决内边距太小的问题，增大 padding 和 item 间距 */
 .t-dropdown__item {
-  @apply !rounded-xl !py-2.5 !px-4 !mb-1 transition-colors !text-sm !font-medium !text-zinc-700 dark:!text-zinc-300;
+  @apply !rounded-xl !py-2.5 !px-4 !mb-1 transition-all !text-sm !font-medium !text-zinc-700 dark:!text-zinc-300;
 }
+
 .t-dropdown__item:last-child {
   @apply !mb-0;
 }
 
-/* 悬浮状态 */
 .t-dropdown__item:hover {
   @apply !bg-zinc-100 dark:!bg-zinc-700/50 !text-zinc-900 dark:!text-white;
 }
 
-/* 危险操作专属悬浮色 */
+/* 危险操作专属 */
 .danger-item:hover {
   @apply !bg-red-50 dark:!bg-red-500/10 !text-red-600 dark:!text-red-400;
 }
 
-/* 修复内部结构占位 */
 .t-dropdown__item .t-dropdown__item__content {
-  @apply w-full flex items-center;
+  @apply w-full flex items-center gap-2;
 }
 
-
-/* ================= Tooltip (提示气泡)  ================= */
+/* ================= Tooltip (提示气泡) ================= */
 .t-tooltip--default .t-popup__content {
   @apply !bg-zinc-800 dark:!bg-zinc-700 !text-white !border-none !rounded-lg !px-3 !py-1.5 !text-xs !font-medium;
-
-  /* 物理消灭 TDesign 写死的 inset 内阴影，替换为外阴影 */
-  box-shadow: 0 4px 6px -1px rgb(0, 0, 0, 0.1), 0 2px 4px -2px rgb(0, 0, 0, 0.1) !important;
+  box-shadow: 0 4px 6px -1px rgb(0, 0, 0, 0.1) !important;
 }
 
-/* 强制重写小三角颜色，消除杂边 */
+/* 强制重写小三角 */
 .t-tooltip--default .t-popup__arrow {
-  background-color: #27272a !important; /* 对应 zinc-800 */
+  background-color: #27272a !important; /* zinc-800 */
   border: none !important;
-  box-shadow: none !important;
 }
 html[theme-mode='dark'] .t-tooltip--default .t-popup__arrow {
-  background-color: #3f3f46 !important; /* 对应 zinc-700 */
+  background-color: #3f3f46 !important; /* zinc-700 */
+}
+
+/* ================= Popconfirm (气泡确认框) ================= */
+
+/* 解决宽度和内边距 */
+.t-popconfirm__content {
+  @apply !bg-white/95 dark:!bg-zinc-800/95 !backdrop-blur-md !rounded-2xl !border !border-zinc-200/50 dark:!border-zinc-700/50 !shadow-2xl !p-5 !min-w-[240px] !max-w-[300px];
+}
+
+/* 图标与文字对齐 */
+.t-popconfirm__body {
+  @apply !flex !items-start !gap-3 !mb-5;
+  display: flex !important; /* 强制启用 flex */
+}
+
+.t-popconfirm__icon--default {
+  @apply !text-blue-500 dark:!text-blue-400 !shrink-0 !mt-0.5 !text-[20px];
+}
+
+.t-popconfirm__inner {
+  @apply !text-sm !font-bold !text-zinc-800 dark:!text-zinc-200 !leading-relaxed;
+}
+
+/* 修复按钮错位 */
+.t-popconfirm__buttons {
+  @apply !flex !flex-row !items-center !justify-end !gap-2 !w-full !p-0;
+  display: flex !important; /* 彻底击穿可能存在的 clear:both 或 block 布局 */
+}
+
+/* 按钮精修 */
+.t-popconfirm__buttons .t-button {
+  @apply !rounded-xl !h-8 !px-4 !text-xs !font-bold transition-all border-none;
+}
+
+/* 取消按钮 */
+.t-popconfirm__cancel {
+  @apply !bg-zinc-100 dark:!bg-zinc-700/50 !text-zinc-500 dark:!text-zinc-400 hover:!bg-zinc-200 dark:hover:!bg-zinc-600;
+}
+
+/* 确认按钮 */
+.t-popconfirm__confirm {
+  @apply !bg-[var(--color-primary)] !text-white shadow-sm shadow-[var(--color-primary)]/20 hover:opacity-90;
+}
+
+/* 小三角颜色 */
+.t-popconfirm .t-popup__arrow {
+  background-color: white !important;
+}
+html[theme-mode='dark'] .t-popconfirm .t-popup__arrow {
+  background-color: #27272a !important;
+}
+
+/* 处理按钮可能的默认宽度干扰 */
+.t-popconfirm__buttons button {
+  width: auto !important;
+  flex: none !important;
 }
