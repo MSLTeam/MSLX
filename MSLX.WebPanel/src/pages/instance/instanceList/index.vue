@@ -1,10 +1,10 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import { onMounted, reactive } from 'vue';
 import {
-  DeleteIcon,
   CheckCircleFilledIcon,
   CloseCircleFilledIcon,
   CpuIcon,
+  DeleteIcon,
   LoadingIcon,
   MinusCircleFilledIcon,
   RefreshIcon,
@@ -123,11 +123,14 @@ const handleConfirmDelete = async () => {
 </script>
 <template>
   <div class="mx-auto flex flex-col gap-6 text-zinc-800 dark:text-zinc-200 pb-5">
-
-    <div class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm text-left">
+    <div
+      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm text-left"
+    >
       <div class="flex flex-col gap-1 items-start">
         <h2 class="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100 m-0">服务端列表</h2>
-        <p class="text-sm text-zinc-500 dark:text-zinc-400 m-0">管理您的 Minecraft 服务器实例，监控运行状态与核心版本</p>
+        <p class="text-sm text-zinc-500 dark:text-zinc-400 m-0">
+          管理您的 Minecraft 服务器实例，监控运行状态与核心版本
+        </p>
       </div>
 
       <div class="flex items-center gap-3">
@@ -144,50 +147,79 @@ const handleConfirmDelete = async () => {
     <div v-loading="false" class="relative min-h-[400px]">
       <template v-if="store.instanceList && store.instanceList.length > 0">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
-          <div v-for="item in store.instanceList" :key="item.id"
-               class="design-card group flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm hover:shadow-md hover:border-[var(--color-primary)]/50 transition-all duration-300 p-5 gap-4 cursor-pointer"
-               @click="handleCardClick(item)">
-
+          <div
+            v-for="item in store.instanceList"
+            :key="item.id"
+            class="design-card group flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm hover:shadow-md hover:border-[var(--color-primary)]/50 transition-all duration-300 p-5 gap-4 cursor-pointer"
+            @click="handleCardClick(item)"
+          >
             <div class="flex items-center gap-4">
               <div class="relative shrink-0">
-                <t-avatar :image="getImageUrl(item.icon, item.id)" size="56px" shape="round"
-                          class="shadow-sm border border-zinc-200/50 dark:border-zinc-700/50 !bg-zinc-100 dark:!bg-zinc-700 !rounded-xl" />
+                <t-avatar
+                  :image="getImageUrl(item.icon, item.id)"
+                  class="shadow-sm border border-zinc-200/50 dark:border-zinc-700/50 !bg-zinc-100 dark:!bg-zinc-700 !rounded-xl"
+                  shape="round"
+                  size="56px"
+                />
                 <span class="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5">
-          <span v-if="item.status === 2" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-          <span :class="item.status === 2 ? 'bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-600'"
-                class="relative inline-flex rounded-full h-3.5 w-3.5 border-2 border-white dark:border-zinc-800"></span>
-        </span>
+                  <span
+                    v-if="item.status === 2"
+                    class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"
+                  ></span>
+                  <span
+                    :class="item.status === 2 ? 'bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-600'"
+                    class="relative inline-flex rounded-full h-3.5 w-3.5 border-2 border-white dark:border-zinc-800"
+                  ></span>
+                </span>
               </div>
 
               <div class="flex-1 min-w-0">
                 <div class="flex items-center">
-                  <h4 class="text-base font-bold text-zinc-900 dark:text-zinc-100 truncate tracking-tight">{{ item.name }}</h4>
-                  <span class="text-xs font-mono text-zinc-400 dark:text-zinc-500 ml-2 opacity-70 shrink-0">#{{ item.id }}</span>
+                  <h4 class="text-base font-bold text-zinc-900 dark:text-zinc-100 truncate tracking-tight">
+                    {{ item.name }}
+                  </h4>
+                  <span class="text-xs font-mono text-zinc-400 dark:text-zinc-500 ml-2 opacity-70 shrink-0"
+                    >#{{ item.id }}</span
+                  >
                 </div>
 
                 <div class="mt-2 flex items-center gap-4">
                   <div class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
-                    <cpu-icon size="14px" class="opacity-80" />
+                    <cpu-icon class="opacity-80" size="14px" />
                     <span class="truncate font-medium">{{ formatCore(item.core) }}</span>
                   </div>
-                  <div :class="getStatusConfig(item.status).theme === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-600 dark:text-zinc-400'"
-                       class="text-xs font-bold">
+                  <div
+                    :class="
+                      getStatusConfig(item.status).theme === 'success'
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-zinc-600 dark:text-zinc-400'
+                    "
+                    class="text-xs font-bold"
+                  >
                     {{ getStatusConfig(item.status).label }}
                   </div>
                 </div>
               </div>
             </div>
 
-            <div class="flex items-center justify-between pt-3 mt-auto border-t border-dashed border-zinc-200 dark:border-zinc-700/60">
-      <span class="text-xs text-zinc-400 dark:text-zinc-500 group-hover:text-[var(--color-primary)] transition-colors font-semibold">
-        控制台 →
-      </span>
+            <div
+              class="flex items-center justify-between pt-3 mt-auto border-t border-dashed border-zinc-200 dark:border-zinc-700/60"
+            >
+              <span
+                class="text-xs text-zinc-400 dark:text-zinc-500 group-hover:text-[var(--color-primary)] transition-colors font-semibold"
+              >
+                控制台 →
+              </span>
               <div class="flex items-center gap-1">
-                <t-button v-if="userStore.isAdmin"
-                          shape="circle" theme="danger" variant="text"
-                          size="small"
-                          class="hover:!bg-red-500/10"
-                          @click.stop="(e) => handleDelete(e, item)">
+                <t-button
+                  v-if="userStore.isAdmin"
+                  class="hover:!bg-red-500/10"
+                  shape="circle"
+                  size="small"
+                  theme="danger"
+                  variant="text"
+                  @click.stop="(e) => handleDelete(e, item)"
+                >
                   <template #icon><delete-icon size="32" /></template>
                 </t-button>
               </div>
@@ -196,17 +228,20 @@ const handleConfirmDelete = async () => {
         </div>
       </template>
 
-      <div v-else class="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-zinc-800/40 rounded-2xl border-2 border-dashed border-zinc-200/50 dark:border-zinc-700/50">
-        <t-empty description="暂无服务端实例" class="!bg-transparent" />
+      <div
+        v-else
+        class="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-zinc-800/40 rounded-2xl border-2 border-dashed border-zinc-200/50 dark:border-zinc-700/50"
+      >
+        <t-empty class="!bg-transparent" description="暂无服务端实例" />
       </div>
     </div>
 
     <t-dialog
       v-model:visible="deleteState.visible"
-      header="确认删除服务端"
-      @confirm="handleConfirmDelete"
       :confirm-btn="{ content: '确认删除', theme: 'danger' }"
       cancel-btn="取消"
+      header="确认删除服务端"
+      @confirm="handleConfirmDelete"
     >
       <div class="delete-dialog-body">
         <div class="alert-zinc bg-red-500/5 border border-red-500/20 p-4 rounded-xl mb-4">
@@ -235,15 +270,29 @@ const handleConfirmDelete = async () => {
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* 动态计算动画延迟 */
-.grid > div:nth-child(1) { animation-delay: 0.05s; }
-.grid > div:nth-child(2) { animation-delay: 0.1s; }
-.grid > div:nth-child(3) { animation-delay: 0.15s; }
-.grid > div:nth-child(4) { animation-delay: 0.2s; }
+.grid > div:nth-child(1) {
+  animation-delay: 0.05s;
+}
+.grid > div:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.grid > div:nth-child(3) {
+  animation-delay: 0.15s;
+}
+.grid > div:nth-child(4) {
+  animation-delay: 0.2s;
+}
 
 /* 深度适配 TDesign */
 :deep(.t-avatar) {

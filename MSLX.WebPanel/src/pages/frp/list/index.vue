@@ -164,47 +164,44 @@ onMounted(() => {
           <div class="flex items-center justify-between gap-3">
             <div class="flex items-center gap-2.5 min-w-0">
               <div class="relative flex items-center justify-center shrink-0">
-          <span
-            v-if="item.status"
-            class="absolute w-2.5 h-2.5 bg-emerald-400 rounded-full animate-ping opacity-75"
-          ></span>
-                <span
-                  :class="item.status ? 'bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-600'"
-                  class="relative w-2 h-2 rounded-full"
-                ></span>
+                <span v-if="item.status" class="absolute w-2.5 h-2.5 bg-emerald-400 rounded-full animate-ping opacity-75"></span>
+                <span :class="item.status ? 'bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-600'"
+                      class="relative w-2 h-2 rounded-full"></span>
               </div>
+
               <h4 class="text-base font-bold text-zinc-900 dark:text-zinc-100 truncate tracking-tight">
                 {{ item.name }}
               </h4>
+              <span class="text-xs font-mono text-zinc-400 dark:text-zinc-500 ml-2 opacity-60 shrink-0">#{{ item.id }}</span>
             </div>
-            <span class="text-xs font-mono text-zinc-400 dark:text-zinc-500 shrink-0 opacity-60">#{{ item.id }}</span>
           </div>
 
-          <div class="flex items-end justify-between px-0.5">
+          <div class="flex items-center gap-8 px-0.5">
             <div class="flex flex-col gap-1.5">
               <span class="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-widest font-black opacity-80">协议类型</span>
               <div class="flex items-center gap-2 text-zinc-800 dark:text-zinc-200">
                 <cloud-icon size="16px" class="text-[var(--color-primary)] opacity-70" />
-                <span class="text-sm font-bold">{{ item.service }}</span>
+                <span class="text-sm font-bold leading-none">{{ item.service }}</span>
               </div>
             </div>
 
-            <div class="flex flex-col items-end gap-1.5">
+            <div class="flex flex-col gap-1.5">
               <span class="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-widest font-black opacity-80">配置格式</span>
-              <t-tag
-                size="small"
-                :theme="getConfigTheme(item.configType) as any"
-                variant="light"
-                shape="round"
-                class="!px-3 !h-5 !text-[10px] font-black italic tracking-tighter"
-              >
-                {{ item.configType.toUpperCase() }}
-              </t-tag>
+              <div>
+                <t-tag
+                  size="small"
+                  :theme="getConfigTheme(item.configType) as any"
+                  variant="light-outline"
+                  class="!px-3 !h-5 !text-[10px] font-black italic tracking-tighter border-zinc-200 dark:border-zinc-700"
+                >
+                  {{ item.configType.toUpperCase() }}
+                </t-tag>
+              </div>
             </div>
           </div>
 
           <div class="flex items-center justify-between pt-4 mt-auto border-t border-dashed border-zinc-200/60 dark:border-zinc-700/60">
-      <span class="text-[11px] text-zinc-400 dark:text-zinc-500 group-hover:text-[var(--color-primary)] transition-colors font-bold">
+      <span class="text-xs text-zinc-400 dark:text-zinc-500 group-hover:text-[var(--color-primary)] transition-colors font-bold">
         隧道控制台 →
       </span>
             <div class="flex items-center gap-1">
@@ -213,6 +210,7 @@ onMounted(() => {
                 shape="circle"
                 theme="danger"
                 variant="text"
+                size="small"
                 class="hover:!bg-red-500/10"
                 @click.stop="handleDelete(item.id)"
               >
