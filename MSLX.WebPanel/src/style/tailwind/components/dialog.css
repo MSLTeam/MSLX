@@ -1,0 +1,57 @@
+/* ================= TDesign 弹窗重构 (彻底解决 Footer 换行) ================= */
+
+/* 1. 弹窗整体容器 */
+.t-dialog {
+  @apply !rounded-2xl !bg-white dark:!bg-zinc-900 !border !border-zinc-200 dark:!border-zinc-800 !shadow-2xl !p-0 !overflow-hidden;
+}
+
+/* 2. 头部 */
+.t-dialog__header {
+  @apply !text-zinc-900 dark:!text-white !font-bold !text-lg !px-6 !py-5 !m-0 !border-b !border-zinc-100 dark:!border-zinc-800/80;
+}
+
+/* 3. 内容区 */
+.t-dialog__body {
+  @apply !text-zinc-600 dark:!text-zinc-400 !px-6 !py-6 !m-0;
+}
+
+/* 4. 底部 Footer：核心修复逻辑 */
+.t-dialog__footer {
+  @apply !border-t !border-zinc-100 dark:!border-zinc-800/80 !px-6 !py-4 !m-0 !bg-zinc-50/50 dark:!bg-zinc-900/50;
+  /* 确保 footer 本身不换行 */
+  display: block !important;
+}
+
+/* 关键：针对你渲染结果中那个没类名的 <div> 进行强制 Flex 布局 */
+.t-dialog__footer > div,
+.t-dialog__footer-content {
+  @apply !flex !flex-row !justify-end !items-center !gap-3 !w-full;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important; /* 绝对禁止换行 */
+}
+
+/* 5. 按钮：消除 TDesign 默认 Margin 的干扰 */
+.t-dialog__footer .t-button {
+  @apply !m-0 !w-auto !min-w-[84px] !shadow-none active:!scale-95 !transition-all;
+  /* 强制覆盖 TDesign 内部可能存在的 margin-left: 8px */
+  margin-left: 0 !important;
+}
+
+/* 6. Checkbox：Zinc 现代风格 */
+.t-checkbox {
+  @apply !inline-flex !items-center !text-zinc-600 dark:!text-zinc-400 !cursor-pointer;
+}
+
+.t-checkbox__input {
+  @apply !rounded-md !border-zinc-300 dark:!border-zinc-700 !bg-white dark:!bg-zinc-800 !transition-all;
+}
+
+/* 选中态 */
+.t-is-checked .t-checkbox__input {
+  @apply !bg-primary !border-primary !shadow-sm !shadow-primary/20;
+}
+
+.t-checkbox__label {
+  @apply !ml-2.5 !text-sm !font-medium;
+}

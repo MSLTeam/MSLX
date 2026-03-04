@@ -2,6 +2,8 @@
 @import "./components/tag.css";
 @import "./components/alert.css";
 @import "./components/dropdown.css";
+@import "./components/button.css";
+@import "./components/dialog.css";
 @custom-variant dark (&:where([theme-mode="dark"], [theme-mode="dark"] *));
 
 @theme {
