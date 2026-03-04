@@ -139,15 +139,15 @@ const goHome = () => {
 
 <style scoped>
 @reference "@/style/tailwind/index.css";
-
-/* ================== 极致洗髓 (邪修版) ================== */
-/* 亮色模式保留 TDesign 原生遮盖以防走光，只对暗黑模式痛下杀手，强制透明 */
-
-:global(html[theme-mode='dark']) :deep(.sidebar-menu-clear),
-:global(html[theme-mode='dark']) :deep(.t-menu),
-:global(html[theme-mode='dark']) :deep(.t-menu--dark),
-:global(html[theme-mode='dark']) :deep(.t-default-menu__inner) {
-  background: transparent !important;
+/* 暗黑模式下，菜单项的背景色 */
+&.dark,
+:global(html[theme-mode='dark']) & {
+  :deep(.sidebar-menu-clear),
+  :deep(.t-menu),
+  :deep(.t-menu--dark),
+  :deep(.t-default-menu__inner) {
+    background: transparent !important;
+  }
 }
 
 /* 强制抹杀 TDesign 的偏移，保证 Logo 的 !ml-0 绝对生效 */
@@ -164,7 +164,6 @@ const goHome = () => {
 }
 :deep(.t-menu__operations) {
   border-top: none !important;
-  /* 操作栏的背景也走双标路线，暗黑模式才透明 */
 }
 :global(html[theme-mode='dark']) :deep(.t-menu__operations) {
   background: transparent !important;
@@ -197,7 +196,7 @@ const goHome = () => {
   @apply !mx-3;
 }
 
-/* 修复白色/暗黑模式下菜单文字颜色的一致性 */
+/* 菜单文字颜色的一致性 */
 :global(html[theme-mode='dark']) .design-card :deep(.t-menu__item) {
   color: rgba(255, 255, 255, 0.7);
 }
@@ -210,7 +209,7 @@ const goHome = () => {
   color: var(--color-primary) !important;
 }
 
-/* 击杀父级 Layout Sider 的默认底色，杜绝外部色差 */
+/* Layout Sider 的默认底色 */
 :global(.t-layout__sider),
 :global(.t-aside) {
   background-color: transparent !important;

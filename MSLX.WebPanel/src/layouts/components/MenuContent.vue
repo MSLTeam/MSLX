@@ -166,93 +166,106 @@ const openHref = (url: string) => {
 };
 </script>
 
-<style lang="less" scoped>
-@ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+<style scoped>
+@reference "@/style/tailwind/index.css";
 
-:deep(.t-menu__item) {
-  position: relative;
-  margin: 4px 0;
-  border-radius: 8px !important;
-  height: 40px;
-  line-height: 40px;
-
-  color: var(--td-text-color-primary);
-  font-size: 14px;
-
-  transition: background-color 0.2s, color 0.2s, transform 0.2s;
-
-  display: flex;
-  align-items: center;
-
-  overflow: hidden;
+/* ================== 清理 TDesign 默认结构 ================== */
+:deep(.t-menu__item::after),
+:deep(.t-menu__item::before),
+:deep(.t-submenu__title::after),
+:deep(.t-submenu__title::before) {
+  display: none !important;
 }
 
+/* 彻底剥离 TDesign 强加给子菜单的 padding 和 margin */
+:deep(.t-menu__sub) {
+  --padding-left: 0px !important;
+  @apply !m-0 !p-0 !bg-transparent !border-none !overflow-hidden;
+}
+
+/* ================== 菜单盒子 ================== */
+:deep(.t-menu__item),
 :deep(.t-submenu__title) {
-  position: relative;
-  margin: 4px 10px;
-  border-radius: 8px !important;
-  height: 40px;
-  line-height: 40px;
-
-  color: var(--td-text-color-primary);
-  font-size: 14px;
-
-  transition: background-color 0.2s, color 0.2s, transform 0.2s;
-
-  display: flex;
-  align-items: center;
-
-  overflow: hidden;
+  @apply !relative !flex !items-center !w-auto !mx-3 !my-1 !rounded-xl !transition-all !duration-200 !border-none !bg-transparent !cursor-pointer;
 }
 
+/* ================== 垂直模式 ================== */
+/* 父级菜单项排版 */
+.modern-menu-wrapper:not(.is-horizontal) :deep(.t-submenu__title),
+.modern-menu-wrapper:not(.is-horizontal) :deep(.t-menu__item:not(.t-submenu__item)) {
+  @apply !h-[44px] !px-3 !text-[14.5px] !font-medium !text-zinc-600 dark:!text-zinc-400;
+}
+
+/* 子菜单排版 */
+.modern-menu-wrapper:not(.is-horizontal) :deep(.t-submenu__item) {
+  @apply !h-[40px] !pl-[42px] !pr-3 !text-[13.5px] !font-normal !text-zinc-500 dark:!text-zinc-400;
+}
+
+/* 统一图标样式 */
 :deep(.t-icon) {
-  font-size: 18px;
-  margin-right: 10px;
-  flex-shrink: 0;
-  opacity: 0.8;
-  transition: all 0.2s;
+  @apply !text-[20px] !mr-2.5 !shrink-0 !opacity-70 !transition-colors !duration-200;
 }
 
-
-:deep(.t-menu__item:hover:not(.t-is-active)),
-:deep(.t-submenu__title:hover) {
-  background-color: var(--td-bg-color-container-hover);
-  transform: translateX(4px);
-
-  .t-icon {
-    opacity: 1;
-    transform: scale(1.1);
-  }
+/* ================== 垂直模式交互 ================== */
+/* 通用 Hover */
+.modern-menu-wrapper:not(.is-horizontal) :deep(.t-menu__item:hover:not(.t-is-active)),
+.modern-menu-wrapper:not(.is-horizontal) :deep(.t-submenu__title:hover:not(.t-is-opened)) {
+  @apply !bg-zinc-100/80 dark:!bg-zinc-800/60 !text-zinc-900 dark:!text-zinc-100;
 }
 
-:deep(.t-menu__item.t-is-active) {
-  background-color: color-mix(in srgb, var(--td-brand-color), transparent 85%) !important;
-  color: var(--td-brand-color);
-  font-weight: 600;
-
-  .t-icon {
-    opacity: 1;
-    color: var(--td-brand-color);
-  }
-
-  &::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 3px;
-    height: 14px;
-    background-color: var(--td-brand-color);
-    border-radius: 0 4px 4px 0;
-  }
+.modern-menu-wrapper:not(.is-horizontal) :deep(.t-menu__item:hover:not(.t-is-active)) .t-icon,
+.modern-menu-wrapper:not(.is-horizontal) :deep(.t-submenu__title:hover:not(.t-is-opened)) .t-icon {
+  @apply !opacity-100 !text-zinc-800 dark:!text-zinc-200;
 }
 
-#menu-wrapper.is-horizontal {
-  --td-comp-margin-s: 0px !important;
+/* 通用 Active (选中的状态) */
+.modern-menu-wrapper:not(.is-horizontal) :deep(.t-menu__item.t-is-active) {
+  @apply !bg-[var(--color-primary-light)]/20 dark:!bg-[var(--color-primary)]/15 !text-[var(--color-primary)] !font-semibold;
 }
 
-:deep(.t-submenu) .t-menu__item.t-is-active::before {
-  display: none;
+.modern-menu-wrapper:not(.is-horizontal) :deep(.t-menu__item.t-is-active) .t-icon {
+  @apply !opacity-100 !text-[var(--color-primary)];
+}
+
+/* 子菜单选中时，文字加粗以强调层级 */
+.modern-menu-wrapper:not(.is-horizontal) :deep(.t-submenu__item.t-is-active) {
+  @apply !font-bold;
+}
+
+/* ================== 水平================== */
+.modern-menu-wrapper.is-horizontal {
+  @apply !flex !items-center;
+}
+
+/* 顶栏项解除垂直模式的强制 padding 和高度，保持紧凑 */
+.modern-menu-wrapper.is-horizontal :deep(.t-menu__item),
+.modern-menu-wrapper.is-horizontal :deep(.t-submenu__title) {
+  @apply !h-[40px] !mx-1 !px-3 !rounded-lg !text-[14px] !font-medium;
+}
+
+/* 顶栏的 Hover */
+.modern-menu-wrapper.is-horizontal :deep(.t-menu__item:hover:not(.t-is-active)),
+.modern-menu-wrapper.is-horizontal :deep(.t-submenu__title:hover:not(.t-is-opened)) {
+  @apply !bg-zinc-100 dark:!bg-zinc-700/50 !text-zinc-900 dark:!text-zinc-100;
+}
+
+/* 顶栏的 Active */
+.modern-menu-wrapper.is-horizontal :deep(.t-menu__item.t-is-active) {
+  @apply !bg-[var(--color-primary-light)]/20 dark:!bg-[var(--color-primary)]/15 !text-[var(--color-primary)] !font-bold;
+}
+
+.modern-menu-wrapper.is-horizontal :deep(.t-menu__item.t-is-active) .t-icon {
+  @apply !opacity-100 !text-[var(--color-primary)];
+}
+
+/* ================== 暗黑模式兜底 ================== */
+:global(html[theme-mode='dark']) :deep(.t-menu__item:not(.t-is-active)),
+:global(html[theme-mode='dark']) :deep(.t-submenu__title:not(.t-is-opened)) {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+:global(html[theme-mode='dark']) :deep(.t-menu__item:hover:not(.t-is-active)),
+:global(html[theme-mode='dark']) :deep(.t-submenu__title:hover:not(.t-is-opened)) {
+  color: #ffffff !important;
 }
 </style>

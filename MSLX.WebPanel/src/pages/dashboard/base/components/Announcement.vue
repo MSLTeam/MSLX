@@ -119,4 +119,14 @@ onMounted(() => {
 :deep(.md-editor-preview) {
   --md-color: inherit !important;
 }
+
+:deep(.md-editor-preview table tr:nth-child(2n)){
+  background-color: transparent;
+}
+
+
+:deep(.md-editor-preview table tr:nth-child(n)){
+  background-color: transparent;
+}
+
 </style>
