@@ -1,0 +1,54 @@
+/* ================= 下拉菜单 (Dropdown) 统一风格 ================= */
+
+.t-dropdown__menu,
+.t-menu__popup {
+  @apply !bg-white dark:!bg-zinc-800 !rounded-2xl !border !border-zinc-200/50 dark:!border-zinc-700/50 !shadow-xl !overflow-hidden !p-2;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1) !important;
+}
+
+html[theme-mode='dark'] .t-dropdown__menu,
+html[theme-mode='dark'] .t-menu__popup {
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* 彻底解决内边距太小的问题，增大 padding 和 item 间距 */
+.t-dropdown__item {
+  @apply !rounded-xl !py-2.5 !px-4 !mb-1 transition-colors !text-sm !font-medium !text-zinc-700 dark:!text-zinc-300;
+}
+.t-dropdown__item:last-child {
+  @apply !mb-0;
+}
+
+/* 悬浮状态 */
+.t-dropdown__item:hover {
+  @apply !bg-zinc-100 dark:!bg-zinc-700/50 !text-zinc-900 dark:!text-white;
+}
+
+/* 危险操作专属悬浮色 */
+.danger-item:hover {
+  @apply !bg-red-50 dark:!bg-red-500/10 !text-red-600 dark:!text-red-400;
+}
+
+/* 修复内部结构占位 */
+.t-dropdown__item .t-dropdown__item__content {
+  @apply w-full flex items-center;
+}
+
+
+/* ================= Tooltip (提示气泡)  ================= */
+.t-tooltip--default .t-popup__content {
+  @apply !bg-zinc-800 dark:!bg-zinc-700 !text-white !border-none !rounded-lg !px-3 !py-1.5 !text-xs !font-medium;
+
+  /* 物理消灭 TDesign 写死的 inset 内阴影，替换为外阴影 */
+  box-shadow: 0 4px 6px -1px rgb(0, 0, 0, 0.1), 0 2px 4px -2px rgb(0, 0, 0, 0.1) !important;
+}
+
+/* 强制重写小三角颜色，消除杂边 */
+.t-tooltip--default .t-popup__arrow {
+  background-color: #27272a !important; /* 对应 zinc-800 */
+  border: none !important;
+  box-shadow: none !important;
+}
+html[theme-mode='dark'] .t-tooltip--default .t-popup__arrow {
+  background-color: #3f3f46 !important; /* 对应 zinc-700 */
+}

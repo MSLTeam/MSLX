@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, reactive, nextTick } from 'vue';
+import { Tag as TTag } from 'tdesign-vue-next';
 import * as signalR from '@microsoft/signalr';
 import * as echarts from 'echarts';
 import { useUserStore } from '@/store/modules/user';
@@ -46,15 +47,15 @@ const getCssVar = (name: string): string => {
 const getChartOption = (color: string, name: string, data: number[]) => {
   return {
     grid: {
-      top: 10, // 调小边距
+      top: 10,
       right: 10,
-      bottom: 0, // 贴底
-      left: 0, // 贴左
-      containLabel: false, // 不包含坐标轴标签
+      bottom: 0,
+      left: 0,
+      containLabel: false,
     },
     tooltip: {
       trigger: 'axis',
-      backgroundColor: 'var(--td-bg-color-container)', // Tooltip 是 DOM，可以用 var
+      backgroundColor: 'var(--td-bg-color-container)',
       borderColor: 'var(--td-component-border)',
       textStyle: { color: 'var(--td-text-color-primary)' },
       formatter: (params: any) => {
@@ -66,13 +67,13 @@ const getChartOption = (color: string, name: string, data: number[]) => {
       type: 'category',
       boundaryGap: false,
       data: timeData,
-      show: false, // 隐藏坐标轴，更简洁
+      show: false,
     },
     yAxis: {
       type: 'value',
       max: 100,
       min: 0,
-      show: false, // 隐藏坐标轴
+      show: false,
     },
     series: [
       {
@@ -88,7 +89,7 @@ const getChartOption = (color: string, name: string, data: number[]) => {
           opacity: 0.2,
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
             { offset: 0, color: color },
-            { offset: 1, color: 'transparent' }, // 透明
+            { offset: 1, color: 'transparent' },
           ]),
         },
         data: data,
@@ -125,7 +126,6 @@ const initSignalR = async () => {
 
   if (token) hubUrl.searchParams.append('x-user-token', token);
 
-  // 建连
   connection.value = new signalR.HubConnectionBuilder()
     .withUrl(hubUrl.toString(), { withCredentials: false })
     .withAutomaticReconnect()
@@ -165,7 +165,6 @@ const initSignalR = async () => {
 
 onMounted(() => {
   nextTick(() => {
-    // 延迟一点点
     setTimeout(() => {
       initCharts();
       initSignalR();
@@ -189,114 +188,63 @@ onUnmounted(async () => {
 </script>
 
 <template>
-  <div class="monitor-dashboard">
-    <t-row :gutter="[12, 12]">
-      <t-col :xs="12" :md="6">
-        <t-card shadow :bordered="false" class="chart-card" size="small">
-          <div class="card-content">
-            <div class="info-section">
-              <div class="label">CPU 使用率</div>
-              <div class="value-group">
-                <span class="value">{{ currentStats.cpu }}</span>
-                <span class="unit">%</span>
-              </div>
-              <t-tag v-if="isConnected" theme="success" variant="light" size="small" class="status-tag"> 实时 </t-tag>
-              <t-tag v-else theme="danger" variant="light" size="small" class="status-tag"> 离线 </t-tag>
-            </div>
-            <div ref="cpuChartRef" class="chart-container"></div>
-          </div>
-        </t-card>
-      </t-col>
+  <div class="w-full">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-      <t-col :xs="12" :md="6">
-        <t-card shadow :bordered="false" class="chart-card" size="small">
-          <div class="card-content">
-            <div class="info-section">
-              <div class="label">内存使用率</div>
-              <div class="value-group">
-                <span class="value">{{ currentStats.memUsage }}</span>
-                <span class="unit">%</span>
-              </div>
-              <div class="sub-text">
-                {{ (currentStats.memUsed / 1024).toFixed(1) }} / {{ (currentStats.memTotal / 1024).toFixed(1) }} GB
-              </div>
+      <div class="design-card w-full bg-white dark:bg-zinc-800 p-4 sm:p-5 rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all duration-300">
+        <div class="flex justify-between items-center h-[100px] w-full gap-2">
+
+          <div class="flex flex-col justify-center min-w-[100px] shrink-0">
+            <div class="text-[13px] text-zinc-500 dark:text-zinc-400 font-medium">CPU 使用率</div>
+            <div class="flex items-baseline my-1">
+              <span class="text-3xl font-bold font-mono text-zinc-800 dark:text-zinc-100 leading-none">{{ currentStats.cpu }}</span>
+              <span class="text-xs ml-0.5 text-zinc-500 dark:text-zinc-400">%</span>
             </div>
-            <div ref="memChartRef" class="chart-container"></div>
+
+            <t-tag v-if="isConnected" theme="success" shape="round" size="small" class="w-fit mt-1">
+              <template #icon>
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse mr-1"></span>
+              </template>
+              实时
+            </t-tag>
+            <t-tag v-else theme="danger" shape="round" size="small" class="w-fit mt-1">
+              <template #icon>
+                <span class="w-1.5 h-1.5 rounded-full bg-red-500 dark:bg-red-400 mr-1"></span>
+              </template>
+              离线
+            </t-tag>
           </div>
-        </t-card>
-      </t-col>
-    </t-row>
+
+          <div ref="cpuChartRef" class="flex-1 h-full min-w-[120px] overflow-hidden"></div>
+        </div>
+      </div>
+
+      <div class="design-card w-full bg-white dark:bg-zinc-800 p-4 sm:p-5 rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all duration-300">
+        <div class="flex justify-between items-center h-[100px] w-full gap-2">
+
+          <div class="flex flex-col justify-center min-w-[100px] shrink-0">
+            <div class="text-[13px] text-zinc-500 dark:text-zinc-400 font-medium">内存使用率</div>
+            <div class="flex items-baseline my-1">
+              <span class="text-3xl font-bold font-mono text-zinc-800 dark:text-zinc-100 leading-none">{{ currentStats.memUsage }}</span>
+              <span class="text-xs ml-0.5 text-zinc-500 dark:text-zinc-400">%</span>
+            </div>
+
+            <div class="mt-1 flex items-baseline gap-1 font-mono">
+              <span class="text-[14px] font-bold text-zinc-700 dark:text-zinc-200">{{ (currentStats.memUsed / 1024).toFixed(1) }}</span>
+              <span class="text-[11px] text-zinc-400 dark:text-zinc-500 mx-0.5">/</span>
+              <span class="text-[11px] text-zinc-500 dark:text-zinc-400">{{ (currentStats.memTotal / 1024).toFixed(1) }} GB</span>
+            </div>
+
+          </div>
+
+          <div ref="memChartRef" class="flex-1 h-full min-w-[120px] overflow-hidden"></div>
+        </div>
+      </div>
+
+    </div>
   </div>
 </template>
 
-<style scoped lang="less">
-.monitor-dashboard {
-  width: 100%;
-}
-
-.chart-card {
-  transition: all 0.3s;
-  border-radius: 6px;
-  background-color: var(--td-bg-color-container);
-}
-
-.card-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 100px;
-  padding: 0 4px;
-}
-
-.info-section {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-width: 100px;
-
-  .label {
-    font-size: 13px;
-    color: var(--td-text-color-secondary);
-  }
-
-  .value-group {
-    display: flex;
-    align-items: baseline;
-    margin: 4px 0;
-
-    .value {
-      font-size: 28px;
-      font-weight: 700;
-      line-height: 1;
-      font-family:
-        'Maple Mono',
-        'Maple Mono CN', Segoe UI,
-        Roboto,
-        sans-serif;
-      color: var(--td-text-color-primary);
-    }
-    .unit {
-      font-size: 12px;
-      margin-left: 2px;
-      color: var(--td-text-color-secondary);
-    }
-  }
-
-  .sub-text {
-    font-size: 12px;
-    color: var(--td-text-color-placeholder);
-  }
-
-  .status-tag {
-    width: fit-content;
-    margin-top: 4px;
-  }
-}
-
-.chart-container {
-  flex: 1; // 图表占据剩余空间
-  height: 100%; // 占满父容器高度
-  min-width: 120px;
-  overflow: hidden;
-}
+<style scoped>
+@reference "@/style/tailwind/index.css";
 </style>

@@ -16,26 +16,30 @@ const isDefaultUser = computed(() => {
 });
 
 </script>
-
 <template>
-  <div>
+  <div class="flex flex-col gap-5 mx-auto w-full min-h-screen">
+
     <t-alert
       v-if="isDefaultUser"
       theme="warning"
       title="安全风险提示"
       message="检测到您当前正在使用默认账号 (mslx)。为了保障系统安全，请务必尽快修改用户名和密码！"
-      style="margin-bottom: 16px;"
+      class="w-full shadow-sm transition-all"
     >
       <template #operation>
-        <span style="cursor: pointer" @click="changeUrl('/settings')">去修改</span>
+        <span class="cursor-pointer font-bold flex items-center gap-1 hover:opacity-80 transition-opacity" @click="changeUrl('/settings')">
+          去修改 <i class="fa-solid fa-arrow-right text-sm"></i>
+        </span>
       </template>
     </t-alert>
 
     <banner />
-    <info-card style="margin-top: 12px;"/>
-    <system-status style="margin-top: 12px;"/>
-    <announcement style="margin-top: 12px;"/>
+    <info-card />
+    <system-status />
+    <announcement />
+
   </div>
 </template>
 
-<style scoped lang="less"></style>
+<style scoped>
+</style>

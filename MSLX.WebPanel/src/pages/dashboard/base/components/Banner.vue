@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { Card as TCard, Icon as TIcon } from 'tdesign-vue-next';
+import { Tag as TTag, Icon as TIcon } from 'tdesign-vue-next';
 import { useUserStore } from '@/store';
 import { request } from '@/utils/request'
 
@@ -39,119 +39,35 @@ onMounted(() => {
 </script>
 
 <template>
-  <t-card shadow :bordered="false" class="welcome-card">
+  <div class="design-card w-full bg-white dark:bg-zinc-800 p-5 sm:p-6 rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all duration-300">
+    <div class="flex flex-col sm:flex-row items-center sm:items-start gap-5">
 
-    <div class="welcome-header">
-
-      <div class="avatar-section">
-        <img :src="userStore.userInfo.avatar" alt="头像" class="user-avatar" />
+      <div class="shrink-0 relative">
+        <img :src="userStore.userInfo.avatar" alt="头像"
+             class="w-20 h-20 rounded-full object-cover ring-2 ring-[var(--color-primary)]/30 shadow-md transition-transform duration-300 hover:rotate-6 hover:scale-105" />
       </div>
 
-      <div class="welcome-info">
-        <h3 class="welcome-text">
-          <t-icon name="sunny" class="welcome-icon" />
-          你好, {{ userStore.userInfo.name }}
+      <div class="flex-1 min-w-0 flex flex-col justify-center gap-2.5 text-center sm:text-left mt-1">
+
+        <div class="flex flex-wrap items-center justify-center sm:justify-start gap-3">
+          <h3 class="text-xl sm:text-2xl font-bold text-zinc-800 dark:text-zinc-100 m-0 flex items-center gap-2 tracking-tight">
+            <t-icon name="sunny" class="text-amber-500 animate-[spin_10s_linear_infinite]" />
+            你好，<span class="text-[var(--color-primary)]">{{ userStore.userInfo.name }}</span>
+          </h3>
           <t-tag :theme="userStore.isAdmin ? 'success' : 'primary'" shape="round">
-              {{ userStore.isAdmin ? '管理员' : '普通用户' }}
+            {{ userStore.isAdmin ? '管理员' : '普通用户' }}
           </t-tag>
-        </h3>
-        <p class="hitokoto-text">{{ oneMsg }}</p>
+        </div>
+
+        <p class="text-sm sm:text-base text-zinc-500 dark:text-zinc-400 italic leading-relaxed m-0">
+          {{ oneMsg }}
+        </p>
+
       </div>
-
     </div>
-
-  </t-card>
+  </div>
 </template>
 
-<style scoped lang="less">
-// --- 核心卡片样式 (与监控/公告卡片统一) ---
-.welcome-card {
-  width: 100%;
-  transition: all 0.3s;
-  border-radius: 6px;
-  background-color: var(--td-bg-color-container);
-
-  // 调整 Card 内边距，使其看起来更紧凑或更舒适
-  :deep(.t-card__body) {
-    padding: var(--td-comp-paddingTB-l) var(--td-comp-paddingLR-l);
-  }
-}
-
-.welcome-header {
-  display: flex;
-  align-items: center;
-  gap: 20px; // Flex子元素间距
-  flex-wrap: wrap; // 允许响应式换行
-}
-
-.avatar-section {
-  flex-shrink: 0; // 防止头像被压缩
-}
-
-.user-avatar {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  border: 2px solid var(--td-brand-color);
-  box-shadow: var(--td-shadow-1);
-  transition: transform 0.3s;
-
-  // 头像悬浮微动效果
-  &:hover {
-    transform: rotate(5deg) scale(1.05);
-  }
-}
-
-.welcome-info {
-  flex: 1; // 占据剩余空间
-  min-width: 200px; // 换行阈值
-}
-
-.welcome-text {
-  margin: 0 0 8px 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--td-text-color-primary);
-  font-size: var(--td-font-size-xl);
-  font-weight: 600;
-
-  .welcome-icon {
-    color: var(--td-warning-color);
-    font-size: 1.2em;
-    animation: sun-spin 10s linear infinite; // 增加一个小动画
-  }
-}
-
-.hitokoto-text {
-  margin: 0;
-  color: var(--td-text-color-secondary);
-  font-size: var(--td-font-size-m);
-  font-style: italic;
-  line-height: 1.6;
-}
-
-// 定义太阳旋转动画
-@keyframes sun-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-// -------------------------------------
-// 响应式布局
-// -------------------------------------
-@media screen and (max-width: 768px) {
-  .welcome-header {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .welcome-info {
-    text-align: center;
-  }
-
-  .welcome-text {
-    justify-content: center;
-  }
-}
+<style scoped>
+@reference "@/style/tailwind/index.css";
 </style>

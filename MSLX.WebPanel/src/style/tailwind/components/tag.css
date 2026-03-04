@@ -1,0 +1,50 @@
+/* ================= 标签 (Tag) 统一风格 ================= */
+.t-tag {
+  @apply font-bold px-3 py-1 border shadow-sm transition-colors flex items-center;
+}
+
+/* 圆角修饰 */
+.t-tag--round {
+  @apply rounded-full;
+}
+
+/*  (Success) - 翡翠绿 */
+.t-tag--success {
+  @apply bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20;
+}
+
+/*  (Primary) */
+.t-tag--primary {
+  @apply bg-[var(--color-primary-light)]/20 dark:bg-[var(--color-primary)]/10 text-[var(--color-primary)] border-[var(--color-primary)]/30 dark:border-[var(--color-primary)]/20;
+}
+
+/* (Info) - 锌灰 */
+.t-tag--default, .t-tag--info {
+  @apply bg-zinc-100/80 dark:bg-zinc-700/30 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700/50;
+}
+
+/*  (Warning) - 琥珀橙 */
+.t-tag--warning {
+  @apply bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20;
+}
+
+/*  (Error) - 玫瑰红 */
+.t-tag--danger, .t-tag--error {
+  @apply bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/20;
+}
+
+/* 移除 TDesign 默认的各种颜色计算劫持 */
+.t-tag--success.t-tag--light,
+.t-tag--primary.t-tag--light,
+.t-tag--info.t-tag--light,
+.t-tag--warning.t-tag--light,
+.t-tag--error.t-tag--light {
+  background-color: inherit !important;
+  border-color: inherit !important;
+  color: inherit !important;
+}
+
+/* 修复内部图标间距 */
+.t-tag .t-icon {
+  @apply mr-1 text-[1.1em];
+}

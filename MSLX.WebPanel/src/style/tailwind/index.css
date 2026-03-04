@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@import "./components/tag.css";
+@import "./components/alert.css";
+@import "./components/dropdown.css";
 @custom-variant dark (&:where([theme-mode="dark"], [theme-mode="dark"] *));
 
 @theme {
