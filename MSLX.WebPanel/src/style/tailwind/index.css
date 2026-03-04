@@ -17,3 +17,34 @@
 
   --radius-td: var(--td-radius-default);
 }
+
+/* 全局劫持TDESIGN！！！ */
+
+:root,
+html[theme-mode='light'] {
+  --td-bg-color-page: var(--color-zinc-50) !important;
+  --td-bg-color-container: var(--color-white) !important;
+  --td-bg-color-secondarycontainer: var(--color-zinc-100) !important;
+
+  --td-component-border: color-mix(in srgb, var(--color-zinc-200), transparent 50%) !important;
+  --td-border-level-1-color: color-mix(in srgb, var(--color-zinc-200), transparent 20%) !important;
+  --td-border-level-2-color: var(--color-zinc-200) !important;
+
+  --td-text-color-primary: var(--color-zinc-900) !important;
+  --td-text-color-secondary: var(--color-zinc-500) !important;
+}
+
+html[theme-mode='dark'] {
+  --td-bg-color-page: var(--color-zinc-900) !important;
+
+  --td-bg-color-container: var(--color-zinc-800) !important;
+
+  --td-bg-color-secondarycontainer: var(--color-zinc-700) !important;
+
+  --td-component-border: color-mix(in srgb, var(--color-zinc-700), transparent 50%) !important;
+  --td-border-level-1-color: color-mix(in srgb, var(--color-zinc-700), transparent 20%) !important;
+  --td-border-level-2-color: var(--color-zinc-700) !important;
+
+  --td-text-color-primary: var(--color-zinc-100) !important;
+  --td-text-color-secondary: var(--color-zinc-400) !important;
+}

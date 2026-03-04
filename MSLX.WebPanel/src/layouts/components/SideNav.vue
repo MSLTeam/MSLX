@@ -1,6 +1,13 @@
 <template>
   <div :class="sideNavCls">
-    <div class="design-card h-full bg-white dark:bg-zinc-800 border-r border-zinc-100 dark:border-zinc-800/80 transition-all duration-300 relative z-40">
+    <div
+      class="design-card h-full bg-white dark:bg-zinc-800 transition-all duration-300 relative z-40"
+      :class="[
+        settingStore.enableCustomTheme
+          ? 'border-r border-white/20 dark:border-white/5'
+          : 'border-r border-zinc-700/60 dark:border-zinc-700/60 shadow-[1px_0_12px_rgba(0,0,0,0.02)] dark:shadow-none'
+      ]"
+    >
 
       <t-menu :class="[menuCls, 'sidebar-menu-clear']" :theme="theme" :value="active" :collapsed="collapsed" :default-expanded="defaultExpanded">
         <template #logo>

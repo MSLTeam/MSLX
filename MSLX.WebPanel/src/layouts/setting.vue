@@ -1,119 +1,36 @@
-<template>
-  <t-drawer
-    v-model:visible="showSettingPanel"
-    :size="drawerSize"
-    :footer="false"
-    header="面板样式"
-    :close-btn="true"
-    class="setting-drawer-container"
-    @close-btn-click="handleCloseDrawer"
-  >
-    <div class="setting-container">
-      <t-form ref="form" :data="formData" label-align="left">
-        <div class="setting-group-title">主题模式</div>
-        <t-radio-group v-model="formData.mode">
-          <div v-for="(item, index) in MODE_OPTIONS" :key="index" class="setting-layout-drawer">
-            <div>
-              <t-radio-button :key="index" :value="item.type">
-                <component :is="getModeIcon(item.type)" />
-              </t-radio-button>
-              <p :style="{ textAlign: 'center', marginTop: '8px' }">{{ item.text }}</p>
-            </div>
-          </div>
-        </t-radio-group>
-
-        <div class="setting-group-title">个性化</div>
-        <div class="setting-item-row">
-          <span class="setting-item-label">开启背景美化</span>
-          <t-switch v-model="formData.enableCustomTheme" />
-        </div>
-
-        <div class="setting-group-title">主题色</div>
-        <t-radio-group v-model="formData.brandTheme">
-          <div
-            v-for="(item, index) in COLOR_OPTIONS.slice(0, COLOR_OPTIONS.length - 1)"
-            :key="index"
-            class="setting-layout-drawer"
-          >
-            <t-radio-button :key="index" :value="item" class="setting-layout-color-group">
-              <color-container :value="item" />
-            </t-radio-button>
-          </div>
-          <div class="setting-layout-drawer">
-            <t-popup
-              destroy-on-close
-              expand-animation
-              placement="bottom-right"
-              trigger="click"
-              :visible="isColoPickerDisplay"
-              :overlay-style="{ padding: 0 }"
-              @visible-change="onPopupVisibleChange"
-            >
-              <template #content>
-                <t-color-picker-panel
-                  :on-change="changeColor"
-                  :color-modes="['monochrome']"
-                  format="HEX"
-                  :swatch-colors="[]"
-                />
-              </template>
-              <t-radio-button
-                :value="COLOR_OPTIONS[COLOR_OPTIONS.length - 1]"
-                class="setting-layout-color-group dynamic-color-btn"
-              >
-                <color-container :value="COLOR_OPTIONS[COLOR_OPTIONS.length - 1]" />
-              </t-radio-button>
-            </t-popup>
-          </div>
-        </t-radio-group>
-
-        <div class="setting-group-title">导航布局</div>
-        <t-radio-group v-model="formData.layout">
-          <div v-for="(item, index) in LAYOUT_OPTION" :key="index" class="setting-layout-drawer">
-            <t-radio-button :key="index" :value="item">
-              <thumbnail :src="getThumbnailUrl(item)" />
-            </t-radio-button>
-          </div>
-        </t-radio-group>
-      </t-form>
-    </div>
-  </t-drawer>
-</template>
-
 <script setup lang="ts">
 import { ref, computed, onMounted, watchEffect, onBeforeUnmount } from 'vue';
 import type { PopupVisibleChangeContext } from 'tdesign-vue-next';
 import { Color } from 'tvision-color';
 
 import { useSettingStore } from '@/store';
-import Thumbnail from '@/components/thumbnail/index.vue';
 import ColorContainer from '@/components/color/index.vue';
-
 import STYLE_CONFIG from '@/config/style';
 import { insertThemeStylesheet, generateColorMap } from '@/config/color';
-
-import SettingDarkIcon from '@/assets/assets-setting-dark.svg';
-import SettingLightIcon from '@/assets/assets-setting-light.svg';
-import SettingAutoIcon from '@/assets/assets-setting-auto.svg';
 
 const settingStore = useSettingStore();
 
 const screenWidth = ref(window.innerWidth);
 const isMobile = computed(() => screenWidth.value < 480);
-const drawerSize = computed(() => {
-  return isMobile.value ? '85%' : '408px';
-});
+const drawerSize = computed(() => (isMobile.value ? '85%' : '408px'));
 
 const updateScreenWidth = () => {
   screenWidth.value = window.innerWidth;
 };
 
-const LAYOUT_OPTION = ['side', 'top'];
+// 🚨 使用 TDesign 原生 Icon 替换缩略图
+const LAYOUT_OPTIONS = [
+  { value: 'side', text: '侧边栏', icon: 'view-column' },
+  { value: 'top', text: '顶栏导航', icon: 'view-agenda' },
+];
+
 const COLOR_OPTIONS = ['default', 'cyan', 'green', 'yellow', 'orange', 'red', 'pink', 'purple', 'dynamic'];
+
+// 🚨 使用 TDesign 原生 Icon 替换引入的 SVG
 const MODE_OPTIONS = [
-  { type: 'auto', text: '跟随系统' },
-  { type: 'light', text: '明亮' },
-  { type: 'dark', text: '暗黑' },
+  { type: 'auto', text: '跟随系统', icon: 'desktop' },
+  { type: 'light', text: '明亮模式', icon: 'sunny' },
+  { type: 'dark', text: '暗黑模式', icon: 'moon' },
 ];
 
 const initStyleConfig = () => {
@@ -127,7 +44,6 @@ const initStyleConfig = () => {
   return styleConfig;
 };
 
-// 初始化表单数据
 const formData = ref({ ...initStyleConfig() });
 if (isMobile.value && formData.value.layout === 'side') {
   formData.value.layout = 'top';
@@ -135,21 +51,12 @@ if (isMobile.value && formData.value.layout === 'side') {
 const isColoPickerDisplay = ref(false);
 
 const showSettingPanel = computed({
-  get() {
-    return settingStore.showSettingPanel;
-  },
-  set(newVal: boolean) {
-    settingStore.updateConfig({
-      showSettingPanel: newVal,
-    });
-  },
+  get: () => settingStore.showSettingPanel,
+  set: (newVal) => settingStore.updateConfig({ showSettingPanel: newVal }),
 });
 
 const changeColor = (hex: string) => {
-  const newPalette = Color.getPaletteByGradation({
-    colors: [hex],
-    step: 10,
-  })[0];
+  const newPalette = Color.getPaletteByGradation({ colors: [hex], step: 10 })[0];
   const { mode } = settingStore;
   const colorMap = generateColorMap(hex, newPalette, mode as 'light' | 'dark');
 
@@ -178,197 +85,180 @@ const onPopupVisibleChange = (visible: boolean, context: PopupVisibleChangeConte
   }
 };
 
-const getModeIcon = (mode: string) => {
-  if (mode === 'light') {
-    return SettingLightIcon;
-  }
-  if (mode === 'dark') {
-    return SettingDarkIcon;
-  }
-  return SettingAutoIcon;
-};
-
 const handleCloseDrawer = () => {
-  settingStore.updateConfig({
-    showSettingPanel: false,
-  });
+  settingStore.updateConfig({ showSettingPanel: false });
 };
 
-const getThumbnailUrl = (name: string): string => {
-  return `https://tdesign.gtimg.com/tdesign-pro/setting/${name}.png`;
-};
-
-// 监听 formData 变化并同步到 Store
 watchEffect(() => {
-  settingStore.updateConfig(formData.value);
+  settingStore.updateConfig({
+    mode: formData.value.mode,
+    layout: formData.value.layout,
+    brandTheme: formData.value.brandTheme,
+    enableCustomTheme: formData.value.enableCustomTheme,
+  });
 });
 </script>
 
-<style lang="less" scoped>
-/* 开关行 */
-.setting-item-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 8px;
+<template>
+  <t-drawer
+    v-model:visible="showSettingPanel"
+    :size="drawerSize"
+    :footer="false"
+    header="面板样式"
+    :close-btn="true"
+    class="setting-drawer-container"
+    @close-btn-click="handleCloseDrawer"
+  >
+    <div class="p-6 sm:p-8 space-y-10 pb-24">
+      <t-form ref="form" :data="formData" label-align="left" class="space-y-10">
 
-  .setting-item-label {
-    font-size: 14px;
-    color: var(--td-text-color-primary);
-  }
+        <section>
+          <div class="setting-title">主题模式</div>
+          <t-radio-group v-model="formData.mode" class="custom-radio-group">
+            <t-radio-button v-for="item in MODE_OPTIONS" :key="item.type" :value="item.type" class="icon-card-radio">
+              <div class="flex flex-col items-center justify-center gap-2">
+                <t-icon :name="item.icon" class="text-[28px] transition-transform duration-300 group-hover:scale-110" />
+                <span class="text-[13px] font-medium">{{ item.text }}</span>
+              </div>
+            </t-radio-button>
+          </t-radio-group>
+        </section>
+
+        <section>
+          <div class="setting-title">个性化</div>
+          <div class="flex items-center justify-between p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200/50 dark:border-zinc-700/50 transition-colors hover:border-zinc-300 dark:hover:border-zinc-600">
+            <div class="flex flex-col">
+              <span class="text-[14px] font-bold text-zinc-800 dark:text-zinc-200">开启背景美化</span>
+              <span class="text-[11px] text-zinc-400 mt-0.5">启用毛玻璃卡片与自定义壁纸</span>
+            </div>
+            <t-switch v-model="formData.enableCustomTheme" />
+          </div>
+        </section>
+
+        <section>
+          <div class="setting-title">主题色</div>
+          <t-radio-group v-model="formData.brandTheme" class="color-radio-group flex-wrap">
+            <t-radio-button
+              v-for="item in COLOR_OPTIONS.slice(0, -1)"
+              :key="item"
+              :value="item"
+              class="color-dot-wrapper"
+            >
+              <color-container :value="item" />
+            </t-radio-button>
+
+            <t-popup
+              destroy-on-close
+              placement="bottom-right"
+              trigger="click"
+              :visible="isColoPickerDisplay"
+              :overlay-style="{ padding: 0 }"
+              @visible-change="onPopupVisibleChange"
+            >
+              <template #content>
+                <t-color-picker-panel
+                  class="custom-color-picker"
+                  :on-change="changeColor"
+                  :color-modes="['monochrome']"
+                  format="HEX"
+                  :swatch-colors="[]"
+                />
+              </template>
+              <t-radio-button
+                :value="COLOR_OPTIONS[COLOR_OPTIONS.length - 1]"
+                class="color-dot-wrapper dynamic-color-btn"
+              >
+                <color-container :value="COLOR_OPTIONS[COLOR_OPTIONS.length - 1]" />
+              </t-radio-button>
+            </t-popup>
+          </t-radio-group>
+        </section>
+
+        <section>
+          <div class="setting-title">导航布局</div>
+          <t-radio-group v-model="formData.layout" class="custom-radio-group">
+            <t-radio-button v-for="item in LAYOUT_OPTIONS" :key="item.value" :value="item.value" class="icon-card-radio">
+              <div class="flex flex-col items-center justify-center gap-2">
+                <t-icon :name="item.icon" class="text-[28px] transition-transform duration-300 group-hover:scale-110" />
+                <span class="text-[13px] font-medium">{{ item.text }}</span>
+              </div>
+            </t-radio-button>
+          </t-radio-group>
+        </section>
+
+      </t-form>
+    </div>
+  </t-drawer>
+</template>
+
+<style scoped>
+@reference "@/style/tailwind/index.css";
+
+/* ================== 抽屉基础样式穿透 ================== */
+:deep(.t-drawer__content-wrapper) {
+  @apply !bg-white dark:!bg-zinc-800 !border-l !border-zinc-200/50 dark:!border-zinc-700/50;
 }
 
-.tdesign-setting {
-  z-index: 100;
-  position: fixed;
-  bottom: 200px;
-  right: 0;
-  height: 40px;
-  width: 40px;
-  border-radius: 20px 0 0 20px;
-  transition: all 0.3s;
-
-  .t-icon {
-    margin-left: 8px;
-  }
-
-  .tdesign-setting-text {
-    font-size: 12px;
-    display: none;
-  }
-
-  &:hover {
-    width: 96px;
-
-    .tdesign-setting-text {
-      display: inline-block;
-    }
-  }
+:deep(.t-drawer__header) {
+  @apply !px-6 !py-5 !border-b !border-zinc-100 dark:!border-zinc-700/50;
+}
+:deep(.t-drawer__header-title) {
+  @apply !text-[16px] !font-bold !text-zinc-800 dark:!text-zinc-100;
 }
 
-.setting-layout-color-group {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  border-radius: 50% !important;
-  padding: 6px !important;
-  border: 2px solid transparent !important;
+:deep(.t-drawer__body) { @apply !p-0; }
 
-  > .t-radio-button__label {
-    display: inline-flex;
-  }
+/* ================== 小标题 ================== */
+.setting-title {
+  @apply text-[13px] font-bold text-zinc-400 dark:text-zinc-500 mb-4 tracking-widest uppercase;
 }
 
-.tdesign-setting-close {
-  position: fixed;
-  bottom: 200px;
-  right: 300px;
+/* ================== 单选组通用 ================== */
+.custom-radio-group, .color-radio-group {
+  @apply !flex !w-full !p-0 !border-none !bg-transparent !gap-3;
 }
 
-.setting-group-title {
-  font-size: 14px;
-  line-height: 22px;
-  margin: 32px 0 24px 0;
-  text-align: left;
-  font-family: PingFang SC;
-  font-style: normal;
-  font-weight: 500;
-  color: var(--td-text-color-primary);
+/* ================== Icon 卡片式单选 ================== */
+:deep(.icon-card-radio) {
+  @apply !flex-1 !h-auto !p-4 !rounded-xl !border-2 !border-zinc-100 dark:!border-zinc-700/50 !bg-zinc-50/50 dark:!bg-zinc-900/30 !text-zinc-500 dark:!text-zinc-400 !transition-all !duration-300;
 }
 
-.setting-link {
-  cursor: pointer;
-  color: var(--td-brand-color);
-  margin-bottom: 8px;
+/* 强行抹除内部 label 的 padding */
+:deep(.icon-card-radio .t-radio-button__label) {
+  @apply !px-0 !w-full;
 }
 
-.setting-info {
-  position: absolute;
-  padding: 24px;
-  bottom: 0;
-  left: 0;
-  line-height: 20px;
-  font-size: 12px;
-  text-align: center;
-  color: var(--td-text-color-placeholder);
-  width: 100%;
-  background: var(--td-bg-color-container);
+/* Hover 状态 */
+:deep(.icon-card-radio:hover:not(.t-is-checked)) {
+  @apply !border-zinc-300 dark:!border-zinc-500 !text-zinc-700 dark:!text-zinc-200;
 }
 
-.setting-drawer-container {
-  .setting-container {
-    padding-bottom: 100px;
-
-    /* 移动端增加左右内边距 */
-    @media (max-width: 480px) {
-      padding: 0 16px 100px 16px;
-    }
-  }
-
-  :deep(.t-radio-group.t-size-m) {
-    min-height: 32px;
-    width: 100%;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 16px;
-
-    /* 移动端靠左排列 */
-    @media (max-width: 480px) {
-      justify-content: flex-start;
-    }
-  }
-
-  :deep(.t-radio-group.t-size-m .t-radio-button) {
-    height: auto;
-  }
-
-  .setting-layout-drawer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-
-    :deep(.t-radio-button) {
-      display: inline-flex;
-      max-height: 78px;
-      padding: 8px;
-      border-radius: var(--td-radius-default);
-      border: 2px solid #e3e6eb;
-      > .t-radio-button__label {
-        display: inline-flex;
-      }
-    }
-
-    :deep(.t-is-checked) {
-      border: 2px solid var(--td-brand-color) !important;
-    }
-
-    :deep(.t-form__controls-content) {
-      justify-content: end;
-    }
-  }
-
-  :deep(.t-form__controls-content) {
-    justify-content: end;
-  }
+/* 选中状态*/
+:deep(.icon-card-radio.t-is-checked) {
+  @apply !border-[var(--color-primary)] !bg-[var(--color-primary-light)]/15 dark:!bg-[var(--color-primary)]/10 !text-[var(--color-primary)] !shadow-sm !scale-[1.02];
 }
 
-.setting-route-theme {
-  :deep(.t-form__label) {
-    min-width: 310px !important;
-    color: var(--td-text-color-secondary);
-  }
+:deep(.color-dot-wrapper) {
+  @apply !h-auto !p-1.5 !rounded-full !border-2 !border-transparent !bg-transparent !transition-all duration-300;
 }
 
-.setting-color-theme {
-  .setting-layout-drawer {
-    :deep(.t-radio-button) {
-      height: 32px;
-    }
+:deep(.color-dot-wrapper .t-radio-button__label) {
+  @apply !p-0;
+}
 
-    &:last-child {
-      margin-right: 0;
-    }
-  }
+:deep(.color-dot-wrapper:hover:not(.t-is-checked)) {
+  @apply !bg-zinc-100 dark:!bg-zinc-700/50;
+}
+
+:deep(.color-dot-wrapper.t-is-checked) {
+  @apply !border-[var(--color-primary)] !scale-110 !shadow-md;
+}
+
+/* ================== 自定义拾色器弹窗 ================== */
+:deep(.custom-color-picker) {
+  @apply !bg-white dark:!bg-zinc-800 !border !border-zinc-200/50 dark:!border-zinc-700/50 !shadow-2xl !rounded-2xl;
+}
+:deep(.custom-color-picker .t-color-picker__panel) {
+  @apply !bg-transparent;
 }
 </style>

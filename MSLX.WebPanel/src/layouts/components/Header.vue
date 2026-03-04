@@ -101,55 +101,75 @@ const navToHelper = () => {
 };
 </script>
 <template>
-  <div :class="layoutCls" class="design-card w-full bg-white dark:bg-zinc-800 border-b border-zinc-100 dark:border-zinc-800/80 transition-all duration-300 relative z-50">
+  <div
+    :class="[
+    layoutCls,
+    'design-card w-full bg-white dark:bg-zinc-800 transition-all duration-300 relative z-50',
+    { 'enable-custom-theme': settingStore.enableCustomTheme }
+  ]"
+  >
 
     <t-head-menu :class="[menuCls, 'header-menu-clear']" :theme="theme" expand-type="popup" :value="active">
       <template #logo>
-        <span v-if="showLogo" class="flex items-center cursor-pointer mr-6 gap-2.5" @click="handleNav('/dashboard/base')">
+        <span v-if="showLogo" class="flex items-center cursor-pointer mr-1 lg:mr-6 gap-2.5" @click="handleNav('/dashboard/base')">
           <img class="w-7 h-7 object-contain shrink-0" :src="CustomLogo" alt="logo" />
           <span class="text-[17px] font-bold truncate max-[1012px]:hidden text-zinc-800 dark:text-zinc-100 tracking-tight leading-none mt-0.5"> MSLX 管理中心 </span>
         </span>
 
-        <div v-if="layout == 'side'" class="max-[1012px]:flex hidden ml-4 items-center">
+        <div v-if="layout == 'side'" class="flex lg:hidden ml-1 items-center">
           <t-button theme="default" shape="square" variant="text" class="header-btn" @click="changeCollapsed">
             <t-icon class="text-xl" name="view-list" />
           </t-button>
         </div>
+
+        <div v-if="layout !== 'side'" class="flex lg:hidden ml-1 items-center">
+          <t-popup
+            placement="bottom"
+            overlay-class-name="mobile-full-width-popup"
+            :overlay-style="{ padding: '0', boxShadow: 'none' }"
+            attach="body"
+          >
+            <t-button class="header-btn" theme="default" shape="square" variant="text">
+              <t-icon name="app" class="text-[24px]" />
+            </t-button>
+
+            <template #content>
+              <t-menu
+                :value="active"
+                :theme="theme"
+                expand-mutex
+                class="max-h-[calc(100vh-64px)] overflow-y-auto !bg-white/95 dark:!bg-zinc-800/95 backdrop-blur-xl !border-none !border-t !border-zinc-200/50 dark:!border-zinc-700/50 shadow-2xl"
+                @change="handleMenuChange"
+              >
+                <menu-content :nav-data="menu" :is-horizontal="false" />
+              </t-menu>
+            </template>
+          </t-popup>
+        </div>
       </template>
 
       <template v-if="layout !== 'side'" #default>
-        <menu-content class="flex-1 inline-flex items-center max-[1012px]:hidden header-menu-reset" :nav-data="menu" :is-horizontal="true" />
-
-        <t-popup
-          placement="bottom-left"
-          class="max-[1012px]:inline-flex hidden items-center"
-          :overlay-style="{ padding: '0', width: '100%', marginTop: '2px', boxShadow: 'none' }"
-        >
-          <t-button class="-ml-4 header-btn" theme="default" shape="square" variant="text">
-            <t-icon name="app" />
-          </t-button>
-          <template #content>
-            <t-menu :value="active" :theme="theme" expand-mutex class="w-screen !bg-white dark:!bg-zinc-800 !border-none" @change="handleMenuChange">
-              <menu-content :nav-data="menu"/>
-            </t-menu>
-          </template>
-        </t-popup>
+        <div class="hidden lg:flex flex-1 items-center">
+          <menu-content class="header-menu-reset" :nav-data="menu" :is-horizontal="true" />
+        </div>
       </template>
 
       <template #operations>
         <div class="flex items-center gap-1 sm:gap-2">
 
-          <t-tooltip placement="bottom" content="代码仓库" class="max-[1012px]:hidden">
-            <t-button theme="default" shape="square" variant="text" class="header-btn" @click="navToGitHub">
-              <t-icon name="logo-github" class="text-[20px]" />
-            </t-button>
-          </t-tooltip>
+          <div class="hidden lg:flex items-center gap-1 sm:gap-2">
+            <t-tooltip placement="bottom" content="代码仓库">
+              <t-button theme="default" shape="square" variant="text" class="header-btn" @click="navToGitHub">
+                <t-icon name="logo-github" class="text-[20px]" />
+              </t-button>
+            </t-tooltip>
 
-          <t-tooltip placement="bottom" content="帮助文档" class="max-[1012px]:hidden">
-            <t-button theme="default" shape="square" variant="text" class="header-btn" @click="navToHelper">
-              <t-icon name="help-circle" class="text-[20px]" />
-            </t-button>
-          </t-tooltip>
+            <t-tooltip placement="bottom" content="帮助文档">
+              <t-button theme="default" shape="square" variant="text" class="header-btn" @click="navToHelper">
+                <t-icon name="help-circle" class="text-[20px]" />
+              </t-button>
+            </t-tooltip>
+          </div>
 
           <t-dropdown :min-column-width="140" trigger="click">
             <template #dropdown>
@@ -175,33 +195,37 @@ const navToHelper = () => {
             </t-button>
           </t-dropdown>
 
-          <t-dropdown :min-column-width="140" trigger="click" class="max-[1012px]:flex hidden">
-            <template #dropdown>
-              <t-dropdown-menu>
-                <t-dropdown-item class="operations-dropdown-item" @click="navToGitHub">
-                  <t-icon name="logo-github" class="text-lg mr-2"></t-icon>
-                  <span>代码仓库</span>
-                </t-dropdown-item>
-                <t-dropdown-item class="operations-dropdown-item mt-1" @click="navToHelper">
-                  <t-icon name="help-circle" class="text-lg mr-2"></t-icon>
-                  <span>帮助文档</span>
-                </t-dropdown-item>
-                <t-dropdown-item class="operations-dropdown-item mt-1" @click="toggleSettingPanel">
-                  <t-icon name="setting" class="text-lg mr-2"></t-icon>
-                  <span>系统设置</span>
-                </t-dropdown-item>
-              </t-dropdown-menu>
-            </template>
-            <t-button theme="default" shape="square" variant="text" class="header-btn">
-              <t-icon name="more" class="text-[20px]" />
-            </t-button>
-          </t-dropdown>
+          <div class="hidden lg:flex items-center">
+            <t-tooltip placement="bottom" content="系统设置">
+              <t-button theme="default" shape="square" variant="text" class="header-btn" @click="toggleSettingPanel">
+                <t-icon name="setting" class="text-[20px]" />
+              </t-button>
+            </t-tooltip>
+          </div>
 
-          <t-tooltip placement="bottom" content="系统设置" class="max-[1012px]:hidden">
-            <t-button theme="default" shape="square" variant="text" class="header-btn" @click="toggleSettingPanel">
-              <t-icon name="setting" class="text-[20px]" />
-            </t-button>
-          </t-tooltip>
+          <div class="flex lg:hidden items-center">
+            <t-dropdown :min-column-width="140" trigger="click">
+              <template #dropdown>
+                <t-dropdown-menu>
+                  <t-dropdown-item class="operations-dropdown-item" @click="navToGitHub">
+                    <t-icon name="logo-github" class="text-lg mr-2"></t-icon>
+                    <span>代码仓库</span>
+                  </t-dropdown-item>
+                  <t-dropdown-item class="operations-dropdown-item mt-1" @click="navToHelper">
+                    <t-icon name="help-circle" class="text-lg mr-2"></t-icon>
+                    <span>帮助文档</span>
+                  </t-dropdown-item>
+                  <t-dropdown-item class="operations-dropdown-item mt-1" @click="toggleSettingPanel">
+                    <t-icon name="setting" class="text-lg mr-2"></t-icon>
+                    <span>系统设置</span>
+                  </t-dropdown-item>
+                </t-dropdown-menu>
+              </template>
+              <t-button theme="default" shape="square" variant="text" class="header-btn">
+                <t-icon name="more" class="text-[20px]" />
+              </t-button>
+            </t-dropdown>
+          </div>
 
         </div>
       </template>
@@ -301,5 +325,49 @@ const navToHelper = () => {
 /* 确保内部容器 100% 占满高度，防止漏出缝隙 */
 .mslx-webpanel-header-layout {
   height: 100%;
+}
+
+/* ================== 移动端下拉菜单 ================== */
+:global(.mobile-full-width-popup) {
+  position: fixed !important;
+  top: 48px !important;
+  left: 0 !important;
+  width: 100vw !important;    /* 满宽 */
+  max-width: 100vw !important;
+  transform: none !important;
+  margin-top: 0 !important;
+}
+
+/* 干掉 TDesign 垂直菜单默认自带的 232px 死宽度 */
+:global(.mobile-full-width-popup .t-default-menu) {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* 放大移动端菜单项 */
+:global(.mobile-full-width-popup .t-menu__item) {
+@apply !h-12 !text-[15px];
+}
+
+/* ================== Header 底边线强化 ================== */
+
+/* 没有开启美化时，强制显示一条有存在感的底线 */
+.design-card:not(.enable-custom-theme) {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important; /* 亮色模式：淡淡的灰色 */
+}
+
+:global(html[theme-mode='dark']) .design-card:not(.enable-custom-theme) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important; /* 暗黑模式：克制的深色线 */
+}
+
+/* 当开启美化时，使用极细的高光线*/
+.design-card.enable-custom-theme {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(20px); /* 确保背景美化时有毛玻璃感 */
+}
+
+/* 彻底干掉 TDesign 内部可能挡住边框的白底 */
+:deep(.t-head-menu) {
+  background-color: transparent !important;
 }
 </style>
