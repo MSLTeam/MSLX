@@ -6,6 +6,8 @@
 @import "./components/dialog.css";
 @import "./components/form.css";
 @import "./components/table.css";
+@import "./components/timeline.css";
+@import "./components/collapse.css";
 @custom-variant dark (&:where([theme-mode="dark"], [theme-mode="dark"] *));
 
 @theme {
