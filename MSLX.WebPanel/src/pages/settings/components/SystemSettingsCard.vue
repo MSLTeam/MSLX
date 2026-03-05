@@ -72,156 +72,151 @@ onMounted(() => {
 </script>
 
 <template>
-  <t-card :bordered="false" title="系统偏好设置" :loading="loading" class="settings-card">
-    <template #actions>
-      <t-button theme="primary" variant="text" size="small" @click="handleRefresh">刷新数据</t-button>
-    </template>
+  <div class="design-card relative flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all duration-300">
 
-    <t-form ref="sysForm" :data="sysData" :label-width="120" label-align="left" @submit="onSysSubmit">
-      <div class="group-title">守护进程</div>
+    <t-loading :loading="loading" show-overlay>
+      <div class="p-5 sm:p-6 sm:px-8">
 
-      <t-form-item label="软件更新" style="margin-top: 6px">
-        <t-button theme="default" :loading="updateStore.loading" @click="updateStore.checkAppUpdate(true)">
-          <template #icon><cloud-download-icon /></template>
-          检查更新
-        </t-button>
-      </t-form-item>
+        <div class="flex items-center justify-between mb-6 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60">
+          <div class="flex items-center gap-3">
+            <div class="w-1.5 h-5 bg-[var(--color-primary)] rounded-full shadow-[0_0_8px_var(--color-primary-light)] opacity-90"></div>
+            <h2 class="text-lg font-bold text-zinc-900 dark:text-zinc-100 m-0 leading-none tracking-tight">系统偏好设置</h2>
+          </div>
+          <t-button variant="dashed" size="small" class="!bg-transparent" @click="handleRefresh">
+            <template #icon><refresh-icon /></template>
+            刷新数据
+          </t-button>
+        </div>
 
-      <t-form-item label="自动打开控制台" help="MSLX 守护进程启动成功后，是否自动登录网页端控制台。">
-        <t-switch v-model="sysData.openWebConsoleOnLaunch" />
-      </t-form-item>
+        <t-form ref="sysForm" :data="sysData" :label-width="140" label-align="left" @submit="onSysSubmit">
 
-      <t-form-item label="安装镜像源" help="选择在自动安装 NeoForge / Forge 时所使用的镜像源。" style="margin-top: 6px">
-        <t-select v-model="sysData.neoForgeInstallerMirrors" :options="mirrorOptions" />
-      </t-form-item>
+          <div class="flex items-center gap-3 mt-2 mb-6">
+            <span class="text-xs font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">守护进程</span>
+            <div class="h-px bg-zinc-200/60 dark:bg-zinc-700/60 flex-1"></div>
+          </div>
 
-      <t-divider v-if="!isInternalNetwork()" dashed />
+          <t-form-item label="软件更新">
+            <t-button theme="default" :loading="updateStore.loading" class="!bg-zinc-50 dark:!bg-zinc-800/50 hover:!bg-zinc-100 dark:hover:!bg-zinc-800 !border-zinc-200/80 dark:!border-zinc-700/80 !text-zinc-700 dark:!text-zinc-300" @click="updateStore.checkAppUpdate(true)">
+              <template #icon><cloud-download-icon class="opacity-70" /></template>
+              检查更新
+            </t-button>
+          </t-form-item>
 
-      <div v-if="!isInternalNetwork()">
-        <div class="group-title">MSL OAuth 2.0</div>
-
-        <t-form-item label="Client ID" style="margin-top: 6px">
-          <t-input v-model="sysData.oAuthMSLClientID" placeholder="请输入 Client ID">
-            <template #prefix-icon><server-icon /></template>
-          </t-input>
-        </t-form-item>
-
-        <t-form-item
-          label="Client Secret"
-          help="配置MSL OAuth 2.0后即可使用您的MSL账号一键登录您的MSLX控制台。"
-          style="margin-top: 16px"
-        >
-          <t-input v-model="sysData.oAuthMSLClientSecret" type="password" placeholder="请输入 Client Secret">
-            <template #prefix-icon><control-platform-icon /></template>
-          </t-input>
-        </t-form-item>
-
-        <t-form-item
-          label="回调地址"
-          help="请将此地址复制并填入 MSL用户中心 OAuth应用配置的 [回调地址] 中"
-          style="margin-top: 16px"
-        >
-          <t-input :value="callbackUrl" readonly placeholder="正在获取当前域名...">
-            <template #prefix-icon><link-icon /></template>
-            <template #suffix>
-              <t-button variant="text" shape="square" @click="copyText(callbackUrl, true, '回调地址复制成功')">
-                <t-icon name="file-copy" />
-              </t-button>
+          <t-form-item label="自动打开控制台">
+            <template #help>
+              <span class="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1 inline-block">MSLX 守护进程启动成功后，是否自动登录网页端控制台。</span>
             </template>
-          </t-input>
-        </t-form-item>
+            <t-switch v-model="sysData.openWebConsoleOnLaunch" />
+          </t-form-item>
 
-        <t-form-item style="margin-top: 6px" label="配置教程">
-          <t-space align="center">
-            <t-button theme="default" @click="changeUrl(DOC_URLS.msl_oauth)">
-              <template #icon>
-                <book-icon />
+          <t-form-item label="安装镜像源">
+            <template #help>
+              <span class="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1 inline-block">选择在自动安装 NeoForge / Forge 时所使用的镜像源。</span>
+            </template>
+            <t-select v-model="sysData.neoForgeInstallerMirrors" :options="mirrorOptions" class="!w-full sm:!w-72" />
+          </t-form-item>
+
+
+          <template v-if="!isInternalNetwork()">
+            <div class="flex items-center gap-3 mt-8 mb-6">
+              <span class="text-xs font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">MSL OAuth 2.0</span>
+              <div class="h-px bg-zinc-200/60 dark:bg-zinc-700/60 flex-1"></div>
+            </div>
+
+            <t-form-item label="Client ID">
+              <t-input v-model="sysData.oAuthMSLClientID" placeholder="请输入 Client ID" class="!w-full sm:!w-96">
+                <template #prefix-icon><server-icon class="opacity-60 text-zinc-400" /></template>
+              </t-input>
+            </t-form-item>
+
+            <t-form-item label="Client Secret">
+              <template #help>
+                <span class="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1 inline-block">配置 MSL OAuth 2.0 后即可使用您的 MSL 账号一键登录控制台。</span>
               </template>
-              配置MSL账号快捷登录教程</t-button
-            >
-          </t-space>
-        </t-form-item>
-      </div>
+              <t-input v-model="sysData.oAuthMSLClientSecret" type="password" placeholder="请输入 Client Secret" class="!w-full sm:!w-96">
+                <template #prefix-icon><control-platform-icon class="opacity-60 text-zinc-400" /></template>
+              </t-input>
+            </t-form-item>
 
-      <t-divider dashed />
+            <t-form-item label="回调地址">
+              <template #help>
+                <span class="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1 inline-block">请将此地址复制并填入 MSL 用户中心 OAuth 应用配置的 [回调地址] 中。</span>
+              </template>
+              <t-input :value="callbackUrl" readonly placeholder="正在获取当前域名..." class="!w-full sm:!w-96 !bg-zinc-50/50 dark:!bg-zinc-900/30">
+                <template #prefix-icon><link-icon class="opacity-60 text-zinc-400" /></template>
+                <template #suffix>
+                  <t-button variant="text" shape="square" class="hover:!bg-[var(--color-primary)]/10 hover:!text-[var(--color-primary)] !h-auto !w-auto !p-1.5 !rounded-md" @click="copyText(callbackUrl, true, '回调地址复制成功')">
+                    <t-icon name="file-copy" />
+                  </t-button>
+                </template>
+              </t-input>
+            </t-form-item>
 
-      <div class="group-title">网络与安全</div>
+            <t-form-item label="配置教程">
+              <t-button theme="default"  class="!bg-[var(--color-primary)]/10 !text-[var(--color-primary)] !border-none hover:!bg-[var(--color-primary)]/20" @click="changeUrl(DOC_URLS.msl_oauth)">
+                <template #icon><book-icon /></template>
+                配置 MSL 账号快捷登录教程
+              </t-button>
+            </t-form-item>
+          </template>
 
-      <t-form-item label="禁止本地访问" help="开启后将禁止本地回环地址访问，增强安全性。">
-        <t-space align="center">
-          <t-switch v-model="sysData.fireWallBanLocalAddr" />
-          <span class="status-label">{{ sysData.fireWallBanLocalAddr ? '已开启' : '已关闭' }}</span>
-        </t-space>
-      </t-form-item>
 
-      <t-form-item
-        label="监听地址设置"
-        help="设置MSLX守护进程的监听地址。(需要重启守护进程生效,若不明白这是干什么的请一定不要修改！)"
-        style="margin-top: 6px"
-      >
-        <t-row :gutter="16" style="width: 100%">
-          <t-col :span="6">
-            <t-input v-model="sysData.listenHost" placeholder="localhost">
-              <template #prefix-icon><server-icon /></template>
-            </t-input>
-          </t-col>
+          <div class="flex items-center gap-3 mt-8 mb-6">
+            <span class="text-xs font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">网络与安全</span>
+            <div class="h-px bg-zinc-200/60 dark:bg-zinc-700/60 flex-1"></div>
+          </div>
 
-          <t-col :span="4" style="display: flex; align-items: center">
-            <span style="margin-right: 8px; color: var(--td-text-color-secondary)">:</span>
-            <t-input v-model="sysData.listenPort" placeholder="1027" style="width: 120px">
-              <template #prefix-icon><control-platform-icon /></template>
-            </t-input>
-          </t-col>
-        </t-row>
-      </t-form-item>
-
-      <t-form-item style="margin-top: 6px" label="远程访问">
-        <t-space align="center">
-          <t-button theme="default" @click="changeUrl(DOC_URLS.remote_access)">
-            <template #icon>
-              <book-icon />
+          <t-form-item label="禁止本地访问">
+            <template #help>
+              <span class="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1 inline-block">开启后将禁止本地回环地址访问，增强安全性。</span>
             </template>
-            配置远程访问说明</t-button
-          >
-        </t-space>
-      </t-form-item>
+            <div class="flex items-center gap-3">
+              <t-switch v-model="sysData.fireWallBanLocalAddr" />
+              <span class="text-[11px] font-extrabold px-2 py-0.5 rounded-md transition-colors" :class="sysData.fireWallBanLocalAddr ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border border-zinc-200 dark:border-zinc-700'">
+                {{ sysData.fireWallBanLocalAddr ? '已开启' : '已关闭' }}
+              </span>
+            </div>
+          </t-form-item>
 
-      <t-form-item>
-        <t-button theme="primary" type="submit" :loading="submitLoading" block class="action-btn">
-          保存系统设置
-        </t-button>
-      </t-form-item>
-    </t-form>
-  </t-card>
+          <t-form-item label="监听地址设置">
+            <template #help>
+              <span class="text-[11px] font-medium text-amber-500/80 dark:text-amber-500/70 mt-1 inline-block">设置 MSLX 守护进程的监听地址。(需要重启守护进程生效，若不明白这是干什么的请一定不要修改！)</span>
+            </template>
+            <div class="flex items-center gap-2 w-full sm:w-96">
+              <div class="flex-1">
+                <t-input v-model="sysData.listenHost" placeholder="localhost">
+                  <template #prefix-icon><server-icon class="opacity-60 text-zinc-400" /></template>
+                </t-input>
+              </div>
+              <div class="text-zinc-400 dark:text-zinc-500 font-extrabold pb-1">:</div>
+              <div class="w-24 shrink-0">
+                <t-input v-model="sysData.listenPort" placeholder="1027" align="center">
+                  <template #prefix-icon><control-platform-icon class="opacity-60 text-zinc-400 hidden sm:block" /></template>
+                </t-input>
+              </div>
+            </div>
+          </t-form-item>
+
+          <t-form-item label="远程访问">
+            <t-button theme="default" class="!bg-zinc-50 dark:!bg-zinc-800/50 hover:!bg-zinc-100 dark:hover:!bg-zinc-800 !border-zinc-200/80 dark:!border-zinc-700/80 !text-zinc-700 dark:!text-zinc-300" @click="changeUrl(DOC_URLS.remote_access)">
+              <template #icon><book-icon class="opacity-70" /></template>
+              配置远程访问说明
+            </t-button>
+          </t-form-item>
+
+          <div class="mt-8 pt-5 border-t border-dashed border-zinc-200/70 dark:border-zinc-700/60">
+            <t-button theme="primary" type="submit" :loading="submitLoading" class="!h-10 !w-full sm:!w-auto sm:!px-10 !font-bold tracking-widest !rounded-xl shadow-md shadow-[var(--color-primary-light)]/40 hover:shadow-[var(--color-primary-light)]/60 transition-shadow">
+              保存系统设置
+            </t-button>
+          </div>
+
+        </t-form>
+      </div>
+    </t-loading>
+  </div>
 </template>
 
-<style scoped lang="less">
-.settings-card {
-  border-radius: 8px;
-  overflow: hidden;
-  transition: all 0.3s;
-  &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  }
-}
+<style scoped>
+@reference "@/style/tailwind/index.css";
 
-.group-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--td-text-color-placeholder);
-  margin: 8px 0 16px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.status-label {
-  font-size: 13px;
-  color: var(--td-text-color-secondary);
-}
-
-.action-btn {
-  margin-top: 12px;
-  font-weight: 600;
-  height: 40px;
-}
 </style>

@@ -298,7 +298,7 @@ onMounted(() => {
         </div>
 
         <t-form-item label="账户角色" name="role">
-          <t-radio-group v-model="formData.role">
+          <t-radio-group v-model="formData.role" variant="default-filled">
             <t-radio-button value="user">普通用户</t-radio-button>
             <t-radio-button value="admin">全局管理员</t-radio-button>
           </t-radio-group>
