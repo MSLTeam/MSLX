@@ -1,24 +1,62 @@
 /* ================= 警告提示 (Alert) 统一风格 ================= */
+
 .t-alert {
-  @apply rounded-xl border p-4 backdrop-blur-md bg-white/60 dark:bg-zinc-900/60 transition-all;
+  @apply !rounded-xl !border !p-4 backdrop-blur-md transition-all !flex !items-start !gap-3;
 }
 
-.t-alert--warning {
-  @apply border-amber-200/80 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-500/10;
+.t-alert__icon {
+  @apply !text-xl !m-0 !mt-0.5 !shrink-0;
 }
 
-.t-alert--warning .t-alert__icon {
-  @apply text-amber-500 text-xl;
+.t-alert__content {
+  @apply !m-0 !p-0 !flex-1;
 }
 
 .t-alert__title {
-  @apply font-bold text-amber-800 dark:text-amber-400 mb-1 text-base;
+  @apply !font-bold !text-base !mb-1 !leading-none;
 }
 
-.t-alert__message {
-  @apply text-amber-700 dark:text-amber-300/80 text-sm font-medium;
+.t-alert__message,
+.t-alert__description {
+  @apply !text-sm !font-medium !leading-relaxed;
 }
 
 .t-alert__operation {
-  @apply text-amber-600 dark:text-amber-400 mt-2 sm:mt-0;
+  @apply !mt-2 sm:!mt-0;
 }
+
+
+/* Warning (警告) 主题的颜色定制 (琥珀色系) */
+.t-alert--warning {
+  @apply !border-amber-200/80 dark:!border-amber-500/30 !bg-amber-50/80 dark:!bg-amber-500/10;
+}
+.t-alert--warning .t-alert__icon { @apply !text-amber-500; }
+.t-alert--warning .t-alert__title { @apply !text-amber-800 dark:!text-amber-400; }
+.t-alert--warning .t-alert__message { @apply !text-amber-700 dark:!text-amber-300/80; }
+
+
+/* 针对 Info (信息) 主题的颜色定制 (使用你主题色 + Zinc 灰色系) */
+.t-alert--info {
+  @apply !border-[var(--color-primary)]/30 !bg-[var(--color-primary)]/5 dark:!bg-[var(--color-primary)]/10;
+}
+.t-alert--info .t-alert__icon { @apply !text-[var(--color-primary)]; }
+.t-alert--info .t-alert__title { @apply !text-zinc-900 dark:!text-zinc-100; }
+.t-alert--info .t-alert__message { @apply !text-zinc-700 dark:!text-zinc-300/90; }
+
+
+/* Success (成功) 主题的颜色定制 (翠绿色系) */
+.t-alert--success {
+  @apply !border-emerald-500/30 !bg-emerald-50/80 dark:!bg-emerald-500/10;
+}
+.t-alert--success .t-alert__icon { @apply !text-emerald-500; }
+.t-alert--success .t-alert__title { @apply !text-emerald-800 dark:!text-emerald-400; }
+.t-alert--success .t-alert__message { @apply !text-emerald-700 dark:!text-emerald-300/80; }
+
+
+/* 针对 Error (错误) 主题的颜色定制 (红色系) */
+.t-alert--error {
+  @apply !border-red-500/30 !bg-red-50/80 dark:!bg-red-500/10;
+}
+.t-alert--error .t-alert__icon { @apply !text-red-500; }
+.t-alert--error .t-alert__title { @apply !text-red-800 dark:!text-red-400; }
+.t-alert--error .t-alert__message { @apply !text-red-700 dark:!text-red-300/80; }
