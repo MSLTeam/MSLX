@@ -1,0 +1,18 @@
+/* ================= 单选框与分段控制器统一风格 ================= */
+.t-radio-group.t-radio-group__outline,
+.t-radio-group.t-radio-group--filled {
+  @apply !bg-zinc-100 dark:!bg-zinc-900/80 !rounded-xl !p-1 !border-none !gap-1 !shadow-inner;
+}
+.t-radio-button {
+  @apply !bg-transparent !border-none !rounded-lg !text-zinc-500 dark:!text-zinc-400 transition-all;
+}
+.t-radio-button.t-is-checked {
+  @apply !bg-white dark:!bg-zinc-700 !text-zinc-900 dark:!text-zinc-100 !shadow-sm !font-bold;
+}
+.t-radio-button__label {
+  @apply !px-4 !py-1.5 !text-sm;
+}
+/* 隐藏 TDesign 默认的竖线分隔符 */
+.t-radio-button::before, .t-radio-button::after {
+  @apply !hidden;
+}

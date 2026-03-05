@@ -8,6 +8,8 @@
 @import "./components/table.css";
 @import "./components/timeline.css";
 @import "./components/collapse.css";
+@import "./components/radio.css";
+@import "./components/checkbox.css";
 @custom-variant dark (&:where([theme-mode="dark"], [theme-mode="dark"] *));
 
 @theme {

@@ -26,3 +26,21 @@ html[theme-mode='dark'] .t-textarea__inner, .dark .t-textarea__inner {
 .t-form__label {
   @apply text-zinc-700 dark:text-zinc-300 font-medium text-sm mb-1;
 }
+
+/* ================= 多选下拉框内部标签风格 ================= */
+.t-select-input__wrap .t-tag,
+.t-select__wrap .t-tag {
+  @apply !inline-flex !items-center !h-auto !py-0.5 !px-2 !rounded-md !bg-zinc-200/50 dark:!bg-zinc-700/50 !border-none !text-zinc-700 dark:!text-zinc-300 !font-medium !text-xs !m-0.5;
+  max-width: calc(100% - 8px) !important;
+}
+
+.t-select-input__wrap .t-tag__text,
+.t-select__wrap .t-tag__text {
+  @apply !truncate;
+}
+
+/* 关闭标签图标居中适配 */
+.t-select-input__wrap .t-tag__close,
+.t-select__wrap .t-tag__close {
+  @apply !mt-0.5 !ml-1 !text-zinc-400 hover:!text-red-500 transition-colors;
+}
