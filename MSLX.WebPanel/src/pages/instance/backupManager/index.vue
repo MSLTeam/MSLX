@@ -133,336 +133,188 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="backup-page-container">
-    <div class="page-header">
-      <div class="title-area">
-        <h2 class="page-title">实例备份管理</h2>
-        <p class="page-desc">管理所有服务器实例的本地备份文件</p>
+  <div class="mx-auto flex flex-col gap-6 text-zinc-800 dark:text-zinc-200 pb-5">
+
+    <div
+      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm text-left"
+    >
+      <div class="flex flex-col gap-1 items-start">
+        <h2 class="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100 m-0">实例备份管理</h2>
+        <p class="text-sm text-zinc-500 dark:text-zinc-400 m-0">
+          管理所有服务器实例的本地备份文件
+        </p>
       </div>
-      <t-button theme="primary" variant="text" :loading="loading" @click="fetchData">
-        <template #icon><refresh-icon /></template>
-        刷新列表
-      </t-button>
+
+      <div class="flex items-center gap-3">
+        <t-button variant="dashed" :loading="loading" @click="fetchData">
+          <template #icon><refresh-icon /></template>
+          刷新列表
+        </t-button>
+      </div>
     </div>
 
-    <div v-if="loading && instanceList.length === 0" class="loading-wrapper">
-      <t-loading text="加载数据中..." size="small"></t-loading>
-    </div>
+    <div class="relative min-h-[400px]">
 
-    <div v-else class="card-list">
-      <transition-group name="list-anim">
-        <div v-for="instance in sortedInstances" :key="instance.id" class="instance-card-wrapper">
-          <t-card :bordered="false" class="instance-card" :class="{ 'is-empty': !instance.backups?.length }">
-            <div class="card-header">
-              <div class="header-left">
-                <t-tag theme="primary" variant="light" shape="mark">ID: {{ instance.id }}</t-tag>
-                <div class="instance-info">
-                  <h3 class="instance-name">
-                    <server-icon class="icon-mr" />
-                    {{ instance.name }}
-                  </h3>
-                  <span class="instance-core">
-                    <cloud-icon class="icon-mr" />
-                    {{ instance.core }}
-                  </span>
+      <div v-if="loading && instanceList.length === 0" class="flex justify-center items-center py-24">
+        <t-loading text="加载数据中..." size="small"></t-loading>
+      </div>
+
+      <template v-else-if="sortedInstances.length > 0">
+        <div class="flex flex-col gap-5">
+          <transition-group name="list-anim" appear>
+            <div
+              v-for="(instance, index) in sortedInstances"
+              :key="instance.id"
+              class="design-card list-item-anim flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all duration-300 hover:border-[var(--color-primary)]/30"
+              :class="{ 'opacity-80': !instance.backups?.length }"
+              :style="{ animationDelay: `${index * 0.05}s` }"
+            >
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 pb-0 border-b-0">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <t-tag theme="primary" variant="light" shape="round" class="!px-3 !font-mono font-bold tracking-wider">ID: {{ instance.id }}</t-tag>
+                  <div class="flex items-center gap-3">
+                    <h3 class="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2 m-0 tracking-tight">
+                      <server-icon class="text-zinc-400 dark:text-zinc-500 shrink-0" />
+                      {{ instance.name }}
+                    </h3>
+                    <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-xs text-zinc-600 dark:text-zinc-400 font-medium border border-zinc-200/50 dark:border-zinc-700/50">
+                      <cloud-icon size="14px" class="opacity-80" />
+                      {{ instance.core }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2 mt-2 sm:mt-0">
+                  <t-tag v-if="instance.backups?.length" theme="success" variant="light" shape="round" class="!px-3 !font-medium">
+                    {{ instance.backups.length }} 个备份
+                  </t-tag>
+                  <t-tag v-else theme="default" variant="light" shape="round" class="!px-3 !text-zinc-400 !bg-zinc-100 dark:!bg-zinc-800">无备份</t-tag>
                 </div>
               </div>
 
-              <div class="header-right">
-                <t-tag v-if="instance.backups?.length" theme="success" variant="outline">
-                  {{ instance.backups.length }} 个备份
-                </t-tag>
-                <t-tag v-else theme="default" disabled>无备份</t-tag>
-              </div>
-            </div>
-
-            <div class="path-section">
-              <div class="path-toggle" @click="togglePath(instance.id)">
-                <folder-open-icon />
-                <span class="label">存储路径</span>
-                <component :is="expandedPaths.has(instance.id) ? ChevronUpIcon : ChevronDownIcon" class="toggle-icon" />
-              </div>
-              <div v-show="expandedPaths.has(instance.id)" class="path-content">
-                {{ instance.backupPath }}
-              </div>
-            </div>
-
-            <div v-if="instance.backups?.length" class="backup-table-area">
-              <div v-if="selectedRowKeys[instance.id]?.length > 0" class="table-toolbar">
-                <span class="selected-count">已选 {{ selectedRowKeys[instance.id].length }} 项</span>
-                <t-button theme="danger" variant="text" size="small" @click="handleBatchDelete(instance.id)">
-                  批量删除
-                </t-button>
+              <div class="mx-5 mt-4 bg-zinc-50/80 dark:bg-zinc-800/50 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 overflow-hidden transition-all">
+                <div
+                  class="flex items-center gap-2 p-2.5 px-4 cursor-pointer text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  @click="togglePath(instance.id)"
+                >
+                  <folder-open-icon class="opacity-80" size="18px" />
+                  <span class="text-xs font-medium select-none">存储路径</span>
+                  <component :is="expandedPaths.has(instance.id) ? ChevronUpIcon : ChevronDownIcon" class="ml-auto opacity-70" />
+                </div>
+                <div
+                  v-show="expandedPaths.has(instance.id)"
+                  class="p-3 px-4 text-xs font-mono text-zinc-500 dark:text-zinc-400 break-all border-t border-zinc-200/50 dark:border-zinc-700/50 bg-zinc-100/50 dark:bg-zinc-900/30 shadow-inner"
+                >
+                  {{ instance.backupPath }}
+                </div>
               </div>
 
-              <t-table
-                row-key="fileName"
-                :data="instance.backups"
-                :columns="columns as any"
-                :selected-row-keys="selectedRowKeys[instance.id] || []"
-                size="small"
-                :hover="true"
-                :pagination="instance.backups.length > 5 ? { pageSize: 5 } : null"
-                @select-change="(val, ctx) => onSelectChange(val as any, ctx, instance.id)"
-              >
-                <template #fileName="{ row }">
-                  <div class="file-name-cell">
-                    <span class="zip-icon">ZIP</span>
-                    <span class="text" :title="row.fileName">{{ row.fileName }}</span>
-                  </div>
-                </template>
+              <div class="p-5 pt-4">
+                <div v-if="instance.backups?.length" class="flex flex-col gap-3">
 
-                <template #op="{ row }">
-                  <div class="op-buttons">
-                    <t-button
-                      theme="primary"
-                      variant="text"
-                      size="small"
-                      @click="handleDownload(instance.id, row.fileName)"
-                    >
-                      <template #icon><download-icon /></template>
-                      下载
-                    </t-button>
-                    <t-button
-                      theme="danger"
-                      variant="text"
-                      size="small"
-                      @click="handleDeleteOne(instance.id, row.fileName)"
-                    >
-                      <template #icon><delete-icon /></template>
-                      删除
+                  <div v-if="selectedRowKeys[instance.id]?.length > 0" class="flex items-center gap-3 p-2 px-4 bg-red-500/10 border border-red-500/20 rounded-xl mb-1 transition-all">
+                    <span class="text-xs font-medium text-red-600 dark:text-red-400">已选 {{ selectedRowKeys[instance.id].length }} 项</span>
+                    <t-button theme="danger" variant="text" size="small" class="!h-auto !py-1 hover:!bg-red-500/20" @click="handleBatchDelete(instance.id)">
+                      批量删除
                     </t-button>
                   </div>
-                </template>
-              </t-table>
-            </div>
 
-            <div v-else class="empty-backups">
-              <span class="empty-text">当前实例暂无备份文件</span>
+                  <t-table
+                    row-key="fileName"
+                    :data="instance.backups"
+                    :columns="columns as any"
+                    :selected-row-keys="selectedRowKeys[instance.id] || []"
+                    size="small"
+                    :hover="true"
+                    :pagination="instance.backups.length > 5 ? { pageSize: 5 } : null"
+                    @select-change="(val, ctx) => onSelectChange(val as any, ctx, instance.id)"
+                  >
+                    <template #fileName="{ row }">
+                      <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-extrabold bg-[var(--color-primary)]/10 text-[var(--color-primary)] px-1.5 py-0.5 rounded border border-[var(--color-primary)]/20 shrink-0 tracking-wider">ZIP</span>
+                        <span class="font-medium text-zinc-800 dark:text-zinc-200 truncate" :title="row.fileName">{{ row.fileName }}</span>
+                      </div>
+                    </template>
+
+                    <template #op="{ row }">
+                      <div class="flex items-center gap-1">
+                        <t-button
+                          theme="primary"
+                          variant="text"
+                          size="small"
+                          class="hover:!bg-[var(--color-primary)]/10"
+                          @click="handleDownload(instance.id, row.fileName)"
+                        >
+                          <template #icon><download-icon /></template>
+                          下载
+                        </t-button>
+                        <t-button
+                          theme="danger"
+                          variant="text"
+                          size="small"
+                          class="hover:!bg-red-500/10"
+                          @click="handleDeleteOne(instance.id, row.fileName)"
+                        >
+                          <template #icon><delete-icon /></template>
+                          删除
+                        </t-button>
+                      </div>
+                    </template>
+                  </t-table>
+                </div>
+
+                <div v-else class="flex flex-col items-center justify-center py-10">
+                  <span class="text-sm font-medium text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-800/50 px-4 py-2 rounded-full border border-zinc-200/50 dark:border-zinc-700/50">
+                    当前实例暂无备份文件
+                  </span>
+                </div>
+              </div>
             </div>
-          </t-card>
+          </transition-group>
         </div>
-      </transition-group>
+      </template>
+
+      <div
+        v-else
+        class="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-zinc-800/40 rounded-2xl border-2 border-dashed border-zinc-200/50 dark:border-zinc-700/50"
+      >
+        <t-empty class="!bg-transparent" description="尚未发现任何实例" />
+      </div>
     </div>
   </div>
 </template>
 
-<style lang="less" scoped>
-@card-bg: var(--td-bg-color-container);
-@text-primary: var(--td-text-color-primary);
-@text-secondary: var(--td-text-color-secondary);
-@border-level: var(--td-component-stroke);
+<style scoped>
+@reference "@/style/tailwind/index.css";
 
-.backup-page-container {
-  padding: 12px;
-  margin: 0 auto;
-  min-height: 100%;
-  box-sizing: border-box;
+/* 首次渲染及列表进场动画 */
+.list-item-anim {
+  animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-
-  .title-area {
-    .page-title {
-      font-size: 24px;
-      font-weight: 700;
-      color: @text-primary;
-      margin: 0 0 8px 0;
-    }
-    .page-desc {
-      color: @text-secondary;
-      font-size: 14px;
-      margin: 0;
-    }
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-.loading-wrapper {
-  display: flex;
-  justify-content: center;
-  padding: 48px;
-}
-
-.card-list {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-// 实例卡片样式
-.instance-card {
-  transition: all 0.3s ease;
-  background: @card-bg;
-
-  // 无备份时的样式降级
-  &.is-empty {
-    opacity: 0.8;
-    .card-header {
-      border-bottom: none;
-    }
-  }
-
-  // 头部布局
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: 16px;
-    border-bottom: 1px solid @border-level;
-    flex-wrap: wrap;
-    gap: 12px;
-
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-
-      .instance-info {
-        display: flex;
-        align-items: baseline;
-        gap: 12px;
-
-        .instance-name {
-          margin: 0;
-          font-size: 18px;
-          display: flex;
-          align-items: center;
-          color: @text-primary;
-        }
-
-        .instance-core {
-          font-size: 13px;
-          color: @text-secondary;
-          background: var(--td-bg-color-secondarycontainer);
-          padding: 2px 8px;
-          border-radius: 4px;
-          display: flex;
-          align-items: center;
-        }
-      }
-    }
-  }
-
-  // 路径折叠区
-  .path-section {
-    margin-top: 12px;
-    background: var(--td-bg-color-secondarycontainer);
-    border-radius: 6px;
-    overflow: hidden;
-
-    .path-toggle {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      cursor: pointer;
-      color: @text-secondary;
-      font-size: 13px;
-      user-select: none;
-      transition: background 0.2s;
-
-      &:hover {
-        background: var(--td-bg-color-component-hover);
-        color: @text-primary;
-      }
-
-      .toggle-icon {
-        margin-left: auto;
-      }
-    }
-
-    .path-content {
-      padding: 8px 12px;
-      font-family: monospace;
-      font-size: 12px;
-      color: @text-secondary;
-      word-break: break-all;
-      border-top: 1px solid rgba(0, 0, 0, 0.05);
-      background: rgba(0, 0, 0, 0.02);
-    }
-  }
-
-  // 表格区域
-  .backup-table-area {
-    margin-top: 16px;
-
-    .table-toolbar {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 8px;
-      padding: 4px 8px;
-      background: var(--td-error-color-1);
-      border-radius: 4px;
-
-      .selected-count {
-        font-size: 12px;
-        color: var(--td-error-color-7);
-      }
-    }
-
-    .file-name-cell {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-
-      .zip-icon {
-        font-size: 10px;
-        background: var(--td-brand-color-focus);
-        color: var(--td-brand-color);
-        padding: 1px 4px;
-        border-radius: 3px;
-        font-weight: bold;
-      }
-      .text {
-        font-weight: 500;
-      }
-    }
-
-    .op-buttons {
-      display: flex;
-      gap: 8px;
-    }
-  }
-
-  .empty-backups {
-    padding: 32px 0;
-    text-align: center;
-    color: var(--td-text-color-disabled);
-    font-size: 13px;
-  }
-}
-
-// 通用图标边距
-.icon-mr {
-  margin-right: 6px;
-}
-
-// 动画
+/* 动态增删时的过渡动画 */
 .list-anim-move,
 .list-anim-enter-active,
 .list-anim-leave-active {
-  transition: all 0.5s ease;
+  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .list-anim-enter-from,
 .list-anim-leave-to {
   opacity: 0;
-  transform: translateY(20px);
+  transform: translateY(16px) scale(0.98);
 }
-
-// 移动端特定适配
-@media (max-width: 600px) {
-  .instance-card {
-    .header-left {
-      flex-direction: column;
-      align-items: flex-start !important;
-      gap: 8px !important;
-    }
-  }
+.list-anim-leave-active {
+  position: absolute;
 }
 </style>

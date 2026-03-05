@@ -265,138 +265,165 @@ onMounted(() => {
   fetchData();
 });
 </script>
-
 <template>
-  <div class="backup-page-container">
-    <div class="page-header">
-      <div class="title-area">
-        <h2 class="page-title">全局定时任务管理</h2>
-        <p class="page-desc">集中管理所有服务器实例的 Cron 定时计划与调度策略</p>
+  <div class="mx-auto flex flex-col gap-6 text-zinc-800 dark:text-zinc-200 pb-5">
+
+    <div
+      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm text-left"
+    >
+      <div class="flex flex-col gap-1 items-start">
+        <h2 class="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100 m-0">全局定时任务管理</h2>
+        <p class="text-sm text-zinc-500 dark:text-zinc-400 m-0">
+          集中管理所有服务器实例的 Cron 定时计划与调度策略
+        </p>
       </div>
-      <t-space>
+
+      <div class="flex items-center gap-3">
+        <t-button variant="dashed" :loading="loading" @click="fetchData">
+          <template #icon><refresh-icon /></template>
+          刷新列表
+        </t-button>
         <t-button v-if="userStore.isAdmin" theme="primary" @click="handleAdd()">
           <template #icon><add-icon /></template>
           新增任务
         </t-button>
-        <t-button theme="primary" variant="text" :loading="loading" @click="fetchData">
-          <template #icon><refresh-icon /></template>
-          刷新列表
-        </t-button>
-      </t-space>
+      </div>
     </div>
 
-    <div v-if="loading && groupedInstances.length === 0" class="loading-wrapper">
-      <t-loading text="加载数据中..." size="small"></t-loading>
-    </div>
+    <div class="relative min-h-[400px]">
 
-    <div v-else class="card-list">
-      <transition-group name="list-anim">
-        <div v-for="instance in groupedInstances" :key="instance.id" class="instance-card-wrapper">
-          <t-card :bordered="false" class="instance-card" :class="{ 'is-empty': !instance.tasks?.length }">
-            <div class="card-header">
-              <div class="header-left">
-                <t-tag theme="primary" variant="light" shape="mark">ID: {{ instance.id }}</t-tag>
-                <div class="instance-info">
-                  <h3 class="instance-name">
-                    <server-icon class="icon-mr" />
-                    {{ instance.name }}
-                  </h3>
-                  <span class="instance-core">
-                    <cloud-icon class="icon-mr" />
-                    {{ instance.core }}
-                  </span>
+      <div v-if="loading && groupedInstances.length === 0" class="flex justify-center items-center py-24">
+        <t-loading text="加载数据中..." size="small"></t-loading>
+      </div>
+
+      <template v-else-if="groupedInstances.length > 0">
+        <div class="flex flex-col gap-5">
+          <transition-group name="list-anim" appear>
+            <div
+              v-for="(instance, index) in groupedInstances"
+              :key="instance.id"
+              class="design-card list-item-anim flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all duration-300 hover:border-[var(--color-primary)]/30"
+              :class="{ 'opacity-80': !instance.tasks?.length }"
+              :style="{ animationDelay: `${index * 0.05}s` }"
+            >
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 border-b border-dashed border-zinc-200 dark:border-zinc-700/60">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <t-tag theme="primary" variant="light" shape="round" class="!px-3 !font-mono font-bold tracking-wider">ID: {{ instance.id }}</t-tag>
+                  <div class="flex items-center gap-3">
+                    <h3 class="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2 m-0 tracking-tight">
+                      <server-icon class="text-zinc-400 dark:text-zinc-500 shrink-0" />
+                      {{ instance.name }}
+                    </h3>
+                    <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-xs text-zinc-600 dark:text-zinc-400 font-medium border border-zinc-200/50 dark:border-zinc-700/50">
+                      <cloud-icon size="14px" class="opacity-80" />
+                      {{ instance.core }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                  <t-button size="small" variant="outline" class="!border-zinc-200 dark:!border-zinc-700 !text-zinc-600 dark:!text-zinc-400 hover:!text-[var(--color-primary)] hover:!border-[var(--color-primary)] bg-white/50 dark:bg-zinc-900/50" @click="handleAdd(instance.id)">
+                    <template #icon><add-icon /></template> 添加任务
+                  </t-button>
+                  <t-tag v-if="instance.tasks?.length" theme="success" variant="light" shape="round" class="!px-3 !font-medium">
+                    {{ instance.tasks.length }} 个任务
+                  </t-tag>
+                  <t-tag v-else theme="default" variant="light" shape="round" class="!px-3 !text-zinc-400 !bg-zinc-100 dark:!bg-zinc-800">无任务</t-tag>
                 </div>
               </div>
 
-              <div class="header-right">
-                <t-space>
-                  <t-button size="small" variant="outline" @click="handleAdd(instance.id)">
-                    <template #icon><add-icon /></template> 添加
-                  </t-button>
-                  <t-tag v-if="instance.tasks?.length" theme="success" variant="outline">
-                    {{ instance.tasks.length }} 个任务
-                  </t-tag>
-                  <t-tag v-else theme="default" disabled>无任务</t-tag>
-                </t-space>
-              </div>
-            </div>
+              <div class="p-5">
+                <div v-if="instance.tasks?.length" class="flex flex-col gap-3">
 
-            <div v-if="instance.tasks?.length" class="backup-table-area">
-              <div v-if="selectedRowKeys[instance.id]?.length > 0" class="table-toolbar">
-                <span class="selected-count">已选 {{ selectedRowKeys[instance.id].length }} 项</span>
-                <t-button theme="danger" variant="text" size="small" @click="handleBatchDelete(instance.id)">
-                  批量删除
-                </t-button>
-              </div>
-
-              <t-table
-                row-key="id"
-                :data="instance.tasks"
-                :columns="columns as any"
-                :selected-row-keys="selectedRowKeys[instance.id] || []"
-                size="small"
-                :hover="true"
-                :pagination="instance.tasks.length > 5 ? { pageSize: 5 } : null"
-                @select-change="(val, ctx) => onSelectChange(val as any, ctx, instance.id)"
-              >
-                <template #name="{ row }">
-                  <div class="file-name-cell">
-                    <time-icon class="task-icon icon-mr" style="color: var(--td-brand-color)" />
-                    <span class="text" :title="row.name">{{ row.name }}</span>
+                  <div v-if="selectedRowKeys[instance.id]?.length > 0" class="flex items-center gap-3 p-2 px-4 bg-red-500/10 border border-red-500/20 rounded-xl mb-1 transition-all">
+                    <span class="text-xs font-medium text-red-600 dark:text-red-400">已选 {{ selectedRowKeys[instance.id].length }} 项</span>
+                    <t-button theme="danger" variant="text" size="small" class="!h-auto !py-1 hover:!bg-red-500/20" @click="handleBatchDelete(instance.id)">
+                      批量删除
+                    </t-button>
                   </div>
-                </template>
 
-                <template #type="{ row }">
-                  <t-tag size="small" variant="light" :theme="getColorByType(row.type)">
-                    <template #icon>
-                      <component :is="getIconByType(row.type)" />
-                    </template>
-                    {{ row.type.toUpperCase() }}
-                  </t-tag>
-                </template>
-
-                <template #cron="{ row }">
-                  <span style="font-family: monospace; color: var(--td-text-color-secondary)">{{ row.cron }}</span>
-                </template>
-
-                <template #enable="{ row }">
-                  <t-switch
-                    :value="row.enable"
+                  <t-table
+                    row-key="id"
+                    :data="instance.tasks"
+                    :columns="columns as any"
+                    :selected-row-keys="selectedRowKeys[instance.id] || []"
                     size="small"
-                    @change="(val) => handleToggleEnable(row, val as boolean)"
-                  />
-                </template>
+                    :hover="true"
+                    :pagination="instance.tasks.length > 5 ? { pageSize: 5 } : null"
+                    @select-change="(val, ctx) => onSelectChange(val as any, ctx, instance.id)"
+                  >
+                    <template #name="{ row }">
+                      <div class="flex items-center gap-2">
+                        <time-icon class="text-[var(--color-primary)] opacity-90 shrink-0" />
+                        <span class="font-medium text-zinc-800 dark:text-zinc-200 truncate" :title="row.name">{{ row.name }}</span>
+                      </div>
+                    </template>
 
-                <template #op="{ row }">
-                  <div class="op-buttons">
-                    <t-button theme="primary" variant="text" size="small" @click="handleEdit(row)">
-                      <template #icon><edit-icon /></template> 编辑
-                    </t-button>
-                    <t-button theme="danger" variant="text" size="small" @click="handleDeleteOne(instance.id, row.id)">
-                      <template #icon><delete-icon /></template> 删除
-                    </t-button>
-                  </div>
-                </template>
-              </t-table>
-            </div>
+                    <template #type="{ row }">
+                      <t-tag size="small" variant="light" :theme="getColorByType(row.type)" class="!rounded-md !px-2 font-medium">
+                        <template #icon>
+                          <component :is="getIconByType(row.type)" class="opacity-80" />
+                        </template>
+                        {{ row.type.toUpperCase() }}
+                      </t-tag>
+                    </template>
 
-            <div v-else class="empty-backups">
-              <span class="empty-text">当前实例暂无定时任务</span>
+                    <template #cron="{ row }">
+                      <span class="font-mono text-xs text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900 px-2.5 py-1 rounded-md border border-zinc-200/50 dark:border-zinc-700/50">
+                        {{ row.cron }}
+                      </span>
+                    </template>
+
+                    <template #enable="{ row }">
+                      <t-switch
+                        :value="row.enable"
+                        size="small"
+                        @change="(val) => handleToggleEnable(row, val as boolean)"
+                      />
+                    </template>
+
+                    <template #op="{ row }">
+                      <div class="flex items-center gap-1">
+                        <t-button theme="primary" variant="text" size="small" class="hover:!bg-[var(--color-primary)]/10" @click="handleEdit(row)">
+                          <template #icon><edit-icon /></template> 编辑
+                        </t-button>
+                        <t-button theme="danger" variant="text" size="small" class="hover:!bg-red-500/10" @click="handleDeleteOne(instance.id, row.id)">
+                          <template #icon><delete-icon /></template> 删除
+                        </t-button>
+                      </div>
+                    </template>
+                  </t-table>
+                </div>
+
+                <div v-else class="flex flex-col items-center justify-center py-12">
+                  <span class="text-sm font-medium text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-800/50 px-4 py-2 rounded-full border border-zinc-200/50 dark:border-zinc-700/50">
+                    当前实例暂无定时任务安排
+                  </span>
+                </div>
+              </div>
             </div>
-          </t-card>
+          </transition-group>
         </div>
-      </transition-group>
+      </template>
+
+      <div
+        v-else
+        class="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-zinc-800/40 rounded-2xl border-2 border-dashed border-zinc-200/50 dark:border-zinc-700/50"
+      >
+        <t-empty class="!bg-transparent" description="尚未配置任何实例定时任务" />
+      </div>
     </div>
 
     <t-dialog
       v-model:visible="formVisible"
       :header="isEdit ? '编辑定时任务' : '新增定时任务'"
       width="600px"
-      :confirm-btn="{ content: '保存', theme: 'primary', loading: submitLoading }"
+      :confirm-btn="{ content: '保存配置', theme: 'primary', loading: submitLoading }"
       placement="center"
       :on-confirm="onDialogConfirm"
     >
-      <t-form ref="formRef" :data="formData" :rules="rules" label-align="top" style="margin-top: 16px">
+      <t-form ref="formRef" :data="formData" :rules="rules" label-align="top" class="mt-4">
+
         <t-form-item label="归属实例" name="instanceId">
           <t-select
             v-model="formData.instanceId"
@@ -414,7 +441,7 @@ onMounted(() => {
         <t-form-item label="触发规则 (Cron 表达式)" name="cron">
           <t-input v-model="formData.cron" placeholder="例如: 0 0 4 * * ?">
             <template #suffix>
-              <t-button variant="text" theme="primary" size="small" @click="showCronGen = true"> 生成器 </t-button>
+              <t-button variant="text" theme="primary" size="small" class="!h-auto !py-1" @click="showCronGen = true"> 生成器 </t-button>
             </template>
           </t-input>
         </t-form-item>
@@ -436,13 +463,14 @@ onMounted(() => {
         </t-form-item>
 
         <t-form-item label="初始状态" name="enable">
-          <div style="display: flex; align-items: center; gap: 12px">
+          <div class="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 w-full mt-1">
             <t-switch v-model="formData.enable" />
-            <span style="color: var(--td-text-color-placeholder); font-size: 13px">
+            <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">
               {{ formData.enable ? '保存后立即生效运行' : '保存后处于暂停状态' }}
             </span>
           </div>
         </t-form-item>
+
       </t-form>
     </t-dialog>
 
@@ -450,180 +478,38 @@ onMounted(() => {
   </div>
 </template>
 
-<style lang="less" scoped>
-/* 样式原封不动复刻你的备份页面样式，只改了几个微小的变量名映射 */
-@card-bg: var(--td-bg-color-container);
-@text-primary: var(--td-text-color-primary);
-@text-secondary: var(--td-text-color-secondary);
-@border-level: var(--td-component-stroke);
+<style scoped>
+@reference "@/style/tailwind/index.css";
 
-.backup-page-container {
-  padding: 12px;
-  margin: 0 auto;
-  min-height: 100%;
-  box-sizing: border-box;
+/* 首次渲染及列表进场动画 */
+.list-item-anim {
+  animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-
-  .title-area {
-    .page-title {
-      font-size: 24px;
-      font-weight: 700;
-      color: @text-primary;
-      margin: 0 0 8px 0;
-    }
-    .page-desc {
-      color: @text-secondary;
-      font-size: 14px;
-      margin: 0;
-    }
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-.loading-wrapper {
-  display: flex;
-  justify-content: center;
-  padding: 48px;
-}
-
-.card-list {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-// 实例卡片样式
-.instance-card {
-  transition: all 0.3s ease;
-  background: @card-bg;
-
-  // 无任务时的样式降级
-  &.is-empty {
-    opacity: 0.8;
-    .card-header {
-      border-bottom: none;
-    }
-  }
-
-  // 头部布局
-  .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: 16px;
-    border-bottom: 1px solid @border-level;
-    flex-wrap: wrap;
-    gap: 12px;
-
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-
-      .instance-info {
-        display: flex;
-        align-items: baseline;
-        gap: 12px;
-
-        .instance-name {
-          margin: 0;
-          font-size: 18px;
-          display: flex;
-          align-items: center;
-          color: @text-primary;
-        }
-
-        .instance-core {
-          font-size: 13px;
-          color: @text-secondary;
-          background: var(--td-bg-color-secondarycontainer);
-          padding: 2px 8px;
-          border-radius: 4px;
-          display: flex;
-          align-items: center;
-        }
-      }
-    }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-    }
-  }
-
-  // 表格区域 (复用备份页面的类名)
-  .backup-table-area {
-    margin-top: 16px;
-
-    .table-toolbar {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 8px;
-      padding: 4px 8px;
-      background: var(--td-error-color-1);
-      border-radius: 4px;
-
-      .selected-count {
-        font-size: 12px;
-        color: var(--td-error-color-7);
-      }
-    }
-
-    .file-name-cell {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      .text {
-        font-weight: 500;
-      }
-    }
-
-    .op-buttons {
-      display: flex;
-      gap: 8px;
-    }
-  }
-
-  .empty-backups {
-    padding: 32px 0;
-    text-align: center;
-    color: var(--td-text-color-disabled);
-    font-size: 13px;
-  }
-}
-
-// 通用图标边距
-.icon-mr {
-  margin-right: 6px;
-}
-
-// 动画
+/* 动态增删时的过渡动画 */
 .list-anim-move,
 .list-anim-enter-active,
 .list-anim-leave-active {
-  transition: all 0.5s ease;
+  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .list-anim-enter-from,
 .list-anim-leave-to {
   opacity: 0;
-  transform: translateY(20px);
+  transform: translateY(16px) scale(0.98);
+}
+.list-anim-leave-active {
+  position: absolute;
 }
 
-// 移动端特定适配
-@media (max-width: 600px) {
-  .instance-card {
-    .header-left {
-      flex-direction: column;
-      align-items: flex-start !important;
-      gap: 8px !important;
-    }
-  }
-}
 </style>

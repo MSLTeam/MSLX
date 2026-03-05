@@ -4,6 +4,8 @@
 @import "./components/dropdown.css";
 @import "./components/button.css";
 @import "./components/dialog.css";
+@import "./components/form.css";
+@import "./components/table.css";
 @custom-variant dark (&:where([theme-mode="dark"], [theme-mode="dark"] *));
 
 @theme {
