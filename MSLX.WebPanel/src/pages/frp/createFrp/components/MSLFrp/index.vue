@@ -288,440 +288,237 @@ async function handleDeleteTunnel() {
 </script>
 
 <template>
-  <div class="page-container">
-    <div v-if="mslUserToken === ''" class="login-container">
-      <div class="login-card">
-        <div class="icon-wrapper">
-          <user-circle-icon size="48px" style="color: var(--td-brand-color)" />
+  <div class="mx-auto pb-6 text-zinc-800 dark:text-zinc-200">
+
+    <div v-if="mslUserToken === ''" class="flex items-center justify-center min-h-[70vh] list-item-anim">
+      <div class="design-card relative w-full max-w-md bg-white/80 dark:bg-zinc-800/80 backdrop-blur-xl rounded-3xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-xl p-10 text-center overflow-hidden">
+        <div class="absolute -top-20 -right-20 w-60 h-60 bg-[var(--color-primary)]/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-[var(--color-primary)]/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="relative z-10 flex flex-col items-center">
+          <div class="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
+            <img src="https://user.mslmc.net/assets/png/msl-user-msl-user-logo-512-transparent-BjXu1GPW.png" alt="msl-user-logo" class="text-[var(--color-primary)]" />
+          </div>
+          <h2 class="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100 !mb-2 tracking-tight">欢迎登录 MSLFrp</h2>
+          <p class="text-sm text-zinc-500 dark:text-zinc-400 !mb-8 font-medium">登录您的 MSL 账户以使用内网穿透服务</p>
+
+          <div class="w-full flex flex-col gap-4">
+            <t-button block theme="primary" size="large" class="!rounded-xl !h-12 !font-bold shadow-md shadow-[var(--color-primary-light)]/30 hover:shadow-[var(--color-primary-light)]/50" @click="jumpLogin">
+              <template #icon><user-circle-icon /></template>
+              跳转用户中心登录
+            </t-button>
+            <t-button theme="default" variant="outline" block size="large" class="!rounded-xl !h-12 !font-bold !bg-white/50 dark:!bg-zinc-900/50 !border-zinc-200 dark:!border-zinc-700 hover:!text-[var(--color-primary)] hover:!border-[var(--color-primary)]/50 !ml-0" @click="changeUrl('https://user.mslmc.net/register')">
+              <template #icon><user-add-icon /></template>
+              注册 MSL 账户
+            </t-button>
+          </div>
         </div>
-        <h2 class="title">欢迎登录 MSLFrp</h2>
-        <p class="subtitle">登录您的MSL账户以使用 MSLFrp 服务</p>
-        <t-space direction="vertical" size="medium" style="width: 100%">
-          <t-button block theme="primary" size="large" @click="jumpLogin">
-            <template #icon><user-circle-icon /></template>
-            跳转用户中心登录
-          </t-button>
-          <t-button
-            theme="default"
-            variant="outline"
-            block
-            size="large"
-            @click="changeUrl('https://user.mslmc.net/register')"
-          >
-            <template #icon><user-add-icon /></template>
-            注册 MSL 账户
-          </t-button>
-        </t-space>
       </div>
     </div>
 
-    <div v-else class="dashboard-container">
+    <div v-else id="app-space" class="relative flex flex-col gap-6">
       <t-loading attach="#app-space" :loading="loading" text="加载数据中..." />
 
-      <t-space id="app-space" direction="vertical" size="large" style="width: 100%">
-        <t-card v-if="userInfo" :bordered="false" title="MSLFrp 用户信息" class="info-card">
-          <template #actions>
-            <t-space size="small">
-              <t-button
-                variant="outline"
-                theme="success"
-                size="small"
-                @click="changeUrl('https://user.mslmc.net/store/buy')"
-              >
-                订阅会员服务
+      <div v-if="userInfo" class="design-card list-item-anim bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-5 sm:p-6" style="animation-delay: 0s;">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60">
+          <div class="flex flex-col">
+            <h3 class="text-lg font-bold text-zinc-900 dark:text-zinc-100 m-0 leading-none">MSLFrp 用户信息</h3>
+          </div>
+          <div class="flex items-center gap-2">
+            <t-button variant="outline" theme="success" size="small" class="!rounded-lg hover:!bg-[var(--color-success)]/10" @click="changeUrl('https://user.mslmc.net/store/buy')">订阅会员服务</t-button>
+            <t-tag theme="primary" variant="light-outline" class="!rounded-md !font-bold">{{ userInfo.user_group_name }}</t-tag>
+            <div class="w-px h-4 bg-zinc-200 dark:bg-zinc-700 mx-1"></div>
+            <t-popconfirm content="确认退出登录吗？" @confirm="handleLogout">
+              <t-button variant="text" theme="danger" size="small" class="!rounded-lg hover:!bg-red-500/10">退出登录</t-button>
+            </t-popconfirm>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800">
+            <div class="text-[11px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1">用户昵称</div>
+            <div class="flex items-center gap-2">
+              <span class="text-lg font-bold text-zinc-800 dark:text-zinc-200 truncate">{{ userInfo.name }}</span>
+              <t-tag :theme="userInfo.realNameStatus ? 'success' : 'warning'" variant="light" size="small" class="!rounded cursor-pointer !font-bold !px-1.5" @click="changeUrl('https://user.mslmc.net/user/profile')">
+                {{ userInfo.realNameStatus ? '已实名' : '未实名' }}
+              </t-tag>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800">
+            <div class="text-[11px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1">隧道限额</div>
+            <div class="text-lg font-bold text-zinc-800 dark:text-zinc-200 font-mono">{{ userInfo.maxTunnelCount }} <span class="text-sm font-medium text-zinc-500">条</span></div>
+          </div>
+
+          <div class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800">
+            <div class="text-[11px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1">速率限制</div>
+            <div class="text-lg font-bold text-zinc-800 dark:text-zinc-200 font-mono">{{ (userInfo.boundLimit / 1024) * 8 }} <span class="text-sm font-medium text-zinc-500">Mbps</span></div>
+          </div>
+
+          <div class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800">
+            <div class="text-[11px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1">会员到期时间</div>
+            <div class="text-[15px] font-bold text-zinc-800 dark:text-zinc-200 font-mono mt-0.5">
+              {{ userInfo.outdated === 3749682420 ? '长期有效' : formatTime(userInfo.outdated) }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <div class="lg:col-span-5 xl:col-span-4 design-card list-item-anim flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm h-[580px]" style="animation-delay: 0.1s;">
+          <div class="flex items-center justify-between p-4 sm:p-5 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 shrink-0">
+            <h3 class="text-base font-bold text-zinc-900 dark:text-zinc-100 m-0">我的隧道</h3>
+            <div class="flex items-center gap-1">
+              <t-button size="small" variant="text" class="!px-2 hover:!bg-zinc-100 dark:hover:!bg-zinc-700/50" :loading="loading" @click="handleRefresh">
+                <template #icon><refresh-icon /></template>刷新
               </t-button>
-              <t-tag theme="primary" variant="light-outline">{{ userInfo.user_group_name }}</t-tag>
-              <t-popconfirm content="确认退出登录吗？" @confirm="handleLogout">
-                <t-button variant="outline" theme="danger" size="small"> 退出登录 </t-button>
-              </t-popconfirm>
-            </t-space>
-          </template>
-          <t-row :gutter="[16, 16]">
-            <t-col :xs="6" :sm="3">
-              <div class="stat-item">
-                <div class="label">用户昵称</div>
-                <div class="value">
-                  {{ userInfo.name }}
-                  <t-tag
-                    :theme="userInfo.realNameStatus ? 'success' : 'warning'"
-                    variant="dark"
-                    size="small"
-                    style="cursor: pointer"
-                    @click="changeUrl('https://user.mslmc.net/user/profile')"
-                    >{{ userInfo.realNameStatus ? '已实名' : '未实名' }}</t-tag
-                  >
+              <t-button size="small" variant="text" class="!px-2 hover:!bg-[var(--color-primary)]/10 hover:!text-[var(--color-primary)]" @click="showDomainDialog = true">
+                <template #icon><cloud-icon /></template>子域名
+              </t-button>
+              <t-button size="small" theme="primary" class="!px-3 !ml-1 !rounded-lg" @click="handleAddTunnel">
+                <template #icon><add-icon /></template>新建
+              </t-button>
+            </div>
+          </div>
+
+          <div class="flex-1 overflow-y-auto custom-scrollbar p-3">
+            <div v-if="tunnels.length > 0" class="flex flex-col gap-2">
+              <div
+                v-for="tunnel in tunnels"
+                :key="tunnel.id"
+                class="group flex items-center p-3 rounded-xl cursor-pointer transition-all duration-300 border"
+                :class="selectedTunnelId === tunnel.id ? 'bg-[var(--color-primary)]/10 border-[var(--color-primary)]/30 shadow-sm' : 'bg-transparent border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-700/50 hover:border-zinc-200 dark:hover:border-zinc-600'"
+                @click="selectedTunnelId = tunnel.id"
+              >
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 mr-3 transition-colors"
+                     :class="selectedTunnelId === tunnel.id ? 'bg-[var(--color-primary)] text-white shadow-md shadow-[var(--color-primary)]/30' : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-zinc-200'">
+                  <server-icon size="20px" />
+                </div>
+                <div class="flex-1 min-w-0 mr-3">
+                  <div class="font-bold text-sm truncate transition-colors" :class="selectedTunnelId === tunnel.id ? 'text-[var(--color-primary)]' : 'text-zinc-800 dark:text-zinc-200'">{{ tunnel.name }}</div>
+                  <div class="text-[11px] text-zinc-500 dark:text-zinc-400 truncate mt-0.5">{{ nodesMap[tunnel.node_id] || `Node ${tunnel.node_id}` }}</div>
+                </div>
+                <div class="shrink-0">
+                  <t-tag v-if="tunnel.status === 1" theme="success" variant="light" size="small" class="!rounded !font-bold !px-1.5">在线</t-tag>
+                  <t-tag v-else theme="default" variant="light" size="small" class="!rounded !font-bold !px-1.5 !text-zinc-500">未启动</t-tag>
                 </div>
               </div>
-            </t-col>
-            <t-col :xs="6" :sm="3">
-              <div class="stat-item">
-                <div class="label">隧道限额</div>
-                <div class="value">{{ userInfo.maxTunnelCount }} 条</div>
+            </div>
+
+            <div v-else class="h-full flex flex-col items-center justify-center opacity-60">
+              <server-icon size="32px" class="text-zinc-400 mb-2" />
+              <span class="text-sm text-zinc-500 font-medium">暂无隧道，请先新建</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-7 xl:col-span-8 design-card list-item-anim flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm h-[580px]" style="animation-delay: 0.2s;">
+
+          <template v-if="currentTunnel">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 shrink-0">
+              <div class="flex flex-col min-w-0">
+                <h3 class="text-xl font-extrabold text-zinc-900 dark:text-zinc-100 m-0 truncate">{{ currentTunnel.name }}</h3>
+                <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1 truncate">{{ currentTunnel.remarks || '暂无备注' }}</p>
               </div>
-            </t-col>
-            <t-col :xs="6" :sm="3">
-              <div class="stat-item">
-                <div class="label">速率限制</div>
-                <div class="value">{{ (userInfo.boundLimit / 1024) * 8 }} Mbps</div>
-              </div>
-            </t-col>
-            <t-col :xs="6" :sm="3">
-              <div class="stat-item">
-                <div class="label">会员到期时间</div>
-                <div class="value date-text">
-                  {{ userInfo.outdated === 3749682420 ? '长期有效' : formatTime(userInfo.outdated) }}
-                </div>
-              </div>
-            </t-col>
-          </t-row>
-        </t-card>
-
-        <t-row :gutter="[16, 16]">
-          <t-col :xs="12" :md="5" :lg="4">
-            <t-card :bordered="false" class="full-height-card">
-              <template #title>
-                <div class="list-header">
-                  <span>我的隧道</span>
-                  <t-space size="4px">
-                    <t-button
-                      style="margin-left: 3px"
-                      size="small"
-                      variant="text"
-                      :loading="loading"
-                      @click="handleRefresh"
-                    >
-                      <template #icon><refresh-icon /></template>
-                      刷新
-                    </t-button>
-                    <t-button size="small" variant="text" @click="showDomainDialog = true">
-                      <template #icon><cloud-icon /></template>
-                      免费子域名
-                    </t-button>
-                    <t-button size="small" variant="text" @click="handleAddTunnel">
-                      <template #icon><add-icon /></template>
-                      新建
-                    </t-button>
-                  </t-space>
-                </div>
-              </template>
-
-              <div class="tunnel-list">
-                <div
-                  v-for="tunnel in tunnels"
-                  :key="tunnel.id"
-                  class="tunnel-item"
-                  :class="{ active: selectedTunnelId === tunnel.id }"
-                  @click="selectedTunnelId = tunnel.id"
-                >
-                  <div class="item-icon">
-                    <server-icon />
-                  </div>
-                  <div class="item-content">
-                    <div class="item-title">{{ tunnel.name }}</div>
-                    <div class="item-subtitle">{{ nodesMap[tunnel.node_id] || `Node ${tunnel.node_id}` }}</div>
-                  </div>
-                  <div class="item-status">
-                    <t-tag v-if="tunnel.status === 1" theme="success" variant="light" size="small">在线</t-tag>
-                    <t-tag v-else theme="default" variant="light" size="small">未启动</t-tag>
-                  </div>
-                </div>
-
-                <div v-if="tunnels.length === 0" class="empty-state">暂无隧道</div>
-              </div>
-            </t-card>
-          </t-col>
-
-          <t-col :xs="12" :md="7" :lg="8">
-            <t-card :bordered="false" class="full-height-card">
-              <template #title>
-                <span>隧道详情</span>
-              </template>
-
-              <template #actions>
-                <t-popconfirm
-                  v-if="currentTunnel"
-                  content="确认删除此隧道吗？"
-                  theme="danger"
-                  placement="bottom-right"
-                  @confirm="handleDeleteTunnel"
-                >
-                  <t-button theme="danger" variant="text" :loading="isDeleting"> 删除隧道 </t-button>
-                </t-popconfirm>
-              </template>
-
-              <div v-if="currentTunnel" class="detail-content">
-                <div class="detail-header">
-                  <h3>{{ currentTunnel.name }}</h3>
-                  <p class="remarks">{{ currentTunnel.remarks || '暂无备注' }}</p>
-                </div>
-
-                <t-divider />
-
-                <t-row :gutter="[24, 24]">
-                  <t-col :span="6">
-                    <div class="detail-grid">
-                      <span class="label">所在节点</span>
-                      <span class="val">{{ currentNodeName }}</span>
-                    </div>
-                  </t-col>
-                  <t-col :span="6">
-                    <div class="detail-grid">
-                      <span class="label">协议类型</span>
-                      <span class="val uppercase">{{ currentTunnel.type }}</span>
-                    </div>
-                  </t-col>
-                  <t-col :span="6">
-                    <div class="detail-grid">
-                      <span class="label">本地地址</span>
-                      <span class="val">{{ currentTunnel.local_ip }}:{{ currentTunnel.local_port }}</span>
-                    </div>
-                  </t-col>
-                  <t-col :span="6">
-                    <div class="detail-grid">
-                      <span class="label">远程端口</span>
-                      <span class="val highlight">{{ currentTunnel.remote_port }}</span>
-                    </div>
-                  </t-col>
-                  <t-col :span="6">
-                    <div class="detail-grid">
-                      <span class="label">今日流量</span>
-                      <span class="val">{{ formatBytes(currentTunnel.today_traffic * 1024 * 1024) }}</span>
-                    </div>
-                  </t-col>
-                  <t-col :span="6">
-                    <div class="detail-grid">
-                      <span class="label">总流量</span>
-                      <span class="val">{{ formatBytes(currentTunnel.total_traffic * 1024 * 1024) }}</span>
-                    </div>
-                  </t-col>
-                </t-row>
-
-                <t-divider />
-
-                <div class="action-area">
-                  <t-button theme="primary" size="large" :loading="isAddingTunnel" block @click="handleUseTunnel">
-                    <template #icon><play-circle-icon /></template>
-                    使用此隧道
+              <div class="shrink-0">
+                <t-popconfirm content="确认删除此隧道吗？将无法恢复！" theme="danger" placement="bottom-right" @confirm="handleDeleteTunnel">
+                  <t-button theme="danger"  class="!rounded-lg hover:!bg-red-500 hover:!text-white transition-colors" :loading="isDeleting">
+                    <template #icon><t-icon name="delete" /></template>
+                    删除隧道
                   </t-button>
+                </t-popconfirm>
+              </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6">
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 flex flex-col justify-center">
+                  <span class="text-[11px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">所在节点</span>
+                  <span class="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate" :title="currentNodeName">{{ currentNodeName }}</span>
+                </div>
+
+                <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 flex flex-col justify-center">
+                  <span class="text-[11px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">协议类型</span>
+                  <span class="text-sm font-bold text-[var(--color-primary)] uppercase tracking-wide">{{ currentTunnel.type }}</span>
+                </div>
+
+                <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 flex flex-col justify-center">
+                  <span class="text-[11px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">本地地址</span>
+                  <span class="text-sm font-mono font-bold text-zinc-800 dark:text-zinc-200">{{ currentTunnel.local_ip }}:{{ currentTunnel.local_port }}</span>
+                </div>
+
+                <div class="p-4 bg-emerald-50/50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/30 flex flex-col justify-center">
+                  <span class="text-[11px] font-extrabold text-emerald-600/80 dark:text-emerald-500/80 uppercase tracking-widest mb-1.5">远程公网端口</span>
+                  <span class="text-lg font-mono font-extrabold text-emerald-600 dark:text-emerald-400">{{ currentTunnel.remote_port }}</span>
+                </div>
+
+                <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 flex flex-col justify-center">
+                  <span class="text-[11px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">今日流量</span>
+                  <span class="text-sm font-mono font-bold text-zinc-800 dark:text-zinc-200">{{ formatBytes(currentTunnel.today_traffic * 1024 * 1024) }}</span>
+                </div>
+
+                <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 flex flex-col justify-center">
+                  <span class="text-[11px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">总流量</span>
+                  <span class="text-sm font-mono font-bold text-zinc-800 dark:text-zinc-200">{{ formatBytes(currentTunnel.total_traffic * 1024 * 1024) }}</span>
                 </div>
               </div>
 
-              <div v-else class="empty-detail">
-                <cloud-icon size="48px" style="color: var(--td-text-color-disabled)" />
-                <p>请在左侧选择一个隧道查看详情</p>
+              <div class="mt-8">
+                <t-button theme="primary" size="large" :loading="isAddingTunnel" block class="!rounded-xl !h-12 !font-bold shadow-md shadow-[var(--color-primary-light)]/40 hover:shadow-[var(--color-primary-light)]/60 transition-shadow text-base" @click="handleUseTunnel">
+                  <template #icon><play-circle-icon /></template>
+                  使用此隧道
+                </t-button>
               </div>
-            </t-card>
-          </t-col>
-        </t-row>
-      </t-space>
+            </div>
+          </template>
+
+          <template v-else>
+            <div class="flex-1 flex flex-col items-center justify-center opacity-50 p-6 text-center">
+              <div class="w-24 h-24 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4">
+                <cloud-icon size="40px" class="text-zinc-400" />
+              </div>
+              <h3 class="text-base font-bold text-zinc-700 dark:text-zinc-300 mb-1">未选择隧道</h3>
+              <p class="text-sm text-zinc-500">请在左侧列表中选择一个隧道以查看详细信息和连接参数</p>
+            </div>
+          </template>
+
+        </div>
+      </div>
     </div>
-    <create-tunnel-dialog
-      v-if="showCreateDialog"
-      v-model:visible="showCreateDialog"
-      :token="mslUserToken"
-      @success="handleCreateSuccess"
-    />
-    <domain-manager-dialog
-      v-if="showDomainDialog"
-      v-model:visible="showDomainDialog"
-      :token="mslUserToken"
-      :tunnels="tunnels"
-    />
+
+    <create-tunnel-dialog v-if="showCreateDialog" v-model:visible="showCreateDialog" :token="mslUserToken" @success="handleCreateSuccess" />
+    <domain-manager-dialog v-if="showDomainDialog" v-model:visible="showDomainDialog" :token="mslUserToken" :tunnels="tunnels" />
   </div>
 </template>
 
 <style scoped lang="less">
-.page-container {
-  margin: 0 auto;
+@import '@/style/scrollbar';
+@reference "@/style/tailwind/index.css";
+
+/* 首次渲染阶梯滑入动画 */
+.list-item-anim {
+  animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 
-// --- 登录页样式 ---
-.login-container {
-  width: 100%;
-  height: 80vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-.login-card {
-  width: 100%;
-  max-width: 400px;
-  padding: 48px 32px;
-  background: var(--td-bg-color-container);
-  border-radius: var(--td-radius-large);
-  box-shadow: var(--td-shadow-2);
-  text-align: center;
-}
-.title {
-  font-size: 24px;
-  font-weight: 600;
-  margin: 16px 0 8px;
-}
-.subtitle {
-  color: var(--td-text-color-secondary);
-  margin-bottom: 32px;
-  font-size: 14px;
-}
-
-// --- 仪表盘样式 ---
-
-// 用户信息卡片
-.info-card {
-  .stat-item {
-    text-align: left;
-    .label {
-      font-size: 12px;
-      color: var(--td-text-color-secondary);
-      margin-bottom: 4px;
-    }
-    .value {
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--td-text-color-primary);
-    }
-    .date-text {
-      font-size: 14px;
-    }
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-// 卡片通用
-.full-height-card {
-  height: 100%; // 让左右两边高度一致
-  min-height: 500px;
+/* 滚动条混入 */
+.custom-scrollbar {
+  .scrollbar-mixin();
 }
 
-.list-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-// 隧道列表
-.tunnel-list {
-  max-height: 400px;
-  overflow-y: auto;
-  margin: 0 -16px;
-  padding: 0 8px;
-
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background: var(--td-scrollbar-color);
-    border-radius: 2px;
-  }
-}
-
-.tunnel-item {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  margin-bottom: 8px;
-  border-radius: var(--td-radius-medium);
-  cursor: pointer;
-  transition: all 0.2s;
-  border: 1px solid transparent;
-
-  &:hover {
-    background-color: var(--td-bg-color-secondarycontainer);
-  }
-
-  &.active {
-    background-color: var(--td-brand-color-light); // 选中态背景浅色
-    border-color: var(--td-brand-color); // 选中边框
-    .item-title {
-      color: var(--td-brand-color);
-    }
-  }
-
-  .item-icon {
-    margin-right: 12px;
-    font-size: 20px;
-    color: var(--td-text-color-secondary);
-  }
-
-  .item-content {
-    flex: 1;
-    overflow: hidden;
-    .item-title {
-      font-weight: 500;
-      font-size: 14px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .item-subtitle {
-      font-size: 12px;
-      color: var(--td-text-color-secondary);
-    }
-  }
-}
-
-// 详情区域
-.detail-content {
-  padding: 8px 0;
-
-  .detail-header {
-    h3 {
-      margin: 0 0 8px;
-      font-size: 20px;
-    }
-    .remarks {
-      color: var(--td-text-color-secondary);
-      font-size: 14px;
-      margin: 0;
-    }
-  }
-
-  .detail-grid {
-    display: flex;
-    flex-direction: column;
-    .label {
-      font-size: 12px;
-      color: var(--td-text-color-secondary);
-      margin-bottom: 4px;
-    }
-    .val {
-      font-size: 14px;
-      color: var(--td-text-color-primary);
-      font-weight: 500;
-      word-break: break-all;
-    }
-    .highlight {
-      color: var(--td-brand-color);
-      font-weight: 700;
-      font-size: 16px;
-    }
-    .uppercase {
-      text-transform: uppercase;
-    }
-  }
-
-  .action-area {
-    margin-top: 32px;
-  }
-}
-
-.empty-detail {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 300px;
-  color: var(--td-text-color-disabled);
-  p {
-    margin-top: 16px;
-  }
-}
-
-// 头部样式修复
-:deep(.t-card__header) {
-  overflow-x: auto;
-  white-space: nowrap;
-  flex-wrap: nowrap;
-}
-:deep(.t-card__header)::-webkit-scrollbar {
-  display: none;
+/* 针对 Loading 遮罩的细节优化 */
+:deep(.t-loading__overlay) {
+@apply !rounded-2xl !bg-white/50 dark:!bg-zinc-900/50 backdrop-blur-sm;
 }
 </style>

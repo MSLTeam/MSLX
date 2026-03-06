@@ -69,58 +69,91 @@ async function createP2PTunnel(isHoster: boolean, roomId: string, roomkey: strin
   }
 }
 </script>
-
 <template>
   <div>
-    <t-card :bordered="false">
-      <template #header>
-        <span style="font-weight: bold; font-size: 16px">MSL P2P 联机隧道</span>
-      </template>
+    <div class="design-card bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-6 sm:p-8">
+
+      <div class="mb-6 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60">
+        <h3 class="text-lg font-bold text-zinc-900 dark:text-zinc-100 m-0 leading-none">MSL P2P 联机隧道</h3>
+      </div>
 
       <t-form
         :data="formData"
         :rules="rules"
-        :label-width="100"
-        :label-align="'top'"
-        :reset-type="'initial'"
+        label-align="top"
+        reset-type="initial"
         @submit="onSubmit"
       >
         <t-form-item label="请选择联机类型" name="isHoster">
-          <t-radio-group v-model="formData.isHoster">
-            <t-radio :value="true">创建房间 - 房主</t-radio>
-            <t-radio :value="false">加入房间 - 成员</t-radio>
+          <t-radio-group v-model="formData.isHoster" variant="default-filled">
+            <t-radio-button :value="true">创建房间 - 房主</t-radio-button>
+            <t-radio-button :value="false">加入房间 - 成员</t-radio-button>
           </t-radio-group>
         </t-form-item>
+
         <t-form-item label="房间号" name="roomId">
           <template #help>
-            <span v-if="formData.isHoster">建议填写您的QQ号码。</span>
-            <span v-else>请输入房间创建者提供的房间号。</span>
+            <span class="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1 inline-block">
+              <span v-if="formData.isHoster">建议填写您的 QQ 号码。</span>
+              <span v-else>请输入房间创建者提供的房间号。</span>
+            </span>
           </template>
-          <t-input v-model="formData.roomId" placeholder="请输入房间号" />
+          <t-input v-model="formData.roomId" placeholder="请输入房间号" class="!w-full sm:!w-96" />
         </t-form-item>
+
         <t-form-item label="房间密钥" name="roomKey">
           <template #help>
-            <span v-if="formData.isHoster">随便写一个你喜欢的密钥。</span>
-            <span v-else>请输入房间创建者提供的密钥。</span>
+            <span class="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1 inline-block">
+              <span v-if="formData.isHoster">随便写一个你喜欢的密钥。</span>
+              <span v-else>请输入房间创建者提供的密钥。</span>
+            </span>
           </template>
-          <t-input v-model="formData.roomKey" placeholder="请输入房间密钥" />
-          <t-button v-if="formData.isHoster" theme="default" variant="base" style="margin-left: 5px;" @click="formData.roomKey = generateRandomString(16);">随机生成</t-button>
+          <div class="flex items-center gap-3 w-full sm:w-[28rem]">
+            <t-input v-model="formData.roomKey" placeholder="请输入房间密钥" class="!flex-1" />
+            <transition name="fade">
+              <t-button
+                v-if="formData.isHoster"
+                theme="default"
+                variant="base"
+                class="shrink-0 !bg-zinc-100 dark:!bg-zinc-800/80 !border-none !text-zinc-700 dark:!text-zinc-300 hover:!bg-zinc-200 dark:hover:!bg-zinc-700 !rounded-lg"
+                @click="formData.roomKey = generateRandomString(16);"
+              >
+                随机生成
+              </t-button>
+            </transition>
+          </div>
         </t-form-item>
+
         <t-form-item label="绑定端口" name="bindPort">
           <template #help>
-            <span v-if="formData.isHoster">请输入游戏内提示的开放联机端口。</span>
-            <span v-else>建议保持默认。</span>
+            <span class="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1 inline-block">
+              <span v-if="formData.isHoster">请输入游戏内提示的开放联机端口。</span>
+              <span v-else>建议保持默认。</span>
+            </span>
           </template>
-          <t-input v-model="formData.bindPort" placeholder="请输入绑定端口" />
+          <t-input v-model="formData.bindPort" placeholder="请输入绑定端口" class="!w-full sm:!w-96" />
         </t-form-item>
 
-        <t-form-item style="margin-top: 16px;">
-            <t-button theme="primary" type="submit">添加隧道</t-button>
-        </t-form-item>
+        <div class="mt-8 pt-5 border-t border-dashed border-zinc-200/70 dark:border-zinc-700/60">
+          <t-button theme="primary" type="submit" class="!rounded-xl !font-bold !px-8 shadow-md shadow-[var(--color-primary-light)]/30 hover:shadow-[var(--color-primary-light)]/50">添加隧道</t-button>
+        </div>
 
       </t-form>
-    </t-card>
+    </div>
   </div>
 </template>
 
-<style scoped lang="less"></style>
+<style scoped lang="less">
+@reference "@/style/tailwind/index.css";
+
+/* 按钮的淡入淡出过渡动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateX(-10px);
+}
+</style>

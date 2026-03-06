@@ -262,62 +262,59 @@ const closeDialog = () => {
   emit('update:visible', false);
 };
 </script>
-
 <template>
   <t-dialog
     :visible="visible"
-    :header="mode === 'list' ? 'MSLFrp免费子域名管理' : formData.id === 0 ? '创建新解析' : '编辑解析'"
+    :header="mode === 'list' ? 'MSLFrp 免费子域名管理' : formData.id === 0 ? '创建新解析' : '编辑解析'"
     width="650px"
     attach="body"
     :footer="false"
     @close="closeDialog"
   >
-    <div v-if="mode === 'list'" class="manager-container">
-      <div class="toolbar">
-        <t-button variant="text" theme="default" @click="changeUrl('https://www.mslmc.cn/docs/proxy/server-no-port/')">
+    <div v-if="mode === 'list'" class="min-h-[400px] flex flex-col">
+      <div class="flex justify-between items-center mb-4 shrink-0">
+        <t-button variant="text" theme="default" class="!text-zinc-500 hover:!text-[var(--color-primary)]" @click="changeUrl('https://www.mslmc.cn/docs/proxy/server-no-port/')">
           <template #icon><internet-icon /></template>查看文档
         </t-button>
-        <t-button theme="primary" @click="goToAdd">
+        <t-button theme="primary" class="!rounded-lg !font-bold shadow-sm shadow-[var(--color-primary-light)]/30" @click="goToAdd">
           <template #icon><add-icon /></template>新建解析
         </t-button>
       </div>
 
       <t-loading :loading="loading" text="加载中...">
-        <div class="record-list">
-          <div v-if="records.length === 0" class="empty-state">
+        <div class="max-h-[500px] overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-3">
+          <div v-if="records.length === 0" class="py-10">
             <t-empty title="暂无解析记录" description="点击上方按钮创建一个吧" />
           </div>
 
-          <div v-for="item in records" :key="item.id" class="record-card">
-            <div class="card-main">
-              <div class="domain-title">
-                <span class="sub">{{ item.name }}</span
-                ><span class="root">.{{ item.domain }}</span>
+          <div v-for="item in records" :key="item.id" class="group flex justify-between items-center bg-zinc-50/80 dark:bg-zinc-800/40 border border-zinc-200/80 dark:border-zinc-700/60 rounded-xl p-3 sm:p-4 transition-all duration-300 hover:border-[var(--color-primary)]/50 hover:bg-white dark:hover:bg-zinc-800 hover:shadow-sm">
+
+            <div class="flex-1 overflow-hidden flex flex-col">
+              <div class="text-base font-extrabold mb-1.5 truncate tracking-tight">
+                <span class="text-[var(--color-primary)]">{{ item.name }}</span><span class="text-zinc-400 dark:text-zinc-500">.{{ item.domain }}</span>
               </div>
 
-              <div class="info-badges">
-                <t-tag size="small" :theme="item.type === 'SRV' ? 'warning' : 'primary'" variant="light">
+              <div class="flex items-center gap-2 mb-1.5">
+                <t-tag size="small" :theme="item.type === 'SRV' ? 'warning' : 'primary'" variant="light" class="!rounded !font-bold !px-1.5 border" :class="item.type === 'SRV' ? 'border-amber-500/20' : 'border-[var(--color-primary)]/20'">
                   {{ item.type }}
                 </t-tag>
-                <span class="record-value" :title="item.record">{{ item.record }}</span>
+                <span class="font-mono text-xs sm:text-[13px] font-bold text-zinc-700 dark:text-zinc-300 bg-zinc-200/50 dark:bg-zinc-900/50 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 rounded-md max-w-[200px] sm:max-w-[250px] truncate" :title="item.record">{{ item.record }}</span>
               </div>
 
-              <div v-if="item.type === 'SRV'" class="srv-helper">
-                <link-icon />
-                <span
-                  >地址: <strong>{{ getFriendlySrvAddr(item) }}</strong></span
-                >
+              <div v-if="item.type === 'SRV'" class="text-xs text-[var(--color-success)] flex items-center gap-1 mt-0.5 truncate font-medium">
+                <link-icon class="shrink-0" />
+                <span class="truncate">地址: <strong class="font-mono font-extrabold">{{ getFriendlySrvAddr(item) }}</strong></span>
               </div>
             </div>
 
-            <div class="card-actions">
+            <div class="flex gap-1 ml-3 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity">
               <t-tooltip content="编辑">
-                <t-button shape="circle" variant="text" @click="goToEdit(item)">
-                  <template #icon><edit-icon /></template>
+                <t-button shape="circle" variant="text" class="hover:!bg-zinc-200 dark:hover:!bg-zinc-700" @click="goToEdit(item)">
+                  <template #icon><edit-icon class="text-zinc-600 dark:text-zinc-300" /></template>
                 </t-button>
               </t-tooltip>
               <t-tooltip content="删除">
-                <t-button shape="circle" variant="text" theme="danger" @click="handleDelete(item.id)">
+                <t-button shape="circle" variant="text" theme="danger" class="hover:!bg-red-500/10" @click="handleDelete(item.id)">
                   <template #icon><delete-icon /></template>
                 </t-button>
               </t-tooltip>
@@ -327,44 +324,48 @@ const closeDialog = () => {
       </t-loading>
     </div>
 
-    <div v-else class="form-container">
-      <div class="form-header">
-        <t-button variant="text" size="small" @click="goBack">
+    <div v-else class="pt-1 flex flex-col">
+      <div class="mb-2 shrink-0">
+        <t-button variant="text" size="small" class="!text-zinc-500 hover:!text-[var(--color-primary)] !rounded-md" @click="goBack">
           <template #icon><rollback-icon /></template> 返回列表
         </t-button>
       </div>
 
-      <t-tabs v-if="formData.id === 0" v-model="formMode" class="mode-tabs">
+      <t-tabs v-if="formData.id === 0" v-model="formMode" class="!mb-4">
         <t-tab-panel value="mc_srv" label="MC Java版隐藏端口" />
         <t-tab-panel value="custom" label="自定义解析" />
       </t-tabs>
 
-      <t-form label-align="top" :data="formData" class="dns-form">
+      <t-form label-align="top" :data="formData" class="[&_.t-form__item]:!mb-5">
+
         <t-form-item label="选择域名后缀">
-          <t-select v-model="formData.domain_id" :disabled="formData.id !== 0" placeholder="请选择后缀" filterable>
+          <t-select v-model="formData.domain_id" :disabled="formData.id !== 0" placeholder="请选择后缀" filterable class="!w-full">
             <t-option v-for="d in domainPool" :key="d.id" :value="d.id" :label="d.domain">
               {{ d.domain }}
             </t-option>
           </t-select>
         </t-form-item>
 
-        <t-form-item v-if="currentDomainRemark" label="备注">
-          <div class="remark-display">
+        <t-form-item v-if="currentDomainRemark" label="备注" class="!mb-4">
+          <div class="w-full px-3 py-2 bg-zinc-100/80 dark:bg-zinc-800/40 rounded-lg text-[13px] text-zinc-500 dark:text-zinc-400 whitespace-pre-wrap break-all leading-relaxed border border-dashed border-zinc-200 dark:border-zinc-700">
             {{ currentDomainRemark }}
           </div>
         </t-form-item>
 
-        <t-form-item label="子域名称" help="起一个你喜欢的前缀即可">
-          <t-input v-model="formData.name" placeholder="例如: myserver">
+        <t-form-item label="子域名称">
+          <template #help><span class="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1 inline-block">起一个你喜欢的前缀即可。</span></template>
+          <t-input v-model="formData.name" placeholder="例如: myserver" class="!w-full">
             <template #prefix-icon>
-              <span v-if="formMode === 'mc_srv' && formData.id === 0" class="prefix-hint">_minecraft._tcp.</span>
+              <span v-if="formMode === 'mc_srv' && formData.id === 0" class="text-zinc-500 dark:text-zinc-400 px-1.5 bg-zinc-100 dark:bg-zinc-800 mr-1 rounded font-mono text-xs flex items-center border border-zinc-200 dark:border-zinc-700">
+                _minecraft._tcp.
+              </span>
             </template>
           </t-input>
         </t-form-item>
 
         <template v-if="formMode === 'mc_srv' && formData.id === 0">
           <t-form-item label="选择隧道 (自动生成解析值)">
-            <t-select v-model="selectedTunnelId" placeholder="点击选择已有的 TCP 隧道" @change="handleTunnelSelect">
+            <t-select v-model="selectedTunnelId" placeholder="点击选择已有的 TCP 隧道" @change="handleTunnelSelect" class="!w-full">
               <t-option
                 v-for="t in tcpTunnels"
                 :key="t.id"
@@ -375,9 +376,9 @@ const closeDialog = () => {
           </t-form-item>
         </template>
 
-        <div class="row-fields">
-          <t-form-item label="记录类型" class="half-width">
-            <t-select v-model="formData.type">
+        <div class="flex flex-col sm:flex-row gap-0 sm:gap-4 w-full">
+          <t-form-item label="记录类型" class="flex-1">
+            <t-select v-model="formData.type" class="!w-full">
               <t-option label="A (IPv4)" value="A" />
               <t-option label="CNAME (别名)" value="CNAME" />
               <t-option label="AAAA (IPv6)" value="AAAA" />
@@ -385,153 +386,30 @@ const closeDialog = () => {
             </t-select>
           </t-form-item>
 
-          <t-form-item label="解析记录值" class="half-width">
-            <t-input v-model="formData.record" placeholder="例: 5 5 25565 node.mslmc.net" />
+          <t-form-item label="解析记录值" class="flex-1">
+            <t-input v-model="formData.record" placeholder="例: 5 5 25565 node.mslmc.net" class="!w-full !font-mono" />
           </t-form-item>
         </div>
 
-        <div class="form-actions">
-          <t-button theme="default" variant="base" @click="goBack">取消</t-button>
-          <t-button theme="primary" :loading="submitting" @click="handleSubmit">
+        <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-dashed border-zinc-200 dark:border-zinc-700">
+          <t-button theme="default" variant="base" class="!bg-zinc-100 dark:!bg-zinc-800 !border-none !text-zinc-700 dark:!text-zinc-300 hover:!bg-zinc-200 dark:hover:!bg-zinc-700 !rounded-lg !font-bold" @click="goBack">取消</t-button>
+          <t-button theme="primary" :loading="submitting" class="!rounded-lg !font-bold shadow-md shadow-[var(--color-primary-light)]/30 hover:shadow-[var(--color-primary-light)]/50" @click="handleSubmit">
             {{ formData.id === 0 ? '立即创建' : '保存修改' }}
           </t-button>
         </div>
+
       </t-form>
     </div>
   </t-dialog>
 </template>
 
 <style scoped lang="less">
-.manager-container {
-  min-height: 400px;
+@import '@/style/scrollbar';
+@reference "@/style/tailwind/index.css";
+
+/* 滚动条混入 */
+.custom-scrollbar {
+  .scrollbar-mixin();
 }
 
-.toolbar {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 16px;
-}
-
-.record-list {
-  max-height: 500px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.record-card {
-  background: var(--td-bg-color-container);
-  border: 1px solid var(--td-component-border);
-  border-radius: var(--td-radius-medium);
-  padding: 12px 16px;
-  margin-bottom: 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: all 0.2s;
-
-  &:hover {
-    border-color: var(--td-brand-color);
-    background: var(--td-bg-color-secondarycontainer);
-  }
-
-  .card-main {
-    flex: 1;
-    overflow: hidden;
-
-    .domain-title {
-      font-size: 16px;
-      font-weight: 600;
-      margin-bottom: 6px;
-      .sub {
-        color: var(--td-brand-color);
-      }
-      .root {
-        color: var(--td-text-color-secondary);
-      }
-    }
-
-    .info-badges {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 6px;
-
-      .record-value {
-        font-family: monospace;
-        font-size: 13px;
-        color: var(--td-text-color-primary);
-        background: var(--td-bg-color-component);
-        padding: 2px 6px;
-        border-radius: 4px;
-        max-width: 250px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-    }
-
-    .srv-helper {
-      font-size: 12px;
-      color: var(--td-success-color);
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-  }
-
-  .card-actions {
-    display: flex;
-    gap: 4px;
-    margin-left: 8px;
-  }
-}
-
-.form-container {
-  padding-top: 4px;
-}
-.form-header {
-  margin-bottom: 8px;
-}
-.mode-tabs {
-  margin-bottom: 16px;
-}
-.dns-form {
-  .remark-display {
-    padding: 8px 12px;
-    background: var(--td-bg-color-secondarycontainer);
-    border-radius: var(--td-radius-small);
-    font-size: 13px;
-    color: var(--td-text-color-secondary);
-    white-space: pre-wrap;
-    word-break: break-all;
-    line-height: 1.5;
-    border: 1px dashed var(--td-component-border);
-    width: 100%;
-  }
-
-  .prefix-hint {
-    color: var(--td-text-color-secondary);
-    padding: 0 4px;
-    background: var(--td-bg-color-component);
-    margin-right: 4px;
-    border-radius: 2px;
-    font-family: monospace;
-    font-size: 12px;
-  }
-
-  .row-fields {
-    display: flex;
-    gap: 16px;
-    .half-width {
-      flex: 1;
-    }
-  }
-
-  .form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    margin-top: 24px;
-  }
-}
 </style>
