@@ -155,16 +155,21 @@ onMounted(() => {
     @close="emit('update:visible', false)"
   >
     <t-loading :loading="loading">
-      <t-form :data="form" label-align="right" :label-width="100" class="dialog-inner-form">
+      <t-form
+        :data="form"
+        label-align="right"
+        :label-width="100"
+        class="pt-2.5 overflow-x-hidden [&_.t-form__item]:!mb-[22px]"
+      >
         <t-form-item label="选择节点" name="nodeId">
           <t-row :gutter="8" style="width: 100%">
             <t-col flex="auto">
               <t-select v-model="form.nodeId" placeholder="请选择节点" @change="generateRandomData">
                 <t-option-group v-for="group in groupedNodes" :key="group.value" :label="group.label">
                   <t-option v-for="node in group.children" :key="node.id" :value="node.id" :label="node.node">
-                    <div class="custom-option-item">
-                      <span class="node-name-text">{{ node.node }}</span>
-                      <div class="node-tag-group">
+                    <div class="flex justify-between items-center w-full">
+                      <span class="truncate">{{ node.node }}</span>
+                      <div class="flex gap-1.5 shrink-0 ml-3">
                         <t-tag size="small" variant="outline" theme="primary">{{ node.bandwidth }}M</t-tag>
                         <t-tag size="small" :theme="node.status === 1 ? 'success' : 'danger'">
                           {{ node.status === 1 ? '在线' : '离线' }}
@@ -184,8 +189,8 @@ onMounted(() => {
         </t-form-item>
 
         <t-form-item v-if="selectedNode" label="节点详情">
-          <div class="node-detail-area">
-            <div class="detail-tags-row">
+          <div class="w-full flex flex-col gap-2.5">
+            <div class="flex gap-2 flex-wrap">
               <t-tag size="small" variant="outline" theme="primary">{{ selectedNode.bandwidth }}Mbps</t-tag>
               <t-tag size="small" :theme="selectedNode.need_real_name ? 'success' : 'warning'">
                 {{ selectedNode.need_real_name ? '需要实名认证' : '无需实名认证' }}
@@ -194,8 +199,8 @@ onMounted(() => {
                 节点状态：{{ selectedNode.status === 1 ? '在线' : '离线' }}
               </t-tag>
             </div>
-            <div class="remarks-box">
-              <pre>{{ selectedNode.remarks || '此节点暂无备注' }}</pre>
+            <div class="bg-[var(--td-bg-color-secondarycontainer)] rounded-[var(--td-radius-medium)] p-3 border border-dashed border-[var(--td-component-border)]">
+              <pre class="m-0 whitespace-pre-wrap break-all text-[13px] text-[var(--td-text-color-primary)] leading-[1.6]">{{ selectedNode.remarks || '此节点暂无备注' }}</pre>
             </div>
           </div>
         </t-form-item>
@@ -236,19 +241,19 @@ onMounted(() => {
           </t-col>
         </t-row>
 
-        <t-form-item v-if="form.type.includes('http')" label="绑定域名" class="spacing-item">
+        <t-form-item v-if="form.type.includes('http')" label="绑定域名" class="mt-1">
           <t-input v-model="form.bindDomain" placeholder="输入已解析的域名" />
         </t-form-item>
 
-        <t-form-item label="备注说明" class="spacing-item">
+        <t-form-item label="备注说明" class="mt-1">
           <t-input v-model="form.remarks" />
         </t-form-item>
 
-        <t-form-item label="额外参数" class="spacing-item">
+        <t-form-item label="额外参数" class="mt-1">
           <t-textarea
             v-model="form.extra_config"
             :autosize="{ minRows: 2 }"
-            placeholder="选填，高级配置参数（不懂清留空！！！）"
+            placeholder="选填，高级配置参数（不懂请留空！！！）"
           />
         </t-form-item>
       </t-form>
@@ -256,67 +261,6 @@ onMounted(() => {
   </t-dialog>
 </template>
 
-<style scoped>
-.dialog-inner-form {
-  padding-top: 10px;
-  overflow-x: hidden;
-}
-
-:deep(.t-form__item) {
-  margin-bottom: 22px !important;
-}
-
-.spacing-item {
-  margin-top: 4px;
-}
-
-.custom-option-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-
-.node-name-text {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.node-tag-group {
-  display: flex;
-  gap: 6px;
-  flex-shrink: 0;
-  margin-left: 12px;
-}
-
-/* 详情展示区样式 */
-.node-detail-area {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.detail-tags-row {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.remarks-box {
-  background: var(--td-bg-color-secondarycontainer);
-  border-radius: var(--td-radius-medium);
-  padding: 12px;
-  border: 1px dashed var(--td-component-border);
-}
-
-.remarks-box pre {
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-all;
-  font-size: 13px;
-  color: var(--td-text-color-primary);
-  line-height: 1.6;
-}
+<style lang="less" scoped>
 </style>
+
