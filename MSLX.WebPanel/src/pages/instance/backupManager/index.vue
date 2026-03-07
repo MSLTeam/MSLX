@@ -161,13 +161,15 @@ onMounted(() => {
 
       <template v-else-if="sortedInstances.length > 0">
         <div class="flex flex-col gap-5">
-          <transition-group name="list-anim" appear>
+          <div
+            v-for="(instance, index) in sortedInstances"
+            :key="instance.id"
+            class="list-item-anim"
+            :style="{ animationDelay: `${index * 0.05}s` }"
+          >
             <div
-              v-for="(instance, index) in sortedInstances"
-              :key="instance.id"
-              class="design-card list-item-anim flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all duration-300 hover:border-[var(--color-primary)]/30"
+              class="design-card flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all duration-300 hover:border-[var(--color-primary)]/30"
               :class="{ 'opacity-80': !instance.backups?.length }"
-              :style="{ animationDelay: `${index * 0.05}s` }"
             >
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 pb-0 border-b-0">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -270,7 +272,7 @@ onMounted(() => {
                 </div>
               </div>
             </div>
-          </transition-group>
+          </div>
         </div>
       </template>
 
@@ -287,9 +289,9 @@ onMounted(() => {
 <style scoped>
 @reference "@/style/tailwind/index.css";
 
-/* 首次渲染及列表进场动画 */
 .list-item-anim {
   animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  will-change: transform, opacity;
 }
 
 @keyframes slideUp {
@@ -301,20 +303,5 @@ onMounted(() => {
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-/* 动态增删时的过渡动画 */
-.list-anim-move,
-.list-anim-enter-active,
-.list-anim-leave-active {
-  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.list-anim-enter-from,
-.list-anim-leave-to {
-  opacity: 0;
-  transform: translateY(16px) scale(0.98);
-}
-.list-anim-leave-active {
-  position: absolute;
 }
 </style>

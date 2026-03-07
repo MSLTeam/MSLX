@@ -265,6 +265,7 @@ onMounted(() => {
   fetchData();
 });
 </script>
+
 <template>
   <div class="mx-auto flex flex-col gap-6 text-zinc-800 dark:text-zinc-200 pb-5">
 
@@ -302,103 +303,107 @@ onMounted(() => {
             <div
               v-for="(instance, index) in groupedInstances"
               :key="instance.id"
-              class="design-card list-item-anim flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all duration-300 hover:border-[var(--color-primary)]/30"
-              :class="{ 'opacity-80': !instance.tasks?.length }"
+              class="list-item-anim"
               :style="{ animationDelay: `${index * 0.05}s` }"
             >
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 border-b border-dashed border-zinc-200 dark:border-zinc-700/60">
-                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <t-tag theme="primary" variant="light" shape="round" class="!px-3 !font-mono font-bold tracking-wider">ID: {{ instance.id }}</t-tag>
-                  <div class="flex items-center gap-3">
-                    <h3 class="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2 m-0 tracking-tight">
-                      <server-icon class="text-zinc-400 dark:text-zinc-500 shrink-0" />
-                      {{ instance.name }}
-                    </h3>
-                    <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-xs text-zinc-600 dark:text-zinc-400 font-medium border border-zinc-200/50 dark:border-zinc-700/50">
-                      <cloud-icon size="14px" class="opacity-80" />
-                      {{ instance.core }}
+              <div
+                class="design-card flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all duration-300 hover:border-[var(--color-primary)]/30"
+                :class="{ 'opacity-80': !instance.tasks?.length }"
+              >
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 border-b border-dashed border-zinc-200 dark:border-zinc-700/60">
+                  <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <t-tag theme="primary" variant="light" shape="round" class="!px-3 !font-mono font-bold tracking-wider">ID: {{ instance.id }}</t-tag>
+                    <div class="flex items-center gap-3">
+                      <h3 class="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2 m-0 tracking-tight">
+                        <server-icon class="text-zinc-400 dark:text-zinc-500 shrink-0" />
+                        {{ instance.name }}
+                      </h3>
+                      <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-xs text-zinc-600 dark:text-zinc-400 font-medium border border-zinc-200/50 dark:border-zinc-700/50">
+                        <cloud-icon size="14px" class="opacity-80" />
+                        {{ instance.core }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-2">
+                    <t-button size="small" variant="outline" class="!border-zinc-200 dark:!border-zinc-700 !text-zinc-600 dark:!text-zinc-400 hover:!text-[var(--color-primary)] hover:!border-[var(--color-primary)] bg-white/50 dark:bg-zinc-900/50" @click="handleAdd(instance.id)">
+                      <template #icon><add-icon /></template> 添加任务
+                    </t-button>
+                    <t-tag v-if="instance.tasks?.length" theme="success" variant="light" shape="round" class="!px-3 !font-medium">
+                      {{ instance.tasks.length }} 个任务
+                    </t-tag>
+                    <t-tag v-else theme="default" variant="light" shape="round" class="!px-3 !text-zinc-400 !bg-zinc-100 dark:!bg-zinc-800">无任务</t-tag>
+                  </div>
+                </div>
+
+                <div class="p-5">
+                  <div v-if="instance.tasks?.length" class="flex flex-col gap-3">
+
+                    <div v-if="selectedRowKeys[instance.id]?.length > 0" class="flex items-center gap-3 p-2 px-4 bg-red-500/10 border border-red-500/20 rounded-xl mb-1 transition-all">
+                      <span class="text-xs font-medium text-red-600 dark:text-red-400">已选 {{ selectedRowKeys[instance.id].length }} 项</span>
+                      <t-button theme="danger" variant="text" size="small" class="!h-auto !py-1 hover:!bg-red-500/20" @click="handleBatchDelete(instance.id)">
+                        批量删除
+                      </t-button>
+                    </div>
+
+                    <t-table
+                      row-key="id"
+                      :data="instance.tasks"
+                      :columns="columns as any"
+                      :selected-row-keys="selectedRowKeys[instance.id] || []"
+                      size="small"
+                      :hover="true"
+                      :pagination="instance.tasks.length > 5 ? { pageSize: 5 } : null"
+                      @select-change="(val, ctx) => onSelectChange(val as any, ctx, instance.id)"
+                    >
+                      <template #name="{ row }">
+                        <div class="flex items-center gap-2">
+                          <time-icon class="text-[var(--color-primary)] opacity-90 shrink-0" />
+                          <span class="font-medium text-zinc-800 dark:text-zinc-200 truncate" :title="row.name">{{ row.name }}</span>
+                        </div>
+                      </template>
+
+                      <template #type="{ row }">
+                        <t-tag size="small" variant="light" :theme="getColorByType(row.type)" class="!rounded-md !px-2 font-medium">
+                          <template #icon>
+                            <component :is="getIconByType(row.type)" class="opacity-80" />
+                          </template>
+                          {{ row.type.toUpperCase() }}
+                        </t-tag>
+                      </template>
+
+                      <template #cron="{ row }">
+                        <span class="font-mono text-xs text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900 px-2.5 py-1 rounded-md border border-zinc-200/50 dark:border-zinc-700/50">
+                          {{ row.cron }}
+                        </span>
+                      </template>
+
+                      <template #enable="{ row }">
+                        <t-switch
+                          :value="row.enable"
+                          size="small"
+                          @change="(val) => handleToggleEnable(row, val as boolean)"
+                        />
+                      </template>
+
+                      <template #op="{ row }">
+                        <div class="flex items-center gap-1">
+                          <t-button theme="primary" variant="text" size="small" class="hover:!bg-[var(--color-primary)]/10" @click="handleEdit(row)">
+                            <template #icon><edit-icon /></template> 编辑
+                          </t-button>
+                          <t-button theme="danger" variant="text" size="small" class="hover:!bg-red-500/10" @click="handleDeleteOne(instance.id, row.id)">
+                            <template #icon><delete-icon /></template> 删除
+                          </t-button>
+                        </div>
+                      </template>
+                    </t-table>
+                  </div>
+
+                  <div v-else class="flex flex-col items-center justify-center py-12">
+                    <span class="text-sm font-medium text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-800/50 px-4 py-2 rounded-full border border-zinc-200/50 dark:border-zinc-700/50">
+                      当前实例暂无定时任务安排
                     </span>
                   </div>
-                </div>
-
-                <div class="flex items-center gap-2">
-                  <t-button size="small" variant="outline" class="!border-zinc-200 dark:!border-zinc-700 !text-zinc-600 dark:!text-zinc-400 hover:!text-[var(--color-primary)] hover:!border-[var(--color-primary)] bg-white/50 dark:bg-zinc-900/50" @click="handleAdd(instance.id)">
-                    <template #icon><add-icon /></template> 添加任务
-                  </t-button>
-                  <t-tag v-if="instance.tasks?.length" theme="success" variant="light" shape="round" class="!px-3 !font-medium">
-                    {{ instance.tasks.length }} 个任务
-                  </t-tag>
-                  <t-tag v-else theme="default" variant="light" shape="round" class="!px-3 !text-zinc-400 !bg-zinc-100 dark:!bg-zinc-800">无任务</t-tag>
-                </div>
-              </div>
-
-              <div class="p-5">
-                <div v-if="instance.tasks?.length" class="flex flex-col gap-3">
-
-                  <div v-if="selectedRowKeys[instance.id]?.length > 0" class="flex items-center gap-3 p-2 px-4 bg-red-500/10 border border-red-500/20 rounded-xl mb-1 transition-all">
-                    <span class="text-xs font-medium text-red-600 dark:text-red-400">已选 {{ selectedRowKeys[instance.id].length }} 项</span>
-                    <t-button theme="danger" variant="text" size="small" class="!h-auto !py-1 hover:!bg-red-500/20" @click="handleBatchDelete(instance.id)">
-                      批量删除
-                    </t-button>
-                  </div>
-
-                  <t-table
-                    row-key="id"
-                    :data="instance.tasks"
-                    :columns="columns as any"
-                    :selected-row-keys="selectedRowKeys[instance.id] || []"
-                    size="small"
-                    :hover="true"
-                    :pagination="instance.tasks.length > 5 ? { pageSize: 5 } : null"
-                    @select-change="(val, ctx) => onSelectChange(val as any, ctx, instance.id)"
-                  >
-                    <template #name="{ row }">
-                      <div class="flex items-center gap-2">
-                        <time-icon class="text-[var(--color-primary)] opacity-90 shrink-0" />
-                        <span class="font-medium text-zinc-800 dark:text-zinc-200 truncate" :title="row.name">{{ row.name }}</span>
-                      </div>
-                    </template>
-
-                    <template #type="{ row }">
-                      <t-tag size="small" variant="light" :theme="getColorByType(row.type)" class="!rounded-md !px-2 font-medium">
-                        <template #icon>
-                          <component :is="getIconByType(row.type)" class="opacity-80" />
-                        </template>
-                        {{ row.type.toUpperCase() }}
-                      </t-tag>
-                    </template>
-
-                    <template #cron="{ row }">
-                      <span class="font-mono text-xs text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-900 px-2.5 py-1 rounded-md border border-zinc-200/50 dark:border-zinc-700/50">
-                        {{ row.cron }}
-                      </span>
-                    </template>
-
-                    <template #enable="{ row }">
-                      <t-switch
-                        :value="row.enable"
-                        size="small"
-                        @change="(val) => handleToggleEnable(row, val as boolean)"
-                      />
-                    </template>
-
-                    <template #op="{ row }">
-                      <div class="flex items-center gap-1">
-                        <t-button theme="primary" variant="text" size="small" class="hover:!bg-[var(--color-primary)]/10" @click="handleEdit(row)">
-                          <template #icon><edit-icon /></template> 编辑
-                        </t-button>
-                        <t-button theme="danger" variant="text" size="small" class="hover:!bg-red-500/10" @click="handleDeleteOne(instance.id, row.id)">
-                          <template #icon><delete-icon /></template> 删除
-                        </t-button>
-                      </div>
-                    </template>
-                  </t-table>
-                </div>
-
-                <div v-else class="flex flex-col items-center justify-center py-12">
-                  <span class="text-sm font-medium text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-800/50 px-4 py-2 rounded-full border border-zinc-200/50 dark:border-zinc-700/50">
-                    当前实例暂无定时任务安排
-                  </span>
                 </div>
               </div>
             </div>
@@ -481,9 +486,9 @@ onMounted(() => {
 <style scoped>
 @reference "@/style/tailwind/index.css";
 
-/* 首次渲染及列表进场动画 */
 .list-item-anim {
   animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  will-change: transform, opacity;
 }
 
 @keyframes slideUp {
@@ -501,7 +506,8 @@ onMounted(() => {
 .list-anim-move,
 .list-anim-enter-active,
 .list-anim-leave-active {
-  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s;
+  will-change: transform, opacity;
 }
 .list-anim-enter-from,
 .list-anim-leave-to {
@@ -511,5 +517,4 @@ onMounted(() => {
 .list-anim-leave-active {
   position: absolute;
 }
-
 </style>
