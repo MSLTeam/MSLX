@@ -12,9 +12,26 @@ const props = defineProps({
 const emits = defineEmits(['update:visible', 'confirm']);
 
 // --- 模式管理 ---
-const mode = ref<'novice' | 'pro'>('novice');
+// 增加 preset 模式，并将默认打开的面板设为预设模式
+const mode = ref<'preset' | 'novice' | 'pro'>('preset');
 
-// --- 新手模式数据 ---
+// --- 预设模式数据 ---
+const selectedPreset = ref('*/10 * * * * *'); // 默认选中第一条
+const presetOptions = [
+  { label: '每 10 秒', value: '*/10 * * * * *' },
+  { label: '每分钟', value: '0 * * * * *' },
+  { label: '每 5 分钟', value: '0 */5 * * * *' },
+  { label: '每 30 分钟', value: '0 */30 * * * *' },
+  { label: '每小时', value: '0 0 * * * ?' },
+  { label: '每天凌晨 3 点', value: '0 0 3 * * ?' },
+  { label: '每周日凌晨 3 点', value: '0 0 3 ? * 1' },
+];
+
+const applyPreset = (val: string) => {
+  selectedPreset.value = val;
+};
+
+// --- 简单模式数据 (原新手模式) ---
 const noviceValue = ref(10);
 const noviceUnit = ref('minute');
 const noviceOptions = [
@@ -94,8 +111,11 @@ const noviceCron = computed(() => {
   }
 });
 
+// 最终表达式根据当前处于哪个 Tab 模式来决定
 const finalCron = computed(() => {
-  return mode.value === 'novice' ? noviceCron.value : proCron.value;
+  if (mode.value === 'preset') return selectedPreset.value;
+  if (mode.value === 'novice') return noviceCron.value;
+  return proCron.value;
 });
 
 // --- 下5次执行时间计算 ---
@@ -131,9 +151,13 @@ watch(
 watch(
   () => props.visible,
   (val) => {
+    // 弹窗打开时，如果有外界传进来的初始值，直接切到专业模式并验证
     if (val && props.initialValue) {
       mode.value = 'pro';
       calculateNextRuns();
+    } else if (val && !props.initialValue) {
+      // 如果没有初始值，默认进入预设模式
+      mode.value = 'preset';
     }
   },
 );
@@ -155,221 +179,171 @@ const getSpecificOptions = (unit: string) => {
   return arr;
 };
 </script>
-
 <template>
   <t-dialog
     :visible="visible"
     header="Cron 表达式生成器"
     width="700px"
     top="5vh"
+    attach="body"
+    class="cron-gen-dialog"
     @close="emits('update:visible', false)"
     @confirm="handleConfirm"
   >
-    <div class="cron-gen-container">
-      <div class="mode-switch">
-        <t-radio-group v-model="mode" variant="default-filled">
-          <t-radio-button value="novice">🚀 新手模式</t-radio-button>
-          <t-radio-button value="pro">🛠️ 专业模式</t-radio-button>
+    <div class="flex flex-col gap-5 p-5 md:p-6 bg-zinc-50/50 dark:bg-zinc-950/20">
+
+      <div class="flex justify-center">
+        <t-radio-group v-model="mode" variant="default-filled" class="!bg-zinc-100 dark:!bg-zinc-800 border border-zinc-200/50 dark:border-zinc-700/50 !rounded-lg p-0.5 shadow-sm">
+          <t-radio-button value="preset" class="!px-4">⭐ 预设模式</t-radio-button>
+          <t-radio-button value="novice" class="!px-4">🚀 简单模式</t-radio-button>
+          <t-radio-button value="pro" class="!px-4">🛠️ 专业模式</t-radio-button>
         </t-radio-group>
       </div>
 
-      <div v-if="mode === 'novice'" class="mode-content novice-panel">
-        <div class="novice-input-group">
+      <div v-if="mode === 'preset'" class="flex flex-col bg-white/80 dark:bg-zinc-800/60 border border-zinc-200/60 dark:border-zinc-700/60 rounded-xl p-6 min-h-[260px] shadow-sm backdrop-blur-md">
+        <div class="text-sm font-bold text-zinc-700 dark:text-zinc-200 mb-4">常用预设规则</div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <t-button
+            v-for="(preset, index) in presetOptions"
+            :key="index"
+            variant="outline"
+            theme="default"
+            class="!m-0 !w-full !rounded-lg !h-12 !justify-start !px-4 hover:!border-[var(--color-primary)] hover:!text-[var(--color-primary)] transition-all bg-white dark:bg-zinc-900/50"
+            @click="applyPreset(preset.value)"
+          >
+            <div class="flex flex-col items-start gap-0.5">
+              <span class="text-sm font-bold">{{ preset.label }}</span>
+            </div>
+          </t-button>
+        </div>
+      </div>
+
+      <div v-if="mode === 'novice'" class="flex flex-col justify-center items-center bg-white/80 dark:bg-zinc-800/60 border border-zinc-200/60 dark:border-zinc-700/60 rounded-xl p-8 min-h-[260px] shadow-sm backdrop-blur-md">
+        <div class="flex items-center gap-3 text-base font-bold text-zinc-700 dark:text-zinc-200">
           <span>每隔</span>
-          <t-input-number v-model="noviceValue" :min="1" theme="column" style="width: 100px" />
-          <t-select v-model="noviceUnit" :options="noviceOptions" style="width: 100px" />
+          <t-input-number v-model="noviceValue" :min="1" theme="column" class="!w-[100px] shadow-sm" />
+          <t-select v-model="noviceUnit" :options="noviceOptions" class="!w-[100px] shadow-sm" />
           <span>执行一次</span>
         </div>
-        <t-alert theme="info" style="margin-top: 16px">
+
+        <t-alert theme="info" class="!mt-8 !rounded-lg !bg-blue-50/50 dark:!bg-blue-900/10 !border-blue-100 dark:!border-blue-800/30">
           <template #message>
-            此模式适用于简单的周期性任务。如果需要“每周五上午10点”等复杂规则，请切换到<b>专业模式</b>。
+            <span class="text-zinc-600 dark:text-zinc-400 text-xs leading-relaxed">
+              此模式适用于简单的周期性任务。如果需要“每周五上午 10 点”等复杂规则，请切换到 <b class="text-zinc-800 dark:text-zinc-200">专业模式</b>。
+            </span>
           </template>
         </t-alert>
       </div>
 
-      <div v-else class="mode-content pro-panel">
-        <t-tabs v-model="activeTab">
+      <div v-if="mode === 'pro'" class="bg-white/80 dark:bg-zinc-800/60 border border-zinc-200/60 dark:border-zinc-700/60 rounded-xl overflow-hidden shadow-sm min-h-[260px] backdrop-blur-md flex flex-col">
+        <t-tabs v-model="activeTab" class="custom-tabs">
           <t-tab-panel v-for="unit in timeUnits" :key="unit.value" :value="unit.value" :label="unit.label">
-            <div class="tab-scroll-area">
-              <t-radio-group v-model="state[unit.value].type" direction="vertical">
-                <t-radio value="every">{{ unit.value === 'week' ? '不指定 (?)' : `每${unit.label} (*)` }}</t-radio>
-                <t-radio v-if="unit.value !== 'week'" value="interval">
-                  周期: 从
-                  <t-input-number
-                    v-model="state[unit.value].start"
-                    :min="unit.min"
-                    :max="unit.max"
-                    size="small"
-                    theme="column"
-                    style="width: 60px"
-                  />
-                  {{ unit.label }}开始，每
-                  <t-input-number
-                    v-model="state[unit.value].step"
-                    :min="1"
-                    :max="unit.max"
-                    size="small"
-                    theme="column"
-                    style="width: 60px"
-                  />
-                  {{ unit.label }}执行一次
+            <div class="p-5 max-h-[260px] overflow-y-auto custom-scrollbar">
+
+              <t-radio-group v-model="state[unit.value].type" direction="vertical" class="w-full gap-4 !bg-transparent">
+                <t-radio value="every" class="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  {{ unit.value === 'week' ? '不指定 (?)' : `每${unit.label} (*)` }}
                 </t-radio>
-                <t-radio v-if="unit.value !== 'week'" value="specific">指定: 选择具体的{{ unit.label }}</t-radio>
-                <t-radio v-if="unit.value === 'week'" value="specific">指定周几</t-radio>
+
+                <t-radio v-if="unit.value !== 'week'" value="interval" class="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span>周期: 从</span>
+                    <t-input-number v-model="state[unit.value].start" :min="unit.min" :max="unit.max" size="small" theme="column" class="!w-[70px]" />
+                    <span>{{ unit.label }} 开始，每</span>
+                    <t-input-number v-model="state[unit.value].step" :min="1" :max="unit.max" size="small" theme="column" class="!w-[70px]" />
+                    <span>{{ unit.label }} 执行一次</span>
+                  </div>
+                </t-radio>
+
+                <t-radio v-if="unit.value !== 'week'" value="specific" class="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  指定: 选择具体的{{ unit.label }}
+                </t-radio>
+
+                <t-radio v-if="unit.value === 'week'" value="specific" class="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                  指定周几
+                </t-radio>
               </t-radio-group>
 
-              <div v-if="state[unit.value].type === 'specific'" class="specific-box">
+              <div v-if="state[unit.value].type === 'specific'" class="mt-4 p-4 bg-zinc-50 dark:bg-zinc-900/50 rounded-xl border border-zinc-100 dark:border-zinc-800 shadow-inner">
                 <t-checkbox-group
                   v-model="state[unit.value].specifics"
                   :options="unit.value === 'week' ? weekOptions : getSpecificOptions(unit.value)"
-                  class="grid-checkbox"
+                  class="grid grid-cols-[repeat(auto-fill,minmax(55px,1fr))] gap-2.5"
                 />
               </div>
+
             </div>
           </t-tab-panel>
         </t-tabs>
       </div>
 
-      <div class="result-area">
-        <div class="cron-display">
-          <span class="label">当前表达式:</span>
-          <div class="code-box">
-            {{ finalCron }}
-            <t-tag v-if="!cronError" theme="success" variant="light" size="small"><check-circle-icon /> 有效</t-tag>
-            <t-tag v-else theme="danger" variant="light" size="small"><error-circle-icon /> 无效</t-tag>
+      <div class="bg-white/80 dark:bg-zinc-800/80 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 shadow-sm p-5 flex flex-col gap-4 backdrop-blur-md">
+
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-dashed border-zinc-200 dark:border-zinc-700/60">
+          <span class="font-bold text-zinc-800 dark:text-zinc-200 text-sm">当前表达式:</span>
+          <div class="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-900 px-3 py-1.5 rounded-lg border border-zinc-100 dark:border-zinc-800 shadow-inner">
+            <span class="font-mono text-lg font-bold tracking-wider text-[var(--color-primary)]">{{ finalCron }}</span>
+            <t-tag v-if="!cronError" theme="success" variant="light" size="small" class="!rounded"><template #icon><check-circle-icon /></template> 有效</t-tag>
+            <t-tag v-else theme="danger" variant="light" size="small" class="!rounded"><template #icon><error-circle-icon /></template> 无效</t-tag>
           </div>
         </div>
 
-        <div class="next-runs">
-          <div class="runs-title"><time-icon /> 最近 5 次运行时间预测:</div>
-          <div v-if="cronError" class="error-msg">{{ cronError }}</div>
-          <ul v-else class="runs-list">
-            <li v-for="(time, index) in nextExecutions" :key="index">
-              <span class="index">#{{ index + 1 }}</span> {{ time }}
+        <div class="flex flex-col gap-2">
+          <div class="text-xs font-bold text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 mb-1 uppercase tracking-wider">
+            <time-icon size="14px" /> 最近 5 次运行时间预测
+          </div>
+
+          <div v-if="cronError" class="text-sm font-medium text-red-500 bg-red-50 dark:bg-red-950/30 p-3 rounded-lg border border-red-100 dark:border-red-900/50">
+            {{ cronError }}
+          </div>
+
+          <ul v-else class="grid grid-cols-1 sm:grid-cols-2 gap-2 m-0 p-0 list-none">
+            <li v-for="(time, index) in nextExecutions" :key="index" class="text-sm font-mono font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-800/40 !px-4 !py-3 rounded-lg border border-zinc-100 dark:border-zinc-700/50 flex items-center transition-colors hover:border-[var(--color-primary)]/30 hover:bg-[var(--color-primary)]/5">
+              <span class="text-zinc-400 dark:text-zinc-500 w-6 font-bold opacity-70">#{{ index + 1 }}</span>
+              {{ time }}
             </li>
           </ul>
         </div>
+
       </div>
+
     </div>
   </t-dialog>
 </template>
 
 <style scoped lang="less">
-.cron-gen-container {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+@import '@/style/scrollbar';
+@reference "@/style/tailwind/index.css";
+
+
+.custom-scrollbar {
+  .scrollbar-mixin();
 }
 
-.mode-switch {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 8px;
-}
-
-.mode-content {
-  border: 1px solid var(--td-component-stroke);
-  border-radius: var(--td-radius-medium);
-  padding: 16px;
-  background-color: var(--td-bg-color-container);
-  min-height: 250px;
-}
-
-.novice-panel {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  .novice-input-group {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 16px;
-    font-weight: 500;
+.custom-tabs {
+  :deep(.t-tabs__nav-container) {
+    background-color: transparent !important;
+    border-bottom: 1px solid var(--td-component-stroke) !important;
+    padding: 0 12px;
   }
-}
-
-.pro-panel {
-  padding: 0;
-  border: none;
-  .tab-scroll-area {
-    padding: 16px 0;
-    max-height: 220px;
-    overflow-y: auto;
+  :deep(.t-tabs__content),
+  :deep(.t-tab-panel) {
+    background-color: transparent !important;
+    padding: 0 !important;
   }
-  .specific-box {
-    margin-top: 12px;
-    padding: 12px;
-    background: var(--td-bg-color-secondarycontainer);
-    border-radius: var(--td-radius-medium);
-  }
-  .grid-checkbox {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
-    gap: 8px;
-  }
-}
-
-.result-area {
-  background-color: var(--td-bg-color-secondarycontainer);
-  border-radius: var(--td-radius-medium);
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-
-  .cron-display {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px dashed var(--td-component-stroke);
-    .label {
-      font-weight: bold;
+  :deep(.t-tabs__nav-item) {
+    background-color: transparent !important;
+    color: var(--td-text-color-secondary);
+    font-size: 13px;
+    &:hover {
       color: var(--td-text-color-primary);
     }
-    .code-box {
-      font-family: 'Consolas', monospace;
-      font-size: 18px;
+    &.t-is-active {
       color: var(--td-brand-color);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-  }
-
-  .next-runs {
-    .runs-title {
-      font-size: 12px;
-      color: var(--td-text-color-secondary);
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .error-msg {
-      color: var(--td-error-color);
-      font-size: 12px;
-    }
-    .runs-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4px;
-      li {
-        font-size: 12px;
-        color: var(--td-text-color-primary);
-        background: var(--td-bg-color-container);
-        padding: 4px 8px;
-        border-radius: 4px;
-        .index {
-          color: var(--td-text-color-placeholder);
-          margin-right: 6px;
-        }
-      }
+      font-weight: bold;
     }
   }
 }
+
+
 </style>
