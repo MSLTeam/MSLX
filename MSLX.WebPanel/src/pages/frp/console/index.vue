@@ -162,27 +162,26 @@ onMounted(() => {
   }
 });
 </script>
-
 <template>
-  <div class="console-page">
-    <div class="layout-container">
-      <div class="main-terminal-area">
-        <console-terminal ref="terminalRef" :frp-id="frpId" @update="fetchTunnelInfo()" />
-      </div>
+  <div class="h-full flex flex-col md:flex-row gap-5 overflow-hidden pb-3 box-border relative">
 
-      <div class="sidebar-area">
-        <control-panel
-          :frp-id="frpId"
-          :is-running="isRunning"
-          :loading="loading"
-          :tunnel-info="tunnelInfo"
-          @start="handleStart"
-          @stop="handleStop"
-          @clear-log="handleClearLog"
-          @edit-config="handleEditConfig"
-        />
-      </div>
+    <div class="list-item-anim flex-1 min-w-0 h-[400px] md:h-full flex flex-col relative z-10" style="animation-delay: 0s;">
+      <console-terminal ref="terminalRef" :frp-id="frpId" @update="fetchTunnelInfo()" />
     </div>
+
+    <div class="list-item-anim w-full md:w-80 lg:w-[340px] shrink-0 h-auto md:h-full overflow-y-auto custom-scrollbar pr-1 flex flex-col hide-scrollbar-on-mobile relative z-10" style="animation-delay: 0.1s;">
+      <control-panel
+        :frp-id="frpId"
+        :is-running="isRunning"
+        :loading="loading"
+        :tunnel-info="tunnelInfo"
+        @start="handleStart"
+        @stop="handleStop"
+        @clear-log="handleClearLog"
+        @edit-config="handleEditConfig"
+      />
+    </div>
+
     <file-editor
       v-model:visible="showEditor"
       :file-name="editorFileName"
@@ -194,53 +193,39 @@ onMounted(() => {
 </template>
 
 <style scoped lang="less">
-.console-page {
-  padding-bottom: 12px;
-  height: 100%;
-  box-sizing: border-box;
-  overflow: hidden;
+@import '@/style/scrollbar';
+@reference "@/style/tailwind/index.css";
+
+.list-item-anim {
+  animation: slideUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  will-change: transform, opacity;
 }
 
-.layout-container {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  gap: 20px;
-  align-items: stretch;
-}
-
-.main-terminal-area {
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.sidebar-area {
-  width: 320px;
-  flex-shrink: 0;
-  height: 100%;
-  overflow-y: auto;
-}
-
-@media (max-width: 768px) {
-  .console-page {
-    height: auto;
-    overflow-y: auto;
-    padding: 16px;
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
   }
-  .layout-container {
-    flex-direction: column;
-    height: auto;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-  .sidebar-area {
-    width: 100%;
-    height: auto;
+}
+
+.custom-scrollbar {
+  .scrollbar-mixin();
+}
+
+/* 移动端隐藏右侧面板的内滚动条，保持视觉干净 */
+.hide-scrollbar-on-mobile::-webkit-scrollbar {
+  @media (max-width: 768px) {
+    display: none;
   }
-  .main-terminal-area {
-    min-height: 400px;
-    margin-bottom: 16px;
+}
+.hide-scrollbar-on-mobile {
+  @media (max-width: 768px) {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
 }
 </style>

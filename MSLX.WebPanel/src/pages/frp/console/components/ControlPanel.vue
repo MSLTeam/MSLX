@@ -34,282 +34,111 @@ defineEmits<{
 </script>
 
 <template>
-  <div class="sidebar-content">
-    <t-card class="control-card" :bordered="false">
-      <div class="control-header">
-        <div class="status-indicator" :class="{ running: isRunning }">
-          <span class="pulse"></span>{{ isRunning ? 'Running' : 'Stopped' }}
+  <div class="flex flex-col gap-5">
+
+    <div class="design-card bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-5">
+
+      <div class="flex justify-between items-center mb-5">
+        <div class="flex items-center gap-2 font-bold text-sm" :class="isRunning ? 'text-[var(--color-success)]' : 'text-zinc-500'">
+          <span class="relative flex h-2.5 w-2.5">
+            <span v-if="isRunning" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--color-success)] opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5" :class="isRunning ? 'bg-[var(--color-success)]' : 'bg-zinc-400 dark:bg-zinc-600'"></span>
+          </span>
+          {{ isRunning ? '运行中' : '未运行' }}
         </div>
-        <t-tag :theme="isRunning ? 'success' : 'default'" variant="light" shape="round">
-          {{ isRunning ? '正常运行' : '未运行' }}
+        <t-tag :theme="isRunning ? 'success' : 'default'" variant="light" class="!rounded !font-bold">
+          {{ isRunning ? '状态正常' : '已停止' }}
         </t-tag>
       </div>
-      <div class="control-actions">
-        <t-button v-if="!isRunning" theme="primary" size="large" block :loading="loading" @click="$emit('start')">
+
+      <div class="flex flex-col gap-3">
+        <t-button v-if="!isRunning" theme="primary" block :loading="loading" class="!rounded-lg !h-10 !font-bold shadow-sm" @click="$emit('start')">
           <template #icon><play-circle-icon /></template>启动服务
         </t-button>
-        <t-button v-else theme="danger" size="large" block :loading="loading" @click="$emit('stop')">
+        <t-button v-else theme="danger" block :loading="loading" class="!rounded-lg !h-10 !font-bold shadow-sm" @click="$emit('stop')">
           <template #icon><stop-circle-icon /></template>停止服务
         </t-button>
-        <div class="action-row">
-          <t-button class="glass-btn" variant="outline" theme="warning" @click="$emit('clear-log')">
+
+        <div class="flex gap-3 w-full mt-2">
+          <t-button variant="outline" theme="warning" class="flex-1 !rounded-lg !h-8 !bg-amber-500/10 !border-amber-500/30 !text-amber-600 dark:!text-amber-400 hover:!bg-amber-500/20" @click="$emit('clear-log')">
             <template #icon><refresh-icon /></template>清空日志
           </t-button>
-          <t-button v-if="userStore.isAdmin" variant="outline" theme="default" @click="$emit('edit-config')">
+          <t-button v-if="userStore.isAdmin" variant="outline" theme="default" class="flex-1 !rounded-lg !h-8 !bg-zinc-100 dark:!bg-zinc-800 !border-zinc-200 dark:!border-zinc-700 !text-zinc-700 dark:!text-zinc-300 hover:!bg-zinc-200 dark:hover:!bg-zinc-700" @click="$emit('edit-config')">
             <template #icon><edit1-icon /></template>配置文件
           </t-button>
         </div>
       </div>
-    </t-card>
+    </div>
 
-    <t-card title="隧道概览" class="info-card" :bordered="false">
-      <template #actions>
-        <t-tag
-          v-if="
-            tunnelInfo &&
-            tunnelInfo.proxies &&
-            tunnelInfo.proxies.length > 0 &&
-            tunnelInfo.proxies.some((proxy) => proxy.type === 'xtcp')
-          "
-          variant="light-outline"
-          theme="primary"
-          >联机房间 - 房主</t-tag
-        >
-        <t-tag
-          v-else-if="
-            tunnelInfo &&
-            tunnelInfo.proxies &&
-            tunnelInfo.proxies.length > 0 &&
-            tunnelInfo.proxies.some((proxy) => proxy.type === 'xtcp - Visitors')
-          "
-          variant="light-outline"
-          theme="primary"
-          >联机房间 - 访客</t-tag
-        >
-        <t-button v-else shape="circle" variant="text"><code-icon /></t-button>
-      </template>
+    <div class="design-card flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-5">
 
-      <div class="info-list">
-        <div class="info-item">
-          <div class="label"><server-icon /> 隧道实例 ID</div>
-          <div class="value">#{{ frpId }}</div>
+      <div class="flex justify-between items-center mb-4 pb-4 border-b border-zinc-200/60 dark:border-zinc-700/60">
+        <h3 class="text-sm font-bold text-zinc-800 dark:text-zinc-200 m-0">隧道概览</h3>
+        <t-tag v-if="tunnelInfo?.proxies?.some((proxy) => proxy.type === 'xtcp')" variant="light-outline" theme="primary" class="!rounded !font-bold">联机房间 - 房主</t-tag>
+        <t-tag v-else-if="tunnelInfo?.proxies?.some((proxy) => proxy.type === 'xtcp - Visitors')" variant="light-outline" theme="primary" class="!rounded !font-bold">联机房间 - 访客</t-tag>
+        <t-button v-else shape="circle" variant="text" size="small" class="!text-zinc-400 hover:!text-[var(--color-primary)]"><code-icon size="14px" /></t-button>
+      </div>
+
+      <div class="flex flex-col">
+        <div class="flex justify-between items-center py-2">
+          <div class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400"><server-icon size="14px" /> 隧道实例 ID</div>
+          <div class="font-mono font-bold text-sm text-zinc-800 dark:text-zinc-200">#{{ frpId }}</div>
         </div>
 
-        <template v-if="tunnelInfo && tunnelInfo.proxies && tunnelInfo.proxies.length > 0">
-          <div v-for="(proxy, index) in tunnelInfo.proxies" :key="index" class="proxy-group">
-            <div v-if="tunnelInfo.proxies.length > 1" class="proxy-header">配置 #{{ index + 1 }}</div>
+        <template v-if="tunnelInfo?.proxies?.length > 0">
+          <div v-for="(proxy, index) in tunnelInfo.proxies" :key="index" class="flex flex-col gap-2 pt-4 mt-3 border-t border-dashed border-zinc-200 dark:border-zinc-700/60">
+            <div v-if="tunnelInfo.proxies.length > 1" class="text-[11px] font-bold text-zinc-400 mb-1.5">
+              配置 #{{ index + 1 }}
+            </div>
 
-            <div class="info-item">
-              <div class="label"><cloud-icon /> {{ proxy.type.includes('xtcp') ? '房间号' : '隧道名称' }}</div>
+            <div class="flex justify-between items-center py-1.5">
+              <div class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400"><cloud-icon size="14px" /> {{ proxy.type.includes('xtcp') ? '房间号' : '名称' }}</div>
               <t-tooltip :content="proxy.proxyName" placement="top" show-arrow destroy-on-close>
-                <div
-                  @click="
-                    copyText(proxy.proxyName, true, `${proxy.type.includes('xtcp') ? '房间号' : '隧道名称'}已复制！`)
-                  "
-                  class="value remote-addr pointer"
-                >
+                <div class="font-bold text-sm text-zinc-800 dark:text-zinc-200 truncate max-w-[140px] cursor-pointer hover:text-[var(--color-primary)] transition-colors" @click="copyText(proxy.proxyName, true, `${proxy.type.includes('xtcp') ? '房间号' : '隧道名称'}已复制！`)">
                   {{ proxy.proxyName }}
                 </div>
               </t-tooltip>
             </div>
 
-            <div class="info-item">
-              <div class="label"><internet-icon /> 协议类型</div>
-              <div class="value highlight">{{ proxy.type.toUpperCase() }}</div>
+            <div class="flex justify-between items-center py-1.5">
+              <div class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400"><internet-icon size="14px" /> 协议</div>
+              <div class="text-xs font-bold text-[var(--color-primary)] uppercase">{{ proxy.type }}</div>
             </div>
 
-            <div class="info-item">
-              <div class="label"><link-icon /> {{ proxy.type.includes('xtcp') ? '房间密钥' : '连接地址' }}</div>
+            <div class="flex justify-between items-center py-1.5">
+              <div class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400"><link-icon size="14px" /> {{ proxy.type.includes('xtcp') ? '密钥' : '远程地址' }}</div>
               <t-tooltip :content="proxy.remoteAddressMain" placement="top" show-arrow destroy-on-close>
-                <div
-                  class="value remote-addr pointer"
-                  @click="
-                    copyText(
-                      proxy.remoteAddressMain,
-                      true,
-                      `${proxy.type.includes('xtcp') ? '房间密钥' : '连接地址'}已复制！`,
-                    )
-                  "
-                >
+                <div class="font-mono font-bold text-xs text-zinc-800 dark:text-zinc-200 truncate max-w-[140px] cursor-pointer hover:text-[var(--color-primary)] transition-colors" @click="copyText(proxy.remoteAddressMain, true, `${proxy.type.includes('xtcp') ? '房间密钥' : '连接地址'}已复制！`)">
                   {{ proxy.remoteAddressMain || '获取中...' }}
                 </div>
               </t-tooltip>
             </div>
 
-            <div
-              v-if="proxy.remoteAddressBackup && proxy.remoteAddressBackup !== proxy.remoteAddressMain"
-              class="info-item"
-            >
-              <div class="label"><link-icon /> 备用地址</div>
+            <div v-if="proxy.remoteAddressBackup && proxy.remoteAddressBackup !== proxy.remoteAddressMain" class="flex justify-between items-center py-1.5">
+              <div class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400"><link-icon size="14px" /> 备用地址</div>
               <t-tooltip :content="proxy.remoteAddressBackup" placement="top" show-arrow destroy-on-close>
-                <div
-                  class="value remote-addr pointer"
-                  @click="copyText(proxy.remoteAddressBackup, true, '备用连接地址已复制！')"
-                >
+                <div class="font-mono font-bold text-xs text-zinc-800 dark:text-zinc-200 truncate max-w-[140px] cursor-pointer hover:text-[var(--color-primary)] transition-colors" @click="copyText(proxy.remoteAddressBackup, true, '备用连接地址已复制！')">
                   {{ proxy.remoteAddressBackup }}
                 </div>
               </t-tooltip>
             </div>
 
-            <div class="info-item">
-              <div class="label"><code-icon /> 本地地址</div>
-              <div class="value">{{ proxy.localAddress }}</div>
+            <div class="flex justify-between items-center py-1.5">
+              <div class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400"><code-icon size="14px" /> 本地地址</div>
+              <div class="font-mono text-xs text-zinc-500 dark:text-zinc-400">{{ proxy.localAddress }}</div>
             </div>
           </div>
         </template>
 
-        <div v-else class="info-item empty-state">
-          <div class="label">状态</div>
-          <div class="value">{{ loading ? '正在加载配置...' : '暂无详细信息' }}</div>
+        <div v-else class="py-8 text-center flex flex-col items-center justify-center opacity-60">
+          <server-icon size="24px" class="text-zinc-400 mb-2" />
+          <span class="text-xs font-medium text-zinc-500">{{ loading ? '加载配置中...' : '暂无隧道信息' }}</span>
         </div>
       </div>
-    </t-card>
+    </div>
   </div>
 </template>
 
-<style scoped lang="less">
-.sidebar-content {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.control-card {
-  border-radius: 12px;
-  box-shadow: var(--td-shadow-1);
-  background: var(--td-bg-color-container);
-
-  .control-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-    .status-indicator {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 600;
-      color: var(--td-text-color-secondary);
-      .pulse {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: var(--td-bg-color-component-disabled);
-        transition: all 0.3s;
-      }
-      &.running {
-        color: var(--td-success-color);
-        .pulse {
-          background: var(--td-success-color);
-          box-shadow: 0 0 8px var(--td-success-color);
-        }
-      }
-    }
-  }
-  .control-actions {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    gap: 16px;
-
-    .glass-btn {
-      backdrop-filter: blur(4px);
-      transition: all 0.2s;
-
-      // 按钮
-      &.t-button--theme-warning {
-        background-color: color-mix(in srgb, var(--td-warning-color), transparent 90%) !important;
-        border-color: var(--td-warning-color) !important;
-        color: var(--td-warning-color) !important;
-
-        &:hover {
-          background-color: color-mix(in srgb, var(--td-warning-color), transparent 80%) !important;
-        }
-      }
-    }
-
-    .action-row {
-      display: flex;
-      gap: 16px;
-      width: 100%;
-
-      .t-button {
-        flex: 1;
-        margin: 0;
-      }
-    }
-  }
-}
-
-.info-card {
-  border-radius: 12px;
-  box-shadow: var(--td-shadow-1);
-  background: var(--td-bg-color-container);
-
-  .info-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-
-    .proxy-group {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      padding-top: 12px;
-      border-top: 1px dashed var(--td-component-stroke);
-      &:first-child {
-        border-top: none;
-        padding-top: 0;
-      }
-    }
-    .proxy-header {
-      font-size: 12px;
-      font-weight: bold;
-      color: var(--td-text-color-secondary);
-    }
-
-    .info-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      .label {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: var(--td-text-color-placeholder);
-        font-size: 13px;
-      }
-      .value {
-        font-family: var(--td-font-family-number);
-        font-weight: 500;
-        color: var(--td-text-color-primary);
-        font-size: 13px;
-        &.highlight {
-          color: var(--td-brand-color);
-          background: var(--td-brand-color-light);
-          padding: 2px 8px;
-          border-radius: 4px;
-          font-size: 12px;
-        }
-        &.remote-addr {
-          max-width: 140px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          cursor: pointer;
-          &:hover {
-            color: var(--td-brand-color);
-          }
-        }
-        &.pointer {
-          cursor: pointer;
-        }
-      }
-    }
-    .empty-state {
-      padding: 12px 0;
-      color: var(--td-text-color-placeholder);
-    }
-  }
-}
+<style scoped>
+@reference "@/style/tailwind/index.css";
 </style>
