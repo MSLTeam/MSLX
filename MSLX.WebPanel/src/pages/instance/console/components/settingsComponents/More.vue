@@ -223,60 +223,58 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="settings-container">
+  <div class="flex flex-col mx-auto w-full pb-6">
 
-    <div v-if="errorMsg" class="error-alert-bar">
-      <t-alert theme="error" :message="errorMsg" closeable @close="errorMsg = ''">
+    <div v-if="errorMsg" class="mb-4">
+      <t-alert theme="error" :message="errorMsg" closeable class="!rounded-xl shadow-sm border border-red-100 dark:border-red-900/50" @close="errorMsg = ''">
         <template #operation>
-          <span style="cursor: pointer; margin-left: 8px" @click="fetchCurrentIcon">重试</span>
+          <span class="cursor-pointer ml-2 font-bold text-red-600 dark:text-red-400 hover:opacity-80 transition-opacity" @click="fetchCurrentIcon">重试</span>
         </template>
       </t-alert>
     </div>
 
     <t-loading :loading="loading" show-overlay>
 
-      <div class="setting-group-title">外观设置</div>
+      <div class="flex items-center gap-2 mt-5 mb-4 pb-2 border-b border-dashed border-zinc-200/60 dark:border-zinc-700/60">
+        <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
+        <h2 class="text-base font-bold text-zinc-800 dark:text-zinc-200 m-0">外观设置</h2>
+      </div>
 
-      <div class="setting-item">
-        <div class="setting-info">
-          <div class="title">服务器图标</div>
-          <div class="desc">
+      <div class="flex flex-col md:flex-row md:items-center justify-between py-4 gap-4">
+
+        <div class="flex-1 md:pr-8">
+          <div class="text-sm font-bold text-zinc-800 dark:text-zinc-200">服务器图标</div>
+          <div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
             上传自定义的 JPG / PNG 图片替换现有的 server-icon.png。<br>
-            MSLX将提供可视化裁剪工具，并自动帮您转换为标准的 64x64 服务器图标文件。
+            系统将提供可视化裁剪工具，并自动帮您转换为标准的 64x64 服务器图标文件。
           </div>
         </div>
 
-        <div class="setting-control icon-control-layout">
-          <input
-            ref="fileInput"
-            type="file"
-            accept="image/png, image/jpeg"
-            style="display: none"
-            @change="onFileSelect"
-          />
+        <div class="flex items-center gap-4 shrink-0 w-full md:w-auto mt-2 md:mt-0">
 
-          <div class="icon-preview-box">
+          <input ref="fileInput" type="file" accept="image/png, image/jpeg" class="hidden" @change="onFileSelect" />
+
+          <div class="w-[72px] h-[72px] shrink-0 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl flex justify-center items-center bg-zinc-50 dark:bg-zinc-900/50 overflow-hidden shadow-inner">
             <template v-if="currentIconUrl">
-              <img :src="currentIconUrl" alt="Server Icon" class="server-icon-img" />
+              <img :src="currentIconUrl" alt="Server Icon" class="w-16 h-16 rounded shadow-sm [image-rendering:pixelated]" />
             </template>
             <template v-else>
-              <div class="empty-icon">
-                <image-icon size="24px" />
-                <span>暂无</span>
+              <div class="flex flex-col items-center text-zinc-400 dark:text-zinc-500 gap-1 opacity-80">
+                <image-icon size="20px" />
+                <span class="text-[10px] font-medium tracking-widest">暂无</span>
               </div>
             </template>
           </div>
 
-          <div class="icon-actions">
-            <t-button theme="primary" block @click="triggerSelectFile">
-              <template #icon><upload-icon /></template>
-              选择新图标
+          <div class="flex flex-col gap-2 flex-1 md:flex-none md:w-[140px]">
+            <t-button theme="primary" block class="!rounded-lg shadow-sm !m-0" @click="triggerSelectFile">
+              <template #icon><upload-icon /></template> 选择新图标
             </t-button>
-            <t-button style="margin-left: 0;" variant="outline" block @click="fetchCurrentIcon">
-              <template #icon><refresh-icon /></template>
-              刷新图标
+            <t-button variant="outline" block class="!rounded-lg !bg-zinc-50 dark:!bg-zinc-800/50 !border-zinc-200 dark:!border-zinc-700 hover:!bg-zinc-100 dark:hover:!bg-zinc-800 !text-zinc-700 dark:!text-zinc-300 transition-colors !m-0" @click="fetchCurrentIcon">
+              <template #icon><refresh-icon /></template> 刷新图标
             </t-button>
           </div>
+
         </div>
       </div>
 
@@ -287,18 +285,23 @@ onMounted(() => {
       header="裁剪服务器图标 (64x64)"
       width="600px"
       :close-on-overlay-click="false"
+      attach="body"
       @confirm="confirmCropAndUpload"
     >
-      <div v-loading="loading" class="crop-dialog-content">
-        <p class="crop-tip">请拖动和缩放亮色方框，选择需要截取的区域。生成后将自动转为 64x64 的标准尺寸。</p>
+      <div v-loading="loading" class="flex flex-col items-center p-5 md:p-6 bg-zinc-50/50 dark:bg-zinc-950/20">
 
-        <div v-if="localImageSrc" class="cropper-container">
-          <img ref="sourceImageRef" :src="localImageSrc" class="cropper-bg" draggable="false" @load="initCropBox" />
+        <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-5 text-center bg-white/80 dark:bg-zinc-800/80 px-4 py-2.5 rounded-lg border border-zinc-200/60 dark:border-zinc-700/60 shadow-sm backdrop-blur-md">
+          请拖动和缩放亮色方框，选择需要截取的区域。生成后将自动转为 <b class="text-zinc-700 dark:text-zinc-300">64x64</b> 的标准尺寸。
+        </p>
 
-          <div class="cropper-overlay"></div>
+        <div v-if="localImageSrc" class="relative max-w-full max-h-[400px] select-none cropper-bg-pattern rounded-lg overflow-hidden border border-zinc-200/80 dark:border-zinc-700/80 shadow-inner">
+
+          <img ref="sourceImageRef" :src="localImageSrc" class="block max-w-full max-h-[400px]" draggable="false" @load="initCropBox" />
+
+          <div class="absolute inset-0 bg-black/60 pointer-events-none"></div>
 
           <div
-            class="crop-selection"
+            class="absolute cursor-move overflow-hidden shadow-[0_0_0_1px_rgba(0,0,0,0.5)] ring-1 ring-white/50"
             :style="{
               left: cropState.x + 'px',
               top: cropState.y + 'px',
@@ -309,7 +312,7 @@ onMounted(() => {
           >
             <img
               :src="localImageSrc"
-              class="cropper-inner-img"
+              class="absolute top-0 left-0 max-w-none pointer-events-none"
               draggable="false"
               :style="{
                 width: cropperConfig.imgWidth + 'px',
@@ -318,232 +321,34 @@ onMounted(() => {
               }"
             />
 
-            <div class="crop-borders"></div>
-            <div class="resize-handle" @mousedown.stop="(e) => startDrag(e, 'resize')"></div>
+            <div class="absolute inset-0 border border-dashed border-white/80 pointer-events-none"></div>
+
+            <div
+              class="absolute right-0 bottom-0 w-3 h-3 bg-[var(--color-primary)] border-2 border-white cursor-nwse-resize z-10 before:absolute before:-inset-2.5"
+              @mousedown.stop="(e) => startDrag(e, 'resize')"
+            ></div>
           </div>
+
         </div>
       </div>
     </t-dialog>
+
   </div>
 </template>
 
 <style scoped lang="less">
-/* 全局容器结构完全复刻设置页 */
-.settings-container {
-  margin: 0 auto;
-  padding-bottom: 24px;
-}
+@reference "@/style/tailwind/index.css";
 
-.error-alert-bar {
-  margin-top: 16px;
-  margin-bottom: 16px;
-}
-
-/* 统一的分组标题样式 */
-.setting-group-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--td-text-color-primary);
-  margin-top: 32px;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 1px dashed var(--td-component-stroke);
-  display: flex;
-  align-items: center;
-
-  &::before {
-    content: '';
-    display: inline-block;
-    width: 4px;
-    height: 16px;
-    background-color: var(--td-brand-color);
-    margin-right: 8px;
-    border-radius: 2px;
-  }
-
-  /* 第一个标题取消顶部边距，视觉更好 */
-  &:first-of-type {
-    margin-top: 24px;
-  }
-}
-
-/* 统一的基础列表项样式 */
-.setting-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 16px 32px 16px 0;
-  flex-wrap: wrap; /* 允许在手机端换行 */
-
-  .setting-info {
-    flex: 1;
-    padding-right: 32px;
-    min-width: 200px; /* 防止过窄 */
-
-    .title {
-      font-size: 14px;
-      color: var(--td-text-color-primary);
-      font-weight: 500;
-      line-height: 22px;
-    }
-
-    .desc {
-      font-size: 12px;
-      color: var(--td-text-color-placeholder);
-      margin-top: 4px;
-      line-height: 20px;
-    }
-  }
-
-  .setting-control {
-    width: 340px; /* 强制统一控制区宽度 */
-    flex-shrink: 0;
-  }
-}
-
-/* 图标特供的控制区内部排版 */
-.icon-control-layout {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-
-  /* 左侧：图标预览框 */
-  .icon-preview-box {
-    width: 72px;
-    height: 72px;
-    flex-shrink: 0;
-    border: 1px dashed var(--td-component-border);
-    border-radius: var(--td-radius-default);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: var(--td-bg-color-secondarycontainer);
-    overflow: hidden;
-
-    .server-icon-img {
-      width: 64px;
-      height: 64px;
-      image-rendering: pixelated; /* 保持原汁原味的像素清晰度 */
-    }
-
-    .empty-icon {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      color: var(--td-text-color-placeholder);
-      font-size: 12px;
-      gap: 4px;
-    }
-  }
-
-  /* 右侧：按钮上下排列 */
-  .icon-actions {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-}
-
-/* --- 弹窗内的独立裁剪器样式 --- */
-.crop-dialog-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-
-  .crop-tip {
-    font-size: 13px;
-    color: var(--td-text-color-secondary);
-    margin-bottom: 16px;
-    text-align: center;
-  }
-}
-
-.cropper-container {
-  position: relative;
-  max-width: 100%;
-  max-height: 400px;
-  background-image: repeating-conic-gradient(#f0f0f0 0% 25%, transparent 0% 50%);
+/* === 裁剪器专用的透明棋盘 === */
+.cropper-bg-pattern {
+  background-image: repeating-conic-gradient(#e4e4e7 0% 25%, transparent 0% 50%);
   background-size: 20px 20px;
-  background-color: #fff;
-  user-select: none;
-
-  .cropper-bg {
-    display: block;
-    max-width: 100%;
-    max-height: 400px;
-  }
-
-  .cropper-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    pointer-events: none;
-  }
-
-  .crop-selection {
-    position: absolute;
-    cursor: move;
-    overflow: hidden;
-
-    .cropper-inner-img {
-      position: absolute;
-      top: 0;
-      left: 0;
-      max-width: none;
-      pointer-events: none;
-    }
-
-    .crop-borders {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      border: 1px dashed #fff;
-      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
-      pointer-events: none;
-    }
-
-    .resize-handle {
-      position: absolute;
-      right: 0;
-      bottom: 0;
-      width: 12px;
-      height: 12px;
-      background-color: var(--td-brand-color);
-      border: 2px solid #fff;
-      cursor: nwse-resize;
-      z-index: 10;
-
-      &::after {
-        content: '';
-        position: absolute;
-        top: -10px;
-        left: -10px;
-        right: -10px;
-        bottom: -10px;
-      }
-    }
-  }
+  background-color: #f4f4f5;
 }
 
-/* 响应式：折叠排版 */
-@media (max-width: 768px) {
-  .setting-item {
-    flex-direction: column;
-
-    .setting-info {
-      padding-right: 0;
-      margin-bottom: 12px;
-    }
-
-    .setting-control {
-      width: 100%; /* 移动端占满宽度 */
-    }
-  }
+:global(html[theme-mode='dark']) .cropper-bg-pattern,
+:global(html.dark) .cropper-bg-pattern {
+  background-image: repeating-conic-gradient(#3f3f46 0% 25%, transparent 0% 50%);
+  background-color: #27272a;
 }
 </style>

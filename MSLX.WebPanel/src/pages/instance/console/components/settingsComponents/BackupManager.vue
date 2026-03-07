@@ -207,38 +207,52 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="settings-container">
-    <div class="setting-group-title">备份管理</div>
+  <div class="flex flex-col mx-auto">
 
-    <div class="setting-item">
-      <div class="setting-info">
-        <div class="title">存档快照</div>
-        <div class="desc">
+    <div class="flex items-center gap-2 mt-5 mb-4 pb-2 border-b border-zinc-200/60 dark:border-zinc-700/60">
+      <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
+      <h2 class="text-base font-bold text-zinc-800 dark:text-zinc-200 m-0">备份管理</h2>
+    </div>
+
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center py-4 pr-0 md:pr-8 gap-4 md:gap-8">
+
+      <div class="flex-1 min-w-[200px]">
+        <div class="text-sm font-bold text-zinc-800 dark:text-zinc-200 leading-snug">存档快照</div>
+        <div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
           查看和管理服务器的自动或手动备份。建议定期下载重要备份到本地保存。
           <br />
-          当前共有 <b>{{ tableData.length }}</b> 个备份文件。最大保存备份文件的数量需要在实例设置中配置。
+          当前共有 <b class="text-zinc-700 dark:text-zinc-300">{{ tableData.length }}</b> 个备份文件。最大保存备份文件的数量需要在实例设置中配置。
         </div>
       </div>
 
-      <div class="setting-control">
-        <transition name="fade" mode="out-in">
-          <div v-if="selectedRowKeys.length > 0" class="bulk-action-bar">
-            <div class="bar-separator"></div>
-            <span class="selected-text">已选 {{ selectedRowKeys.length }} 项</span>
+      <div class="shrink-0 flex items-center min-h-[32px] w-full md:w-auto">
+        <transition
+          enter-active-class="transition-opacity duration-200 ease-out"
+          enter-from-class="opacity-0"
+          leave-active-class="transition-opacity duration-200 ease-in"
+          leave-to-class="opacity-0"
+          mode="out-in"
+        >
+          <div v-if="selectedRowKeys.length > 0" class="flex items-center bg-zinc-100 dark:bg-zinc-800/80 px-3 py-1.5 rounded-lg gap-3 shadow-sm w-full md:w-auto justify-between md:justify-start">
+            <div class="flex items-center gap-3">
+              <div class="w-[2px] h-[14px] bg-zinc-300 dark:bg-zinc-600 -mr-1"></div>
+              <span class="text-sm font-bold text-zinc-800 dark:text-zinc-200">已选 {{ selectedRowKeys.length }} 项</span>
+            </div>
 
-            <t-button variant="text" theme="primary" @click="handleBatchDownload"> 下载 </t-button>
-            <t-button variant="text" theme="danger" @click="handleBatchDelete"> 删除 </t-button>
+            <div class="flex items-center">
+              <t-button variant="text" theme="primary" class="!px-2 !h-7 !text-sm hover:!bg-[var(--color-primary)]/10 !rounded-md" @click="handleBatchDownload"> 下载 </t-button>
+              <t-button variant="text" theme="danger" class="!px-2 !h-7 !text-sm hover:!bg-red-500/10 !rounded-md" @click="handleBatchDelete"> 删除 </t-button>
+            </div>
           </div>
 
-          <t-button v-else theme="primary" variant="outline" @click="initData">
-            <template #icon><refresh-icon /></template>
-            刷新列表
+          <t-button v-else theme="primary" variant="outline" class="!rounded-lg shadow-sm w-full md:w-auto" @click="initData">
+            <template #icon><refresh-icon /></template> 刷新列表
           </t-button>
         </transition>
       </div>
     </div>
 
-    <div class="backup-table-wrapper">
+    <div class="mt-4 border border-zinc-200/60 dark:border-zinc-700/60 rounded-xl overflow-hidden shadow-sm bg-white/50 dark:bg-zinc-900/20">
       <t-table
         row-key="fileName"
         :data="tableData"
@@ -251,15 +265,15 @@ onMounted(() => {
         @select-change="onSelectChange"
       >
         <template #fileName="{ row }">
-          <div class="file-name-cell">
-            <file-icon style="margin-right: 6px; color: var(--td-brand-color)" />
+          <div class="flex items-center font-mono text-[13px] text-zinc-700 dark:text-zinc-300 break-all">
+            <file-icon class="mr-1.5 text-[var(--color-primary)]" />
             <span>{{ row.fileName }}</span>
           </div>
         </template>
 
         <template #createTime="{ row }">
-          <div class="time-cell">
-            <time-icon style="margin-right: 6px; color: var(--td-text-color-placeholder)" />
+          <div class="flex items-center text-zinc-500 dark:text-zinc-400 text-[13px]">
+            <time-icon class="mr-1.5" />
             {{ row.createTime }}
           </div>
         </template>
@@ -267,12 +281,12 @@ onMounted(() => {
         <template #op="{ row }">
           <t-space>
             <t-tooltip content="下载备份">
-              <t-button variant="text" shape="square" theme="primary" @click="handleDownload(row)">
+              <t-button variant="text" shape="square" theme="primary" class="!rounded-md hover:!bg-[var(--color-primary)]/10 transition-colors" @click="handleDownload(row)">
                 <download-icon />
               </t-button>
             </t-tooltip>
             <t-tooltip content="删除备份">
-              <t-button variant="text" shape="square" theme="danger" @click="handleDelete(row)">
+              <t-button variant="text" shape="square" theme="danger" class="!rounded-md hover:!bg-red-500/10 transition-colors" @click="handleDelete(row)">
                 <delete-icon />
               </t-button>
             </t-tooltip>
@@ -280,7 +294,7 @@ onMounted(() => {
         </template>
 
         <template #empty>
-          <div class="empty-state">暂无备份记录</div>
+          <div class="p-8 text-center text-sm font-medium text-zinc-400 dark:text-zinc-500">暂无备份记录</div>
         </template>
       </t-table>
     </div>
@@ -288,152 +302,5 @@ onMounted(() => {
 </template>
 
 <style scoped lang="less">
-.settings-container {
-  margin: 0 auto;
-}
-
-.setting-group-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--td-text-color-primary);
-  margin-top: 32px;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 1px dashed var(--td-component-stroke);
-  display: flex;
-  align-items: center;
-
-  &::before {
-    content: '';
-    display: inline-block;
-    width: 4px;
-    height: 16px;
-    background-color: var(--td-brand-color);
-    margin-right: 8px;
-    border-radius: 2px;
-  }
-}
-
-.setting-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 32px 16px 0;
-  flex-wrap: wrap;
-
-  .setting-info {
-    flex: 1;
-    padding-right: 32px;
-    min-width: 200px;
-
-    .title {
-      font-size: 14px;
-      color: var(--td-text-color-primary);
-      font-weight: 500;
-      line-height: 22px;
-    }
-
-    .desc {
-      font-size: 12px;
-      color: var(--td-text-color-placeholder);
-      margin-top: 4px;
-      line-height: 20px;
-    }
-  }
-
-  .setting-control {
-    width: auto;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    min-height: 32px;
-  }
-}
-
-.bulk-action-bar {
-  display: flex;
-  align-items: center;
-  background-color: var(--td-bg-color-secondarycontainer);
-  padding: 4px 12px;
-  border-radius: var(--td-radius-default);
-  gap: 12px;
-  animation: fadeIn 0.2s ease-in-out;
-
-  .bar-separator {
-    width: 2px;
-    height: 14px;
-    background-color: var(--td-component-stroke);
-    margin-right: -4px;
-  }
-
-  .selected-text {
-    font-size: 14px;
-    color: var(--td-text-color-primary);
-    font-weight: 500;
-  }
-
-  :deep(.t-button) {
-    padding: 0 8px;
-    height: 24px;
-    line-height: 24px;
-    font-size: 14px;
-  }
-}
-
-/* --- 表格样式 --- */
-.backup-table-wrapper {
-  margin-top: 16px;
-  border: 1px solid var(--td-component-stroke);
-  border-radius: var(--td-radius-medium);
-  overflow: hidden;
-}
-
-.file-name-cell {
-  display: flex;
-  align-items: center;
-  font-family: 'Consolas', monospace;
-  font-size: 13px;
-  word-break: break-all;
-}
-
-.time-cell {
-  display: flex;
-  align-items: center;
-  color: var(--td-text-color-secondary);
-}
-
-.empty-state {
-  padding: 32px;
-  text-align: center;
-  color: var(--td-text-color-placeholder);
-}
-
-/* 简单的淡入淡出动画 */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-@media (max-width: 768px) {
-  .setting-item {
-    flex-direction: column;
-    align-items: flex-start;
-
-    .setting-info {
-      padding-right: 0;
-      margin-bottom: 12px;
-    }
-
-    .setting-control {
-      width: 100%;
-      justify-content: flex-start;
-      margin-top: 8px;
-    }
-  }
-}
+@reference "@/style/tailwind/index.css";
 </style>

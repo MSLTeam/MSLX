@@ -202,131 +202,121 @@ onMounted(fetchData);
 </script>
 
 <template>
-  <div class="page-container">
-    <div class="page-header">
-      <div class="section-title">定时计划任务</div>
-      <t-space>
-        <t-button v-if="!isCreating" theme="default" @click="changeUrl(DOC_URLS.cron)">
-          <template #icon><book-icon /></template>
-          使用文档
+  <div class="flex flex-col mx-auto w-full">
+    <div class="flex items-center justify-between mt-5 mb-4 pb-2 border-b border-dashed border-zinc-200 dark:border-zinc-700">
+      <div class="flex items-center gap-2">
+        <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
+        <h2 class="text-base font-bold text-zinc-800 dark:text-zinc-200 m-0">定时计划任务</h2>
+      </div>
+
+      <t-space v-if="!isCreating">
+        <t-button theme="default" variant="outline" class="!rounded-lg" @click="changeUrl(DOC_URLS.cron)">
+          <template #icon><book-icon /></template>使用文档
         </t-button>
-        <t-button v-if="!isCreating" theme="primary" @click="handleStartCreate">
-          <template #icon><add-icon /></template>
-          创建新任务
+        <t-button theme="primary" class="!rounded-lg shadow-sm" @click="handleStartCreate">
+          <template #icon><add-icon /></template>创建新任务
         </t-button>
       </t-space>
     </div>
 
-    <transition name="slide-fade">
-      <div v-if="isCreating" class="create-container">
-        <div class="container-header">
-          <span class="title">{{ isEditingId ? '编辑任务' : '创建新任务' }}</span>
-          <t-button size="small" variant="text" @click="handleCancelCreate"><close-icon /></t-button>
+    <transition
+      enter-active-class="transition duration-300 ease-out"
+      enter-from-class="transform -translate-y-2 opacity-0"
+      leave-active-class="transition duration-200 ease-in"
+      leave-to-class="transform -translate-y-2 opacity-0"
+    >
+      <div v-if="isCreating" class="mb-6 overflow-hidden bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm">
+        <div class="px-6 py-3 flex justify-between items-center bg-zinc-50 dark:bg-zinc-800/50 border-b border-zinc-200 dark:border-zinc-800">
+          <span class="text-sm font-bold text-zinc-700 dark:text-zinc-200">{{ isEditingId ? '编辑任务' : '创建新任务' }}</span>
+          <t-button size="small" variant="text" shape="square" @click="handleCancelCreate"><close-icon /></t-button>
         </div>
 
-        <t-form ref="formRef" :data="formData" :rules="rules" label-width="0">
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="title">任务名称</div>
-              <div class="desc">给这个计划任务起个容易识别的名字，例如“每日自动重启”</div>
+        <t-form ref="formRef" :data="formData" :rules="rules" label-width="0" class="p-0">
+          <div v-for="(field, idx) in [
+            { title: '任务名称', desc: '给计划任务起个易识别的名字', key: 'name' },
+            { title: '触发规则 (Cron)', desc: '支持秒级精度 (秒 分 时 日 月 周)', key: 'cron' },
+            { title: '执行操作', desc: '选择触发时要执行的动作类型', key: 'type' }
+          ]" :key="idx" class="flex flex-col md:flex-row md:items-start justify-between p-5 border-b border-dashed border-zinc-100 dark:border-zinc-800 last:border-0">
+            <div class="flex-1 md:max-w-[40%] pr-0 md:pr-8 mb-3 md:mb-0">
+              <div class="text-sm font-bold text-zinc-800 dark:text-zinc-200">{{ field.title }}</div>
+              <div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">{{ field.desc }}</div>
             </div>
-            <div class="setting-control">
-              <t-input v-model="formData.name" placeholder="请输入任务名称" />
-            </div>
-          </div>
-
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="title">触发规则 (Cron)</div>
-              <div class="desc">使用 Cron 表达式定义执行时间。支持秒级精度 (秒 分 时 日 月 周)</div>
-            </div>
-            <div class="setting-control">
-              <t-input v-model="formData.cron" placeholder="例如: 0 0 12 * * ?" />
-              <t-button variant="outline" theme="default" @click="showCronGen = true"> 表达式生成器 </t-button>
+            <div class="flex-1 md:max-w-[60%] w-full flex items-center gap-2">
+              <t-input v-if="field.key === 'name'" v-model="formData.name" placeholder="请输入任务名称" class="flex-1" />
+              <template v-if="field.key === 'cron'">
+                <t-input v-model="formData.cron" placeholder="例如: 0 0 12 * * ?" class="flex-1" />
+                <t-button variant="outline" class="shrink-0" @click="showCronGen = true">生成器</t-button>
+              </template>
+              <t-select v-if="field.key === 'type'" v-model="formData.type" :options="taskTypeOptions" class="w-full" />
             </div>
           </div>
 
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="title">执行操作</div>
-              <div class="desc">选择触发时要执行的动作类型</div>
-            </div>
-            <div class="setting-control">
-              <t-select v-model="formData.type" :options="taskTypeOptions" />
-            </div>
-          </div>
-
-          <div v-if="formData.type === 'command' || formData.type === 'restart'" class="setting-item">
-            <div class="setting-info">
-              <div class="title">{{ formData.type === 'restart' ? '重启提示语' : '控制台命令' }}</div>
-              <div class="desc">
-                {{
-                  formData.type === 'restart' ? '重启前发送给全服玩家的倒计时提示消息' : '不需要加 /，直接输入命令内容'
-                }}
+          <div v-if="formData.type === 'command' || formData.type === 'restart'" class="flex flex-col md:flex-row md:items-start justify-between p-5 border-b border-dashed border-zinc-100 dark:border-zinc-800">
+            <div class="flex-1 md:max-w-[40%] pr-0 md:pr-8 mb-3 md:mb-0">
+              <div class="text-sm font-bold text-zinc-800 dark:text-zinc-200">{{ formData.type === 'restart' ? '重启提示语' : '控制台命令' }}</div>
+              <div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                {{ formData.type === 'restart' ? '重启前发送给玩家的消息' : '直接输入内容，不需要加 /' }}
               </div>
             </div>
-            <div class="setting-control">
-              <t-textarea
-                v-model="formData.payload"
-                :autosize="{ minRows: 2, maxRows: 5 }"
-                placeholder="请输入内容..."
-              />
+            <div class="flex-1 md:max-w-[60%] w-full">
+              <t-textarea v-model="formData.payload" :autosize="{ minRows: 2, maxRows: 4 }" placeholder="请输入内容..." class="w-full" />
             </div>
           </div>
 
-          <div class="setting-item">
-            <div class="setting-info">
-              <div class="title">启用状态</div>
-              <div class="desc">暂时禁用此任务而不删除它</div>
+          <div class="flex items-center justify-between p-5">
+            <div class="flex-1 pr-8">
+              <div class="text-sm font-bold text-zinc-800 dark:text-zinc-200">启用状态</div>
+              <div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">暂时禁用此任务而不删除它</div>
             </div>
-            <div class="setting-control">
-              <t-switch v-model="formData.enable" />
-            </div>
+            <t-switch v-model="formData.enable" />
           </div>
 
-          <div class="form-actions">
-            <t-button theme="primary" :loading="submitLoading" @click="handleSubmit">
-              <template #icon><save-icon /></template>
-              {{ isEditingId ? '保存修改' : '立即创建' }}
+          <div class="px-5 py-4 bg-zinc-50/50 dark:bg-zinc-800/20 flex gap-3">
+            <t-button theme="primary" :loading="submitLoading" class="!rounded-lg" @click="handleSubmit">
+              <template #icon><save-icon /></template>{{ isEditingId ? '保存修改' : '立即创建' }}
             </t-button>
-            <t-button theme="default" variant="base" @click="handleCancelCreate">取消</t-button>
+            <t-button theme="default" variant="base" class="!rounded-lg" @click="handleCancelCreate">取消</t-button>
           </div>
         </t-form>
       </div>
     </transition>
 
     <t-loading :loading="loading" show-overlay>
-      <div class="task-list">
-        <div v-if="taskList.length === 0 && !loading" class="empty-state">暂无任务，请点击上方创建</div>
+      <div class="flex flex-col gap-3 mt-2">
+        <div v-if="taskList.length === 0 && !loading" class="flex flex-col items-center justify-center p-12 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl text-zinc-400 dark:text-zinc-500">
+          <span class="text-sm font-medium">暂无任务，请点击上方创建</span>
+        </div>
 
-        <div v-for="item in taskList" :key="item.id" class="task-card">
-          <div class="card-left">
-            <div class="task-header-row">
-              <t-tag size="small" :theme="item.enable ? 'success' : 'warning'" variant="light" class="status-tag">
+        <div v-for="item in taskList" :key="item.id" class="group flex flex-col md:flex-row items-center justify-between p-5 bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 rounded-xl transition-all duration-200 hover:border-[var(--color-primary)] hover:shadow-md">
+          <div class="flex-1 min-w-0 w-full">
+            <div class="flex items-center gap-3 mb-3">
+              <t-tag size="small" :theme="item.enable ? 'success' : 'warning'" variant="light-outline" class="!rounded-md">
                 {{ item.enable ? '运行中' : '已暂停' }}
               </t-tag>
-              <span class="task-name">{{ item.name }}</span>
+              <span class="text-base font-bold text-zinc-800 dark:text-zinc-200 truncate">{{ item.name }}</span>
             </div>
-            <div class="task-meta-row">
-              <t-tag size="small" variant="outline" :theme="getColorByType(item.type)" style="margin-right: 8px">
-                <template #icon>
-                  <component :is="getIconByType(item.type)" />
-                </template>
-                {{ item.type.toUpperCase() }}
+
+            <div class="flex flex-wrap items-center gap-3 text-xs">
+              <t-tag size="small" variant="outline" :theme="getColorByType(item.type)" class="!rounded-md uppercase font-mono">
+                <template #icon><component :is="getIconByType(item.type)" /></template>
+                {{ item.type }}
               </t-tag>
 
-              <span class="cron-display"><time-icon /> {{ item.cron }}</span>
+              <div class="flex items-center gap-1.5 px-2 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-md font-mono">
+                <time-icon class="text-sm" /> {{ item.cron }}
+              </div>
             </div>
-            <div class="task-payload" v-if="item.payload" :title="item.payload">
+
+            <div v-if="item.payload" class="mt-3 text-xs text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-800/30 p-2 rounded-md border border-zinc-100 dark:border-zinc-800/50 truncate" :title="item.payload">
               {{ item.payload }}
             </div>
           </div>
 
-          <div class="card-right">
-            <t-button variant="text" theme="primary" @click="handleEdit(item)">
+          <div class="flex shrink-0 gap-1 mt-4 md:mt-0 pt-3 md:pt-0 border-t md:border-t-0 border-zinc-100 dark:border-zinc-800 w-full md:w-auto justify-end">
+            <t-button variant="text" theme="primary" class="!rounded-lg hover:!bg-[var(--color-primary)]/10" @click="handleEdit(item)">
               <template #icon><edit-icon /></template> 编辑
             </t-button>
-            <t-button variant="text" theme="danger" @click="handleDelete(item)">
+            <t-button variant="text" theme="danger" class="!rounded-lg hover:!bg-red-500/10" @click="handleDelete(item)">
               <template #icon><delete-icon /></template> 删除
             </t-button>
           </div>
@@ -339,259 +329,5 @@ onMounted(fetchData);
 </template>
 
 <style scoped lang="less">
-.page-container {
-  max-width: 100%;
-}
-
-/* 顶部标题栏 - 这里进行了关键修改以匹配模板 */
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  /* 核心修复：复用 setting-group-title 的间距和边框样式 */
-  margin-top: 32px; /* 增加顶部距离，不再顶格 */
-  margin-bottom: 16px; /* 底部留白 */
-  padding-bottom: 8px; /* 文字和虚线的距离 */
-  border-bottom: 1px dashed var(--td-component-stroke); /* 底部虚线 */
-}
-
-/* 蓝色竖条标题风格 - 保持不变，但对齐方式微调 */
-.section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--td-text-color-primary);
-  display: flex;
-  align-items: center;
-
-  &::before {
-    content: '';
-    display: inline-block;
-    width: 4px;
-    height: 16px;
-    background-color: var(--td-brand-color);
-    margin-right: 8px;
-    border-radius: 2px;
-  }
-}
-
-/* 创建/编辑容器 */
-.create-container {
-  background-color: var(--td-bg-color-container);
-  border: 1px solid var(--td-component-stroke);
-  border-radius: var(--td-radius-medium);
-  padding: 0 0 24px 0;
-  margin-bottom: 24px;
-  overflow: hidden;
-  /* 增加进入动画的平滑度 */
-  transition: all 0.3s;
-
-  .container-header {
-    padding: 12px 24px;
-    border-bottom: 1px solid var(--td-component-stroke);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: var(--td-bg-color-secondarycontainer);
-    margin-bottom: 8px;
-
-    .title {
-      font-weight: 600;
-      font-size: 14px;
-    }
-  }
-}
-
-/* 核心布局：Setting Item (左文右控) */
-.setting-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 16px 24px;
-  border-bottom: 1px dashed var(--td-component-stroke);
-
-  &:last-child {
-    border-bottom: none;
-  }
-
-  .setting-info {
-    flex: 1;
-    padding-right: 32px;
-    max-width: 40%;
-
-    .title {
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--td-text-color-primary);
-      margin-bottom: 4px;
-      line-height: 22px; /* 增加行高对齐 */
-    }
-    .desc {
-      font-size: 12px;
-      color: var(--td-text-color-placeholder);
-      line-height: 20px;
-    }
-  }
-
-  .setting-control {
-    flex: 1;
-    max-width: 60%;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center; /* 垂直居中 */
-    gap: 8px; /* 输入框和按钮之间的间距 */
-
-    /* 让输入框、下拉框占满剩余空间 */
-    .t-input,
-    .t-select,
-    .t-textarea {
-      flex: 1; /* 关键：自动撑开宽度 */
-      width: auto; /* 覆盖之前的 width: 100% */
-      max-width: 400px;
-    }
-
-    /* 防止按钮被压缩 */
-    .t-button {
-      flex-shrink: 0;
-    }
-  }
-}
-
-.form-actions {
-  padding: 24px 24px 0 24px;
-  display: flex;
-  gap: 12px;
-}
-
-/* 列表样式 */
-.task-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  /* 确保列表和标题之间有距离 */
-  margin-top: 8px;
-}
-
-.task-card {
-  background-color: var(--td-bg-color-container);
-  border: 1px solid var(--td-component-stroke);
-  border-radius: var(--td-radius-medium);
-  padding: 16px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  transition: all 0.2s;
-
-  &:hover {
-    border-color: var(--td-brand-color);
-  }
-
-  .card-left {
-    flex: 1;
-    min-width: 0; /* 防止flex子项溢出 */
-
-    .task-header-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 8px;
-
-      .task-name {
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--td-text-color-primary);
-      }
-    }
-
-    .task-meta-row {
-      display: flex;
-      align-items: center;
-      margin-bottom: 6px;
-      font-size: 13px;
-
-      .cron-display {
-        font-family: monospace; /* 等宽字体显示Cron */
-        color: var(--td-text-color-secondary);
-        background: var(--td-bg-color-secondarycontainer);
-        padding: 2px 6px;
-        border-radius: 4px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-    }
-
-    .task-payload {
-      font-size: 12px;
-      color: var(--td-text-color-placeholder);
-      max-width: 600px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      line-height: 1.5;
-    }
-  }
-
-  .card-right {
-    display: flex;
-    gap: 8px;
-    flex-shrink: 0;
-  }
-}
-
-.empty-state {
-  text-align: center;
-  padding: 40px;
-  color: var(--td-text-color-placeholder);
-  background: var(--td-bg-color-container);
-  border-radius: var(--td-radius-medium);
-  border: 1px dashed var(--td-component-stroke);
-}
-
-/* Vue Transition */
-.slide-fade-enter-active,
-.slide-fade-leave-active {
-  transition: all 0.3s ease-out;
-}
-.slide-fade-enter-from,
-.slide-fade-leave-to {
-  transform: translateY(-10px);
-  opacity: 0;
-}
-
-@media (max-width: 768px) {
-  .setting-item {
-    flex-direction: column;
-    padding: 16px;
-
-    .setting-info {
-      max-width: 100%;
-      margin-bottom: 12px;
-      padding-right: 0;
-    }
-    .setting-control {
-      max-width: 100%;
-      justify-content: flex-start;
-      .t-input,
-      .t-select,
-      .t-textarea {
-        max-width: 100%;
-      }
-    }
-  }
-
-  .task-card {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 16px;
-
-    .card-right {
-      width: 100%;
-      justify-content: flex-end;
-      margin-top: 12px;
-      border-top: 1px solid var(--td-component-stroke);
-      padding-top: 8px;
-    }
-  }
-}
+@reference "@/style/tailwind/index.css";
 </style>

@@ -203,76 +203,80 @@ watch(() => route.params.serverId, (newId) => {
 </script>
 
 <template>
-  <div class="pm-container">
+  <div class="flex flex-col pb-6">
 
-    <div class="header-section">
-      <div class="setting-group-title">
-        资源管理
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-5 mb-4 pb-2 border-b border-dashed border-zinc-200/60 dark:border-zinc-700/60">
+      <div class="flex items-center gap-2">
+        <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
+        <h2 class="text-base font-bold text-zinc-800 dark:text-zinc-200 m-0">资源管理</h2>
       </div>
-      <div class="mode-switcher">
-        <t-radio-group v-model="mode" variant="default-filled" @change="onModeChange">
-          <t-radio-button value="mods">
-            <template #icon><extension-icon /></template>
-            模组 (Mods)
+
+      <div class="w-full md:w-auto">
+        <t-radio-group v-model="mode" variant="default-filled" class="!bg-zinc-100 dark:!bg-zinc-800 border border-zinc-200/50 dark:border-zinc-700/50 !rounded-lg p-0.5 shadow-sm flex w-full" @change="onModeChange">
+          <t-radio-button value="mods" class="flex-1 md:flex-none !text-center">
+            <div class="flex justify-center items-center gap-1.5"><extension-icon size="14px"/> 模组 (Mods)</div>
           </t-radio-button>
-          <t-radio-button value="plugins">
-            <template #icon><app-icon /></template>
-            插件 (Plugins)
+          <t-radio-button value="plugins" class="flex-1 md:flex-none !text-center">
+            <div class="flex justify-center items-center gap-1.5"><app-icon size="14px"/> 插件 (Plugins)</div>
           </t-radio-button>
         </t-radio-group>
       </div>
     </div>
 
-    <div v-if="errorMsg" class="error-alert-bar">
-      <t-alert theme="error" :message="errorMsg" closeable @close="errorMsg = ''">
+    <div v-if="errorMsg" class="mb-4">
+      <t-alert theme="error" :message="errorMsg" closeable class="!rounded-xl shadow-sm border border-red-100 dark:border-red-900/50" @close="errorMsg = ''">
         <template #operation>
-          <span style="cursor: pointer; margin-left: 8px" @click="fetchData(false)">重试</span>
+          <span class="cursor-pointer ml-2 font-bold text-red-600 dark:text-red-400 hover:opacity-80 transition-opacity" @click="fetchData(false)">重试</span>
         </template>
       </t-alert>
     </div>
 
-    <div class="toolbar">
-      <div class="left-actions">
-        <t-button theme="primary" :disabled="errorMsg !== ''" @click="handleUpload">
-          <template #icon><upload-icon /></template>
-          上传文件
-        </t-button>
-        <t-button
-          v-if="mode === 'mods'"
-          :disabled="errorMsg !== ''"
-          variant="outline"
-          :loading="loading"
-          @click="fetchData(true)"
-        >
-          <template #icon><search-icon /></template>
-          检测客户端模组
-        </t-button>
-        <t-button variant="outline" :loading="loading" @click="fetchData(false)">
-          <template #icon><refresh-icon /></template>
-        </t-button>
+    <div class="flex flex-col-reverse md:flex-row justify-between items-stretch md:items-center gap-3 mb-4">
 
-        <transition name="fade">
-          <div v-if="selectedRowKeys.length > 0" class="bulk-actions">
-            <div class="divider"></div>
-            <span class="selected-count">已选 {{ selectedRowKeys.length }} 项</span>
-            <t-button size="small" variant="text" theme="success" @click="handleBulk('enable')">启用</t-button>
-            <t-button size="small" variant="text" theme="warning" @click="handleBulk('disable')">禁用</t-button>
-            <t-button size="small" variant="text" theme="danger" @click="handleBulk('delete')">删除</t-button>
+      <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-between md:justify-start">
+        <div class="flex items-center gap-2">
+          <t-button theme="primary" class="!rounded-lg shadow-sm" :disabled="errorMsg !== ''" @click="handleUpload">
+            <template #icon><upload-icon /></template> 上传文件
+          </t-button>
+
+          <t-button v-if="mode === 'mods'" variant="outline" class="!rounded-lg !bg-zinc-50 dark:!bg-zinc-800/50 !border-zinc-200 dark:!border-zinc-700 hover:!bg-zinc-100 dark:hover:!bg-zinc-800" :disabled="errorMsg !== ''" :loading="loading" @click="fetchData(true)">
+            <template #icon><search-icon /></template> 检测客户端模组
+          </t-button>
+
+          <t-button variant="outline" class="!rounded-lg !bg-zinc-50 dark:!bg-zinc-800/50 !border-zinc-200 dark:!border-zinc-700 hover:!bg-zinc-100 dark:hover:!bg-zinc-800 shrink-0" :loading="loading" @click="fetchData(false)">
+            <template #icon><refresh-icon /></template>
+          </t-button>
+        </div>
+
+        <transition
+          enter-active-class="transition-opacity duration-200 ease-out"
+          enter-from-class="opacity-0"
+          leave-active-class="transition-opacity duration-200 ease-in"
+          leave-to-class="opacity-0"
+        >
+          <div v-if="selectedRowKeys.length > 0" class="flex items-center bg-zinc-100 dark:bg-zinc-800/80 px-3 py-1.5 rounded-lg gap-3 shadow-sm flex-1 md:flex-none justify-end md:justify-start">
+            <div class="hidden md:block w-[2px] h-[14px] bg-zinc-300 dark:bg-zinc-600 -mr-1"></div>
+            <span class="text-xs font-bold text-zinc-600 dark:text-zinc-300 shrink-0">已选 {{ selectedRowKeys.length }} 项</span>
+            <div class="flex items-center">
+              <t-button size="small" variant="text" theme="success" class="!px-2 !h-7 !text-xs hover:!bg-emerald-500/10 !rounded-md" @click="handleBulk('enable')">启用</t-button>
+              <t-button size="small" variant="text" theme="warning" class="!px-2 !h-7 !text-xs hover:!bg-amber-500/10 !rounded-md" @click="handleBulk('disable')">禁用</t-button>
+              <t-button size="small" variant="text" theme="danger" class="!px-2 !h-7 !text-xs hover:!bg-red-500/10 !rounded-md" @click="handleBulk('delete')">删除</t-button>
+            </div>
           </div>
         </transition>
       </div>
 
-      <div class="right-search">
-        <t-input v-model="filterText" placeholder="搜索文件名..." clearable>
-          <template #prefix-icon><search-icon /></template>
+      <div class="w-full md:w-60 shrink-0">
+        <t-input v-model="filterText" placeholder="搜索文件名..." clearable class="!w-full !rounded-lg shadow-sm">
+          <template #prefix-icon><search-icon class="text-zinc-400" /></template>
         </t-input>
       </div>
     </div>
 
-    <div class="table-wrapper">
+    <div class="border border-zinc-200/60 dark:border-zinc-700/60 rounded-xl overflow-hidden shadow-sm bg-white/50 dark:bg-zinc-900/20">
       <t-table
         v-model:selected-row-keys="selectedRowKeys"
-        :pagination="{ defaultPageSize: 20, total: displayList.length, showJumper: true ,defaultCurrent: 1}"
+        :pagination="{ defaultPageSize: 20, total: displayList.length, showJumper: true, defaultCurrent: 1 }"
         :data="displayList"
         :columns="columns"
         :row-key="'name'"
@@ -282,31 +286,25 @@ watch(() => route.params.serverId, (newId) => {
         class="custom-table"
       >
         <template #name="{ row }">
-          <div style="display: flex; align-items: center; gap: 8px;">
+          <div class="flex items-center gap-2 font-mono text-[13px] text-zinc-700 dark:text-zinc-300 break-all">
             <span>{{ row.name }}</span>
-            <t-tag
-              v-if="row.isClient"
-              theme="warning"
-              variant="light"
-              size="small"
-            >
+            <t-tag v-if="row.isClient" theme="warning" variant="light" size="small" class="!rounded shrink-0">
               客户端
             </t-tag>
           </div>
         </template>
+
         <template #status="{ row }">
-          <t-tag v-if="row.status === 'enabled'" theme="success" variant="light">
-            <template #icon><check-circle-icon /></template>
-            已启用
+          <t-tag v-if="row.status === 'enabled'" theme="success" variant="light" class="!rounded-md">
+            <template #icon><check-circle-icon /></template>已启用
           </t-tag>
-          <t-tag v-else theme="default" variant="light" style="color: var(--td-text-color-placeholder)">
-            <template #icon><close-circle-icon /></template>
-            已禁用
+          <t-tag v-else theme="default" variant="light" class="!rounded-md !text-zinc-500 dark:!text-zinc-400">
+            <template #icon><close-circle-icon /></template>已禁用
           </t-tag>
         </template>
 
         <template #op="{ row }">
-          <t-space size="small">
+          <t-space size="small" class="flex items-center">
             <t-switch
               :model-value="row.status === 'enabled'"
               :loading="loading"
@@ -317,7 +315,7 @@ watch(() => route.params.serverId, (newId) => {
             </t-switch>
 
             <t-popconfirm content="确定要删除此文件吗？" theme="danger" @confirm="handleAction('delete', [row.name])">
-              <t-button variant="text" theme="danger" shape="square">
+              <t-button variant="text" theme="danger" shape="square" class="!rounded-md hover:!bg-red-500/10 transition-colors">
                 <delete-icon />
               </t-button>
             </t-popconfirm>
@@ -325,18 +323,18 @@ watch(() => route.params.serverId, (newId) => {
         </template>
 
         <template #empty>
-          <div class="empty-state">
-            <extension-icon v-if="mode === 'mods'" size="48px" style="color: var(--td-gray-color-4)" />
-            <app-icon v-else size="48px" style="color: var(--td-gray-color-4)" />
-            <p>{{ `暂无${mode === 'mods' ? '模组' : '插件'}文件` }}</p>
+          <div class="py-16 flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500">
+            <extension-icon v-if="mode === 'mods'" size="40px" class="opacity-60 mb-3" />
+            <app-icon v-else size="40px" class="opacity-60 mb-3" />
+            <span class="text-sm font-medium">暂无{{ mode === 'mods' ? '模组' : '插件' }}文件</span>
           </div>
         </template>
       </t-table>
     </div>
 
-    <div class="tips-footer">
+    <div class="mt-4 text-[11px] text-zinc-400 dark:text-zinc-500 leading-relaxed tracking-wider space-y-1">
       <p>提示：{{ mode === 'mods' ? '模组' : '插件' }}文件存放于服务器根目录的 /{{ mode }} 文件夹下。</p>
-      <p>禁用文件后，会在文件名后添加 .disabled 后缀，服务器将忽略该文件。</p>
+      <p>禁用文件后，会在文件名后添加 <code class="bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded font-mono text-[10px] text-zinc-500 dark:text-zinc-400">.disabled</code> 后缀，服务器将自动忽略该文件。</p>
     </div>
 
     <upload-dialog
@@ -351,163 +349,5 @@ watch(() => route.params.serverId, (newId) => {
 </template>
 
 <style scoped lang="less">
-.pm-container {
-  padding-bottom: 24px;
-}
-
-/* 标题样式复刻 */
-.setting-group-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--td-text-color-primary);
-  display: flex;
-  align-items: center;
-
-  &::before {
-    content: '';
-    display: inline-block;
-    width: 4px;
-    height: 16px;
-    background-color: var(--td-brand-color);
-    margin-right: 8px;
-    border-radius: 2px;
-  }
-}
-
-.header-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 24px;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 1px dashed var(--td-component-stroke);
-}
-
-.error-alert-bar {
-  margin-bottom: 16px;
-}
-
-.toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  gap: 12px;
-
-  .left-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .right-search {
-    width: 240px;
-  }
-}
-
-.bulk-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background-color: var(--td-bg-color-container-hover);
-  padding: 4px 12px;
-  border-radius: var(--td-radius-medium);
-
-  .divider {
-    width: 1px;
-    height: 14px;
-    background-color: var(--td-component-stroke);
-    margin: 0 4px;
-  }
-
-  .selected-count {
-    font-size: 12px;
-    color: var(--td-text-color-secondary);
-    margin-right: 4px;
-  }
-}
-
-.table-wrapper {
-  background-color: var(--td-bg-color-container);
-  border-radius: var(--td-radius-medium);
-  overflow: hidden; /* 圆角溢出处理 */
-  border: 1px solid var(--td-component-stroke);
-}
-
-.empty-state {
-  padding: 48px 0;
-  text-align: center;
-  color: var(--td-text-color-secondary);
-  p {
-    margin-top: 12px;
-    font-size: 14px;
-  }
-}
-
-.tips-footer {
-  margin-top: 16px;
-  font-size: 12px;
-  color: var(--td-text-color-placeholder);
-  line-height: 20px;
-}
-
-/* 响应式适配 */
-@media (max-width: 768px) {
-  .header-section {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-
-    .setting-group-title {
-      width: 100%;
-      border-bottom: none;
-      margin-bottom: 0;
-      padding-bottom: 0;
-    }
-
-    .mode-switcher {
-      width: 100%;
-      :deep(.t-radio-group) {
-        width: 100%;
-        display: flex;
-        .t-radio-button {
-          flex: 1;
-          text-align: center;
-        }
-      }
-    }
-  }
-
-  .toolbar {
-    flex-direction: column-reverse; /* 手机上搜索框放上面可能更好，这里保持原逻辑 */
-    align-items: stretch;
-
-    .right-search {
-      width: 100%;
-    }
-
-    .left-actions {
-      justify-content: space-between;
-      width: 100%;
-    }
-  }
-
-  .bulk-actions {
-    flex: 1; /* 在移动端让批量操作栏占据剩余空间 */
-    justify-content: flex-end;
-  }
-}
-
-/* 动画效果 */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
+@reference "@/style/tailwind/index.css";
 </style>
