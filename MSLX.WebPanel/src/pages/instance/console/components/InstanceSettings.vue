@@ -38,199 +38,74 @@ defineExpose({ open });
     :footer="false"
     class="settings-dialog"
   >
-    <div class="layout-container">
-      <div class="sidebar">
+    <div class="flex flex-col md:flex-row h-[75vh] md:h-[72vh] overflow-hidden bg-white/50 dark:bg-zinc-900/30 rounded-b-xl">
+
+      <div class="flex flex-row md:flex-col w-full md:w-40 shrink-0 border-b md:border-b-0 md:border-r border-zinc-200/60 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-950/30 overflow-x-auto md:overflow-y-auto hide-scrollbar md:pt-3">
+
         <div
           v-for="(item, index) in menuItems"
           :key="index"
-          class="nav-item"
-          :class="{ active: currentTab === index }"
+          class="relative flex flex-col md:flex-row items-center justify-center md:justify-start flex-1 md:flex-none h-auto md:h-12 px-2 py-3 md:py-0 md:px-5 cursor-pointer text-xs md:text-sm transition-all duration-200 gap-1 md:gap-2.5 group"
+          :class="currentTab === index ? 'text-[var(--color-primary)] font-bold bg-white/80 dark:bg-zinc-800/50 md:bg-transparent' : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/40'"
           @click="currentTab = index"
         >
-          <component :is="item.icon" class="nav-icon" />
-          <span class="nav-text">{{ item.label }}</span>
+          <div
+            v-if="currentTab === index"
+            class="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[3px] rounded-t-sm md:top-1/2 md:left-0 md:-translate-y-1/2 md:translate-x-0 md:w-1 md:h-6 md:rounded-r-sm md:rounded-tl-none bg-[var(--color-primary)] shadow-[0_0_8px_var(--color-primary)] opacity-80"
+          ></div>
+
+          <component :is="item.icon" class="text-xl md:text-lg shrink-0 transition-transform duration-300" :class="currentTab === index ? 'scale-110' : 'group-hover:scale-110'" />
+          <span class="whitespace-nowrap overflow-hidden text-ellipsis">{{ item.label }}</span>
+        </div>
+
+      </div>
+
+      <div class="flex-1 min-w-0 h-full flex flex-col relative bg-white/40 dark:bg-zinc-900/20">
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-4 pb-20 md:p-0 md:pl-8 md:pb-12 md:pr-2">
+
+          <div v-if="currentTab === 0" class="tab-panel-anim"><general-settings /></div>
+          <div v-if="currentTab === 1" class="tab-panel-anim"><mods-plugins-manager /></div>
+          <div v-if="currentTab === 2" class="tab-panel-anim"><server-properties :instance-id="21" /></div>
+          <div v-if="currentTab === 3" class="tab-panel-anim"><cron-tasks /></div>
+          <div v-if="currentTab === 4" class="tab-panel-anim"><backup-manager /></div>
+          <div v-if="currentTab === 5" class="tab-panel-anim"><more /></div>
+
         </div>
       </div>
 
-      <div class="main-content">
-        <div v-if="currentTab === 0" class="panel-wrapper">
-          <general-settings />
-        </div>
-
-        <div v-if="currentTab === 1" class="panel-wrapper">
-          <mods-plugins-manager />
-        </div>
-
-        <div v-if="currentTab === 2" class="panel-wrapper">
-          <server-properties :instance-id="21" />
-        </div>
-
-        <div v-if="currentTab === 3" class="panel-wrapper">
-          <cron-tasks />
-        </div>
-
-        <div v-if="currentTab === 4" class="panel-wrapper">
-          <backup-manager />
-        </div>
-        <div v-if="currentTab === 5" class="panel-wrapper">
-          <more />
-        </div>
-      </div>
     </div>
   </t-dialog>
 </template>
 
 <style scoped lang="less">
-@import '@/style/scrollbar.less';
+@import '@/style/scrollbar';
+@reference "@/style/tailwind/index.css";
 
-:deep(.t-dialog__body) {
-  padding: 0 !important;
-}
-
-.layout-container {
-  height: 72vh;
-  display: flex;
-  flex-direction: row;
-  position: relative;
-  overflow: hidden;
-  background-color: var(--td-bg-color-secondarycontainer);
-}
-
-// 侧边栏
-.sidebar {
-  width: 160px;
-  height: 100%;
-  background-color: var(--td-bg-color-secondarycontainer);
-  border-right: 1px solid var(--td-component-border);
-  display: flex;
-  flex-direction: column;
-  padding-top: 12px;
-  flex-shrink: 0;
-  overflow-y: auto;
-}
-
-.nav-item {
-  height: 50px;
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  cursor: pointer;
-  color: var(--td-text-color-secondary);
-  font-size: 14px;
-  transition: all 0.2s;
-  position: relative;
-
-  .nav-icon {
-    font-size: 18px;
-    margin-right: 10px;
-    flex-shrink: 0;
-  }
-
-  .nav-text {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  &:hover:not(.active) {
-    background-color: var(--td-bg-color-container-hover);
-  }
-
-  &.active {
-    background-color: var(--td-bg-color-container);
-    color: var(--td-brand-color);
-    font-weight: 600;
-
-    &::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 4px;
-      height: 24px;
-      background-color: var(--td-brand-color);
-      border-radius: 0 2px 2px 0;
-    }
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
   }
 }
 
-// 内容区
-.main-content {
-  flex: 1;
-  background-color: var(--td-bg-color-container);
-  height: 100%;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.panel-wrapper {
-  flex: 1;
-  padding-left: 32px;
-  padding-bottom: 50px;
-  overflow-y: auto;
+.custom-scrollbar {
   .scrollbar-mixin();
 }
 
-.panel-title {
-  font-size: 20px;
-  font-weight: 600;
-  margin-bottom: 24px;
-  color: var(--td-text-color-primary);
+.tab-panel-anim {
+  animation: fadeSlideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  will-change: transform, opacity;
 }
 
-// 移动端适配
-@media (max-width: 768px) {
-  // 变成上下布局
-  .layout-container {
-    flex-direction: column;
-    height: 75vh;
+@keyframes fadeSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
-
-  // 横向导航
-  .sidebar {
-    width: 100%;
-    height: auto;
-    flex-direction: row;
-    border-right: none;
-    border-bottom: 1px solid var(--td-component-border);
-    padding: 0;
-  }
-
-  .nav-item {
-    flex: 1;
-    justify-content: center;
-    padding: 12px 0;
-    flex-direction: column;
-    height: auto;
-    font-size: 12px;
-    gap: 4px;
-
-    .nav-icon {
-      margin-right: 0;
-      font-size: 20px;
-    }
-
-    &.active {
-      background-color: transparent;
-
-      &::before {
-        left: 50%;
-        top: auto;
-        bottom: 0;
-        transform: translateX(-50%);
-        width: 24px;
-        height: 3px;
-        border-radius: 2px 2px 0 0;
-      }
-    }
-  }
-
-  .panel-wrapper {
-    .scrollbar-mixin();
-    padding: 16px 16px 80px;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style>

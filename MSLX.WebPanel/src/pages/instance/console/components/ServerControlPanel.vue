@@ -125,43 +125,63 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="sidebar-content">
-    <t-card :bordered="false" class="control-card">
-      <div class="control-header">
-        <div class="status-indicator" :class="statusConfig.theme">
-          <span class="pulse"></span>{{ statusConfig.text }}
+  <div class="flex flex-col gap-5 h-full">
+
+    <div class="design-card bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-5">
+
+      <div class="flex justify-between items-center mb-5">
+        <div class="flex items-center gap-2 font-bold text-sm"
+             :class="{
+               'text-zinc-500': status === 0,
+               'text-[var(--color-primary)]': status === 1 || status === 4,
+               'text-[var(--color-success)]': status === 2,
+               'text-[var(--color-warning)]': status === 3
+             }">
+          <span class="relative flex h-2.5 w-2.5">
+            <span v-if="status === 1 || status === 2 || status === 4"
+                  class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                  :class="status === 2 ? 'bg-[var(--color-success)]' : 'bg-[var(--color-primary)]'">
+            </span>
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5"
+                  :class="{
+                    'bg-zinc-400 dark:bg-zinc-600': status === 0,
+                    'bg-[var(--color-primary)]': status === 1 || status === 4,
+                    'bg-[var(--color-success)]': status === 2,
+                    'bg-[var(--color-warning)]': status === 3
+                  }">
+            </span>
+          </span>
+          {{ statusConfig.text }}
         </div>
-        <t-tag :theme="statusConfig.theme as any" variant="light" shape="round">
+        <t-tag :theme="statusConfig.theme as any" variant="light" class="!rounded !font-bold">
           {{ statusConfig.label }}
         </t-tag>
       </div>
 
-      <div class="control-actions">
+      <div class="flex flex-col gap-2.5">
+
         <t-button
           v-if="status === 0"
           theme="primary"
           size="large"
           block
           :loading="loading"
-          @click="
-            $emit('clear-log');
-            $emit('start');
-          "
+          class="!rounded-lg !h-10 !font-bold shadow-sm"
+          @click="$emit('clear-log'); $emit('start');"
         >
           <template #icon><play-circle-icon /></template>启动实例
         </t-button>
 
         <template v-else>
-          <div v-if="status === 2 && !loading" class="running-action-group">
+          <div v-if="status === 2 && !loading" class="flex gap-2 w-full">
             <t-popconfirm content="确定要停止该实例吗？" @confirm="$emit('stop')">
-              <t-button class="stop-btn" theme="danger" size="large">
-                <template #icon><stop-circle-icon /></template>
-                停止
+              <t-button theme="danger" class="flex-1 !rounded-lg !h-10 !font-bold shadow-sm">
+                <template #icon><stop-circle-icon /></template> 停止
               </t-button>
             </t-popconfirm>
 
             <t-popconfirm content="确定要重启该实例吗？" @confirm="$emit('restart')">
-              <t-button theme="warning" size="large" shape="square">
+              <t-button theme="warning" class="!rounded-lg !h-10 !w-10 !p-0 shadow-sm shrink-0">
                 <template #icon><refresh-icon /></template>
               </t-button>
             </t-popconfirm>
@@ -173,11 +193,12 @@ onUnmounted(() => {
             @confirm="$emit('force-exit')"
           >
             <t-button
-              class="force-kill-btn glass-btn"
               :theme="loading ? 'primary' : 'danger'"
               variant="outline"
               block
               :loading="loading"
+              class="!rounded-lg !h-10 !font-bold transition-all duration-300"
+              :class="loading ? '!bg-[var(--color-primary)]/10 !border-[var(--color-primary)]/30' : '!bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20'"
             >
               <template #icon><close-circle-icon v-if="!loading" /></template>
               {{ loading ? '正在处理...' : '强制结束' }}
@@ -185,119 +206,120 @@ onUnmounted(() => {
           </t-popconfirm>
         </template>
 
-        <div class="action-row">
-          <t-button class="glass-btn" variant="outline" block @click="changeUrl(`/instance/files/${serverId}`)">
+        <div class="flex gap-2 w-full mt-1.5">
+          <t-button variant="outline" class="flex-1 !rounded-lg !h-8 !bg-zinc-100 dark:!bg-zinc-800 !border-zinc-200 dark:!border-zinc-700 !text-zinc-700 dark:!text-zinc-300 hover:!bg-zinc-200 dark:hover:!bg-zinc-700 transition-colors" @click="changeUrl(`/instance/files/${serverId}`)">
             <template #icon><folder-icon /></template>文件管理
           </t-button>
 
-          <t-button class="glass-btn" variant="outline" block @click="handleOpenSettings">
+          <t-button variant="outline" class="flex-1 !rounded-lg !h-8 !bg-zinc-100 dark:!bg-zinc-800 !border-zinc-200 dark:!border-zinc-700 !text-zinc-700 dark:!text-zinc-300 hover:!bg-zinc-200 dark:hover:!bg-zinc-700 transition-colors" @click="handleOpenSettings">
             <template #icon><setting-icon /></template>实例设置
           </t-button>
         </div>
 
         <t-dropdown trigger="click" :min-column-width="120" placement="bottom">
-          <t-button theme="primary" class="glass-btn" variant="outline" block>
+          <t-button block class="!rounded-lg !h-8 mt-0.5 !bg-[var(--color-primary)]/5 !border-[var(--color-primary)]/20 !text-[var(--color-primary)] hover:!bg-[var(--color-primary)]/10 transition-colors">
             <template #icon><more-icon /></template>更多功能
           </t-button>
 
           <t-dropdown-menu>
             <t-dropdown-item @click="$emit('clear-log')">
-              <template #prefix-icon><refresh-icon /></template>
-              清空日志
+              <template #prefix-icon><refresh-icon /></template>清空日志
             </t-dropdown-item>
-
             <t-dropdown-item :disabled="status !== 2 || loading" @click="$emit('backup')">
-              <template #prefix-icon><cloud-icon /></template>
-              立即备份
+              <template #prefix-icon><cloud-icon /></template>立即备份
             </t-dropdown-item>
             <t-dropdown-item @click="showMapRenderDialog = true">
-              <template #prefix-icon><map-icon /></template>
-              世界渲染图
+              <template #prefix-icon><map-icon /></template>世界渲染图
             </t-dropdown-item>
             <t-dropdown-item @click="showLogAnalysisDialog = true">
-              <template #prefix-icon><analytics-icon /></template>
-              日志分析
+              <template #prefix-icon><analytics-icon /></template>日志分析
             </t-dropdown-item>
           </t-dropdown-menu>
         </t-dropdown>
-      </div>
-    </t-card>
 
-    <t-card :bordered="false" title="实例概览" class="info-card">
-      <template #actions>
+      </div>
+    </div>
+
+    <div class="design-card flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-5">
+
+      <div class="flex justify-between items-center mb-4 pb-4 border-b border-zinc-200/60 dark:border-zinc-700/60">
+        <h3 class="text-sm font-bold text-zinc-800 dark:text-zinc-200 m-0">实例概览</h3>
         <t-radio-group v-model="activeTab" variant="default-filled" size="small">
           <t-radio-button value="info"><info-circle-icon /> 详情</t-radio-button>
           <t-radio-button value="monitor"><chart-bar-icon /> 监控</t-radio-button>
         </t-radio-group>
-      </template>
+      </div>
 
-      <div class="card-content-area">
-        <div v-if="activeTab === 'info'" class="info-list">
-          <div class="info-item">
-            <div class="label"><desktop-icon /> 实例名称</div>
-            <div class="value">{{ serverInfo?.name }}</div>
+      <div class="flex-1 min-h-0">
+        <div v-if="activeTab === 'info'" class="flex flex-col gap-1.5">
+
+          <div class="flex justify-between items-center py-1">
+            <div class="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"><desktop-icon size="14px" /> 实例名称</div>
+            <div class="font-bold text-sm text-zinc-800 dark:text-zinc-200 truncate max-w-[150px]">{{ serverInfo?.name }}</div>
           </div>
+
           <template v-if="serverInfo?.java !== 'none'">
-            <div class="info-item">
-              <div class="label"><dashboard-icon /> 内存限制</div>
-              <div class="value">{{ serverInfo?.maxM }} MB</div>
+            <div class="flex justify-between items-center py-1">
+              <div class="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"><dashboard-icon size="14px" /> 内存限制</div>
+              <div class="font-mono text-sm font-bold text-zinc-800 dark:text-zinc-200">{{ serverInfo?.maxM }} MB</div>
             </div>
-            <div class="proxy-group"></div>
-            <div class="info-item">
-              <div class="label"><enter-icon /> 运行端口</div>
-              <div class="value">{{ serverInfo?.mcConfig?.serverPort }}</div>
+
+            <div class="flex justify-between items-center py-1">
+              <div class="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"><enter-icon size="14px" /> 运行端口</div>
+              <div class="font-mono text-sm font-bold text-[var(--color-primary)]">{{ serverInfo?.mcConfig?.serverPort }}</div>
             </div>
-            <div class="info-item">
-              <div class="label"><arrow-left-right-1-icon /> 游戏难度</div>
-              <div class="value">
-                <t-tag theme="primary">{{ serverInfo?.mcConfig?.difficulty }}</t-tag>
-              </div>
+
+            <div class="flex justify-between items-center py-1">
+              <div class="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"><arrow-left-right-1-icon size="14px" /> 游戏难度</div>
+              <t-tag theme="primary" variant="light" size="small" class="!rounded">{{ serverInfo?.mcConfig?.difficulty }}</t-tag>
             </div>
-            <div class="info-item">
-              <div class="label"><wink-icon /> 游戏模式</div>
-              <div class="value">
-                <t-tag>{{ serverInfo?.mcConfig?.gamemode }}</t-tag>
-              </div>
+
+            <div class="flex justify-between items-center py-1">
+              <div class="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"><wink-icon size="14px" /> 游戏模式</div>
+              <t-tag variant="light" size="small" class="!rounded">{{ serverInfo?.mcConfig?.gamemode }}</t-tag>
             </div>
-            <div class="info-item">
-              <div class="label"><folder-icon /> 游戏地图</div>
-              <div class="value">{{ serverInfo?.mcConfig?.levelName }}</div>
+
+            <div class="flex justify-between items-center py-1">
+              <div class="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"><folder-icon size="14px" /> 游戏地图</div>
+              <div class="text-xs font-bold text-zinc-800 dark:text-zinc-200">{{ serverInfo?.mcConfig?.levelName }}</div>
             </div>
-            <div class="info-item">
-              <div class="label"><user-unlocked-icon /> 正版验证</div>
-              <div class="value">
-                <t-tag :theme="serverInfo?.mcConfig?.onlineMode === 'true' ? 'success' : 'warning'">{{
-                  serverInfo?.mcConfig?.onlineMode === 'true' ? '开启' : '关闭'
-                }}</t-tag>
-              </div>
+
+            <div class="flex justify-between items-center py-1">
+              <div class="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"><user-unlocked-icon size="14px" /> 正版验证</div>
+              <t-tag :theme="serverInfo?.mcConfig?.onlineMode === 'true' ? 'success' : 'warning'" variant="light" size="small" class="!rounded">
+                {{ serverInfo?.mcConfig?.onlineMode === 'true' ? '开启' : '关闭' }}
+              </t-tag>
             </div>
           </template>
-          <template v-else
-            ><div class="info-item">
-              <div class="label"><dashboard-icon /> 模式</div>
-              <div class="value">自定义模式</div>
-            </div></template
-          >
-          <div class="proxy-group"></div>
-          <div class="info-item">
-            <div class="label"><time-icon /> 运行时长</div>
-            <div class="value">{{ status === 2 ? formattedUptime : '--:--:--' }}</div>
+
+          <template v-else>
+            <div class="flex justify-between items-center py-1">
+              <div class="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"><dashboard-icon size="14px" /> 模式</div>
+              <t-tag theme="warning" variant="light" size="small" class="!rounded">自定义模式</t-tag>
+            </div>
+          </template>
+
+          <div class="flex justify-between items-center py-1 mt-1">
+            <div class="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"><time-icon size="14px" /> 运行时长</div>
+            <div class="font-mono text-sm font-bold text-zinc-800 dark:text-zinc-200">{{ status === 2 ? formattedUptime : '--:--:--' }}</div>
           </div>
         </div>
 
-        <div v-else-if="activeTab === 'monitor'" class="monitor-view">
+        <div v-else-if="activeTab === 'monitor'" class="flex flex-col">
           <instance-monitor
             v-if="serverInfo && status !== 0"
             :server-id="serverId"
             :is-running="status === 2"
             :max-memory="serverInfo.java === 'none' ? 0 : serverInfo.maxM || 4096"
           />
-          <div v-else class="monitor-placeholder">实例未运行</div>
+          <div v-else class="flex-1 flex items-center justify-center text-zinc-400 dark:text-zinc-500 text-sm font-medium">
+            实例未运行
+          </div>
         </div>
       </div>
-    </t-card>
+    </div>
 
-    <player-list-card v-if="serverInfo?.monitorPlayers" :server-id="serverId" :status="status" />
+    <player-list-card v-if="serverInfo?.monitorPlayers" :server-id="serverId" :status="status" class="design-card" />
 
     <instance-settings ref="settingsRef" :server-id="serverId" @success="handleSettingsSaved" />
     <log-analysis-dialog v-model:visible="showLogAnalysisDialog" :server-id="serverId" />
@@ -306,231 +328,5 @@ onUnmounted(() => {
 </template>
 
 <style scoped lang="less">
-.sidebar-content {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  height: 100%;
-}
-
-.control-card,
-.info-card {
-  :deep(.t-card__body) {
-    padding-top: 10px;
-  }
-}
-
-/* === 卡片 1: Radio 按钮透明化 === */
-.info-card {
-  :deep(.t-radio-group) {
-    background-color: transparent !important; /* 去掉整个条的背景 */
-  }
-  :deep(.t-radio-button) {
-    background-color: transparent !important; /* 去掉按钮背景 */
-    border: 1px solid transparent; /* 默认无边框 */
-    color: var(--td-text-color-secondary);
-    transition: all 0.2s;
-
-    /* 选中状态 */
-    &.t-is-checked {
-      background-color: color-mix(in srgb, var(--td-brand-color), transparent 85%) !important;
-      border-color: var(--td-brand-color) !important;
-      color: var(--td-brand-color) !important;
-      box-shadow: none !important; /* 去掉默认阴影 */
-    }
-
-    /* 悬浮状态 */
-    &:hover:not(.t-is-checked) {
-      color: var(--td-text-color-primary);
-      background-color: color-mix(in srgb, var(--td-text-color-primary), transparent 95%) !important;
-    }
-  }
-}
-
-/* === 卡片 2: 控制区域 === */
-.control-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  .status-indicator {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-weight: 600;
-    color: var(--td-text-color-secondary);
-    .pulse {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--td-bg-color-component-disabled);
-      transition: all 0.3s;
-    }
-
-    /* 状态 2: 运行中 (绿色) */
-    &.success {
-      color: var(--td-success-color);
-      .pulse {
-        background: var(--td-success-color);
-        box-shadow: 0 0 8px var(--td-success-color);
-      }
-    }
-
-    /* 状态 3: 停止中  */
-    &.warning {
-      color: var(--td-warning-color);
-      .pulse {
-        background: var(--td-warning-color);
-        box-shadow: 0 0 8px var(--td-warning-color);
-      }
-    }
-
-    /* 状态 1 & 4: 启动/重启中 */
-    &.primary {
-      color: var(--td-brand-color);
-      .pulse {
-        background: var(--td-brand-color);
-        box-shadow: 0 0 8px var(--td-brand-color);
-      }
-    }
-  }
-}
-
-.control-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  .action-row {
-    display: flex;
-    gap: 12px;
-  }
-
-  :deep(.glass-btn) {
-    margin: 0;
-    backdrop-filter: blur(4px);
-    transition: all 0.2s;
-
-    &.t-is-disabled {
-      background-color: color-mix(in srgb, var(--td-bg-color-component-disabled), transparent 50%) !important;
-      border-color: var(--td-component-border) !important;
-      color: var(--td-text-color-disabled) !important;
-      cursor: not-allowed !important;
-      &:hover {
-        background-color: color-mix(in srgb, var(--td-bg-color-component-disabled), transparent 50%) !important;
-        border-color: var(--td-component-border) !important;
-        color: var(--td-text-color-disabled) !important;
-      }
-    }
-
-    &.t-button--theme-default {
-      background-color: color-mix(in srgb, var(--td-text-color-primary), transparent 92%) !important;
-      border-color: var(--td-component-border);
-      color: var(--td-text-color-primary);
-
-      &:hover {
-        background-color: color-mix(in srgb, var(--td-text-color-primary), transparent 85%) !important;
-        border-color: var(--td-text-color-primary);
-      }
-    }
-
-    &.t-button--theme-warning {
-      background-color: color-mix(in srgb, var(--td-warning-color), transparent 90%) !important;
-      border-color: var(--td-warning-color) !important;
-      color: var(--td-warning-color) !important;
-
-      &:hover {
-        background-color: color-mix(in srgb, var(--td-warning-color), transparent 80%) !important;
-      }
-    }
-
-    &.t-button--theme-success {
-      background-color: color-mix(in srgb, var(--td-success-color), transparent 90%) !important;
-      border-color: var(--td-success-color) !important;
-      color: var(--td-success-color) !important;
-
-      &:hover {
-        background-color: color-mix(in srgb, var(--td-success-color), transparent 80%) !important;
-      }
-    }
-
-    &.t-button--theme-danger {
-      background-color: color-mix(in srgb, var(--td-error-color), transparent 90%) !important;
-      border-color: var(--td-error-color) !important;
-      color: var(--td-error-color) !important;
-
-      &:hover {
-        background-color: color-mix(in srgb, var(--td-error-color), transparent 80%) !important;
-      }
-    }
-
-    &.t-button--theme-primary {
-      background-color: color-mix(in srgb, var(--td-brand-color), transparent 90%) !important;
-      border-color: var(--td-brand-color) !important;
-      color: var(--td-brand-color) !important;
-
-      &:hover {
-        background-color: color-mix(in srgb, var(--td-brand-color), transparent 80%) !important;
-      }
-    }
-  }
-  // 强制退出
-  .force-kill-btn {
-    margin-top: -8px;
-    margin-left: 0;
-    animation: fadeIn 0.3s ease-in-out;
-  }
-
-  .running-action-group {
-    display: flex;
-
-    .stop-btn {
-      flex: 1;
-    }
-  }
-
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(-5px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-}
-
-.monitor-placeholder {
-  color: var(--td-text-color-placeholder);
-  text-align: center;
-  padding: 40px 0;
-  font-size: 13px;
-}
-
-.info-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  .proxy-group {
-    border-top: 1px dashed var(--td-component-stroke);
-    margin-top: 4px;
-  }
-  .info-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    .label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--td-text-color-placeholder);
-      font-size: 13px;
-    }
-    .value {
-      font-family: var(--td-font-family-number);
-      font-weight: 500;
-      font-size: 13px;
-    }
-  }
-}
+@reference "@/style/tailwind/index.css";
 </style>

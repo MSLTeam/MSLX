@@ -163,24 +163,28 @@ const handleClose = () => emits('update:visible', false);
     @close="handleClose"
   >
     <div
-      class="map-viewport"
+      class="w-full h-[70vh] min-h-[500px] relative overflow-hidden bg-zinc-50 dark:bg-zinc-950 rounded-b-xl select-none cursor-grab active:cursor-grabbing custom-grid-bg"
       @wheel="handleScroll"
       @mousedown="startDrag"
       @mousemove="onDrag"
       @mouseup="stopDrag"
       @mouseleave="stopDrag"
     >
-      <div class="map-layer" :style="{ transform: `translate(${translateX}px, ${translateY}px) scale(${scale})` }">
+
+      <div
+        class="absolute top-1/2 left-1/2 origin-center transition-transform duration-[50ms] ease-linear"
+        :style="{ transform: `translate(${translateX}px, ${translateY}px) scale(${scale})` }"
+      >
         <div
           v-for="tile in loadedRegions"
           :key="tile.key"
-          class="tile-wrapper"
+          class="absolute w-[512px] h-[512px] -ml-[256px] -mt-[256px] flex items-center justify-center bg-zinc-100/50 dark:bg-zinc-900/50"
           :style="{ left: `${tile.x * 512}px`, top: `${tile.z * 512}px` }"
         >
           <img
             :src="tile.src"
-            class="pixel-map-tile"
-            :class="{ 'is-loaded': tile.loaded }"
+            class="w-full h-full pointer-events-none opacity-0 transition-opacity duration-500 ease-out [image-rendering:pixelated]"
+            :class="{ 'opacity-100': tile.loaded }"
             @load="tile.loaded = true"
             alt="tile"
             draggable="false"
@@ -188,184 +192,65 @@ const handleClose = () => emits('update:visible', false);
         </div>
       </div>
 
-      <div class="center-crosshair"></div>
+      <div class="absolute top-1/2 left-1/2 w-3.5 h-3.5 -mt-[7px] -ml-[7px] pointer-events-none z-10 before:absolute before:left-[6px] before:top-0 before:w-[2px] before:h-[14px] before:bg-red-500/80 before:shadow-[0_0_2px_rgba(0,0,0,0.5)] after:absolute after:left-0 after:top-[6px] after:w-[14px] after:h-[2px] after:bg-red-500/80 after:shadow-[0_0_2px_rgba(0,0,0,0.5)]"></div>
 
-      <div class="search-panel" @mousedown.stop @wheel.stop>
-        <t-space align="center" size="small">
-          <t-input v-model="inputX" type="number" placeholder="X 坐标" style="width: 100px" @enter="handleSearchJump" />
-          <t-input v-model="inputZ" type="number" placeholder="Z 坐标" style="width: 100px" @enter="handleSearchJump" />
-          <t-button theme="primary" @click="handleSearchJump">
-            <template #icon><location-icon /></template> 定位
-          </t-button>
-          <t-button variant="outline" theme="default" @click="jumpToSpawn" title="回到世界出生点">
-            <template #icon><home-icon /></template>
-          </t-button>
-        </t-space>
+      <div
+        class="absolute top-4 left-4 p-3 flex items-center gap-2 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-md z-20 cursor-default"
+        @mousedown.stop
+        @wheel.stop
+      >
+        <t-input v-model="inputX" type="number" placeholder="X 坐标" class="!w-[90px]" @enter="handleSearchJump" />
+        <t-input v-model="inputZ" type="number" placeholder="Z 坐标" class="!w-[90px]" @enter="handleSearchJump" />
+
+        <t-button theme="primary" class="!rounded-lg shadow-sm" @click="handleSearchJump">
+          <template #icon><location-icon /></template> 定位
+        </t-button>
+
+        <t-button variant="outline" class="!rounded-lg !bg-zinc-100 dark:!bg-zinc-800 !border-zinc-200 dark:!border-zinc-700 hover:!bg-zinc-200 dark:hover:!bg-zinc-700 !text-zinc-600 dark:!text-zinc-300 transition-colors" @click="jumpToSpawn" title="回到世界出生点">
+          <template #icon><home-icon /></template>
+        </t-button>
       </div>
 
-      <div class="map-controls">
-        <div class="coord-item">
-          <span class="label">方块坐标 (Block):</span>
-          <span class="value">X: {{ centerCoordinates.blockX }}, Z: {{ centerCoordinates.blockZ }}</span>
+      <div class="absolute bottom-4 right-4 p-4 flex flex-col font-mono text-sm bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-md z-20 pointer-events-none">
+
+        <div class="flex justify-between items-center gap-6 mb-2">
+          <span class="text-xs text-zinc-500 dark:text-zinc-400">方块坐标 (Block):</span>
+          <span class="font-bold text-[var(--color-primary)]">X: {{ centerCoordinates.blockX }}, Z: {{ centerCoordinates.blockZ }}</span>
         </div>
-        <div class="coord-item">
-          <span class="label">区块区号 (Region):</span>
-          <span class="value">r.{{ centerCoordinates.regionX }}.{{ centerCoordinates.regionZ }}</span>
+
+        <div class="flex justify-between items-center gap-6 mb-2">
+          <span class="text-xs text-zinc-500 dark:text-zinc-400">区块区号 (Region):</span>
+          <span class="font-bold text-[var(--color-primary)]">r.{{ centerCoordinates.regionX }}.{{ centerCoordinates.regionZ }}</span>
         </div>
-        <div class="coord-item">
-          <span class="label">当前缩放:</span>
-          <span class="value">{{ Math.round(scale * 100) }}%</span>
+
+        <div class="flex justify-between items-center gap-6 mb-3">
+          <span class="text-xs text-zinc-500 dark:text-zinc-400">当前缩放:</span>
+          <span class="font-bold text-[var(--color-primary)]">{{ Math.round(scale * 100) }}%</span>
         </div>
-        <div class="helper-text">🖱️ 滚轮缩放 | 按住拖拽</div>
+
+        <div class="pt-2.5 border-t border-dashed border-zinc-200/80 dark:border-zinc-700/80 text-right text-[11px] text-zinc-400 dark:text-zinc-500 font-sans tracking-widest">
+          🖱️ 滚轮缩放 | 按住拖拽
+        </div>
+
       </div>
     </div>
   </t-dialog>
 </template>
 
 <style scoped lang="less">
-.map-viewport {
-  width: 100%;
-  height: 65vh;
-  min-height: 500px;
-  background-color: var(--td-bg-color-page);
-  background-image:
-    linear-gradient(var(--td-component-stroke) 1px, transparent 1px),
-    linear-gradient(90deg, var(--td-component-stroke) 1px, transparent 1px);
+@reference "@/style/tailwind/index.css";
+
+
+.custom-grid-bg {
+  background-image: linear-gradient(rgba(161, 161, 170, 0.2) 1px, transparent 1px),
+  linear-gradient(90deg, rgba(161, 161, 170, 0.2) 1px, transparent 1px);
   background-size: 32px 32px;
-  overflow: hidden;
-  position: relative;
-  cursor: grab;
-  border-radius: var(--td-radius-default);
-  border: 1px solid var(--td-component-stroke);
-  user-select: none;
-  -webkit-user-select: none;
 }
 
-.map-viewport:active {
-  cursor: grabbing;
-}
-
-.map-layer {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform-origin: center;
-  transition: transform 0.05s linear;
-}
-
-.tile-wrapper {
-  position: absolute;
-  width: 512px;
-  height: 512px;
-  margin-left: -256px;
-  margin-top: -256px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--td-bg-color-container);
-}
-
-.pixel-map-tile {
-  width: 100%;
-  height: 100%;
-  image-rendering: pixelated;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.5s ease-out;
-}
-.pixel-map-tile.is-loaded {
-  opacity: 1;
-}
-
-/* ================= 屏幕中心准星 ================= */
-.center-crosshair {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 14px;
-  height: 14px;
-  margin-top: -7px;
-  margin-left: -7px;
-  pointer-events: none;
-  z-index: 10;
-
-  &::before,
-  &::after {
-    content: '';
-    position: absolute;
-    background: rgba(255, 60, 60, 0.8);
-    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
-  }
-  &::before {
-    left: 6px;
-    top: 0;
-    width: 2px;
-    height: 14px;
-  }
-  &::after {
-    left: 0;
-    top: 6px;
-    width: 14px;
-    height: 2px;
-  }
-}
-
-.search-panel {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  padding: 12px;
-  background: var(--td-bg-color-container);
-  border-radius: var(--td-radius-default);
-  border: 1px solid var(--td-component-stroke);
-  box-shadow: var(--td-shadow-2);
-  z-index: 20;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  background-color: rgba(var(--td-bg-color-container-rgb), 0.85);
-  cursor: default;
-}
-
-.map-controls {
-  position: absolute;
-  bottom: 16px;
-  right: 16px;
-  background: var(--td-bg-color-container);
-  color: var(--td-text-color-primary);
-  padding: 12px 16px;
-  border-radius: var(--td-radius-default);
-  font-size: 13px;
-  font-family: monospace;
-  pointer-events: none;
-  border: 1px solid var(--td-component-stroke);
-  box-shadow: var(--td-shadow-2);
-  z-index: 20;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  background-color: rgba(var(--td-bg-color-container-rgb), 0.85);
-
-  .coord-item {
-    display: flex;
-    justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 6px;
-
-    .label {
-      color: var(--td-text-color-secondary);
-    }
-    .value {
-      font-weight: bold;
-      color: var(--td-brand-color);
-    }
-  }
-
-  .helper-text {
-    margin-top: 12px;
-    padding-top: 8px;
-    border-top: 1px solid var(--td-component-stroke);
-    color: var(--td-text-color-placeholder);
-    text-align: right;
-    font-size: 12px;
-  }
+/* 深色模式下的网格透明度调整 */
+:global(html[theme-mode='dark']) .custom-grid-bg,
+:global(html.dark) .custom-grid-bg {
+  background-image: linear-gradient(rgba(82, 82, 91, 0.3) 1px, transparent 1px),
+  linear-gradient(90deg, rgba(82, 82, 91, 0.3) 1px, transparent 1px);
 }
 </style>
