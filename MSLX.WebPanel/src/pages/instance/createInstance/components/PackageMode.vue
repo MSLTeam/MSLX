@@ -604,10 +604,12 @@ const viewDetails = () => {
 </script>
 
 <template>
-  <div>
-    <div class="main-layout-container">
-      <div class="steps-aside">
-        <t-steps layout="vertical" style="margin-top: 16px" :current="currentStep" status="process" readonly>
+  <div class="mx-auto pb-6 text-zinc-800 dark:text-zinc-200">
+
+    <div class="design-card bg-white/80 dark:bg-zinc-800/80 backdrop-blur-xl rounded-3xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-6 sm:p-8 transition-all duration-300 flex flex-col md:flex-row gap-8 lg:gap-12 min-h-[600px]">
+
+      <div class="w-full md:w-56 shrink-0 md:border-r border-dashed border-zinc-200/80 dark:border-zinc-700/60 md:pr-8 pb-4 md:pb-0 border-b md:border-b-0">
+        <t-steps layout="vertical" :current="currentStep" status="process" readonly class="custom-steps !bg-transparent !mt-2">
           <t-step-item title="基本信息" content="填写实例名称" />
           <t-step-item title="上传整合包" content="上传服务端 Zip 包" />
           <t-step-item title="核心配置" content="确认启动的服务端核心" />
@@ -619,422 +621,347 @@ const viewDetails = () => {
         </t-steps>
       </div>
 
-      <div class="main-content">
-        <div v-if="!isCreating && !isSuccess" class="form-step-container">
+      <div class="flex-1 min-w-0 flex flex-col relative">
+        <div v-if="!isCreating && !isSuccess" class="h-full flex flex-col">
+
           <t-form
             ref="formRef"
             :data="formData"
             :rules="FORM_RULES"
             label-align="top"
-            class="step-form"
+            class="flex-1 flex flex-col [&_.t-form__item]:!mb-6"
             @submit="onSubmit"
           >
-            <div v-show="currentStep === 0" class="step-content">
+            <div v-show="currentStep === 0" class="list-item-anim flex-1 pt-1">
               <t-form-item label="实例名称" name="name">
-                <t-input v-model="formData.name" placeholder="为你的服务器起个名字" />
+                <t-input v-model="formData.name" placeholder="为你的服务器起个名字" class="!w-full sm:!w-[28rem]" />
               </t-form-item>
               <t-form-item
                 label="实例路径"
                 name="path"
-                :help="
-                  userStore.userInfo.systemInfo.docker
-                    ? '您正在使用Docker容器部署，为保数据安全，仅支持使用默认数据路径'
-                    : '选填，留空将使用默认路径'
-                "
+                :help="userStore.userInfo.systemInfo.docker ? '您正在使用Docker容器部署，为保数据安全，仅支持使用默认数据路径' : '选填，留空将使用默认路径'"
               >
                 <t-input
                   v-model="formData.path"
                   :disabled="userStore.userInfo.systemInfo.docker"
                   placeholder="例如: D:\MyServer"
+                  class="!w-full sm:!w-[28rem] !font-mono"
                 />
               </t-form-item>
             </div>
 
-            <div v-show="currentStep === 1" class="step-content">
-              <t-alert theme="info" class="mb-4">
-                <template #message>
-                  请上传包含服务端文件的 <b>.zip</b> 压缩包。上传完成后系统将自动分析包内的服务端核心文件。
-                </template>
+            <div v-show="currentStep === 1" class="list-item-anim flex-1 pt-1">
+              <t-alert theme="info" class="!mb-6 !rounded-xl">
+                <template #message>请上传包含服务端文件的 <b>.zip</b> 压缩包。上传完成后系统将自动分析包内的服务端核心文件。</template>
               </t-alert>
 
-              <t-form-item label="上传服务端整合包 (Zip)" name="packageFileKey">
-                <div class="select-core-wrapper">
+              <t-form-item label="上传服务端整合包 (Zip)" name="packageFileKey" class="!mb-0">
+                <div class="w-full sm:w-[32rem]">
                   <input ref="uploadInputRef" accept=".zip" type="file" style="display: none" @change="onFileChange" />
 
                   <t-button
                     v-if="!isUploading && !formData.packageFileKey"
                     variant="outline"
+                    class="!w-full !justify-start !pl-4 !h-10 !bg-transparent border-zinc-200 dark:border-zinc-700 hover:!border-[var(--color-primary)]"
                     @click="triggerFileSelect"
                   >
-                    <template #icon><t-icon name="upload" /></template>
+                    <template #icon><t-icon name="upload" class="opacity-70" /></template>
                     点击选择 Zip 文件并上传
                   </t-button>
 
-                  <div v-if="isUploading" class="uploading-state">
-                    <div class="core-filename">正在上传: {{ uploadedFileName }} ({{ uploadedFileSize }})</div>
+                  <div v-if="isUploading" class="w-full bg-transparent p-4 mt-4 rounded-lg border border-[var(--color-primary)]/40">
+                    <div class="text-sm font-bold text-zinc-800 dark:text-zinc-200 mb-2 truncate">正在上传: {{ uploadedFileName }} ({{ uploadedFileSize }})</div>
                     <t-progress theme="line" :percentage="uploadProgress" />
-                    <div class="tip">别着急，喝杯咖啡☕️...</div>
+                    <div class="text-[11px] text-zinc-500 mt-2 text-center">别着急，喝杯咖啡☕️...</div>
                   </div>
 
-                  <div v-if="!isUploading && isCheckingPackage" class="uploading-state">
+                  <div v-if="!isUploading && isCheckingPackage" class="w-full bg-transparent p-4 mt-4 rounded-lg border border-[var(--color-primary)]/40 flex items-center justify-center">
                     <t-loading text="正在分析压缩包结构..." size="small" />
                   </div>
 
-                  <div v-if="formData.packageFileKey && !isUploading && !isCheckingPackage" class="selected-core-card">
-                    <div class="core-icon"><t-icon name="folder-zip" /></div>
-                    <div class="core-info">
-                      <div class="core-filename">{{ uploadedFileName }}</div>
-                      <div class="core-url">
-                        {{
-                          detectedJars.length > 0
-                            ? `发现 ${detectedJars.length} 个服务端核心文件`
-                            : '未发现服务端核心文件'
-                        }}
+                  <div v-if="formData.packageFileKey && !isUploading && !isCheckingPackage" class="flex items-center gap-3 mt-4 p-3 bg-transparent rounded-lg border border-[var(--color-success)]/40 relative overflow-hidden group">
+                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-success)] opacity-80"></div>
+                    <t-icon name="folder-zip" class="text-[var(--color-success)] text-xl shrink-0 ml-1" />
+                    <div class="flex-1 min-w-0">
+                      <div class="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">{{ uploadedFileName }}</div>
+                      <div class="text-[11px] text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
+                        {{ detectedJars.length > 0 ? `发现 ${detectedJars.length} 个服务端核心文件` : '未发现服务端核心文件' }}
                         {{ detectedRoot ? `| 根目录: /${detectedRoot}` : '' }}
                       </div>
                     </div>
-                    <t-button shape="circle" variant="text" theme="primary" @click="triggerFileSelect">
-                      <template #icon><t-icon name="swap" /></template>
-                    </t-button>
-                    <t-button shape="circle" variant="text" theme="danger" @click="removeUploadedFile">
-                      <template #icon><t-icon name="delete" /></template>
-                    </t-button>
+                    <div class="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <t-button shape="square" variant="text" theme="primary" @click="triggerFileSelect"><t-icon name="swap" /></t-button>
+                      <t-button shape="square" variant="text" theme="danger" class="hover:!bg-red-500/10" @click="removeUploadedFile"><t-icon name="delete" /></t-button>
+                    </div>
                   </div>
                 </div>
               </t-form-item>
             </div>
 
-            <div v-show="currentStep === 2" class="step-content">
+            <div v-show="currentStep === 2" class="list-item-anim flex-1 pt-1">
+
               <div v-if="detectedJars.length > 0">
-                <t-alert theme="success" class="mb-4">
-                  <template #message
-                    >我们在压缩包中发现了以下服务端核心文件，请选择哪一个作为<b>启动核心</b>。</template
-                  >
+                <t-alert theme="success" class="!mb-6 !rounded-xl !bg-[var(--color-success)]/10 !border-[var(--color-success)]/20">
+                  <template #message>我们在压缩包中发现了以下服务端核心文件，请选择哪一个作为<b>启动核心</b>。</template>
                 </t-alert>
 
                 <t-form-item label="选择启动核心" name="core">
-                  <t-radio-group v-model="formData.core" class="vertical-radio-group">
-                    <div v-for="jar in detectedJars" :key="jar" class="jar-option-item">
-                      <t-radio :value="jar">{{ jar }}</t-radio>
+                  <t-radio-group v-model="formData.core" class="flex flex-col gap-3">
+                    <div v-for="jar in detectedJars" :key="jar" class="flex items-center">
+                      <t-radio :value="jar" class="!font-mono !text-sm">{{ jar }}</t-radio>
                     </div>
                   </t-radio-group>
                 </t-form-item>
               </div>
 
               <div v-else>
-                <t-alert theme="warning" class="mb-4">
-                  <template #message>在上传的包中未发现服务端核心文件。请在此处下载一个服务端核心。</template>
+                <t-alert theme="warning" class="!mb-6 !rounded-xl !bg-amber-500/10 !border-amber-500/20">
+                  <template #message>在上传的包中未发现服务端核心文件。请在此处下载一个或等待创建后手动补充。</template>
                 </t-alert>
 
-                <t-form-item label="补充服务端核心">
+                <t-form-item label="补充服务端核心" class="!mb-5">
                   <t-radio-group v-model="downloadType" variant="default-filled">
                     <t-radio-button value="online">在线下载核心</t-radio-button>
                     <t-radio-button disabled value="manual">自行上传(不支持)</t-radio-button>
                   </t-radio-group>
                 </t-form-item>
 
-                <div v-if="downloadType === 'online'" class="online-select-area">
-                  <t-form-item label="选择服务端核心" name="coreUrl">
-                    <div class="select-core-wrapper">
-                      <t-button variant="outline" @click="showCoreSelector = true">
-                        <template #icon><t-icon name="cloud-download" /></template>
-                        打开核心库
-                      </t-button>
-                      <div v-if="formData.core && downloadType === 'online'" class="selected-core-card">
-                        <div class="core-icon"><t-icon name="check-circle-filled" /></div>
-                        <div class="core-info">
-                          <div class="core-filename">{{ formData.core }}</div>
-                          <div class="core-url">将在创建时自动下载</div>
+                <div class="w-full sm:w-[32rem]">
+                  <div v-if="downloadType === 'online'">
+                    <t-form-item label="选择服务端核心" name="coreUrl" class="!mb-0">
+                      <div class="w-full">
+                        <t-button variant="outline" class="!w-full !justify-start !pl-4 !h-10 !bg-transparent border-zinc-200 dark:border-zinc-700 hover:!border-[var(--color-primary)]" @click="showCoreSelector = true">
+                          <template #icon><t-icon name="cloud-download" class="opacity-70" /></template>
+                          打开核心库
+                        </t-button>
+
+                        <div v-if="formData.core" class="flex items-center gap-3 mt-4 p-3 bg-transparent rounded-lg border border-[var(--color-primary)]/40 shadow-sm relative overflow-hidden group">
+                          <div class="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)] opacity-80"></div>
+                          <t-icon name="check-circle-filled" class="text-[var(--color-primary)] text-xl shrink-0 ml-1" />
+                          <div class="flex-1 min-w-0">
+                            <div class="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">{{ formData.core }}</div>
+                            <div class="text-[11px] text-zinc-500 dark:text-zinc-400 truncate mt-0.5">将在创建时自动下载</div>
+                          </div>
+                          <t-button shape="circle" variant="text" theme="danger" class="shrink-0 hover:!bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity" @click="formData.core = ''; formData.coreUrl = '';">
+                            <t-icon name="close" />
+                          </t-button>
                         </div>
                       </div>
-                    </div>
-                  </t-form-item>
-                </div>
+                    </t-form-item>
+                  </div>
 
-                <div v-if="downloadType === 'manual'" class="online-select-area">
-                  <div class="tip-text">请在整合包解压后手动放入核心，或在此处不填写等待创建后手动上传。</div>
-                  <t-alert theme="error" message="此模式下建议确保压缩包内包含核心，或者使用在线下载功能。" />
+                  <div v-if="downloadType === 'manual'" class="mt-2">
+                    <div class="text-sm text-zinc-500 dark:text-zinc-400 mb-4">请在整合包解压后手动放入核心，或在此处不填写等待创建后手动上传。</div>
+                    <t-alert theme="error" message="此模式下建议确保压缩包内包含核心，或者使用在线下载功能。" class="!rounded-xl" />
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div v-show="currentStep === 3" class="step-content">
-              <t-alert theme="info" title="Java 版本选择指南">
+            <div v-show="currentStep === 3" class="list-item-anim flex-1 pt-1">
+              <t-alert theme="info" title="Java 版本选择指南" class="!mb-6 !rounded-xl">
                 <template #message>
-                  <div style="margin-top: 6px; display: flex; flex-direction: column; gap: 6px">
-                    <t-space align="center" :size="12">
-                      <t-tag theme="primary" variant="dark" style="width: 130px; justify-content: center"
-                        >MC 26.1 - 最新版本</t-tag
-                      >
-                      <t-tag theme="success" variant="light" shape="round">Java 25</t-tag>
-                    </t-space>
-
-                    <t-space align="center" :size="12">
-                      <t-tag theme="primary" variant="dark" style="width: 130px; justify-content: center"
-                        >MC 1.20.5 - 1.21.11</t-tag
-                      >
-                      <t-tag theme="success" variant="light" shape="round">Java 21</t-tag>
-                    </t-space>
-
-                    <t-space align="center" :size="12">
-                      <t-tag theme="primary" variant="dark" style="width: 130px; justify-content: center"
-                        >MC 1.18 - 1.20.4</t-tag
-                      >
-                      <t-tag theme="success" variant="light" shape="round">Java 17</t-tag>
-                    </t-space>
-
-                    <t-space align="center" :size="12">
-                      <t-tag theme="primary" variant="dark" style="width: 130px; justify-content: center"
-                        >MC 1.17 / 1.17.1</t-tag
-                      >
-                      <t-tag theme="success" variant="light" shape="round">Java 16</t-tag>
-                    </t-space>
-
-                    <t-space align="center" :size="12">
-                      <t-tag theme="default" variant="outline" style="width: 130px; justify-content: center"
-                        >MC 1.13 - 更低版本</t-tag
-                      >
-                      <t-tag theme="default" variant="light" shape="round">Java 8</t-tag>
-                    </t-space>
-
-                    <div style="margin-top: 4px; color: var(--td-text-color-placeholder); font-size: 12px">
-                      <t-icon name="info-circle" size="small" style="margin-right: 4px" />
-                      建议直接使用推荐版本，避免兼容性问题。
+                  <div class="flex flex-col gap-2.5 mt-2">
+                    <div class="flex items-center gap-3">
+                      <span class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-[var(--color-primary)] text-white font-bold text-xs tracking-wide shadow-sm">MC 26.1 - 最新版本</span>
+                      <span class="font-extrabold text-xs text-[var(--color-success)] bg-[var(--color-success)]/10 px-2.5 py-1 rounded-md border border-[var(--color-success)]/20">Java 25</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <span class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-[var(--color-primary)] text-white font-bold text-xs tracking-wide shadow-sm">MC 1.20.5 - 1.21.11</span>
+                      <span class="font-extrabold text-xs text-[var(--color-success)] bg-[var(--color-success)]/10 px-2.5 py-1 rounded-md border border-[var(--color-success)]/20">Java 21</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <span class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-[var(--color-primary)] text-white font-bold text-xs tracking-wide shadow-sm">MC 1.18 - 1.20.4</span>
+                      <span class="font-extrabold text-xs text-[var(--color-success)] bg-[var(--color-success)]/10 px-2.5 py-1 rounded-md border border-[var(--color-success)]/20">Java 17</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <span class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-[var(--color-primary)] text-white font-bold text-xs tracking-wide shadow-sm">MC 1.17 / 1.17.1</span>
+                      <span class="font-extrabold text-xs text-[var(--color-success)] bg-[var(--color-success)]/10 px-2.5 py-1 rounded-md border border-[var(--color-success)]/20">Java 16</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <span class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 font-bold text-xs tracking-wide shadow-sm">MC 1.13 - 更低版本</span>
+                      <span class="font-extrabold text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md border border-zinc-200 dark:border-zinc-700">Java 8</span>
+                    </div>
+                    <div class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 flex items-center gap-1 font-medium">
+                      <t-icon name="info-circle" size="14px" /> 建议直接使用推荐版本，避免兼容性问题。
                     </div>
                   </div>
                 </template>
               </t-alert>
 
-              <t-form-item label="Java 来源" name="java">
-                <div style="width: 100%">
-                  <t-radio-group v-model="javaType" variant="default-filled">
+              <t-form-item label="Java 来源" name="java" class="!mb-0">
+                <div class="w-full">
+                  <t-radio-group v-model="javaType" variant="default-filled" class="!mb-4">
                     <t-radio-button value="online">在线下载</t-radio-button>
                     <t-radio-button value="local">本机 Java</t-radio-button>
                     <t-radio-button value="env">环境变量</t-radio-button>
                     <t-radio-button value="custom">自定义路径</t-radio-button>
                   </t-radio-group>
 
-                  <div class="java-option-panel">
-                    <div v-if="javaType === 'online'" class="flex-row">
-                      <t-select v-model="selectedJavaVersion" :options="javaVersions" placeholder="请选择 Java 版本" />
+                  <div class="w-full sm:w-[32rem] min-h-[70px] mt-2">
+                    <div v-if="javaType === 'online'">
+                      <t-select v-model="selectedJavaVersion" :options="javaVersions" placeholder="请选择 Java 版本" class="!w-full sm:!w-64" />
                     </div>
-                    <div v-if="javaType === 'local'" class="flex-row">
-                      <t-select v-model="customJavaPath" :options="localJavaVersions" placeholder="请选择 Java" />
+                    <div v-if="javaType === 'local'" class="flex items-center gap-3">
+                      <t-select v-model="customJavaPath" :options="localJavaVersions" placeholder="请选择 Java" class="!flex-1" />
                       <t-button variant="text" @click="fetchJavaVersions(true)">刷新</t-button>
                     </div>
                     <div v-if="javaType === 'env'">
-                      <t-input model-value="java" readonly disabled />
+                      <t-input model-value="java" readonly disabled class="!font-mono !bg-zinc-100 dark:!bg-zinc-800/50" />
                     </div>
                     <div v-if="javaType === 'custom'">
-                      <t-input v-model="customJavaPath" placeholder="C:\Path\To\java.exe" />
+                      <t-input v-model="customJavaPath" placeholder="C:\Path\To\java.exe" class="!font-mono" />
                     </div>
                   </div>
                 </div>
               </t-form-item>
             </div>
 
-            <div v-show="currentStep === 4" class="step-content">
-              <t-row :gutter="[16, 24]">
-                <t-col :xs="12" :span="6">
-                  <t-form-item label="最小内存" name="minM">
-                    <t-space :size="8" style="width: 100%">
-                      <t-input-number
-                        v-model="minMComputed"
-                        :min="0"
-                        :decimal-places="minUnit === 'GB' ? 1 : 0"
-                        placeholder="Xms"
-                        theme="column"
-                        style="width: 100%"
-                      />
-                      <t-select v-model="minUnit" :options="unitOptions" :clearable="false" style="width: 80px" />
-                    </t-space>
-                  </t-form-item>
-                </t-col>
-
-                <t-col :xs="12" :span="6">
-                  <t-form-item label="最大内存" name="maxM">
-                    <t-space :size="8" style="width: 100%">
-                      <t-input-number
-                        v-model="maxMComputed"
-                        :min="0"
-                        :decimal-places="maxUnit === 'GB' ? 1 : 0"
-                        placeholder="Xmx"
-                        theme="column"
-                        style="width: 100%"
-                      />
-                      <t-select v-model="maxUnit" :options="unitOptions" :clearable="false" style="width: 80px" />
-                    </t-space>
-                  </t-form-item>
-                </t-col>
-              </t-row>
-
-              <t-form-item label="JVM 参数" name="args" style="margin-top: 16px">
-                <t-textarea v-model="formData.args" placeholder="-XX:+UseG1GC" />
-              </t-form-item>
-            </div>
-            <div v-show="currentStep === 5" class="step-content">
-              <div class="confirm-container">
-                <div class="confirm-header">
-                  <div class="server-icon-placeholder">
-                    <t-icon name="server" size="32px" />
+            <div v-show="currentStep === 4" class="list-item-anim flex-1 pt-1">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-6 w-full sm:w-[40rem]">
+                <t-form-item label="最小内存" name="minM" class="!mb-0">
+                  <div class="flex items-center gap-2 w-full">
+                    <div class="flex-1">
+                      <t-input-number v-model="minMComputed" :min="0" :decimal-places="minUnit === 'GB' ? 1 : 0" placeholder="Xms" theme="column" class="!w-full" />
+                    </div>
+                    <t-select v-model="minUnit" :options="unitOptions" :clearable="false" class="!w-20 shrink-0" />
                   </div>
-                  <div class="server-title-info">
-                    <div class="server-name">{{ formData.name }}</div>
-                    <div class="server-path">
-                      <t-icon name="folder-open" size="small" />
-                      {{ formData.path || '默认数据路径 (/DaemonData/Servers)' }}
+                </t-form-item>
+
+                <t-form-item label="最大内存" name="maxM" class="!mb-0">
+                  <div class="flex items-center gap-2 w-full">
+                    <div class="flex-1">
+                      <t-input-number v-model="maxMComputed" :min="0" :decimal-places="maxUnit === 'GB' ? 1 : 0" placeholder="Xmx" theme="column" class="!w-full" />
                     </div>
+                    <t-select v-model="maxUnit" :options="unitOptions" :clearable="false" class="!w-20 shrink-0" />
                   </div>
-                </div>
-
-                <t-divider dashed style="margin: 16px 0" />
-
-                <t-row :gutter="[24, 24]">
-                  <t-col :span="6">
-                    <div class="confirm-item">
-                      <div class="label">服务端整合包</div>
-                      <div class="value-row">
-                        <span class="main-text text-truncate" :title="uploadedFileName">{{ uploadedFileName }}</span>
-                        <t-tag theme="primary" variant="light" size="small">ZIP</t-tag>
-                      </div>
-                      <div class="sub-text">大小: {{ uploadedFileSize || '未知' }}</div>
-                    </div>
-                  </t-col>
-
-                  <t-col :span="6">
-                    <div class="confirm-item">
-                      <div class="label">启动核心 (Jar)</div>
-                      <div class="value-row">
-                        <span class="main-text text-truncate" :title="formData.core">{{ formData.core }}</span>
-
-                        <t-tag v-if="detectedJars.length > 0" theme="success" variant="light" size="small">
-                          整合包内核心
-                        </t-tag>
-                        <t-tag v-else-if="downloadType === 'online'" theme="primary" variant="light" size="small">
-                          在线下载
-                        </t-tag>
-                        <t-tag v-else theme="warning" variant="light" size="small">手动配置</t-tag>
-                      </div>
-                      <div v-if="detectedJars.length > 0" class="sub-text">已从压缩包中选定启动文件</div>
-                      <div v-else-if="downloadType === 'online'" class="sub-text">
-                        来源: MSL 镜像源 ({{ formData.coreUrl ? '已匹配' : '未匹配' }})
-                      </div>
-                    </div>
-                  </t-col>
-
-                  <t-col :span="6">
-                    <div class="confirm-item">
-                      <div class="label">Java 运行时</div>
-                      <div class="value-row">
-                        <span v-if="javaType === 'online'" class="main-text"> Java {{ selectedJavaVersion }} </span>
-                        <span v-else class="main-text text-truncate" :title="formData.java">
-                          {{ formData.java }}
-                        </span>
-
-                        <t-tag v-if="javaType === 'online'" theme="success" variant="light" size="small">
-                          自动安装
-                        </t-tag>
-                        <t-tag v-else-if="javaType === 'local'" theme="primary" variant="light" size="small">
-                          本机环境
-                        </t-tag>
-                        <t-tag v-else theme="default" variant="light" size="small">自定义</t-tag>
-                      </div>
-                      <div v-if="javaType === 'online'" class="sub-text text-truncate">
-                        将自动从镜像源下载并解压 JDK
-                      </div>
-                    </div>
-                  </t-col>
-
-                  <t-col :span="6">
-                    <div class="confirm-item">
-                      <div class="label">内存分配 (JVM)</div>
-                      <div class="memory-viz">
-                        <div class="mem-block">
-                          <span class="mem-label">初始 (Xms)</span>
-                          <span class="mem-val">{{ minMComputed }} {{ minUnit }}</span>
-                        </div>
-                        <div class="mem-arrow"><t-icon name="arrow-right" /></div>
-                        <div class="mem-block">
-                          <span class="mem-label">最大 (Xmx)</span>
-                          <span class="mem-val">{{ maxMComputed }} {{ maxUnit }}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </t-col>
-
-                  <t-col v-if="formData.args" :span="12">
-                    <div class="confirm-item">
-                      <div class="label">启动参数</div>
-                      <div class="args-box">{{ formData.args }}</div>
-                    </div>
-                  </t-col>
-                </t-row>
-
-                <t-alert style="margin-top: 24px" theme="info">
-                  <template #message> 确认无误后点击下方 <b>提交创建</b>，系统自动部署服务端。 </template>
-                </t-alert>
+                </t-form-item>
               </div>
+
+              <t-form-item label="JVM 参数" name="args" class="!mt-8 w-full sm:w-[40rem]">
+                <t-textarea v-model="formData.args" placeholder="-XX:+UseG1GC" :autosize="{ minRows: 3, maxRows: 6 }" class="!font-mono !bg-transparent" />
+              </t-form-item>
             </div>
 
-            <t-form-item class="step-actions" style="margin-top: 16px">
-              <t-button v-if="currentStep > 0" theme="default" @click="prevStep">上一步</t-button>
+            <div v-show="currentStep === 5" class="list-item-anim flex-1 pt-1">
 
-              <t-button
-                v-if="currentStep < 5"
-                type="button"
-                :loading="isUploading || isCheckingPackage"
-                @click="nextStep"
-                >下一步</t-button
-              >
+              <div class="flex flex-col min-w-0 mb-8 pb-6 border-b border-zinc-200 dark:border-zinc-800">
+                <div class="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100 truncate tracking-tight">{{ formData.name }}</div>
+                <div class="text-sm text-zinc-500 dark:text-zinc-400 mt-2 flex items-center gap-1.5 truncate">
+                  <t-icon name="folder-open" class="opacity-70" /> {{ formData.path || '默认数据路径 (/DaemonData/Servers)' }}
+                </div>
+              </div>
 
-              <t-button v-if="currentStep === 5" theme="primary" type="submit" :loading="isSubmitting"
-                >提交创建</t-button
-              >
-            </t-form-item>
+              <div class="flex flex-col w-full">
+
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80">
+                  <span class="text-sm text-zinc-500 dark:text-zinc-400 font-bold mb-1.5 sm:mb-0 shrink-0">服务端整合包</span>
+                  <div class="flex flex-col sm:items-end text-left sm:text-right">
+                    <div class="flex items-center gap-2">
+                      <span class="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate max-w-[200px] sm:max-w-[300px]" :title="uploadedFileName">{{ uploadedFileName }}</span>
+                      <t-tag theme="primary" variant="light" size="small" class="!rounded">ZIP</t-tag>
+                    </div>
+                    <div class="text-[11px] text-zinc-500 mt-1">大小: {{ uploadedFileSize || '未知' }}</div>
+                  </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80">
+                  <span class="text-sm text-zinc-500 dark:text-zinc-400 font-bold mb-1.5 sm:mb-0 shrink-0">启动核心 (Jar)</span>
+                  <div class="flex flex-col sm:items-end text-left sm:text-right">
+                    <div class="flex items-center gap-2">
+                      <span class="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate max-w-[200px] sm:max-w-[300px]" :title="formData.core">{{ formData.core }}</span>
+                      <t-tag v-if="detectedJars.length > 0" theme="success" variant="light" size="small" class="!rounded">整合包内核心</t-tag>
+                      <t-tag v-else-if="downloadType === 'online'" theme="primary" variant="light" size="small" class="!rounded">在线下载</t-tag>
+                      <t-tag v-else theme="warning" variant="light" size="small" class="!rounded">手动配置</t-tag>
+                    </div>
+                    <div class="text-[11px] text-zinc-500 mt-1 truncate">
+                      <span v-if="detectedJars.length > 0">已从压缩包中选定启动文件</span>
+                      <span v-else-if="downloadType === 'online'">来源: MSL 镜像源 ({{ formData.coreUrl ? '已匹配' : '未匹配' }})</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80">
+                  <span class="text-sm text-zinc-500 dark:text-zinc-400 font-bold mb-1.5 sm:mb-0 shrink-0">Java 运行时</span>
+                  <div class="flex flex-col sm:items-end text-left sm:text-right">
+                    <div class="flex items-center gap-2">
+                      <span v-if="javaType === 'online'" class="text-sm font-bold text-zinc-800 dark:text-zinc-200">Java {{ selectedJavaVersion }}</span>
+                      <span v-else class="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate max-w-[200px] sm:max-w-[300px]" :title="formData.java">{{ formData.java }}</span>
+                      <t-tag v-if="javaType === 'online'" theme="success" variant="light" size="small" class="!rounded">自动安装</t-tag>
+                      <t-tag v-else-if="javaType === 'local'" theme="primary" variant="light" size="small" class="!rounded">本机环境</t-tag>
+                      <t-tag v-else theme="default" variant="light" size="small" class="!rounded">自定义</t-tag>
+                    </div>
+                    <div v-if="javaType === 'online'" class="text-[11px] text-zinc-500 mt-1 truncate">将自动从镜像源下载并解压 JDK</div>
+                  </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80">
+                  <span class="text-sm text-zinc-500 dark:text-zinc-400 font-bold mb-1.5 sm:mb-0 shrink-0">内存分配 (JVM)</span>
+                  <div class="flex items-center gap-3">
+                    <span class="text-sm font-bold text-[var(--color-primary)]">初始 (Xms): {{ minMComputed }} {{ minUnit }}</span>
+                    <t-icon name="arrow-right" class="text-zinc-300 dark:text-zinc-600" />
+                    <span class="text-sm font-bold text-red-500 dark:text-red-400">最大 (Xmx): {{ maxMComputed }} {{ maxUnit }}</span>
+                  </div>
+                </div>
+
+                <div v-if="formData.args" class="flex flex-col sm:flex-row sm:items-start justify-between py-4">
+                  <span class="text-sm text-zinc-500 dark:text-zinc-400 font-bold mb-2 sm:mb-0 shrink-0 mt-1">启动参数</span>
+                  <div class="text-xs font-mono text-zinc-600 dark:text-zinc-400 break-all leading-relaxed bg-zinc-50/50 dark:bg-zinc-800/30 p-2.5 rounded-lg border border-zinc-100 dark:border-zinc-800 text-left sm:text-right max-w-full sm:max-w-md">
+                    {{ formData.args }}
+                  </div>
+                </div>
+
+              </div>
+
+              <t-alert theme="info" class="!mt-8 !rounded-xl !bg-[var(--color-primary)]/5 !border-[var(--color-primary)]/20">
+                <template #message>确认无误后点击下方 <strong class="text-[var(--color-primary)] mx-1">提交创建</strong>，系统自动部署服务端。</template>
+              </t-alert>
+            </div>
+
+            <div class="mt-auto pt-6 border-t border-zinc-200 dark:border-zinc-700 flex items-center justify-between">
+              <t-button v-if="currentStep > 0 && currentStep < 6" theme="default" @click="prevStep">上一步</t-button>
+              <div v-else></div> <t-button v-if="currentStep < 5" type="button" theme="primary" :loading="isUploading || isCheckingPackage" @click="nextStep">下一步</t-button>
+              <t-button v-if="currentStep === 5" theme="primary" type="submit" :loading="isSubmitting">提交创建</t-button>
+            </div>
+
           </t-form>
         </div>
 
-        <div v-if="isCreating" class="step-content creation-progress">
-          <div class="progress-title">正在创建整合包实例 ({{ createdServerId }})</div>
-          <p>正在解压文件并配置环境...</p>
-          <t-progress theme="plump" :percentage="progress" :label="`${progress.toFixed(2)}%`" />
-          <div ref="logContainerRef" class="log-container">
-            <t-list :split="true">
-              <t-list-item v-for="(log, index) in statusMessages" :key="index">
-                <t-list-item-meta :description="`[${log.time}] ${log.message}`" />
-              </t-list-item>
-            </t-list>
+        <div v-if="isCreating" class="h-full flex flex-col items-center justify-center py-8 list-item-anim">
+          <div class="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-2 tracking-tight">正在创建整合包实例 ({{ createdServerId }})</div>
+          <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-6">正在解压文件并配置环境...</p>
+
+          <div class="w-full max-w-lg !my-6">
+            <t-progress theme="plump" :percentage="progress" :label="`${progress.toFixed(2)}%`" />
+          </div>
+
+          <div class="w-full max-w-2xl bg-white/40 dark:bg-zinc-900/40 backdrop-blur-md rounded-2xl border border-white/60 dark:border-zinc-700/50 p-4 h-64 flex flex-col mt-6 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+            <div ref="logContainerRef" class="flex-1 overflow-y-auto custom-scrollbar pr-2">
+              <div v-for="(log, index) in statusMessages" :key="index" class="text-xs font-mono mb-2 leading-relaxed">
+                <span class="text-zinc-500 dark:text-zinc-400 mr-2">[{{ log.time }}]</span>
+                <span class="text-zinc-800 dark:text-zinc-200 font-medium">{{ log.message }}</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div v-if="isSuccess" class="result-success">
-          <t-icon class="result-success-icon" name="check-circle" />
-          <div class="result-success-title">整合包服务器已部署成功</div>
-          <div class="result-success-describe">文件已解压，环境已配置就绪</div>
-          <div>
-            <t-button
-              @click="
-                () => {
-                  goToHome();
-                  changeUrl('/instance/list');
-                }
-              "
-            >
-              返回服务端列表
-            </t-button>
-            <t-button
-              theme="default"
-              @click="
-                () => {
-                  goToHome();
-                  changeUrl(`/instance/console/${createdServerId}`);
-                }
-              "
-            >
-              前往控制台
-            </t-button>
+        <div v-if="isSuccess" class="h-full flex flex-col items-center justify-center py-8 list-item-anim min-h-[50vh] sm:min-h-[40vh]">
+          <t-icon name="check-circle" size="64px" class="text-[var(--color-success)]" />
+
+          <div class="text-xl text-zinc-900 dark:text-zinc-100 text-center font-medium leading-[22px] !mt-4">
+            整合包服务器已部署成功
+          </div>
+
+          <div class="text-sm text-zinc-500 dark:text-zinc-400 leading-[22px] !my-2 !mb-8">
+            文件已解压，环境已配置就绪
+          </div>
+
+          <div class="flex gap-4">
+            <t-button @click="() => { goToHome(); changeUrl('/instance/list'); }">返回服务端列表</t-button>
+            <t-button theme="default" @click="() => { goToHome(); changeUrl(`/instance/console/${createdServerId}`); }">前往控制台</t-button>
           </div>
         </div>
+
       </div>
     </div>
 
@@ -1043,171 +970,56 @@ const viewDetails = () => {
 </template>
 
 <style scoped lang="less">
-@import './ConfirmStep'; // 确认信息
-.main-layout-container {
-  display: flex;
-  gap: 32px;
+@import '@/style/scrollbar';
+@reference "@/style/tailwind/index.css";
+
+/* 进场动画 */
+.list-item-anim {
+  animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
-.steps-aside {
-  flex-shrink: 0;
-  width: 220px;
-  border-right: 1px solid var(--td-border-level-2-color);
-  padding-right: 32px;
-}
-.main-content {
-  flex-grow: 1;
-  min-width: 0;
-}
-.form-step-container {
-  padding-top: 0;
-}
-.step-content {
-  margin: 0;
-  padding: 16px 0;
-}
-.mb-4 {
-  margin-bottom: 16px;
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.java-option-panel,
-.online-select-area {
-  margin-top: 16px;
-  padding: 16px;
-  background-color: var(--td-bg-color-secondarycontainer);
-  border-radius: var(--td-radius-medium);
-}
-.flex-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
+.custom-scrollbar {
+  .scrollbar-mixin();
 }
 
-.select-core-wrapper {
-  width: 100%;
-}
-.uploading-state {
-  margin-top: 12px;
-  .core-filename {
-    font-weight: 600;
-    margin-bottom: 8px;
-  }
-  .tip {
-    font-size: 12px;
-    color: var(--td-text-color-secondary);
-    margin-top: 4px;
-  }
-}
-
-.selected-core-card {
-  margin-top: 12px;
-  display: flex;
-  align-items: center;
-  background-color: var(--td-bg-color-secondarycontainer);
-  border: 1px solid var(--td-brand-color);
-  border-radius: var(--td-radius-medium);
-  padding: 12px;
-  .core-icon {
-    font-size: 24px;
-    color: var(--td-brand-color);
-    margin-right: 12px;
-  }
-  .core-info {
-    flex: 1;
-    overflow: hidden;
-    .core-filename {
-      font-weight: 600;
-    }
-    .core-url {
-      font-size: 12px;
-      color: var(--td-text-color-secondary);
-    }
-  }
-}
-
-.vertical-radio-group {
-  display: block;
-  .jar-option-item {
-    margin-bottom: 8px;
-    &:last-child {
-      margin-bottom: 0;
-    }
-  }
-}
-
-/* --- 进度条和结果页样式 --- */
-.creation-progress {
-  text-align: center;
-  padding: 16px;
-
-  .progress-title {
-    font-size: 18px;
-    font-weight: 500;
+:deep(.custom-steps) {
+  .t-steps-item__inner {
+  @apply !flex !items-start !gap-4 !pb-8 !m-0;
   }
 
-  .t-progress {
-    margin: 24px 0;
+  .t-steps-item__icon {
+  @apply !w-8 !h-8 !rounded-full !flex !items-center !justify-center !border-2 !text-sm !font-extrabold !bg-transparent !transition-colors !duration-300 !z-10 !relative;
+  }
+  .t-steps-item--process .t-steps-item__icon {
+  @apply !border-[var(--color-primary)] !text-[var(--color-primary)] !bg-[var(--color-primary)]/10 shadow-[0_0_12px_var(--color-primary-light)]/40;
+  }
+  .t-steps-item--default .t-steps-item__icon {
+  @apply !border-zinc-200 dark:!border-zinc-700 !text-zinc-400 dark:!text-zinc-500 !bg-transparent;
+  }
+  .t-steps-item--finish .t-steps-item__icon {
+  @apply !border-[var(--color-success)] !text-[var(--color-success)] !bg-[var(--color-success)]/10;
   }
 
-  .log-container {
-    margin-top: 24px;
-    max-height: 400px;
-    overflow-y: auto;
-    text-align: left;
-    background-color: var(--td-bg-color-container);
-    border: 1px solid var(--td-border-level-2-color);
-    border-radius: var(--td-radius-medium);
-
-    .log-time {
-      color: var(--td-text-color-placeholder);
-      margin-right: 8px;
-    }
+  .t-steps-item__title {
+  @apply !text-sm !font-extrabold !text-zinc-800 dark:!text-zinc-200 !leading-none !mb-1.5 !transition-colors;
   }
-}
-
-.result-success {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  min-height: 50vh;
-  padding: 32px 0;
-  &-icon {
-    font-size: 64px;
-    color: var(--td-success-color);
+  .t-steps-item--process .t-steps-item__title {
+  @apply !text-[var(--color-primary)];
   }
-  &-title {
-    margin-top: 16px;
-    font-size: 20px;
-    font-weight: 500;
-  }
-  &-describe {
-    margin: 8px 0 32px;
-    font-size: 14px;
-  }
-}
-
-/* --- 移动端适配 --- */
-@media (max-width: 768px) {
-  .main-layout-container {
-    flex-direction: column;
-    gap: 24px;
+  .t-steps-item__description {
+  @apply !text-xs !font-medium !text-zinc-500 dark:!text-zinc-400 !leading-relaxed;
   }
 
-  .steps-aside {
-    width: 100%;
-    border-right: none;
-    padding-right: 0;
-    border-bottom: 1px solid var(--td-border-level-2-color);
-    padding-bottom: 24px;
+  .t-steps-item:not(:last-child)::after {
+    content: '';
+  @apply !absolute !w-[2px] !bg-zinc-200 dark:!bg-zinc-700 !top-8 !bottom-0 !left-[15px] !z-0;
   }
-
-  .step-content {
-    max-width: 100%;
-  }
-
-  .result-success {
-    min-height: 40vh;
+  .t-steps-item--finish:not(:last-child)::after {
+  @apply !bg-[var(--color-primary)]/50;
   }
 }
 

@@ -255,176 +255,76 @@ onUnmounted(async () => {
 </script>
 
 <template>
-  <div ref="terminalWrapper" class="terminal-wrapper">
-    <div class="terminal-header">
-      <div class="dots">
-        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+  <div ref="terminalWrapper" class="terminal-wrapper flex-1 flex flex-col bg-white/80 dark:bg-zinc-800/80 border border-zinc-200/50 dark:border-zinc-700/50 rounded-xl overflow-hidden shadow-sm relative w-full h-full">
+
+    <div class="h-[38px] shrink-0 bg-transparent border-b border-zinc-200/50 dark:border-zinc-700/50 flex items-center px-4 relative z-10 select-none">
+      <div class="flex gap-1.5 mr-4">
+        <span class="w-2.5 h-2.5 rounded-full bg-[#ff5f56]"></span>
+        <span class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></span>
+        <span class="w-2.5 h-2.5 rounded-full bg-[#27c93f]"></span>
       </div>
-      <div class="tab-title">MSLX 服务端控制台 | #{{ serverId }}</div>
+      <div class="text-zinc-500 dark:text-zinc-400 text-xs font-mono truncate">
+        MSLX 服务端控制台 | #{{ serverId }}
+      </div>
     </div>
-    <div ref="terminalBody" class="terminal-body"></div>
-    <div class="terminal-footer">
-      <input v-model="inputCommand" class="cmd-input" placeholder="发送控制台指令..." @keyup.enter="handleSendInput" />
-      <button class="send-btn" @click="handleSendInput">发送</button>
+
+    <div ref="terminalBody" class="absolute top-[38px] bottom-[50px] left-0 right-0 py-1.5 pl-2.5 z-[1] terminal-body-container"></div>
+
+    <div class="absolute bottom-0 left-0 right-0 h-[50px] flex items-center px-4 bg-transparent border-t border-zinc-200/50 dark:border-zinc-700/50 z-10 gap-3">
+      <input
+        v-model="inputCommand"
+        class="flex-1 h-8 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-700 rounded-md px-3 text-zinc-800 dark:text-zinc-200 font-mono text-[13px] outline-none transition-all focus:border-[var(--color-primary)] focus:bg-white dark:focus:bg-zinc-900 placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
+        placeholder="发送控制台指令..."
+        @keyup.enter="handleSendInput"
+      />
+      <button
+        class="h-8 px-4 rounded-md bg-[var(--color-primary)] text-white text-[13px] font-medium transition-all hover:brightness-110 active:brightness-90"
+        @click="handleSendInput"
+      >
+        发送
+      </button>
     </div>
   </div>
 </template>
 
 <style scoped lang="less">
 @import '@/style/scrollbar.less';
+@reference "@/style/tailwind/index.css";
 
-.terminal-wrapper {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background-color: var(--td-bg-color-container);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid var(--td-component-stroke);
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: var(--td-shadow-2);
-  position: relative;
-  width: 100%;
-  height: 100%;
-
-  .terminal-header {
-    height: 38px;
-    flex-shrink: 0;
-    background-color: transparent;
-    border-bottom: 1px solid var(--td-component-stroke);
-    display: flex;
-    align-items: center;
-    padding: 0 16px;
-    z-index: 10;
-    user-select: none;
-
-    .dots {
-      display: flex;
-      gap: 6px;
-      margin-right: 16px;
-      .dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-      }
-      .red {
-        background: #ff5f56;
-      }
-      .yellow {
-        background: #ffbd2e;
-      }
-      .green {
-        background: #27c93f;
-      }
-    }
-    .tab-title {
-      color: var(--td-text-color-placeholder);
-      font-size: 12px;
-      font-family:
-        'Maple Mono', 'Maple Mono CN', 'Cascadia Code', Consolas, Menlo, 'PingFang SC', 'Microsoft YaHei', 'monospace',
-        serif;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+/* 剥离所有普通样式的 LESS，仅保留对 xterm 内部结构的穿透覆盖 */
+.terminal-body-container {
+  :deep(.xterm),
+  :deep(.xterm-viewport),
+  :deep(.xterm-screen),
+  :deep(.xterm-scrollable-element) {
+    background-color: transparent !important;
   }
 
-  .terminal-body {
-    position: absolute;
-    top: 38px;
-    bottom: 50px;
-    left: 0;
-    right: 0;
-    padding: 6px 0 6px 10px;
-    z-index: 1;
-
-    :deep(.xterm),
-    :deep(.xterm-viewport),
-    :deep(.xterm-screen),
-    :deep(.xterm-scrollable-element) {
-      background-color: transparent !important;
-    }
-
-    :deep(.xterm-viewport) {
-      overflow-y: hidden !important;
-    }
-
-    :deep(.xterm-scrollable-element) {
-      overflow-y: auto !important;
-
-      .scrollbar-mixin();
-
-      &::-webkit-scrollbar {
-        width: 12px !important;
-        background-color: transparent;
-      }
-
-      &::-webkit-scrollbar-thumb {
-        background-clip: content-box;
-        border: 3px solid transparent;
-        border-radius: 10px;
-      }
-
-      &::-webkit-scrollbar-thumb:hover {
-        border-width: 2px;
-      }
-    }
+  :deep(.xterm-viewport) {
+    overflow-y: hidden !important;
   }
 
-  .terminal-footer {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    padding: 0 16px;
-    background-color: transparent;
-    border-top: 1px solid var(--td-component-stroke);
-    z-index: 10;
-    gap: 12px;
+  :deep(.xterm-scrollable-element) {
+    overflow-y: auto !important;
+    .scrollbar-mixin();
 
-    .cmd-input {
-      flex: 1;
-      height: 32px;
-      background-color: color-mix(in srgb, var(--td-bg-color-secondarycontainer), transparent 70%);
-      border: 1px solid var(--td-component-border);
-      border-radius: 4px;
-      padding: 0 12px;
-      color: var(--td-text-color-primary);
-      font-family:
-        'Maple Mono', 'Maple Mono CN', 'Cascadia Code', Consolas, Menlo, 'PingFang SC', 'Microsoft YaHei', 'monospace',
-        serif;
-      font-size: 13px;
-      outline: none;
-      transition: all 0.2s;
-      &:focus {
-        border-color: var(--td-brand-color);
-        background-color: color-mix(in srgb, var(--td-bg-color-secondarycontainer), transparent 50%);
-      }
-      &::placeholder {
-        color: var(--td-text-color-placeholder);
-      }
+    &::-webkit-scrollbar {
+      width: 12px !important;
+      background-color: transparent;
     }
-
-    .send-btn {
-      height: 32px;
-      padding: 0 16px;
-      border: none;
-      border-radius: 4px;
-      background-color: var(--td-brand-color);
-      color: #fff;
-      font-size: 13px;
-      cursor: pointer;
-      transition: all 0.2s;
-      &:hover {
-        background-color: var(--td-brand-color-hover);
-      }
-      &:active {
-        background-color: var(--td-brand-color-active);
-      }
+    &::-webkit-scrollbar-thumb {
+      background-clip: content-box;
+      border: 3px solid transparent;
+      border-radius: 10px;
+      /* 将滚动条也替换为 zinc 色系 */
+      background-color: #d4d4d8; /* zinc-300 */
+    }
+    :global(html[theme-mode='dark']) &::-webkit-scrollbar-thumb,
+    :global(html.dark) &::-webkit-scrollbar-thumb {
+      background-color: #52525b; /* zinc-600 */
+    }
+    &::-webkit-scrollbar-thumb:hover {
+      border-width: 2px;
     }
   }
 }
