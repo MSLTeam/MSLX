@@ -4,7 +4,7 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch: 
+  workflow_dispatch:
 
 permissions:
   contents: write 
@@ -32,7 +32,6 @@ jobs:
             TAG_NAME="beta"
             CLEAN_VERSION="beta"
           fi
-          
           echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
           echo "CLEAN_VERSION=$CLEAN_VERSION" >> $GITHUB_ENV
 
@@ -48,15 +47,11 @@ jobs:
           chmod +x fnpack
           mv fnpack fnos-workspace/
 
-      - name: 动态修改 Manifest 与镜像版本
+      - name: 动态修改 Manifest
         working-directory: ./fnos-workspace
         run: |
-          echo "正在修改 manifest 文件..."
-          
-          # 替换版本号 (匹配 version = xxx)
           sed -i "s/^version[[:space:]]*=.*/version=$CLEAN_VERSION/" manifest
           
-          # 替换平台架构
           if grep -q "^platform[[:space:]]*=" manifest; then
             sed -i "s/^platform[[:space:]]*=.*/platform=${{ matrix.platform }}/" manifest
           else
@@ -74,20 +69,39 @@ jobs:
       - name: 编译并重命名飞牛应用包
         working-directory: ./fnos-workspace
         run: |
-          # 执行打包
           ./fnpack build
           
-          # 抓取生成的 .fpk 文件并重命名
-          # 最终格式: mslx_v1.2.5_amd64.fpk / mslx_v1.2.5_arm64.fpk
           FINAL_PACKAGE_NAME="mslx_${TAG_NAME}_${{ matrix.arch }}.fpk"
           mv *.fpk "../$FINAL_PACKAGE_NAME"
-          
-          # 记录路径供下一步上传使用
           echo "ASSET_PATH=./$FINAL_PACKAGE_NAME" >> $GITHUB_ENV
 
-      - name: 附加到 Release
+      - name: 暂存编译产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: fpk-${{ matrix.arch }}
+          path: ${{ env.ASSET_PATH }}
+
+
+  publish-fnos-release:
+    needs: build-fnos-app
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    name: 发布到 Release
+    steps:
+      - name: 确定版本号
+        shell: bash
+        run: |
+          echo "TAG_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
+
+      - name: 下载所有编译产物
+        uses: actions/download-artifact@v4
+        with:
+          pattern: fpk-*
+          path: packages
+          merge-multiple: true 
+
+      - name: 发布到 Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ env.ASSET_PATH }}
+          files: packages/*.fpk
           tag_name: ${{ env.TAG_NAME }}
-          prerelease: ${{ env.TAG_NAME == 'beta' }}
