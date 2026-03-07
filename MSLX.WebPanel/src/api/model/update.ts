@@ -3,6 +3,7 @@ export interface UpdateInfoModel {
   currentVersion: string;
   latestVersion: string;
   status: string;
+  environment: string;
   log: string;
 }
 

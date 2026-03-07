@@ -135,6 +135,9 @@ public class AppInfoController : ControllerBase
     {
         try
         {
+            bool isFnOS = Environment.GetEnvironmentVariable("IS_FNOS_APP") == "true";
+            var inContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER");
+
             var localVerObj = Assembly.GetEntryAssembly()?.GetName().Version ?? new Version("0.0.0.0");
             HttpService.HttpResponse res = await MSLApi.GetAsync("/query/update?software=MSLX", null);
 
@@ -147,13 +150,12 @@ public class AppInfoController : ControllerBase
                     remoteVerObj = new Version("0.0.0.0");
                 }
 
-                // 版本归一化
                 Version normalizedLocal = NormalizeVersion(localVerObj);
                 Version normalizedRemote = NormalizeVersion(remoteVerObj);
 
-                // 判定状态
                 bool needUpdate = normalizedRemote > normalizedLocal;
-                string status = "release"; // 默认为最新正式版
+                string status = "release";
+                string environment = (inContainer != null && inContainer.Equals("true", StringComparison.OrdinalIgnoreCase)) ? "docker" : "native";
 
                 if (needUpdate)
                 {
@@ -161,7 +163,15 @@ public class AppInfoController : ControllerBase
                 }
                 else if (normalizedLocal > normalizedRemote)
                 {
-                    status = "beta"; // 本地版本比服务器还新，说明是测试版
+                    status = "beta";
+                }
+
+                // fnos 屏蔽更新
+                if (isFnOS)
+                {
+                    needUpdate = false;
+                    status = "managed";
+                    environment = "fnos";
                 }
 
                 var responseData = new
@@ -169,8 +179,9 @@ public class AppInfoController : ControllerBase
                     needUpdate,
                     currentVersion = localVerObj.ToString(),
                     latestVersion = remoteVerStr,
-                    status, // release / beta / outdated
-                    log = remoteJObj["data"]?["log"]?.ToString()
+                    status,
+                    environment,
+                    log = remoteJObj["data"]?["log"]?.ToString(),
                 };
 
                 return Ok(new ApiResponse<object>()
