@@ -1,0 +1,203 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="MSLX.Desktop.Views.CreateTunnel.CreateMSLFrpTunnel">
+  <Grid>
+    <TabControl>
+      <TabItem Header="我的隧道">
+        <Grid Margin="10">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+          <Grid>
+            <Grid>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+              </Grid.RowDefinitions>
+              <suki:GlassCard Margin="0,0,10,0">
+                <Grid RowDefinitions="Auto * Auto">
+                  <TextBlock Text="隧道列表：" FontWeight="Bold" FontSize="16"/>
+                  <ListBox Margin="0,5,0,0" Grid.Row="1" >
+                    <ListBox.ItemTemplate>
+                      <DataTemplate>
+                        <TextBlock Foreground="{DynamicResource SukiText}">
+                          <Run />
+                          <Run Text="|"/>
+                          <Run />
+                        </TextBlock>
+                      </DataTemplate>
+                    </ListBox.ItemTemplate>
+                  </ListBox>
+                  <Grid Grid.Row="2" HorizontalAlignment="Stretch">
+                    <Grid.ColumnDefinitions>
+                      <ColumnDefinition Width="*"/>
+                      <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Button Grid.Column="0" Content="刷新" Classes="Flat"/>
+                    <Button Grid.Column="1" Margin="5,0,5,0" Content="删除隧道" Classes="Flat Accent" Background="Red"/>
+                  </Grid>
+                </Grid>
+              </suki:GlassCard>
+            </Grid>
+          </Grid>
+          <Grid Grid.Column="1">
+            <ScrollViewer>
+              <StackPanel Spacing="10">
+                <suki:GlassCard>
+                  <Grid>
+                  <StackPanel>
+                    <TextBlock Text="用户信息" Margin="3" FontWeight="Bold" FontSize="16"/>
+                    <TextBlock Margin="3">
+                      <Run Text="用户名："></Run>
+                      <Run ></Run>
+                    </TextBlock>
+                    <TextBlock Margin="3">
+                      <Run Text="用户组："></Run>
+                      <Run ></Run>
+                    </TextBlock>
+                    <TextBlock Margin="3">
+                      <Run Text="最大隧道数："></Run>
+                      <Run ></Run>
+                    </TextBlock>
+                    <TextBlock Margin="3">
+                      <Run Text="到期时间："></Run>
+                      <Run ></Run>
+                    </TextBlock>
+                  </StackPanel>
+                    <Grid VerticalAlignment="Top" HorizontalAlignment="Right" >
+                      <StackPanel Spacing="5">
+                          <!--
+                          <Button Classes="Flat" Command="{Binding UrlUtils.OpenUrlCommand}" CommandParameter="https://user.mslmc.net" Content="打开官网"/>
+                          -->
+                        <Button Classes="Flat Accent" Background="Red" Content="退出登录"/>
+                      </StackPanel>
+                    </Grid>
+                  </Grid>
+                </suki:GlassCard>
+                <suki:GlassCard>
+                  <StackPanel Spacing="10">
+                    <TextBlock Text="隧道信息" FontWeight="Bold" FontSize="16"/>
+                    <TextBlock>
+                      <Run Text="名称："/>
+                      <Run Text="#"/>
+                      <Run />
+                      <Run Text=" "/>
+                      <Run />
+                    </TextBlock>
+                    <TextBlock>
+                      <Run Text="备注："/>
+                      <Run />
+                    </TextBlock>
+                    <TextBlock>
+                      <Run Text="状态："/>
+                      <Run />
+                    </TextBlock>
+                    <TextBlock>
+                      <Run Text="本地端口："/>
+                      <Run />
+                    </TextBlock>
+                    <TextBlock>
+                      <Run Text="远程端口："/>
+                      <Run />
+                    </TextBlock>
+                    <TextBlock>
+                      <Run Text="节点："/>
+                      <Run />
+                    </TextBlock>
+                    <Button Content="使用该隧道" Height="50" Classes="Flat" FontSize="18"/>
+                  </StackPanel>
+                </suki:GlassCard>
+              </StackPanel>
+            </ScrollViewer>
+          </Grid>
+        </Grid>
+      </TabItem>
+      <TabItem Header="创建隧道">
+        <Grid Grid.ColumnDefinitions="* *" Margin="10">
+          <Grid Margin="0,0,10,0">
+            <suki:GlassCard>
+              <Grid RowDefinitions="Auto * Auto">
+                <TextBlock Text="节点列表：" FontSize="16" FontWeight="Bold"/>
+                <ListBox Margin="0,5,0,0" Grid.Row="1" >
+                  <ListBox.ItemTemplate>
+                    <DataTemplate>
+                      <TextBlock Foreground="{DynamicResource SukiText}">
+                        <Run Text="["/>
+                        <Run />
+                        <Run Text="]"/>
+                        <Run />
+                        <Run Text="@"/>
+                        <Run />
+                        <Run Text="Mbps"/>
+                      </TextBlock>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+                <Button Grid.Row="2" Content="刷新" Classes="Flat"/>
+              </Grid>
+            </suki:GlassCard>
+          </Grid>
+          <Grid Grid.Column="1">
+            <ScrollViewer>
+              <StackPanel Spacing="10">
+                <suki:GlassCard>
+                  <StackPanel Spacing="10">
+                    <TextBlock Text="节点信息：" FontSize="16" FontWeight="Bold"/>
+                    <TextBlock>
+                      <Run Text="节点名称："/>
+                      <Run />
+                    </TextBlock>
+                    <TextBlock>
+                      <Run Text="信息："/>
+                      <Run />
+                    </TextBlock>
+                  </StackPanel>
+                </suki:GlassCard>
+                <suki:GlassCard>
+                  <StackPanel Spacing="10">
+                    <TextBlock Text="填写隧道信息：" FontSize="16" FontWeight="Bold"/>
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                      <TextBlock VerticalAlignment="Center" Text="隧道名称："/>
+                      <TextBox MinWidth="150" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                      <TextBlock VerticalAlignment="Center" Text="协议类型："/>
+                      <ComboBox MinWidth="150">
+                        <ComboBoxItem>tcp</ComboBoxItem>
+                        <ComboBoxItem>udp</ComboBoxItem>
+                        <ComboBoxItem>http</ComboBoxItem>
+                        <ComboBoxItem>https</ComboBoxItem>
+                      </ComboBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                      <TextBlock VerticalAlignment="Center" Text="本地IP："/>
+                      <TextBox MinWidth="150"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                      <TextBlock VerticalAlignment="Center" Text="本地端口："/>
+                      <NumericUpDown MinWidth="150"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                      <TextBlock VerticalAlignment="Center" Text="远程端口："/>
+                      <NumericUpDown MinWidth="150"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                      <TextBlock VerticalAlignment="Center" Text="使用KCP协议传输："/>
+                      <ToggleSwitch/>
+                    </StackPanel>
+                    <Button Content="创建隧道" Height="50" Classes="Flat" FontSize="18"/>
+                  </StackPanel>
+                </suki:GlassCard>
+              </StackPanel>
+            </ScrollViewer>
+          </Grid>
+        </Grid>
+      </TabItem>
+    </TabControl>
+  </Grid>
+</UserControl>

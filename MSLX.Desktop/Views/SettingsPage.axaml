@@ -1,4 +1,4 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -40,26 +40,20 @@
 
     <suki:GlassCard Margin="10">
         <Grid RowDefinitions="Auto,*">
-
-            <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,20">
-                <StackPanel Orientation="Horizontal" Spacing="15" VerticalAlignment="Center">
+            <Grid Grid.Row="0" Margin="0,0,0,20">
+                <StackPanel Orientation="Horizontal" Spacing="15">
                     <TextBlock Text="设置" Classes="h3"/>
-                    <ProgressBar Name="LoadingBar" 
+                    <Button Name="BtnRefresh" 
+                        VerticalAlignment="Center" Click="OnRefreshClick"
+                        ToolTip.Tip="刷新数据">
+                    <icons:MaterialIcon Kind="Refresh"/>
+                </Button>
+                </StackPanel>
+                <ProgressBar Name="LoadingBar" 
                                  IsIndeterminate="True" 
                                  IsVisible="False" 
-                                 Width="120" 
                                  Height="2" 
-                                 VerticalAlignment="Bottom"
-                                 Margin="0,0,0,5"/>
-                </StackPanel>
-
-                <Button Grid.Column="1" 
-                        Name="BtnRefresh" 
-                        Classes="Flat" 
-                        Click="OnRefreshClick"
-                        ToolTip.Tip="刷新数据">
-                    <icons:MaterialIcon Kind="Refresh" Width="22" Height="22"/>
-                </Button>
+                                 VerticalAlignment="Bottom"/>
             </Grid>
 
             <ScrollViewer Grid.Row="1" Padding="0,0,15,0">

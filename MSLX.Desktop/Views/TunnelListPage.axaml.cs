@@ -60,4 +60,13 @@ public partial class TunnelListPage : UserControl
                                 .Dismiss().After(TimeSpan.FromSeconds(5))
                                 .Queue();
     }
+
+    private async void AddBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        DialogService.ToastManager.CreateToast()
+            .WithTitle("在写了在写了")
+            .WithContent("别捉急~")
+            .Dismiss().After(TimeSpan.FromSeconds(5))
+            .Queue();
+    }
 }
