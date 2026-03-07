@@ -1,0 +1,93 @@
+name: 发布 MSLX 飞牛应用包
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch: 
+
+permissions:
+  contents: write 
+
+jobs:
+  build-fnos-app:
+    runs-on: ubuntu-latest
+    name: 构建飞牛应用包 (${{ matrix.arch }})
+    
+    strategy:
+      matrix:
+        include:
+          - { arch: 'amd64', platform: 'x86' }
+          - { arch: 'arm64', platform: 'arm' }
+
+    steps:
+      - name: 确定版本号
+        id: version
+        shell: bash
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            TAG_NAME="${{ github.ref_name }}"
+            CLEAN_VERSION="${TAG_NAME#v}"
+          else
+            TAG_NAME="beta"
+            CLEAN_VERSION="beta"
+          fi
+          
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+          echo "CLEAN_VERSION=$CLEAN_VERSION" >> $GITHUB_ENV
+
+      - name: 签出飞牛应用配置仓库
+        uses: actions/checkout@v4
+        with:
+          repository: MSLTeam/mslx-fnos-app
+          path: fnos-workspace
+
+      - name: 下载并配置 fnpack 工具
+        run: |
+          wget -O fnpack https://static2.fnnas.com/fnpack/fnpack-1.2.1-linux-amd64
+          chmod +x fnpack
+          mv fnpack fnos-workspace/
+
+      - name: 动态修改 Manifest 与镜像版本
+        working-directory: ./fnos-workspace
+        run: |
+          echo "正在修改 manifest 文件..."
+          
+          # 替换版本号 (匹配 version = xxx)
+          sed -i "s/^version[[:space:]]*=.*/version=$CLEAN_VERSION/" manifest
+          
+          # 替换平台架构
+          if grep -q "^platform[[:space:]]*=" manifest; then
+            sed -i "s/^platform[[:space:]]*=.*/platform=${{ matrix.platform }}/" manifest
+          else
+            echo "platform=${{ matrix.platform }}" >> manifest
+          fi
+          
+          if grep -q "^arch[[:space:]]*=" manifest; then
+             if [[ "${{ matrix.platform }}" == "x86" ]]; then
+               sed -i "s/^arch[[:space:]]*=.*/arch=x86_64/" manifest
+             else
+               sed -i "s/^arch[[:space:]]*=.*/arch=aarch64/" manifest
+             fi
+          fi
+
+      - name: 编译并重命名飞牛应用包
+        working-directory: ./fnos-workspace
+        run: |
+          # 执行打包
+          ./fnpack build
+          
+          # 抓取生成的 .fpk 文件并重命名
+          # 最终格式: mslx_v1.2.5_amd64.fpk / mslx_v1.2.5_arm64.fpk
+          FINAL_PACKAGE_NAME="mslx_${TAG_NAME}_${{ matrix.arch }}.fpk"
+          mv *.fpk "../$FINAL_PACKAGE_NAME"
+          
+          # 记录路径供下一步上传使用
+          echo "ASSET_PATH=./$FINAL_PACKAGE_NAME" >> $GITHUB_ENV
+
+      - name: 附加到 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ASSET_PATH }}
+          tag_name: ${{ env.TAG_NAME }}
+          prerelease: ${{ env.TAG_NAME == 'beta' }}
