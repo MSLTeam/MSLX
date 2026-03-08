@@ -249,7 +249,6 @@ onUnmounted(() => {
     class="update-modal"
     destroy-on-close
     attach="body"
-    top="2vh"
     @close="handleClose"
   >
     <div class="flex justify-between items-start mb-5">
