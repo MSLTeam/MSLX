@@ -172,14 +172,14 @@ onMounted(async () => {
 });
 </script>
 
-<<template>
-  <div class="h-full flex flex-col md:flex-row gap-5 overflow-hidden pb-3 box-border relative text-zinc-800 dark:text-zinc-200">
+<template>
+  <div class="h-auto md:h-full flex flex-col md:flex-row gap-5 overflow-y-auto md:overflow-hidden pb-3 box-border relative text-zinc-800 dark:text-zinc-200">
 
-    <div class="list-item-anim flex-1 min-w-0 h-[400px] md:h-full flex flex-col relative z-10" style="animation-delay: 0s;">
+    <div class="list-item-anim flex-1 shrink-0 min-w-0 min-h-[450px] md:h-full flex flex-col relative z-10" style="animation-delay: 0s;">
       <server-terminal ref="terminalRef" :server-id="serverId" @update="fetchServerInfo()" />
     </div>
 
-    <div class="list-item-anim w-full md:w-80 lg:w-[340px] shrink-0 h-auto md:h-full overflow-y-auto custom-scrollbar pr-1 flex flex-col hide-scrollbar-on-mobile relative z-10" style="animation-delay: 0.1s;">
+    <div class="list-item-anim w-full md:w-80 lg:w-[340px] shrink-0 h-auto md:h-full overflow-y-auto custom-scrollbar md:pr-1 flex flex-col hide-scrollbar-on-mobile relative z-10" style="animation-delay: 0.1s;">
       <server-control-panel
         :server-id="serverId"
         :status="status"
