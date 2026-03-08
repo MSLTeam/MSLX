@@ -1,6 +1,6 @@
 {
-  "version": "1.3.0",
-  "buildTime": "2026-03-08 16:49:07",
+  "version": "1.3.0.1",
+  "buildTime": "2026-03-08 19:58:37",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -72,10 +72,58 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "b8fd60f6e4f8c7281a3d1695f5d306f6126aec91",
-  "commitMsg": "assets(webpanel): 移除无用资源",
+  "commitId": "bd9afebacaa96a7a57a4f98bcd005fc0c0a094f8",
+  "commitMsg": "fix(webpanel): 修复气泡弹窗样式异常问题",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "bd9afebacaa96a7a57a4f98bcd005fc0c0a094f8",
+      "commitTime": "2026-03-08 19:56:44 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复气泡弹窗样式异常问题"
+    },
+    {
+      "commitId": "571b28c2aa6458d2c042f43f06d8871bb8312662",
+      "commitTime": "2026-03-08 19:50:24 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复全局定时任务页面动画冲突问题"
+    },
+    {
+      "commitId": "6a5f6200b97e795a41c17a5a4e12c8f2f084b020",
+      "commitTime": "2026-03-08 19:45:19 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(webpanel): 优化移动端下拉菜单的交互体验"
+    },
+    {
+      "commitId": "7153ab3a7227350ed85ba31f55a4e80f83364352",
+      "commitTime": "2026-03-08 19:32:29 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复菜单在侧边栏折叠模式下icon偏移的问题"
+    },
+    {
+      "commitId": "aa3b1bf346362f3c0b28bcfb3edb9c1e2b23ae3a",
+      "commitTime": "2026-03-08 19:21:44 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复终端组件在移动端坍缩的问题"
+    },
+    {
+      "commitId": "0fd540d0d8247640cb4ebab6438170d575dc710e",
+      "commitTime": "2026-03-08 19:09:34 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复终端组件毛玻璃模糊度样式丢失的问题"
+    },
+    {
+      "commitId": "34b1c176f6a51a6a327495eceecca7e3a6e8be24",
+      "commitTime": "2026-03-08 16:51:18 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #74 from MSLTeam/dev"
+    },
+    {
+      "commitId": "29b902e2ab8fd4712976d8b56e57badc6a124376",
+      "commitTime": "2026-03-08 16:49:38 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.3.0"
+    },
     {
       "commitId": "b8fd60f6e4f8c7281a3d1695f5d306f6126aec91",
       "commitTime": "2026-03-08 16:48:02 +0800",
@@ -327,54 +375,6 @@
       "commitTime": "2026-03-03 23:28:39 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "chore(webpanel): 修正 stylelint 规则"
-    },
-    {
-      "commitId": "f57f384ae3a502889d582ce71491a649caa9fc6c",
-      "commitTime": "2026-03-03 23:19:49 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 集成 Tailwind CSS 样式"
-    },
-    {
-      "commitId": "ba2b56cf7a959398c4e424750566dbd95e409e98",
-      "commitTime": "2026-03-03 22:24:52 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(webpanel): 修正代码格式"
-    },
-    {
-      "commitId": "11412c8b740e03992dfbe86271e7440b8d9c082b",
-      "commitTime": "2026-03-03 22:21:20 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复更新弹窗在移动端下按钮错位的问题"
-    },
-    {
-      "commitId": "1c2a8fb8d6b422bfcb2e5531bc5b8a741862d5b5",
-      "commitTime": "2026-03-03 22:13:39 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #71 from MSLTeam/dev"
-    },
-    {
-      "commitId": "ac5f4923614a26d371a5bdd62200fd01cd466283",
-      "commitTime": "2026-03-03 22:12:59 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(webpanel & daemon): 更新到 v1.2.5 版本"
-    },
-    {
-      "commitId": "f2645dc0dc5b67cd47fb52aa9d40454123111df2",
-      "commitTime": "2026-03-03 22:09:05 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 尝试修复对使用sh脚本启动服务端资源监控错误的问题 #63"
-    },
-    {
-      "commitId": "4625bf3564e607bb3d3db4bddae532e2ff3021a2",
-      "commitTime": "2026-03-03 22:00:44 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel & daemon): 添加服务器图标快捷裁剪替换功能 #64"
-    },
-    {
-      "commitId": "9cb00fbd9b58e030982f3107f8acce5ac2e07224",
-      "commitTime": "2026-03-03 21:27:40 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复玩家管理弹窗无法正常滚动的问题 #62"
     }
   ]
 }
