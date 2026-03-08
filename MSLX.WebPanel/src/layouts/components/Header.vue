@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import type { PropType } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSettingStore,useUserStore } from '@/store';
@@ -7,11 +7,10 @@ import { getActive } from '@/router';
 import { prefix } from '@/config/global';
 import type { MenuRoute } from '@/types/interface';
 
-const userStore = useUserStore();
-
-
 import MenuContent from './MenuContent.vue';
 import CustomLogo from "@/assets/logo.png";
+
+const userStore = useUserStore();
 
 const props = defineProps({
   theme: {
@@ -54,6 +53,7 @@ const toggleSettingPanel = () => {
 };
 
 const active = computed(() => getActive());
+const mobileMenuVisible = ref(false);
 
 const layoutCls = computed(() => [`${prefix}-header-layout`]);
 
@@ -83,6 +83,7 @@ const handleMenuChange = (value: string) => {
   // value = 路由 path
   if (value) {
     router.push(value);
+    mobileMenuVisible.value = false;
   }
 };
 const handleLogout = () => {
@@ -124,6 +125,7 @@ const navToHelper = () => {
 
         <div v-if="layout !== 'side'" class="flex lg:hidden ml-1 items-center">
           <t-popup
+            v-model="mobileMenuVisible"
             placement="bottom"
             overlay-class-name="mobile-full-width-popup"
             :overlay-style="{ padding: '0', boxShadow: 'none' }"
@@ -256,19 +258,17 @@ const navToHelper = () => {
   }
 }
 
-/* ================== 核弹级洗髓：干掉一切背景和边框 ================== */
 
-/* 1. 强制击穿 .t-menu--dark 和 .t-menu--light 的背景色劫持，让我们的 bg-white 透出来 */
-/* ================== Header 彻底透明化 ================== */
+// 击穿底色
 :deep(.t-menu),
 :deep(.t-head-menu),
 :deep(.t-menu--dark),
 :deep(.t-menu--light),
-:deep(.t-head-menu__inner) {  /* 👈 同样干掉它的内层底色 */
+:deep(.t-head-menu__inner) {
   background: transparent !important;
 }
 
-/* 2. 物理消灭所有的边框、轮廓和阴影 */
+// 击穿边框
 :deep(.t-head-menu__inner),
 :deep(.t-menu__item) {
   border: none !important;
@@ -280,14 +280,13 @@ const navToHelper = () => {
 @apply px-4 sm:px-6;
 }
 
-/* 3. 斩草除根：TDesign 自动生成的下划线和边框伪元素统统去死 */
+// 击穿伪元素
 :deep(.t-menu__item::after),
 :deep(.t-menu__item::before),
 :deep(.t-menu__item.t-is-active::after) {
   display: none !important;
 }
 
-/* ================================================================= */
 
 .header-menu-reset {
   :deep(.t-menu__item) {
@@ -315,14 +314,13 @@ const navToHelper = () => {
   }
 }
 
-/* ================== 终极修复：击杀父级 Layout 的默认底色 ================== */
+// 击穿layout底色
 :global(.t-layout__header) {
   background-color: transparent !important;
   background: transparent !important;
   border-bottom: none !important;
 }
 
-/* 确保内部容器 100% 占满高度，防止漏出缝隙 */
 .mslx-webpanel-header-layout {
   height: 100%;
 }
@@ -338,7 +336,6 @@ const navToHelper = () => {
   margin-top: 0 !important;
 }
 
-/* 干掉 TDesign 垂直菜单默认自带的 232px 死宽度 */
 :global(.mobile-full-width-popup .t-default-menu) {
   width: 100% !important;
   max-width: 100% !important;
@@ -363,10 +360,9 @@ const navToHelper = () => {
 /* 当开启美化时，使用极细的高光线*/
 .design-card.enable-custom-theme {
   border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
-  backdrop-filter: blur(20px); /* 确保背景美化时有毛玻璃感 */
+  backdrop-filter: blur(20px);
 }
 
-/* 彻底干掉 TDesign 内部可能挡住边框的白底 */
 :deep(.t-head-menu) {
   background-color: transparent !important;
 }
