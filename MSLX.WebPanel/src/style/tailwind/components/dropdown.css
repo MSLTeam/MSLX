@@ -63,6 +63,10 @@ html[theme-mode='dark'] .t-tooltip--default .t-popup__arrow {
 /* ================= Popconfirm (气泡确认框) ================= */
 
 /* 解决宽度和内边距 */
+.t-popup__content:has(.t-popconfirm__content) {
+  @apply !bg-transparent !border-none !shadow-none !p-0;
+}
+
 .t-popconfirm__content {
   @apply !bg-white/95 dark:!bg-zinc-800/95 !backdrop-blur-md !rounded-2xl !border !border-zinc-200/50 dark:!border-zinc-700/50 !shadow-2xl !p-5 !min-w-[240px] !max-w-[300px];
 }
@@ -114,4 +118,12 @@ html[theme-mode='dark'] .t-popconfirm .t-popup__arrow {
 .t-popconfirm__buttons button {
   width: auto !important;
   flex: none !important;
+}
+
+.t-popup__content:has(.t-popconfirm__content) .t-popup__arrow {
+  background-color: white !important;
+  border: none !important;
+}
+html[theme-mode='dark'] .t-popup__content:has(.t-popconfirm__content) .t-popup__arrow {
+  background-color: #27272a !important; /* 暗黑模式下的 zinc-800 */
 }

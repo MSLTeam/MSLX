@@ -291,7 +291,6 @@ onUnmounted(async () => {
 @import '@/style/scrollbar.less';
 @reference "@/style/tailwind/index.css";
 
-/* 剥离所有普通样式的 LESS，仅保留对 xterm 内部结构的穿透覆盖 */
 .terminal-body-container {
   :deep(.xterm),
   :deep(.xterm-viewport),
@@ -316,7 +315,6 @@ onUnmounted(async () => {
       background-clip: content-box;
       border: 3px solid transparent;
       border-radius: 10px;
-      /* 将滚动条也替换为 zinc 色系 */
       background-color: #d4d4d8; /* zinc-300 */
     }
     :global(html[theme-mode='dark']) &::-webkit-scrollbar-thumb,

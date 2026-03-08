@@ -177,7 +177,7 @@ const openHref = (url: string) => {
   display: none !important;
 }
 
-/* 彻底剥离 TDesign 强加给子菜单的 padding 和 margin */
+/* 剥离 TDesign 强加给子菜单的 padding 和 margin */
 :deep(.t-menu__sub) {
   --padding-left: 0px !important;
   @apply !m-0 !p-0 !bg-transparent !border-none !overflow-hidden;
@@ -186,7 +186,7 @@ const openHref = (url: string) => {
 /* ================== 菜单盒子 ================== */
 :deep(.t-menu__item),
 :deep(.t-submenu__title) {
-  @apply !relative !flex !items-center !w-auto !mx-3 !my-1 !rounded-xl !transition-all !duration-200 !border-none !bg-transparent !cursor-pointer;
+  @apply !relative !flex !items-center !gap-2.5 !w-auto !mx-3 !my-1 !rounded-xl !transition-all !duration-200 !border-none !bg-transparent !cursor-pointer;
 }
 
 /* ================== 垂直模式 ================== */
@@ -203,7 +203,7 @@ const openHref = (url: string) => {
 
 /* 统一图标样式 */
 :deep(.t-icon) {
-  @apply !text-[20px] !mr-2.5 !shrink-0 !opacity-70 !transition-colors !duration-200;
+  @apply !text-[20px] !shrink-0 !opacity-70 !transition-colors !duration-200;
 }
 
 /* ================== 垂直模式交互 ================== */

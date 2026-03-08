@@ -172,14 +172,14 @@ onMounted(async () => {
 });
 </script>
 
-<<template>
-  <div class="h-full flex flex-col md:flex-row gap-5 overflow-hidden pb-3 box-border relative text-zinc-800 dark:text-zinc-200">
+<template>
+  <div class="h-auto md:h-full flex flex-col md:flex-row gap-5 overflow-y-auto md:overflow-hidden pb-3 box-border relative text-zinc-800 dark:text-zinc-200">
 
-    <div class="list-item-anim flex-1 min-w-0 h-[400px] md:h-full flex flex-col relative z-10" style="animation-delay: 0s;">
+    <div class="list-item-anim flex-1 shrink-0 min-w-0 min-h-[450px] md:h-full flex flex-col relative z-10" style="animation-delay: 0s;">
       <server-terminal ref="terminalRef" :server-id="serverId" @update="fetchServerInfo()" />
     </div>
 
-    <div class="list-item-anim w-full md:w-80 lg:w-[340px] shrink-0 h-auto md:h-full overflow-y-auto custom-scrollbar pr-1 flex flex-col hide-scrollbar-on-mobile relative z-10" style="animation-delay: 0.1s;">
+    <div class="list-item-anim w-full md:w-80 lg:w-[340px] shrink-0 h-auto md:h-full overflow-y-auto custom-scrollbar md:pr-1 flex flex-col hide-scrollbar-on-mobile relative z-10" style="animation-delay: 0.1s;">
       <server-control-panel
         :server-id="serverId"
         :status="status"
@@ -229,18 +229,30 @@ onMounted(async () => {
 @reference "@/style/tailwind/index.css";
 
 .list-item-anim {
-  animation: slideUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
-  will-change: transform, opacity;
+  animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 
 @keyframes slideUp {
   from {
-    opacity: 0;
     transform: translateY(20px);
   }
   to {
-    opacity: 1;
     transform: translateY(0);
+  }
+}
+
+.list-item-anim {
+  :deep(.terminal-wrapper) {
+    animation: glassFadeIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+    animation-delay: inherit;
+  }
+}
+
+@keyframes glassFadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px) !important;
+    -webkit-backdrop-filter: blur(0px) !important;
   }
 }
 

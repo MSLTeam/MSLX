@@ -75,7 +75,7 @@ const rules: FormRules = {
 const columns = [
   { colKey: 'row-select', type: 'multiple', width: 30, fixed: 'left' },
   { colKey: 'name', title: '任务名称', ellipsis: true },
-  { colKey: 'type', title: '类型', width: 100 },
+  { colKey: 'type', title: '类型', width: 120 },
   { colKey: 'cron', title: 'Cron 规则', width: 140 },
   { colKey: 'payload', title: '执行参数', ellipsis: true },
   { colKey: 'enable', title: '状态', width: 90 },
@@ -502,19 +502,20 @@ onMounted(() => {
   }
 }
 
-/* 动态增删时的过渡动画 */
-.list-anim-move,
 .list-anim-enter-active,
 .list-anim-leave-active {
   transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s;
   will-change: transform, opacity;
 }
+
 .list-anim-enter-from,
 .list-anim-leave-to {
   opacity: 0;
   transform: translateY(16px) scale(0.98);
 }
+
 .list-anim-leave-active {
   position: absolute;
+  width: 100%;
 }
 </style>

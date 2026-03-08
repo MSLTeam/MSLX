@@ -162,14 +162,15 @@ onMounted(() => {
   }
 });
 </script>
-<template>
-  <div class="h-full flex flex-col md:flex-row gap-5 overflow-hidden pb-3 box-border relative">
 
-    <div class="list-item-anim flex-1 min-w-0 h-[400px] md:h-full flex flex-col relative z-10" style="animation-delay: 0s;">
+<template>
+  <div class="h-auto md:h-full flex flex-col md:flex-row gap-5 overflow-y-auto md:overflow-hidden pb-3 box-border relative">
+
+    <div class="list-item-anim w-full min-h-[400px] shrink-0 md:flex-1 md:min-h-0 md:h-full flex flex-col" style="animation-delay: 0s;">
       <console-terminal ref="terminalRef" :frp-id="frpId" @update="fetchTunnelInfo()" />
     </div>
 
-    <div class="list-item-anim w-full md:w-80 lg:w-[340px] shrink-0 h-auto md:h-full overflow-y-auto custom-scrollbar pr-1 flex flex-col hide-scrollbar-on-mobile relative z-10" style="animation-delay: 0.1s;">
+    <div class="list-item-anim w-full md:w-80 lg:w-[340px] shrink-0 h-auto md:h-full overflow-y-auto custom-scrollbar md:pr-1 flex flex-col hide-scrollbar-on-mobile" style="animation-delay: 0.1s;">
       <control-panel
         :frp-id="frpId"
         :is-running="isRunning"
@@ -197,18 +198,30 @@ onMounted(() => {
 @reference "@/style/tailwind/index.css";
 
 .list-item-anim {
-  animation: slideUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
-  will-change: transform, opacity;
+  animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 
 @keyframes slideUp {
   from {
-    opacity: 0;
     transform: translateY(20px);
   }
   to {
-    opacity: 1;
     transform: translateY(0);
+  }
+}
+
+.list-item-anim {
+  :deep(.terminal-wrapper) {
+    animation: glassFadeIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+    animation-delay: inherit;
+  }
+}
+
+@keyframes glassFadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px) !important;
+    -webkit-backdrop-filter: blur(0px) !important;
   }
 }
 
