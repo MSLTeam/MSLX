@@ -229,18 +229,30 @@ onMounted(async () => {
 @reference "@/style/tailwind/index.css";
 
 .list-item-anim {
-  animation: slideUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
-  will-change: transform, opacity;
+  animation: slideUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 
 @keyframes slideUp {
   from {
-    opacity: 0;
     transform: translateY(20px);
   }
   to {
-    opacity: 1;
     transform: translateY(0);
+  }
+}
+
+.list-item-anim {
+  :deep(.terminal-wrapper) {
+    animation: glassFadeIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+    animation-delay: inherit;
+  }
+}
+
+@keyframes glassFadeIn {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0px) !important;
+    -webkit-backdrop-filter: blur(0px) !important;
   }
 }
 
