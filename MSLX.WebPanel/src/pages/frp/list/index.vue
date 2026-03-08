@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue';
-import { CloudIcon, DeleteIcon, RefreshIcon } from 'tdesign-icons-vue-next';
+import { AddIcon, CloudIcon, DeleteIcon, RefreshIcon, RocketIcon } from 'tdesign-icons-vue-next';
 
 import Result from '@/components/result/index.vue';
 
@@ -125,8 +125,14 @@ onMounted(() => {
           <template #icon><refresh-icon /></template>
           刷新
         </t-button>
-        <t-button v-if="userStore.isAdmin" variant="outline" @click="openAutoStartSettings"> 自启动设置 </t-button>
-        <t-button v-if="userStore.isAdmin" theme="primary" @click="changeUrl('/frp/create')"> 创建隧道 </t-button>
+        <t-button v-if="userStore.isAdmin" variant="outline" @click="openAutoStartSettings">
+          <template #icon><rocket-icon /></template>
+          自启动设置
+        </t-button>
+        <t-button v-if="userStore.isAdmin" theme="primary" @click="changeUrl('/frp/create')">
+          <template #icon><add-icon /></template>
+          创建隧道
+        </t-button>
       </div>
     </div>
 
@@ -164,21 +170,30 @@ onMounted(() => {
           <div class="flex items-center justify-between gap-3">
             <div class="flex items-center gap-2.5 min-w-0">
               <div class="relative flex items-center justify-center shrink-0">
-                <span v-if="item.status" class="absolute w-2.5 h-2.5 bg-emerald-400 rounded-full animate-ping opacity-75"></span>
-                <span :class="item.status ? 'bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-600'"
-                      class="relative w-2 h-2 rounded-full"></span>
+                <span
+                  v-if="item.status"
+                  class="absolute w-2.5 h-2.5 bg-emerald-400 rounded-full animate-ping opacity-75"
+                ></span>
+                <span
+                  :class="item.status ? 'bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-600'"
+                  class="relative w-2 h-2 rounded-full"
+                ></span>
               </div>
 
               <h4 class="text-base font-bold text-zinc-900 dark:text-zinc-100 truncate tracking-tight">
                 {{ item.name }}
               </h4>
-              <span class="text-xs font-mono text-zinc-400 dark:text-zinc-500 ml-2 opacity-60 shrink-0">#{{ item.id }}</span>
+              <span class="text-xs font-mono text-zinc-400 dark:text-zinc-500 ml-2 opacity-60 shrink-0"
+                >#{{ item.id }}</span
+              >
             </div>
           </div>
 
           <div class="flex items-center gap-8 px-0.5">
             <div class="flex flex-col gap-1.5">
-              <span class="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-widest font-black opacity-80">提供商</span>
+              <span class="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-widest font-black opacity-80"
+                >提供商</span
+              >
               <div class="flex items-center gap-2 text-zinc-800 dark:text-zinc-200">
                 <cloud-icon size="16px" class="text-[var(--color-primary)] opacity-70" />
                 <span class="text-sm font-bold leading-none">{{ item.service }}</span>
@@ -186,7 +201,9 @@ onMounted(() => {
             </div>
 
             <div class="flex flex-col gap-1.5">
-              <span class="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-widest font-black opacity-80">配置格式</span>
+              <span class="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-widest font-black opacity-80"
+                >配置格式</span
+              >
               <div>
                 <t-tag
                   size="small"
@@ -200,10 +217,14 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="flex items-center justify-between pt-4 mt-auto border-t border-dashed border-zinc-200/60 dark:border-zinc-700/60">
-      <span class="text-xs text-zinc-400 dark:text-zinc-500 group-hover:text-[var(--color-primary)] transition-colors font-bold">
-        隧道控制台 →
-      </span>
+          <div
+            class="flex items-center justify-between pt-4 mt-auto border-t border-dashed border-zinc-200/60 dark:border-zinc-700/60"
+          >
+            <span
+              class="text-xs text-zinc-400 dark:text-zinc-500 group-hover:text-[var(--color-primary)] transition-colors font-bold"
+            >
+              隧道控制台 →
+            </span>
             <div class="flex items-center gap-1">
               <t-button
                 v-if="userStore.isAdmin"
