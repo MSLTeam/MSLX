@@ -1,12 +1,12 @@
 /* ================= 表格组件统一风格 ================= */
 .t-table {
-  background-color: transparent !important;
+  @apply !bg-transparent;
   --td-bg-color-container: transparent;
-  --td-border-level-2-color: rgba(228, 228, 231, 0.5); /* zinc-200 50% */
+  --td-border-level-2-color: color-mix(in srgb, theme('colors.zinc.200'), transparent 50%);
 }
 
 html[theme-mode='dark'] .t-table, .dark .t-table {
-  --td-border-level-2-color: rgba(63, 63, 70, 0.5); /* zinc-700 50% */
+  --td-border-level-2-color: color-mix(in srgb, theme('colors.zinc.700'), transparent 50%);
 }
 
 .t-table th {
@@ -21,8 +21,12 @@ html[theme-mode='dark'] .t-table, .dark .t-table {
   border-bottom: 1px solid var(--td-border-level-2-color);
 }
 
+.t-table--striped:not(.t-table--header-fixed) > .t-table__content > table > tbody > tr:nth-of-type(odd):not(.t-table__expanded-row) {
+  @apply !bg-zinc-50/50 dark:!bg-zinc-800/30;
+}
+
 .t-table tr:hover td {
-  background-color: var(--td-bg-color-secondarycontainer) !important;
+  @apply !bg-zinc-100/80 dark:!bg-zinc-700/40;
 }
 
 .t-table__pagination {
