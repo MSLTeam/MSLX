@@ -129,29 +129,30 @@ const handleClose = () => {
     :on-close="handleClose"
     width="480px"
   >
-    <div class="decompress-container">
-      <div class="file-info">
-        <span class="label">目标文件：</span>
-        <span class="value">{{ fileName }}</span>
+    <div class="flex flex-col gap-5 py-2">
+
+      <div class="bg-zinc-50 dark:bg-zinc-800/40 p-3 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 flex items-start text-[13px] shadow-inner">
+        <span class="text-zinc-500 dark:text-zinc-400 min-w-[70px] shrink-0 pt-0.5">目标文件：</span>
+        <span class="font-medium font-mono text-zinc-800 dark:text-zinc-200 break-all leading-relaxed">{{ fileName }}</span>
       </div>
 
-      <div class="form-item" v-if="!isProcessing">
-        <span class="label">文件名编码</span>
-        <t-select v-model="encoding" :options="encodingOptions" />
+      <div class="flex flex-col gap-2" v-if="!isProcessing">
+        <span class="text-sm font-medium text-zinc-800 dark:text-zinc-200">文件名编码</span>
+        <t-select v-model="encoding" :options="encodingOptions" class="!rounded-lg shadow-sm" />
       </div>
 
-      <div class="switch-row" v-if="!isProcessing">
-        <div class="switch-info">
-          <span class="switch-label">创建同名文件夹</span>
-          <span class="switch-tip">推荐开启，防止文件散乱在当前目录</span>
+      <div class="flex justify-between items-center py-1" v-if="!isProcessing">
+        <div class="flex flex-col gap-1 pr-4">
+          <span class="text-sm font-medium text-zinc-800 dark:text-zinc-200">创建同名文件夹</span>
+          <span class="text-xs text-zinc-500 dark:text-zinc-400">推荐开启，防止文件散乱在当前目录</span>
         </div>
-        <t-switch v-model="createSubFolder" />
+        <t-switch v-model="createSubFolder" size="large" class="shrink-0" />
       </div>
 
-      <div class="progress-area" v-if="isProcessing">
-        <div class="status-header">
-          <span class="status-text">{{ statusMessage }}</span>
-          <span class="status-percent">{{ progress }}%</span>
+      <div class="py-2" v-if="isProcessing">
+        <div class="flex justify-between items-center mb-2 text-[13px] text-[var(--color-primary)] font-medium">
+          <span class="truncate pr-4">{{ statusMessage }}</span>
+          <span class="font-mono font-bold shrink-0">{{ progress }}%</span>
         </div>
         <t-progress
           theme="line"
@@ -161,64 +162,15 @@ const handleClose = () => {
         />
       </div>
 
-      <div class="actions" v-if="!isProcessing">
-        <t-button variant="outline" @click="handleClose">取消</t-button>
-        <t-button theme="primary" @click="handleStart">开始解压</t-button>
+      <div class="flex justify-end gap-3 mt-2" v-if="!isProcessing">
+        <t-button variant="outline" class="!rounded-lg hover:!bg-zinc-100 dark:hover:!bg-zinc-800" @click="handleClose">取消</t-button>
+        <t-button theme="primary" class="!rounded-lg shadow-sm" @click="handleStart">开始解压</t-button>
       </div>
+
     </div>
   </t-dialog>
 </template>
 
 <style scoped lang="less">
-.decompress-container {
-  padding: 10px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-.file-info {
-  background: var(--td-bg-color-secondarycontainer);
-  padding: 12px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  font-size: 13px;
-  .label { color: var(--td-text-color-secondary); min-width: 70px; }
-  .value { font-weight: 500; word-break: break-all; color: var(--td-text-color-primary); }
-}
-.form-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  .label { font-size: 14px; font-weight: 500; color: var(--td-text-color-primary); }
-}
-.switch-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 4px 0;
-  .switch-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    .switch-label { font-size: 14px; font-weight: 500; }
-    .switch-tip { font-size: 12px; color: var(--td-text-color-placeholder); }
-  }
-}
-.progress-area {
-  padding: 10px 0;
-  .status-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 8px;
-    font-size: 13px;
-    color: var(--td-brand-color);
-  }
-}
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 10px;
-}
+@reference "@/style/tailwind/index.css";
 </style>

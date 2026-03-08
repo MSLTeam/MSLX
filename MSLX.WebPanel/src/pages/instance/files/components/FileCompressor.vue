@@ -109,7 +109,6 @@ const handleClose = () => {
 
 onUnmounted(() => stopPolling());
 </script>
-
 <template>
   <t-dialog
     :visible="visible"
@@ -119,74 +118,60 @@ onUnmounted(() => stopPolling());
     width="480px"
     @close="handleClose"
   >
-    <div v-if="status === 'idle'" class="compress-form">
-      <div class="file-list-preview">
-        即将压缩 <span>{{ files.length }}</span> 个文件/文件夹
+    <div v-if="status === 'idle'" class="flex flex-col gap-4 py-2">
+
+      <div class="bg-zinc-50 dark:bg-zinc-800/40 p-3 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 text-[13px] text-zinc-500 dark:text-zinc-400 shadow-inner flex items-center">
+        即将压缩
+        <span class="font-bold font-mono text-[var(--color-primary)] mx-1.5 text-sm">{{ files.length }}</span>
+        个文件/文件夹
       </div>
-      <t-input v-model="targetName" placeholder="请输入文件名" suffix=".zip" autofocus @enter="handleStart" />
-      <div class="actions">
-        <t-button theme="default" variant="text" @click="handleClose">取消</t-button>
-        <t-button theme="primary" @click="handleStart">开始压缩</t-button>
+
+      <t-input
+        v-model="targetName"
+        placeholder="请输入文件名"
+        suffix=".zip"
+        autofocus
+        class="!rounded-lg shadow-sm"
+        @enter="handleStart"
+      />
+
+      <div class="flex justify-end gap-3 mt-2">
+        <t-button variant="outline" class="!rounded-lg hover:!bg-zinc-100 dark:hover:!bg-zinc-800" @click="handleClose">取消</t-button>
+        <t-button theme="primary" class="!rounded-lg shadow-sm" @click="handleStart">开始压缩</t-button>
       </div>
+
     </div>
 
-    <div v-else class="progress-view">
-      <div class="status-icon">
-        <t-loading v-if="status === 'processing'" />
+    <div v-else class="flex flex-col items-center gap-4 py-4 w-full">
+
+      <div class="flex justify-center items-center h-10">
+        <t-loading v-if="status === 'processing'" size="medium" />
         <check-circle-filled-icon
           v-else-if="status === 'success'"
-          style="color: var(--td-success-color); font-size: 40px"
+          class="text-emerald-500 text-[40px]"
         />
         <error-circle-filled-icon
           v-else-if="status === 'error'"
-          style="color: var(--td-error-color); font-size: 40px"
+          class="text-red-500 text-[40px]"
         />
       </div>
 
-      <div class="status-text">{{ statusMsg }}</div>
+      <div class="text-sm font-medium text-zinc-800 dark:text-zinc-200 text-center px-4 w-full truncate">
+        {{ statusMsg }}
+      </div>
 
-      <t-progress
-        theme="plump"
-        :percentage="progress"
-        :status="status === 'error' ? 'error' : status === 'success' ? 'success' : 'active'"
-      />
+      <div class="w-full">
+        <t-progress
+          theme="plump"
+          :percentage="progress"
+          :status="status === 'error' ? 'error' : status === 'success' ? 'success' : 'active'"
+        />
+      </div>
+
     </div>
   </t-dialog>
 </template>
 
 <style scoped lang="less">
-.compress-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  .file-list-preview {
-    color: var(--td-text-color-secondary);
-    font-size: 13px;
-    span {
-      font-weight: bold;
-      color: var(--td-brand-color);
-    }
-  }
-  .actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-top: 8px;
-  }
-}
-
-.progress-view {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 12px 0;
-  .status-text {
-    color: var(--td-text-color-primary);
-    font-weight: 500;
-  }
-  .t-progress {
-    width: 100%;
-  }
-}
+@reference "@/style/tailwind/index.css";
 </style>

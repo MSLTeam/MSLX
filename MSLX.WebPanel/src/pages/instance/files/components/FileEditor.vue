@@ -205,37 +205,47 @@ const handleConfirm = () => {
     :header="`正在编辑: ${fileName}`"
     width="90%"
     attach="body"
-    top="1vh"
+    top="2vh"
     class="editor-dialog"
     @close="handleClose"
   >
-    <div class="editor-container">
-      <codemirror
-        v-model="code"
-        placeholder="文件内容为空..."
-        :style="{ height: '70vh', fontSize: '14px' }"
-        :autofocus="true"
-        :indent-with-tab="true"
-        :tab-size="2"
-        :extensions="extensions"
-      />
-    </div>
+    <div class="flex flex-col gap-2">
+      <div class="border border-zinc-200/60 dark:border-zinc-700/60 rounded-xl overflow-hidden shadow-inner bg-white dark:bg-zinc-900/30">
+        <codemirror
+          v-model="code"
+          placeholder="文件内容为空..."
+          :style="{ height: '60vh', fontSize: '14px' }"
+          :autofocus="true"
+          :indent-with-tab="true"
+          :tab-size="2"
+          :extensions="extensions"
+        />
+      </div>
 
-    <div class="editor-status-bar">
-      <span>行数: {{ code.split('\n').length }}</span>
-      <span>长度: {{ code.length }}</span>
-      <span class="mode-tag">{{ isDarkMode ? 'Dark Mode' : 'Light Mode' }}</span>
+      <div class="flex justify-end items-center gap-4 px-1 text-[11.5px] font-mono text-zinc-400 dark:text-zinc-500 tracking-wider">
+        <span>行数: {{ code.split('\n').length }}</span>
+        <span>长度: {{ code.length }}</span>
+        <span class="text-[var(--color-primary)] font-medium bg-[var(--color-primary)]/10 px-1.5 py-0.5 rounded">
+          {{ isDarkMode ? 'Dark Mode' : 'Light Mode' }}
+        </span>
+      </div>
     </div>
 
     <template #footer>
-      <div class="dialog-footer">
-        <div class="footer-left">
-          <t-button variant="outline" theme="default" @click="handleFormat"> 自动格式化 </t-button>
+      <div class="flex justify-between items-center w-full mt-2">
+        <div class="flex">
+          <t-button variant="outline" theme="default" class="!rounded-lg hover:!bg-zinc-100 dark:hover:!bg-zinc-800" @click="handleFormat">
+            自动格式化
+          </t-button>
         </div>
 
-        <div class="footer-right">
-          <t-button variant="outline" @click="handleClose">取消</t-button>
-          <t-button theme="primary" :loading="props.loading" @click="handleConfirm"> 保存 </t-button>
+        <div class="flex items-center gap-2">
+          <t-button variant="outline" class="!rounded-lg hover:!bg-zinc-100 dark:hover:!bg-zinc-800" @click="handleClose">
+            取消
+          </t-button>
+          <t-button theme="primary" class="!rounded-lg shadow-sm" :loading="props.loading" @click="handleConfirm">
+            保存
+          </t-button>
         </div>
       </div>
     </template>
@@ -243,64 +253,23 @@ const handleConfirm = () => {
 </template>
 
 <style scoped lang="less">
-.editor-container {
-  border: 1px solid var(--td-component-stroke);
-  border-radius: var(--td-radius-medium);
-  overflow: hidden;
-}
-
-.editor-status-bar {
-  margin-top: 8px;
-  display: flex;
-  gap: 16px;
-  font-size: 12px;
-  color: var(--td-text-color-placeholder);
-  justify-content: flex-end;
-
-  .mode-tag {
-    color: var(--td-brand-color);
-  }
-}
+@reference "@/style/tailwind/index.css";
 
 :deep(.t-dialog) {
-  max-width: 95vw;
+  max-width: 95vw !important;
 }
 
 :deep(.cm-editor) {
-  &.cm-focused {
-    outline: none;
-  }
-}
-.dialog-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.footer-right {
-  display: flex;
-  gap: 8px;
-}
-
-// 字体
-:deep(.cm-editor) {
-  font-family:
-    'Maple Mono', 'Maple Mono CN', 'Cascadia Code', Consolas, Menlo, 'PingFang SC', 'Microsoft YaHei', monospace;
-
+  font-family: 'Maple Mono', 'Maple Mono CN', 'Cascadia Code', Consolas, Menlo, 'PingFang SC', 'Microsoft YaHei', monospace !important;
   font-variant-ligatures: common-ligatures;
 
-  font-size: 14px;
-
   &.cm-focused {
-    outline: none;
+    outline: none !important;
   }
 }
 
-:deep(.cm-scroller) {
-  font-family: inherit;
-}
-
+:deep(.cm-scroller),
 :deep(.cm-gutters) {
-  font-family: inherit;
+  font-family: inherit !important;
 }
 </style>

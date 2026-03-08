@@ -101,64 +101,53 @@ const instanceId = props.instanceId;
     :on-confirm="handleConfirm"
     width="480px"
   >
-    <div class="permission-form">
+    <div class="py-1 md:py-2">
+
       <t-form-item label="权限代码" required-mark>
         <t-input
           v-model="formData.mode"
           placeholder="例如: 755"
           tips="请输入3位八进制数字 (Linux Chmod)"
+          class="[&_.t-input__inner]:!font-mono [&_.t-input__inner]:!text-[15px]"
         />
       </t-form-item>
 
-      <div class="presets">
-        <div class="preset-label">快捷设置：</div>
-        <div class="preset-list">
+      <div class="mt-5 p-4 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 shadow-inner">
+        <div class="text-xs text-zinc-500 dark:text-zinc-400 mb-3 font-medium">快捷设置：</div>
+
+        <div class="flex gap-2 flex-wrap mb-2.5">
           <t-tag
             v-for="pre in presets"
             :key="pre.value"
             variant="light-outline"
             theme="primary"
-            class="preset-tag"
-            style="cursor: pointer"
+            class="cursor-pointer !font-mono !rounded-md hover:!bg-[var(--color-primary)] hover:!text-white transition-colors"
             @click="formData.mode = pre.value"
           >
             {{ pre.value }}
           </t-tag>
         </div>
-        <div v-if="formData.mode === '755'" class="preset-desc">适合可执行程序、脚本或文件夹</div>
-        <div v-if="formData.mode === '644'" class="preset-desc">适合普通配置文件、日志等</div>
-        <div v-if="formData.mode === '777'" class="preset-desc">允许任何人写入 (不安全)</div>
+
+        <div class="min-h-[16px] flex items-center">
+          <div v-if="formData.mode === '755'" class="text-xs text-zinc-500 dark:text-zinc-400">
+            适合可执行程序、脚本或文件夹
+          </div>
+          <div v-else-if="formData.mode === '644'" class="text-xs text-zinc-500 dark:text-zinc-400">
+            适合普通配置文件、日志等
+          </div>
+          <div v-else-if="formData.mode === '777'" class="text-xs text-amber-600 dark:text-amber-500 font-medium">
+            ⚠️ 允许任何人读写执行 (极其不安全)
+          </div>
+          <div v-else class="text-xs text-zinc-400 dark:text-zinc-500 italic opacity-60">
+            自定义权限
+          </div>
+        </div>
       </div>
+
     </div>
   </t-dialog>
 </template>
 
 <style scoped lang="less">
-.permission-form {
-  padding: 12px 0;
-}
-.presets {
-  margin-top: 16px;
-  padding: 12px;
-  background: var(--td-bg-color-secondarycontainer);
-  border-radius: var(--td-radius-default);
-
-  .preset-label {
-    font-size: 12px;
-    color: var(--td-text-color-secondary);
-    margin-bottom: 8px;
-  }
-
-  .preset-list {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 8px;
-  }
-
-  .preset-desc {
-    font-size: 12px;
-    color: var(--td-text-color-placeholder);
-  }
-}
+@reference "@/style/tailwind/index.css";
 </style>

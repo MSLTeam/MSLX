@@ -360,69 +360,78 @@ onUnmounted(() => tasks.value.forEach((t) => t.abortController?.abort()));
 </script>
 
 <template>
-  <t-dialog :visible="visible" header="批量上传文件" width="650px" :footer="false" @close="handleClose">
-    <input ref="fileInputRef" type="file" multiple style="display: none" @change="onFileChange" />
-    <input ref="folderInputRef" type="file" webkitdirectory style="display: none" @change="onFileChange" />
+  <t-dialog attach="body" :visible="visible" header="批量上传文件" width="650px" :footer="false" @close="handleClose">
 
-    <div class="uploader-container">
+    <input ref="fileInputRef" type="file" multiple class="hidden" @change="onFileChange" />
+    <input ref="folderInputRef" type="file" webkitdirectory class="hidden" @change="onFileChange" />
+
+    <div class="flex flex-col gap-4 max-h-[60vh]">
+
       <div
-        class="drop-zone"
-        :class="{ active: dragOver }"
+        class="border-2 border-dashed rounded-xl p-6 flex flex-col items-center gap-3 transition-all duration-300"
+        :class="dragOver ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5 scale-[0.99]' : 'border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/40 hover:border-zinc-300 dark:hover:border-zinc-600'"
         @dragover.prevent="dragOver = true"
         @dragleave.prevent="dragOver = false"
         @drop.prevent="handleDrop"
       >
-        <cloud-upload-icon size="40px" style="color: var(--td-brand-color)" />
-        <p v-if="props.allowFolder" class="drop-text">拖入文件或文件夹</p>
-        <p v-if="!props.allowFolder" class="drop-text">拖入文件</p>
-        <div class="drop-actions">
-          <t-button variant="outline" size="small" @click="handleSelectFiles"
-            ><template #icon><file-icon /></template> 选择文件</t-button
-          >
-          <t-button v-if="props.allowFolder" variant="outline" size="small" @click="handleSelectFolder"
-            ><template #icon><folder-icon /></template> 选择文件夹</t-button
-          >
+        <cloud-upload-icon size="40px" class="text-[var(--color-primary)]" />
+        <p class="text-[13px] font-medium text-zinc-500 dark:text-zinc-400 m-0">
+          {{ props.allowFolder ? '拖入文件或文件夹至此处' : '拖入文件至此处' }}
+        </p>
+        <div class="flex gap-3 mt-1">
+          <t-button variant="outline" size="small" class="!rounded-lg !bg-white dark:!bg-zinc-900 !border-zinc-200 dark:!border-zinc-700" @click="handleSelectFiles">
+            <template #icon><file-icon /></template> 选择文件
+          </t-button>
+          <t-button v-if="props.allowFolder" variant="outline" size="small" class="!rounded-lg !bg-white dark:!bg-zinc-900 !border-zinc-200 dark:!border-zinc-700" @click="handleSelectFolder">
+            <template #icon><folder-icon /></template> 选择文件夹
+          </t-button>
         </div>
       </div>
 
-      <div v-if="tasks.length > 0" class="queue-actions">
-        <span class="queue-info">
-          队列: {{ tasks.length }} 个 | <span v-if="isUploading">总进度 {{ totalProgress }}%</span>
+      <div v-if="tasks.length > 0" class="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-zinc-700/60">
+        <span class="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+          队列: <span class="text-zinc-800 dark:text-zinc-200 font-bold mx-0.5">{{ tasks.length }}</span> 个
+          <template v-if="isUploading">
+            <span class="mx-1.5 opacity-50">|</span> 总进度 <span class="text-[var(--color-primary)] font-bold ml-0.5">{{ totalProgress }}%</span>
+          </template>
         </span>
-        <div class="btn-group">
-          <t-button theme="primary" size="small" :disabled="!hasPending || isUploading" @click="processQueue">
+        <div class="flex gap-2">
+          <t-button theme="primary" size="small" class="!rounded-md shadow-sm" :disabled="!hasPending || isUploading" @click="processQueue">
             <template #icon><play-circle-icon /></template> {{ isUploading ? '上传中...' : '开始上传' }}
           </t-button>
-          <t-button variant="text" size="small" @click="clearFinished"
-            ><template #icon><clear-icon /></template> 清空已完成</t-button
-          >
+          <t-button variant="text" size="small" class="!rounded-md hover:!bg-zinc-100 dark:hover:!bg-zinc-800 !text-zinc-500" @click="clearFinished">
+            <template #icon><clear-icon /></template> 清空已完成
+          </t-button>
         </div>
       </div>
 
-      <div v-if="tasks.length > 0" class="file-list">
-        <div v-for="(task, index) in tasks" :key="task.id" class="file-item">
-          <div class="file-icon-wrapper">
+      <div v-if="tasks.length > 0" class="flex-1 overflow-y-auto flex flex-col gap-2 pr-1 custom-scrollbar">
+        <div v-for="(task, index) in tasks" :key="task.id" class="flex items-start gap-3 p-3 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl border border-zinc-100 dark:border-zinc-700/50 hover:border-zinc-200 dark:hover:border-zinc-600 transition-colors group">
+
+          <div class="pt-0.5 shrink-0 text-xl">
             <component
               :is="getTaskIcon(getFileName(task.path)).icon"
               :style="{ color: getTaskIcon(getFileName(task.path)).color }"
             />
           </div>
 
-          <div class="file-content">
-            <div class="file-header">
-              <div class="name" :title="getFileName(task.path)">{{ getFileName(task.path) }}</div>
-              <div class="meta">
-                <span v-if="task.status === 'error'" class="error">{{ task.errorMsg }}</span>
+          <div class="flex-1 overflow-hidden flex flex-col gap-1">
+            <div class="flex justify-between items-center text-[13px]">
+              <div class="font-medium text-zinc-800 dark:text-zinc-200 truncate max-w-[200px] sm:max-w-[280px]" :title="getFileName(task.path)">
+                {{ getFileName(task.path) }}
+              </div>
+              <div class="text-[11px] text-zinc-400 dark:text-zinc-500 flex items-center gap-2 font-mono">
+                <span v-if="task.status === 'error'" class="text-red-500 font-sans font-medium">{{ task.errorMsg }}</span>
                 <span v-else>{{ task.speed }}</span>
-                <span class="size">{{ (task.file.size / 1024 / 1024).toFixed(2) }} MB</span>
+                <span class="bg-zinc-200/50 dark:bg-zinc-700/50 px-1.5 py-0.5 rounded">{{ (task.file.size / 1024 / 1024).toFixed(2) }} MB</span>
               </div>
             </div>
 
-            <div v-if="getDirectory(task.path)" class="file-path" :title="getDirectory(task.path)">
-              <folder-icon size="10px" /> {{ getDirectory(task.path) }}/
+            <div v-if="getDirectory(task.path)" class="text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1 truncate" :title="getDirectory(task.path)">
+              <folder-icon size="12px" class="shrink-0 opacity-70" /> {{ getDirectory(task.path) }}/
             </div>
 
-            <div class="progress-wrapper">
+            <div class="mt-0.5">
               <t-progress
                 :percentage="task.progress"
                 :status="task.status === 'error' ? 'error' : task.status === 'success' ? 'success' : 'active'"
@@ -432,149 +441,41 @@ onUnmounted(() => tasks.value.forEach((t) => t.abortController?.abort()));
             </div>
           </div>
 
-          <div class="file-action">
+          <div class="shrink-0 pt-0.5 flex items-center justify-center">
             <t-button
               v-if="task.status !== 'success'"
               shape="circle"
               variant="text"
               size="small"
+              class="!text-zinc-400 hover:!text-red-500 hover:!bg-red-50 dark:hover:!bg-red-900/20 opacity-0 group-hover:opacity-100 transition-opacity"
               @click="removeTask(index)"
             >
               <close-circle-icon />
             </t-button>
-            <check-circle-filled-icon v-else style="color: var(--td-success-color); font-size: 18px" />
+            <check-circle-filled-icon v-else class="text-emerald-500 text-[18px]" />
           </div>
+
         </div>
       </div>
+
     </div>
   </t-dialog>
 </template>
 
 <style scoped lang="less">
-.uploader-container {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  max-height: 60vh;
-}
-.drop-zone {
-  border: 2px dashed var(--td-component-stroke);
-  border-radius: var(--td-radius-medium);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  background-color: var(--td-bg-color-container-hover);
-  transition: all 0.3s;
-  &.active {
-    border-color: var(--td-brand-color);
-    background-color: var(--td-brand-color-light);
-  }
-  .drop-text {
-    color: var(--td-text-color-secondary);
-    font-size: 13px;
-    margin: 0;
-  }
-  .drop-actions {
-    display: flex;
-    gap: 12px;
-  }
-}
-.queue-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--td-component-stroke);
-  .queue-info {
-    font-size: 12px;
-    color: var(--td-text-color-placeholder);
-  }
-  .btn-group {
-    display: flex;
-    gap: 8px;
-  }
-}
-.file-list {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-right: 4px;
+@reference "@/style/tailwind/index.css";
+
+/* 优雅的定制滚动条 */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--td-scrollbar-color) transparent;
+
   &::-webkit-scrollbar {
     width: 4px;
   }
   &::-webkit-scrollbar-thumb {
     background: var(--td-scrollbar-color);
     border-radius: 2px;
-  }
-}
-.file-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 10px;
-  background-color: var(--td-bg-color-secondarycontainer);
-  border-radius: var(--td-radius-medium);
-
-  .file-icon-wrapper {
-    padding-top: 2px;
-    flex-shrink: 0;
-    font-size: 18px;
-  }
-
-  .file-content {
-    flex: 1;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-
-    .file-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 13px;
-      .name {
-        font-weight: 500;
-        color: var(--td-text-color-primary);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 260px;
-      }
-      .meta {
-        font-size: 11px;
-        color: var(--td-text-color-placeholder);
-        display: flex;
-        gap: 8px;
-        .error {
-          color: var(--td-error-color);
-        }
-      }
-    }
-
-    .file-path {
-      font-size: 11px;
-      color: var(--td-text-color-secondary);
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .progress-wrapper {
-      margin-top: 2px;
-    }
-  }
-
-  .file-action {
-    flex-shrink: 0;
-    padding-top: 2px;
   }
 }
 </style>
