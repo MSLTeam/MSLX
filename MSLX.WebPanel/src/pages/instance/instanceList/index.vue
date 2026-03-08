@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { onMounted, reactive } from 'vue';
 import {
+  AddIcon,
   CheckCircleFilledIcon,
   CloseCircleFilledIcon,
   CpuIcon,
@@ -140,6 +141,7 @@ const handleConfirmDelete = async () => {
           刷新列表
         </t-button>
         <t-button v-if="userStore.isAdmin" theme="primary" @click="changeUrl('/instance/create')">
+          <template #icon><add-icon /></template>
           添加服务端
         </t-button>
       </div>
@@ -148,7 +150,6 @@ const handleConfirmDelete = async () => {
     <div v-loading="false" class="relative min-h-[400px]">
       <template v-if="store.instanceList && store.instanceList.length > 0">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
-
           <div
             v-for="(item, index) in store.instanceList"
             :key="item.id"
@@ -185,7 +186,7 @@ const handleConfirmDelete = async () => {
                       {{ item.name }}
                     </h4>
                     <span class="text-xs font-mono text-zinc-400 dark:text-zinc-500 ml-2 opacity-70 shrink-0"
-                    >#{{ item.id }}</span
+                      >#{{ item.id }}</span
                     >
                   </div>
 
@@ -232,7 +233,6 @@ const handleConfirmDelete = async () => {
               </div>
             </div>
           </div>
-
         </div>
       </template>
 
@@ -292,5 +292,4 @@ const handleConfirmDelete = async () => {
 :deep(.t-avatar) {
   @apply ring-1 ring-zinc-200/50 dark:ring-zinc-700/50;
 }
-
 </style>
