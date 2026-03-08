@@ -172,109 +172,92 @@ onMounted(async () => {
 });
 </script>
 
-<template>
-  <div class="console-page">
-    <div class="layout-container">
-      <div class="main-terminal-area">
-        <server-terminal ref="terminalRef" :server-id="serverId" @update="fetchServerInfo()" />
-      </div>
+<<template>
+  <div class="h-full flex flex-col md:flex-row gap-5 overflow-hidden pb-3 box-border relative text-zinc-800 dark:text-zinc-200">
 
-      <div class="sidebar-area">
-        <server-control-panel
-          :server-id="serverId"
-          :status="status"
-          :loading="loading"
-          :server-info="serverInfo"
-          @start="handleStart"
-          @stop="handleStop"
-          @backup="handleBackup"
-          @clear-log="handleClearLog"
-          @force-exit="handleForceExit"
-          @restart="handleRestart"
-        />
-      </div>
+    <div class="list-item-anim flex-1 min-w-0 h-[400px] md:h-full flex flex-col relative z-10" style="animation-delay: 0s;">
+      <server-terminal ref="terminalRef" :server-id="serverId" @update="fetchServerInfo()" />
     </div>
+
+    <div class="list-item-anim w-full md:w-80 lg:w-[340px] shrink-0 h-auto md:h-full overflow-y-auto custom-scrollbar pr-1 flex flex-col hide-scrollbar-on-mobile relative z-10" style="animation-delay: 0.1s;">
+      <server-control-panel
+        :server-id="serverId"
+        :status="status"
+        :loading="loading"
+        :server-info="serverInfo"
+        @start="handleStart"
+        @stop="handleStop"
+        @backup="handleBackup"
+        @clear-log="handleClearLog"
+        @force-exit="handleForceExit"
+        @restart="handleRestart"
+      />
+    </div>
+
     <t-dialog
       v-model:visible="eulaDialogVisible"
-      header="是否同意EULA"
-      :confirm-btn="{
-        content: '同意',
-        theme: 'primary',
-      }"
-      :cancel-btn="{
-        content: '不同意',
-        theme: 'default',
-      }"
+      header="是否同意 EULA"
+      :confirm-btn="{ content: '同意', theme: 'primary', class: '!rounded-lg !font-bold' }"
+      :cancel-btn="{ content: '不同意', theme: 'default', class: '!rounded-lg !font-bold' }"
       @confirm="handleAgreeEula(true)"
       @cancel="handleAgreeEula(false)"
     >
-      <div style="line-height: 1.6">
-        <p style="margin-bottom: 12px">
-          开启Minecraft服务器需要您同意 <strong>EULA</strong> ！<t-link theme="primary" underline>
-            (https://aka.ms/minecrafteula)</t-link
-          >
+      <div class="leading-relaxed text-sm">
+        <p class="mb-3">
+          开启 Minecraft 服务器需要您同意 <strong>EULA</strong> ！
+          <t-link theme="primary" underline href="https://aka.ms/minecrafteula" target="_blank" class="font-mono">
+            (https://aka.ms/minecrafteula)
+          </t-link>
         </p>
-        <p style="margin-bottom: 12px">
-          <strong style="color: #e34d59">请您务必认真仔细阅读！</strong>
+        <p class="mb-3">
+          <strong class="text-red-500 dark:text-red-400">请您务必认真仔细阅读！</strong>
         </p>
-        <p style="margin-bottom: 12px"><strong>注意：</strong>不论您选择是或否，服务器都会在您操作后继续运行。</p>
-        <p style="margin-bottom: 12px; color: #f59a23">
+        <p class="mb-3 text-zinc-700 dark:text-zinc-300"><strong>注意：</strong>不论您选择是或否，服务器都会在您操作后继续运行。</p>
+        <p class="mb-3 text-amber-500 dark:text-amber-400 font-medium">
           ⚠️ 如果您<strong>未同意 EULA</strong>，服务器可能会在运行时自动关闭！
         </p>
-        <p style="margin-top: 16px">💡 提示：如要在每次启动实例时忽略此提示，请在<strong>设置</strong>里进行配置。</p>
+        <p class="mt-4 pt-4 border-t border-dashed border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 text-xs">
+          💡 提示：如要在每次启动实例时忽略此提示，请在<strong>设置</strong>里进行配置。
+        </p>
       </div>
     </t-dialog>
   </div>
 </template>
 
 <style scoped lang="less">
-.console-page {
-  padding-bottom: 12px;
-  height: 100%;
-  box-sizing: border-box;
-  overflow: hidden;
+@import '@/style/scrollbar';
+@reference "@/style/tailwind/index.css";
+
+.list-item-anim {
+  animation: slideUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  will-change: transform, opacity;
 }
 
-.layout-container {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  gap: 20px;
-  align-items: stretch;
-}
-
-.main-terminal-area {
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.sidebar-area {
-  width: 320px;
-  flex-shrink: 0;
-  height: 100%;
-  overflow-y: auto;
-}
-
-@media (max-width: 768px) {
-  .console-page {
-    height: auto;
-    overflow-y: auto;
-    padding: 16px;
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
   }
-  .layout-container {
-    flex-direction: column;
-    height: auto;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
-  .sidebar-area {
-    width: 100%;
-    height: auto;
+}
+
+.custom-scrollbar {
+  .scrollbar-mixin();
+}
+
+/* 移动端隐藏右侧面板的内滚动条，保持视觉干净 */
+.hide-scrollbar-on-mobile::-webkit-scrollbar {
+  @media (max-width: 768px) {
+    display: none;
   }
-  .main-terminal-area {
-    min-height: 400px;
-    margin-bottom: 16px;
+}
+.hide-scrollbar-on-mobile {
+  @media (max-width: 768px) {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
 }
 </style>

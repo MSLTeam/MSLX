@@ -1,0 +1,117 @@
+name: 发布 MSLX 飞牛应用包
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write 
+
+jobs:
+  build-fnos-app:
+    runs-on: ubuntu-latest
+    name: 构建飞牛应用包 (${{ matrix.arch }})
+    
+    strategy:
+      matrix:
+        include:
+          - { arch: 'amd64', platform: 'x86' }
+          - { arch: 'arm64', platform: 'arm' }
+
+    steps:
+      - name: 确定版本号
+        id: version
+        shell: bash
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            TAG_NAME="${{ github.ref_name }}"
+            CLEAN_VERSION="${TAG_NAME#v}"
+          else
+            TAG_NAME="beta"
+            CLEAN_VERSION="beta"
+          fi
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+          echo "CLEAN_VERSION=$CLEAN_VERSION" >> $GITHUB_ENV
+
+      - name: 签出飞牛应用配置仓库
+        uses: actions/checkout@v4
+        with:
+          repository: MSLTeam/mslx-fnos-app
+          path: fnos-workspace
+
+      - name: 下载并配置 fnpack 工具
+        run: |
+          wget -O fnpack https://static2.fnnas.com/fnpack/fnpack-1.2.1-linux-amd64
+          chmod +x fnpack
+          mv fnpack fnos-workspace/
+
+      - name: 动态修改 Manifest 与镜像标签
+        working-directory: ./fnos-workspace
+        run: |
+          # 修改 Manifest 版本号 (如 1.2.5)
+          sed -i "s/^version[[:space:]]*=.*/version=$CLEAN_VERSION/" manifest
+          
+          # 修改平台架构
+          if grep -q "^platform[[:space:]]*=" manifest; then
+            sed -i "s/^platform[[:space:]]*=.*/platform=${{ matrix.platform }}/" manifest
+          else
+            echo "platform=${{ matrix.platform }}" >> manifest
+          fi
+          
+          if grep -q "^arch[[:space:]]*=" manifest; then
+             if [[ "${{ matrix.platform }}" == "x86" ]]; then
+               sed -i "s/^arch[[:space:]]*=.*/arch=x86_64/" manifest
+             else
+               sed -i "s/^arch[[:space:]]*=.*/arch=aarch64/" manifest
+             fi
+          fi
+
+          # 锁定 Docker 镜像版本 (将 latest 替换为 v1.2.x)
+          if [[ "$TAG_NAME" != "beta" ]]; then
+            echo "正在锁定镜像版本为: $TAG_NAME"
+            sed -i "s/mslx-daemon:latest/mslx-daemon:${TAG_NAME}/g" app/docker/docker-compose.yaml
+          else
+            echo "手动构建/Beta版本，保持使用 latest 镜像"
+          fi
+
+      - name: 编译并重命名飞牛应用包
+        working-directory: ./fnos-workspace
+        run: |
+          ./fnpack build
+          
+          FINAL_PACKAGE_NAME="mslx_${TAG_NAME}_${{ matrix.arch }}.fpk"
+          mv *.fpk "../$FINAL_PACKAGE_NAME"
+          echo "ASSET_PATH=./$FINAL_PACKAGE_NAME" >> $GITHUB_ENV
+
+      - name: 暂存编译产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: fpk-${{ matrix.arch }}
+          path: ${{ env.ASSET_PATH }}
+
+
+  publish-fnos-release:
+    needs: build-fnos-app
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    name: 发布到 Release
+    steps:
+      - name: 确定版本号
+        shell: bash
+        run: |
+          echo "TAG_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
+
+      - name: 下载所有编译产物
+        uses: actions/download-artifact@v4
+        with:
+          pattern: fpk-*
+          path: packages
+          merge-multiple: true 
+
+      - name: 发布到 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: packages/*.fpk
+          tag_name: ${{ env.TAG_NAME }}

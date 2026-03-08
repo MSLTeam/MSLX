@@ -252,109 +252,62 @@ onUnmounted(async () => {
   resizeObserver?.disconnect();
 });
 </script>
-
 <template>
-  <div ref="terminalWrapper" class="terminal-wrapper">
-    <div class="terminal-header">
-      <div class="dots">
-        <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+  <div ref="terminalWrapper" class="terminal-wrapper flex-1 flex flex-col bg-white/80 dark:bg-zinc-800/80 border border-zinc-200/50 dark:border-zinc-700/50 rounded-xl overflow-hidden shadow-sm relative w-full h-full">
+
+    <div class="h-[38px] shrink-0 bg-transparent border-b border-zinc-200/50 dark:border-zinc-700/50 flex items-center px-4 relative z-10">
+      <div class="flex gap-1.5 mr-4">
+        <span class="w-2.5 h-2.5 rounded-full bg-[#ff5f56]"></span>
+        <span class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></span>
+        <span class="w-2.5 h-2.5 rounded-full bg-[#27c93f]"></span>
       </div>
-      <div class="tab-title">MSLX - Frp 控制台 | {{ frpId }}</div>
+      <div class="text-zinc-500 dark:text-zinc-400 text-xs font-mono">
+        MSLX - Frp 控制台 | {{ frpId }}
+      </div>
     </div>
-    <div ref="terminalBody" class="terminal-body"></div>
+
+    <div ref="terminalBody" class="absolute top-[38px] bottom-[50px] left-0 right-0 py-1.5 pl-2.5 z-[1] terminal-body-container"></div>
   </div>
 </template>
 
 <style scoped lang="less">
 @import '@/style/scrollbar.less';
+@reference "@/style/tailwind/index.css";
 
-.terminal-wrapper {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background-color: var(--td-bg-color-container);
-  backdrop-filter: blur(10px);
-
-  border: 1px solid var(--td-component-stroke);
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: var(--td-shadow-2);
-  position: relative;
-  width: 100%;
-  height: 100%;
-
-  .terminal-header {
-    height: 38px;
-    flex-shrink: 0;
-    background-color: transparent;
-    border-bottom: 1px solid var(--td-component-stroke);
-    display: flex;
-    align-items: center;
-    padding: 0 16px;
-    z-index: 10;
-
-    .dots {
-      display: flex;
-      gap: 6px;
-      margin-right: 16px;
-      .dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-      }
-      .red {
-        background: #ff5f56;
-      }
-      .yellow {
-        background: #ffbd2e;
-      }
-      .green {
-        background: #27c93f;
-      }
-    }
-    .tab-title {
-      color: var(--td-text-color-placeholder);
-      font-size: 12px;
-      font-family: Menlo, monospace;
-    }
+/* 剥离所有普通样式的 LESS，仅保留对 xterm 内部结构的穿透覆盖 */
+.terminal-body-container {
+  :deep(.xterm),
+  :deep(.xterm-viewport),
+  :deep(.xterm-screen),
+  :deep(.xterm-scrollable-element) {
+    background-color: transparent !important;
   }
 
-  .terminal-body {
-    position: absolute;
-    top: 38px;
-    bottom: 50px;
-    left: 0;
-    right: 0;
-    padding: 6px 0 6px 10px;
-    z-index: 1;
+  :deep(.xterm-viewport) {
+    overflow-y: hidden !important;
+  }
 
-    :deep(.xterm),
-    :deep(.xterm-viewport),
-    :deep(.xterm-screen),
-    :deep(.xterm-scrollable-element) {
-      background-color: transparent !important;
+  :deep(.xterm-scrollable-element) {
+    overflow-y: auto !important;
+    .scrollbar-mixin();
+
+    &::-webkit-scrollbar {
+      width: 12px !important;
+      background-color: transparent;
     }
-
-    :deep(.xterm-viewport) {
-      overflow-y: hidden !important;
+    &::-webkit-scrollbar-thumb {
+      background-clip: content-box;
+      border: 3px solid transparent;
+      border-radius: 10px;
+      /* 将滚动条也替换为 zinc 色系 */
+      background-color: #d4d4d8; /* zinc-300 */
     }
-
-    :deep(.xterm-scrollable-element) {
-      overflow-y: auto !important;
-      .scrollbar-mixin();
-
-      &::-webkit-scrollbar {
-        width: 12px !important;
-        background-color: transparent;
-      }
-      &::-webkit-scrollbar-thumb {
-        background-clip: content-box;
-        border: 3px solid transparent;
-        border-radius: 10px;
-      }
-      &::-webkit-scrollbar-thumb:hover {
-        border-width: 2px;
-      }
+    :global(html[theme-mode='dark']) &::-webkit-scrollbar-thumb,
+    :global(html.dark) &::-webkit-scrollbar-thumb {
+      background-color: #52525b; /* zinc-600 */
+    }
+    &::-webkit-scrollbar-thumb:hover {
+      border-width: 2px;
     }
   }
 }

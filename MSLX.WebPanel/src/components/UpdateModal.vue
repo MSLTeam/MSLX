@@ -238,7 +238,6 @@ onUnmounted(() => {
   stopSignalR();
 });
 </script>
-
 <template>
   <t-dialog
     :visible="props.visible"
@@ -249,373 +248,176 @@ onUnmounted(() => {
     width="500px"
     class="update-modal"
     destroy-on-close
+    attach="body"
+    top="2vh"
     @close="handleClose"
   >
-    <div class="modal-header">
-      <div class="header-content">
-        <div class="title-row">
-          <h3>{{ updateSuccess ? '更新完成' : '发现新版本' }}</h3>
-          <t-tag v-if="isBeta" theme="warning" variant="light">Beta</t-tag>
-          <t-tag v-else theme="success" variant="light">Release</t-tag>
+    <div class="flex justify-between items-start mb-5">
+      <div class="flex flex-col">
+        <div class="flex items-center gap-2">
+          <h3 class="m-0 text-[20px] font-bold text-zinc-800 dark:text-zinc-100 tracking-wide">
+            {{ updateSuccess ? '更新完成' : '发现新版本' }}
+          </h3>
+          <t-tag v-if="isBeta" theme="warning" variant="light-outline" class="!rounded-md !font-bold">Beta</t-tag>
+          <t-tag v-else theme="success" variant="light-outline" class="!rounded-md !font-bold">Release</t-tag>
         </div>
-        <div class="version-row">
-          <t-tag variant="outline" size="small">{{ updateInfo?.currentVersion }}</t-tag>
-          <span class="arrow">→</span>
-          <t-tag theme="primary" variant="light-outline" size="small">{{ updateInfo?.latestVersion }}</t-tag>
+
+        <div class="mt-2.5 flex items-center gap-2">
+          <t-tag variant="outline" size="small" class="!font-mono !rounded-md">{{ updateInfo?.currentVersion }}</t-tag>
+          <span class="text-zinc-400 font-mono font-bold">→</span>
+          <t-tag theme="primary" variant="light-outline" size="small" class="!font-mono !rounded-md">{{ updateInfo?.latestVersion }}</t-tag>
         </div>
       </div>
-      <t-button v-if="!isUpdating" variant="text" shape="circle" @click="handleClose">
+      <t-button v-if="!isUpdating" variant="text" shape="circle" class="hover:!bg-zinc-100 dark:hover:!bg-zinc-800" @click="handleClose">
         <template #icon><close-icon /></template>
       </t-button>
     </div>
 
-    <div class="modal-body">
-      <div v-if="updateSuccess" class="status-container success">
-        <check-circle-icon size="48px" class="success-icon" />
-        <p><b>MSLX守护进程端</b>已成功更新至最新版本</p>
-        <p class="sub-text">请刷新页面以加载最新功能</p>
+    <div class="mb-6 min-h-[120px] flex flex-col justify-center">
+
+      <div v-if="updateSuccess" class="flex flex-col items-center text-center py-2">
+        <check-circle-icon size="48px" class="text-emerald-500 mb-4 drop-shadow-sm" />
+        <p class="text-base font-bold text-zinc-800 dark:text-zinc-200 m-0 mb-1">MSLX守护进程端已成功更新</p>
+        <p class="text-sm text-zinc-500 dark:text-zinc-400 m-0">请刷新页面以加载最新功能</p>
       </div>
 
-      <div v-else-if="isDockerEnv" class="status-container docker-warn">
-        <t-alert theme="warning" title="检测到 Docker 环境">
+      <div v-else-if="isDockerEnv" class="py-2">
+        <t-alert theme="warning" title="检测到 Docker 环境" class="!rounded-xl">
           <template #message>
-            当前程序运行在
-            <b>Docker 容器</b> 内，不支持热更新。<br />请使用以下命令或者参照 <b>官方文档</b> 更新。<br />
-            <t-link
-              theme="primary"
-              href="https://mslx.mslmc.cn/docs/install/docker/"
-              target="_blank"
-              style="vertical-align: baseline"
-            >
+            当前程序运行在 <b>Docker 容器</b> 内，不支持热更新。<br />请使用以下命令或者参照 <b>官方文档</b> 更新。<br />
+            <t-link theme="primary" href="https://mslx.mslmc.cn/docs/install/docker/" target="_blank" class="mt-1 align-baseline">
               <b>Docker安装/更新文档</b>
             </t-link>
           </template>
         </t-alert>
-        <div class="code-block">sudo docker compose pull && docker compose up -d # 指令仅适用于Docker Compose安装方式。</div>
-      </div>
-
-      <div v-else-if="hasRunningServers" class="status-container server-running-warn">
-        <div class="warn-icon-wrapper">
-          <stop-circle-icon size="48px" style="color: var(--td-warning-color)" />
+        <div class="mt-3 bg-[#1e1e1e] text-[#d4d4d4] p-3 rounded-xl font-mono text-[13px] break-all select-all shadow-inner border border-black/20">
+          sudo docker compose pull && docker compose up -d <span class="text-zinc-500"># 指令仅适用于Compose部署</span>
         </div>
-        <p class="warn-title">无法开始更新</p>
-        <p class="warn-desc">
-          检测到当前有服务器实例正在运行。
-          <br />为了防止数据丢失，请先停止所有实例。
+      </div>
+
+      <div v-else-if="hasRunningServers" class="flex flex-col items-center text-center py-4">
+        <stop-circle-icon size="48px" class="text-amber-500 mb-3 drop-shadow-sm" />
+        <p class="text-base font-bold text-zinc-800 dark:text-zinc-200 m-0 mb-2">无法开始更新</p>
+        <p class="text-sm text-zinc-500 dark:text-zinc-400 m-0 leading-relaxed">
+          检测到当前有服务器实例正在运行。<br />为了防止数据丢失，请先停止所有实例。
         </p>
       </div>
 
-      <div v-else-if="updateStatusText.includes('等待服务端确认权限')" class="status-container permission-wait">
-        <p class="warn-title">请在服务端确认权限</p>
-        <p class="warn-desc">
-          macOS 系统已弹出提示：
-          <br /><strong>“MSLX-Daemon 想要控制应用程序 终端.app”</strong> <br />请务必点击
-          <strong>【好/OK】</strong> 以继续更新。
+      <div v-else-if="updateStatusText.includes('等待服务端确认权限')" class="flex flex-col items-center text-center py-4">
+        <p class="text-base font-bold text-zinc-800 dark:text-zinc-200 m-0 mb-2">请在服务端确认权限</p>
+        <p class="text-sm text-zinc-500 dark:text-zinc-400 m-0 leading-relaxed">
+          macOS 系统已弹出提示：<br />
+          <strong class="text-zinc-700 dark:text-zinc-300">“MSLX-Daemon 想要控制应用程序 终端.app”</strong> <br />
+          请务必点击 <strong>【好/OK】</strong> 以继续更新。
         </p>
       </div>
 
-      <div v-else-if="isUpdating || errorMessage" class="status-container updating">
+      <div v-else-if="isUpdating || errorMessage" class="py-2">
         <template v-if="errorMessage">
-          <div class="error-box">
-            <error-circle-icon style="color: var(--td-error-color)" />
-            <span>{{ errorMessage }}</span>
+          <div class="flex items-center gap-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 p-3.5 rounded-xl border border-red-100 dark:border-red-900/50">
+            <error-circle-icon class="shrink-0 text-lg" />
+            <span class="text-sm font-medium">{{ errorMessage }}</span>
           </div>
         </template>
         <template v-else>
-          <div class="progress-info">
-            <span>{{ updateStatusText }}</span>
-            <span class="speed">{{ updateSpeed }}</span>
+          <div class="flex justify-between items-end mb-2 text-sm">
+            <span class="font-medium text-[var(--color-primary)]">{{ updateStatusText }}</span>
+            <span class="text-xs font-mono text-zinc-400 dark:text-zinc-500">{{ updateSpeed }}</span>
           </div>
-          <t-progress
-            theme="plump"
-            :percentage="updateProgress"
-            :status="updateProgress >= 100 ? 'active' : 'success'"
-          />
+          <t-progress theme="plump" :percentage="updateProgress" :status="updateProgress >= 100 ? 'active' : 'success'" />
         </template>
       </div>
 
-      <div v-else>
-        <t-alert v-if="isMacOS" theme="warning" variant="outline" class="macos-alert">
+      <div v-else class="flex flex-col gap-3">
+        <t-alert v-if="isMacOS" theme="warning" variant="outline" class="!rounded-xl !text-[13px] leading-relaxed">
           <template #message>
-            <strong>macOS 用户请注意：</strong>
-            <br />受 Apple 安全机制 (Gatekeeper) 限制，更新重启后应用可能无法自动启动。如遇此情况，请前往「系统设置 >
-            隐私与安全性」手动允许应用运行。
+            <strong>macOS 用户请注意：</strong><br />
+            受 Apple 安全机制 (Gatekeeper) 限制，更新重启后应用可能无法自动启动。如遇此情况，请前往「系统设置 > 隐私与安全性」手动允许应用运行。
           </template>
         </t-alert>
 
-        <t-alert v-if="isLinux" theme="info" variant="outline" class="macos-alert">
+        <t-alert v-if="isLinux" theme="info" variant="outline" class="!rounded-xl !text-[13px] leading-relaxed">
           <template #message>
             <strong>Linux 用户提示：</strong>
-            <ul style="margin: 4px 0 0 0; line-height: 1.6">
-              <li>
-                如使用一键脚本部署，推荐优先参考
-                <t-link
-                  theme="primary"
-                  href="https://mslx.mslmc.cn/docs/install/linux/"
-                  target="_blank"
-                  style="vertical-align: baseline"
-                >
-                  官方文档
-                </t-link>
-                使用脚本进行更新。
-              </li>
-              <li>
-                若启用 <strong>Systemd</strong> 托管，请确保服务名称为
-                <code>mslx</code>，否则自动更新后可能无法自动重启。
-              </li>
+            <ul class="m-0 mt-1 pl-4 leading-relaxed opacity-90 space-y-1">
+              <li>如使用一键脚本部署，推荐优先参考 <t-link theme="primary" href="https://mslx.mslmc.cn/docs/install/linux/" target="_blank" class="align-baseline font-bold">官方文档</t-link>。</li>
+              <li>若启用 <strong>Systemd</strong> 托管，请确保服务名称为 <code>mslx</code>，否则无法自动重启。</li>
               <li>如果更新完成后仍然是旧版本，请尝试手动重启服务或手动更新！</li>
             </ul>
           </template>
         </t-alert>
 
-        <div class="log-title">更新内容：</div>
-        <div class="log-scroll-area">
-          <div class="log-text">{{ updateInfo?.log || '暂无详细日志' }}</div>
+        <div class="flex flex-col gap-1.5 mt-1">
+          <div class="text-[13px] font-bold text-zinc-600 dark:text-zinc-400 tracking-wider">更新内容</div>
+          <div class="bg-zinc-50 dark:bg-zinc-900/50 rounded-xl p-3.5 max-h-[200px] overflow-y-auto border border-zinc-200/60 dark:border-zinc-700/50 shadow-inner custom-scrollbar">
+            <div class="font-mono text-[13px] leading-relaxed whitespace-pre-wrap text-zinc-700 dark:text-zinc-300">
+              {{ updateInfo?.log || '暂无详细日志' }}
+            </div>
+          </div>
         </div>
       </div>
     </div>
 
-    <div v-if="!updateSuccess && !isDockerEnv && !hasRunningServers" class="modal-footer">
-      <div class="primary-actions">
-        <t-button theme="primary" block :loading="isUpdating" :disabled="isUpdating" @click="handleAutoUpdate">
-          <template #icon><cloud-download-icon /></template>
-          {{ isUpdating ? '正在更新...' : '立即更新' }}
+    <div v-if="!updateSuccess && !isDockerEnv && !hasRunningServers" class="flex flex-col gap-3">
+      <t-button theme="primary" block size="large" :loading="isUpdating" :disabled="isUpdating" class="!rounded-xl shadow-sm" @click="handleAutoUpdate">
+        <template #icon><cloud-download-icon /></template>
+        {{ isUpdating ? '正在更新...' : '立即更新' }}
+      </t-button>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <t-button variant="outline" block class="!rounded-xl !m-0" :disabled="!downloadInfo?.file || isUpdating" @click="openLink(downloadInfo?.file || '')">
+          <template #icon><download-icon /></template> 下载新版本
         </t-button>
-
-        <div class="secondary-grid">
-          <t-button
-            variant="outline"
-            :disabled="!downloadInfo?.file || isUpdating"
-            @click="openLink(downloadInfo?.file || '')"
-          >
-            <template #icon><download-icon /></template>
-            下载新版本
-          </t-button>
-
-          <t-button
-            variant="dashed"
-            :disabled="!downloadInfo?.web || isUpdating"
-            @click="openLink(downloadInfo?.web || '')"
-          >
-            <template #icon><link-icon /></template>
-            前往下载页
-          </t-button>
-        </div>
+        <t-button variant="dashed" block class="!rounded-xl !m-0" :disabled="!downloadInfo?.web || isUpdating" @click="openLink(downloadInfo?.web || '')">
+          <template #icon><link-icon /></template> 前往下载页
+        </t-button>
       </div>
 
-      <div v-if="!isUpdating" class="sub-actions">
-        <t-popconfirm
-          content="确定要跳过此版本吗？跳过后将不再提示该版本的更新。若跳过后需要更新也可以前往设置页面进行更新哦~"
-          theme="warning"
-          @confirm="handleSkip"
-        >
-          <t-link theme="default" hover="color" size="small"> 跳过此版本 </t-link>
+      <div v-if="!isUpdating" class="mt-2 flex justify-center">
+        <t-popconfirm content="确定要跳过此版本吗？跳过后将不再提示该版本。后续可在设置中更新。" theme="warning" @confirm="handleSkip">
+          <t-link theme="default" hover="color" size="small" class="!text-zinc-400 hover:!text-zinc-600 dark:hover:!text-zinc-300">
+            跳过此版本
+          </t-link>
         </t-popconfirm>
       </div>
     </div>
 
-    <div v-if="updateSuccess" class="modal-footer">
-      <t-button theme="primary" block @click="reloadPage">刷新页面</t-button>
+    <div v-if="updateSuccess" class="mt-4">
+      <t-button theme="primary" size="large" block class="!rounded-xl shadow-sm" @click="reloadPage">刷新页面</t-button>
     </div>
 
-    <div v-if="isDockerEnv" class="modal-footer">
-      <t-button variant="outline" block @click="handleClose">我知道了</t-button>
+    <div v-if="isDockerEnv" class="mt-4">
+      <t-button variant="outline" size="large" block class="!rounded-xl" @click="handleClose">我知道了</t-button>
     </div>
 
-    <div v-if="hasRunningServers" class="modal-footer">
-      <div class="primary-actions">
-        <t-button theme="primary" block @click="toInstanceList"> 前往实例列表管理 </t-button>
-        <t-button variant="outline" style="margin-left: 0" block @click="handleClose"> 暂不更新 </t-button>
-      </div>
+    <div v-if="hasRunningServers" class="flex flex-col gap-3 mt-4">
+      <t-button theme="primary" size="large" block class="!rounded-xl shadow-sm" @click="toInstanceList">前往实例列表管理</t-button>
+      <t-button variant="outline" size="large" block class="!rounded-xl !m-0" @click="handleClose">暂不更新</t-button>
     </div>
   </t-dialog>
 </template>
 
 <style scoped lang="less">
-.update-modal {
+@reference "@/style/tailwind/index.css";
+
+:deep(.update-modal) {
   @media (max-width: 768px) {
-    width: 90% !important;
+    width: 90vw !important;
     max-width: 400px;
   }
 }
 
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 16px;
+/* 日志框的极简滚动条 */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--td-scrollbar-color) transparent;
 
-  .header-content {
-    .title-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      h3 {
-        margin: 0;
-        font-size: 20px;
-        font-weight: 600;
-        color: var(--td-text-color-primary);
-      }
-    }
-    .version-row {
-      margin-top: 8px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      .arrow {
-        color: var(--td-text-color-placeholder);
-        font-family: monospace;
-      }
-    }
+  &::-webkit-scrollbar {
+    width: 6px;
   }
-}
-
-.modal-body {
-  margin-bottom: 24px;
-  min-height: 120px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-
-  .macos-alert {
-    margin-bottom: 16px;
-    font-size: 13px;
-    line-height: 1.5;
-  }
-
-  .status-container {
-    padding: 10px 0;
-
-    &.success {
-      text-align: center;
-      .success-icon {
-        color: var(--td-success-color);
-        margin-bottom: 16px;
-      }
-      p {
-        font-size: 16px;
-        font-weight: 600;
-        margin: 0 0 4px 0;
-      }
-      .sub-text {
-        font-size: 14px;
-        color: var(--td-text-color-secondary);
-        font-weight: normal;
-      }
-    }
-
-    // 新增：服务器运行警告样式
-    &.server-running-warn {
-      text-align: center;
-      .warn-icon-wrapper {
-        margin-bottom: 12px;
-      }
-      .warn-title {
-        font-size: 16px;
-        font-weight: 600;
-        margin-bottom: 8px;
-        color: var(--td-text-color-primary);
-      }
-      .warn-desc {
-        font-size: 14px;
-        color: var(--td-text-color-secondary);
-        line-height: 1.6;
-      }
-    }
-
-    &.updating {
-      .progress-info {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 8px;
-        font-size: 14px;
-        color: var(--td-text-color-primary);
-        .speed {
-          color: var(--td-text-color-secondary);
-        }
-      }
-      .error-box {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: var(--td-error-color);
-        background: var(--td-error-color-1);
-        padding: 12px;
-        border-radius: var(--td-radius-medium);
-      }
-    }
-
-    &.docker-warn {
-      .code-block {
-        margin-top: 12px;
-        background: #1e1e1e;
-        color: #d4d4d4;
-        padding: 10px;
-        border-radius: 4px;
-        font-family: monospace;
-        font-size: 12px;
-        word-break: break-all;
-        user-select: all;
-      }
-    }
-  }
-
-  .log-title {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--td-text-color-secondary);
-    margin-bottom: 8px;
-  }
-
-  .log-scroll-area {
-    background: var(--td-bg-color-secondarycontainer);
-    border-radius: var(--td-radius-medium);
-    padding: 12px;
-    max-height: 200px;
-    overflow-y: auto;
-    border: 1px solid var(--td-component-border);
-
-    &::-webkit-scrollbar {
-      width: 6px;
-    }
-    &::-webkit-scrollbar-thumb {
-      background: var(--td-scrollbar-color);
-      border-radius: 4px;
-    }
-
-    .log-text {
-      font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-      font-size: 13px;
-      line-height: 1.6;
-      white-space: pre-wrap;
-      color: var(--td-text-color-primary);
-    }
-  }
-}
-
-.modal-footer {
-  .primary-actions {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .secondary-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
-
-  .sub-actions {
-    margin-top: 16px;
-    display: flex;
-    justify-content: center;
-  }
-}
-
-@media (max-width: 480px) {
-  .secondary-grid {
-    grid-template-columns: 1fr !important;
+  &::-webkit-scrollbar-thumb {
+    background: var(--td-scrollbar-color);
+    border-radius: 4px;
   }
 }
 </style>

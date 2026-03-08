@@ -59,7 +59,11 @@ export const useUpdateStore = defineStore('update', () => {
         }
       } else {
         if (force) {
-          MessagePlugin.success('当前已是最新版本');
+          if(data.environment === 'fnos'){
+            MessagePlugin.success('请前往飞牛应用商店检查更新！');
+          }else{
+            MessagePlugin.success('当前已是最新版本');
+          }
         }
       }
     } catch (error) {

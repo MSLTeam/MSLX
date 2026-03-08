@@ -1,0 +1,25 @@
+/* ================= 按钮 ================= */
+.t-button {
+  @apply rounded-xl font-medium transition-all border-0 shadow-sm active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer;
+}
+
+/* 主色按钮 */
+.t-button--variant-base.t-button--theme-primary {
+  @apply bg-primary hover:bg-primary-hover active:bg-primary-active text-white;
+}
+
+/* 虚线/次要按钮 */
+.t-button--variant-dashed.t-button--theme-primary,
+.t-button--variant-outline {
+  @apply bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 ring-1 ring-inset ring-zinc-200 dark:ring-zinc-700/50;
+}
+
+/* 危险按钮 */
+.t-button--theme-danger {
+  @apply bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 text-red-600 dark:text-red-400;
+}
+
+/* 文字按钮 */
+.t-button--variant-text {
+  @apply bg-transparent shadow-none active:scale-100 hover:bg-zinc-100 dark:hover:bg-zinc-800;
+}

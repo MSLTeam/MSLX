@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
-import { Card as TCard, Loading as TLoading, Icon as TIcon } from 'tdesign-vue-next';
+import { Loading as TLoading, Icon as TIcon } from 'tdesign-vue-next';
 import { request } from '@/utils/request';
 import { MdPreview, type Themes } from 'md-editor-v3';
 import 'md-editor-v3/lib/preview.css';
@@ -44,99 +44,89 @@ onMounted(() => {
 </script>
 
 <template>
-  <t-card shadow :bordered="false" class="announcement-card">
-    <template #title>
-      <div class="card-header">
-        <t-icon name="system-messages" />
-        <span>系统公告</span>
-      </div>
-    </template>
+  <div class="design-card w-full bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all duration-300 flex flex-col relative overflow-hidden">
 
-    <t-loading :loading="loading" text="加载中..." size="small" style="width: 100%">
-      <div class="announcement-wrapper">
-        <md-preview
-          editor-id="announcement-preview"
-          :model-value="notice"
-          :theme="mdTheme as Themes"
-          class="md-preview-wrapper"
-        />
-      </div>
-    </t-loading>
-  </t-card>
+    <div class="flex items-center gap-2 p-5 sm:px-6 pb-4  dark:border-zinc-700/50 text-left">
+      <t-icon name="system-messages" class="text-[var(--color-primary)] text-lg" />
+      <h3 class="text-[16px] font-bold text-zinc-900 dark:text-zinc-100 m-0">系统公告</h3>
+    </div>
+
+    <div class="p-5 sm:px-6 text-left w-full min-h-[150px]">
+      <t-loading :loading="loading" text="加载中..." size="small" class="w-full">
+        <div class="w-full overflow-y-auto custom-scrollbar">
+          <md-preview
+            editor-id="announcement-preview"
+            :model-value="notice"
+            :theme="mdTheme as Themes"
+            class="custom-md-preview bg-transparent text-left !p-0"
+          />
+        </div>
+      </t-loading>
+    </div>
+
+  </div>
 </template>
 
 <style scoped lang="less">
-.announcement-card {
-  width: 100%;
-  transition: all 0.3s;
-  border-radius: 6px;
-  background-color: var(--td-bg-color-container);
+@reference "@/style/tailwind/index.css";
 
-  // 头部样式微调
-  :deep(.t-card__header) {
-    padding: var(--td-comp-paddingTB-l) var(--td-comp-paddingLR-l);
-  }
-
-  :deep(.t-card__body) {
-    padding: var(--td-comp-paddingTB-m) var(--td-comp-paddingLR-l);
-  }
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 16px; // 保持与其他标题一致的大小
-  font-weight: 600;
-  color: var(--td-text-color-primary);
-}
-
-// --- 内容包裹器 ---
-.announcement-wrapper {
-  min-height: 150px;
-  overflow-y: auto;
-  width: 100%;
-
+// 自定义滚动条样式
+.custom-scrollbar {
   &::-webkit-scrollbar {
     width: 6px;
   }
   &::-webkit-scrollbar-thumb {
-    background-color: var(--td-scrollbar-color);
-    border-radius: 3px;
+  @apply bg-zinc-300 dark:bg-zinc-600 rounded-full;
   }
 }
 
-// md内容
+// ================= Markdown 组件样式 =================
 
-.md-preview-wrapper {
-  background: none; // 确保背景透明，使用卡片的背景色
+// 强制背景透明与左对齐
+:deep(.custom-md-preview) {
+  --md-bk-color: transparent !important;
+  --md-color: inherit !important;
+  text-align: left !important;
 }
 
-// 覆盖MD编辑器链接颜色
+// 覆盖MD编辑器链接颜色，使用主题色
 :deep(.md-editor-preview a) {
-  color: var(--td-brand-color);
+  color: var(--color-primary);
   text-decoration: none;
   &:hover {
     text-decoration: underline;
   }
 }
 
-// 覆盖代码块颜色
-:deep(.md-editor-preview code) {
-  color: var(--td-brand-color);
-  background-color: color-mix(in srgb, var(--td-brand-color), transparent 90%);
+// 覆盖行内代码块颜色，采用微透明质感
+:deep(.md-editor-preview code:not([class*="language-"])) {
+  color: var(--color-primary);
+  background-color: color-mix(in srgb, var(--color-primary), transparent 90%);
   border-radius: 4px;
   padding: 2px 4px;
 }
 
-// 引用块左边框颜色
-:deep(.md-editor div.default-theme) {
-  --md-theme-quote-border: 4px solid var(--td-brand-color);
+:deep(.md-editor-preview blockquote){
+  background: none;
 }
 
-// 颜色模式适配
-:deep(.md-editor-preview) {
-  --md-color: var(--td-text-color-primary) !important;
-  --md-bk-color: transparent;
+// 引用块左边框颜色
+:deep(.md-editor div.default-theme) {
+  --md-theme-quote-border: 4px solid var(--color-primary);
 }
+
+// 颜色模式适配，跟随外层文字颜色
+:deep(.md-editor-preview) {
+  --md-color: inherit !important;
+}
+
+:deep(.md-editor-preview table tr:nth-child(2n)){
+  background-color: transparent;
+}
+
+
+:deep(.md-editor-preview table tr:nth-child(n)){
+  background-color: transparent;
+}
+
 </style>

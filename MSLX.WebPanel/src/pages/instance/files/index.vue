@@ -25,6 +25,7 @@ import {
   CloseIcon,
   SearchIcon,
   FilterIcon,
+  EditIcon,
 } from 'tdesign-icons-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import {
@@ -592,15 +593,18 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="file-manager-wrapper">
-    <t-card :bordered="false" class="file-manager-card">
-      <div class="toolbar">
-        <div class="breadcrumb-area">
+  <div class="flex flex-col mx-auto w-full pb-8">
+
+    <div class="card-enter-anim design-card bg-[var(--td-bg-color-container)] border-y md:border border-zinc-200/60 dark:border-zinc-700/60 md:rounded-xl shadow-sm flex flex-col min-h-[calc(100vh-100px)] md:min-h-[600px] -mx-4 md:mx-0 overflow-hidden">
+
+      <div class="sticky top-0 z-10 p-3 md:px-5 md:py-4 !bg-inherit border-b border-zinc-200/60 dark:border-zinc-800 flex items-center justify-between gap-4 overflow-x-auto hide-scrollbar">
+
+        <div class="flex-1 flex items-center min-w-max">
           <t-breadcrumb :max-item-width="isMobile ? '80px' : '150px'">
             <t-breadcrumb-item
               v-for="(crumb, index) in breadcrumbs"
               :key="index"
-              class="crumb-item"
+              class="cursor-pointer whitespace-nowrap transition-colors hover:text-[var(--color-primary)]"
               @click="navigateTo(crumb.path)"
             >
               <template v-if="index === 0" #icon><home-icon /></template>
@@ -608,45 +612,50 @@ onUnmounted(() => {
             </t-breadcrumb-item>
           </t-breadcrumb>
         </div>
-        <div class="actions-area">
-          <t-input v-model="searchKey" placeholder="搜索文件..." :style="{ width: isMobile ? '120px' : '200px' }">
-            <template #prefix-icon><search-icon /></template>
+
+        <div class="flex items-center gap-2 shrink-0 min-w-max">
+          <t-input v-model="searchKey" placeholder="搜索文件..." class="!rounded-lg shadow-sm" :style="{ width: isMobile ? '120px' : '200px' }">
+            <template #prefix-icon><search-icon class="text-zinc-400" /></template>
           </t-input>
 
-          <t-select
-            v-model="sortType"
-            :options="sortOptions"
-            :style="{ width: isMobile ? '110px' : '140px' }"
-            placeholder="排序"
-          >
-            <template #prefixIcon><filter-icon /></template>
+          <t-select v-model="sortType" :options="sortOptions" class="!rounded-lg shadow-sm" :style="{ width: isMobile ? '110px' : '140px' }" placeholder="排序">
+            <template #prefixIcon><filter-icon class="text-zinc-400" /></template>
           </t-select>
-          <t-button variant="outline" size="medium" @click="changeUrl(`/instance/console/${instanceId}`)">
+
+          <t-button variant="outline" size="medium" class="!rounded-lg !m-0" @click="changeUrl(`/instance/console/${instanceId}`)">
             <template #icon><rollback-icon /></template>
             <span v-if="!isMobile">控制台</span>
           </t-button>
-          <t-dropdown
-            :options="[
-              { content: '新建文件', value: 'file', onClick: handleOpenCreateDialog },
-              { content: '新建文件夹', value: 'folder', onClick: handleOpenCreateFolder },
-            ]"
-          >
-            <t-button variant="outline" size="medium">
+
+          <t-dropdown>
+            <t-button variant="outline" size="medium" class="!rounded-lg !m-0">
               <template #icon><file-add-icon /></template>
               <span v-if="!isMobile">新建</span>
             </t-button>
+            <template #dropdown>
+              <t-dropdown-menu>
+                <t-dropdown-item value="file" @click="handleOpenCreateDialog">
+                  <file-icon class="mr-2" /> <span>新建文件</span>
+                </t-dropdown-item>
+                <t-dropdown-item value="folder" @click="handleOpenCreateFolder">
+                  <folder-add-icon class="mr-2" /> <span>新建文件夹</span>
+                </t-dropdown-item>
+              </t-dropdown-menu>
+            </template>
           </t-dropdown>
-          <t-button theme="primary" size="medium" @click="showBatchUploader = true">
+
+          <t-button theme="primary" size="medium" class="!rounded-lg shadow-sm !m-0" @click="showBatchUploader = true">
             <template #icon><cloud-upload-icon /></template>
             <span v-if="!isMobile">上传</span>
           </t-button>
-          <t-button variant="outline" size="medium" @click="handleRefresh">
+
+          <t-button variant="outline" size="medium" class="!rounded-lg shrink-0 !m-0" @click="handleRefresh">
             <template #icon><refresh-icon /></template>
           </t-button>
         </div>
       </div>
 
-      <div class="table-wrapper">
+      <div class="flex-1 w-full bg-transparent overflow-hidden [&_.t-table]:!border-t-0 [&_.t-table\_\_header]:!border-t-0 [&_.t-table\_\_header>tr>th]:!border-t-0">
         <t-table
           v-model:selected-row-keys="selectedRowKeys"
           :data="filteredFileList"
@@ -655,112 +664,139 @@ onUnmounted(() => {
           :loading="loading"
           :hover="true"
           size="medium"
-          class="file-table"
+          class="custom-table"
         >
           <template #name="{ row }">
-            <div class="file-name-cell" @click.stop="handleRowClick(row)">
-              <component :is="getFileIcon(row).icon" class="file-icon" :style="{ color: getFileIcon(row).color }" />
-              <span class="name-text">{{ row.name }}</span>
+            <div class="flex items-center py-1.5 cursor-pointer group" @click.stop="handleRowClick(row)">
+              <component :is="getFileIcon(row).icon" class="text-xl mr-2 shrink-0 transition-transform group-hover:scale-110" :style="{ color: getFileIcon(row).color }" />
+              <span class="font-medium text-zinc-800 dark:text-zinc-200 group-hover:text-[var(--color-primary)] transition-colors truncate max-w-[calc(100vw-140px)] md:max-w-full">
+                {{ row.name }}
+              </span>
             </div>
           </template>
-          <template #size="{ row }">{{ formatSize(row.size) }}</template>
-          <template #permission="{ row }">
-            <t-tag v-if="row.permission" variant="light" size="small">{{ row.permission }}</t-tag>
+
+          <template #size="{ row }">
+            <span class="text-[13px] font-mono text-zinc-500 dark:text-zinc-400">{{ formatSize(row.size) }}</span>
           </template>
-          <template #lastModified="{ row }">{{ formatTime(row.lastModified) }}</template>
+
+          <template #permission="{ row }">
+            <t-tag v-if="row.permission" variant="light-outline" size="small" class="!font-mono !rounded !justify-center !text-center">{{ row.permission }}</t-tag>
+          </template>
+
+          <template #lastModified="{ row }">
+            <span class="text-[13px] text-zinc-500 dark:text-zinc-400">{{ formatTime(row.lastModified) }}</span>
+          </template>
+
           <template #operation="{ row }">
-            <div class="op-actions">
-              <t-dropdown
-                :placement="isMobile ? 'bottom-right' : 'bottom'"
-                :options="
-                  [
-                    {
-                      content: '解压',
-                      value: 'decompress',
-                      onClick: () => handleOpenDecompress(row),
-                      show: isArchive(row.name) && row.type !== 'folder',
-                    },
-                    {
-                      content: isImage(row.name) ? '预览' : '编辑',
-                      value: 'edit',
-                      onClick: () => (isImage(row.name) ? openPreview(row.name) : openEditor(row.name)),
-                      disabled: row.type === 'folder' || isArchive(row.name),
-                    },
-                    {
-                      content: '权限',
-                      value: 'permission',
-                      onClick: () => handleOpenPermission(row),
-                      show: hasPermissionSupport,
-                    },
-                    { content: '下载', value: 'download', onClick: () => handleDownload(row) },
-                    { content: '重命名', value: 'rename', onClick: () => handleOpenRename(row) },
-                    { content: '删除', value: 'delete', theme: 'error', onClick: () => handleDelete(row) },
-                  ].filter((opt: any) => opt.show !== false) as any
-                "
-              >
-                <t-button variant="text" shape="square" size="medium"><more-icon /></t-button>
+            <div class="op-actions" @click.stop>
+              <t-dropdown :placement="isMobile ? 'bottom-right' : 'bottom'">
+                <t-button variant="text" shape="square" size="medium" class="!rounded-md hover:!bg-zinc-100 dark:hover:!bg-zinc-800 transition-colors">
+                  <more-icon />
+                </t-button>
+                <template #dropdown>
+                  <t-dropdown-menu>
+                    <t-dropdown-item v-if="isArchive(row.name) && row.type !== 'folder'" value="decompress" @click="handleOpenDecompress(row)">
+                      <file-zip-icon class="mr-2" /> <span>解压</span>
+                    </t-dropdown-item>
+
+                    <t-dropdown-item v-if="!(row.type === 'folder' || isArchive(row.name))" value="edit" @click="isImage(row.name) ? openPreview(row.name) : openEditor(row.name)">
+                      <image-icon v-if="isImage(row.name)" class="mr-2" />
+                      <edit-icon v-else class="mr-2" />
+                      <span>{{ isImage(row.name) ? '预览' : '编辑' }}</span>
+                    </t-dropdown-item>
+
+                    <t-dropdown-item v-if="hasPermissionSupport" value="permission" @click="handleOpenPermission(row)">
+                      <lock-on-icon class="mr-2" /> <span>权限</span>
+                    </t-dropdown-item>
+
+                    <t-dropdown-item value="download" @click="handleDownload(row)">
+                      <download-icon class="mr-2" /> <span>下载</span>
+                    </t-dropdown-item>
+
+                    <t-dropdown-item value="rename" @click="handleOpenRename(row)">
+                      <edit-icon class="mr-2" /> <span>重命名</span>
+                    </t-dropdown-item>
+
+                    <t-dropdown-item value="delete" class="danger-item !text-red-500 hover:!bg-red-50 dark:hover:!bg-red-500/10 transition-colors" @click="handleDelete(row)">
+                      <delete-icon class="mr-2" /> <span>删除</span>
+                    </t-dropdown-item>
+                  </t-dropdown-menu>
+                </template>
               </t-dropdown>
             </div>
           </template>
-          <template #empty><div class="empty-state">暂无文件</div></template>
+
+          <template #empty>
+            <div class="py-16 flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500">
+              <file-icon size="40px" class="opacity-60 mb-3" />
+              <span class="text-sm font-medium">暂无文件</span>
+            </div>
+          </template>
         </t-table>
       </div>
-    </t-card>
+    </div>
 
     <transition name="slide-up">
-      <div v-if="hasSelection" class="selection-bar">
-        <div v-if="!isMobile" class="selection-info">
-          已选 <span>{{ selectedRowKeys.length }}</span> 项
-        </div>
-        <div v-else class="selection-info">
-          <span>{{ selectedRowKeys.length }}</span>
+      <div v-if="hasSelection" class="design-card fixed bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 w-11/12 md:w-max min-w-[280px] bg-[var(--td-bg-color-container)] border border-zinc-200/60 dark:border-zinc-700/60 shadow-[0_8px_30px_rgba(0,0,0,0.12)] rounded-full px-4 py-2.5 flex justify-between items-center z-[500] gap-4">
+
+        <div class="text-sm font-medium text-zinc-700 dark:text-zinc-300 shrink-0">
+          <template v-if="!isMobile">已选 </template>
+          <span class="text-[var(--color-primary)] font-bold text-base mx-1">{{ selectedRowKeys.length }}</span>
+          <template v-if="!isMobile">项</template>
         </div>
 
-        <div class="selection-actions">
-          <t-button size="small" variant="text" theme="primary" @click="handleCopy()">
+        <div class="flex items-center gap-1 md:gap-1.5 overflow-x-auto hide-scrollbar">
+          <t-button size="small" variant="text" theme="primary" class="!rounded-full hover:!bg-[var(--color-primary)]/10" @click="handleCopy()">
             <template #icon><file-copy-icon /></template><span v-if="!isMobile">复制</span>
           </t-button>
 
-          <t-button size="small" variant="text" theme="primary" @click="handleCut()">
+          <t-button size="small" variant="text" theme="primary" class="!rounded-full hover:!bg-[var(--color-primary)]/10" @click="handleCut()">
             <template #icon><swap-icon /></template><span v-if="!isMobile">剪切</span>
           </t-button>
 
-          <t-button size="small" variant="text" theme="primary" @click="handleCompress()">
+          <t-button size="small" variant="text" theme="primary" class="!rounded-full hover:!bg-[var(--color-primary)]/10" @click="handleCompress()">
             <template #icon><file-zip-icon /></template><span v-if="!isMobile">压缩</span>
           </t-button>
-          <t-button size="small" variant="text" theme="primary" @click="handleDownload()">
+
+          <t-button size="small" variant="text" theme="primary" class="!rounded-full hover:!bg-[var(--color-primary)]/10" @click="handleDownload()">
             <template #icon><download-icon /></template><span v-if="!isMobile">下载</span>
           </t-button>
+
           <t-button
             v-if="hasPermissionSupport"
             size="small"
             variant="text"
             theme="primary"
+            class="!rounded-full hover:!bg-[var(--color-primary)]/10"
             @click="handleOpenPermission()"
           >
             <template #icon><lock-on-icon /></template><span v-if="!isMobile">权限</span>
           </t-button>
-          <t-button size="small" variant="text" theme="danger" @click="handleDelete()">
+
+          <t-button size="small" variant="text" theme="danger" class="!rounded-full hover:!bg-red-500/10" @click="handleDelete()">
             <template #icon><delete-icon /></template><span v-if="!isMobile">删除</span>
           </t-button>
-          <t-button size="small" variant="text" @click="selectedRowKeys = []">取消</t-button>
+
+          <div class="w-[1px] h-4 bg-zinc-200 dark:bg-zinc-700 mx-1 shrink-0"></div>
+          <t-button size="small" variant="text" class="!rounded-full !text-zinc-500 hover:!bg-zinc-200 dark:hover:!bg-zinc-700 shrink-0" @click="selectedRowKeys = []">取消</t-button>
         </div>
       </div>
 
-      <div v-else-if="hasClipboard" class="selection-bar clipboard-bar">
-        <div class="selection-info">
+      <div v-else-if="hasClipboard" class="design-card fixed bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 w-11/12 md:w-max min-w-[280px] bg-[var(--td-bg-color-container)] border-2 border-[var(--color-primary)] shadow-[0_8px_30px_rgba(0,0,0,0.12)] shadow-[var(--color-primary)]/20 rounded-full px-5 py-3 flex justify-between items-center z-[501] gap-4">
+
+        <div class="text-sm font-medium text-zinc-700 dark:text-zinc-300 shrink-0">
           <span v-if="clipboardMode === 'copy'">准备复制</span>
           <span v-else>准备移动</span>
-          <span>{{ clipboard.length }}</span> 项
+          <span class="text-[var(--color-primary)] font-bold text-base mx-1">{{ clipboard.length }}</span> 项
         </div>
 
-        <div class="selection-actions">
-          <t-button theme="primary" :disabled="isPasteDisabled" @click="handlePaste">
+        <div class="flex items-center gap-2">
+          <t-button theme="primary" :disabled="isPasteDisabled" class="!rounded-full shadow-sm" @click="handlePaste">
             <template #icon><file-paste-icon /></template>
             粘贴在此处
           </t-button>
 
-          <t-button variant="text" theme="default" @click="handleCancelPaste">
+          <t-button variant="text" theme="default" class="!rounded-full hover:!bg-zinc-200 dark:hover:!bg-zinc-700" @click="handleCancelPaste">
             <template #icon><close-icon /></template>
             取消
           </t-button>
@@ -768,224 +804,95 @@ onUnmounted(() => {
       </div>
     </transition>
 
-    <file-editor
-      v-model:visible="showEditor"
-      :file-name="editorFileName"
-      :content="editorContent"
-      :loading="isSaving"
-      @save="handleSaveFile"
-    />
+    <file-editor v-model:visible="showEditor" :file-name="editorFileName" :content="editorContent" :loading="isSaving" @save="handleSaveFile" />
     <t-dialog v-model:visible="showCreateDialog" header="新建文件" :on-confirm="handleConfirmCreate">
       <t-input v-model="newFileName" placeholder="输入文件名" :autofocus="true" @enter="handleConfirmCreate" />
     </t-dialog>
     <t-dialog v-model:visible="showRenameDialog" header="重命名" :on-confirm="handleConfirmRename">
       <t-input v-model="renameNewName" placeholder="输入新名称" :autofocus="true" @enter="handleConfirmRename" />
     </t-dialog>
-    <file-uploader
-      v-model:visible="showBatchUploader"
-      :instance-id="instanceId"
-      :current-path="currentPath"
-      @success="handleUploadSuccess"
-    />
+    <file-uploader v-model:visible="showBatchUploader" :instance-id="instanceId" :current-path="currentPath" @success="handleUploadSuccess" />
     <image-preview v-model:visible="showImagePreview" :file-name="previewFileName" :image-blob-url="previewUrl" />
-    <file-compressor
-      v-model:visible="showCompressor"
-      :instance-id="instanceId"
-      :current-path="currentPath"
-      :files="compressTargets"
-      @success="handleCompressSuccess"
-    />
-    <file-decompress
-      v-model:visible="showDecompressor"
-      :instance-id="instanceId"
-      :current-path="currentPath"
-      :file-name="decompressTargetFile"
-      @success="handleDecompressSuccess"
-    />
-    <file-permission
-      v-model:visible="showPermissionDialog"
-      :instance-id="instanceId"
-      :current-path="currentPath"
-      :targets="permissionTargets"
-      @success="handlePermissionSuccess"
-    />
+    <file-compressor v-model:visible="showCompressor" :instance-id="instanceId" :current-path="currentPath" :files="compressTargets" @success="handleCompressSuccess" />
+    <file-decompress v-model:visible="showDecompressor" :instance-id="instanceId" :current-path="currentPath" :file-name="decompressTargetFile" @success="handleDecompressSuccess" />
+    <file-permission v-model:visible="showPermissionDialog" :instance-id="instanceId" :current-path="currentPath" :targets="permissionTargets" @success="handlePermissionSuccess" />
     <t-dialog v-model:visible="showCreateFolderDialog" header="新建文件夹" :on-confirm="handleConfirmCreateFolder">
-      <t-input
-        v-model="newFolderName"
-        placeholder="输入文件夹名称"
-        :autofocus="true"
-        @enter="handleConfirmCreateFolder"
-      />
+      <t-input v-model="newFolderName" placeholder="输入文件夹名称" :autofocus="true" @enter="handleConfirmCreateFolder" />
     </t-dialog>
   </div>
 </template>
 
 <style scoped lang="less">
-/* 修复全局 .light 样式污染面包屑的问题 */
+@reference "@/style/tailwind/index.css";
+
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* === 面包屑 Light 样式污染修复 === */
 :deep(.t-breadcrumb__item.light) {
   background-color: transparent !important;
   color: unset !important;
 }
 
-.file-manager-wrapper {
-  padding-bottom: 20px;
+/* ================= 卡片整体进场动画 ================= */
+.card-enter-anim {
+  animation: slideUpFade 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
-.file-manager-card {
-  min-height: 600px;
-  overflow: hidden;
-  border-radius: var(--td-radius-large);
-  :deep(.t-card__body) {
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-  }
-}
-.toolbar {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  padding: 16px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--td-component-stroke);
-  background: var(--td-bg-color-container);
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  gap: 16px;
-  /* 隐藏滚动条 */
-  &::-webkit-scrollbar {
-    display: none;
-  }
-  scrollbar-width: none;
 
-  .breadcrumb-area {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    min-width: max-content;
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
   }
-  .breadcrumb-area .crumb-item {
-    cursor: pointer;
-    white-space: nowrap;
-    transition: color 0.2s;
-  }
-  .breadcrumb-area .crumb-item:hover {
-    color: var(--td-brand-color);
-  }
-  .actions-area {
-    display: flex;
-    gap: 8px;
-    flex-shrink: 0;
-    min-width: max-content;
-    align-items: center;
-  }
-  .actions-area .t-button {
-    margin: 0 !important;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-/* 移动端特定样式调整 */
-@media (max-width: 768px) {
-  .toolbar {
-    padding: 10px 12px;
-  }
-  .file-manager-card {
-    border-radius: 0; /* 手机端去掉圆角以利用空间 */
-    min-height: calc(100vh - 100px);
-  }
-  /* 调整表格内边距 */
-  :deep(.t-table th),
-  :deep(.t-table td) {
-    padding: 8px !important;
-  }
-}
-
-.table-wrapper {
-  width: 100%;
-  flex: 1;
-}
-.file-table .file-name-cell {
-  display: flex;
-  align-items: center;
-  padding: 4px 0;
-  cursor: pointer;
-}
-.file-table .file-icon {
-  font-size: 20px;
-  margin-right: 8px;
-  flex-shrink: 0;
-}
-.file-table .name-text {
-  font-weight: 500;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  /* 确保文件名在手机端能够自适应截断 */
-  max-width: calc(100vw - 140px);
-}
-@media (min-width: 768px) {
-  .file-table .name-text {
-    max-width: 100%;
-  }
-}
-
-.file-table .name-text:hover {
-  color: var(--td-brand-color);
-}
-.selection-bar {
-  position: fixed;
-  bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: max-content;
-  min-width: 280px;
-  max-width: 95%;
-  background: var(--td-bg-color-container);
-  border: 1px solid var(--td-component-stroke);
-  box-shadow: var(--td-shadow-3);
-  border-radius: 48px;
-  padding: 8px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  z-index: 500;
-  gap: 16px;
-  .selection-info span {
-    color: var(--td-brand-color);
-    font-weight: bold;
-    margin: 0 4px;
-    font-size: 16px;
-  }
-  .selection-actions {
-    display: flex;
-    gap: 4px; /* 移动端更紧凑 */
-  }
-}
-
-@media (max-width: 768px) {
-  .selection-bar {
-    bottom: 20px;
-    padding: 8px 16px;
-    min-width: auto;
-    width: 90%;
-  }
-}
-
+/* ================= 悬浮条进出动画 ================= */
 .slide-up-enter-active,
 .slide-up-leave-active {
-  transition:
-    transform 0.3s ease,
-    opacity 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
 }
 .slide-up-enter-from,
 .slide-up-leave-to {
-  transform: translateY(100%);
+  transform: translate(-50%, 100%);
   opacity: 0;
 }
-.clipboard-bar {
-  z-index: 501;
-  border-color: var(--td-brand-color);
-  background-color: var(--td-bg-color-container);
+
+/* ================= 文件列雅瀑布流进场 ================= */
+@keyframes tableRowSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+:deep(.t-table tbody tr) {
+  animation: tableRowSlideUp 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  will-change: transform, opacity;
+}
+
+/* 首屏的 15 行应用错落延迟 */
+.generate-row-delays(@n, @i: 1) when (@i =< @n) {
+  :deep(.t-table tbody tr:nth-child(@{i})) {
+    animation-delay: (@i * 0.025s);
+  }
+  .generate-row-delays(@n, (@i + 1));
+}
+.generate-row-delays(15);
+
+:deep(.t-table tbody tr:nth-child(n+16)) {
+  animation-delay: 0.35s;
 }
 </style>

@@ -1,0 +1,7 @@
+/* ================= 折叠面板组件统一风格 ================= */
+.t-collapse,
+.t-collapse-panel,
+.t-collapse-panel__header,
+.t-collapse-panel__body {
+  @apply !bg-transparent !border-none !text-inherit;
+}

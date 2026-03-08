@@ -1,0 +1,42 @@
+/* ================= 单选框与分段控制器统一风格 ================= */
+
+.t-radio-group.t-radio-group__outline,
+.t-radio-group.t-radio-group--filled {
+  @apply !bg-zinc-100/80 dark:!bg-zinc-900/80 !rounded-[8px] !p-[2px] !border-none !shadow-inner !relative !inline-flex !gap-0 !m-0 !w-auto;
+}
+
+.t-radio-group__bg-block {
+  @apply !bg-white dark:!bg-zinc-700 !rounded-[6px] !shadow-sm !border-none;
+  transition: all 0.3s cubic-bezier(0.38, 0, 0.24, 1) !important;
+}
+
+.t-radio-button,
+.t-radio-button.t-is-checked,
+.t-radio-button:hover {
+  background: transparent !important;
+  background-color: transparent !important;
+  @apply !border-none !rounded-[6px] !z-10 transition-colors duration-300 !m-0 !p-0;
+}
+
+.t-radio-button:not(.t-is-checked) {
+  @apply !text-zinc-500 dark:!text-zinc-400;
+}
+
+.t-radio-button.t-is-checked {
+  @apply !text-zinc-900 dark:!text-zinc-100 !font-bold;
+}
+
+.t-radio-button__label {
+  @apply !px-2.5 !py-1 !text-xs !leading-none !font-medium !h-auto !flex !items-center !justify-center !gap-1.5;
+}
+
+.t-radio-button__label .t-icon {
+  @apply !m-0 !text-sm;
+}
+
+.t-radio-button::before,
+.t-radio-button::after,
+.t-radio-button:hover::before,
+.t-radio-button:hover::after {
+  display: none !important;
+}

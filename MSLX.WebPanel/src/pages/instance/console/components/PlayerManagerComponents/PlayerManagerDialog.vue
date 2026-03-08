@@ -201,391 +201,196 @@ const handleClose = () => emits('update:visible', false);
     width="min(800px, 95vw)"
     placement="center"
     :footer="false"
+    class="player-manager-dialog"
     @close="handleClose"
   >
-    <div class="dialog-body-container">
-      <div class="global-toolbar">
-        <t-tooltip content="指令模式直接与服务端交互，API模式直接修改配置文件" placement="bottom">
-          <t-radio-group v-model="opMode" variant="default-filled" size="small" :disabled="!isRunning">
-            <t-radio-button value="api">API 模式</t-radio-button>
-            <t-radio-button value="command">指令优先</t-radio-button>
-          </t-radio-group>
-        </t-tooltip>
+    <div class="flex flex-col h-[65vh] min-h-[500px]">
 
-        <t-button variant="text" theme="primary" size="small" :loading="loading" @click="fetchCurrentTabData">
-          <template #icon><refresh-icon /></template> 刷新
-        </t-button>
+      <div class="flex flex-col gap-4 mb-6 shrink-0">
+
+        <div class="flex justify-between items-center">
+          <t-tooltip content="指令模式直接与服务端交互，API模式直接修改配置文件" placement="bottom">
+            <t-radio-group v-model="opMode" variant="default-filled" size="small" :disabled="!isRunning" class="!bg-zinc-100 dark:!bg-zinc-800 border border-zinc-200/50 dark:border-zinc-700/50 !rounded-lg p-0.5">
+              <t-radio-button value="api">API 模式</t-radio-button>
+              <t-radio-button value="command">指令优先</t-radio-button>
+            </t-radio-group>
+          </t-tooltip>
+
+          <t-button variant="text" theme="primary" size="small" :loading="loading" class="!rounded-md hover:!bg-[var(--color-primary)]/10" @click="fetchCurrentTabData">
+            <template #icon><refresh-icon /></template> 刷新数据
+          </t-button>
+        </div>
+
+        <div class="w-full overflow-x-auto hide-scrollbar pb-1">
+          <t-radio-group v-model="activeTab" variant="default-filled" class="flex w-max min-w-full !bg-zinc-100 dark:!bg-zinc-800 border border-zinc-200/50 dark:border-zinc-700/50 !rounded-xl p-1">
+            <t-radio-button value="online" class="flex-1 !text-center"><div class="flex justify-center items-center gap-1.5"><user-icon size="14px"/> 在线</div></t-radio-button>
+            <t-radio-button value="history" class="flex-1 !text-center"><div class="flex justify-center items-center gap-1.5"><time-icon size="14px"/> 历史</div></t-radio-button>
+            <t-radio-button value="ops" class="flex-1 !text-center"><div class="flex justify-center items-center gap-1.5"><secured-icon size="14px"/> 管理员</div></t-radio-button>
+            <t-radio-button value="banned" class="flex-1 !text-center"><div class="flex justify-center items-center gap-1.5"><close-circle-icon size="14px"/> 黑名单</div></t-radio-button>
+            <t-radio-button value="whitelist" class="flex-1 !text-center"><div class="flex justify-center items-center gap-1.5"><usergroup-icon size="14px"/> 白名单</div></t-radio-button>
+          </t-radio-group>
+        </div>
       </div>
 
-      <t-tabs v-model="activeTab" theme="card" class="manager-tabs">
-        <t-tab-panel value="online" label="在线玩家">
-          <template #label><user-icon style="margin-right: 4px" /> 在线玩家</template>
-          <div class="panel-content">
-            <t-list v-if="onlinePlayers.length > 0" :split="true" class="custom-list">
-              <t-list-item v-for="player in onlinePlayers" :key="player" class="custom-list-item">
-                <div class="custom-item-layout">
-                  <div class="player-info">
-                    <t-avatar shape="round" :image="`https://minotar.net/helm/${player}/32.png`" />
-                    <span class="name">{{ player }}</span>
-                  </div>
-                  <div class="player-actions">
-                    <t-space class="action-space" break-line>
-                      <t-button size="small" variant="text" theme="primary" @click="handleAddOp(player)"
-                        >设为 OP</t-button
-                      >
-                      <t-button size="small" variant="text" theme="warning" @click="handleRemoveOp(player)"
-                        >撤销 OP</t-button
-                      >
-                      <t-button size="small" variant="text" theme="success" @click="handleAddWhitelist(player)"
-                        >加白</t-button
-                      >
-                      <t-button
-                        size="small"
-                        variant="text"
-                        theme="danger"
-                        @click="sendCmdOnly(`kick ${player} 被管理员踢出`, `已踢出 ${player}`)"
-                        >踢出</t-button
-                      >
-                      <t-button size="small" variant="text" theme="danger" @click="handleAddBanPlayer(player)"
-                        >封禁</t-button
-                      >
-                    </t-space>
-                  </div>
-                </div>
-              </t-list-item>
-            </t-list>
-            <div v-else class="empty-state">
-              <user-clear-icon size="48px" style="color: var(--td-text-color-placeholder); margin-bottom: 12px" />
-              <p>{{ isRunning ? '当前没有玩家在线' : '服务器未运行' }}</p>
-            </div>
-          </div>
-        </t-tab-panel>
+      <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 pb-2">
 
-        <t-tab-panel value="history" label="历史玩家">
-          <template #label><time-icon style="margin-right: 4px" /> 历史玩家</template>
-          <div class="panel-content">
-            <t-list v-if="historyPlayers.length > 0" :split="true" class="custom-list">
-              <t-list-item v-for="user in historyPlayers" :key="user.uuid" class="custom-list-item">
-                <div class="custom-item-layout">
-                  <div class="player-info">
-                    <t-avatar shape="round" :image="`https://minotar.net/helm/${user.name}/32.png`" />
-                    <div class="info-text">
-                      <span class="name">{{ user.name }}</span>
-                      <span class="sub-text">UUID: {{ user.uuid.split('-')[0] }}...</span>
-                    </div>
-                  </div>
-                  <div class="player-actions">
-                    <t-space class="action-space" break-line>
-                      <t-button size="small" variant="text" theme="primary" @click="handleAddOp(user.name)"
-                        >设为 OP</t-button
-                      >
-                      <t-button size="small" variant="text" theme="success" @click="handleAddWhitelist(user.name)"
-                        >加白名单</t-button
-                      >
-                      <t-button size="small" variant="text" theme="danger" @click="handleAddBanPlayer(user.name)"
-                        >封禁</t-button
-                      >
-                    </t-space>
-                  </div>
-                </div>
-              </t-list-item>
-            </t-list>
-            <div v-else class="empty-state">无历史登录记录</div>
-          </div>
-        </t-tab-panel>
-
-        <t-tab-panel value="ops" label="管理员">
-          <template #label><secured-icon style="margin-right: 4px" /> 管理员</template>
-          <div class="panel-content">
-            <div class="input-toolbar">
-              <t-input v-model="inputNewOp" placeholder="输入玩家游戏ID" @enter="handleAddOp()" clearable />
-              <t-button theme="primary" @click="handleAddOp()"
-                ><template #icon><add-icon /></template> 添加</t-button
-              >
-            </div>
-            <t-list v-if="ops.length > 0" :split="true" class="custom-list">
-              <t-list-item v-for="op in ops" :key="op.uuid" class="custom-list-item">
-                <div class="custom-item-layout">
-                  <div class="player-info">
-                    <t-avatar shape="round" :image="`https://minotar.net/helm/${op.name}/32.png`" />
-                    <span class="name"
-                      >{{ op.name }}
-                      <t-tag theme="success" variant="light" size="small">等级: {{ op.level }}</t-tag></span
-                    >
-                  </div>
-                  <div class="player-actions">
-                    <t-popconfirm content="确定要撤销该管理员吗？" theme="danger" @confirm="handleRemoveOp(op.name)">
-                      <t-button size="small" variant="text" theme="danger"
-                        ><template #icon><delete-icon /></template> 移除</t-button
-                      >
-                    </t-popconfirm>
-                  </div>
-                </div>
-              </t-list-item>
-            </t-list>
-            <div v-else class="empty-state">暂无管理员记录</div>
-          </div>
-        </t-tab-panel>
-
-        <t-tab-panel value="banned" label="黑名单">
-          <template #label><close-circle-icon style="margin-right: 4px" /> 黑名单</template>
-          <div class="panel-content">
-            <div class="input-toolbar">
-              <t-radio-group v-model="banType" variant="default-filled">
-                <t-radio-button value="player">玩家封禁</t-radio-button>
-                <t-radio-button value="ip">IP 封禁</t-radio-button>
-              </t-radio-group>
-            </div>
-
-            <div v-if="banType === 'player'">
-              <div class="input-toolbar">
-                <t-input v-model="inputNewBanPlayer" placeholder="输入玩家ID" style="flex: 1" clearable />
-                <t-input v-model="inputNewBanReason" placeholder="理由(可选)" style="flex: 1.5" clearable />
-                <t-button theme="danger" @click="handleAddBanPlayer()"
-                  ><template #icon><add-icon /></template> 封禁</t-button
-                >
+        <div v-if="activeTab === 'online'" class="flex flex-col gap-3">
+          <template v-if="onlinePlayers.length > 0">
+            <div v-for="player in onlinePlayers" :key="player" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 hover:border-[var(--color-primary)]/30 transition-colors shadow-sm">
+              <div class="flex items-center gap-3">
+                <img :src="`https://minotar.net/helm/${player}/32.png`" class="w-9 h-9 rounded shadow-sm [image-rendering:pixelated]" />
+                <span class="font-bold text-sm text-zinc-800 dark:text-zinc-200">{{ player }}</span>
               </div>
-              <t-list v-if="bannedPlayers.length > 0" :split="true" class="custom-list">
-                <t-list-item v-for="player in bannedPlayers" :key="player.uuid" class="custom-list-item">
-                  <div class="custom-item-layout">
-                    <div class="player-info" style="align-items: flex-start">
-                      <t-avatar size="small" shape="round" :image="`https://minotar.net/helm/${player.name}/32.png`" />
-                      <div class="info-text">
-                        <span class="name" style="color: var(--td-error-color)">{{ player.name }}</span>
-                        <span class="sub-text" style="white-space: normal">理由: {{ player.reason }}</span>
-                      </div>
-                    </div>
-                    <div class="player-actions">
-                      <t-popconfirm
-                        content="确定要解封吗？"
-                        theme="warning"
-                        @confirm="handleRemoveBanPlayer(player.name)"
-                      >
-                        <t-button size="small" variant="text" theme="primary"> 解封</t-button>
-                      </t-popconfirm>
-                    </div>
-                  </div>
-                </t-list-item>
-              </t-list>
-              <div v-else class="empty-state">暂无被封禁的玩家</div>
-            </div>
-
-            <div v-else>
-              <div class="input-toolbar">
-                <t-input v-model="inputNewBanIp" placeholder="输入IP地址" style="flex: 1" clearable />
-                <t-input v-model="inputNewBanReason" placeholder="理由(可选)" style="flex: 1.5" clearable />
-                <t-button theme="danger" @click="handleAddBanIp()"
-                  ><template #icon><add-icon /></template> 封禁IP</t-button
-                >
+              <div class="flex flex-wrap items-center gap-1.5">
+                <t-button size="small" variant="outline" theme="default" class="!rounded-lg !border-zinc-200 dark:!border-zinc-700 !text-zinc-600 dark:!text-zinc-300 hover:!text-[var(--color-primary)] hover:!border-[var(--color-primary)]/50" @click="handleAddOp(player)">设为 OP</t-button>
+                <t-button size="small" variant="text" theme="warning" class="!rounded-lg hover:!bg-amber-500/10" @click="handleRemoveOp(player)">撤销 OP</t-button>
+                <t-button size="small" variant="text" theme="success" class="!rounded-lg hover:!bg-emerald-500/10" @click="handleAddWhitelist(player)">加白</t-button>
+                <t-button size="small" variant="text" theme="danger" class="!rounded-lg hover:!bg-red-500/10" @click="sendCmdOnly(`kick ${player} 被管理员踢出`, `已踢出 ${player}`)">踢出</t-button>
+                <t-button size="small" variant="text" theme="danger" class="!rounded-lg hover:!bg-red-500/10" @click="handleAddBanPlayer(player)">封禁</t-button>
               </div>
-              <t-list v-if="bannedIps.length > 0" :split="true" class="custom-list">
-                <t-list-item v-for="ban in bannedIps" :key="ban.ip" class="custom-list-item">
-                  <div class="custom-item-layout">
-                    <div class="player-info info-text">
-                      <span class="name" style="color: var(--td-error-color)">{{ ban.ip }}</span>
-                      <span class="sub-text" style="white-space: normal">理由: {{ ban.reason }}</span>
-                    </div>
-                    <div class="player-actions">
-                      <t-popconfirm content="确定要解封该IP吗？" theme="warning" @confirm="handleRemoveBanIp(ban.ip)">
-                        <t-button size="small" variant="text" theme="primary"> 解封</t-button>
-                      </t-popconfirm>
-                    </div>
-                  </div>
-                </t-list-item>
-              </t-list>
-              <div v-else class="empty-state">暂无被封禁的IP</div>
             </div>
+          </template>
+          <div v-else class="py-16 flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500">
+            <user-clear-icon size="40px" class="mb-3 opacity-60" />
+            <span class="text-sm font-medium">{{ isRunning ? '当前没有玩家在线' : '服务器未运行' }}</span>
           </div>
-        </t-tab-panel>
+        </div>
 
-        <t-tab-panel value="whitelist" label="白名单">
-          <template #label><usergroup-icon style="margin-right: 4px" /> 白名单</template>
-          <div class="panel-content">
-            <div class="input-toolbar">
-              <t-input v-model="inputNewWhitelist" placeholder="输入玩家ID" @enter="handleAddWhitelist()" clearable />
-              <t-button theme="primary" @click="handleAddWhitelist()"
-                ><template #icon><add-icon /></template> 添加</t-button
-              >
+        <div v-if="activeTab === 'history'" class="flex flex-col gap-3">
+          <template v-if="historyPlayers.length > 0">
+            <div v-for="user in historyPlayers" :key="user.uuid" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 hover:border-[var(--color-primary)]/30 transition-colors shadow-sm">
+              <div class="flex items-center gap-3 min-w-0">
+                <img :src="`https://minotar.net/helm/${user.name}/32.png`" class="w-9 h-9 rounded shadow-sm [image-rendering:pixelated] shrink-0" />
+                <div class="flex flex-col min-w-0">
+                  <span class="font-bold text-sm text-zinc-800 dark:text-zinc-200 truncate">{{ user.name }}</span>
+                  <span class="text-[11px] text-zinc-500 font-mono truncate mt-0.5">UUID: {{ user.uuid.split('-')[0] }}...</span>
+                </div>
+              </div>
+              <div class="flex flex-wrap items-center gap-1.5 shrink-0">
+                <t-button size="small" variant="outline" theme="default" class="!rounded-lg !border-zinc-200 dark:!border-zinc-700 !text-zinc-600 dark:!text-zinc-300 hover:!text-[var(--color-primary)] hover:!border-[var(--color-primary)]/50" @click="handleAddOp(user.name)">设为 OP</t-button>
+                <t-button size="small" variant="text" theme="success" class="!rounded-lg hover:!bg-emerald-500/10" @click="handleAddWhitelist(user.name)">加白名单</t-button>
+                <t-button size="small" variant="text" theme="danger" class="!rounded-lg hover:!bg-red-500/10" @click="handleAddBanPlayer(user.name)">封禁</t-button>
+              </div>
             </div>
-            <t-list v-if="whitelist.length > 0" :split="true" class="custom-list">
-              <t-list-item v-for="user in whitelist" :key="user.uuid" class="custom-list-item">
-                <div class="custom-item-layout">
-                  <div class="player-info">
-                    <t-avatar shape="round" :image="`https://minotar.net/helm/${user.name}/32.png`" />
-                    <span class="name">{{ user.name }}</span>
-                  </div>
-                  <div class="player-actions">
-                    <t-popconfirm content="移出白名单？" theme="danger" @confirm="handleRemoveWhitelist(user.name)">
-                      <t-button size="small" variant="text" theme="danger"
-                        ><template #icon><delete-icon /></template> 移除</t-button
-                      >
-                    </t-popconfirm>
+          </template>
+          <div v-else class="py-16 flex items-center justify-center text-sm font-medium text-zinc-400 dark:text-zinc-500">无历史登录记录</div>
+        </div>
+
+        <div v-if="activeTab === 'ops'" class="flex flex-col gap-3">
+          <div class="flex flex-col sm:flex-row gap-2 mb-2">
+            <t-input v-model="inputNewOp" placeholder="输入玩家游戏ID" @enter="handleAddOp()" clearable class="!flex-1" />
+            <t-button theme="primary" @click="handleAddOp()" class="!rounded-lg shadow-sm shrink-0"><template #icon><add-icon /></template> 添加管理员</t-button>
+          </div>
+
+          <template v-if="ops.length > 0">
+            <div v-for="op in ops" :key="op.uuid" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 shadow-sm">
+              <div class="flex items-center gap-3">
+                <img :src="`https://minotar.net/helm/${op.name}/32.png`" class="w-9 h-9 rounded shadow-sm [image-rendering:pixelated]" />
+                <div class="flex flex-col gap-1">
+                  <span class="font-bold text-sm text-zinc-800 dark:text-zinc-200">{{ op.name }}</span>
+                  <span class="text-[10px] font-extrabold bg-blue-50 text-blue-600 ring-1 ring-inset ring-blue-500/20 dark:bg-blue-500/10 dark:text-blue-400 dark:ring-blue-500/30 px-1.5 py-0.5 rounded w-max">LV.{{ op.level }}</span>
+                </div>
+              </div>
+              <t-popconfirm content="确定要撤销该管理员吗？" theme="danger" @confirm="handleRemoveOp(op.name)">
+                <t-button size="small" variant="outline" theme="danger" class="!rounded-lg !border-red-500/30 hover:!bg-red-500/10 self-start sm:self-auto"><template #icon><delete-icon /></template> 移除</t-button>
+              </t-popconfirm>
+            </div>
+          </template>
+          <div v-else class="py-12 flex items-center justify-center text-sm font-medium text-zinc-400 dark:text-zinc-500">暂无管理员记录</div>
+        </div>
+
+        <div v-if="activeTab === 'banned'" class="flex flex-col gap-3">
+          <div class="mb-2">
+            <t-radio-group v-model="banType" variant="default-filled" size="small" class="!bg-zinc-100 dark:!bg-zinc-800 border border-zinc-200/50 dark:border-zinc-700/50 !rounded-lg p-0.5">
+              <t-radio-button value="player">玩家封禁</t-radio-button>
+              <t-radio-button value="ip">IP 封禁</t-radio-button>
+            </t-radio-group>
+          </div>
+
+          <div v-if="banType === 'player'" class="flex flex-col gap-3">
+            <div class="flex flex-col sm:flex-row gap-2">
+              <t-input v-model="inputNewBanPlayer" placeholder="输入玩家ID" clearable class="!flex-1" />
+              <t-input v-model="inputNewBanReason" placeholder="封禁理由(可选)" clearable class="!flex-[1.5]" />
+              <t-button theme="danger" @click="handleAddBanPlayer()" class="!rounded-lg shadow-sm shrink-0"><template #icon><add-icon /></template> 封禁</t-button>
+            </div>
+
+            <template v-if="bannedPlayers.length > 0">
+              <div v-for="player in bannedPlayers" :key="player.uuid" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-red-50/50 dark:bg-red-950/20 rounded-xl border border-red-200/60 dark:border-red-900/40 shadow-sm">
+                <div class="flex items-start sm:items-center gap-3 min-w-0">
+                  <img :src="`https://minotar.net/helm/${player.name}/32.png`" class="w-9 h-9 rounded shadow-sm [image-rendering:pixelated] shrink-0" />
+                  <div class="flex flex-col min-w-0 gap-0.5">
+                    <span class="font-bold text-sm text-red-600 dark:text-red-400 truncate">{{ player.name }}</span>
+                    <span class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 break-all line-clamp-2">理由: {{ player.reason }}</span>
                   </div>
                 </div>
-              </t-list-item>
-            </t-list>
-            <div v-else class="empty-state">白名单为空</div>
+                <t-popconfirm content="确定要解封吗？" theme="warning" @confirm="handleRemoveBanPlayer(player.name)">
+                  <t-button size="small" variant="outline" theme="primary" class="!rounded-lg !border-[var(--color-primary)]/30 hover:!bg-[var(--color-primary)]/10 shrink-0 self-end sm:self-auto">解封</t-button>
+                </t-popconfirm>
+              </div>
+            </template>
+            <div v-else class="py-12 flex items-center justify-center text-sm font-medium text-zinc-400 dark:text-zinc-500">暂无被封禁的玩家</div>
           </div>
-        </t-tab-panel>
-      </t-tabs>
+
+          <div v-else class="flex flex-col gap-3">
+            <div class="flex flex-col sm:flex-row gap-2">
+              <t-input v-model="inputNewBanIp" placeholder="输入IP地址" clearable class="!flex-1" />
+              <t-input v-model="inputNewBanReason" placeholder="封禁理由(可选)" clearable class="!flex-[1.5]" />
+              <t-button theme="danger" @click="handleAddBanIp()" class="!rounded-lg shadow-sm shrink-0"><template #icon><add-icon /></template> 封禁IP</t-button>
+            </div>
+
+            <template v-if="bannedIps.length > 0">
+              <div v-for="ban in bannedIps" :key="ban.ip" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-red-50/50 dark:bg-red-950/20 rounded-xl border border-red-200/60 dark:border-red-900/40 shadow-sm">
+                <div class="flex flex-col min-w-0 gap-0.5">
+                  <span class="font-mono font-bold text-sm text-red-600 dark:text-red-400 truncate">{{ ban.ip }}</span>
+                  <span class="text-[11px] text-zinc-500 dark:text-zinc-400 break-all line-clamp-2">理由: {{ ban.reason }}</span>
+                </div>
+                <t-popconfirm content="确定要解封该IP吗？" theme="warning" @confirm="handleRemoveBanIp(ban.ip)">
+                  <t-button size="small" variant="outline" theme="primary" class="!rounded-lg !border-[var(--color-primary)]/30 hover:!bg-[var(--color-primary)]/10 shrink-0 self-end sm:self-auto">解封</t-button>
+                </t-popconfirm>
+              </div>
+            </template>
+            <div v-else class="py-12 flex items-center justify-center text-sm font-medium text-zinc-400 dark:text-zinc-500">暂无被封禁的IP</div>
+          </div>
+        </div>
+
+        <div v-if="activeTab === 'whitelist'" class="flex flex-col gap-3">
+          <div class="flex flex-col sm:flex-row gap-2 mb-2">
+            <t-input v-model="inputNewWhitelist" placeholder="输入玩家ID" @enter="handleAddWhitelist()" clearable class="!flex-1" />
+            <t-button theme="primary" @click="handleAddWhitelist()" class="!rounded-lg shadow-sm shrink-0"><template #icon><add-icon /></template> 添加白名单</t-button>
+          </div>
+
+          <template v-if="whitelist.length > 0">
+            <div v-for="user in whitelist" :key="user.uuid" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 shadow-sm">
+              <div class="flex items-center gap-3 min-w-0">
+                <img :src="`https://minotar.net/helm/${user.name}/32.png`" class="w-9 h-9 rounded shadow-sm [image-rendering:pixelated] shrink-0" />
+                <span class="font-bold text-sm text-zinc-800 dark:text-zinc-200 truncate">{{ user.name }}</span>
+              </div>
+              <t-popconfirm content="移出白名单？" theme="danger" @confirm="handleRemoveWhitelist(user.name)">
+                <t-button size="small" variant="outline" theme="danger" class="!rounded-lg !border-red-500/30 hover:!bg-red-500/10 self-start sm:self-auto"><template #icon><delete-icon /></template> 移除</t-button>
+              </t-popconfirm>
+            </div>
+          </template>
+          <div v-else class="py-12 flex items-center justify-center text-sm font-medium text-zinc-400 dark:text-zinc-500">白名单为空</div>
+        </div>
+
+      </div>
     </div>
   </t-dialog>
 </template>
 
 <style scoped lang="less">
-.dialog-body-container {
-  height: 60vh;
-  min-height: 400px;
-  display: flex;
-  flex-direction: column;
-}
+@import '@/style/scrollbar';
+@reference "@/style/tailwind/index.css";
 
-.global-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--td-component-stroke);
-  margin-bottom: 12px;
-}
-
-.manager-tabs {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-:deep(.t-tabs__content) {
-  flex: 1;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-:deep(.t-tab-panel) {
-  display: flex;
-  flex-direction: column;
-  height: 100%;       /* 强制占满父容器高度 */
-  overflow: hidden;   /* 防止自身溢出 */
-}
-
-
-
-.panel-content {
-  flex: 1;
-  overflow-y: auto;
-  height: 0;
-  padding: 16px 4px 16px 0;
-  box-sizing: border-box;
-
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   &::-webkit-scrollbar {
-    width: 6px;
-  }
-  &::-webkit-scrollbar-thumb {
-    background-color: var(--td-scrollbar-color);
-    border-radius: 4px;
+    display: none;
   }
 }
 
-.input-toolbar {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.custom-list {
-  border: 1px solid var(--td-component-stroke);
-  border-radius: var(--td-radius-default);
-  overflow: hidden;
-}
-
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  min-height: 200px;
-  color: var(--td-text-color-placeholder);
-}
-
-:deep(.custom-list-item .t-list-item__content) {
-  width: 100%;
-}
-
-.custom-item-layout {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-}
-
-.player-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
-  flex: 1;
-
-  .t-avatar {
-    flex-shrink: 0;
-  }
-
-  .info-text {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 2px;
-  }
-
-  .name {
-    font-weight: 500;
-    font-family: var(--td-font-family-sans-serif);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .sub-text {
-    font-size: 12px;
-    color: var(--td-text-color-secondary);
-  }
-}
-
-.player-actions {
-  flex-shrink: 0;
-}
-
-@media (max-width: 640px) {
-  .dialog-body-container {
-    height: 75vh;
-  }
-  .input-toolbar {
-    flex-direction: column;
-  }
-  .custom-item-layout {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-  .player-info {
-    width: 100%;
-    .name {
-      white-space: normal;
-      word-break: break-all;
-      line-height: 1.4;
-    }
-  }
-  .player-actions {
-    width: 100%;
-    :deep(.action-space) {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-start;
-      gap: 12px 8px !important;
-    }
-  }
+.custom-scrollbar {
+  .scrollbar-mixin();
 }
 </style>

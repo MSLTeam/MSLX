@@ -177,255 +177,106 @@ watch(() => route.params.serverId, (newId) => {
 </script>
 
 <template>
-  <div class="settings-container">
-    <div class="page-header">
-      <div class="section-title">Server.properties 配置编辑器</div>
-      <t-space>
-        <t-button variant="text" shape="square" :loading="loading" @click="loadData">
-          <template #icon><refresh-icon /></template>
+  <div class="flex flex-col mx-auto w-full pb-8">
+
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-5 mb-6 pb-2 border-b border-dashed border-zinc-200/60 dark:border-zinc-700/60">
+      <div class="flex items-center gap-2">
+        <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
+        <h2 class="text-base font-bold text-zinc-800 dark:text-zinc-200 m-0">Server.properties 配置编辑器</h2>
+      </div>
+
+      <t-space size="small" class="w-full sm:w-auto justify-end">
+        <t-button variant="outline" class="!rounded-lg !bg-zinc-50 dark:!bg-zinc-800/50 !border-zinc-200 dark:!border-zinc-700 hover:!bg-zinc-100 dark:hover:!bg-zinc-800 !text-zinc-600 dark:!text-zinc-300 transition-colors" :loading="loading" @click="loadData">
+          <template #icon><refresh-icon /></template> 刷新
         </t-button>
-        <t-button theme="primary" :loading="saving" @click="handleSave">
-          <template #icon><save-icon /></template>
-          保存配置
+        <t-button theme="primary" class="!rounded-lg shadow-sm" :loading="saving" @click="handleSave">
+          <template #icon><save-icon /></template> 保存配置
         </t-button>
       </t-space>
     </div>
 
     <t-loading :loading="loading" text="正在读取配置文件...">
-      <div class="config-list">
+      <div class="bg-white/80 dark:bg-zinc-900/40 border border-zinc-200/60 dark:border-zinc-800 rounded-xl shadow-sm backdrop-blur-md overflow-hidden">
 
-        <div v-if="!loading && renderList.length === 0" class="empty-tip">
+        <div v-if="!loading && renderList.length === 0" class="py-16 flex items-center justify-center text-sm font-medium text-zinc-400 dark:text-zinc-500">
           无法找到配置项或文件为空
         </div>
 
-        <div
-          v-for="item in renderList"
-          :key="item.key"
-          class="setting-item"
-          :class="{ 'unknown-item': item.isUnknown }"
-        >
-          <div class="setting-info">
-            <div class="title">
-              {{ item.label }}
+        <div class="flex flex-col divide-y divide-dashed divide-zinc-200/60 dark:divide-zinc-700/60">
+          <div
+            v-for="item in renderList"
+            :key="item.key"
+            class="flex flex-col md:flex-row md:items-start justify-between p-5 transition-colors hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20"
+          >
+            <div class="flex-1 md:max-w-[40%] pr-0 md:pr-8 mb-3 md:mb-0">
+              <div class="text-sm font-bold mb-1" :class="item.isUnknown ? 'text-amber-600 dark:text-amber-500' : 'text-zinc-800 dark:text-zinc-200'">
+                {{ item.label }}
+              </div>
+
+              <div class="flex items-center mb-1.5" v-if="!item.isUnknown">
+                <span class="font-mono text-[11px] text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800/80 px-1.5 py-0.5 rounded tracking-wider shadow-inner">{{ item.key }}</span>
+              </div>
+
+              <div v-if="!item.isUnknown" class="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                {{ item.desc || '暂无描述' }}
+              </div>
             </div>
-            <div class="key-name-row">
-              <span v-if="!item.isUnknown" class="key-name">{{ item.key }}</span>
+
+            <div class="flex-1 md:max-w-[60%] w-full flex md:justify-end items-center">
+
+              <template v-if="item.type === 'boolean'">
+                <t-switch
+                  :model-value="getBindValue(item.key, 'boolean') as boolean"
+                  @update:model-value="(v) => setBindValue(item.key, v, 'boolean')"
+                />
+              </template>
+
+              <template v-else-if="item.type === 'select'">
+                <t-select
+                  :model-value="getBindValue(item.key, 'string')"
+                  :options="item.options"
+                  placeholder="请选择"
+                  class="w-full md:max-w-[400px]"
+                  @update:model-value="(v) => setBindValue(item.key, v, 'string')"
+                />
+              </template>
+
+              <template v-else-if="item.type === 'number'">
+                <t-input-number
+                  :model-value="getBindValue(item.key, 'number') as number"
+                  theme="column"
+                  class="w-full md:max-w-[400px]"
+                  @update:model-value="(v) => setBindValue(item.key, v, 'number')"
+                />
+              </template>
+
+              <template v-else>
+                <t-input
+                  :model-value="getBindValue(item.key, 'string') as string"
+                  placeholder="未设置"
+                  class="w-full md:max-w-[400px]"
+                  @update:model-value="(v) => setBindValue(item.key, v, 'string')"
+                />
+              </template>
+
             </div>
-            <div v-if="!item.isUnknown" class="desc">{{ item.desc || '暂无描述' }}</div>
-          </div>
-
-          <div class="setting-control">
-            <template v-if="item.type === 'boolean'">
-              <t-switch
-                :model-value="getBindValue(item.key, 'boolean') as boolean"
-                @update:model-value="(v) => setBindValue(item.key, v, 'boolean')"
-              />
-            </template>
-
-            <template v-else-if="item.type === 'select'">
-              <t-select
-                :model-value="getBindValue(item.key, 'string')"
-                :options="item.options"
-                placeholder="请选择"
-                @update:model-value="(v) => setBindValue(item.key, v, 'string')"
-              />
-            </template>
-
-            <template v-else-if="item.type === 'number'">
-              <t-input-number
-                :model-value="getBindValue(item.key, 'number') as number"
-                theme="column"
-                style="width: 100%"
-                @update:model-value="(v) => setBindValue(item.key, v, 'number')"
-              />
-            </template>
-
-            <template v-else>
-              <t-input
-                :model-value="getBindValue(item.key, 'string') as string"
-                placeholder="未设置"
-                @update:model-value="(v) => setBindValue(item.key, v, 'string')"
-              />
-            </template>
           </div>
         </div>
       </div>
     </t-loading>
 
-    <div class="form-actions">
-      <t-button theme="primary" size="large" :loading="saving" @click="handleSave">保存设置</t-button>
-      <t-button theme="default" variant="base" size="large" @click="loadData">重置更改</t-button>
+    <div class="flex flex-col sm:flex-row gap-3 mt-6 pt-6 border-t border-zinc-200/60 dark:border-zinc-700/60">
+      <t-button theme="primary" size="large" class="!rounded-lg shadow-sm w-full sm:w-auto" :loading="saving" @click="handleSave">
+        <template #icon><save-icon /></template> 保存设置
+      </t-button>
+      <t-button theme="default" variant="base" size="large" class="!rounded-lg w-full sm:w-auto" @click="loadData">
+        重置更改
+      </t-button>
     </div>
+
   </div>
 </template>
 
 <style scoped lang="less">
-.settings-container {
-  margin: 0 auto;
-  max-width: 100%;
-}
-
-/* 顶部标题栏 - 蓝色标题风格 */
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 32px;
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  border-bottom: 1px dashed var(--td-component-stroke);
-}
-
-.section-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--td-text-color-primary);
-  display: flex;
-  align-items: center;
-
-  &::before {
-    content: '';
-    display: inline-block;
-    width: 4px;
-    height: 16px;
-    background-color: var(--td-brand-color);
-    margin-right: 8px;
-    border-radius: 2px;
-  }
-}
-
-.config-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.empty-tip {
-  text-align: center;
-  padding: 40px;
-  color: var(--td-text-color-placeholder);
-  background: var(--td-bg-color-container);
-  border-radius: var(--td-radius-medium);
-  border: 1px dashed var(--td-component-stroke);
-}
-
-.setting-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 16px 24px; /* 增加左右内边距 */
-  border-bottom: 1px dashed var(--td-component-stroke);
-  flex-wrap: wrap;
-  transition: background-color 0.2s;
-
-  &:last-child {
-    border-bottom: none;
-  }
-
-  /* 未知项略微区分 */
-  &.unknown-item {
-    .title {
-      color: var(--td-warning-color);
-    }
-  }
-
-  .setting-info {
-    flex: 1;
-    padding-right: 32px;
-    max-width: 40%; /* 限制左侧宽度，与模板一致 */
-    min-width: 200px;
-
-    .title {
-      font-size: 14px;
-      color: var(--td-text-color-primary);
-      font-weight: 500;
-      line-height: 22px;
-      margin-bottom: 4px;
-    }
-
-    .key-name-row {
-      display: flex;
-      align-items: center;
-      margin-bottom: 2px;
-    }
-
-    .key-name {
-      font-family: 'Consolas', monospace;
-      font-size: 12px;
-      color: var(--td-text-color-secondary);
-      background-color: var(--td-bg-color-secondarycontainer);
-      padding: 1px 4px;
-      border-radius: 3px;
-    }
-
-    .unknown-tag {
-      font-size: 12px;
-      color: var(--td-warning-color);
-      background-color: var(--td-bg-color-secondarycontainer);
-      padding: 1px 4px;
-      border-radius: 3px;
-    }
-
-    .desc {
-      font-size: 12px;
-      color: var(--td-text-color-placeholder);
-      margin-top: 4px;
-      line-height: 20px;
-    }
-  }
-
-  .setting-control {
-    flex: 1;
-    max-width: 60%;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center; /* 垂直居中 */
-
-    /* 让控件统一样式 */
-    .t-input, .t-select, .t-input-number {
-      width: 100%;
-      max-width: 400px;
-    }
-  }
-}
-
-.form-actions {
-  margin-top: 24px;
-  display: flex;
-  gap: 16px;
-  padding-top: 24px;
-  border-top: 1px solid var(--td-component-stroke);
-  /* 恢复左对齐，如果需要右对齐可改为 justify-content: flex-end */
-}
-
-/* 适配暗黑模式的滚动条等细节由 TDesign 变量自动处理 */
-
-@media (max-width: 768px) {
-  .setting-item {
-    flex-direction: column;
-    padding: 16px;
-
-    .setting-info {
-      padding-right: 0;
-      margin-bottom: 12px;
-      max-width: 100%;
-    }
-
-    .setting-control {
-      max-width: 100%;
-      justify-content: flex-start;
-
-      .t-input, .t-select, .t-input-number {
-        max-width: 100%;
-      }
-    }
-  }
-
-  .form-actions {
-    flex-direction: column;
-
-    button {
-      width: 100%;
-    }
-  }
-}
+@reference "@/style/tailwind/index.css";
 </style>

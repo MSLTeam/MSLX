@@ -1,0 +1,10 @@
+/* ================= 复选框组件统一风格 ================= */
+.t-checkbox__ui {
+  @apply !rounded-md !border-zinc-300 dark:!border-zinc-600 !bg-white dark:!bg-zinc-900 transition-colors;
+}
+.t-checkbox.t-is-checked .t-checkbox__ui {
+  @apply !bg-[var(--color-primary)] !border-[var(--color-primary)];
+}
+.t-checkbox__label {
+  @apply !text-zinc-700 dark:!text-zinc-300 !text-sm font-medium;
+}

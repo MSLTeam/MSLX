@@ -1,0 +1,60 @@
+/* ================= 弹窗 ================= */
+
+/* 弹窗整体容器 */
+.t-dialog {
+  @apply !rounded-2xl !bg-white dark:!bg-zinc-900 !border !border-zinc-200 dark:!border-zinc-800 !shadow-2xl !p-0 !overflow-hidden;
+}
+
+/* 优化图标与文字的排版 */
+.t-dialog__header {
+  @apply !text-zinc-900 dark:!text-white !font-bold !text-lg !px-6 !py-5 !m-0 !border-b !border-zinc-100 dark:!border-zinc-800/80;
+}
+
+.t-dialog__header-content {
+  @apply flex items-center gap-2;
+}
+
+/* 针对 Danger 类型的图标颜色 */
+.t-dialog__header-content .t-icon-error-circle-filled {
+  @apply !text-red-500 !text-xl;
+}
+
+/* 内容区 */
+.t-dialog__body,
+.t-dialog__body__icon {
+  @apply !text-zinc-600 dark:!text-zinc-400 !px-6 !py-8 !m-0 !text-sm !leading-relaxed;
+  display: block !important;
+}
+
+/* 底部 Footer：强制横向排列 */
+.t-dialog__footer {
+  @apply !border-t !border-zinc-100 dark:!border-zinc-800/80 !px-6 !py-4 !m-0 !bg-zinc-50/50 dark:!bg-zinc-900/50;
+  display: block !important;
+}
+
+.t-dialog__footer > div {
+  @apply !flex !flex-row !justify-end !items-center !gap-3 !w-full;
+  display: flex !important;
+  flex-direction: row !important;
+}
+
+/* 按钮精修 */
+.t-dialog__footer .t-button {
+  @apply !m-0 !rounded-xl !h-9 !px-5 !text-sm !font-bold !shadow-none active:!scale-95 !transition-all;
+  margin-left: 0 !important;
+}
+
+/* 取消按钮 */
+.t-dialog__cancel {
+  @apply !bg-zinc-100 dark:!bg-zinc-800 !text-zinc-500 dark:!text-zinc-400 !border-none hover:!bg-zinc-200 dark:hover:!bg-zinc-700;
+}
+
+/* 确认按钮 (Danger 样式) */
+.t-dialog__modal-danger .t-dialog__confirm {
+  @apply !bg-red-500 hover:!bg-red-600 !text-white !border-none shadow-sm shadow-red-500/20;
+}
+
+/* 关闭按钮微调 */
+.t-dialog__close {
+  @apply !top-5 !right-5 !p-1 !rounded-lg hover:!bg-zinc-100 dark:hover:!bg-zinc-800 !transition-colors;
+}

@@ -5,165 +5,55 @@ import { changeUrl } from '@/router';
 
 const settingStore = useSettingStore();
 
-const themeMode = computed(() => settingStore.displayMode);
-
 </script>
 
 <template>
-  <div class="result-wrapper" :class="themeMode">
-    <div class="result-content">
-      <div class="result-container">
+  <div class="relative flex items-center justify-center w-screen min-h-screen transition-all duration-300 bg-cover bg-center bg-no-repeat page-bg before:absolute before:inset-0 before:bg-white/20 dark:before:bg-black/40 before:transition-colors">
 
-        <div class="result-info">
-          <h1 class="code">404</h1>
-          <h2 class="title">掉出了这个世界......</h2>
-          <p class="desc">越过基岩的边界，只剩无尽的黑夜，<br>请点击重生，寻回原本的世界。</p>
-        </div>
+    <div class="relative z-10 flex flex-col items-center text-center w-[420px] max-w-[90%] p-10 md:p-12 mx-5 bg-white/60 dark:bg-[#1e1e28]/50 backdrop-blur-xl border border-white/40 dark:border-white/15 rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.2)] transition-all duration-300">
 
-        <div class="action-box">
-          <t-button
-            theme="primary"
-            size="large"
-            block
-            class="home-btn"
-            @click="changeUrl('/')"
-          >
-            返回主页
-          </t-button>
-        </div>
+      <div class="mb-10 w-full">
+        <h1 class="text-[72px] md:text-[96px] font-bold leading-tight m-0 bg-gradient-to-br from-[#40a9ff] to-[#1890ff] dark:from-[#69c0ff] dark:to-[#40a9ff] bg-clip-text text-transparent opacity-90 select-none">
+          404
+        </h1>
 
-        <footer class="copyright">Copyright @ 2021-{{ new Date().getFullYear() }} MSLTeam</footer>
+        <h2 class="text-2xl font-semibold mt-2.5 !mb-4 tracking-wide text-zinc-800 dark:text-white">
+          掉出了这个世界......
+        </h2>
+        <p class="text-sm leading-relaxed !px-5 m-0 text-zinc-600 dark:text-zinc-300/80">
+          越过基岩的边界，只剩无尽的黑夜，<br>请点击重生，寻回原本的世界。
+        </p>
       </div>
+
+      <div class="w-full">
+        <t-button
+          theme="primary"
+          size="large"
+          block
+          class="!rounded-xl !h-12 !text-base shadow-lg shadow-[var(--color-primary)]/20 hover:shadow-[var(--color-primary)]/40 transition-shadow"
+          @click="changeUrl('/')"
+        >
+          返回主页
+        </t-button>
+      </div>
+
+      <footer class="mt-8 text-xs text-zinc-500 dark:text-zinc-400/60 font-mono tracking-wider">
+        Copyright @ 2021-{{ new Date().getFullYear() }} MSLTeam
+      </footer>
+
     </div>
   </div>
 </template>
 
 <style lang="less" scoped>
-.result-wrapper {
-  width: 100vw;
-  min-height: 100vh;
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  transition: all 0.3s ease;
+@reference "@/style/tailwind/index.css";
+
+.page-bg {
   background-image: url('@/assets/bg_light_new.jpg');
 }
 
-.dark.result-wrapper {
+:global(html[theme-mode='dark']) .page-bg,
+:global(html.dark) .page-bg {
   background-image: url('@/assets/bg_night_new.jpg');
-}
-
-.result-container {
-  width: 420px;
-  max-width: 90%;
-  padding: 50px 40px;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  z-index: 10;
-  text-align: center;
-  transition: transform 0.3s ease, background 0.3s ease;
-}
-
-.result-info {
-  margin-bottom: 40px;
-
-  .code {
-    font-size: 96px;
-    font-weight: 700;
-    line-height: 1.1;
-    margin: 0;
-    background: linear-gradient(135deg, #40a9ff 0%, #1890ff 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    opacity: 0.9;
-  }
-
-  .title {
-    font-size: 24px;
-    font-weight: 600;
-    margin-top: 10px;
-    margin-bottom: 16px;
-    letter-spacing: 1px;
-  }
-
-  .desc {
-    font-size: 14px;
-    opacity: 0.7;
-    margin: 0;
-    line-height: 1.6;
-    padding: 0 20px;
-  }
-}
-
-.action-box {
-  width: 100%;
-  .home-btn {
-    border-radius: 8px;
-    height: 48px;
-    font-size: 16px;
-  }
-}
-
-.copyright {
-  text-align: center;
-  font-size: 12px;
-  margin-top: 32px;
-  opacity: 0.6;
-}
-
-.light.result-wrapper {
-  background-color: rgba(255, 255, 255, 0.2);
-
-  .result-container {
-    background: rgba(255, 255, 255, 0.65);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-
-    .title, .desc, .copyright {
-      color: #333;
-    }
-  }
-}
-
-.dark.result-wrapper {
-  background-color: rgba(0, 0, 0, 0.2);
-  background-blend-mode: overlay;
-
-  .result-container {
-    background: rgba(30, 30, 40, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-
-    .title, .desc, .copyright {
-      color: #fff;
-    }
-
-    .code {
-      background: linear-gradient(135deg, #69c0ff 0%, #40a9ff 100%);
-      -webkit-background-clip: text;
-      color: transparent;
-    }
-  }
-}
-
-@media (max-width: 768px) {
-  .result-container {
-    width: 100%;
-    margin: 20px;
-    padding: 40px 24px;
-  }
-
-  .result-info .code {
-    font-size: 72px;
-  }
 }
 </style>

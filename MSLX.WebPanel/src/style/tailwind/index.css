@@ -1,0 +1,58 @@
+@import "tailwindcss";
+@import "./components/tag.css";
+@import "./components/alert.css";
+@import "./components/dropdown.css";
+@import "./components/button.css";
+@import "./components/dialog.css";
+@import "./components/form.css";
+@import "./components/table.css";
+@import "./components/timeline.css";
+@import "./components/collapse.css";
+@import "./components/radio.css";
+@import "./components/checkbox.css";
+@custom-variant dark (&:where([theme-mode="dark"], [theme-mode="dark"] *));
+
+@theme {
+  --color-primary: var(--td-brand-color);
+  --color-primary-hover: var(--td-brand-color-hover);
+  --color-primary-active: var(--td-brand-color-active);
+  --color-primary-light: var(--td-brand-color-light);
+
+  --color-success: var(--td-success-color);
+  --color-warning: var(--td-warning-color);
+  --color-error: var(--td-error-color);
+  --color-info: var(--td-info-color);
+
+  --radius-td: var(--td-radius-default);
+}
+
+/* 全局劫持TDESIGN！！！ */
+
+:root,
+html[theme-mode='light'] {
+  --td-bg-color-page: var(--color-zinc-50) !important;
+  --td-bg-color-container: var(--color-white) !important;
+  --td-bg-color-secondarycontainer: var(--color-zinc-100) !important;
+
+  --td-component-border: color-mix(in srgb, var(--color-zinc-200), transparent 50%) !important;
+  --td-border-level-1-color: color-mix(in srgb, var(--color-zinc-200), transparent 20%) !important;
+  --td-border-level-2-color: var(--color-zinc-200) !important;
+
+  --td-text-color-primary: var(--color-zinc-900) !important;
+  --td-text-color-secondary: var(--color-zinc-500) !important;
+}
+
+html[theme-mode='dark'] {
+  --td-bg-color-page: var(--color-zinc-900) !important;
+
+  --td-bg-color-container: var(--color-zinc-800) !important;
+
+  --td-bg-color-secondarycontainer: var(--color-zinc-700) !important;
+
+  --td-component-border: color-mix(in srgb, var(--color-zinc-700), transparent 50%) !important;
+  --td-border-level-1-color: color-mix(in srgb, var(--color-zinc-700), transparent 20%) !important;
+  --td-border-level-2-color: var(--color-zinc-700) !important;
+
+  --td-text-color-primary: var(--color-zinc-100) !important;
+  --td-text-color-secondary: var(--color-zinc-400) !important;
+}

@@ -132,19 +132,23 @@ const handleDropdownClick = async (dropdownItem: any, playerName: string) => {
 </script>
 
 <template>
-  <t-card :bordered="false" class="player-list-card">
-    <div class="header-row">
-      <div class="title">
-        <usergroup-icon /> 在线玩家 <span class="count" v-if="status === 2">({{ onlinePlayers.length }})</span>
+  <div class="design-card flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-5">
+
+    <div class="flex justify-between items-center mb-4 pb-4 border-b border-zinc-200/60 dark:border-zinc-700/60">
+      <div class="flex items-center gap-1.5 font-bold text-sm text-zinc-800 dark:text-zinc-200 m-0">
+        <usergroup-icon size="16px" class="text-zinc-500 dark:text-zinc-400" />
+        在线玩家
+        <span v-if="status === 2" class="text-xs font-medium text-zinc-400 dark:text-zinc-500">({{ onlinePlayers.length }})</span>
       </div>
-      <t-button size="small" variant="text" theme="primary" @click="showManager = true" :disabled="status === 0">
+
+      <t-button size="small" variant="text" theme="primary" class="!rounded-md hover:!bg-[var(--color-primary)]/10 transition-colors" @click="showManager = true" :disabled="status === 0">
         <template #icon><setting-icon /></template>管理
       </t-button>
     </div>
 
-    <div class="content-area">
+    <div class="flex-1 min-h-[40px]">
       <template v-if="status === 2">
-        <t-space v-if="onlinePlayers.length > 0" break-line size="small">
+        <div v-if="onlinePlayers.length > 0" class="flex flex-wrap gap-2">
           <t-dropdown
             v-for="player in onlinePlayers"
             :key="player"
@@ -153,79 +157,23 @@ const handleDropdownClick = async (dropdownItem: any, playerName: string) => {
             placement="bottom-left"
             @click="(item) => handleDropdownClick(item, player)"
           >
-            <t-tag class="player-tag" variant="light" hoverable>
-              <template #icon>
-                <img :src="`https://minotar.net/helm/${player}/16.png`" class="player-avatar" />
-              </template>
+            <div class="flex items-center gap-1.5 px-2 py-1 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:border-[var(--color-primary)]/50 hover:bg-[var(--color-primary)]/5 rounded-md cursor-pointer transition-colors text-xs font-bold text-zinc-700 dark:text-zinc-300 shadow-sm">
+              <img :src="`https://minotar.net/helm/${player}/16.png`" class="w-3.5 h-3.5 rounded-[2px] shadow-sm [image-rendering:pixelated]" />
               {{ player }}
-            </t-tag>
+            </div>
           </t-dropdown>
-        </t-space>
-        <div v-else class="empty-text">当前无人在线</div>
+        </div>
+
+        <div v-else class="py-4 text-center text-xs font-medium text-zinc-400 dark:text-zinc-500">当前无人在线</div>
       </template>
-      <div v-else class="empty-text">服务器未运行</div>
+
+      <div v-else class="py-4 text-center text-xs font-medium text-zinc-400 dark:text-zinc-500">服务器未运行</div>
     </div>
 
     <player-manager-dialog v-model:visible="showManager" :server-id="serverId" :is-running="status === 2" />
-  </t-card>
+  </div>
 </template>
 
-<style scoped lang="less">
-.player-list-card {
-  :deep(.t-card__body) {
-    padding: 16px;
-  }
-
-  .header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-
-    .title {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--td-text-color-primary);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-
-      .count {
-        color: var(--td-text-color-placeholder);
-        font-size: 13px;
-        font-weight: normal;
-      }
-    }
-  }
-
-  .content-area {
-    min-height: 40px;
-
-    .player-tag {
-      cursor: pointer;
-      border: 1px solid transparent;
-      transition: all 0.2s;
-
-      &:hover {
-        border-color: var(--td-brand-color);
-        background-color: color-mix(in srgb, var(--td-brand-color), transparent 90%);
-      }
-
-      .player-avatar {
-        width: 14px;
-        height: 14px;
-        border-radius: 2px;
-        margin-right: 4px;
-        image-rendering: pixelated;
-      }
-    }
-
-    .empty-text {
-      color: var(--td-text-color-placeholder);
-      font-size: 13px;
-      text-align: center;
-      padding: 10px 0;
-    }
-  }
-}
+<style scoped>
+@reference "@/style/tailwind/index.css";
 </style>

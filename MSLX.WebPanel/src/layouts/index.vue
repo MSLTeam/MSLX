@@ -101,9 +101,8 @@ watch(
 
 .global-layout-bg.custom-theme-enabled {
   color: var(--td-text-color-primary);
-  --current-comp-op: var(--comp-op-light); // 目前组件透明度
+  --current-comp-op: var(--comp-op-light);
 
-  // 使用伪元素控制背景图透明度
   &::before {
     content: '';
     position: fixed;
@@ -115,12 +114,9 @@ watch(
     background-repeat: no-repeat;
     background-position: center center;
     background-size: cover;
-
     background-image: var(--bg-img-light);
     opacity: var(--bg-op-light);
-    transition:
-      background-image 0.3s ease,
-      opacity 0.3s ease;
+    transition: background-image 0.3s ease, opacity 0.3s ease;
   }
 
   &.dark::before,
@@ -132,8 +128,14 @@ watch(
   // 布局透明
   :deep(.t-layout),
   :deep(.t-layout__content),
-  :deep(.t-content) {
+  :deep(.t-content),
+  :deep(.t-layout__header),
+  :deep(.t-header),
+  :deep(.t-layout__sider),
+  :deep(.t-aside) {
     background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
   }
 
   // 清除内部背景
@@ -166,28 +168,25 @@ watch(
   }
 
   // 白天组件样式
-  :deep(.t-layout__sider),
-  :deep(.t-aside),
-  :deep(.t-layout__header),
-  :deep(.t-header),
   :deep(.t-card),
   :deep(.design-card),
   :deep(.t-textarea__inner),
   :deep(.t-input-number),
   :deep(.t-input) {
     background-color: rgba(255, 255, 255, var(--comp-op-light)) !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
-    transition:
-      background-color 0.3s,
-      border-color 0.3s;
+    transition: background-color 0.3s, border-color 0.3s;
   }
+
   :deep(.t-input),
   :deep(.t-textarea__inner),
   :deep(.t-input-number) {
     border-color: var(--td-component-border) !important;
   }
+
   // 终端
   :deep(.terminal-wrapper) {
     background-color: rgba(255, 255, 255, var(--comp-op-light)) !important;
@@ -201,21 +200,19 @@ watch(
   :global(html[theme-mode='dark']) & {
     --current-comp-op: var(--comp-op-dark);
 
-    :deep(.t-layout__sider),
-    :deep(.t-aside),
-    :deep(.t-layout__header),
-    :deep(.t-header),
     :deep(.design-card),
     :deep(.t-card) {
       background-color: rgba(20, 20, 20, var(--comp-op-dark)) !important;
-      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
     }
+
     :deep(.t-input),
     :deep(.t-textarea__inner),
     :deep(.t-input-number) {
       background-color: transparent !important;
       border-color: var(--td-component-border) !important;
     }
+
     // 终端
     :deep(.terminal-wrapper) {
       background-color: rgba(20, 20, 20, var(--comp-op-dark)) !important;

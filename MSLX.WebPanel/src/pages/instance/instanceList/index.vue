@@ -1,10 +1,11 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import { onMounted, reactive } from 'vue';
 import {
-  DeleteIcon,
+  AddIcon,
   CheckCircleFilledIcon,
   CloseCircleFilledIcon,
   CpuIcon,
+  DeleteIcon,
   LoadingIcon,
   MinusCircleFilledIcon,
   RefreshIcon,
@@ -123,331 +124,172 @@ const handleConfirmDelete = async () => {
 </script>
 
 <template>
-  <div class="server-list-container">
-    <div class="page-header">
-      <h2 class="title">服务端列表</h2>
-      <t-space>
-        <t-button theme="primary" variant="dashed" @click="store.refreshInstanceList"> 刷新列表 </t-button>
-        <t-button v-if="userStore.isAdmin" theme="primary" @click="changeUrl('/instance/create')"> 添加服务端 </t-button></t-space
-      >
+  <div class="mx-auto flex flex-col gap-6 text-zinc-800 dark:text-zinc-200 pb-5">
+    <div
+      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm text-left"
+    >
+      <div class="flex flex-col gap-1 items-start">
+        <h2 class="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100 m-0">服务端列表</h2>
+        <p class="text-sm text-zinc-500 dark:text-zinc-400 m-0">
+          管理您的 Minecraft 服务器实例，监控运行状态与核心版本
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <t-button variant="dashed" @click="store.refreshInstanceList">
+          <template #icon><refresh-icon /></template>
+          刷新列表
+        </t-button>
+        <t-button v-if="userStore.isAdmin" theme="primary" @click="changeUrl('/instance/create')">
+          <template #icon><add-icon /></template>
+          添加服务端
+        </t-button>
+      </div>
     </div>
 
-    <t-loading :loading="false" text="加载中..." fullscreen />
-
-    <t-row :gutter="[24, 24]">
-      <t-col v-for="item in store.instanceList" :key="item.id" :xs="12" :sm="6" :md="4" :lg="3" :xl="3">
-        <t-card class="server-card" :class="`status-${item.status}`" :bordered="false" @click="handleCardClick(item)">
-          <div class="card-header">
-            <div class="icon-wrapper" :class="`status-${item.status}`">
-              <t-avatar :image="getImageUrl(item.icon, item.id)" size="large" shape="round" class="server-icon" />
-            </div>
-
-            <div class="status-badge">
-              <t-tag :theme="getStatusConfig(item.status).theme as any" variant="light" shape="round">
-                <template #icon>
-                  <component
-                    :is="getStatusConfig(item.status).icon"
-                    :class="{ 'spin-icon': getStatusConfig(item.status).loading }"
-                  />
-                </template>
-                {{ getStatusConfig(item.status).label }}
-              </t-tag>
-            </div>
-          </div>
-
-          <div class="card-content">
-            <h3 class="server-name text-ellipsis">{{ item.name }}</h3>
-            <div class="server-info">
-              <div class="info-item">
-                <cpu-icon class="info-icon" />
-                <span>{{ formatCore(item.core) }}</span>
-              </div>
-              <div class="info-item id-tag">
-                <span>#{{ item.id }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="card-actions">
-            <span class="action-hint">点击管理</span>
-            <t-button
-              v-if="userStore.isAdmin"
-              shape="circle"
-              theme="danger"
-              variant="text"
-              class="delete-btn"
-              @click="(e) => handleDelete(e, item)"
+    <div v-loading="false" class="relative min-h-[400px]">
+      <template v-if="store.instanceList && store.instanceList.length > 0">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
+          <div
+            v-for="(item, index) in store.instanceList"
+            :key="item.id"
+            class="list-item-anim h-full"
+            :style="{ animationDelay: `${index * 0.05}s` }"
+          >
+            <div
+              class="design-card h-full group flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm hover:shadow-md hover:border-[var(--color-primary)]/50 transition-colors duration-300 p-5 gap-4 cursor-pointer"
+              @click="handleCardClick(item)"
             >
-              <delete-icon />
-            </t-button>
-          </div>
-        </t-card>
-      </t-col>
-    </t-row>
+              <div class="flex items-center gap-4">
+                <div class="relative shrink-0">
+                  <t-avatar
+                    :image="getImageUrl(item.icon, item.id)"
+                    class="shadow-sm border border-zinc-200/50 dark:border-zinc-700/50 !bg-zinc-100 dark:!bg-zinc-700 !rounded-xl"
+                    shape="round"
+                    size="56px"
+                  />
+                  <span class="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5">
+                    <span
+                      v-if="item.status === 2"
+                      class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"
+                    ></span>
+                    <span
+                      :class="item.status === 2 ? 'bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-600'"
+                      class="relative inline-flex rounded-full h-3.5 w-3.5 border-2 border-white dark:border-zinc-800"
+                    ></span>
+                  </span>
+                </div>
 
-    <div v-if="store.instanceList.length === 0" class="empty-state">
-      <t-empty description="暂无服务端实例" />
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center">
+                    <h4 class="text-base font-bold text-zinc-900 dark:text-zinc-100 truncate tracking-tight">
+                      {{ item.name }}
+                    </h4>
+                    <span class="text-xs font-mono text-zinc-400 dark:text-zinc-500 ml-2 opacity-70 shrink-0"
+                      >#{{ item.id }}</span
+                    >
+                  </div>
+
+                  <div class="mt-2 flex items-center gap-4">
+                    <div class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+                      <cpu-icon class="opacity-80" size="14px" />
+                      <span class="truncate font-medium">{{ formatCore(item.core) }}</span>
+                    </div>
+                    <div
+                      :class="
+                        getStatusConfig(item.status).theme === 'success'
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-zinc-600 dark:text-zinc-400'
+                      "
+                      class="text-xs font-bold"
+                    >
+                      {{ getStatusConfig(item.status).label }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="flex items-center justify-between pt-3 mt-auto border-t border-dashed border-zinc-200 dark:border-zinc-700/60"
+              >
+                <span
+                  class="text-xs text-zinc-400 dark:text-zinc-500 group-hover:text-[var(--color-primary)] transition-colors font-semibold"
+                >
+                  控制台 →
+                </span>
+                <div class="flex items-center gap-1">
+                  <t-button
+                    v-if="userStore.isAdmin"
+                    class="hover:!bg-red-500/10"
+                    shape="circle"
+                    size="small"
+                    theme="danger"
+                    variant="text"
+                    @click.stop="(e) => handleDelete(e, item)"
+                  >
+                    <template #icon><delete-icon size="32" /></template>
+                  </t-button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <div
+        v-else
+        class="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-zinc-800/40 rounded-2xl border-2 border-dashed border-zinc-200/50 dark:border-zinc-700/50"
+      >
+        <t-empty class="!bg-transparent" description="暂无服务端实例" />
+      </div>
     </div>
 
     <t-dialog
       v-model:visible="deleteState.visible"
-      header="确认删除"
-      theme="danger"
-      :confirm-btn="{ content: '确认删除', loading: deleteState.loading }"
+      :confirm-btn="{ content: '确认删除', theme: 'danger' }"
+      cancel-btn="取消"
+      header="确认删除服务端"
       @confirm="handleConfirmDelete"
     >
       <div class="delete-dialog-body">
-        <p>
-          您确定要删除服务端 <strong>{{ deleteState.item?.name }}</strong> (ID: {{ deleteState.item?.id }}) 吗？
-        </p>
-        <p class="warning-text">此操作不可恢复！</p>
+        <div class="alert-zinc bg-red-500/5 border border-red-500/20 p-4 rounded-xl mb-4">
+          <p class="text-zinc-900 dark:text-zinc-100 font-bold mb-1">
+            您确定要删除 <span class="text-red-500">{{ deleteState.item?.name }}</span> 吗？
+          </p>
+          <p class="text-xs text-red-500/80 italic">此操作不可撤销，服务端配置与运行记录将被抹除。</p>
+        </div>
 
-        <div class="checkbox-area">
-          <t-checkbox v-model="deleteState.deleteFile">同时删除服务端文件数据</t-checkbox>
+        <div class="px-1">
+          <t-checkbox v-model="deleteState.deleteFile">
+            <span class="text-zinc-600 dark:text-zinc-400 text-sm">同时清理磁盘上的服务端数据文件</span>
+          </t-checkbox>
         </div>
       </div>
     </t-dialog>
   </div>
 </template>
 
-<style scoped lang="less">
-@card-radius: 16px;
-@transition-speed: 0.3s;
+<style scoped>
+@reference "@/style/tailwind/index.css";
 
-.server-list-container {
-  padding: 12px;
-
-  .page-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 24px;
-
-    .title {
-      font-size: 24px;
-      font-weight: 700;
-      color: var(--td-text-color-primary);
-      margin: 0;
-    }
-  }
+.list-item-anim {
+  animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  will-change: transform, opacity;
 }
 
-.server-card {
-  position: relative;
-  border-radius: @card-radius;
-  background: var(--td-bg-color-container);
-  transition: all @transition-speed cubic-bezier(0.34, 1.56, 0.64, 1);
-  cursor: pointer;
-  overflow: hidden;
-  box-shadow: var(--td-shadow-1);
-  border: 1px solid transparent;
-
-  // 运行中绿色条
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 5.1px; // 反正就是这个数好看qwq
-    background: transparent;
-    transition: background-color 0.3s;
-    z-index: 1;
-    background: var(--td-component-stroke); // 没运行的颜色
-    border-top-left-radius: @card-radius;
-    border-top-right-radius: @card-radius;
-  }
-
-  // 状态 1: 启动中 (主色)
-  &.status-1::before,
-  &.status-4::before {
-    background: var(--td-brand-color);
-  }
-  // 状态 2: 运行中 (绿色/成功色)
-  &.status-2::before {
-    background: var(--td-success-color);
-  }
-  // 状态 3: 停止中 (橙色/警告色)
-  &.status-3::before {
-    background: var(--td-warning-color);
-  }
-  // 状态 4: 重启中
-  &.status-4::before {
-    background: var(--td-brand-color-focus);
-  }
-
-  // 悬浮效果：上浮 + 阴影增强 + 边框高亮
-  &:hover {
-    transform: translateY(-6px);
-    box-shadow: var(--td-shadow-3);
-    border-color: var(--td-brand-color-light);
-
-    .delete-btn {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    .action-hint {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  // 内部布局
-  :deep(.t-card__body) {
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-}
-
-// 头部区域样式
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-
-  .icon-wrapper {
-    position: relative;
-    padding: 2px;
-    border-radius: 14px;
-    border: 2px solid transparent;
-    transition: border-color 0.3s;
-
-    // 状态 1 & 4 (启动/重启): 蓝色光环
-    &.status-1,
-    &.status-4 {
-      border-color: var(--td-brand-color);
-    }
-    // 状态 2 (运行): 绿色光环
-    &.status-2 {
-      border-color: var(--td-success-color);
-    }
-    // 状态 3 (停止): 橙色光环
-    &.status-3 {
-      border-color: var(--td-warning-color);
-    }
-
-    .server-icon {
-      background-color: var(--td-bg-color-secondarycontainer);
-      color: var(--td-brand-color);
-    }
-  }
-}
-
-.spin-icon {
-  animation: t-spin 1s linear infinite;
-}
-
-@keyframes t-spin {
+@keyframes slideUp {
   from {
-    transform: rotate(0deg);
+    opacity: 0;
+    transform: translateY(16px);
   }
   to {
-    transform: rotate(360deg);
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-// 内容区域样式
-.card-content {
-  .server-name {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--td-text-color-primary);
-    margin: 0 0 8px 0;
-    line-height: 1.4;
-  }
-
-  .server-info {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 13px;
-    color: var(--td-text-color-secondary);
-
-    .info-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      background: var(--td-bg-color-secondarycontainer);
-      padding: 4px 10px;
-      border-radius: 8px;
-
-      .info-icon {
-        font-size: 14px;
-      }
-    }
-
-    .id-tag {
-      background: transparent;
-      border: 1px solid var(--td-component-border);
-      color: var(--td-text-color-placeholder);
-      font-family: monospace;
-    }
-  }
-}
-
-// 底部操作栏样式
-.card-actions {
-  margin-top: 8px;
-  padding-top: 16px;
-  border-top: 1px dashed var(--td-component-stroke);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  height: 32px;
-
-  .action-hint {
-    font-size: 12px;
-    color: var(--td-brand-color);
-    font-weight: 500;
-    opacity: 0; // 默认隐藏，hover显示
-    transform: translateX(-10px);
-    transition: all 0.3s ease;
-  }
-
-  .delete-btn {
-    opacity: 0; // 默认隐藏，保持界面清爽
-    transform: scale(0.8);
-    transition: all 0.2s ease;
-    margin-left: auto; // 靠右
-
-    &:hover {
-      background: var(--td-error-color-light);
-      color: var(--td-error-color);
-    }
-  }
-
-  // 移动端默认显示删除按钮
-  @media (max-width: 768px) {
-    .delete-btn {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-}
-
-// 通用工具类
-.text-ellipsis {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.empty-state {
-  padding: 60px 0;
-}
-
-// 弹窗
-.warning-text {
-  color: var(--td-error-color);
-  font-size: 12px;
-  margin-bottom: 10px;
-}
-.checkbox-area {
-  margin-top: 15px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--td-component-stroke);
+/* 深度适配 TDesign */
+:deep(.t-avatar) {
+  @apply ring-1 ring-zinc-200/50 dark:ring-zinc-700/50;
 }
 </style>

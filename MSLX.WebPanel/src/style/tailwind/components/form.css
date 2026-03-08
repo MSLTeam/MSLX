@@ -1,0 +1,46 @@
+/* ================= 表单与输入框组件统一风格 ================= */
+.t-input, .t-textarea__inner, .t-select__wrap .t-input {
+  @apply shadow-sm rounded-xl transition-shadow bg-white dark:bg-zinc-900;
+  border: none !important;
+  box-shadow: inset 0 0 0 1px #e4e4e7;
+}
+
+html[theme-mode='dark'] .t-input, .dark .t-input,
+html[theme-mode='dark'] .t-textarea__inner, .dark .t-textarea__inner {
+  box-shadow: inset 0 0 0 1px #3f3f46;
+}
+
+.t-input:focus-within, .t-textarea__inner:focus, .t-input--focused {
+  box-shadow: inset 0 0 0 2px var(--color-primary) !important;
+}
+
+.t-input__inner, .t-textarea__inner {
+  @apply text-zinc-700 dark:text-zinc-200;
+}
+
+.t-input__inner::placeholder, .t-textarea__inner::placeholder {
+  @apply text-zinc-400 dark:text-zinc-500;
+}
+
+/* 表单 Label 标签 */
+.t-form__label {
+  @apply text-zinc-700 dark:text-zinc-300 font-medium text-sm mb-1;
+}
+
+/* ================= 多选下拉框内部标签风格 ================= */
+.t-select-input__wrap .t-tag,
+.t-select__wrap .t-tag {
+  @apply !inline-flex !items-center !h-auto !py-0.5 !px-2 !rounded-md !bg-zinc-200/50 dark:!bg-zinc-700/50 !border-none !text-zinc-700 dark:!text-zinc-300 !font-medium !text-xs !m-0.5;
+  max-width: calc(100% - 8px) !important;
+}
+
+.t-select-input__wrap .t-tag__text,
+.t-select__wrap .t-tag__text {
+  @apply !truncate;
+}
+
+/* 关闭标签图标居中适配 */
+.t-select-input__wrap .t-tag__close,
+.t-select__wrap .t-tag__close {
+  @apply !mt-0.5 !ml-1 !text-zinc-400 hover:!text-red-500 transition-colors;
+}

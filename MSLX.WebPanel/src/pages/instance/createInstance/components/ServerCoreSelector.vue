@@ -192,397 +192,175 @@ watch(
   <t-dialog
     v-model:visible="isVisible"
     header="选择服务端核心"
-    width="85%"
+    width="90%"
     top="5vh"
     attach="body"
     :footer="false"
     destroy-on-close
     class="core-selector-dialog"
   >
-    <div class="core-selector-layout">
-      <div class="sidebar">
-        <div class="sidebar-title">服务端分类</div>
-        <div class="sidebar-desc">选择您需要的服务端类型</div>
+    <div class="flex flex-col md:flex-row h-[75vh] bg-zinc-50 dark:bg-zinc-900/80 overflow-hidden">
 
-        <t-loading v-if="loadingCategories" :loading="loadingCategories" size="small" text="加载分类中..." />
+      <div class="w-full md:w-64 lg:w-72 shrink-0 bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md border-b md:border-b-0 md:border-r border-zinc-200/70 dark:border-zinc-700/60 flex flex-col z-10 shadow-[2px_0_8px_rgba(0,0,0,0.02)]">
 
-        <div v-else class="category-list">
-          <div
-            v-for="cat in categoryConfig"
-            :key="cat.key"
-            class="category-item"
-            :class="{ active: currentCategoryKey === cat.key }"
-            @click="handleCategoryChange(cat.key)"
-          >
-            <div class="cat-icon">
-              <t-icon :name="cat.icon" />
-            </div>
-            <div class="cat-info">
-              <div class="cat-name">{{ cat.name }}</div>
-              <div class="cat-desc">{{ cat.desc }}</div>
-              <div v-if="categoryData[cat.dataKey]" class="cat-count">
-                {{ categoryData[cat.dataKey]?.length || 0 }} 个核心
+        <div class="hidden md:block p-5 pb-3">
+          <h3 class="text-base font-extrabold text-zinc-900 dark:text-zinc-100 m-0 tracking-tight">服务端分类</h3>
+          <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1 font-medium">选择您需要的底层架构类型</p>
+        </div>
+
+        <div class="flex-1 overflow-x-auto md:overflow-y-auto custom-scrollbar flex flex-row md:flex-col gap-2 p-3 md:p-4 hide-scrollbar-on-mobile">
+          <t-loading v-if="loadingCategories" :loading="loadingCategories" size="small" text="加载分类中..." class="m-auto" />
+
+          <template v-else>
+            <div
+              v-for="cat in categoryConfig"
+              :key="cat.key"
+              class="group flex items-center md:items-start gap-3 p-2.5 md:p-3 rounded-xl cursor-pointer border border-transparent transition-all duration-300 shrink-0 md:shrink"
+              :class="currentCategoryKey === cat.key ? 'bg-[var(--color-primary)]/10 border-[var(--color-primary)]/20 shadow-sm' : 'hover:bg-zinc-100 dark:hover:bg-zinc-700/50 hover:border-zinc-200 dark:hover:border-zinc-600'"
+              @click="handleCategoryChange(cat.key)"
+            >
+              <div
+                class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors"
+                :class="currentCategoryKey === cat.key ? 'bg-[var(--color-primary)] text-white shadow-md shadow-[var(--color-primary)]/30' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200'"
+              >
+                <t-icon :name="cat.icon" size="20px" />
+              </div>
+
+              <div class="flex flex-col min-w-0 pr-2 md:pr-0">
+                <div
+                  class="font-bold text-sm truncate transition-colors"
+                  :class="currentCategoryKey === cat.key ? 'text-[var(--color-primary)]' : 'text-zinc-700 dark:text-zinc-300'"
+                >
+                  {{ cat.name }}
+                </div>
+                <div class="hidden md:block text-[11px] text-zinc-500 dark:text-zinc-400 leading-snug mt-0.5">{{ cat.desc }}</div>
+                <div v-if="categoryData[cat.dataKey]" class="hidden md:inline-flex items-center mt-1.5 w-max px-1.5 py-0.5 rounded bg-zinc-200/50 dark:bg-zinc-700/50 text-zinc-500 dark:text-zinc-400 text-[10px] font-mono font-bold">
+                  {{ categoryData[cat.dataKey]?.length || 0 }} CORES
+                </div>
               </div>
             </div>
-          </div>
+          </template>
         </div>
       </div>
 
-      <div class="main-panel">
-        <div class="panel-section">
-          <div class="section-header">
-            <div class="section-title">选择服务端核心</div>
-            <t-input v-model="searchText" placeholder="搜索核心..." class="search-input">
-              <template #suffix-icon><t-icon name="search" /></template>
+      <div class="flex-1 flex flex-col min-w-0 relative overflow-y-auto md:overflow-hidden">
+
+        <div class="flex-1 flex flex-col min-h-[240px] shrink-0 md:min-h-0 md:shrink p-4 sm:p-6 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 bg-white/40 dark:bg-zinc-900/40">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
+            <div class="flex items-center gap-2">
+              <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
+              <h3 class="text-sm font-bold text-zinc-800 dark:text-zinc-200 m-0">选择服务端核心</h3>
+            </div>
+            <t-input v-model="searchText" placeholder="搜索核心名称..." class="!w-full sm:!w-64 !bg-white dark:!bg-zinc-800">
+              <template #prefix-icon><t-icon name="search" class="opacity-60" /></template>
             </t-input>
           </div>
 
-          <div class="core-grid">
-            <div
-              v-for="coreName in filteredCores"
-              :key="coreName"
-              class="core-card"
-              :class="{ active: selectedCore === coreName }"
-              @click="handleCoreSelect(coreName)"
-            >
-              {{ coreName }}
-              <t-icon v-if="selectedCore === coreName" name="check" class="check-icon" />
+          <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 pb-2">
+            <div v-if="filteredCores.length > 0" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              <div
+                v-for="coreName in filteredCores"
+                :key="coreName"
+                class="group relative flex items-center justify-center p-4 rounded-xl border bg-white dark:bg-zinc-800 cursor-pointer transition-all duration-300 select-none overflow-hidden"
+                :class="selectedCore === coreName ? 'border-[var(--color-primary)] shadow-md shadow-[var(--color-primary)]/20' : 'border-zinc-200 dark:border-zinc-700 hover:border-[var(--color-primary)]/50 hover:shadow-sm'"
+                @click="handleCoreSelect(coreName)"
+              >
+                <div
+                  class="absolute inset-0 bg-[var(--color-primary)] transition-transform duration-300 origin-bottom"
+                  :class="selectedCore === coreName ? 'scale-y-100 opacity-100' : 'scale-y-0 opacity-0'"
+                ></div>
+
+                <span
+                  class="relative z-10 font-extrabold text-sm truncate transition-colors duration-300"
+                  :class="selectedCore === coreName ? 'text-white' : 'text-zinc-700 dark:text-zinc-300 group-hover:text-[var(--color-primary)]'"
+                >
+                  {{ coreName }}
+                </span>
+
+                <t-icon v-if="selectedCore === coreName" name="check" class="absolute top-2 right-2 text-white/80 text-sm z-10" />
+              </div>
             </div>
-            <div v-if="filteredCores.length === 0" class="empty-text">该分类下暂无核心</div>
+
+            <div v-else class="h-full flex flex-col items-center justify-center opacity-60">
+              <t-icon name="search" size="32px" class="text-zinc-400 mb-2" />
+              <span class="text-sm text-zinc-500 font-medium">该分类下暂无匹配的核心</span>
+            </div>
           </div>
         </div>
 
-        <div v-if="selectedCore" class="panel-section">
-          <t-divider />
-          <div class="section-header">
-            <div class="section-title">{{ selectedCore }} 版本列表</div>
-            <t-button size="small" variant="text" @click="fetchVersions(selectedCore)">
-              <template #icon><t-icon name="refresh" /></template>刷新
+        <div class="flex-1 flex flex-col min-h-[240px] shrink-0 md:min-h-0 md:shrink p-4 sm:p-6 bg-zinc-50/50 dark:bg-zinc-800/30">
+          <div class="flex items-center justify-between mb-4 shrink-0">
+            <div class="flex items-center gap-2">
+              <div class="w-1 h-4 bg-emerald-500 rounded-full"></div>
+              <h3 class="text-sm font-bold text-zinc-800 dark:text-zinc-200 m-0">
+                <span v-if="selectedCore" class="text-[var(--color-primary)] mr-1">{{ selectedCore }}</span>
+                支持版本列表
+              </h3>
+            </div>
+
+            <t-button v-if="selectedCore" size="small" variant="text" class="hover:!bg-zinc-200/50 dark:hover:!bg-zinc-700/50" @click="fetchVersions(selectedCore)">
+              <template #icon><t-icon name="refresh" /></template>刷新版本
             </t-button>
           </div>
 
-          <t-loading :loading="loadingVersions" size="small" text="获取版本中..." class="loading-wrapper">
-            <div class="version-grid">
-              <div v-for="ver in versionList" :key="ver" class="version-item" @click="handleVersionSelect(ver)">
-                {{ ver }}
+          <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 pb-2 relative">
+            <t-loading v-if="loadingVersions" :loading="loadingVersions" size="small" text="获取版本中..." class="absolute inset-0 m-auto" />
+
+            <template v-else>
+              <div v-if="!selectedCore" class="h-full flex items-center justify-center">
+                <span class="text-sm font-medium text-zinc-400 dark:text-zinc-500 bg-white dark:bg-zinc-800 px-4 py-2 rounded-full shadow-sm border border-zinc-200/50 dark:border-zinc-700/50">请先在上方选择一个核心</span>
               </div>
-              <div v-if="versionList.length === 0 && !loadingVersions" class="empty-text">未找到该核心的版本信息</div>
-            </div>
-          </t-loading>
+
+              <div v-else-if="versionList.length > 0" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2">
+                <div
+                  v-for="ver in versionList"
+                  :key="ver"
+                  class="flex items-center justify-center px-2 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-xs font-mono font-bold text-zinc-600 dark:text-zinc-300 cursor-pointer shadow-sm transition-all hover:bg-[var(--color-primary)]/10 hover:border-[var(--color-primary)]/40 hover:text-[var(--color-primary)] hover:-translate-y-0.5 active:translate-y-0"
+                  @click="handleVersionSelect(ver)"
+                >
+                  {{ ver }}
+                </div>
+              </div>
+
+              <div v-else class="h-full flex items-center justify-center opacity-60">
+                <span class="text-sm text-zinc-500 font-medium">未找到该核心的版本信息</span>
+              </div>
+            </template>
+          </div>
         </div>
+
       </div>
     </div>
   </t-dialog>
 </template>
 
 <style scoped lang="less">
-@import '@/style/scrollbar';
-.core-selector-layout {
-  display: flex;
-  height: 75vh; // 固定高度，内部滚动
-  border-top: 1px solid var(--td-border-level-2-color);
+@import '@/style/scrollbar.less';
+@reference "@/style/tailwind/index.css";
+
+:deep(.t-dialog__body) {
+  @apply !p-0 !overflow-hidden;
 }
 
-// 左侧侧边栏
-.sidebar {
-  width: 300px;
-  background-color: var(--td-bg-color-secondarycontainer);
-  border-right: 1px solid var(--td-border-level-2-color);
-  display: flex;
-  flex-direction: column;
-  padding: 16px;
-  flex-shrink: 0;
-
-  &-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--td-text-color-primary);
-    margin-bottom: 4px;
-  }
-
-  &-desc {
-    font-size: 12px;
-    color: var(--td-text-color-secondary);
-    margin-bottom: 16px;
-  }
+:deep(.t-dialog__header) {
+  @apply !pb-4 border-b border-zinc-100 dark:border-zinc-800;
 }
 
-.category-list {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+/* 滚动条混入 */
+.custom-scrollbar {
   .scrollbar-mixin();
-  position: relative !important;
-  padding-right: 4px;
 }
 
-.category-item {
-  display: flex;
-  align-items: flex-start;
-  padding: 12px;
-  border-radius: var(--td-radius-medium);
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition: all 0.2s;
-  background-color: var(--td-bg-color-container);
-
-  &:hover {
-    background-color: var(--td-bg-color-component-hover);
-  }
-
-  &.active {
-    background-color: var(--td-brand-color-light);
-    border-color: var(--td-brand-color);
-
-    .cat-name {
-      color: var(--td-brand-color);
-    }
-    .cat-icon {
-      color: var(--td-brand-color);
-    }
-  }
-
-  .cat-icon {
-    font-size: 20px;
-    margin-right: 12px;
-    margin-top: 2px;
-    color: var(--td-text-color-secondary);
-  }
-
-  .cat-info {
-    flex: 1;
-    .cat-name {
-      font-weight: 500;
-      font-size: 14px;
-      margin-bottom: 2px;
-    }
-    .cat-desc {
-      font-size: 12px;
-      color: var(--td-text-color-placeholder);
-      line-height: 1.4;
-    }
-    .cat-count {
-      margin-top: 4px;
-      font-size: 10px;
-      color: var(--td-brand-color);
-      background: var(--td-bg-color-component);
-      display: inline-block;
-      padding: 0 4px;
-      border-radius: 4px;
-    }
+/* 移动端隐藏横向滚动条以保持美观 */
+.hide-scrollbar-on-mobile::-webkit-scrollbar {
+  @media (max-width: 768px) {
+    display: none;
   }
 }
-
-// 右侧主面板
-.main-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 0 24px;
-  overflow-y: hidden; // 让内部滚动
-}
-
-.panel-section {
-  display: flex;
-  flex-direction: column;
-  padding: 16px 0;
-
-  &:first-child {
-    flex: 1; // 核心列表占多一点空间
-    min-height: 0;
-  }
-  &:last-child {
-    flex: 1; // 版本列表也占空间
-    min-height: 0;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-  }
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  flex-shrink: 0;
-
-  .section-title {
-    font-size: 16px;
-    font-weight: 600;
-  }
-
-  .search-input {
-    width: 200px;
-  }
-}
-
-// 核心网格
-.core-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 12px;
-  overflow-y: auto;
-  padding-bottom: 8px;
-  padding-right: 4px; // 防止滚动条遮挡
-
-  .core-card {
-    border: 1px solid var(--td-border-level-2-color);
-    border-radius: var(--td-radius-medium);
-    padding: 16px;
-    text-align: center;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s;
-    position: relative;
-    user-select: none;
-
-    &:hover {
-      border-color: var(--td-brand-color-focus);
-      color: var(--td-brand-color);
-    }
-
-    &.active {
-      background-color: var(--td-brand-color);
-      color: #fff;
-      border-color: var(--td-brand-color);
-
-      .check-icon {
-        display: block;
-      }
-    }
-
-    .check-icon {
-      display: none;
-      position: absolute;
-      top: 4px;
-      right: 4px;
-      font-size: 14px;
-    }
-  }
-}
-
-// 版本网格
-.loading-wrapper {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  display: flex;
-}
-
-.version-grid {
-  flex: 1;
-  overflow-y: auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  grid-auto-rows: max-content;
-  gap: 8px;
-  padding-right: 4px;
-
-  .version-item {
-    border: 1px dashed var(--td-border-level-2-color);
-    border-radius: var(--td-radius-small);
-    padding: 8px;
-    text-align: center;
-    font-size: 13px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    transition: all 0.2s;
-
-    &:hover {
-      border-color: var(--td-brand-color);
-      color: var(--td-brand-color);
-      background-color: var(--td-bg-color-container-hover);
-    }
-  }
-}
-
-.empty-text {
-  color: var(--td-text-color-placeholder);
-  text-align: center;
-  padding: 24px;
-  width: 100%;
-}
-
-@media (max-width: 768px) {
-  :deep(.t-dialog) {
-    width: 95vw !important;
-    max-width: 95vw !important;
-  }
-
-  // 垂直堆叠
-  .core-selector-layout {
-    flex-direction: column;
-    height: 70vh;
-  }
-
-  // 侧边栏改为顶部横向或短列表
-  .sidebar {
-    width: 100%;
-    height: 160px; // 固定一个较小的高度
-    border-right: none;
-    border-bottom: 1px solid var(--td-border-level-2-color);
-    padding: 12px;
-
-    // 隐藏描述文字
-    .cat-desc {
-      display: none;
-    }
-
-    // 缩小标题
-    .sidebar-title {
-      font-size: 16px;
-    }
-    .sidebar-desc {
-      display: none;
-    }
-  }
-
-  .category-item {
-    padding: 8px 12px;
-    .cat-icon {
-      font-size: 18px;
-    }
-    .cat-info .cat-name {
-      font-size: 13px;
-    }
-  }
-
-  .main-panel {
-    width: 100%;
-    padding: 12px;
-  }
-
-  .section-header {
-    flex-direction: column; // 垂直排列标题和搜索/按钮
-    align-items: flex-start;
-    gap: 8px;
-
-    .search-input {
-      width: 100%; // 搜索框占满
-    }
-    .t-button {
-      align-self: flex-end; // 按钮靠右
-    }
-  }
-
-  // 网格更加紧凑
-  .core-grid {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); // 允许更小的卡片
-    gap: 8px;
-
-    .core-card {
-      padding: 10px;
-      font-size: 13px;
-    }
-  }
-
-  .version-grid {
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+.hide-scrollbar-on-mobile {
+  @media (max-width: 768px) {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
   }
 }
 </style>
