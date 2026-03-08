@@ -1,4 +1,10 @@
-/* ================= 下拉菜单 (Dropdown) & 弹出菜单 ================= */
+/* ================= 下拉菜单 & 弹出菜单 ================= */
+
+.t-popup__content.t-dropdown {
+  @apply !bg-transparent !border-none !shadow-none !p-0 !rounded-none;
+}
+
+/* 毛玻璃菜单层 */
 .t-dropdown__menu,
 .t-menu__popup {
   @apply !bg-white/90 dark:!bg-zinc-800/90 !backdrop-blur-md !rounded-2xl !border !border-zinc-200/50 dark:!border-zinc-700/50 !shadow-xl !overflow-hidden !p-2;
@@ -10,8 +16,13 @@ html[theme-mode='dark'] .t-menu__popup {
   box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5) !important;
 }
 
+/* 菜单项精修 */
 .t-dropdown__item {
   @apply !rounded-xl !py-2.5 !px-4 !mb-1 transition-all !text-sm !font-medium !text-zinc-700 dark:!text-zinc-300;
+
+  max-width: none !important;
+  min-width: 120px !important;
+  white-space: nowrap !important;
 }
 
 .t-dropdown__item:last-child {
@@ -27,9 +38,12 @@ html[theme-mode='dark'] .t-menu__popup {
   @apply !bg-red-50 dark:!bg-red-500/10 !text-red-600 dark:!text-red-400;
 }
 
-.t-dropdown__item .t-dropdown__item__content {
+/* 让图标和文字完美居中对齐 */
+.t-dropdown__item .t-dropdown__item__content,
+.t-dropdown__item .t-dropdown__item-text {
   @apply w-full flex items-center gap-2;
 }
+
 
 /* ================= Tooltip (提示气泡) ================= */
 .t-tooltip--default .t-popup__content {
