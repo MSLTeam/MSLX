@@ -17,6 +17,10 @@ export default defineConfig(({ mode }: ConfigEnv) => {
       },
     },
     css: {
+      transformer: 'lightningcss',
+      lightningcss: {
+        targets: { chrome: 109 << 16 },
+      },
       preprocessorOptions: {
         less: {
           modifyVars: {
@@ -40,6 +44,8 @@ export default defineConfig(({ mode }: ConfigEnv) => {
       },
     },
     build: {
+      target: ['es2020', 'chrome109'],
+      cssMinify: 'lightningcss',
       chunkSizeWarningLimit: 2000,
       rollupOptions: {
         onwarn(warning, warn) {
