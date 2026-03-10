@@ -17,7 +17,6 @@ export default defineConfig(({ mode }: ConfigEnv) => {
       },
     },
     css: {
-      transformer: 'lightningcss',
       lightningcss: {
         targets: { chrome: 109 << 16 },
       },
