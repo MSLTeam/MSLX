@@ -28,12 +28,21 @@ jobs:
           if [[ "${{ github.ref_type }}" == "tag" ]]; then
             TAG_NAME="${{ github.ref_name }}"
             CLEAN_VERSION="${TAG_NAME#v}"
+            if [[ "$CLEAN_VERSION" =~ ^([0-9]+\.[0-9]+\.[0-9]+)\.([0-9]+) ]]; then
+              FNOS_VERSION="${BASH_REMATCH[1]}-${BASH_REMATCH[2]}"
+            elif [[ "$CLEAN_VERSION" =~ ^([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+              FNOS_VERSION="${BASH_REMATCH[1]}"
+            else
+              FNOS_VERSION="$CLEAN_VERSION"
+            fi
           else
             TAG_NAME="beta"
             CLEAN_VERSION="beta"
+            FNOS_VERSION="beta"
           fi
           echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
           echo "CLEAN_VERSION=$CLEAN_VERSION" >> $GITHUB_ENV
+          echo "FNOS_VERSION=$FNOS_VERSION" >> $GITHUB_ENV
 
       - name: 签出飞牛应用配置仓库
         uses: actions/checkout@v4
@@ -50,10 +59,8 @@ jobs:
       - name: 动态修改 Manifest 与镜像标签
         working-directory: ./fnos-workspace
         run: |
-          # 修改 Manifest 版本号 (如 1.2.5)
-          sed -i "s/^version[[:space:]]*=.*/version=$CLEAN_VERSION/" manifest
+          sed -i "s/^version[[:space:]]*=.*/version=$FNOS_VERSION/" manifest
           
-          # 修改平台架构
           if grep -q "^platform[[:space:]]*=" manifest; then
             sed -i "s/^platform[[:space:]]*=.*/platform=${{ matrix.platform }}/" manifest
           else
@@ -68,12 +75,8 @@ jobs:
              fi
           fi
 
-          # 锁定 Docker 镜像版本 (将 latest 替换为 v1.2.x)
           if [[ "$TAG_NAME" != "beta" ]]; then
-            echo "正在锁定镜像版本为: $TAG_NAME"
             sed -i "s/mslx-daemon:latest/mslx-daemon:${TAG_NAME}/g" app/docker/docker-compose.yaml
-          else
-            echo "手动构建/Beta版本，保持使用 latest 镜像"
           fi
 
       - name: 编译并重命名飞牛应用包
@@ -90,7 +93,6 @@ jobs:
         with:
           name: fpk-${{ matrix.arch }}
           path: ${{ env.ASSET_PATH }}
-
 
   publish-fnos-release:
     needs: build-fnos-app
