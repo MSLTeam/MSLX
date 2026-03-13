@@ -44,7 +44,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="design-card w-full bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all duration-300 flex flex-col relative overflow-hidden">
+  <div class="design-card w-full bg-white dark:bg-zinc-800 rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300 flex flex-col relative overflow-hidden">
 
     <div class="flex items-center gap-2 p-5 sm:px-6 pb-4  dark:border-zinc-700/50 text-left">
       <t-icon name="system-messages" class="text-[var(--color-primary)] text-lg" />

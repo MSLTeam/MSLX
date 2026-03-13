@@ -191,7 +191,7 @@ onUnmounted(async () => {
   <div class="w-full">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-      <div class="design-card w-full bg-white dark:bg-zinc-800 p-4 sm:p-5 rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all duration-300">
+      <div class="design-card w-full bg-white dark:bg-zinc-800 p-4 sm:p-5 rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300">
         <div class="flex justify-between items-center h-[100px] w-full gap-2">
 
           <div class="flex flex-col justify-center min-w-[100px] shrink-0">
@@ -219,7 +219,7 @@ onUnmounted(async () => {
         </div>
       </div>
 
-      <div class="design-card w-full bg-white dark:bg-zinc-800 p-4 sm:p-5 rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all duration-300">
+      <div class="design-card w-full bg-white dark:bg-zinc-800 p-4 sm:p-5 rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300">
         <div class="flex justify-between items-center h-[100px] w-full gap-2">
 
           <div class="flex flex-col justify-center min-w-[100px] shrink-0">

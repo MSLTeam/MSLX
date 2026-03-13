@@ -193,7 +193,7 @@ const getSpecificOptions = (unit: string) => {
     <div class="flex flex-col gap-5 p-5 md:p-6 bg-zinc-50/50 dark:bg-zinc-950/20">
 
       <div class="flex justify-center">
-        <t-radio-group v-model="mode" variant="default-filled" class="!bg-zinc-100 dark:!bg-zinc-800 border border-zinc-200/50 dark:border-zinc-700/50 !rounded-lg p-0.5 shadow-sm">
+        <t-radio-group v-model="mode" variant="default-filled" class="!bg-zinc-100 dark:!bg-zinc-800 border border-[var(--td-component-border)] !rounded-lg p-0.5 shadow-sm">
           <t-radio-button value="preset" class="!px-4">⭐ 预设模式</t-radio-button>
           <t-radio-button value="novice" class="!px-4">🚀 简单模式</t-radio-button>
           <t-radio-button value="pro" class="!px-4">🛠️ 专业模式</t-radio-button>
@@ -277,7 +277,7 @@ const getSpecificOptions = (unit: string) => {
         </t-tabs>
       </div>
 
-      <div class="bg-white/80 dark:bg-zinc-800/80 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 shadow-sm p-5 flex flex-col gap-4 backdrop-blur-md">
+      <div class="bg-[var(--td-bg-color-container)]/80 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 shadow-sm p-5 flex flex-col gap-4 backdrop-blur-md">
 
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-dashed border-zinc-200 dark:border-zinc-700/60">
           <span class="font-bold text-[var(--td-text-color-primary)] text-sm">当前表达式:</span>

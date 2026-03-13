@@ -195,7 +195,7 @@ const handleClose = () => emits('update:visible', false);
       <div class="absolute top-1/2 left-1/2 w-3.5 h-3.5 -mt-[7px] -ml-[7px] pointer-events-none z-10 before:absolute before:left-[6px] before:top-0 before:w-[2px] before:h-[14px] before:bg-red-500/80 before:shadow-[0_0_2px_rgba(0,0,0,0.5)] after:absolute after:left-0 after:top-[6px] after:w-[14px] after:h-[2px] after:bg-red-500/80 after:shadow-[0_0_2px_rgba(0,0,0,0.5)]"></div>
 
       <div
-        class="absolute top-4 left-4 p-3 flex items-center gap-2 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-md z-20 cursor-default"
+        class="absolute top-4 left-4 p-3 flex items-center gap-2 bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-xl border border-[var(--td-component-border)] shadow-md z-20 cursor-default"
         @mousedown.stop
         @wheel.stop
       >
@@ -211,7 +211,7 @@ const handleClose = () => emits('update:visible', false);
         </t-button>
       </div>
 
-      <div class="absolute bottom-4 right-4 p-4 flex flex-col font-mono text-sm bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-md z-20 pointer-events-none">
+      <div class="absolute bottom-4 right-4 p-4 flex flex-col font-mono text-sm bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-xl border border-[var(--td-component-border)] shadow-md z-20 pointer-events-none">
 
         <div class="flex justify-between items-center gap-6 mb-2">
           <span class="text-xs text-[var(--td-text-color-secondary)]">方块坐标 (Block):</span>

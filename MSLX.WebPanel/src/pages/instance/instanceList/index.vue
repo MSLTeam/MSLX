@@ -126,7 +126,7 @@ const handleConfirmDelete = async () => {
 <template>
   <div class="mx-auto flex flex-col gap-6 text-[var(--td-text-color-primary)] pb-5">
     <div
-      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm text-left"
+      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
     >
       <div class="flex flex-col gap-1 items-start">
         <h2 class="text-lg font-bold tracking-tight text-[var(--td-text-color-primary)] m-0">服务端列表</h2>
@@ -157,14 +157,14 @@ const handleConfirmDelete = async () => {
             :style="{ animationDelay: `${index * 0.05}s` }"
           >
             <div
-              class="design-card h-full group flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm hover:shadow-md hover:border-[var(--color-primary)]/50 transition-colors duration-300 p-5 gap-4 cursor-pointer"
+              class="design-card h-full group flex flex-col bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm hover:shadow-md hover:border-[var(--color-primary)]/50 transition-colors duration-300 p-5 gap-4 cursor-pointer"
               @click="handleCardClick(item)"
             >
               <div class="flex items-center gap-4">
                 <div class="relative shrink-0">
                   <t-avatar
                     :image="getImageUrl(item.icon, item.id)"
-                    class="shadow-sm border border-zinc-200/50 dark:border-zinc-700/50 !bg-zinc-100 dark:!bg-zinc-700 !rounded-xl"
+                    class="shadow-sm border border-[var(--td-component-border)] !bg-[var(--td-bg-color-secondarycontainer)] !rounded-xl"
                     shape="round"
                     size="56px"
                   />
@@ -238,7 +238,7 @@ const handleConfirmDelete = async () => {
 
       <div
         v-else
-        class="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-zinc-800/40 rounded-2xl border-2 border-dashed border-zinc-200/50 dark:border-zinc-700/50"
+        class="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-zinc-800/40 rounded-2xl border-2 border-dashed border-[var(--td-component-border)]"
       >
         <t-empty class="!bg-transparent" description="暂无服务端实例" />
       </div>

@@ -66,7 +66,7 @@ const goToHome = () => {
 </script>
 
 <template>
-  <div class="design-card list-item-anim bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-3xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-6 sm:p-8">
+  <div class="design-card list-item-anim bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-3xl border border-[var(--td-component-border)] shadow-sm p-6 sm:p-8">
 
     <div v-if="!isSuccess" class="flex flex-col relative pt-1">
       <t-form

@@ -72,7 +72,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="design-card relative flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all duration-300">
+  <div class="design-card relative flex flex-col bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300">
 
     <t-loading :loading="loading" show-overlay>
       <div class="p-5 sm:p-6 sm:px-8">

@@ -213,7 +213,7 @@ const handleUnbindMSL = () => {
 </script>
 
 <template>
-  <div class="design-card list-item-anim relative flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all duration-300">
+  <div class="design-card list-item-anim relative flex flex-col bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300">
 
     <t-loading :loading="loading" show-overlay>
       <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-6 sm:p-8 pb-8 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 relative overflow-hidden">
@@ -240,7 +240,7 @@ const handleUnbindMSL = () => {
           </div>
 
           <div class="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-sm mt-1">
-            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100/80 dark:bg-zinc-900/50 border border-zinc-200/50 dark:border-zinc-700/50 text-[var(--td-text-color-secondary)] font-mono font-medium shadow-inner">
+            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100/80 dark:bg-zinc-900/50 border border-[var(--td-component-border)] text-[var(--td-text-color-secondary)] font-mono font-medium shadow-inner">
               <span class="text-[var(--td-text-color-secondary)] font-bold">@</span>{{ userInfo.username }}
             </div>
 
@@ -339,7 +339,7 @@ const handleUnbindMSL = () => {
             <t-switch v-model="securityState.changePassword" />
           </t-form-item>
 
-          <div v-if="securityState.changePassword" class="bg-zinc-50/50 dark:bg-zinc-800/30 p-4 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 mt-4 w-full">
+          <div v-if="securityState.changePassword" class="bg-zinc-50/50 dark:bg-zinc-800/30 p-4 rounded-xl border border-[var(--td-component-border)] mt-4 w-full">
             <t-form-item label="新密码" required-mark label-width="80">
               <t-input v-model="securityState.newPassword" type="password" placeholder="请输入新密码">
                 <template #prefix-icon><lock-on-icon class="opacity-60 text-zinc-400" /></template>

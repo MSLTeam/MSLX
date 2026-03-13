@@ -246,7 +246,7 @@ const openHref = (url: string) => {
 /* 顶栏的 Hover */
 .modern-menu-wrapper.is-horizontal :deep(.t-menu__item:hover:not(.t-is-active)),
 .modern-menu-wrapper.is-horizontal :deep(.t-submenu__title:hover:not(.t-is-opened)) {
-  @apply !bg-zinc-100 dark:!bg-zinc-700/50 !text-zinc-900 dark:!text-zinc-100;
+  @apply !bg-[var(--td-bg-color-secondarycontainer)]/50 !text-zinc-900 dark:!text-zinc-100;
 }
 
 /* 顶栏的 Active */

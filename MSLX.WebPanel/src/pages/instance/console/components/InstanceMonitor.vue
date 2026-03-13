@@ -187,7 +187,7 @@ onUnmounted(async () => {
             {{ hubStore.stats.cpu.toFixed(1) }} %
           </div>
         </div>
-        <div ref="cpuChartRef" class="h-[50px] w-full overflow-hidden rounded-md bg-transparent border border-zinc-200/50 dark:border-zinc-700/50"></div>
+        <div ref="cpuChartRef" class="h-[50px] w-full overflow-hidden rounded-md bg-transparent border border-[var(--td-component-border)]"></div>
       </div>
 
       <div class="flex flex-col gap-2">
@@ -202,7 +202,7 @@ onUnmounted(async () => {
             </span>
           </div>
         </div>
-        <div ref="memChartRef" class="h-[50px] w-full overflow-hidden rounded-md bg-transparent border border-zinc-200/50 dark:border-zinc-700/50"></div>
+        <div ref="memChartRef" class="h-[50px] w-full overflow-hidden rounded-md bg-transparent border border-[var(--td-component-border)]"></div>
       </div>
 
     </div>

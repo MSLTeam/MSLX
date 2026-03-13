@@ -294,7 +294,7 @@ async function handleDeleteTunnel() {
   <div class="mx-auto pb-6 text-[var(--td-text-color-primary)]">
 
     <div v-if="meUserToken === ''" class="flex items-center justify-center min-h-[70vh] list-item-anim">
-      <div class="design-card relative w-full max-w-md bg-white/80 dark:bg-zinc-800/80 backdrop-blur-xl rounded-3xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-xl p-10 text-center overflow-hidden">
+      <div class="design-card relative w-full max-w-md bg-[var(--td-bg-color-container)]/80 backdrop-blur-xl rounded-3xl border border-[var(--td-component-border)] shadow-xl p-10 text-center overflow-hidden">
         <div class="absolute -top-20 -right-20 w-60 h-60 bg-[var(--color-primary)]/10 rounded-full blur-3xl pointer-events-none"></div>
         <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-[var(--color-primary)]/10 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -351,7 +351,7 @@ async function handleDeleteTunnel() {
     <div v-else id="app-space" class="relative flex flex-col gap-6">
       <t-loading attach="#app-space" :loading="loading" text="加载数据中..." />
 
-      <div v-if="userInfo" class="design-card list-item-anim bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-5 sm:p-6" style="animation-delay: 0s;">
+      <div v-if="userInfo" class="design-card list-item-anim bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm p-5 sm:p-6" style="animation-delay: 0s;">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60">
           <div class="flex flex-col">
             <h3 class="text-lg font-bold text-[var(--td-text-color-primary)] m-0 leading-none">ME Frp 用户信息</h3>
@@ -398,7 +398,7 @@ async function handleDeleteTunnel() {
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-        <div class="lg:col-span-5 xl:col-span-4 design-card list-item-anim flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm h-[580px]" style="animation-delay: 0.1s;">
+        <div class="lg:col-span-5 xl:col-span-4 design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm h-[580px]" style="animation-delay: 0.1s;">
           <div class="flex items-center justify-between p-4 sm:p-5 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 shrink-0">
             <h3 class="text-base font-bold text-[var(--td-text-color-primary)] m-0">我的隧道</h3>
             <div class="flex items-center gap-1">
@@ -442,7 +442,7 @@ async function handleDeleteTunnel() {
           </div>
         </div>
 
-        <div class="lg:col-span-7 xl:col-span-8 design-card list-item-anim flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm h-[580px]" style="animation-delay: 0.2s;">
+        <div class="lg:col-span-7 xl:col-span-8 design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm h-[580px]" style="animation-delay: 0.2s;">
 
           <template v-if="currentTunnel">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 shrink-0">
@@ -462,12 +462,12 @@ async function handleDeleteTunnel() {
 
             <div class="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
-                <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 flex flex-col justify-center">
+                <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-[var(--td-component-border)] flex flex-col justify-center">
                   <span class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1.5">所在节点</span>
                   <span class="text-sm font-bold text-[var(--td-text-color-primary)] truncate" :title="currentNodeName">{{ currentNodeName }}</span>
                 </div>
 
-                <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 flex flex-col justify-center">
+                <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-[var(--td-component-border)] flex flex-col justify-center">
                   <span class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1.5">本地地址</span>
                   <span class="text-sm font-mono font-bold text-[var(--td-text-color-primary)]">{{ currentTunnel.localIp }}:{{ currentTunnel.localPort }}</span>
                 </div>
@@ -478,7 +478,7 @@ async function handleDeleteTunnel() {
                 </div>
 
                 <div class="p-4 rounded-xl flex flex-col justify-center border transition-colors"
-                     :class="currentTunnel.isOnline ? 'bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-200/50 dark:border-emerald-800/30' : 'bg-zinc-50/80 dark:bg-zinc-900/50 border-zinc-200/50 dark:border-zinc-700/50'">
+                     :class="currentTunnel.isOnline ? 'bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-200/50 dark:border-emerald-800/30' : 'bg-zinc-50/80 dark:bg-zinc-900/50 border-[var(--td-component-border)]'">
                   <span class="text-[11px] font-extrabold uppercase tracking-widest mb-1.5"
                         :class="currentTunnel.isOnline ? 'text-emerald-600/80 dark:text-emerald-500/80' : 'text-[var(--td-text-color-secondary)]'">当前状态</span>
                   <div class="flex items-center gap-2">

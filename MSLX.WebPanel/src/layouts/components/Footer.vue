@@ -1,18 +1,18 @@
 <template>
   <footer class="w-full flex justify-center items-center">
-    <div class="glass-capsule design-card group flex items-center gap-3 px-6 py-2 rounded-full bg-white/80 dark:bg-zinc-800/80 backdrop-blur-[10px] border border-zinc-200/80 dark:border-zinc-700/60 shadow-sm transition-all duration-300 font-mono text-[13px] leading-none text-[var(--td-text-color-secondary)] cursor-default">
+    <div class="glass-capsule design-card group flex items-center gap-3 px-6 py-2 rounded-full bg-[var(--td-bg-color-container)]/80 backdrop-blur-[10px] border border-zinc-200/80 dark:border-zinc-700/60 shadow-sm transition-all duration-300 font-mono text-[13px] leading-none text-[var(--td-text-color-secondary)] cursor-default">
 
       <span class="font-bold text-[var(--td-text-color-primary)] tracking-[0.5px] transition-colors duration-300 group-hover:text-[var(--color-primary)]">
         MSLX-WEBPANEL
       </span>
 
-      <span class="font-light text-zinc-400 dark:text-zinc-600">/</span>
+      <span class="font-light text-zinc-500 dark:text-zinc-600">/</span>
 
       <span class="font-bold text-[var(--td-text-color-primary)] tracking-[0.5px] transition-colors duration-300 group-hover:text-[var(--color-primary)]">
         MSLTEAM
       </span>
 
-      <span class="font-light text-zinc-400 dark:text-zinc-600">/</span>
+      <span class="font-light text-zinc-500 dark:text-zinc-600">/</span>
 
       <span class="font-bold text-[var(--td-text-color-primary)] tracking-[0.5px] transition-colors duration-300 group-hover:text-[var(--color-primary)]">
         © 2021-{{ new Date().getFullYear() }}

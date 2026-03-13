@@ -308,7 +308,7 @@ watch(
 
             <template v-else>
               <div v-if="!selectedCore" class="h-full flex items-center justify-center">
-                <span class="text-sm font-medium text-[var(--td-text-color-secondary)] bg-white dark:bg-zinc-800 px-4 py-2 rounded-full shadow-sm border border-zinc-200/50 dark:border-zinc-700/50">请先在上方选择一个核心</span>
+                <span class="text-sm font-medium text-[var(--td-text-color-secondary)] bg-white dark:bg-zinc-800 px-4 py-2 rounded-full shadow-sm border border-[var(--td-component-border)]">请先在上方选择一个核心</span>
               </div>
 
               <div v-else-if="versionList.length > 0" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2">

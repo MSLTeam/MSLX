@@ -188,7 +188,7 @@ const goHome = () => {
 
 /* 悬浮与激活的绝美质感 */
 :deep(.t-menu__item:hover:not(.t-is-active)) {
-  @apply !bg-zinc-100 dark:!bg-zinc-700/50 !text-zinc-900 dark:!text-zinc-100;
+  @apply !bg-[var(--td-bg-color-secondarycontainer)]/50 !text-zinc-900 dark:!text-zinc-100;
 }
 
 :deep(.t-menu__item.t-is-active) {

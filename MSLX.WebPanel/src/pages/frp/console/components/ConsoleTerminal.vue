@@ -253,9 +253,9 @@ onUnmounted(async () => {
 });
 </script>
 <template>
-  <div ref="terminalWrapper" class="terminal-wrapper flex-1 flex flex-col bg-white/80 dark:bg-zinc-800/80 border border-zinc-200/50 dark:border-zinc-700/50 rounded-xl overflow-hidden shadow-sm relative w-full h-full">
+  <div ref="terminalWrapper" class="terminal-wrapper flex-1 flex flex-col bg-[var(--td-bg-color-container)]/80 border border-[var(--td-component-border)] rounded-xl overflow-hidden shadow-sm relative w-full h-full">
 
-    <div class="h-[38px] shrink-0 bg-transparent border-b border-zinc-200/50 dark:border-zinc-700/50 flex items-center px-4 relative z-10">
+    <div class="h-[38px] shrink-0 bg-transparent border-b border-[var(--td-component-border)] flex items-center px-4 relative z-10">
       <div class="flex gap-1.5 mr-4">
         <span class="w-2.5 h-2.5 rounded-full bg-[#ff5f56]"></span>
         <span class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></span>

@@ -132,7 +132,7 @@ const handleDropdownClick = async (dropdownItem: any, playerName: string) => {
 </script>
 
 <template>
-  <div class="design-card flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-5">
+  <div class="design-card flex flex-col bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-xl border border-[var(--td-component-border)] shadow-sm p-5">
 
     <div class="flex justify-between items-center mb-4 pb-4 border-b border-zinc-200/60 dark:border-zinc-700/60">
       <div class="flex items-center gap-1.5 font-bold text-sm text-[var(--td-text-color-primary)] m-0">

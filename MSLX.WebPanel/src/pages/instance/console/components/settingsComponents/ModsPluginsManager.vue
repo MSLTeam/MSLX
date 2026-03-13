@@ -212,7 +212,7 @@ watch(() => route.params.serverId, (newId) => {
       </div>
 
       <div class="w-full md:w-auto">
-        <t-radio-group v-model="mode" variant="default-filled" class="!bg-zinc-100 dark:!bg-zinc-800 border border-zinc-200/50 dark:border-zinc-700/50 !rounded-lg p-0.5 shadow-sm flex w-full" @change="onModeChange">
+        <t-radio-group v-model="mode" variant="default-filled" class="!bg-zinc-100 dark:!bg-zinc-800 border border-[var(--td-component-border)] !rounded-lg p-0.5 shadow-sm flex w-full" @change="onModeChange">
           <t-radio-button value="mods" class="flex-1 md:flex-none !text-center">
             <div class="flex justify-center items-center gap-1.5"><extension-icon size="14px"/> 模组 (Mods)</div>
           </t-radio-button>

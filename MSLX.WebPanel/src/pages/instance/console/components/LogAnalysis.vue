@@ -183,7 +183,7 @@ watch(isDark, () => {
     </template>
 
     <t-loading :loading="loading">
-      <div class="flex flex-col md:flex-row w-full h-[75vh] md:h-[70vh] rounded-xl overflow-hidden bg-white/80 dark:bg-zinc-800/80 border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm">
+      <div class="flex flex-col md:flex-row w-full h-[75vh] md:h-[70vh] rounded-xl overflow-hidden bg-[var(--td-bg-color-container)]/80 border border-[var(--td-component-border)] shadow-sm">
 
         <div class="list-item-anim w-full md:w-[40%] min-w-[320px] p-5 flex flex-col gap-5 border-b md:border-b-0 md:border-r border-zinc-200/60 dark:border-zinc-700/60 overflow-y-auto custom-scrollbar" style="animation-delay: 0s;">
 

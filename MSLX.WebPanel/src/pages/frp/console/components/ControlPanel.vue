@@ -36,7 +36,7 @@ defineEmits<{
 <template>
   <div class="flex flex-col gap-5">
 
-    <div class="design-card bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-5">
+    <div class="design-card bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-xl border border-[var(--td-component-border)] shadow-sm p-5">
 
       <div class="flex justify-between items-center mb-5">
         <div class="flex items-center gap-2 font-bold text-sm" :class="isRunning ? 'text-[var(--color-success)]' : 'text-zinc-500'">
@@ -70,7 +70,7 @@ defineEmits<{
       </div>
     </div>
 
-    <div class="design-card flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-5">
+    <div class="design-card flex flex-col bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-xl border border-[var(--td-component-border)] shadow-sm p-5">
 
       <div class="flex justify-between items-center mb-4 pb-4 border-b border-zinc-200/60 dark:border-zinc-700/60">
         <h3 class="text-sm font-bold text-[var(--td-text-color-primary)] m-0">隧道概览</h3>

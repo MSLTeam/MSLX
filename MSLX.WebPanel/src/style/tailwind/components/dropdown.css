@@ -30,7 +30,7 @@ html[theme-mode='dark'] .t-menu__popup {
 }
 
 .t-dropdown__item:hover {
-  @apply !bg-zinc-100 dark:!bg-zinc-700/50 !text-zinc-900 dark:!text-white;
+  @apply !bg-[var(--td-bg-color-secondarycontainer)]/50 !text-zinc-900 dark:!text-white;
 }
 
 /* 危险操作专属 */
@@ -98,7 +98,7 @@ html[theme-mode='dark'] .t-tooltip--default .t-popup__arrow {
 
 /* 取消按钮 */
 .t-popconfirm__cancel {
-  @apply !bg-zinc-100 dark:!bg-zinc-700/50 !text-zinc-500 dark:!text-zinc-400 hover:!bg-zinc-200 dark:hover:!bg-zinc-600;
+  @apply !bg-[var(--td-bg-color-secondarycontainer)]/50 !text-zinc-500 dark:!text-zinc-400 hover:!bg-zinc-200 dark:hover:!bg-zinc-600;
 }
 
 /* 确认按钮 */

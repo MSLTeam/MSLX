@@ -113,7 +113,7 @@ onMounted(() => {
 <template>
   <div class="mx-auto flex flex-col gap-6 text-[var(--td-text-color-primary)] pb-5">
     <div
-      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm text-left"
+      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
     >
       <div class="flex flex-col gap-1 items-start">
         <h2 class="text-lg font-bold tracking-tight text-[var(--td-text-color-primary)] m-0">隧道列表</h2>
@@ -152,7 +152,7 @@ onMounted(() => {
 
       <div
         v-else-if="tunnelsStore.frpList.length === 0"
-        class="flex flex-col items-center justify-center py-24 design-card bg-white/40 dark:bg-zinc-800/40 rounded-2xl border-2 border-dashed border-zinc-200/50 dark:border-zinc-700/50"
+        class="flex flex-col items-center justify-center py-24 design-card bg-white/40 dark:bg-zinc-800/40 rounded-2xl border-2 border-dashed border-[var(--td-component-border)]"
       >
         <result title="暂无隧道" :tip="userStore.isAdmin ? '快去创建一个吧' : '管理员尚未为您分配隧道'" type="404">
           <t-button v-if="userStore.isAdmin" theme="primary" @click="changeUrl('/frp/create')">立即创建</t-button>
@@ -164,7 +164,7 @@ onMounted(() => {
           v-for="(item, index) in tunnelsStore.frpList"
           :key="item.id"
           :style="{ '--i': index }"
-          class="design-card group flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm hover:shadow-md hover:border-[var(--color-primary)]/50 transition-all duration-300 p-5 gap-5 cursor-pointer"
+          class="design-card group flex flex-col bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm hover:shadow-md hover:border-[var(--color-primary)]/50 transition-all duration-300 p-5 gap-5 cursor-pointer"
           @click="handleCardClick(item)"
         >
           <div class="flex items-center justify-between gap-3">
@@ -268,7 +268,7 @@ onMounted(() => {
                 <div
                   v-for="item in tunnelsStore.frpList"
                   :key="item.id"
-                  class="p-3 bg-zinc-50/50 dark:bg-zinc-800/40 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 hover:bg-zinc-100 dark:hover:bg-zinc-700/60 transition-colors"
+                  class="p-3 bg-zinc-50/50 dark:bg-zinc-800/40 rounded-xl border border-[var(--td-component-border)] hover:bg-zinc-100 dark:hover:bg-zinc-700/60 transition-colors"
                 >
                   <t-checkbox :value="item.id" class="!w-full">
                     <div class="flex items-center justify-between w-full ml-1 overflow-hidden">

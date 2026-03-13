@@ -210,7 +210,7 @@ const handleClose = () => emits('update:visible', false);
 
         <div class="flex justify-between items-center">
           <t-tooltip content="指令模式直接与服务端交互，API模式直接修改配置文件" placement="bottom">
-            <t-radio-group v-model="opMode" variant="default-filled" size="small" :disabled="!isRunning" class="!bg-zinc-100 dark:!bg-zinc-800 border border-zinc-200/50 dark:border-zinc-700/50 !rounded-lg p-0.5">
+            <t-radio-group v-model="opMode" variant="default-filled" size="small" :disabled="!isRunning" class="!bg-zinc-100 dark:!bg-zinc-800 border border-[var(--td-component-border)] !rounded-lg p-0.5">
               <t-radio-button value="api">API 模式</t-radio-button>
               <t-radio-button value="command">指令优先</t-radio-button>
             </t-radio-group>
@@ -222,7 +222,7 @@ const handleClose = () => emits('update:visible', false);
         </div>
 
         <div class="w-full overflow-x-auto hide-scrollbar pb-1">
-          <t-radio-group v-model="activeTab" variant="default-filled" class="flex w-max min-w-full !bg-zinc-100 dark:!bg-zinc-800 border border-zinc-200/50 dark:border-zinc-700/50 !rounded-xl p-1">
+          <t-radio-group v-model="activeTab" variant="default-filled" class="flex w-max min-w-full !bg-zinc-100 dark:!bg-zinc-800 border border-[var(--td-component-border)] !rounded-xl p-1">
             <t-radio-button value="online" class="flex-1 !text-center"><div class="flex justify-center items-center gap-1.5"><user-icon size="14px"/> 在线</div></t-radio-button>
             <t-radio-button value="history" class="flex-1 !text-center"><div class="flex justify-center items-center gap-1.5"><time-icon size="14px"/> 历史</div></t-radio-button>
             <t-radio-button value="ops" class="flex-1 !text-center"><div class="flex justify-center items-center gap-1.5"><secured-icon size="14px"/> 管理员</div></t-radio-button>
@@ -301,7 +301,7 @@ const handleClose = () => emits('update:visible', false);
 
         <div v-if="activeTab === 'banned'" class="flex flex-col gap-3">
           <div class="mb-2">
-            <t-radio-group v-model="banType" variant="default-filled" size="small" class="!bg-zinc-100 dark:!bg-zinc-800 border border-zinc-200/50 dark:border-zinc-700/50 !rounded-lg p-0.5">
+            <t-radio-group v-model="banType" variant="default-filled" size="small" class="!bg-zinc-100 dark:!bg-zinc-800 border border-[var(--td-component-border)] !rounded-lg p-0.5">
               <t-radio-button value="player">玩家封禁</t-radio-button>
               <t-radio-button value="ip">IP 封禁</t-radio-button>
             </t-radio-group>

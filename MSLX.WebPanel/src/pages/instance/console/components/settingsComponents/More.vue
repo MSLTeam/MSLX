@@ -290,7 +290,7 @@ onMounted(() => {
     >
       <div v-loading="loading" class="flex flex-col items-center p-5 md:p-6 bg-zinc-50/50 dark:bg-zinc-950/20">
 
-        <p class="text-xs text-[var(--td-text-color-secondary)] mb-5 text-center bg-white/80 dark:bg-zinc-800/80 px-4 py-2.5 rounded-lg border border-zinc-200/60 dark:border-zinc-700/60 shadow-sm backdrop-blur-md">
+        <p class="text-xs text-[var(--td-text-color-secondary)] mb-5 text-center bg-[var(--td-bg-color-container)]/80 px-4 py-2.5 rounded-lg border border-zinc-200/60 dark:border-zinc-700/60 shadow-sm backdrop-blur-md">
           请拖动和缩放亮色方框，选择需要截取的区域。生成后将自动转为 <b class="text-zinc-700 dark:text-zinc-300">64x64</b> 的标准尺寸。
         </p>
 
