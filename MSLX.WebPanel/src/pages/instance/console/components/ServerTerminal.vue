@@ -289,7 +289,6 @@ onUnmounted(async () => {
 
 <style scoped lang="less">
 @import '@/style/scrollbar.less';
-@reference "@/style/tailwind/index.css";
 
 .terminal-body-container {
   :deep(.xterm),

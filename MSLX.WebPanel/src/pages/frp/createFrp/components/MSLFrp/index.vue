@@ -291,7 +291,7 @@ async function handleDeleteTunnel() {
   <div class="mx-auto pb-6 text-[var(--td-text-color-primary)]">
 
     <div v-if="mslUserToken === ''" class="flex items-center justify-center min-h-[70vh] list-item-anim">
-      <div class="design-card relative w-full max-w-md bg-[var(--td-bg-color-container)]/80 backdrop-blur-xl rounded-3xl border border-[var(--td-component-border)] shadow-xl p-10 text-center overflow-hidden">
+      <div class="design-card relative w-full max-w-md bg-[var(--td-bg-color-container)]/80 rounded-3xl border border-[var(--td-component-border)] shadow-xl p-10 text-center overflow-hidden">
         <div class="absolute -top-20 -right-20 w-60 h-60 bg-[var(--color-primary)]/10 rounded-full blur-3xl pointer-events-none"></div>
         <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-[var(--color-primary)]/10 rounded-full blur-3xl pointer-events-none"></div>
 
