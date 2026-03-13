@@ -512,13 +512,24 @@ async function handleDeleteTunnel() {
   }
 }
 
+@keyframes smoothLoadingGlass {
+  from {
+    backdrop-filter: blur(0.01px) !important;
+    -webkit-backdrop-filter: blur(0.01px) !important;
+  }
+  to {
+    backdrop-filter: blur(4px) !important;
+    -webkit-backdrop-filter: blur(4px) !important;
+  }
+}
+
+:deep(.t-loading__overlay) {
+@apply !rounded-2xl !bg-white/50 dark:!bg-zinc-900/50;
+  animation: smoothLoadingGlass 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards !important;
+}
+
 /* 滚动条混入 */
 .custom-scrollbar {
   .scrollbar-mixin();
-}
-
-/* 针对 Loading 遮罩的细节优化 */
-:deep(.t-loading__overlay) {
-@apply !rounded-2xl !bg-white/50 dark:!bg-zinc-900/50 backdrop-blur-sm;
 }
 </style>
