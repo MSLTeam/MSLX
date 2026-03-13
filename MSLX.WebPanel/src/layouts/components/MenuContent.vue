@@ -193,12 +193,12 @@ const openHref = (url: string) => {
 /* 父级菜单项排版 */
 .modern-menu-wrapper:not(.is-horizontal) :deep(.t-submenu__title),
 .modern-menu-wrapper:not(.is-horizontal) :deep(.t-menu__item:not(.t-submenu__item)) {
-  @apply !h-[44px] !px-3 !text-[14.5px] !font-medium !text-zinc-600 dark:!text-zinc-400;
+  @apply !h-[44px] !px-3 !text-[14.5px] !font-medium !text-[var(--td-text-color-primary)] dark:!text-zinc-400;
 }
 
 /* 子菜单排版 */
 .modern-menu-wrapper:not(.is-horizontal) :deep(.t-submenu__item) {
-  @apply !h-[40px] !pl-[42px] !pr-3 !text-[13.5px] !font-normal !text-zinc-500 dark:!text-zinc-400;
+  @apply !h-[40px] !pl-[42px] !pr-3 !text-[13.5px] !font-normal !text-[var(--td-text-color-secondary)] dark:!text-zinc-400;
 }
 
 /* 统一图标样式 */
