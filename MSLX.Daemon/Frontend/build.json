@@ -1,6 +1,6 @@
 {
-  "version": "1.3.0.1",
-  "buildTime": "2026-03-08 19:58:37",
+  "version": "1.3.1",
+  "buildTime": "2026-03-14 00:01:13",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -50,6 +50,7 @@
     "@vitejs/plugin-vue-jsx": "^5.1.3",
     "@vue/compiler-sfc": "^3.4.31",
     "@vue/eslint-config-typescript": "^14.6.0",
+    "browserslist": "^4.28.1",
     "commitizen": "^4.3.0",
     "cz-conventional-changelog": "^3.3.0",
     "eslint": "^9.38.0",
@@ -60,6 +61,7 @@
     "eslint-plugin-vue-scoped-css": "^2.12.0",
     "husky": "^9.1.1",
     "less": "^4.2.0",
+    "lightningcss": "^1.32.0",
     "lint-staged": "^15.2.7",
     "prettier": "^3.3.3",
     "stylelint": "^16.25.0",
@@ -72,10 +74,148 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "bd9afebacaa96a7a57a4f98bcd005fc0c0a094f8",
-  "commitMsg": "fix(webpanel): 修复气泡弹窗样式异常问题",
+  "commitId": "503d96cc1789605adfd95d987944885168877bbf",
+  "commitMsg": "style(webpanel): 调高二级文本透明度",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "503d96cc1789605adfd95d987944885168877bbf",
+      "commitTime": "2026-03-13 23:59:42 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 调高二级文本透明度"
+    },
+    {
+      "commitId": "87635410801aafa17b50a60e03858bbc9137abd8",
+      "commitTime": "2026-03-13 23:57:43 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 优化Frp服务商登录窗口的毛玻璃效果"
+    },
+    {
+      "commitId": "5a307d864f132ff9af3e86d8105981bd3c028478",
+      "commitTime": "2026-03-13 23:50:20 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 移除多余的毛玻璃效果"
+    },
+    {
+      "commitId": "b25ba5640742508cf6e1c4a5b14ff7a91e8ea9d8",
+      "commitTime": "2026-03-13 23:50:06 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复lightningcss兼容降级导致终端毛玻璃效果丢失Id问题"
+    },
+    {
+      "commitId": "fc2d9992cb7926b1b5b870ba06b43fe5f1b7c5b0",
+      "commitTime": "2026-03-13 22:46:16 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 移除多余的毛玻璃效果"
+    },
+    {
+      "commitId": "5305b31d775ca746aa3d449d8accd9010509e426",
+      "commitTime": "2026-03-13 22:04:37 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "refactor(webpanel): 规范CSS颜色变量的调用"
+    },
+    {
+      "commitId": "f737ce68812d76408f2b4abb3954ae0fc957990b",
+      "commitTime": "2026-03-13 22:00:46 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 优化二级文本的可读性"
+    },
+    {
+      "commitId": "842c996994b7f66e64c4798fb8fa336d513e26b4",
+      "commitTime": "2026-03-13 21:52:12 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 优化浅色模式菜单文本的可读性"
+    },
+    {
+      "commitId": "48156c93adea74906a6b667f65473fcd043e31af",
+      "commitTime": "2026-03-13 21:36:37 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 文件编码分离UTF8和UTF-8 With BOM的混用 #77"
+    },
+    {
+      "commitId": "02dc9988a48806306cb3f264b866174a8d8df4b4",
+      "commitTime": "2026-03-13 21:11:16 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
+    },
+    {
+      "commitId": "780f5c6e6e0557365a498ad3331909d40ddb111f",
+      "commitTime": "2026-03-13 21:11:05 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "refactor(daemon & desktop): 重构更精确的设备ID计算方法"
+    },
+    {
+      "commitId": "6abc65fe855d77d46495d574335c6deb4565e43a",
+      "commitTime": "2026-03-13 20:00:17 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
+    },
+    {
+      "commitId": "88916e7110cea311d84680dc957806d3ff892bde",
+      "commitTime": "2026-03-13 20:00:15 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "docs(readme): 更新README"
+    },
+    {
+      "commitId": "c4137dfb3fc8748402efc1d2114f92062f678518",
+      "commitTime": "2026-03-11 16:53:27 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 隧道在添加时弹窗允许修改隧道外显名字 #78"
+    },
+    {
+      "commitId": "89f2c026ef792f503fde859a048f3a5ade33c734",
+      "commitTime": "2026-03-11 16:47:09 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 创建隧道时隧道名自动添加节点名"
+    },
+    {
+      "commitId": "97f92b7212aac555bb34f0e6e3ea6f091b9b7959",
+      "commitTime": "2026-03-10 23:33:04 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修正构建配置"
+    },
+    {
+      "commitId": "7225193e47ac79e1d02e8d754de87a023803a624",
+      "commitTime": "2026-03-10 22:42:14 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
+    },
+    {
+      "commitId": "44b5162280411d9ef7dd832251a4200145ccf470",
+      "commitTime": "2026-03-10 22:41:58 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 增加对较老内核浏览器兼容性支持 & 新增较老浏览器的警告信息"
+    },
+    {
+      "commitId": "130876f4d5e0d9d02587d489ad9b203b309878da",
+      "commitTime": "2026-03-10 10:41:05 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #76 from MSLTeam/dev"
+    },
+    {
+      "commitId": "0cb9040f762d0961026a8ada6894ceceb8af422c",
+      "commitTime": "2026-03-10 10:39:40 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "build(daemon): 修复fnos构建版本号逻辑"
+    },
+    {
+      "commitId": "7c9dd7aa42e0052ddd1ded9f6e86e4384ef9a687",
+      "commitTime": "2026-03-08 20:08:45 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修正更新弹窗位置异常的问题"
+    },
+    {
+      "commitId": "111149d010a412f8d6fe918f653948c3d845d755",
+      "commitTime": "2026-03-08 19:59:36 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #75 from MSLTeam/dev"
+    },
+    {
+      "commitId": "1faf36bf1e368142de4403cbe58c11891afd570d",
+      "commitTime": "2026-03-08 19:59:02 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.3.0.1 - hotfix"
+    },
     {
       "commitId": "bd9afebacaa96a7a57a4f98bcd005fc0c0a094f8",
       "commitTime": "2026-03-08 19:56:44 +0800",
@@ -237,144 +377,6 @@
       "commitTime": "2026-03-07 19:07:08 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "fix(webpanel): 修复全局备份 & 定时任务页面加载出现的频闪问题"
-    },
-    {
-      "commitId": "55c07c677576a38d7dd408512de47c6a10d58029",
-      "commitTime": "2026-03-07 18:56:36 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
-    },
-    {
-      "commitId": "46a71d9b87b9f0fa59a3e42a57b0e7c0b98d561c",
-      "commitTime": "2026-03-07 18:56:22 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(webpanel): 重构创建服务端相关页面的样式"
-    },
-    {
-      "commitId": "6e26f569433b16622ccb228e9d264fedbd9cb18e",
-      "commitTime": "2026-03-07 16:36:53 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(daemon): 修正飞牛app包构建逻辑"
-    },
-    {
-      "commitId": "ca13ec8f2ffdfb85acf78947ea6691b145c66725",
-      "commitTime": "2026-03-07 16:25:50 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
-    },
-    {
-      "commitId": "438854be69ceac47cd4e8cadefc7fb5477051d0e",
-      "commitTime": "2026-03-07 16:25:39 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(daemon): 新增 fnos app 包构建工作流"
-    },
-    {
-      "commitId": "f166d0e2f6e0807b5f6ef5c59928b2a118983901",
-      "commitTime": "2026-03-07 10:55:00 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "feat(desktop): 添加隧道功能的UI（MSLFrp）"
-    },
-    {
-      "commitId": "12ece04ac3c9726070b548bf1df2382522b3390e",
-      "commitTime": "2026-03-07 00:44:10 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(webpanel): 重构所有创建隧道相关的页面和组件"
-    },
-    {
-      "commitId": "069003a67bbc44df706b7b66814e5951e95ec981",
-      "commitTime": "2026-03-05 20:46:24 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(webpanel): 重构alert样式"
-    },
-    {
-      "commitId": "ef56c2be31185a3aba837fd6d3f72867be239777",
-      "commitTime": "2026-03-05 20:46:18 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(webpanel): 重构创建服务端页面的一些组件"
-    },
-    {
-      "commitId": "b4d1953327a4a90dc0c8e19a39e9d497a13c9fdc",
-      "commitTime": "2026-03-05 20:28:02 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(webpanel): 重构设置页面"
-    },
-    {
-      "commitId": "a85926024c75c7fa85d2f5080f798be409eda957",
-      "commitTime": "2026-03-05 19:23:41 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(webpanel): 重构用户管理页面和一些组件样式"
-    },
-    {
-      "commitId": "f3ed79e27b5d3ea9cc8699a7369ae83f075e96e9",
-      "commitTime": "2026-03-05 19:09:51 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(webpanel): 重构关于页面 & 折叠面板和时间轴的样式"
-    },
-    {
-      "commitId": "5c1596f58fde7f381aba7c51df3629adfc2dccdd",
-      "commitTime": "2026-03-05 18:52:36 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(webpanel): 重构表单表格样式以及全局备份/定时计划任务页面"
-    },
-    {
-      "commitId": "0e904e874dac40c09065bc47f8db3667889a387a",
-      "commitTime": "2026-03-04 20:34:12 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复异常的菜单边框"
-    },
-    {
-      "commitId": "3f1a36b7948bf02a53119ef1f9f303a9a1d07bd4",
-      "commitTime": "2026-03-04 19:43:54 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 微调首页banner样式"
-    },
-    {
-      "commitId": "43e5de7e3e28f792c2ba56d466cd17cfed4f24d2",
-      "commitTime": "2026-03-04 19:40:58 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 优化一些组件适配样式"
-    },
-    {
-      "commitId": "c1fcc21af8ce58a553909ca52d11ba6f28d04fc6",
-      "commitTime": "2026-03-04 19:33:46 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 优化服务端列表和隧道列表的样式"
-    },
-    {
-      "commitId": "1acca3ef4190c819b830bee46171a55b229f2327",
-      "commitTime": "2026-03-04 18:55:06 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(webpanel): 重构服务端列表和隧道列表的样式"
-    },
-    {
-      "commitId": "f7029c042c27cf5ef147d75c10fe2e364e67088c",
-      "commitTime": "2026-03-04 17:03:00 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修正新版导航栏的移动端适配"
-    },
-    {
-      "commitId": "3cc369fe880041bde45e8604337c3b9b2625a5fe",
-      "commitTime": "2026-03-04 16:05:42 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(webpanel): 重构页脚样式"
-    },
-    {
-      "commitId": "99c2eeee89af04d971fdf08f9080a3cd13c71354",
-      "commitTime": "2026-03-04 16:02:52 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(webpanel): 重构菜单布局"
-    },
-    {
-      "commitId": "ddd06db8ff5760f9d700dc4bcdc641029da01b29",
-      "commitTime": "2026-03-04 13:26:58 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(webpanel): 重构全局顶部和侧边菜单样式 & 重构仪表盘样式"
-    },
-    {
-      "commitId": "d1ed5e0393dad4be9316dc273fb78e8fb6c8d43d",
-      "commitTime": "2026-03-03 23:28:39 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(webpanel): 修正 stylelint 规则"
     }
   ]
 }
