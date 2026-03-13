@@ -195,7 +195,7 @@ const handleClose = () => emits('update:visible', false);
       <div class="absolute top-1/2 left-1/2 w-3.5 h-3.5 -mt-[7px] -ml-[7px] pointer-events-none z-10 before:absolute before:left-[6px] before:top-0 before:w-[2px] before:h-[14px] before:bg-red-500/80 before:shadow-[0_0_2px_rgba(0,0,0,0.5)] after:absolute after:left-0 after:top-[6px] after:w-[14px] after:h-[2px] after:bg-red-500/80 after:shadow-[0_0_2px_rgba(0,0,0,0.5)]"></div>
 
       <div
-        class="absolute top-4 left-4 p-3 flex items-center gap-2 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-md z-20 cursor-default"
+        class="absolute top-4 left-4 p-3 flex items-center gap-2 bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-xl border border-[var(--td-component-border)] shadow-md z-20 cursor-default"
         @mousedown.stop
         @wheel.stop
       >
@@ -211,24 +211,24 @@ const handleClose = () => emits('update:visible', false);
         </t-button>
       </div>
 
-      <div class="absolute bottom-4 right-4 p-4 flex flex-col font-mono text-sm bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-md z-20 pointer-events-none">
+      <div class="absolute bottom-4 right-4 p-4 flex flex-col font-mono text-sm bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-xl border border-[var(--td-component-border)] shadow-md z-20 pointer-events-none">
 
         <div class="flex justify-between items-center gap-6 mb-2">
-          <span class="text-xs text-zinc-500 dark:text-zinc-400">方块坐标 (Block):</span>
+          <span class="text-xs text-[var(--td-text-color-secondary)]">方块坐标 (Block):</span>
           <span class="font-bold text-[var(--color-primary)]">X: {{ centerCoordinates.blockX }}, Z: {{ centerCoordinates.blockZ }}</span>
         </div>
 
         <div class="flex justify-between items-center gap-6 mb-2">
-          <span class="text-xs text-zinc-500 dark:text-zinc-400">区块区号 (Region):</span>
+          <span class="text-xs text-[var(--td-text-color-secondary)]">区块区号 (Region):</span>
           <span class="font-bold text-[var(--color-primary)]">r.{{ centerCoordinates.regionX }}.{{ centerCoordinates.regionZ }}</span>
         </div>
 
         <div class="flex justify-between items-center gap-6 mb-3">
-          <span class="text-xs text-zinc-500 dark:text-zinc-400">当前缩放:</span>
+          <span class="text-xs text-[var(--td-text-color-secondary)]">当前缩放:</span>
           <span class="font-bold text-[var(--color-primary)]">{{ Math.round(scale * 100) }}%</span>
         </div>
 
-        <div class="pt-2.5 border-t border-dashed border-zinc-200/80 dark:border-zinc-700/80 text-right text-[11px] text-zinc-400 dark:text-zinc-500 font-sans tracking-widest">
+        <div class="pt-2.5 border-t border-dashed border-zinc-200/80 dark:border-zinc-700/80 text-right text-[11px] text-[var(--td-text-color-secondary)] font-sans tracking-widest">
           🖱️ 滚轮缩放 | 按住拖拽
         </div>
 

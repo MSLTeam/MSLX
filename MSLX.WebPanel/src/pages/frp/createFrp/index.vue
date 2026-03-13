@@ -8,16 +8,16 @@ import MEFrp from '@/pages/frp/createFrp/components/MEFrp/index.vue';
 const value = ref(1);
 </script>
 <template>
-  <div class="mx-auto flex flex-col gap-6 text-zinc-800 dark:text-zinc-200 pb-5">
+  <div class="mx-auto flex flex-col gap-6 text-[var(--td-text-color-primary)] pb-5">
 
     <div
-      class="design-card list-item-anim flex flex-col sm:flex-row sm:items-center justify-between gap-5 p-5 sm:p-6 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm text-left"
+      class="design-card list-item-anim flex flex-col sm:flex-row sm:items-center justify-between gap-5 p-5 sm:p-6 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
       style="animation-delay: 0s;"
     >
       <div class="flex items-center gap-3">
         <div class="flex flex-col">
-          <h2 class="text-lg font-bold text-zinc-900 dark:text-zinc-100 m-0 leading-none tracking-tight">创建穿透隧道</h2>
-          <span class="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 font-medium">选择适合您的内网穿透服务，快速将本地服务器暴露至公网以进行联机···</span>
+          <h2 class="text-lg font-bold text-[var(--td-text-color-primary)] m-0 leading-none tracking-tight">创建穿透隧道</h2>
+          <span class="text-xs text-[var(--td-text-color-secondary)] mt-1.5 font-medium">选择适合您的内网穿透服务，快速将本地服务器暴露至公网以进行联机···</span>
         </div>
       </div>
 

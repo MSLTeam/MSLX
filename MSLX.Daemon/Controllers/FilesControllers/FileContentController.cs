@@ -22,9 +22,9 @@ public class FileContentController : ControllerBase
 
         if (id == 0)
         {
-            // ID为0时，指向 Configs/Frpc，默认 UTF8
+            // ID为0时，指向 Configs/Frpc
             basePath = Path.Combine(IConfigBase.GetAppConfigPath(), "Frpc");
-            encoding = Encoding.UTF8;
+            encoding = new UTF8Encoding(false); 
         }
         else
         {
@@ -34,7 +34,7 @@ public class FileContentController : ControllerBase
                 return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
 
             basePath = server.Base;
-            encoding = server.FileEncoding == "gbk" ? Encoding.GetEncoding("gbk") : Encoding.UTF8;
+            encoding = FileUtils.GetFileEncodingByString(server.FileEncoding);
         }
 
         // 安全检查
@@ -224,7 +224,8 @@ public class FileContentController : ControllerBase
                 return NotFound(new ApiResponse<object> { Code = 404, Message = "找不到指定的实例" });
             }
             basePath = server.Base;
-            encoding = server.FileEncoding == "gbk" ? Encoding.GetEncoding("gbk") : Encoding.UTF8;
+            
+            encoding = FileUtils.GetFileEncodingByString(server.FileEncoding);
         }
 
         // check

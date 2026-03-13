@@ -72,7 +72,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="design-card relative flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all duration-300">
+  <div class="design-card relative flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300">
 
     <t-loading :loading="loading" show-overlay>
       <div class="p-5 sm:p-6 sm:px-8">
@@ -80,7 +80,7 @@ onMounted(() => {
         <div class="flex items-center justify-between mb-6 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60">
           <div class="flex items-center gap-3">
             <div class="w-1.5 h-5 bg-[var(--color-primary)] rounded-full shadow-[0_0_8px_var(--color-primary-light)] opacity-90"></div>
-            <h2 class="text-lg font-bold text-zinc-900 dark:text-zinc-100 m-0 leading-none tracking-tight">系统偏好设置</h2>
+            <h2 class="text-lg font-bold text-[var(--td-text-color-primary)] m-0 leading-none tracking-tight">系统偏好设置</h2>
           </div>
           <t-button variant="dashed" size="small" class="!bg-transparent" @click="handleRefresh">
             <template #icon><refresh-icon /></template>
@@ -91,7 +91,7 @@ onMounted(() => {
         <t-form ref="sysForm" :data="sysData" :label-width="140" label-align="left" @submit="onSysSubmit">
 
           <div class="flex items-center gap-3 mt-2 mb-6">
-            <span class="text-xs font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">守护进程</span>
+            <span class="text-xs font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest">守护进程</span>
             <div class="h-px bg-zinc-200/60 dark:bg-zinc-700/60 flex-1"></div>
           </div>
 
@@ -104,14 +104,14 @@ onMounted(() => {
 
           <t-form-item label="自动打开控制台">
             <template #help>
-              <span class="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1 inline-block">MSLX 守护进程启动成功后，是否自动登录网页端控制台。</span>
+              <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block">MSLX 守护进程启动成功后，是否自动登录网页端控制台。</span>
             </template>
             <t-switch v-model="sysData.openWebConsoleOnLaunch" />
           </t-form-item>
 
           <t-form-item label="安装镜像源">
             <template #help>
-              <span class="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1 inline-block">选择在自动安装 NeoForge / Forge 时所使用的镜像源。</span>
+              <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block">选择在自动安装 NeoForge / Forge 时所使用的镜像源。</span>
             </template>
             <t-select v-model="sysData.neoForgeInstallerMirrors" :options="mirrorOptions" class="!w-full sm:!w-72" />
           </t-form-item>
@@ -119,7 +119,7 @@ onMounted(() => {
 
           <template v-if="!isInternalNetwork()">
             <div class="flex items-center gap-3 mt-8 mb-6">
-              <span class="text-xs font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">MSL OAuth 2.0</span>
+              <span class="text-xs font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest">MSL OAuth 2.0</span>
               <div class="h-px bg-zinc-200/60 dark:bg-zinc-700/60 flex-1"></div>
             </div>
 
@@ -131,7 +131,7 @@ onMounted(() => {
 
             <t-form-item label="Client Secret">
               <template #help>
-                <span class="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1 inline-block">配置 MSL OAuth 2.0 后即可使用您的 MSL 账号一键登录控制台。</span>
+                <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block">配置 MSL OAuth 2.0 后即可使用您的 MSL 账号一键登录控制台。</span>
               </template>
               <t-input v-model="sysData.oAuthMSLClientSecret" type="password" placeholder="请输入 Client Secret" class="!w-full sm:!w-96">
                 <template #prefix-icon><control-platform-icon class="opacity-60 text-zinc-400" /></template>
@@ -140,7 +140,7 @@ onMounted(() => {
 
             <t-form-item label="回调地址">
               <template #help>
-                <span class="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1 inline-block">请将此地址复制并填入 MSL 用户中心 OAuth 应用配置的 [回调地址] 中。</span>
+                <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block">请将此地址复制并填入 MSL 用户中心 OAuth 应用配置的 [回调地址] 中。</span>
               </template>
               <t-input :value="callbackUrl" readonly placeholder="正在获取当前域名..." class="!w-full sm:!w-96 !bg-zinc-50/50 dark:!bg-zinc-900/30">
                 <template #prefix-icon><link-icon class="opacity-60 text-zinc-400" /></template>
@@ -162,13 +162,13 @@ onMounted(() => {
 
 
           <div class="flex items-center gap-3 mt-8 mb-6">
-            <span class="text-xs font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">网络与安全</span>
+            <span class="text-xs font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest">网络与安全</span>
             <div class="h-px bg-zinc-200/60 dark:bg-zinc-700/60 flex-1"></div>
           </div>
 
           <t-form-item label="禁止本地访问">
             <template #help>
-              <span class="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1 inline-block">开启后将禁止本地回环地址访问，增强安全性。</span>
+              <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block">开启后将禁止本地回环地址访问，增强安全性。</span>
             </template>
             <div class="flex items-center gap-3">
               <t-switch v-model="sysData.fireWallBanLocalAddr" />
@@ -188,7 +188,7 @@ onMounted(() => {
                   <template #prefix-icon><server-icon class="opacity-60 text-zinc-400" /></template>
                 </t-input>
               </div>
-              <div class="text-zinc-400 dark:text-zinc-500 font-extrabold pb-1">:</div>
+              <div class="text-[var(--td-text-color-secondary)] font-extrabold pb-1">:</div>
               <div class="w-24 shrink-0">
                 <t-input v-model="sysData.listenPort" placeholder="1027" align="center">
                   <template #prefix-icon><control-platform-icon class="opacity-60 text-zinc-400 hidden sm:block" /></template>

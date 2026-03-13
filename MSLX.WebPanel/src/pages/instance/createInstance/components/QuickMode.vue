@@ -603,9 +603,9 @@ const goToHome = () => {
 </script>
 
 <template>
-  <div class="mx-auto pb-6 text-zinc-800 dark:text-zinc-200">
+  <div class="mx-auto pb-6 text-[var(--td-text-color-primary)]">
 
-    <div class="design-card bg-white/80 dark:bg-zinc-800/80 backdrop-blur-xl rounded-3xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-6 sm:p-8 transition-all duration-300 flex flex-col md:flex-row gap-8 lg:gap-12 min-h-[600px]">
+    <div class="design-card bg-[var(--td-bg-color-container)]/80 rounded-3xl border border-[var(--td-component-border)] shadow-sm p-6 sm:p-8 transition-all duration-300 flex flex-col md:flex-row gap-8 lg:gap-12 min-h-[600px]">
 
       <div class="w-full md:w-56 shrink-0 md:border-r border-dashed border-zinc-200/80 dark:border-zinc-700/60 md:pr-8 pb-4 md:pb-0 border-b md:border-b-0">
         <t-steps layout="vertical" :current="currentStep" status="process" readonly class="custom-steps !bg-transparent !mt-2">
@@ -671,9 +671,9 @@ const goToHome = () => {
                     </div>
                     <div class="flex items-center gap-3">
                       <span class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 font-bold text-xs tracking-wide shadow-sm">MC 1.13 - 更低版本</span>
-                      <span class="font-extrabold text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md border border-zinc-200 dark:border-zinc-700">Java 8</span>
+                      <span class="font-extrabold text-xs text-[var(--td-text-color-secondary)] bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md border border-zinc-200 dark:border-zinc-700">Java 8</span>
                     </div>
-                    <div class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 flex items-center gap-1 font-medium">
+                    <div class="text-[11px] text-[var(--td-text-color-secondary)] mt-1 flex items-center gap-1 font-medium">
                       <t-icon name="info-circle" size="14px" /> 建议直接使用推荐版本，避免兼容性问题。
                     </div>
                   </div>
@@ -692,7 +692,7 @@ const goToHome = () => {
                   <div class="w-full sm:w-[32rem] min-h-[70px] mt-2">
                     <div v-if="javaType === 'online'">
                       <t-select v-model="selectedJavaVersion" :options="javaVersions" placeholder="请选择 Java 版本" class="!w-full sm:!w-64" />
-                      <div class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-2 font-medium">
+                      <div class="text-[11px] text-[var(--td-text-color-secondary)] mt-2 font-medium">
                         将下载并使用 Java {{ selectedJavaVersion || '?' }}
                         <span class="font-mono bg-zinc-100 dark:bg-zinc-800 px-1 rounded ml-1">{{ userStore.userInfo.systemInfo.osType.toLowerCase().replace('os', '') }} / {{ userStore.userInfo.systemInfo.osArchitecture.toLowerCase() }}</span>
                       </div>
@@ -738,8 +738,8 @@ const goToHome = () => {
                         <div class="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)] opacity-80"></div>
                         <t-icon name="check-circle-filled" class="text-[var(--color-primary)] text-xl shrink-0 ml-1" />
                         <div class="flex-1 min-w-0">
-                          <div class="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">{{ formData.core }}</div>
-                          <div class="text-[11px] text-zinc-500 dark:text-zinc-400 truncate mt-0.5">MSLX 将在稍后帮您自动下载此文件...</div>
+                          <div class="font-bold text-sm text-[var(--td-text-color-primary)] truncate">{{ formData.core }}</div>
+                          <div class="text-[11px] text-[var(--td-text-color-secondary)] truncate mt-0.5">MSLX 将在稍后帮您自动下载此文件...</div>
                         </div>
                         <t-button shape="circle" variant="text" theme="danger" class="shrink-0 hover:!bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity" @click="formData.core = ''; formData.coreUrl = '';">
                           <t-icon name="close" />
@@ -761,7 +761,7 @@ const goToHome = () => {
                       </t-button>
 
                       <div v-if="isUploading" class="w-full bg-transparent p-4 mt-4 rounded-lg border border-[var(--color-primary)]/40">
-                        <div class="text-sm font-bold text-zinc-800 dark:text-zinc-200 mb-2 truncate">正在上传: {{ uploadedFileName }} ({{ uploadedFileSize }})</div>
+                        <div class="text-sm font-bold text-[var(--td-text-color-primary)] mb-2 truncate">正在上传: {{ uploadedFileName }} ({{ uploadedFileSize }})</div>
                         <t-progress theme="line" :percentage="uploadProgress" />
                         <div class="text-[11px] text-zinc-500 mt-2 text-center">别着急，喝杯茶🍵...</div>
                       </div>
@@ -770,8 +770,8 @@ const goToHome = () => {
                         <div class="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-success)] opacity-80"></div>
                         <t-icon name="check-circle-filled" class="text-[var(--color-success)] text-xl shrink-0 ml-1" />
                         <div class="flex-1 min-w-0">
-                          <div class="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">{{ uploadedFileName }}</div>
-                          <div class="text-[11px] text-zinc-500 dark:text-zinc-400 truncate mt-0.5">{{ uploadedFileSize }} | 已上传准备就绪</div>
+                          <div class="font-bold text-sm text-[var(--td-text-color-primary)] truncate">{{ uploadedFileName }}</div>
+                          <div class="text-[11px] text-[var(--td-text-color-secondary)] truncate mt-0.5">{{ uploadedFileSize }} | 已上传准备就绪</div>
                         </div>
                         <div class="flex items-center gap-1 shrink-0">
                           <t-button shape="square" variant="text" theme="primary" @click="triggerFileSelect"><t-icon name="swap" /></t-button>
@@ -825,8 +825,8 @@ const goToHome = () => {
             <div v-show="currentStep === 4" class="list-item-anim flex-1 pt-1">
 
               <div class="flex flex-col min-w-0 mb-8 pb-6 border-b border-zinc-200 dark:border-zinc-800">
-                <div class="text-xl font-extrabold text-zinc-900 dark:text-zinc-100 truncate tracking-tight">{{ formData.name }}</div>
-                <div class="text-sm text-zinc-500 dark:text-zinc-400 mt-2 flex items-center gap-1.5 truncate">
+                <div class="text-xl font-extrabold text-[var(--td-text-color-primary)] truncate tracking-tight">{{ formData.name }}</div>
+                <div class="text-sm text-[var(--td-text-color-secondary)] mt-2 flex items-center gap-1.5 truncate">
                   <t-icon name="folder-open" class="opacity-70" /> {{ formData.path || '默认数据路径 (/DaemonData/Servers)' }}
                 </div>
               </div>
@@ -834,10 +834,10 @@ const goToHome = () => {
               <div class="flex flex-col w-full">
 
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80">
-                  <span class="text-sm text-zinc-500 dark:text-zinc-400 font-bold mb-1.5 sm:mb-0 shrink-0">服务端核心</span>
+                  <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-1.5 sm:mb-0 shrink-0">服务端核心</span>
                   <div class="flex flex-col sm:items-end text-left sm:text-right">
                     <div class="flex items-center gap-2">
-                      <span class="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate max-w-[200px] sm:max-w-[300px]">{{ formData.core || '未指定' }}</span>
+                      <span class="text-sm font-bold text-[var(--td-text-color-primary)] truncate max-w-[200px] sm:max-w-[300px]">{{ formData.core || '未指定' }}</span>
                       <t-tag v-if="downloadType === 'online'" theme="primary" variant="light" size="small" class="!rounded">在线下载</t-tag>
                       <t-tag v-else-if="downloadType === 'manual'" theme="warning" variant="light" size="small" class="!rounded">手动上传</t-tag>
                       <t-tag v-else theme="default" variant="light" size="small" class="!rounded">自定义</t-tag>
@@ -850,11 +850,11 @@ const goToHome = () => {
                 </div>
 
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80">
-                  <span class="text-sm text-zinc-500 dark:text-zinc-400 font-bold mb-1.5 sm:mb-0 shrink-0">Java 运行时</span>
+                  <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-1.5 sm:mb-0 shrink-0">Java 运行时</span>
                   <div class="flex flex-col sm:items-end text-left sm:text-right">
                     <div class="flex items-center gap-2">
-                      <span v-if="javaType === 'online'" class="text-sm font-bold text-zinc-800 dark:text-zinc-200">Java {{ selectedJavaVersion }}</span>
-                      <span v-else class="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate max-w-[200px] sm:max-w-[300px]" :title="formData.java">{{ formData.java }}</span>
+                      <span v-if="javaType === 'online'" class="text-sm font-bold text-[var(--td-text-color-primary)]">Java {{ selectedJavaVersion }}</span>
+                      <span v-else class="text-sm font-bold text-[var(--td-text-color-primary)] truncate max-w-[200px] sm:max-w-[300px]" :title="formData.java">{{ formData.java }}</span>
                       <t-tag v-if="javaType === 'online'" theme="success" variant="light" size="small" class="!rounded">自动安装</t-tag>
                     </div>
                     <div class="text-[11px] text-zinc-500 mt-1 truncate max-w-[250px] sm:max-w-[350px]">
@@ -865,7 +865,7 @@ const goToHome = () => {
                 </div>
 
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80">
-                  <span class="text-sm text-zinc-500 dark:text-zinc-400 font-bold mb-1.5 sm:mb-0 shrink-0">内存分配 (JVM)</span>
+                  <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-1.5 sm:mb-0 shrink-0">内存分配 (JVM)</span>
                   <div class="flex items-center gap-3">
                     <span class="text-sm font-bold text-[var(--color-primary)]">初始 (Xms): {{ minMComputed }} {{ minUnit }}</span>
                     <t-icon name="arrow-right" class="text-zinc-300 dark:text-zinc-600" />
@@ -874,8 +874,8 @@ const goToHome = () => {
                 </div>
 
                 <div class="flex flex-col sm:flex-row sm:items-start justify-between py-4">
-                  <span class="text-sm text-zinc-500 dark:text-zinc-400 font-bold mb-2 sm:mb-0 shrink-0 mt-1">启动参数</span>
-                  <div v-if="formData.args" class="text-xs font-mono text-zinc-600 dark:text-zinc-400 break-all leading-relaxed bg-zinc-50/50 dark:bg-zinc-800/30 p-2.5 rounded-lg border border-zinc-100 dark:border-zinc-800 text-left sm:text-right max-w-full sm:max-w-md">
+                  <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-2 sm:mb-0 shrink-0 mt-1">启动参数</span>
+                  <div v-if="formData.args" class="text-xs font-mono text-[var(--td-text-color-secondary)] break-all leading-relaxed bg-zinc-50/50 dark:bg-zinc-800/30 p-2.5 rounded-lg border border-zinc-100 dark:border-zinc-800 text-left sm:text-right max-w-full sm:max-w-md">
                     {{ formData.args }}
                   </div>
                   <div v-else class="text-sm text-zinc-500 mt-1">无额外参数</div>
@@ -898,18 +898,18 @@ const goToHome = () => {
         </div>
 
         <div v-if="isCreating" class="h-full flex flex-col items-center justify-center py-8 list-item-anim">
-          <div class="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-2 tracking-tight">正在创建实例 ({{ createdServerId }})</div>
-          <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-6">请勿关闭此页面，创建过程可能需要几分钟...</p>
+          <div class="text-lg font-bold text-[var(--td-text-color-primary)] mb-2 tracking-tight">正在创建实例 ({{ createdServerId }})</div>
+          <p class="text-sm text-[var(--td-text-color-secondary)] mb-6">请勿关闭此页面，创建过程可能需要几分钟...</p>
 
           <div class="w-full max-w-lg !my-6">
             <t-progress theme="plump" :percentage="progress" :label="`${progress.toFixed(2)}%`" />
           </div>
 
-          <div class="w-full max-w-2xl bg-white/40 dark:bg-zinc-900/40 backdrop-blur-md rounded-2xl border border-white/60 dark:border-zinc-700/50 p-4 h-64 flex flex-col mt-6 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+          <div class="w-full max-w-2xl bg-white/40 dark:bg-zinc-900/40 rounded-2xl border border-white/60 dark:border-zinc-700/50 p-4 h-64 flex flex-col mt-6 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
             <div ref="logContainerRef" class="flex-1 overflow-y-auto custom-scrollbar pr-2">
               <div v-for="(log, index) in statusMessages" :key="index" class="text-xs font-mono mb-2 leading-relaxed">
-                <span class="text-zinc-500 dark:text-zinc-400 mr-2">[{{ log.time }}]</span>
-                <span class="text-zinc-800 dark:text-zinc-200 font-medium">{{ log.message }}</span>
+                <span class="text-[var(--td-text-color-secondary)] mr-2">[{{ log.time }}]</span>
+                <span class="text-[var(--td-text-color-primary)] font-medium">{{ log.message }}</span>
               </div>
             </div>
           </div>
@@ -918,11 +918,11 @@ const goToHome = () => {
         <div v-if="isSuccess" class="h-full flex flex-col items-center justify-center py-8 list-item-anim min-h-[50vh] sm:min-h-[40vh]">
           <t-icon name="check-circle" size="64px" class="text-[var(--color-success)]" />
 
-          <div class="text-xl text-zinc-900 dark:text-zinc-100 text-center font-medium leading-[22px] !mt-4">
+          <div class="text-xl text-[var(--td-text-color-primary)] text-center font-medium leading-[22px] !mt-4">
             服务器 ({{ createdServerId }}) 已创建成功
           </div>
 
-          <div class="text-sm text-zinc-500 dark:text-zinc-400 leading-[22px] !my-2 !mb-8">
+          <div class="text-sm text-[var(--td-text-color-secondary)] leading-[22px] !my-2 !mb-8">
             你现在可以去服务器列表启动它了
           </div>
 

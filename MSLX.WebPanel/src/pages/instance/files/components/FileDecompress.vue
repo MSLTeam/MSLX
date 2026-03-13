@@ -132,19 +132,19 @@ const handleClose = () => {
     <div class="flex flex-col gap-5 py-2">
 
       <div class="bg-zinc-50 dark:bg-zinc-800/40 p-3 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 flex items-start text-[13px] shadow-inner">
-        <span class="text-zinc-500 dark:text-zinc-400 min-w-[70px] shrink-0 pt-0.5">目标文件：</span>
-        <span class="font-medium font-mono text-zinc-800 dark:text-zinc-200 break-all leading-relaxed">{{ fileName }}</span>
+        <span class="text-[var(--td-text-color-secondary)] min-w-[70px] shrink-0 pt-0.5">目标文件：</span>
+        <span class="font-medium font-mono text-[var(--td-text-color-primary)] break-all leading-relaxed">{{ fileName }}</span>
       </div>
 
       <div class="flex flex-col gap-2" v-if="!isProcessing">
-        <span class="text-sm font-medium text-zinc-800 dark:text-zinc-200">文件名编码</span>
+        <span class="text-sm font-medium text-[var(--td-text-color-primary)]">文件名编码</span>
         <t-select v-model="encoding" :options="encodingOptions" class="!rounded-lg shadow-sm" />
       </div>
 
       <div class="flex justify-between items-center py-1" v-if="!isProcessing">
         <div class="flex flex-col gap-1 pr-4">
-          <span class="text-sm font-medium text-zinc-800 dark:text-zinc-200">创建同名文件夹</span>
-          <span class="text-xs text-zinc-500 dark:text-zinc-400">推荐开启，防止文件散乱在当前目录</span>
+          <span class="text-sm font-medium text-[var(--td-text-color-primary)]">创建同名文件夹</span>
+          <span class="text-xs text-[var(--td-text-color-secondary)]">推荐开启，防止文件散乱在当前目录</span>
         </div>
         <t-switch v-model="createSubFolder" size="large" class="shrink-0" />
       </div>

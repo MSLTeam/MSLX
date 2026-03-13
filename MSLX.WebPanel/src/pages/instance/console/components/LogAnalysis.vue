@@ -177,18 +177,18 @@ watch(isDark, () => {
     attach="body"
   >
     <template #header>
-      <div class="flex items-center gap-2 font-bold text-lg text-zinc-800 dark:text-zinc-200">
+      <div class="flex items-center gap-2 font-bold text-lg text-[var(--td-text-color-primary)]">
         AI 错误日志分析
       </div>
     </template>
 
     <t-loading :loading="loading">
-      <div class="flex flex-col md:flex-row w-full h-[75vh] md:h-[70vh] rounded-xl overflow-hidden bg-white/80 dark:bg-zinc-800/80 border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm">
+      <div class="flex flex-col md:flex-row w-full h-[75vh] md:h-[70vh] rounded-xl overflow-hidden bg-[var(--td-bg-color-container)]/80 border border-[var(--td-component-border)] shadow-sm">
 
         <div class="list-item-anim w-full md:w-[40%] min-w-[320px] p-5 flex flex-col gap-5 border-b md:border-b-0 md:border-r border-zinc-200/60 dark:border-zinc-700/60 overflow-y-auto custom-scrollbar" style="animation-delay: 0s;">
 
           <div class="flex flex-col gap-2">
-            <div class="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">选择分析模型</div>
+            <div class="text-[11px] font-bold text-[var(--td-text-color-secondary)] uppercase tracking-wider">选择分析模型</div>
             <t-select v-model="formData.selectedModel" placeholder="请选择 AI 模型" filterable class="!w-full">
               <t-option v-for="item in modelList" :key="item.name" :value="item.name" :label="item.name">
                 <div class="flex justify-between items-center w-full gap-2">
@@ -200,14 +200,14 @@ watch(isDark, () => {
           </div>
 
           <div class="flex flex-col gap-2">
-            <div class="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">服务端核心 / 版本</div>
+            <div class="text-[11px] font-bold text-[var(--td-text-color-secondary)] uppercase tracking-wider">服务端核心 / 版本</div>
             <t-input v-model="formData.coreVersion" readonly placeholder="例如: Arclight 1.21.1">
               <template #prefix-icon><app-icon class="text-zinc-400" /></template>
             </t-input>
           </div>
 
           <div class="flex flex-col gap-2">
-            <div class="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">环境列表</div>
+            <div class="text-[11px] font-bold text-[var(--td-text-color-secondary)] uppercase tracking-wider">环境列表</div>
 
             <t-radio-group v-model="formData.envType" variant="default-filled" class="flex w-full">
               <t-radio-button value="mods" class="flex-1 !text-center">
@@ -238,7 +238,7 @@ watch(isDark, () => {
           </div>
 
           <div class="flex flex-col gap-2 flex-1 min-h-[150px]">
-            <div class="text-[11px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">错误日志内容</div>
+            <div class="text-[11px] font-bold text-[var(--td-text-color-secondary)] uppercase tracking-wider">错误日志内容</div>
             <t-textarea
               v-model="formData.logContent"
               placeholder="没找到有效日志，您可以手动粘贴日志......"
@@ -254,7 +254,7 @@ watch(isDark, () => {
         <div class="list-item-anim flex-1 flex flex-col bg-zinc-50/50 dark:bg-zinc-900/30 overflow-hidden" style="animation-delay: 0.1s;">
 
           <div class="px-5 py-4 flex flex-wrap justify-between items-center gap-3 border-b border-zinc-200/60 dark:border-zinc-700/60 bg-white/50 dark:bg-zinc-800/30">
-            <span class="text-sm font-bold text-zinc-800 dark:text-zinc-200">AI 分析报告</span>
+            <span class="text-sm font-bold text-[var(--td-text-color-primary)]">AI 分析报告</span>
             <div class="flex flex-wrap items-center gap-2">
               <t-tag theme="default" variant="light" class="!rounded font-bold">
                 <template #icon><browse-icon /></template> 今日: {{ stats.today }} / {{ stats.max }}

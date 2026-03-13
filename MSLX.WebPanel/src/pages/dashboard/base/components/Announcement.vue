@@ -44,11 +44,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="design-card w-full bg-white dark:bg-zinc-800 rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all duration-300 flex flex-col relative overflow-hidden">
+  <div class="design-card w-full bg-white dark:bg-zinc-800 rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300 flex flex-col relative overflow-hidden">
 
     <div class="flex items-center gap-2 p-5 sm:px-6 pb-4  dark:border-zinc-700/50 text-left">
       <t-icon name="system-messages" class="text-[var(--color-primary)] text-lg" />
-      <h3 class="text-[16px] font-bold text-zinc-900 dark:text-zinc-100 m-0">系统公告</h3>
+      <h3 class="text-[16px] font-bold text-[var(--td-text-color-primary)] m-0">系统公告</h3>
     </div>
 
     <div class="p-5 sm:px-6 text-left w-full min-h-[150px]">

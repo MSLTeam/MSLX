@@ -211,14 +211,14 @@ onMounted(() => {
 
     <div class="flex items-center gap-2 mt-5 mb-4 pb-2 border-b border-zinc-200/60 dark:border-zinc-700/60">
       <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
-      <h2 class="text-base font-bold text-zinc-800 dark:text-zinc-200 m-0">备份管理</h2>
+      <h2 class="text-base font-bold text-[var(--td-text-color-primary)] m-0">备份管理</h2>
     </div>
 
     <div class="flex flex-col md:flex-row md:justify-between md:items-center py-4 pr-0 md:pr-8 gap-4 md:gap-8">
 
       <div class="flex-1 min-w-[200px]">
-        <div class="text-sm font-bold text-zinc-800 dark:text-zinc-200 leading-snug">存档快照</div>
-        <div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
+        <div class="text-sm font-bold text-[var(--td-text-color-primary)] leading-snug">存档快照</div>
+        <div class="text-xs text-[var(--td-text-color-secondary)] mt-1.5 leading-relaxed">
           查看和管理服务器的自动或手动备份。建议定期下载重要备份到本地保存。
           <br />
           当前共有 <b class="text-zinc-700 dark:text-zinc-300">{{ tableData.length }}</b> 个备份文件。最大保存备份文件的数量需要在实例设置中配置。
@@ -236,7 +236,7 @@ onMounted(() => {
           <div v-if="selectedRowKeys.length > 0" class="flex items-center bg-zinc-100 dark:bg-zinc-800/80 px-3 py-1.5 rounded-lg gap-3 shadow-sm w-full md:w-auto justify-between md:justify-start">
             <div class="flex items-center gap-3">
               <div class="w-[2px] h-[14px] bg-zinc-300 dark:bg-zinc-600 -mr-1"></div>
-              <span class="text-sm font-bold text-zinc-800 dark:text-zinc-200">已选 {{ selectedRowKeys.length }} 项</span>
+              <span class="text-sm font-bold text-[var(--td-text-color-primary)]">已选 {{ selectedRowKeys.length }} 项</span>
             </div>
 
             <div class="flex items-center">
@@ -272,7 +272,7 @@ onMounted(() => {
         </template>
 
         <template #createTime="{ row }">
-          <div class="flex items-center text-zinc-500 dark:text-zinc-400 text-[13px]">
+          <div class="flex items-center text-[var(--td-text-color-secondary)] text-[13px]">
             <time-icon class="mr-1.5" />
             {{ row.createTime }}
           </div>
@@ -294,7 +294,7 @@ onMounted(() => {
         </template>
 
         <template #empty>
-          <div class="p-8 text-center text-sm font-medium text-zinc-400 dark:text-zinc-500">暂无备份记录</div>
+          <div class="p-8 text-center text-sm font-medium text-[var(--td-text-color-secondary)]">暂无备份记录</div>
         </template>
       </t-table>
     </div>

@@ -604,9 +604,9 @@ const viewDetails = () => {
 </script>
 
 <template>
-  <div class="mx-auto pb-6 text-zinc-800 dark:text-zinc-200">
+  <div class="mx-auto pb-6 text-[var(--td-text-color-primary)]">
 
-    <div class="design-card bg-white/80 dark:bg-zinc-800/80 backdrop-blur-xl rounded-3xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-6 sm:p-8 transition-all duration-300 flex flex-col md:flex-row gap-8 lg:gap-12 min-h-[600px]">
+    <div class="design-card bg-[var(--td-bg-color-container)]/80 rounded-3xl border border-[var(--td-component-border)] shadow-sm p-6 sm:p-8 transition-all duration-300 flex flex-col md:flex-row gap-8 lg:gap-12 min-h-[600px]">
 
       <div class="w-full md:w-56 shrink-0 md:border-r border-dashed border-zinc-200/80 dark:border-zinc-700/60 md:pr-8 pb-4 md:pb-0 border-b md:border-b-0">
         <t-steps layout="vertical" :current="currentStep" status="process" readonly class="custom-steps !bg-transparent !mt-2">
@@ -670,7 +670,7 @@ const viewDetails = () => {
                   </t-button>
 
                   <div v-if="isUploading" class="w-full bg-transparent p-4 mt-4 rounded-lg border border-[var(--color-primary)]/40">
-                    <div class="text-sm font-bold text-zinc-800 dark:text-zinc-200 mb-2 truncate">正在上传: {{ uploadedFileName }} ({{ uploadedFileSize }})</div>
+                    <div class="text-sm font-bold text-[var(--td-text-color-primary)] mb-2 truncate">正在上传: {{ uploadedFileName }} ({{ uploadedFileSize }})</div>
                     <t-progress theme="line" :percentage="uploadProgress" />
                     <div class="text-[11px] text-zinc-500 mt-2 text-center">别着急，喝杯咖啡☕️...</div>
                   </div>
@@ -683,8 +683,8 @@ const viewDetails = () => {
                     <div class="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-success)] opacity-80"></div>
                     <t-icon name="folder-zip" class="text-[var(--color-success)] text-xl shrink-0 ml-1" />
                     <div class="flex-1 min-w-0">
-                      <div class="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">{{ uploadedFileName }}</div>
-                      <div class="text-[11px] text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
+                      <div class="font-bold text-sm text-[var(--td-text-color-primary)] truncate">{{ uploadedFileName }}</div>
+                      <div class="text-[11px] text-[var(--td-text-color-secondary)] truncate mt-0.5">
                         {{ detectedJars.length > 0 ? `发现 ${detectedJars.length} 个服务端核心文件` : '未发现服务端核心文件' }}
                         {{ detectedRoot ? `| 根目录: /${detectedRoot}` : '' }}
                       </div>
@@ -739,8 +739,8 @@ const viewDetails = () => {
                           <div class="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)] opacity-80"></div>
                           <t-icon name="check-circle-filled" class="text-[var(--color-primary)] text-xl shrink-0 ml-1" />
                           <div class="flex-1 min-w-0">
-                            <div class="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">{{ formData.core }}</div>
-                            <div class="text-[11px] text-zinc-500 dark:text-zinc-400 truncate mt-0.5">将在创建时自动下载</div>
+                            <div class="font-bold text-sm text-[var(--td-text-color-primary)] truncate">{{ formData.core }}</div>
+                            <div class="text-[11px] text-[var(--td-text-color-secondary)] truncate mt-0.5">将在创建时自动下载</div>
                           </div>
                           <t-button shape="circle" variant="text" theme="danger" class="shrink-0 hover:!bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity" @click="formData.core = ''; formData.coreUrl = '';">
                             <t-icon name="close" />
@@ -751,7 +751,7 @@ const viewDetails = () => {
                   </div>
 
                   <div v-if="downloadType === 'manual'" class="mt-2">
-                    <div class="text-sm text-zinc-500 dark:text-zinc-400 mb-4">请在整合包解压后手动放入核心，或在此处不填写等待创建后手动上传。</div>
+                    <div class="text-sm text-[var(--td-text-color-secondary)] mb-4">请在整合包解压后手动放入核心，或在此处不填写等待创建后手动上传。</div>
                     <t-alert theme="error" message="此模式下建议确保压缩包内包含核心，或者使用在线下载功能。" class="!rounded-xl" />
                   </div>
                 </div>
@@ -780,9 +780,9 @@ const viewDetails = () => {
                     </div>
                     <div class="flex items-center gap-3">
                       <span class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 font-bold text-xs tracking-wide shadow-sm">MC 1.13 - 更低版本</span>
-                      <span class="font-extrabold text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md border border-zinc-200 dark:border-zinc-700">Java 8</span>
+                      <span class="font-extrabold text-xs text-[var(--td-text-color-secondary)] bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md border border-zinc-200 dark:border-zinc-700">Java 8</span>
                     </div>
-                    <div class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1 flex items-center gap-1 font-medium">
+                    <div class="text-[11px] text-[var(--td-text-color-secondary)] mt-1 flex items-center gap-1 font-medium">
                       <t-icon name="info-circle" size="14px" /> 建议直接使用推荐版本，避免兼容性问题。
                     </div>
                   </div>
@@ -846,8 +846,8 @@ const viewDetails = () => {
             <div v-show="currentStep === 5" class="list-item-anim flex-1 pt-1">
 
               <div class="flex flex-col min-w-0 mb-8 pb-6 border-b border-zinc-200 dark:border-zinc-800">
-                <div class="text-3xl font-extrabold text-zinc-900 dark:text-zinc-100 truncate tracking-tight">{{ formData.name }}</div>
-                <div class="text-sm text-zinc-500 dark:text-zinc-400 mt-2 flex items-center gap-1.5 truncate">
+                <div class="text-3xl font-extrabold text-[var(--td-text-color-primary)] truncate tracking-tight">{{ formData.name }}</div>
+                <div class="text-sm text-[var(--td-text-color-secondary)] mt-2 flex items-center gap-1.5 truncate">
                   <t-icon name="folder-open" class="opacity-70" /> {{ formData.path || '默认数据路径 (/DaemonData/Servers)' }}
                 </div>
               </div>
@@ -855,10 +855,10 @@ const viewDetails = () => {
               <div class="flex flex-col w-full">
 
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80">
-                  <span class="text-sm text-zinc-500 dark:text-zinc-400 font-bold mb-1.5 sm:mb-0 shrink-0">服务端整合包</span>
+                  <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-1.5 sm:mb-0 shrink-0">服务端整合包</span>
                   <div class="flex flex-col sm:items-end text-left sm:text-right">
                     <div class="flex items-center gap-2">
-                      <span class="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate max-w-[200px] sm:max-w-[300px]" :title="uploadedFileName">{{ uploadedFileName }}</span>
+                      <span class="text-sm font-bold text-[var(--td-text-color-primary)] truncate max-w-[200px] sm:max-w-[300px]" :title="uploadedFileName">{{ uploadedFileName }}</span>
                       <t-tag theme="primary" variant="light" size="small" class="!rounded">ZIP</t-tag>
                     </div>
                     <div class="text-[11px] text-zinc-500 mt-1">大小: {{ uploadedFileSize || '未知' }}</div>
@@ -866,10 +866,10 @@ const viewDetails = () => {
                 </div>
 
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80">
-                  <span class="text-sm text-zinc-500 dark:text-zinc-400 font-bold mb-1.5 sm:mb-0 shrink-0">启动核心 (Jar)</span>
+                  <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-1.5 sm:mb-0 shrink-0">启动核心 (Jar)</span>
                   <div class="flex flex-col sm:items-end text-left sm:text-right">
                     <div class="flex items-center gap-2">
-                      <span class="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate max-w-[200px] sm:max-w-[300px]" :title="formData.core">{{ formData.core }}</span>
+                      <span class="text-sm font-bold text-[var(--td-text-color-primary)] truncate max-w-[200px] sm:max-w-[300px]" :title="formData.core">{{ formData.core }}</span>
                       <t-tag v-if="detectedJars.length > 0" theme="success" variant="light" size="small" class="!rounded">整合包内核心</t-tag>
                       <t-tag v-else-if="downloadType === 'online'" theme="primary" variant="light" size="small" class="!rounded">在线下载</t-tag>
                       <t-tag v-else theme="warning" variant="light" size="small" class="!rounded">手动配置</t-tag>
@@ -882,11 +882,11 @@ const viewDetails = () => {
                 </div>
 
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80">
-                  <span class="text-sm text-zinc-500 dark:text-zinc-400 font-bold mb-1.5 sm:mb-0 shrink-0">Java 运行时</span>
+                  <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-1.5 sm:mb-0 shrink-0">Java 运行时</span>
                   <div class="flex flex-col sm:items-end text-left sm:text-right">
                     <div class="flex items-center gap-2">
-                      <span v-if="javaType === 'online'" class="text-sm font-bold text-zinc-800 dark:text-zinc-200">Java {{ selectedJavaVersion }}</span>
-                      <span v-else class="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate max-w-[200px] sm:max-w-[300px]" :title="formData.java">{{ formData.java }}</span>
+                      <span v-if="javaType === 'online'" class="text-sm font-bold text-[var(--td-text-color-primary)]">Java {{ selectedJavaVersion }}</span>
+                      <span v-else class="text-sm font-bold text-[var(--td-text-color-primary)] truncate max-w-[200px] sm:max-w-[300px]" :title="formData.java">{{ formData.java }}</span>
                       <t-tag v-if="javaType === 'online'" theme="success" variant="light" size="small" class="!rounded">自动安装</t-tag>
                       <t-tag v-else-if="javaType === 'local'" theme="primary" variant="light" size="small" class="!rounded">本机环境</t-tag>
                       <t-tag v-else theme="default" variant="light" size="small" class="!rounded">自定义</t-tag>
@@ -896,7 +896,7 @@ const viewDetails = () => {
                 </div>
 
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80">
-                  <span class="text-sm text-zinc-500 dark:text-zinc-400 font-bold mb-1.5 sm:mb-0 shrink-0">内存分配 (JVM)</span>
+                  <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-1.5 sm:mb-0 shrink-0">内存分配 (JVM)</span>
                   <div class="flex items-center gap-3">
                     <span class="text-sm font-bold text-[var(--color-primary)]">初始 (Xms): {{ minMComputed }} {{ minUnit }}</span>
                     <t-icon name="arrow-right" class="text-zinc-300 dark:text-zinc-600" />
@@ -905,8 +905,8 @@ const viewDetails = () => {
                 </div>
 
                 <div v-if="formData.args" class="flex flex-col sm:flex-row sm:items-start justify-between py-4">
-                  <span class="text-sm text-zinc-500 dark:text-zinc-400 font-bold mb-2 sm:mb-0 shrink-0 mt-1">启动参数</span>
-                  <div class="text-xs font-mono text-zinc-600 dark:text-zinc-400 break-all leading-relaxed bg-zinc-50/50 dark:bg-zinc-800/30 p-2.5 rounded-lg border border-zinc-100 dark:border-zinc-800 text-left sm:text-right max-w-full sm:max-w-md">
+                  <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-2 sm:mb-0 shrink-0 mt-1">启动参数</span>
+                  <div class="text-xs font-mono text-[var(--td-text-color-secondary)] break-all leading-relaxed bg-zinc-50/50 dark:bg-zinc-800/30 p-2.5 rounded-lg border border-zinc-100 dark:border-zinc-800 text-left sm:text-right max-w-full sm:max-w-md">
                     {{ formData.args }}
                   </div>
                 </div>
@@ -928,18 +928,18 @@ const viewDetails = () => {
         </div>
 
         <div v-if="isCreating" class="h-full flex flex-col items-center justify-center py-8 list-item-anim">
-          <div class="text-lg font-bold text-zinc-900 dark:text-zinc-100 mb-2 tracking-tight">正在创建整合包实例 ({{ createdServerId }})</div>
-          <p class="text-sm text-zinc-500 dark:text-zinc-400 mb-6">正在解压文件并配置环境...</p>
+          <div class="text-lg font-bold text-[var(--td-text-color-primary)] mb-2 tracking-tight">正在创建整合包实例 ({{ createdServerId }})</div>
+          <p class="text-sm text-[var(--td-text-color-secondary)] mb-6">正在解压文件并配置环境...</p>
 
           <div class="w-full max-w-lg !my-6">
             <t-progress theme="plump" :percentage="progress" :label="`${progress.toFixed(2)}%`" />
           </div>
 
-          <div class="w-full max-w-2xl bg-white/40 dark:bg-zinc-900/40 backdrop-blur-md rounded-2xl border border-white/60 dark:border-zinc-700/50 p-4 h-64 flex flex-col mt-6 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+          <div class="w-full max-w-2xl bg-white/40 dark:bg-zinc-900/40 rounded-2xl border border-white/60 dark:border-zinc-700/50 p-4 h-64 flex flex-col mt-6 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
             <div ref="logContainerRef" class="flex-1 overflow-y-auto custom-scrollbar pr-2">
               <div v-for="(log, index) in statusMessages" :key="index" class="text-xs font-mono mb-2 leading-relaxed">
-                <span class="text-zinc-500 dark:text-zinc-400 mr-2">[{{ log.time }}]</span>
-                <span class="text-zinc-800 dark:text-zinc-200 font-medium">{{ log.message }}</span>
+                <span class="text-[var(--td-text-color-secondary)] mr-2">[{{ log.time }}]</span>
+                <span class="text-[var(--td-text-color-primary)] font-medium">{{ log.message }}</span>
               </div>
             </div>
           </div>
@@ -948,11 +948,11 @@ const viewDetails = () => {
         <div v-if="isSuccess" class="h-full flex flex-col items-center justify-center py-8 list-item-anim min-h-[50vh] sm:min-h-[40vh]">
           <t-icon name="check-circle" size="64px" class="text-[var(--color-success)]" />
 
-          <div class="text-xl text-zinc-900 dark:text-zinc-100 text-center font-medium leading-[22px] !mt-4">
+          <div class="text-xl text-[var(--td-text-color-primary)] text-center font-medium leading-[22px] !mt-4">
             整合包服务器已部署成功
           </div>
 
-          <div class="text-sm text-zinc-500 dark:text-zinc-400 leading-[22px] !my-2 !mb-8">
+          <div class="text-sm text-[var(--td-text-color-secondary)] leading-[22px] !my-2 !mb-8">
             文件已解压，环境已配置就绪
           </div>
 

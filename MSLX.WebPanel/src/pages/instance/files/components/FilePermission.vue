@@ -113,7 +113,7 @@ const instanceId = props.instanceId;
       </t-form-item>
 
       <div class="mt-5 p-4 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 shadow-inner">
-        <div class="text-xs text-zinc-500 dark:text-zinc-400 mb-3 font-medium">快捷设置：</div>
+        <div class="text-xs text-[var(--td-text-color-secondary)] mb-3 font-medium">快捷设置：</div>
 
         <div class="flex gap-2 flex-wrap mb-2.5">
           <t-tag
@@ -129,16 +129,16 @@ const instanceId = props.instanceId;
         </div>
 
         <div class="min-h-[16px] flex items-center">
-          <div v-if="formData.mode === '755'" class="text-xs text-zinc-500 dark:text-zinc-400">
+          <div v-if="formData.mode === '755'" class="text-xs text-[var(--td-text-color-secondary)]">
             适合可执行程序、脚本或文件夹
           </div>
-          <div v-else-if="formData.mode === '644'" class="text-xs text-zinc-500 dark:text-zinc-400">
+          <div v-else-if="formData.mode === '644'" class="text-xs text-[var(--td-text-color-secondary)]">
             适合普通配置文件、日志等
           </div>
           <div v-else-if="formData.mode === '777'" class="text-xs text-amber-600 dark:text-amber-500 font-medium">
             ⚠️ 允许任何人读写执行 (极其不安全)
           </div>
-          <div v-else class="text-xs text-zinc-400 dark:text-zinc-500 italic opacity-60">
+          <div v-else class="text-xs text-[var(--td-text-color-secondary)] italic opacity-60">
             自定义权限
           </div>
         </div>

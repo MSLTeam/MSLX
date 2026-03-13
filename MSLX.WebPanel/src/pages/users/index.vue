@@ -175,15 +175,15 @@ onMounted(() => {
 });
 </script>
 <template>
-  <div class="mx-auto flex flex-col gap-6 text-zinc-800 dark:text-zinc-200 pb-5">
+  <div class="mx-auto flex flex-col gap-6 text-[var(--td-text-color-primary)] pb-5">
 
     <div
-      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm text-left"
+      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
     >
       <div class="flex items-center gap-3">
         <div class="flex flex-col">
-          <h2 class="text-lg font-bold text-zinc-900 dark:text-zinc-100 m-0 leading-none">用户管理</h2>
-          <span class="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 font-medium">管理系统内的账户权限与实例资源分配</span>
+          <h2 class="text-lg font-bold text-[var(--td-text-color-primary)] m-0 leading-none">用户管理</h2>
+          <span class="text-xs text-[var(--td-text-color-secondary)] mt-1.5 font-medium">管理系统内的账户权限与实例资源分配</span>
         </div>
       </div>
 
@@ -200,10 +200,10 @@ onMounted(() => {
     </div>
 
     <div class="relative min-h-[400px]">
-      <div class="design-card list-item-anim flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-5 sm:p-6" style="animation-delay: 0.05s;">
+      <div class="design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm p-5 sm:p-6" style="animation-delay: 0.05s;">
 
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60">
-          <div class="text-base font-bold text-zinc-900 dark:text-zinc-100">用户列表</div>
+          <div class="text-base font-bold text-[var(--td-text-color-primary)]">用户列表</div>
           <div class="w-full sm:w-72">
             <t-input v-model="filterText" placeholder="搜索用户名或昵称" clearable>
               <template #prefix-icon><search-icon class="opacity-60" /></template>
@@ -231,8 +231,8 @@ onMounted(() => {
                 <span class="font-bold text-lg">{{ row.name ? row.name[0].toUpperCase() : 'U' }}</span>
               </t-avatar>
               <div class="flex flex-col min-w-0">
-                <div class="font-bold text-sm text-zinc-900 dark:text-zinc-100 truncate">{{ row.name || '未设置昵称' }}</div>
-                <div class="text-xs font-mono text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">@{{ row.username }}</div>
+                <div class="font-bold text-sm text-[var(--td-text-color-primary)] truncate">{{ row.name || '未设置昵称' }}</div>
+                <div class="text-xs font-mono text-[var(--td-text-color-secondary)] mt-0.5 truncate">@{{ row.username }}</div>
               </div>
             </div>
           </template>
@@ -249,8 +249,8 @@ onMounted(() => {
           <template #time-slot="{ row }">
             <div class="flex items-center gap-1.5">
               <time-icon v-if="row.lastLoginTime" class="text-[var(--color-primary)] opacity-70" size="14px" />
-              <span v-if="row.lastLoginTime" class="text-xs font-mono font-medium text-zinc-600 dark:text-zinc-400">{{ new Date(row.lastLoginTime).toLocaleString() }}</span>
-              <span v-else class="text-xs font-medium px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500">从未登录</span>
+              <span v-if="row.lastLoginTime" class="text-xs font-mono font-medium text-[var(--td-text-color-secondary)]">{{ new Date(row.lastLoginTime).toLocaleString() }}</span>
+              <span v-else class="text-xs font-medium px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-[var(--td-text-color-secondary)]">从未登录</span>
             </div>
           </template>
 
@@ -325,7 +325,7 @@ onMounted(() => {
               placeholder="搜索或选择要分配的实例与隧道"
             />
             <template #help>
-              <span class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 inline-block">该用户将获得以上选定实例和隧道的完整控制权</span>
+              <span class="text-[11px] text-[var(--td-text-color-secondary)] mt-1 inline-block">该用户将获得以上选定实例和隧道的完整控制权</span>
             </template>
           </t-form-item>
         </template>
@@ -333,12 +333,12 @@ onMounted(() => {
         <t-form-item label="密码设置" name="password">
           <t-input v-model="formData.password" type="password" placeholder="设置新密码" autocomplete="new-password" />
           <template #help>
-            <span v-if="dialogMode === 'edit'" class="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 inline-block">留空则保持原密码不变</span>
+            <span v-if="dialogMode === 'edit'" class="text-[11px] text-[var(--td-text-color-secondary)] mt-1 inline-block">留空则保持原密码不变</span>
           </template>
         </t-form-item>
 
         <t-form-item v-if="dialogMode === 'edit'" label="开发者选项">
-          <div class="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 w-full mt-1">
+          <div class="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-[var(--td-component-border)] w-full mt-1">
             <t-checkbox v-model="formData.resetApiKey">强制重置该用户的 API Key</t-checkbox>
           </div>
         </t-form-item>

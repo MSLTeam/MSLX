@@ -36,7 +36,7 @@ defineEmits<{
 <template>
   <div class="flex flex-col gap-5">
 
-    <div class="design-card bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-5">
+    <div class="design-card bg-[var(--td-bg-color-container)]/80 rounded-xl border border-[var(--td-component-border)] shadow-sm p-5">
 
       <div class="flex justify-between items-center mb-5">
         <div class="flex items-center gap-2 font-bold text-sm" :class="isRunning ? 'text-[var(--color-success)]' : 'text-zinc-500'">
@@ -70,10 +70,10 @@ defineEmits<{
       </div>
     </div>
 
-    <div class="design-card flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-5">
+    <div class="design-card flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-xl border border-[var(--td-component-border)] shadow-sm p-5">
 
       <div class="flex justify-between items-center mb-4 pb-4 border-b border-zinc-200/60 dark:border-zinc-700/60">
-        <h3 class="text-sm font-bold text-zinc-800 dark:text-zinc-200 m-0">隧道概览</h3>
+        <h3 class="text-sm font-bold text-[var(--td-text-color-primary)] m-0">隧道概览</h3>
         <t-tag v-if="tunnelInfo?.proxies?.some((proxy) => proxy.type === 'xtcp')" variant="light-outline" theme="primary" class="!rounded !font-bold">联机房间 - 房主</t-tag>
         <t-tag v-else-if="tunnelInfo?.proxies?.some((proxy) => proxy.type === 'xtcp - Visitors')" variant="light-outline" theme="primary" class="!rounded !font-bold">联机房间 - 访客</t-tag>
         <t-button v-else shape="circle" variant="text" size="small" class="!text-zinc-400 hover:!text-[var(--color-primary)]"><code-icon size="14px" /></t-button>
@@ -81,8 +81,8 @@ defineEmits<{
 
       <div class="flex flex-col">
         <div class="flex justify-between items-center py-2">
-          <div class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400"><server-icon size="14px" /> 隧道实例 ID</div>
-          <div class="font-mono font-bold text-sm text-zinc-800 dark:text-zinc-200">#{{ frpId }}</div>
+          <div class="flex items-center gap-1.5 text-xs text-[var(--td-text-color-secondary)]"><server-icon size="14px" /> 隧道实例 ID</div>
+          <div class="font-mono font-bold text-sm text-[var(--td-text-color-primary)]">#{{ frpId }}</div>
         </div>
 
         <template v-if="tunnelInfo?.proxies?.length > 0">
@@ -92,40 +92,40 @@ defineEmits<{
             </div>
 
             <div class="flex justify-between items-center py-1.5">
-              <div class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400"><cloud-icon size="14px" /> {{ proxy.type.includes('xtcp') ? '房间号' : '名称' }}</div>
+              <div class="flex items-center gap-1.5 text-xs text-[var(--td-text-color-secondary)]"><cloud-icon size="14px" /> {{ proxy.type.includes('xtcp') ? '房间号' : '名称' }}</div>
               <t-tooltip :content="proxy.proxyName" placement="top" show-arrow destroy-on-close>
-                <div class="font-bold text-sm text-zinc-800 dark:text-zinc-200 truncate max-w-[140px] cursor-pointer hover:text-[var(--color-primary)] transition-colors" @click="copyText(proxy.proxyName, true, `${proxy.type.includes('xtcp') ? '房间号' : '隧道名称'}已复制！`)">
+                <div class="font-bold text-sm text-[var(--td-text-color-primary)] truncate max-w-[140px] cursor-pointer hover:text-[var(--color-primary)] transition-colors" @click="copyText(proxy.proxyName, true, `${proxy.type.includes('xtcp') ? '房间号' : '隧道名称'}已复制！`)">
                   {{ proxy.proxyName }}
                 </div>
               </t-tooltip>
             </div>
 
             <div class="flex justify-between items-center py-1.5">
-              <div class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400"><internet-icon size="14px" /> 协议</div>
+              <div class="flex items-center gap-1.5 text-xs text-[var(--td-text-color-secondary)]"><internet-icon size="14px" /> 协议</div>
               <div class="text-xs font-bold text-[var(--color-primary)] uppercase">{{ proxy.type }}</div>
             </div>
 
             <div class="flex justify-between items-center py-1.5">
-              <div class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400"><link-icon size="14px" /> {{ proxy.type.includes('xtcp') ? '密钥' : '远程地址' }}</div>
+              <div class="flex items-center gap-1.5 text-xs text-[var(--td-text-color-secondary)]"><link-icon size="14px" /> {{ proxy.type.includes('xtcp') ? '密钥' : '远程地址' }}</div>
               <t-tooltip :content="proxy.remoteAddressMain" placement="top" show-arrow destroy-on-close>
-                <div class="font-mono font-bold text-xs text-zinc-800 dark:text-zinc-200 truncate max-w-[140px] cursor-pointer hover:text-[var(--color-primary)] transition-colors" @click="copyText(proxy.remoteAddressMain, true, `${proxy.type.includes('xtcp') ? '房间密钥' : '连接地址'}已复制！`)">
+                <div class="font-mono font-bold text-xs text-[var(--td-text-color-primary)] truncate max-w-[140px] cursor-pointer hover:text-[var(--color-primary)] transition-colors" @click="copyText(proxy.remoteAddressMain, true, `${proxy.type.includes('xtcp') ? '房间密钥' : '连接地址'}已复制！`)">
                   {{ proxy.remoteAddressMain || '获取中...' }}
                 </div>
               </t-tooltip>
             </div>
 
             <div v-if="proxy.remoteAddressBackup && proxy.remoteAddressBackup !== proxy.remoteAddressMain" class="flex justify-between items-center py-1.5">
-              <div class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400"><link-icon size="14px" /> 备用地址</div>
+              <div class="flex items-center gap-1.5 text-xs text-[var(--td-text-color-secondary)]"><link-icon size="14px" /> 备用地址</div>
               <t-tooltip :content="proxy.remoteAddressBackup" placement="top" show-arrow destroy-on-close>
-                <div class="font-mono font-bold text-xs text-zinc-800 dark:text-zinc-200 truncate max-w-[140px] cursor-pointer hover:text-[var(--color-primary)] transition-colors" @click="copyText(proxy.remoteAddressBackup, true, '备用连接地址已复制！')">
+                <div class="font-mono font-bold text-xs text-[var(--td-text-color-primary)] truncate max-w-[140px] cursor-pointer hover:text-[var(--color-primary)] transition-colors" @click="copyText(proxy.remoteAddressBackup, true, '备用连接地址已复制！')">
                   {{ proxy.remoteAddressBackup }}
                 </div>
               </t-tooltip>
             </div>
 
             <div class="flex justify-between items-center py-1.5">
-              <div class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400"><code-icon size="14px" /> 本地地址</div>
-              <div class="font-mono text-xs text-zinc-500 dark:text-zinc-400">{{ proxy.localAddress }}</div>
+              <div class="flex items-center gap-1.5 text-xs text-[var(--td-text-color-secondary)]"><code-icon size="14px" /> 本地地址</div>
+              <div class="font-mono text-xs text-[var(--td-text-color-secondary)]">{{ proxy.localAddress }}</div>
             </div>
           </div>
         </template>

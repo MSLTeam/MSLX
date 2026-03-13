@@ -133,14 +133,14 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="mx-auto flex flex-col gap-6 text-zinc-800 dark:text-zinc-200 pb-5">
+  <div class="mx-auto flex flex-col gap-6 text-[var(--td-text-color-primary)] pb-5">
 
     <div
-      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm text-left"
+      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80  rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
     >
       <div class="flex flex-col gap-1 items-start">
-        <h2 class="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100 m-0">实例备份管理</h2>
-        <p class="text-sm text-zinc-500 dark:text-zinc-400 m-0">
+        <h2 class="text-lg font-bold tracking-tight text-[var(--td-text-color-primary)] m-0">实例备份管理</h2>
+        <p class="text-sm text-[var(--td-text-color-secondary)] m-0">
           管理所有服务器实例的本地备份文件
         </p>
       </div>
@@ -168,18 +168,18 @@ onMounted(() => {
             :style="{ animationDelay: `${index * 0.05}s` }"
           >
             <div
-              class="design-card flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all duration-300 hover:border-[var(--color-primary)]/30"
+              class="design-card flex flex-col bg-[var(--td-bg-color-container)]/80  rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300 hover:border-[var(--color-primary)]/30"
               :class="{ 'opacity-80': !instance.backups?.length }"
             >
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 pb-0 border-b-0">
                 <div class="flex flex-col sm:flex-row sm:items-center gap-3">
                   <t-tag theme="primary" variant="light" shape="round" class="!px-3 !font-mono font-bold tracking-wider">ID: {{ instance.id }}</t-tag>
                   <div class="flex items-center gap-3">
-                    <h3 class="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2 m-0 tracking-tight">
-                      <server-icon class="text-zinc-400 dark:text-zinc-500 shrink-0" />
+                    <h3 class="text-base font-bold text-[var(--td-text-color-primary)] flex items-center gap-2 m-0 tracking-tight">
+                      <server-icon class="text-[var(--td-text-color-secondary)] shrink-0" />
                       {{ instance.name }}
                     </h3>
-                    <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-xs text-zinc-600 dark:text-zinc-400 font-medium border border-zinc-200/50 dark:border-zinc-700/50">
+                    <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-xs text-[var(--td-text-color-secondary)] font-medium border border-[var(--td-component-border)]">
                       <cloud-icon size="14px" class="opacity-80" />
                       {{ instance.core }}
                     </span>
@@ -194,9 +194,9 @@ onMounted(() => {
                 </div>
               </div>
 
-              <div class="mx-5 mt-4 bg-zinc-50/80 dark:bg-zinc-800/50 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 overflow-hidden transition-all">
+              <div class="mx-5 mt-4 bg-zinc-50/80 dark:bg-zinc-800/50 rounded-xl border border-[var(--td-component-border)] overflow-hidden transition-all">
                 <div
-                  class="flex items-center gap-2 p-2.5 px-4 cursor-pointer text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                  class="flex items-center gap-2 p-2.5 px-4 cursor-pointer text-[var(--td-text-color-secondary)] hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                   @click="togglePath(instance.id)"
                 >
                   <folder-open-icon class="opacity-80" size="18px" />
@@ -205,7 +205,7 @@ onMounted(() => {
                 </div>
                 <div
                   v-show="expandedPaths.has(instance.id)"
-                  class="p-3 px-4 text-xs font-mono text-zinc-500 dark:text-zinc-400 break-all border-t border-zinc-200/50 dark:border-zinc-700/50 bg-zinc-100/50 dark:bg-zinc-900/30 shadow-inner"
+                  class="p-3 px-4 text-xs font-mono text-[var(--td-text-color-secondary)] break-all border-t border-[var(--td-component-border)] bg-zinc-100/50 dark:bg-zinc-900/30 shadow-inner"
                 >
                   {{ instance.backupPath }}
                 </div>
@@ -234,7 +234,7 @@ onMounted(() => {
                     <template #fileName="{ row }">
                       <div class="flex items-center gap-2">
                         <span class="text-[10px] font-extrabold bg-[var(--color-primary)]/10 text-[var(--color-primary)] px-1.5 py-0.5 rounded border border-[var(--color-primary)]/20 shrink-0 tracking-wider">ZIP</span>
-                        <span class="font-medium text-zinc-800 dark:text-zinc-200 truncate" :title="row.fileName">{{ row.fileName }}</span>
+                        <span class="font-medium text-[var(--td-text-color-primary)] truncate" :title="row.fileName">{{ row.fileName }}</span>
                       </div>
                     </template>
 
@@ -266,7 +266,7 @@ onMounted(() => {
                 </div>
 
                 <div v-else class="flex flex-col items-center justify-center py-10">
-                  <span class="text-sm font-medium text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-800/50 px-4 py-2 rounded-full border border-zinc-200/50 dark:border-zinc-700/50">
+                  <span class="text-sm font-medium text-[var(--td-text-color-secondary)] bg-zinc-50 dark:bg-zinc-800/50 px-4 py-2 rounded-full border border-[var(--td-component-border)]">
                     当前实例暂无备份文件
                   </span>
                 </div>
@@ -278,7 +278,7 @@ onMounted(() => {
 
       <div
         v-else
-        class="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-zinc-800/40 rounded-2xl border-2 border-dashed border-zinc-200/50 dark:border-zinc-700/50"
+        class="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-zinc-800/40 rounded-2xl border-2 border-dashed border-[var(--td-component-border)]"
       >
         <t-empty class="!bg-transparent" description="尚未发现任何实例" />
       </div>

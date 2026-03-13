@@ -1111,7 +1111,7 @@ public class MCServerService
             if (File.Exists(Path.Combine(server.Base, "server.properties")))
             {
                 dynamic config = ServerPropertiesLoader.Load(Path.Combine(server.Base, "server.properties"),
-                    Encoding.GetEncoding(server.FileEncoding));
+                    FileUtils.GetFileEncodingByString(server.FileEncoding));
                 worldPath = config.level_name == "未知" ? "world" : config.level_name;
             }
 

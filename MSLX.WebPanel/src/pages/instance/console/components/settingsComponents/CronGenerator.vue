@@ -193,7 +193,7 @@ const getSpecificOptions = (unit: string) => {
     <div class="flex flex-col gap-5 p-5 md:p-6 bg-zinc-50/50 dark:bg-zinc-950/20">
 
       <div class="flex justify-center">
-        <t-radio-group v-model="mode" variant="default-filled" class="!bg-zinc-100 dark:!bg-zinc-800 border border-zinc-200/50 dark:border-zinc-700/50 !rounded-lg p-0.5 shadow-sm">
+        <t-radio-group v-model="mode" variant="default-filled" class="!bg-zinc-100 dark:!bg-zinc-800 border border-[var(--td-component-border)] !rounded-lg p-0.5 shadow-sm">
           <t-radio-button value="preset" class="!px-4">⭐ 预设模式</t-radio-button>
           <t-radio-button value="novice" class="!px-4">🚀 简单模式</t-radio-button>
           <t-radio-button value="pro" class="!px-4">🛠️ 专业模式</t-radio-button>
@@ -228,8 +228,8 @@ const getSpecificOptions = (unit: string) => {
 
         <t-alert theme="info" class="!mt-8 !rounded-lg !bg-blue-50/50 dark:!bg-blue-900/10 !border-blue-100 dark:!border-blue-800/30">
           <template #message>
-            <span class="text-zinc-600 dark:text-zinc-400 text-xs leading-relaxed">
-              此模式适用于简单的周期性任务。如果需要“每周五上午 10 点”等复杂规则，请切换到 <b class="text-zinc-800 dark:text-zinc-200">专业模式</b>。
+            <span class="text-[var(--td-text-color-secondary)] text-xs leading-relaxed">
+              此模式适用于简单的周期性任务。如果需要“每周五上午 10 点”等复杂规则，请切换到 <b class="text-[var(--td-text-color-primary)]">专业模式</b>。
             </span>
           </template>
         </t-alert>
@@ -277,10 +277,10 @@ const getSpecificOptions = (unit: string) => {
         </t-tabs>
       </div>
 
-      <div class="bg-white/80 dark:bg-zinc-800/80 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 shadow-sm p-5 flex flex-col gap-4 backdrop-blur-md">
+      <div class="bg-[var(--td-bg-color-container)]/80 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 shadow-sm p-5 flex flex-col gap-4 backdrop-blur-md">
 
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-dashed border-zinc-200 dark:border-zinc-700/60">
-          <span class="font-bold text-zinc-800 dark:text-zinc-200 text-sm">当前表达式:</span>
+          <span class="font-bold text-[var(--td-text-color-primary)] text-sm">当前表达式:</span>
           <div class="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-900 px-3 py-1.5 rounded-lg border border-zinc-100 dark:border-zinc-800 shadow-inner">
             <span class="font-mono text-lg font-bold tracking-wider text-[var(--color-primary)]">{{ finalCron }}</span>
             <t-tag v-if="!cronError" theme="success" variant="light" size="small" class="!rounded"><template #icon><check-circle-icon /></template> 有效</t-tag>
@@ -289,7 +289,7 @@ const getSpecificOptions = (unit: string) => {
         </div>
 
         <div class="flex flex-col gap-2">
-          <div class="text-xs font-bold text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 mb-1 uppercase tracking-wider">
+          <div class="text-xs font-bold text-[var(--td-text-color-secondary)] flex items-center gap-1.5 mb-1 uppercase tracking-wider">
             <time-icon size="14px" /> 最近 5 次运行时间预测
           </div>
 
@@ -299,7 +299,7 @@ const getSpecificOptions = (unit: string) => {
 
           <ul v-else class="grid grid-cols-1 sm:grid-cols-2 gap-2 m-0 p-0 list-none">
             <li v-for="(time, index) in nextExecutions" :key="index" class="text-sm font-mono font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-800/40 !px-4 !py-3 rounded-lg border border-zinc-100 dark:border-zinc-700/50 flex items-center transition-colors hover:border-[var(--color-primary)]/30 hover:bg-[var(--color-primary)]/5">
-              <span class="text-zinc-400 dark:text-zinc-500 w-6 font-bold opacity-70">#{{ index + 1 }}</span>
+              <span class="text-[var(--td-text-color-secondary)] w-6 font-bold opacity-70">#{{ index + 1 }}</span>
               {{ time }}
             </li>
           </ul>

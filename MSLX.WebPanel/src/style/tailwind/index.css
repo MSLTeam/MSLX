@@ -39,7 +39,7 @@ html[theme-mode='light'] {
   --td-border-level-2-color: var(--color-zinc-200) !important;
 
   --td-text-color-primary: var(--color-zinc-900) !important;
-  --td-text-color-secondary: var(--color-zinc-500) !important;
+  --td-text-color-secondary: var(--color-zinc-600) !important;
 }
 
 html[theme-mode='dark'] {

@@ -204,8 +204,8 @@ watch(
       <div class="w-full md:w-64 lg:w-72 shrink-0 bg-white/90 dark:bg-zinc-800/90 backdrop-blur-md border-b md:border-b-0 md:border-r border-zinc-200/70 dark:border-zinc-700/60 flex flex-col z-10 shadow-[2px_0_8px_rgba(0,0,0,0.02)]">
 
         <div class="hidden md:block p-5 pb-3">
-          <h3 class="text-base font-extrabold text-zinc-900 dark:text-zinc-100 m-0 tracking-tight">服务端分类</h3>
-          <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1 font-medium">选择您需要的底层架构类型</p>
+          <h3 class="text-base font-extrabold text-[var(--td-text-color-primary)] m-0 tracking-tight">服务端分类</h3>
+          <p class="text-xs text-[var(--td-text-color-secondary)] mt-1 font-medium">选择您需要的底层架构类型</p>
         </div>
 
         <div class="flex-1 overflow-x-auto md:overflow-y-auto custom-scrollbar flex flex-row md:flex-col gap-2 p-3 md:p-4 hide-scrollbar-on-mobile">
@@ -221,7 +221,7 @@ watch(
             >
               <div
                 class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 transition-colors"
-                :class="currentCategoryKey === cat.key ? 'bg-[var(--color-primary)] text-white shadow-md shadow-[var(--color-primary)]/30' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-700 dark:group-hover:text-zinc-200'"
+                :class="currentCategoryKey === cat.key ? 'bg-[var(--color-primary)] text-white shadow-md shadow-[var(--color-primary)]/30' : 'bg-zinc-100 dark:bg-zinc-800 text-[var(--td-text-color-secondary)] group-hover:text-zinc-700 dark:group-hover:text-zinc-200'"
               >
                 <t-icon :name="cat.icon" size="20px" />
               </div>
@@ -233,8 +233,8 @@ watch(
                 >
                   {{ cat.name }}
                 </div>
-                <div class="hidden md:block text-[11px] text-zinc-500 dark:text-zinc-400 leading-snug mt-0.5">{{ cat.desc }}</div>
-                <div v-if="categoryData[cat.dataKey]" class="hidden md:inline-flex items-center mt-1.5 w-max px-1.5 py-0.5 rounded bg-zinc-200/50 dark:bg-zinc-700/50 text-zinc-500 dark:text-zinc-400 text-[10px] font-mono font-bold">
+                <div class="hidden md:block text-[11px] text-[var(--td-text-color-secondary)] leading-snug mt-0.5">{{ cat.desc }}</div>
+                <div v-if="categoryData[cat.dataKey]" class="hidden md:inline-flex items-center mt-1.5 w-max px-1.5 py-0.5 rounded bg-zinc-200/50 dark:bg-zinc-700/50 text-[var(--td-text-color-secondary)] text-[10px] font-mono font-bold">
                   {{ categoryData[cat.dataKey]?.length || 0 }} CORES
                 </div>
               </div>
@@ -249,7 +249,7 @@ watch(
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
             <div class="flex items-center gap-2">
               <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
-              <h3 class="text-sm font-bold text-zinc-800 dark:text-zinc-200 m-0">选择服务端核心</h3>
+              <h3 class="text-sm font-bold text-[var(--td-text-color-primary)] m-0">选择服务端核心</h3>
             </div>
             <t-input v-model="searchText" placeholder="搜索核心名称..." class="!w-full sm:!w-64 !bg-white dark:!bg-zinc-800">
               <template #prefix-icon><t-icon name="search" class="opacity-60" /></template>
@@ -292,7 +292,7 @@ watch(
           <div class="flex items-center justify-between mb-4 shrink-0">
             <div class="flex items-center gap-2">
               <div class="w-1 h-4 bg-emerald-500 rounded-full"></div>
-              <h3 class="text-sm font-bold text-zinc-800 dark:text-zinc-200 m-0">
+              <h3 class="text-sm font-bold text-[var(--td-text-color-primary)] m-0">
                 <span v-if="selectedCore" class="text-[var(--color-primary)] mr-1">{{ selectedCore }}</span>
                 支持版本列表
               </h3>
@@ -308,7 +308,7 @@ watch(
 
             <template v-else>
               <div v-if="!selectedCore" class="h-full flex items-center justify-center">
-                <span class="text-sm font-medium text-zinc-400 dark:text-zinc-500 bg-white dark:bg-zinc-800 px-4 py-2 rounded-full shadow-sm border border-zinc-200/50 dark:border-zinc-700/50">请先在上方选择一个核心</span>
+                <span class="text-sm font-medium text-[var(--td-text-color-secondary)] bg-white dark:bg-zinc-800 px-4 py-2 rounded-full shadow-sm border border-[var(--td-component-border)]">请先在上方选择一个核心</span>
               </div>
 
               <div v-else-if="versionList.length > 0" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2">

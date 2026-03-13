@@ -10,7 +10,7 @@ html[theme-mode='dark'] .t-table, .dark .t-table {
 }
 
 .t-table th {
-  @apply text-zinc-500 dark:text-zinc-400 font-medium text-xs uppercase tracking-wider;
+  @apply text-[var(--td-text-color-secondary)] font-medium text-xs uppercase tracking-wider;
   background-color: transparent !important;
   border-bottom: 1px solid var(--td-border-level-2-color);
 }

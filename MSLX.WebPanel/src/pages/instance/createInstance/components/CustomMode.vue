@@ -66,7 +66,7 @@ const goToHome = () => {
 </script>
 
 <template>
-  <div class="design-card list-item-anim bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-3xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-6 sm:p-8">
+  <div class="design-card list-item-anim bg-[var(--td-bg-color-container)]/80 rounded-3xl border border-[var(--td-component-border)] shadow-sm p-6 sm:p-8">
 
     <div v-if="!isSuccess" class="flex flex-col relative pt-1">
       <t-form
@@ -108,7 +108,7 @@ const goToHome = () => {
           <template #help><span class="text-[11px] text-zinc-500 mt-1 inline-block">若您的实例并非 MC 服务器，可打开此选项。</span></template>
           <div class="flex items-center gap-3">
             <t-switch v-model="formData.ignoreEula" size="large" />
-            <span class="text-sm font-bold transition-colors" :class="formData.ignoreEula ? 'text-[var(--color-primary)]' : 'text-zinc-400 dark:text-zinc-500'">
+            <span class="text-sm font-bold transition-colors" :class="formData.ignoreEula ? 'text-[var(--color-primary)]' : 'text-[var(--td-text-color-secondary)]'">
               {{ formData.ignoreEula ? '已开启' : '已关闭' }}
             </span>
           </div>
@@ -123,11 +123,11 @@ const goToHome = () => {
     <div v-else class="flex flex-col items-center justify-center py-8 min-h-[50vh] sm:min-h-[40vh]">
       <t-icon name="check-circle" size="64px" class="text-[var(--color-success)]" />
 
-      <div class="text-xl text-zinc-900 dark:text-zinc-100 text-center font-medium leading-[22px] !mt-4">
+      <div class="text-xl text-[var(--td-text-color-primary)] text-center font-medium leading-[22px] !mt-4">
         服务器 ({{ createdServerId }}) 已创建成功
       </div>
 
-      <div class="text-sm text-zinc-500 dark:text-zinc-400 leading-[22px] !my-2 !mb-8">
+      <div class="text-sm text-[var(--td-text-color-secondary)] leading-[22px] !my-2 !mb-8">
         你现在可以去服务器列表启动它了
       </div>
 

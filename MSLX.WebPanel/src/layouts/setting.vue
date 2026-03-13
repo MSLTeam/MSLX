@@ -126,9 +126,9 @@ watchEffect(() => {
 
         <section>
           <div class="setting-title">个性化</div>
-          <div class="flex items-center justify-between p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200/50 dark:border-zinc-700/50 transition-colors hover:border-zinc-300 dark:hover:border-zinc-600">
+          <div class="flex items-center justify-between p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-[var(--td-component-border)] transition-colors hover:border-zinc-300 dark:hover:border-zinc-600">
             <div class="flex flex-col">
-              <span class="text-[14px] font-bold text-zinc-800 dark:text-zinc-200">开启背景美化</span>
+              <span class="text-[14px] font-bold text-[var(--td-text-color-primary)]">开启背景美化</span>
               <span class="text-[11px] text-zinc-400 mt-0.5">启用毛玻璃卡片与自定义壁纸</span>
             </div>
             <t-switch v-model="formData.enableCustomTheme" />
@@ -210,7 +210,7 @@ watchEffect(() => {
 
 /* ================== 小标题 ================== */
 .setting-title {
-  @apply text-[13px] font-bold text-zinc-400 dark:text-zinc-500 mb-4 tracking-widest uppercase;
+  @apply text-[13px] font-bold text-[var(--td-text-color-secondary)] mb-4 tracking-widest uppercase;
 }
 
 /* ================== 单选组通用 ================== */
@@ -247,7 +247,7 @@ watchEffect(() => {
 }
 
 :deep(.color-dot-wrapper:hover:not(.t-is-checked)) {
-  @apply !bg-zinc-100 dark:!bg-zinc-700/50;
+  @apply !bg-[var(--td-bg-color-secondarycontainer)]/50;
 }
 
 :deep(.color-dot-wrapper.t-is-checked) {

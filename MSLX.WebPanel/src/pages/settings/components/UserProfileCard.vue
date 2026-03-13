@@ -213,7 +213,7 @@ const handleUnbindMSL = () => {
 </script>
 
 <template>
-  <div class="design-card list-item-anim relative flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm transition-all duration-300">
+  <div class="design-card list-item-anim relative flex flex-col bg-[var(--td-bg-color-container)]/80rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300">
 
     <t-loading :loading="loading" show-overlay>
       <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-6 sm:p-8 pb-8 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 relative overflow-hidden">
@@ -228,7 +228,7 @@ const handleUnbindMSL = () => {
 
         <div class="flex flex-col items-center sm:items-start gap-2.5 pt-1 z-10 w-full">
           <div class="flex flex-col sm:flex-row items-center gap-3">
-            <h1 class="text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-100 m-0 leading-none">
+            <h1 class="text-2xl font-extrabold tracking-tight text-[var(--td-text-color-primary)] m-0 leading-none">
               {{ userInfo.name || '未设置昵称' }}
             </h1>
             <span v-if="userInfo.role === 'admin'" class="inline-flex items-center px-2.5 py-1 rounded-md bg-[var(--color-success)]/10 text-[var(--color-success)] font-extrabold text-[11px] tracking-wider uppercase border border-[var(--color-success)]/20 shadow-sm">
@@ -240,11 +240,11 @@ const handleUnbindMSL = () => {
           </div>
 
           <div class="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-sm mt-1">
-            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100/80 dark:bg-zinc-900/50 border border-zinc-200/50 dark:border-zinc-700/50 text-zinc-600 dark:text-zinc-400 font-mono font-medium shadow-inner">
-              <span class="text-zinc-400 dark:text-zinc-500 font-bold">@</span>{{ userInfo.username }}
+            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100/80 dark:bg-zinc-900/50 border border-[var(--td-component-border)] text-[var(--td-text-color-secondary)] font-mono font-medium shadow-inner">
+              <span class="text-[var(--td-text-color-secondary)] font-bold">@</span>{{ userInfo.username }}
             </div>
 
-            <div v-if="userInfo.lastLoginTime" class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+            <div v-if="userInfo.lastLoginTime" class="flex items-center gap-1.5 text-xs text-[var(--td-text-color-secondary)] font-medium">
               <time-icon class="opacity-70 text-[var(--color-primary)]" size="14px" />
               上次登录: <span class="font-mono">{{ new Date(userInfo.lastLoginTime).toLocaleString() }}</span>
             </div>
@@ -283,7 +283,7 @@ const handleUnbindMSL = () => {
 
           <t-form-item label="API Key">
             <template #help>
-              <span class="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1 inline-block">用于 MSLX 桌面版或第三方工具连接的凭证，请妥善保管。</span>
+              <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block">用于 MSLX 桌面版或第三方工具连接的凭证，请妥善保管。</span>
             </template>
             <t-input
               :value="userInfo.apiKey"
@@ -311,7 +311,7 @@ const handleUnbindMSL = () => {
 
             <t-form-item label="MSL 账户绑定">
               <template #help>
-                <span class="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1.5 inline-block">绑定后可使用 MSL 账户一键快捷登录本控制台。</span>
+                <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1.5 inline-block">绑定后可使用 MSL 账户一键快捷登录本控制台。</span>
               </template>
 
               <div v-if="userInfo.openMSLID && userInfo.openMSLID !== '0'" class="flex items-center gap-3">
@@ -339,7 +339,7 @@ const handleUnbindMSL = () => {
             <t-switch v-model="securityState.changePassword" />
           </t-form-item>
 
-          <div v-if="securityState.changePassword" class="bg-zinc-50/50 dark:bg-zinc-800/30 p-4 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 mt-4 w-full">
+          <div v-if="securityState.changePassword" class="bg-zinc-50/50 dark:bg-zinc-800/30 p-4 rounded-xl border border-[var(--td-component-border)] mt-4 w-full">
             <t-form-item label="新密码" required-mark label-width="80">
               <t-input v-model="securityState.newPassword" type="password" placeholder="请输入新密码">
                 <template #prefix-icon><lock-on-icon class="opacity-60 text-zinc-400" /></template>

@@ -71,10 +71,10 @@ async function createP2PTunnel(isHoster: boolean, roomId: string, roomkey: strin
 </script>
 <template>
   <div>
-    <div class="design-card bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-6 sm:p-8">
+    <div class="design-card bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm p-6 sm:p-8">
 
       <div class="mb-6 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60">
-        <h3 class="text-lg font-bold text-zinc-900 dark:text-zinc-100 m-0 leading-none">MSL P2P 联机隧道</h3>
+        <h3 class="text-lg font-bold text-[var(--td-text-color-primary)] m-0 leading-none">MSL P2P 联机隧道</h3>
       </div>
 
       <t-form
@@ -93,7 +93,7 @@ async function createP2PTunnel(isHoster: boolean, roomId: string, roomkey: strin
 
         <t-form-item label="房间号" name="roomId">
           <template #help>
-            <span class="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1 inline-block">
+            <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block">
               <span v-if="formData.isHoster">建议填写您的 QQ 号码。</span>
               <span v-else>请输入房间创建者提供的房间号。</span>
             </span>
@@ -103,7 +103,7 @@ async function createP2PTunnel(isHoster: boolean, roomId: string, roomkey: strin
 
         <t-form-item label="房间密钥" name="roomKey">
           <template #help>
-            <span class="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1 inline-block">
+            <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block">
               <span v-if="formData.isHoster">随便写一个你喜欢的密钥。</span>
               <span v-else>请输入房间创建者提供的密钥。</span>
             </span>
@@ -126,7 +126,7 @@ async function createP2PTunnel(isHoster: boolean, roomId: string, roomkey: strin
 
         <t-form-item label="绑定端口" name="bindPort">
           <template #help>
-            <span class="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1 inline-block">
+            <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block">
               <span v-if="formData.isHoster">请输入游戏内提示的开放联机端口。</span>
               <span v-else>建议保持默认。</span>
             </span>

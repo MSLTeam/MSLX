@@ -375,7 +375,7 @@ onUnmounted(() => tasks.value.forEach((t) => t.abortController?.abort()));
         @drop.prevent="handleDrop"
       >
         <cloud-upload-icon size="40px" class="text-[var(--color-primary)]" />
-        <p class="text-[13px] font-medium text-zinc-500 dark:text-zinc-400 m-0">
+        <p class="text-[13px] font-medium text-[var(--td-text-color-secondary)] m-0">
           {{ props.allowFolder ? '拖入文件或文件夹至此处' : '拖入文件至此处' }}
         </p>
         <div class="flex gap-3 mt-1">
@@ -389,8 +389,8 @@ onUnmounted(() => tasks.value.forEach((t) => t.abortController?.abort()));
       </div>
 
       <div v-if="tasks.length > 0" class="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-zinc-700/60">
-        <span class="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
-          队列: <span class="text-zinc-800 dark:text-zinc-200 font-bold mx-0.5">{{ tasks.length }}</span> 个
+        <span class="text-xs text-[var(--td-text-color-secondary)] font-medium">
+          队列: <span class="text-[var(--td-text-color-primary)] font-bold mx-0.5">{{ tasks.length }}</span> 个
           <template v-if="isUploading">
             <span class="mx-1.5 opacity-50">|</span> 总进度 <span class="text-[var(--color-primary)] font-bold ml-0.5">{{ totalProgress }}%</span>
           </template>
@@ -417,17 +417,17 @@ onUnmounted(() => tasks.value.forEach((t) => t.abortController?.abort()));
 
           <div class="flex-1 overflow-hidden flex flex-col gap-1">
             <div class="flex justify-between items-center text-[13px]">
-              <div class="font-medium text-zinc-800 dark:text-zinc-200 truncate max-w-[200px] sm:max-w-[280px]" :title="getFileName(task.path)">
+              <div class="font-medium text-[var(--td-text-color-primary)] truncate max-w-[200px] sm:max-w-[280px]" :title="getFileName(task.path)">
                 {{ getFileName(task.path) }}
               </div>
-              <div class="text-[11px] text-zinc-400 dark:text-zinc-500 flex items-center gap-2 font-mono">
+              <div class="text-[11px] text-[var(--td-text-color-secondary)] flex items-center gap-2 font-mono">
                 <span v-if="task.status === 'error'" class="text-red-500 font-sans font-medium">{{ task.errorMsg }}</span>
                 <span v-else>{{ task.speed }}</span>
                 <span class="bg-zinc-200/50 dark:bg-zinc-700/50 px-1.5 py-0.5 rounded">{{ (task.file.size / 1024 / 1024).toFixed(2) }} MB</span>
               </div>
             </div>
 
-            <div v-if="getDirectory(task.path)" class="text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1 truncate" :title="getDirectory(task.path)">
+            <div v-if="getDirectory(task.path)" class="text-[11px] text-[var(--td-text-color-secondary)] flex items-center gap-1 truncate" :title="getDirectory(task.path)">
               <folder-icon size="12px" class="shrink-0 opacity-70" /> {{ getDirectory(task.path) }}/
             </div>
 

@@ -237,14 +237,14 @@ onMounted(() => {
 
       <div class="flex items-center gap-2 mt-5 mb-4 pb-2 border-b border-dashed border-zinc-200/60 dark:border-zinc-700/60">
         <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
-        <h2 class="text-base font-bold text-zinc-800 dark:text-zinc-200 m-0">外观设置</h2>
+        <h2 class="text-base font-bold text-[var(--td-text-color-primary)] m-0">外观设置</h2>
       </div>
 
       <div class="flex flex-col md:flex-row md:items-center justify-between py-4 gap-4">
 
         <div class="flex-1 md:pr-8">
-          <div class="text-sm font-bold text-zinc-800 dark:text-zinc-200">服务器图标</div>
-          <div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
+          <div class="text-sm font-bold text-[var(--td-text-color-primary)]">服务器图标</div>
+          <div class="text-xs text-[var(--td-text-color-secondary)] mt-1.5 leading-relaxed">
             上传自定义的 JPG / PNG 图片替换现有的 server-icon.png。<br>
             系统将提供可视化裁剪工具，并自动帮您转换为标准的 64x64 服务器图标文件。
           </div>
@@ -259,7 +259,7 @@ onMounted(() => {
               <img :src="currentIconUrl" alt="Server Icon" class="w-16 h-16 rounded shadow-sm [image-rendering:pixelated]" />
             </template>
             <template v-else>
-              <div class="flex flex-col items-center text-zinc-400 dark:text-zinc-500 gap-1 opacity-80">
+              <div class="flex flex-col items-center text-[var(--td-text-color-secondary)] gap-1 opacity-80">
                 <image-icon size="20px" />
                 <span class="text-[10px] font-medium tracking-widest">暂无</span>
               </div>
@@ -290,7 +290,7 @@ onMounted(() => {
     >
       <div v-loading="loading" class="flex flex-col items-center p-5 md:p-6 bg-zinc-50/50 dark:bg-zinc-950/20">
 
-        <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-5 text-center bg-white/80 dark:bg-zinc-800/80 px-4 py-2.5 rounded-lg border border-zinc-200/60 dark:border-zinc-700/60 shadow-sm backdrop-blur-md">
+        <p class="text-xs text-[var(--td-text-color-secondary)] mb-5 text-center bg-[var(--td-bg-color-container)]/80 px-4 py-2.5 rounded-lg border border-zinc-200/60 dark:border-zinc-700/60 shadow-sm backdrop-blur-md">
           请拖动和缩放亮色方框，选择需要截取的区域。生成后将自动转为 <b class="text-zinc-700 dark:text-zinc-300">64x64</b> 的标准尺寸。
         </p>
 

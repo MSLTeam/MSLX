@@ -124,13 +124,13 @@ const handleConfirmDelete = async () => {
 </script>
 
 <template>
-  <div class="mx-auto flex flex-col gap-6 text-zinc-800 dark:text-zinc-200 pb-5">
+  <div class="mx-auto flex flex-col gap-6 text-[var(--td-text-color-primary)] pb-5">
     <div
-      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm text-left"
+      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
     >
       <div class="flex flex-col gap-1 items-start">
-        <h2 class="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100 m-0">服务端列表</h2>
-        <p class="text-sm text-zinc-500 dark:text-zinc-400 m-0">
+        <h2 class="text-lg font-bold tracking-tight text-[var(--td-text-color-primary)] m-0">服务端列表</h2>
+        <p class="text-sm text-[var(--td-text-color-secondary)] m-0">
           管理您的 Minecraft 服务器实例，监控运行状态与核心版本
         </p>
       </div>
@@ -157,14 +157,14 @@ const handleConfirmDelete = async () => {
             :style="{ animationDelay: `${index * 0.05}s` }"
           >
             <div
-              class="design-card h-full group flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm hover:shadow-md hover:border-[var(--color-primary)]/50 transition-colors duration-300 p-5 gap-4 cursor-pointer"
+              class="design-card h-full group flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm hover:shadow-md hover:border-[var(--color-primary)]/50 transition-colors duration-300 p-5 gap-4 cursor-pointer"
               @click="handleCardClick(item)"
             >
               <div class="flex items-center gap-4">
                 <div class="relative shrink-0">
                   <t-avatar
                     :image="getImageUrl(item.icon, item.id)"
-                    class="shadow-sm border border-zinc-200/50 dark:border-zinc-700/50 !bg-zinc-100 dark:!bg-zinc-700 !rounded-xl"
+                    class="shadow-sm border border-[var(--td-component-border)] !bg-[var(--td-bg-color-secondarycontainer)] !rounded-xl"
                     shape="round"
                     size="56px"
                   />
@@ -182,16 +182,16 @@ const handleConfirmDelete = async () => {
 
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center">
-                    <h4 class="text-base font-bold text-zinc-900 dark:text-zinc-100 truncate tracking-tight">
+                    <h4 class="text-base font-bold text-[var(--td-text-color-primary)] truncate tracking-tight">
                       {{ item.name }}
                     </h4>
-                    <span class="text-xs font-mono text-zinc-400 dark:text-zinc-500 ml-2 opacity-70 shrink-0"
+                    <span class="text-xs font-mono text-[var(--td-text-color-secondary)] ml-2 opacity-70 shrink-0"
                       >#{{ item.id }}</span
                     >
                   </div>
 
                   <div class="mt-2 flex items-center gap-4">
-                    <div class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+                    <div class="flex items-center gap-1.5 text-xs text-[var(--td-text-color-secondary)]">
                       <cpu-icon class="opacity-80" size="14px" />
                       <span class="truncate font-medium">{{ formatCore(item.core) }}</span>
                     </div>
@@ -199,7 +199,7 @@ const handleConfirmDelete = async () => {
                       :class="
                         getStatusConfig(item.status).theme === 'success'
                           ? 'text-emerald-600 dark:text-emerald-400'
-                          : 'text-zinc-600 dark:text-zinc-400'
+                          : 'text-[var(--td-text-color-secondary)]'
                       "
                       class="text-xs font-bold"
                     >
@@ -213,7 +213,7 @@ const handleConfirmDelete = async () => {
                 class="flex items-center justify-between pt-3 mt-auto border-t border-dashed border-zinc-200 dark:border-zinc-700/60"
               >
                 <span
-                  class="text-xs text-zinc-400 dark:text-zinc-500 group-hover:text-[var(--color-primary)] transition-colors font-semibold"
+                  class="text-xs text-[var(--td-text-color-secondary)] group-hover:text-[var(--color-primary)] transition-colors font-semibold"
                 >
                   控制台 →
                 </span>
@@ -238,7 +238,7 @@ const handleConfirmDelete = async () => {
 
       <div
         v-else
-        class="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-zinc-800/40 rounded-2xl border-2 border-dashed border-zinc-200/50 dark:border-zinc-700/50"
+        class="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-zinc-800/40 rounded-2xl border-2 border-dashed border-[var(--td-component-border)]"
       >
         <t-empty class="!bg-transparent" description="暂无服务端实例" />
       </div>
@@ -253,7 +253,7 @@ const handleConfirmDelete = async () => {
     >
       <div class="delete-dialog-body">
         <div class="alert-zinc bg-red-500/5 border border-red-500/20 p-4 rounded-xl mb-4">
-          <p class="text-zinc-900 dark:text-zinc-100 font-bold mb-1">
+          <p class="text-[var(--td-text-color-primary)] font-bold mb-1">
             您确定要删除 <span class="text-red-500">{{ deleteState.item?.name }}</span> 吗？
           </p>
           <p class="text-xs text-red-500/80 italic">此操作不可撤销，服务端配置与运行记录将被抹除。</p>
@@ -261,7 +261,7 @@ const handleConfirmDelete = async () => {
 
         <div class="px-1">
           <t-checkbox v-model="deleteState.deleteFile">
-            <span class="text-zinc-600 dark:text-zinc-400 text-sm">同时清理磁盘上的服务端数据文件</span>
+            <span class="text-[var(--td-text-color-secondary)] text-sm">同时清理磁盘上的服务端数据文件</span>
           </t-checkbox>
         </div>
       </div>

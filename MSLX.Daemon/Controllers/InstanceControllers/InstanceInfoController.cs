@@ -116,7 +116,7 @@ public class InstanceInfoController : ControllerBase
             var (serverStatus, serverStatusText) = _mcServerService.GetServerStatus(id);
             if (System.IO.File.Exists(Path.Combine(server.Base, "server.properties")))
             {
-                dynamic config = ServerPropertiesLoader.Load(Path.Combine(server.Base, "server.properties"),Encoding.GetEncoding(server.FileEncoding));
+                dynamic config = ServerPropertiesLoader.Load(Path.Combine(server.Base, "server.properties"),FileUtils.GetFileEncodingByString(server.FileEncoding));
                 string difficulty = "未知";
                 switch (config.difficulty)
                 {

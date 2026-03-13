@@ -20,7 +20,7 @@
             <img class="w-7 h-7 object-contain shrink-0" :src="CustomLogo" alt="logo" />
             <span
               v-if="!collapsed"
-              class="text-[17px] font-bold truncate text-zinc-800 dark:text-zinc-100 tracking-tight transition-opacity duration-300 leading-none mt-0.5"
+              class="text-[17px] font-bold truncate text-[var(--td-text-color-primary)] tracking-tight transition-opacity duration-300 leading-none mt-0.5"
             >
               MSLX 管理中心
             </span>
@@ -30,7 +30,7 @@
         <menu-content :nav-data="menu" />
 
         <template #operations>
-          <div class="flex items-center justify-center h-12 text-[11px] font-mono font-medium text-zinc-400 dark:text-zinc-500 tracking-wider">
+          <div class="flex items-center justify-center h-12 text-[11px] font-mono font-medium text-[var(--td-text-color-secondary)] tracking-wider">
             {{ !collapsed ? 'MSLX-WEBPANEL ' : '' }}v{{ pkg.version }}
           </div>
         </template>
@@ -188,7 +188,7 @@ const goHome = () => {
 
 /* 悬浮与激活的绝美质感 */
 :deep(.t-menu__item:hover:not(.t-is-active)) {
-  @apply !bg-zinc-100 dark:!bg-zinc-700/50 !text-zinc-900 dark:!text-zinc-100;
+  @apply !bg-[var(--td-bg-color-secondarycontainer)]/50 !text-zinc-900 dark:!text-zinc-100;
 }
 
 :deep(.t-menu__item.t-is-active) {

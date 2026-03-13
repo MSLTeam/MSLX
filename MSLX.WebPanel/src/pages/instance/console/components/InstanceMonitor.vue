@@ -165,7 +165,7 @@ onUnmounted(async () => {
 <template>
   <div class="flex flex-col gap-3">
 
-    <div class="flex justify-between items-center text-xs text-zinc-500 dark:text-zinc-400 pb-2 border-b border-dashed border-zinc-200 dark:border-zinc-700/60">
+    <div class="flex justify-between items-center text-xs text-[var(--td-text-color-secondary)] pb-2 border-b border-dashed border-zinc-200 dark:border-zinc-700/60">
       <span class="flex items-center gap-1.5">
         <wifi-icon :class="hubStore.isConnected ? 'text-emerald-500' : 'text-zinc-400 dark:text-zinc-600'" />
         {{ hubStore.isConnected ? '连接正常' : '正在连接数据流...' }}
@@ -180,29 +180,29 @@ onUnmounted(async () => {
 
       <div class="flex flex-col gap-2">
         <div class="flex justify-between items-center">
-          <div class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+          <div class="flex items-center gap-1.5 text-xs text-[var(--td-text-color-secondary)]">
             <dashboard-icon size="14px" /> CPU 使用率
           </div>
-          <div class="font-mono font-medium text-xs text-zinc-800 dark:text-zinc-200">
+          <div class="font-mono font-medium text-xs text-[var(--td-text-color-primary)]">
             {{ hubStore.stats.cpu.toFixed(1) }} %
           </div>
         </div>
-        <div ref="cpuChartRef" class="h-[50px] w-full overflow-hidden rounded-md bg-transparent border border-zinc-200/50 dark:border-zinc-700/50"></div>
+        <div ref="cpuChartRef" class="h-[50px] w-full overflow-hidden rounded-md bg-transparent border border-[var(--td-component-border)]"></div>
       </div>
 
       <div class="flex flex-col gap-2">
         <div class="flex justify-between items-center">
-          <div class="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
+          <div class="flex items-center gap-1.5 text-xs text-[var(--td-text-color-secondary)]">
             <chart-line-data-icon size="14px" /> 内存使用
           </div>
-          <div class="font-mono font-medium text-xs text-zinc-800 dark:text-zinc-200 flex items-center gap-1">
+          <div class="font-mono font-medium text-xs text-[var(--td-text-color-primary)] flex items-center gap-1">
             {{ formattedMemory }}
-            <span v-if="hasMaxMemory" class="text-[11px] text-zinc-400 dark:text-zinc-500">
+            <span v-if="hasMaxMemory" class="text-[11px] text-[var(--td-text-color-secondary)]">
               ({{ hubStore.stats.memPercent.toFixed(1) }}%)
             </span>
           </div>
         </div>
-        <div ref="memChartRef" class="h-[50px] w-full overflow-hidden rounded-md bg-transparent border border-zinc-200/50 dark:border-zinc-700/50"></div>
+        <div ref="memChartRef" class="h-[50px] w-full overflow-hidden rounded-md bg-transparent border border-[var(--td-component-border)]"></div>
       </div>
 
     </div>

@@ -120,7 +120,7 @@ onUnmounted(() => stopPolling());
   >
     <div v-if="status === 'idle'" class="flex flex-col gap-4 py-2">
 
-      <div class="bg-zinc-50 dark:bg-zinc-800/40 p-3 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 text-[13px] text-zinc-500 dark:text-zinc-400 shadow-inner flex items-center">
+      <div class="bg-zinc-50 dark:bg-zinc-800/40 p-3 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 text-[13px] text-[var(--td-text-color-secondary)] shadow-inner flex items-center">
         即将压缩
         <span class="font-bold font-mono text-[var(--color-primary)] mx-1.5 text-sm">{{ files.length }}</span>
         个文件/文件夹
@@ -156,7 +156,7 @@ onUnmounted(() => stopPolling());
         />
       </div>
 
-      <div class="text-sm font-medium text-zinc-800 dark:text-zinc-200 text-center px-4 w-full truncate">
+      <div class="text-sm font-medium text-[var(--td-text-color-primary)] text-center px-4 w-full truncate">
         {{ statusMsg }}
       </div>
 

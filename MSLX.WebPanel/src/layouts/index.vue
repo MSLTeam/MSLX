@@ -66,6 +66,18 @@ watch(
 
 <template>
   <div class="global-layout-bg" :class="{ 'custom-theme-enabled': enableCustomTheme }" :style="customThemeVars">
+    <!-- 注入终端开启背景美化后的毛玻璃 不会被lightningcss干掉喵 -->
+    <component :is="'style'" v-if="enableCustomTheme">
+      .global-layout-bg.custom-theme-enabled .terminal-wrapper {
+      backdrop-filter: blur(var(--term-blur-light)) !important;
+      -webkit-backdrop-filter: blur(var(--term-blur-light)) !important;
+      }
+      html[theme-mode='dark'] .global-layout-bg.custom-theme-enabled .terminal-wrapper,
+      .global-layout-bg.custom-theme-enabled.dark .terminal-wrapper {
+      backdrop-filter: blur(var(--term-blur-dark)) !important;
+      -webkit-backdrop-filter: blur(var(--term-blur-dark)) !important;
+      }
+    </component>
     <template v-if="setting.layout.value === 'side'">
       <t-layout key="side" :class="mainLayoutCls">
         <t-aside><layout-side-nav /></t-aside>
@@ -191,8 +203,6 @@ watch(
   :deep(.terminal-wrapper) {
     background-color: rgba(255, 255, 255, var(--comp-op-light)) !important;
     border: 1px solid rgba(255, 255, 255, 0.3) !important;
-    backdrop-filter: blur(var(--term-blur-light)) !important;
-    -webkit-backdrop-filter: blur(var(--term-blur-light)) !important;
   }
 
   // 黑夜组件样式
@@ -217,8 +227,6 @@ watch(
     :deep(.terminal-wrapper) {
       background-color: rgba(20, 20, 20, var(--comp-op-dark)) !important;
       border: 1px solid rgba(255, 255, 255, 0.08) !important;
-      backdrop-filter: blur(var(--term-blur-dark)) !important;
-      -webkit-backdrop-filter: blur(var(--term-blur-dark)) !important;
       --td-component-stroke: rgba(255, 255, 255, 0.1) !important;
     }
   }
