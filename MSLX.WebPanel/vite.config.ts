@@ -5,6 +5,8 @@ import vueJsx from '@vitejs/plugin-vue-jsx';
 import svgLoader from 'vite-svg-loader';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { browserslistToTargets } from 'lightningcss';
+import browserslist from 'browserslist';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -18,7 +20,11 @@ export default defineConfig(({ mode }: ConfigEnv) => {
     },
     css: {
       lightningcss: {
-        targets: { chrome: 109 << 16 },
+        targets: browserslistToTargets(browserslist('chrome >= 109')),
+        drafts: {
+          customMedia: true,
+        },
+        minify: true,
       },
       preprocessorOptions: {
         less: {
