@@ -178,7 +178,7 @@ onMounted(() => {
   <div class="mx-auto flex flex-col gap-6 text-[var(--td-text-color-primary)] pb-5">
 
     <div
-      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
+      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
     >
       <div class="flex items-center gap-3">
         <div class="flex flex-col">
@@ -200,7 +200,7 @@ onMounted(() => {
     </div>
 
     <div class="relative min-h-[400px]">
-      <div class="design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm p-5 sm:p-6" style="animation-delay: 0.05s;">
+      <div class="design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm p-5 sm:p-6" style="animation-delay: 0.05s;">
 
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60">
           <div class="text-base font-bold text-[var(--td-text-color-primary)]">用户列表</div>

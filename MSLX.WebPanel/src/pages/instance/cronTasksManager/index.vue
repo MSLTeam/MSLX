@@ -270,7 +270,7 @@ onMounted(() => {
   <div class="mx-auto flex flex-col gap-6 text-[var(--td-text-color-primary)] pb-5">
 
     <div
-      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
+      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
     >
       <div class="flex flex-col gap-1 items-start">
         <h2 class="text-lg font-bold tracking-tight text-[var(--td-text-color-primary)] m-0">全局定时任务管理</h2>
@@ -307,7 +307,7 @@ onMounted(() => {
               :style="{ animationDelay: `${index * 0.05}s` }"
             >
               <div
-                class="design-card flex flex-col bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300 hover:border-[var(--color-primary)]/30"
+                class="design-card flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300 hover:border-[var(--color-primary)]/30"
                 :class="{ 'opacity-80': !instance.tasks?.length }"
               >
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 border-b border-dashed border-zinc-200 dark:border-zinc-700/60">

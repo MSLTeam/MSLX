@@ -108,7 +108,7 @@ onMounted(() => {
   <div class="mx-auto flex flex-col gap-6 text-[var(--td-text-color-primary)] pb-5">
 
     <div
-      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
+      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80  rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
     >
       <div class="flex flex-col gap-1 items-start">
         <h2 class="text-lg font-bold tracking-tight text-[var(--td-text-color-primary)] m-0">关于与更新日志</h2>
@@ -125,7 +125,7 @@ onMounted(() => {
     <div class="relative min-h-[400px]">
       <div class="flex flex-col gap-5">
 
-        <div class="design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm p-6" style="animation-delay: 0s;">
+        <div class="design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80  rounded-2xl border border-[var(--td-component-border)] shadow-sm p-6" style="animation-delay: 0s;">
           <div class="mb-5 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 flex items-center justify-between">
             <div class="flex items-center gap-3">
               <div class="w-1.5 h-6 bg-[var(--color-primary)] rounded-full shadow-[0_0_8px_var(--color-primary-light)] opacity-90"></div>
@@ -148,7 +148,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <div class="design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm p-6" style="animation-delay: 0.05s;">
+        <div class="design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80  rounded-2xl border border-[var(--td-component-border)] shadow-sm p-6" style="animation-delay: 0.05s;">
           <div class="mb-5 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 flex items-center">
             <div class="flex items-center gap-3">
               <div class="w-1.5 h-6 bg-[var(--color-primary)] rounded-full shadow-[0_0_8px_var(--color-primary-light)] opacity-90"></div>
@@ -171,7 +171,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <div class="design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm p-6" style="animation-delay: 0.1s;">
+        <div class="design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80  rounded-2xl border border-[var(--td-component-border)] shadow-sm p-6" style="animation-delay: 0.1s;">
           <div class="mb-5 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 flex items-center">
             <div class="flex items-center gap-3">
               <div class="w-1.5 h-6 bg-[var(--color-warning)] rounded-full shadow-[0_0_8px_var(--color-warning)] opacity-90"></div>
@@ -184,7 +184,7 @@ onMounted(() => {
           <hurry-upppppppp />
         </div>
 
-        <div class="design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm p-6" style="animation-delay: 0.15s;">
+        <div class="design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80  rounded-2xl border border-[var(--td-component-border)] shadow-sm p-6" style="animation-delay: 0.15s;">
           <div class="mb-5 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 flex items-center">
             <div class="flex items-center gap-3">
               <div class="w-1.5 h-6 bg-[var(--color-success)] rounded-full shadow-[0_0_8px_var(--color-success)] opacity-90"></div>
@@ -207,7 +207,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <div class="design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm p-6" style="animation-delay: 0.2s;">
+        <div class="design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80  rounded-2xl border border-[var(--td-component-border)] shadow-sm p-6" style="animation-delay: 0.2s;">
           <div class="mb-5 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 flex items-center justify-between">
             <div class="flex items-center gap-3">
               <div class="w-1.5 h-6 bg-[var(--color-primary)] rounded-full shadow-[0_0_8px_var(--color-primary-light)] opacity-90"></div>
@@ -242,7 +242,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <div class="design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm p-6" style="animation-delay: 0.25s;">
+        <div class="design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80  rounded-2xl border border-[var(--td-component-border)] shadow-sm p-6" style="animation-delay: 0.25s;">
           <div class="mb-5 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div class="flex items-center gap-3">
               <div class="w-1.5 h-6 bg-[var(--color-primary)] rounded-full shadow-[0_0_8px_var(--color-primary-light)] opacity-90"></div>

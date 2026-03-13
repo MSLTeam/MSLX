@@ -71,7 +71,7 @@ async function createP2PTunnel(isHoster: boolean, roomId: string, roomkey: strin
 </script>
 <template>
   <div>
-    <div class="design-card bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm p-6 sm:p-8">
+    <div class="design-card bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm p-6 sm:p-8">
 
       <div class="mb-6 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60">
         <h3 class="text-lg font-bold text-[var(--td-text-color-primary)] m-0 leading-none">MSL P2P 联机隧道</h3>

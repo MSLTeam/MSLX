@@ -351,7 +351,7 @@ async function handleDeleteTunnel() {
     <div v-else id="app-space" class="relative flex flex-col gap-6">
       <t-loading attach="#app-space" :loading="loading" text="加载数据中..." />
 
-      <div v-if="userInfo" class="design-card list-item-anim bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm p-5 sm:p-6" style="animation-delay: 0s;">
+      <div v-if="userInfo" class="design-card list-item-anim bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm p-5 sm:p-6" style="animation-delay: 0s;">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60">
           <div class="flex flex-col">
             <h3 class="text-lg font-bold text-[var(--td-text-color-primary)] m-0 leading-none">ME Frp 用户信息</h3>
@@ -398,7 +398,7 @@ async function handleDeleteTunnel() {
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-        <div class="lg:col-span-5 xl:col-span-4 design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm h-[580px]" style="animation-delay: 0.1s;">
+        <div class="lg:col-span-5 xl:col-span-4 design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm h-[580px]" style="animation-delay: 0.1s;">
           <div class="flex items-center justify-between p-4 sm:p-5 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 shrink-0">
             <h3 class="text-base font-bold text-[var(--td-text-color-primary)] m-0">我的隧道</h3>
             <div class="flex items-center gap-1">
@@ -442,7 +442,7 @@ async function handleDeleteTunnel() {
           </div>
         </div>
 
-        <div class="lg:col-span-7 xl:col-span-8 design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm h-[580px]" style="animation-delay: 0.2s;">
+        <div class="lg:col-span-7 xl:col-span-8 design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm h-[580px]" style="animation-delay: 0.2s;">
 
           <template v-if="currentTunnel">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 shrink-0">

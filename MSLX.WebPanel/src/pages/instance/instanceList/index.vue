@@ -126,7 +126,7 @@ const handleConfirmDelete = async () => {
 <template>
   <div class="mx-auto flex flex-col gap-6 text-[var(--td-text-color-primary)] pb-5">
     <div
-      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
+      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
     >
       <div class="flex flex-col gap-1 items-start">
         <h2 class="text-lg font-bold tracking-tight text-[var(--td-text-color-primary)] m-0">服务端列表</h2>
@@ -157,7 +157,7 @@ const handleConfirmDelete = async () => {
             :style="{ animationDelay: `${index * 0.05}s` }"
           >
             <div
-              class="design-card h-full group flex flex-col bg-[var(--td-bg-color-container)]/80 backdrop-blur-md rounded-2xl border border-[var(--td-component-border)] shadow-sm hover:shadow-md hover:border-[var(--color-primary)]/50 transition-colors duration-300 p-5 gap-4 cursor-pointer"
+              class="design-card h-full group flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm hover:shadow-md hover:border-[var(--color-primary)]/50 transition-colors duration-300 p-5 gap-4 cursor-pointer"
               @click="handleCardClick(item)"
             >
               <div class="flex items-center gap-4">
