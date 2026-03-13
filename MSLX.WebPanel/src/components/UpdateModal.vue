@@ -254,7 +254,7 @@ onUnmounted(() => {
     <div class="flex justify-between items-start mb-5">
       <div class="flex flex-col">
         <div class="flex items-center gap-2">
-          <h3 class="m-0 text-[20px] font-bold text-zinc-800 dark:text-zinc-100 tracking-wide">
+          <h3 class="m-0 text-[20px] font-bold text-[var(--td-text-color-primary)] tracking-wide">
             {{ updateSuccess ? '更新完成' : '发现新版本' }}
           </h3>
           <t-tag v-if="isBeta" theme="warning" variant="light-outline" class="!rounded-md !font-bold">Beta</t-tag>
@@ -276,8 +276,8 @@ onUnmounted(() => {
 
       <div v-if="updateSuccess" class="flex flex-col items-center text-center py-2">
         <check-circle-icon size="48px" class="text-emerald-500 mb-4 drop-shadow-sm" />
-        <p class="text-base font-bold text-zinc-800 dark:text-zinc-200 m-0 mb-1">MSLX守护进程端已成功更新</p>
-        <p class="text-sm text-zinc-500 dark:text-zinc-400 m-0">请刷新页面以加载最新功能</p>
+        <p class="text-base font-bold text-[var(--td-text-color-primary)] m-0 mb-1">MSLX守护进程端已成功更新</p>
+        <p class="text-sm text-[var(--td-text-color-secondary)] m-0">请刷新页面以加载最新功能</p>
       </div>
 
       <div v-else-if="isDockerEnv" class="py-2">
@@ -296,15 +296,15 @@ onUnmounted(() => {
 
       <div v-else-if="hasRunningServers" class="flex flex-col items-center text-center py-4">
         <stop-circle-icon size="48px" class="text-amber-500 mb-3 drop-shadow-sm" />
-        <p class="text-base font-bold text-zinc-800 dark:text-zinc-200 m-0 mb-2">无法开始更新</p>
-        <p class="text-sm text-zinc-500 dark:text-zinc-400 m-0 leading-relaxed">
+        <p class="text-base font-bold text-[var(--td-text-color-primary)] m-0 mb-2">无法开始更新</p>
+        <p class="text-sm text-[var(--td-text-color-secondary)] m-0 leading-relaxed">
           检测到当前有服务器实例正在运行。<br />为了防止数据丢失，请先停止所有实例。
         </p>
       </div>
 
       <div v-else-if="updateStatusText.includes('等待服务端确认权限')" class="flex flex-col items-center text-center py-4">
-        <p class="text-base font-bold text-zinc-800 dark:text-zinc-200 m-0 mb-2">请在服务端确认权限</p>
-        <p class="text-sm text-zinc-500 dark:text-zinc-400 m-0 leading-relaxed">
+        <p class="text-base font-bold text-[var(--td-text-color-primary)] m-0 mb-2">请在服务端确认权限</p>
+        <p class="text-sm text-[var(--td-text-color-secondary)] m-0 leading-relaxed">
           macOS 系统已弹出提示：<br />
           <strong class="text-zinc-700 dark:text-zinc-300">“MSLX-Daemon 想要控制应用程序 终端.app”</strong> <br />
           请务必点击 <strong>【好/OK】</strong> 以继续更新。
@@ -321,7 +321,7 @@ onUnmounted(() => {
         <template v-else>
           <div class="flex justify-between items-end mb-2 text-sm">
             <span class="font-medium text-[var(--color-primary)]">{{ updateStatusText }}</span>
-            <span class="text-xs font-mono text-zinc-400 dark:text-zinc-500">{{ updateSpeed }}</span>
+            <span class="text-xs font-mono text-[var(--td-text-color-secondary)]">{{ updateSpeed }}</span>
           </div>
           <t-progress theme="plump" :percentage="updateProgress" :status="updateProgress >= 100 ? 'active' : 'success'" />
         </template>
@@ -347,7 +347,7 @@ onUnmounted(() => {
         </t-alert>
 
         <div class="flex flex-col gap-1.5 mt-1">
-          <div class="text-[13px] font-bold text-zinc-600 dark:text-zinc-400 tracking-wider">更新内容</div>
+          <div class="text-[13px] font-bold text-[var(--td-text-color-secondary)] tracking-wider">更新内容</div>
           <div class="bg-zinc-50 dark:bg-zinc-900/50 rounded-xl p-3.5 max-h-[200px] overflow-y-auto border border-zinc-200/60 dark:border-zinc-700/50 shadow-inner custom-scrollbar">
             <div class="font-mono text-[13px] leading-relaxed whitespace-pre-wrap text-zinc-700 dark:text-zinc-300">
               {{ updateInfo?.log || '暂无详细日志' }}

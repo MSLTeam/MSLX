@@ -182,7 +182,7 @@ watch(() => route.params.serverId, (newId) => {
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-5 mb-6 pb-2 border-b border-dashed border-zinc-200/60 dark:border-zinc-700/60">
       <div class="flex items-center gap-2">
         <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
-        <h2 class="text-base font-bold text-zinc-800 dark:text-zinc-200 m-0">Server.properties 配置编辑器</h2>
+        <h2 class="text-base font-bold text-[var(--td-text-color-primary)] m-0">Server.properties 配置编辑器</h2>
       </div>
 
       <t-space size="small" class="w-full sm:w-auto justify-end">
@@ -198,7 +198,7 @@ watch(() => route.params.serverId, (newId) => {
     <t-loading :loading="loading" text="正在读取配置文件...">
       <div class="bg-white/80 dark:bg-zinc-900/40 border border-zinc-200/60 dark:border-zinc-800 rounded-xl shadow-sm backdrop-blur-md overflow-hidden">
 
-        <div v-if="!loading && renderList.length === 0" class="py-16 flex items-center justify-center text-sm font-medium text-zinc-400 dark:text-zinc-500">
+        <div v-if="!loading && renderList.length === 0" class="py-16 flex items-center justify-center text-sm font-medium text-[var(--td-text-color-secondary)]">
           无法找到配置项或文件为空
         </div>
 
@@ -209,15 +209,15 @@ watch(() => route.params.serverId, (newId) => {
             class="flex flex-col md:flex-row md:items-start justify-between p-5 transition-colors hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20"
           >
             <div class="flex-1 md:max-w-[40%] pr-0 md:pr-8 mb-3 md:mb-0">
-              <div class="text-sm font-bold mb-1" :class="item.isUnknown ? 'text-amber-600 dark:text-amber-500' : 'text-zinc-800 dark:text-zinc-200'">
+              <div class="text-sm font-bold mb-1" :class="item.isUnknown ? 'text-amber-600 dark:text-amber-500' : 'text-[var(--td-text-color-primary)]'">
                 {{ item.label }}
               </div>
 
               <div class="flex items-center mb-1.5" v-if="!item.isUnknown">
-                <span class="font-mono text-[11px] text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800/80 px-1.5 py-0.5 rounded tracking-wider shadow-inner">{{ item.key }}</span>
+                <span class="font-mono text-[11px] text-[var(--td-text-color-secondary)] bg-zinc-100 dark:bg-zinc-800/80 px-1.5 py-0.5 rounded tracking-wider shadow-inner">{{ item.key }}</span>
               </div>
 
-              <div v-if="!item.isUnknown" class="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              <div v-if="!item.isUnknown" class="text-xs text-[var(--td-text-color-secondary)] leading-relaxed">
                 {{ item.desc || '暂无描述' }}
               </div>
             </div>

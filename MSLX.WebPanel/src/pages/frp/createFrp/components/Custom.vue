@@ -149,7 +149,7 @@ const convertIniToToml = () => {
     <div class="design-card bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-6 sm:p-8">
 
       <div class="flex items-center gap-2 mb-6 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60">
-        <h3 class="text-lg font-bold text-zinc-900 dark:text-zinc-100 m-0 leading-none">自定义 Frp 隧道</h3>
+        <h3 class="text-lg font-bold text-[var(--td-text-color-primary)] m-0 leading-none">自定义 Frp 隧道</h3>
       </div>
 
       <t-form ref="formRef" :data="formData" :rules="rules" label-align="top" @reset="onReset" @submit="onSubmit">

@@ -243,7 +243,7 @@ onUnmounted(() => {
     <div class="design-card flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-5">
 
       <div class="flex justify-between items-center mb-4 pb-4 border-b border-zinc-200/60 dark:border-zinc-700/60">
-        <h3 class="text-sm font-bold text-zinc-800 dark:text-zinc-200 m-0">实例概览</h3>
+        <h3 class="text-sm font-bold text-[var(--td-text-color-primary)] m-0">实例概览</h3>
         <t-radio-group v-model="activeTab" variant="default-filled" size="small">
           <t-radio-button value="info"><info-circle-icon /> 详情</t-radio-button>
           <t-radio-button value="monitor"><chart-bar-icon /> 监控</t-radio-button>
@@ -254,38 +254,38 @@ onUnmounted(() => {
         <div v-if="activeTab === 'info'" class="flex flex-col gap-1.5">
 
           <div class="flex justify-between items-center py-1">
-            <div class="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"><desktop-icon size="14px" /> 实例名称</div>
-            <div class="font-bold text-sm text-zinc-800 dark:text-zinc-200 truncate max-w-[150px]">{{ serverInfo?.name }}</div>
+            <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]"><desktop-icon size="14px" /> 实例名称</div>
+            <div class="font-bold text-sm text-[var(--td-text-color-primary)] truncate max-w-[150px]">{{ serverInfo?.name }}</div>
           </div>
 
           <template v-if="serverInfo?.java !== 'none'">
             <div class="flex justify-between items-center py-1">
-              <div class="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"><dashboard-icon size="14px" /> 内存限制</div>
-              <div class="font-mono text-sm font-bold text-zinc-800 dark:text-zinc-200">{{ serverInfo?.maxM }} MB</div>
+              <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]"><dashboard-icon size="14px" /> 内存限制</div>
+              <div class="font-mono text-sm font-bold text-[var(--td-text-color-primary)]">{{ serverInfo?.maxM }} MB</div>
             </div>
 
             <div class="flex justify-between items-center py-1">
-              <div class="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"><enter-icon size="14px" /> 运行端口</div>
+              <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]"><enter-icon size="14px" /> 运行端口</div>
               <div class="font-mono text-sm font-bold text-[var(--color-primary)]">{{ serverInfo?.mcConfig?.serverPort }}</div>
             </div>
 
             <div class="flex justify-between items-center py-1">
-              <div class="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"><arrow-left-right-1-icon size="14px" /> 游戏难度</div>
+              <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]"><arrow-left-right-1-icon size="14px" /> 游戏难度</div>
               <t-tag theme="primary" variant="light" size="small" class="!rounded">{{ serverInfo?.mcConfig?.difficulty }}</t-tag>
             </div>
 
             <div class="flex justify-between items-center py-1">
-              <div class="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"><wink-icon size="14px" /> 游戏模式</div>
+              <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]"><wink-icon size="14px" /> 游戏模式</div>
               <t-tag variant="light" size="small" class="!rounded">{{ serverInfo?.mcConfig?.gamemode }}</t-tag>
             </div>
 
             <div class="flex justify-between items-center py-1">
-              <div class="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"><folder-icon size="14px" /> 游戏地图</div>
-              <div class="text-xs font-bold text-zinc-800 dark:text-zinc-200">{{ serverInfo?.mcConfig?.levelName }}</div>
+              <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]"><folder-icon size="14px" /> 游戏地图</div>
+              <div class="text-xs font-bold text-[var(--td-text-color-primary)]">{{ serverInfo?.mcConfig?.levelName }}</div>
             </div>
 
             <div class="flex justify-between items-center py-1">
-              <div class="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"><user-unlocked-icon size="14px" /> 正版验证</div>
+              <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]"><user-unlocked-icon size="14px" /> 正版验证</div>
               <t-tag :theme="serverInfo?.mcConfig?.onlineMode === 'true' ? 'success' : 'warning'" variant="light" size="small" class="!rounded">
                 {{ serverInfo?.mcConfig?.onlineMode === 'true' ? '开启' : '关闭' }}
               </t-tag>
@@ -294,14 +294,14 @@ onUnmounted(() => {
 
           <template v-else>
             <div class="flex justify-between items-center py-1">
-              <div class="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"><dashboard-icon size="14px" /> 模式</div>
+              <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]"><dashboard-icon size="14px" /> 模式</div>
               <t-tag theme="warning" variant="light" size="small" class="!rounded">自定义模式</t-tag>
             </div>
           </template>
 
           <div class="flex justify-between items-center py-1 mt-1">
-            <div class="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400"><time-icon size="14px" /> 运行时长</div>
-            <div class="font-mono text-sm font-bold text-zinc-800 dark:text-zinc-200">{{ status === 2 ? formattedUptime : '--:--:--' }}</div>
+            <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]"><time-icon size="14px" /> 运行时长</div>
+            <div class="font-mono text-sm font-bold text-[var(--td-text-color-primary)]">{{ status === 2 ? formattedUptime : '--:--:--' }}</div>
           </div>
         </div>
 
@@ -312,7 +312,7 @@ onUnmounted(() => {
             :is-running="status === 2"
             :max-memory="serverInfo.java === 'none' ? 0 : serverInfo.maxM || 4096"
           />
-          <div v-else class="flex-1 flex items-center justify-center text-zinc-400 dark:text-zinc-500 text-sm font-medium">
+          <div v-else class="flex-1 flex items-center justify-center text-[var(--td-text-color-secondary)] text-sm font-medium">
             实例未运行
           </div>
         </div>

@@ -669,14 +669,14 @@ onUnmounted(() => {
           <template #name="{ row }">
             <div class="flex items-center py-1.5 cursor-pointer group" @click.stop="handleRowClick(row)">
               <component :is="getFileIcon(row).icon" class="text-xl mr-2 shrink-0 transition-transform group-hover:scale-110" :style="{ color: getFileIcon(row).color }" />
-              <span class="font-medium text-zinc-800 dark:text-zinc-200 group-hover:text-[var(--color-primary)] transition-colors truncate max-w-[calc(100vw-140px)] md:max-w-full">
+              <span class="font-medium text-[var(--td-text-color-primary)] group-hover:text-[var(--color-primary)] transition-colors truncate max-w-[calc(100vw-140px)] md:max-w-full">
                 {{ row.name }}
               </span>
             </div>
           </template>
 
           <template #size="{ row }">
-            <span class="text-[13px] font-mono text-zinc-500 dark:text-zinc-400">{{ formatSize(row.size) }}</span>
+            <span class="text-[13px] font-mono text-[var(--td-text-color-secondary)]">{{ formatSize(row.size) }}</span>
           </template>
 
           <template #permission="{ row }">
@@ -684,7 +684,7 @@ onUnmounted(() => {
           </template>
 
           <template #lastModified="{ row }">
-            <span class="text-[13px] text-zinc-500 dark:text-zinc-400">{{ formatTime(row.lastModified) }}</span>
+            <span class="text-[13px] text-[var(--td-text-color-secondary)]">{{ formatTime(row.lastModified) }}</span>
           </template>
 
           <template #operation="{ row }">
@@ -727,7 +727,7 @@ onUnmounted(() => {
           </template>
 
           <template #empty>
-            <div class="py-16 flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500">
+            <div class="py-16 flex flex-col items-center justify-center text-[var(--td-text-color-secondary)]">
               <file-icon size="40px" class="opacity-60 mb-3" />
               <span class="text-sm font-medium">暂无文件</span>
             </div>

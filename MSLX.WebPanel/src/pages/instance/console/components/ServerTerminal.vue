@@ -263,7 +263,7 @@ onUnmounted(async () => {
         <span class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></span>
         <span class="w-2.5 h-2.5 rounded-full bg-[#27c93f]"></span>
       </div>
-      <div class="text-zinc-500 dark:text-zinc-400 text-xs font-mono truncate">
+      <div class="text-[var(--td-text-color-secondary)] text-xs font-mono truncate">
         MSLX 服务端控制台 | #{{ serverId }}
       </div>
     </div>
@@ -273,7 +273,7 @@ onUnmounted(async () => {
     <div class="absolute bottom-0 left-0 right-0 h-[50px] flex items-center px-4 bg-transparent border-t border-zinc-200/50 dark:border-zinc-700/50 z-10 gap-3">
       <input
         v-model="inputCommand"
-        class="flex-1 h-8 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-700 rounded-md px-3 text-zinc-800 dark:text-zinc-200 font-mono text-[13px] outline-none transition-all focus:border-[var(--color-primary)] focus:bg-white dark:focus:bg-zinc-900 placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
+        class="flex-1 h-8 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-700 rounded-md px-3 text-[var(--td-text-color-primary)] font-mono text-[13px] outline-none transition-all focus:border-[var(--color-primary)] focus:bg-white dark:focus:bg-zinc-900 placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
         placeholder="发送控制台指令..."
         @keyup.enter="handleSendInput"
       />

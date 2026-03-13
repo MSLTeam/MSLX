@@ -261,7 +261,7 @@ onUnmounted(async () => {
         <span class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></span>
         <span class="w-2.5 h-2.5 rounded-full bg-[#27c93f]"></span>
       </div>
-      <div class="text-zinc-500 dark:text-zinc-400 text-xs font-mono">
+      <div class="text-[var(--td-text-color-secondary)] text-xs font-mono">
         MSLX - Frp 控制台 | {{ frpId }}
       </div>
     </div>

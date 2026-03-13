@@ -291,7 +291,7 @@ const closeDialog = () => {
 
             <div class="flex-1 overflow-hidden flex flex-col">
               <div class="text-base font-extrabold mb-1.5 truncate tracking-tight">
-                <span class="text-[var(--color-primary)]">{{ item.name }}</span><span class="text-zinc-400 dark:text-zinc-500">.{{ item.domain }}</span>
+                <span class="text-[var(--color-primary)]">{{ item.name }}</span><span class="text-[var(--td-text-color-secondary)]">.{{ item.domain }}</span>
               </div>
 
               <div class="flex items-center gap-2 mb-1.5">
@@ -347,16 +347,16 @@ const closeDialog = () => {
         </t-form-item>
 
         <t-form-item v-if="currentDomainRemark" label="备注" class="!mb-4">
-          <div class="w-full px-3 py-2 bg-zinc-100/80 dark:bg-zinc-800/40 rounded-lg text-[13px] text-zinc-500 dark:text-zinc-400 whitespace-pre-wrap break-all leading-relaxed border border-dashed border-zinc-200 dark:border-zinc-700">
+          <div class="w-full px-3 py-2 bg-zinc-100/80 dark:bg-zinc-800/40 rounded-lg text-[13px] text-[var(--td-text-color-secondary)] whitespace-pre-wrap break-all leading-relaxed border border-dashed border-zinc-200 dark:border-zinc-700">
             {{ currentDomainRemark }}
           </div>
         </t-form-item>
 
         <t-form-item label="子域名称">
-          <template #help><span class="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1 inline-block">起一个你喜欢的前缀即可。</span></template>
+          <template #help><span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block">起一个你喜欢的前缀即可。</span></template>
           <t-input v-model="formData.name" placeholder="例如: myserver" class="!w-full">
             <template #prefix-icon>
-              <span v-if="formMode === 'mc_srv' && formData.id === 0" class="text-zinc-500 dark:text-zinc-400 px-1.5 bg-zinc-100 dark:bg-zinc-800 mr-1 rounded font-mono text-xs flex items-center border border-zinc-200 dark:border-zinc-700">
+              <span v-if="formMode === 'mc_srv' && formData.id === 0" class="text-[var(--td-text-color-secondary)] px-1.5 bg-zinc-100 dark:bg-zinc-800 mr-1 rounded font-mono text-xs flex items-center border border-zinc-200 dark:border-zinc-700">
                 _minecraft._tcp.
               </span>
             </template>

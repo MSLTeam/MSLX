@@ -135,10 +135,10 @@ const handleDropdownClick = async (dropdownItem: any, playerName: string) => {
   <div class="design-card flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-5">
 
     <div class="flex justify-between items-center mb-4 pb-4 border-b border-zinc-200/60 dark:border-zinc-700/60">
-      <div class="flex items-center gap-1.5 font-bold text-sm text-zinc-800 dark:text-zinc-200 m-0">
-        <usergroup-icon size="16px" class="text-zinc-500 dark:text-zinc-400" />
+      <div class="flex items-center gap-1.5 font-bold text-sm text-[var(--td-text-color-primary)] m-0">
+        <usergroup-icon size="16px" class="text-[var(--td-text-color-secondary)]" />
         在线玩家
-        <span v-if="status === 2" class="text-xs font-medium text-zinc-400 dark:text-zinc-500">({{ onlinePlayers.length }})</span>
+        <span v-if="status === 2" class="text-xs font-medium text-[var(--td-text-color-secondary)]">({{ onlinePlayers.length }})</span>
       </div>
 
       <t-button size="small" variant="text" theme="primary" class="!rounded-md hover:!bg-[var(--color-primary)]/10 transition-colors" @click="showManager = true" :disabled="status === 0">
@@ -164,10 +164,10 @@ const handleDropdownClick = async (dropdownItem: any, playerName: string) => {
           </t-dropdown>
         </div>
 
-        <div v-else class="py-4 text-center text-xs font-medium text-zinc-400 dark:text-zinc-500">当前无人在线</div>
+        <div v-else class="py-4 text-center text-xs font-medium text-[var(--td-text-color-secondary)]">当前无人在线</div>
       </template>
 
-      <div v-else class="py-4 text-center text-xs font-medium text-zinc-400 dark:text-zinc-500">服务器未运行</div>
+      <div v-else class="py-4 text-center text-xs font-medium text-[var(--td-text-color-secondary)]">服务器未运行</div>
     </div>
 
     <player-manager-dialog v-model:visible="showManager" :server-id="serverId" :is-running="status === 2" />

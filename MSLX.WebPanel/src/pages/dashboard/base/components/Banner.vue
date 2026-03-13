@@ -50,7 +50,7 @@ onMounted(() => {
       <div class="flex-1 min-w-0 flex flex-col justify-center gap-2.5 text-center sm:text-left mt-1">
 
         <div class="flex flex-wrap items-center justify-center sm:justify-start gap-3">
-          <h3 class="text-l sm:text-xl font-bold text-zinc-800 dark:text-zinc-100 m-0 flex items-center gap-2 tracking-tight">
+          <h3 class="text-l sm:text-xl font-bold text-[var(--td-text-color-primary)] m-0 flex items-center gap-2 tracking-tight">
             <t-icon name="sunny" class="text-amber-500 animate-[spin_10s_linear_infinite]" />
             你好，<span class="text-[var(--color-primary)]">{{ userStore.userInfo.name }}</span>
           </h3>
@@ -59,7 +59,7 @@ onMounted(() => {
           </t-tag>
         </div>
 
-        <p class="text-sm sm:text-base text-zinc-500 dark:text-zinc-400 italic leading-relaxed m-0">
+        <p class="text-sm sm:text-base text-[var(--td-text-color-secondary)] italic leading-relaxed m-0">
           {{ oneMsg }}
         </p>
 

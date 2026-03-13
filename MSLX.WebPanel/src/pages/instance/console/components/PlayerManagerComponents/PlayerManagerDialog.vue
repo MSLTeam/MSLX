@@ -239,7 +239,7 @@ const handleClose = () => emits('update:visible', false);
             <div v-for="player in onlinePlayers" :key="player" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 hover:border-[var(--color-primary)]/30 transition-colors shadow-sm">
               <div class="flex items-center gap-3">
                 <img :src="`https://minotar.net/helm/${player}/32.png`" class="w-9 h-9 rounded shadow-sm [image-rendering:pixelated]" />
-                <span class="font-bold text-sm text-zinc-800 dark:text-zinc-200">{{ player }}</span>
+                <span class="font-bold text-sm text-[var(--td-text-color-primary)]">{{ player }}</span>
               </div>
               <div class="flex flex-wrap items-center gap-1.5">
                 <t-button size="small" variant="outline" theme="default" class="!rounded-lg !border-zinc-200 dark:!border-zinc-700 !text-zinc-600 dark:!text-zinc-300 hover:!text-[var(--color-primary)] hover:!border-[var(--color-primary)]/50" @click="handleAddOp(player)">设为 OP</t-button>
@@ -250,7 +250,7 @@ const handleClose = () => emits('update:visible', false);
               </div>
             </div>
           </template>
-          <div v-else class="py-16 flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500">
+          <div v-else class="py-16 flex flex-col items-center justify-center text-[var(--td-text-color-secondary)]">
             <user-clear-icon size="40px" class="mb-3 opacity-60" />
             <span class="text-sm font-medium">{{ isRunning ? '当前没有玩家在线' : '服务器未运行' }}</span>
           </div>
@@ -262,7 +262,7 @@ const handleClose = () => emits('update:visible', false);
               <div class="flex items-center gap-3 min-w-0">
                 <img :src="`https://minotar.net/helm/${user.name}/32.png`" class="w-9 h-9 rounded shadow-sm [image-rendering:pixelated] shrink-0" />
                 <div class="flex flex-col min-w-0">
-                  <span class="font-bold text-sm text-zinc-800 dark:text-zinc-200 truncate">{{ user.name }}</span>
+                  <span class="font-bold text-sm text-[var(--td-text-color-primary)] truncate">{{ user.name }}</span>
                   <span class="text-[11px] text-zinc-500 font-mono truncate mt-0.5">UUID: {{ user.uuid.split('-')[0] }}...</span>
                 </div>
               </div>
@@ -273,7 +273,7 @@ const handleClose = () => emits('update:visible', false);
               </div>
             </div>
           </template>
-          <div v-else class="py-16 flex items-center justify-center text-sm font-medium text-zinc-400 dark:text-zinc-500">无历史登录记录</div>
+          <div v-else class="py-16 flex items-center justify-center text-sm font-medium text-[var(--td-text-color-secondary)]">无历史登录记录</div>
         </div>
 
         <div v-if="activeTab === 'ops'" class="flex flex-col gap-3">
@@ -287,7 +287,7 @@ const handleClose = () => emits('update:visible', false);
               <div class="flex items-center gap-3">
                 <img :src="`https://minotar.net/helm/${op.name}/32.png`" class="w-9 h-9 rounded shadow-sm [image-rendering:pixelated]" />
                 <div class="flex flex-col gap-1">
-                  <span class="font-bold text-sm text-zinc-800 dark:text-zinc-200">{{ op.name }}</span>
+                  <span class="font-bold text-sm text-[var(--td-text-color-primary)]">{{ op.name }}</span>
                   <span class="text-[10px] font-extrabold bg-blue-50 text-blue-600 ring-1 ring-inset ring-blue-500/20 dark:bg-blue-500/10 dark:text-blue-400 dark:ring-blue-500/30 px-1.5 py-0.5 rounded w-max">LV.{{ op.level }}</span>
                 </div>
               </div>
@@ -296,7 +296,7 @@ const handleClose = () => emits('update:visible', false);
               </t-popconfirm>
             </div>
           </template>
-          <div v-else class="py-12 flex items-center justify-center text-sm font-medium text-zinc-400 dark:text-zinc-500">暂无管理员记录</div>
+          <div v-else class="py-12 flex items-center justify-center text-sm font-medium text-[var(--td-text-color-secondary)]">暂无管理员记录</div>
         </div>
 
         <div v-if="activeTab === 'banned'" class="flex flex-col gap-3">
@@ -320,7 +320,7 @@ const handleClose = () => emits('update:visible', false);
                   <img :src="`https://minotar.net/helm/${player.name}/32.png`" class="w-9 h-9 rounded shadow-sm [image-rendering:pixelated] shrink-0" />
                   <div class="flex flex-col min-w-0 gap-0.5">
                     <span class="font-bold text-sm text-red-600 dark:text-red-400 truncate">{{ player.name }}</span>
-                    <span class="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 break-all line-clamp-2">理由: {{ player.reason }}</span>
+                    <span class="text-[11px] text-[var(--td-text-color-secondary)] mt-0.5 break-all line-clamp-2">理由: {{ player.reason }}</span>
                   </div>
                 </div>
                 <t-popconfirm content="确定要解封吗？" theme="warning" @confirm="handleRemoveBanPlayer(player.name)">
@@ -328,7 +328,7 @@ const handleClose = () => emits('update:visible', false);
                 </t-popconfirm>
               </div>
             </template>
-            <div v-else class="py-12 flex items-center justify-center text-sm font-medium text-zinc-400 dark:text-zinc-500">暂无被封禁的玩家</div>
+            <div v-else class="py-12 flex items-center justify-center text-sm font-medium text-[var(--td-text-color-secondary)]">暂无被封禁的玩家</div>
           </div>
 
           <div v-else class="flex flex-col gap-3">
@@ -342,14 +342,14 @@ const handleClose = () => emits('update:visible', false);
               <div v-for="ban in bannedIps" :key="ban.ip" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-red-50/50 dark:bg-red-950/20 rounded-xl border border-red-200/60 dark:border-red-900/40 shadow-sm">
                 <div class="flex flex-col min-w-0 gap-0.5">
                   <span class="font-mono font-bold text-sm text-red-600 dark:text-red-400 truncate">{{ ban.ip }}</span>
-                  <span class="text-[11px] text-zinc-500 dark:text-zinc-400 break-all line-clamp-2">理由: {{ ban.reason }}</span>
+                  <span class="text-[11px] text-[var(--td-text-color-secondary)] break-all line-clamp-2">理由: {{ ban.reason }}</span>
                 </div>
                 <t-popconfirm content="确定要解封该IP吗？" theme="warning" @confirm="handleRemoveBanIp(ban.ip)">
                   <t-button size="small" variant="outline" theme="primary" class="!rounded-lg !border-[var(--color-primary)]/30 hover:!bg-[var(--color-primary)]/10 shrink-0 self-end sm:self-auto">解封</t-button>
                 </t-popconfirm>
               </div>
             </template>
-            <div v-else class="py-12 flex items-center justify-center text-sm font-medium text-zinc-400 dark:text-zinc-500">暂无被封禁的IP</div>
+            <div v-else class="py-12 flex items-center justify-center text-sm font-medium text-[var(--td-text-color-secondary)]">暂无被封禁的IP</div>
           </div>
         </div>
 
@@ -363,14 +363,14 @@ const handleClose = () => emits('update:visible', false);
             <div v-for="user in whitelist" :key="user.uuid" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl border border-zinc-200/60 dark:border-zinc-700/60 shadow-sm">
               <div class="flex items-center gap-3 min-w-0">
                 <img :src="`https://minotar.net/helm/${user.name}/32.png`" class="w-9 h-9 rounded shadow-sm [image-rendering:pixelated] shrink-0" />
-                <span class="font-bold text-sm text-zinc-800 dark:text-zinc-200 truncate">{{ user.name }}</span>
+                <span class="font-bold text-sm text-[var(--td-text-color-primary)] truncate">{{ user.name }}</span>
               </div>
               <t-popconfirm content="移出白名单？" theme="danger" @confirm="handleRemoveWhitelist(user.name)">
                 <t-button size="small" variant="outline" theme="danger" class="!rounded-lg !border-red-500/30 hover:!bg-red-500/10 self-start sm:self-auto"><template #icon><delete-icon /></template> 移除</t-button>
               </t-popconfirm>
             </div>
           </template>
-          <div v-else class="py-12 flex items-center justify-center text-sm font-medium text-zinc-400 dark:text-zinc-500">白名单为空</div>
+          <div v-else class="py-12 flex items-center justify-center text-sm font-medium text-[var(--td-text-color-secondary)]">白名单为空</div>
         </div>
 
       </div>

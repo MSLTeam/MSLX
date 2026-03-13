@@ -214,21 +214,21 @@ const handleClose = () => emits('update:visible', false);
       <div class="absolute bottom-4 right-4 p-4 flex flex-col font-mono text-sm bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-md z-20 pointer-events-none">
 
         <div class="flex justify-between items-center gap-6 mb-2">
-          <span class="text-xs text-zinc-500 dark:text-zinc-400">方块坐标 (Block):</span>
+          <span class="text-xs text-[var(--td-text-color-secondary)]">方块坐标 (Block):</span>
           <span class="font-bold text-[var(--color-primary)]">X: {{ centerCoordinates.blockX }}, Z: {{ centerCoordinates.blockZ }}</span>
         </div>
 
         <div class="flex justify-between items-center gap-6 mb-2">
-          <span class="text-xs text-zinc-500 dark:text-zinc-400">区块区号 (Region):</span>
+          <span class="text-xs text-[var(--td-text-color-secondary)]">区块区号 (Region):</span>
           <span class="font-bold text-[var(--color-primary)]">r.{{ centerCoordinates.regionX }}.{{ centerCoordinates.regionZ }}</span>
         </div>
 
         <div class="flex justify-between items-center gap-6 mb-3">
-          <span class="text-xs text-zinc-500 dark:text-zinc-400">当前缩放:</span>
+          <span class="text-xs text-[var(--td-text-color-secondary)]">当前缩放:</span>
           <span class="font-bold text-[var(--color-primary)]">{{ Math.round(scale * 100) }}%</span>
         </div>
 
-        <div class="pt-2.5 border-t border-dashed border-zinc-200/80 dark:border-zinc-700/80 text-right text-[11px] text-zinc-400 dark:text-zinc-500 font-sans tracking-widest">
+        <div class="pt-2.5 border-t border-dashed border-zinc-200/80 dark:border-zinc-700/80 text-right text-[11px] text-[var(--td-text-color-secondary)] font-sans tracking-widest">
           🖱️ 滚轮缩放 | 按住拖拽
         </div>
 

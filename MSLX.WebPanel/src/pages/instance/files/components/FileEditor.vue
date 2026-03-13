@@ -222,7 +222,7 @@ const handleConfirm = () => {
         />
       </div>
 
-      <div class="flex justify-end items-center gap-4 px-1 text-[11.5px] font-mono text-zinc-400 dark:text-zinc-500 tracking-wider">
+      <div class="flex justify-end items-center gap-4 px-1 text-[11.5px] font-mono text-[var(--td-text-color-secondary)] tracking-wider">
         <span>行数: {{ code.split('\n').length }}</span>
         <span>长度: {{ code.length }}</span>
         <span class="text-[var(--color-primary)] font-medium bg-[var(--color-primary)]/10 px-1.5 py-0.5 rounded">

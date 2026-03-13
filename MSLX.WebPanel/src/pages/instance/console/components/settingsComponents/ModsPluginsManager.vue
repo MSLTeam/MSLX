@@ -208,7 +208,7 @@ watch(() => route.params.serverId, (newId) => {
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-5 mb-4 pb-2 border-b border-dashed border-zinc-200/60 dark:border-zinc-700/60">
       <div class="flex items-center gap-2">
         <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
-        <h2 class="text-base font-bold text-zinc-800 dark:text-zinc-200 m-0">资源管理</h2>
+        <h2 class="text-base font-bold text-[var(--td-text-color-primary)] m-0">资源管理</h2>
       </div>
 
       <div class="w-full md:w-auto">
@@ -323,7 +323,7 @@ watch(() => route.params.serverId, (newId) => {
         </template>
 
         <template #empty>
-          <div class="py-16 flex flex-col items-center justify-center text-zinc-400 dark:text-zinc-500">
+          <div class="py-16 flex flex-col items-center justify-center text-[var(--td-text-color-secondary)]">
             <extension-icon v-if="mode === 'mods'" size="40px" class="opacity-60 mb-3" />
             <app-icon v-else size="40px" class="opacity-60 mb-3" />
             <span class="text-sm font-medium">暂无{{ mode === 'mods' ? '模组' : '插件' }}文件</span>
@@ -332,9 +332,9 @@ watch(() => route.params.serverId, (newId) => {
       </t-table>
     </div>
 
-    <div class="mt-4 text-[11px] text-zinc-400 dark:text-zinc-500 leading-relaxed tracking-wider space-y-1">
+    <div class="mt-4 text-[11px] text-[var(--td-text-color-secondary)] leading-relaxed tracking-wider space-y-1">
       <p>提示：{{ mode === 'mods' ? '模组' : '插件' }}文件存放于服务器根目录的 /{{ mode }} 文件夹下。</p>
-      <p>禁用文件后，会在文件名后添加 <code class="bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded font-mono text-[10px] text-zinc-500 dark:text-zinc-400">.disabled</code> 后缀，服务器将自动忽略该文件。</p>
+      <p>禁用文件后，会在文件名后添加 <code class="bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded font-mono text-[10px] text-[var(--td-text-color-secondary)]">.disabled</code> 后缀，服务器将自动忽略该文件。</p>
     </div>
 
     <upload-dialog

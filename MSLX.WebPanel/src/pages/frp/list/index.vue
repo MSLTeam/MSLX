@@ -111,13 +111,13 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="mx-auto flex flex-col gap-6 text-zinc-800 dark:text-zinc-200 pb-5">
+  <div class="mx-auto flex flex-col gap-6 text-[var(--td-text-color-primary)] pb-5">
     <div
       class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm text-left"
     >
       <div class="flex flex-col gap-1 items-start">
-        <h2 class="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100 m-0">隧道列表</h2>
-        <p class="text-sm text-zinc-500 dark:text-zinc-400 m-0">管理您的 FRP 隧道映射，设置自启动并监控运行状态</p>
+        <h2 class="text-lg font-bold tracking-tight text-[var(--td-text-color-primary)] m-0">隧道列表</h2>
+        <p class="text-sm text-[var(--td-text-color-secondary)] m-0">管理您的 FRP 隧道映射，设置自启动并监控运行状态</p>
       </div>
 
       <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -180,10 +180,10 @@ onMounted(() => {
                 ></span>
               </div>
 
-              <h4 class="text-base font-bold text-zinc-900 dark:text-zinc-100 truncate tracking-tight">
+              <h4 class="text-base font-bold text-[var(--td-text-color-primary)] truncate tracking-tight">
                 {{ item.name }}
               </h4>
-              <span class="text-xs font-mono text-zinc-400 dark:text-zinc-500 ml-2 opacity-60 shrink-0"
+              <span class="text-xs font-mono text-[var(--td-text-color-secondary)] ml-2 opacity-60 shrink-0"
                 >#{{ item.id }}</span
               >
             </div>
@@ -191,17 +191,17 @@ onMounted(() => {
 
           <div class="flex items-center gap-8 px-0.5">
             <div class="flex flex-col gap-1.5">
-              <span class="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-widest font-black opacity-80"
+              <span class="text-[10px] text-[var(--td-text-color-secondary)] uppercase tracking-widest font-black opacity-80"
                 >提供商</span
               >
-              <div class="flex items-center gap-2 text-zinc-800 dark:text-zinc-200">
+              <div class="flex items-center gap-2 text-[var(--td-text-color-primary)]">
                 <cloud-icon size="16px" class="text-[var(--color-primary)] opacity-70" />
                 <span class="text-sm font-bold leading-none">{{ item.service }}</span>
               </div>
             </div>
 
             <div class="flex flex-col gap-1.5">
-              <span class="text-[10px] text-zinc-400 dark:text-zinc-500 uppercase tracking-widest font-black opacity-80"
+              <span class="text-[10px] text-[var(--td-text-color-secondary)] uppercase tracking-widest font-black opacity-80"
                 >配置格式</span
               >
               <div>
@@ -221,7 +221,7 @@ onMounted(() => {
             class="flex items-center justify-between pt-4 mt-auto border-t border-dashed border-zinc-200/60 dark:border-zinc-700/60"
           >
             <span
-              class="text-xs text-zinc-400 dark:text-zinc-500 group-hover:text-[var(--color-primary)] transition-colors font-bold"
+              class="text-xs text-[var(--td-text-color-secondary)] group-hover:text-[var(--color-primary)] transition-colors font-bold"
             >
               隧道控制台 →
             </span>
@@ -255,8 +255,8 @@ onMounted(() => {
           <div class="alert-zinc bg-primary/5 border border-primary/20 p-4 rounded-xl mb-6 flex items-start gap-3">
             <t-icon name="info-circle-filled" class="text-primary mt-0.5" />
             <div class="text-sm">
-              <p class="text-zinc-900 dark:text-zinc-100 font-bold mb-1">自启动策略说明</p>
-              <p class="text-zinc-500 dark:text-zinc-400 leading-relaxed m-0">
+              <p class="text-[var(--td-text-color-primary)] font-bold mb-1">自启动策略说明</p>
+              <p class="text-[var(--td-text-color-secondary)] leading-relaxed m-0">
                 勾选的隧道将在 MSLX 守护进程启动时自动加载并运行。
               </p>
             </div>
@@ -272,7 +272,7 @@ onMounted(() => {
                 >
                   <t-checkbox :value="item.id" class="!w-full">
                     <div class="flex items-center justify-between w-full ml-1 overflow-hidden">
-                      <span class="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate pr-2">{{
+                      <span class="text-sm font-medium text-[var(--td-text-color-primary)] truncate pr-2">{{
                         item.name
                       }}</span>
                       <span class="text-[10px] font-mono text-zinc-400 shrink-0">#{{ item.id }}</span>

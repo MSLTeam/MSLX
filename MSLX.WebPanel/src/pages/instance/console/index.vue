@@ -173,7 +173,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="h-auto md:h-full flex flex-col md:flex-row gap-5 overflow-y-auto md:overflow-hidden pb-3 box-border relative text-zinc-800 dark:text-zinc-200">
+  <div class="h-auto md:h-full flex flex-col md:flex-row gap-5 overflow-y-auto md:overflow-hidden pb-3 box-border relative text-[var(--td-text-color-primary)]">
 
     <div class="list-item-anim flex-1 shrink-0 min-w-0 min-h-[450px] md:h-full flex flex-col relative z-10" style="animation-delay: 0s;">
       <server-terminal ref="terminalRef" :server-id="serverId" @update="fetchServerInfo()" />
@@ -216,7 +216,7 @@ onMounted(async () => {
         <p class="mb-3 text-amber-500 dark:text-amber-400 font-medium">
           ⚠️ 如果您<strong>未同意 EULA</strong>，服务器可能会在运行时自动关闭！
         </p>
-        <p class="mt-4 pt-4 border-t border-dashed border-zinc-200 dark:border-zinc-700 text-zinc-500 dark:text-zinc-400 text-xs">
+        <p class="mt-4 pt-4 border-t border-dashed border-zinc-200 dark:border-zinc-700 text-[var(--td-text-color-secondary)] text-xs">
           💡 提示：如要在每次启动实例时忽略此提示，请在<strong>设置</strong>里进行配置。
         </p>
       </div>

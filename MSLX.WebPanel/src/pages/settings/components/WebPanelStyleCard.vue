@@ -35,7 +35,7 @@ const handleFileUpload = async (
           <div class="flex items-center gap-3">
             <div class="w-1.5 h-6 bg-[var(--color-primary)] rounded-full shadow-[0_0_8px_var(--color-primary-light)] opacity-90"></div>
             <div class="flex flex-col">
-              <h2 class="text-lg font-bold text-zinc-900 dark:text-zinc-100 m-0 leading-none tracking-tight">面板自定义样式</h2>
+              <h2 class="text-lg font-bold text-[var(--td-text-color-primary)] m-0 leading-none tracking-tight">面板自定义样式</h2>
               <span class="text-[11px] sm:text-xs text-amber-600/80 dark:text-amber-500/80 mt-1.5 font-medium">背景图相关的样式需要在面板左上角的样式面板中启用背景美化才会生效哦！</span>
             </div>
           </div>
@@ -48,12 +48,12 @@ const handleFileUpload = async (
         <t-form :data="webpanelStore.settings" label-align="top" @submit="webpanelStore.saveSettings">
 
           <div class="flex items-center gap-3 mt-2 mb-6">
-            <span class="text-xs font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">背景图片设置</span>
+            <span class="text-xs font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest">背景图片设置</span>
             <div class="h-px bg-zinc-200/60 dark:bg-zinc-700/60 flex-1"></div>
           </div>
 
           <t-form-item label="浅色背景">
-            <template #help><span class="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 mt-1 inline-block">留空则使用默认的背景图哦～</span></template>
+            <template #help><span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block">留空则使用默认的背景图哦～</span></template>
             <t-input
               v-model="webpanelStore.settings.webPanelStyleLightBackground"
               placeholder="输入完整 URL 地址或者在右边上传图片"
@@ -99,7 +99,7 @@ const handleFileUpload = async (
           </t-form-item>
 
           <div class="flex items-center gap-3 mt-8 mb-6">
-            <span class="text-xs font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">透明度调整 (0.1 - 1.0)</span>
+            <span class="text-xs font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest">透明度调整 (0.1 - 1.0)</span>
             <div class="h-px bg-zinc-200/60 dark:bg-zinc-700/60 flex-1"></div>
           </div>
 
@@ -133,7 +133,7 @@ const handleFileUpload = async (
           </div>
 
           <div class="flex items-center gap-3 mt-8 mb-6">
-            <span class="text-xs font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">终端设置 (毛玻璃强度/染色设置)</span>
+            <span class="text-xs font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest">终端设置 (毛玻璃强度/染色设置)</span>
             <div class="h-px bg-zinc-200/60 dark:bg-zinc-700/60 flex-1"></div>
           </div>
 

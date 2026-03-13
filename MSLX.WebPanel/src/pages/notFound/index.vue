@@ -37,7 +37,7 @@ const settingStore = useSettingStore();
         </t-button>
       </div>
 
-      <footer class="mt-8 text-xs text-zinc-500 dark:text-zinc-400/60 font-mono tracking-wider">
+      <footer class="mt-8 text-xs text-[var(--td-text-color-secondary)]/60 font-mono tracking-wider">
         Copyright @ 2021-{{ new Date().getFullYear() }} MSLTeam
       </footer>
 

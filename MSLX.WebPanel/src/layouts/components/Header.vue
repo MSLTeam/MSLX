@@ -114,7 +114,7 @@ const navToHelper = () => {
       <template #logo>
         <span v-if="showLogo" class="flex items-center cursor-pointer mr-1 lg:mr-6 gap-2.5" @click="handleNav('/dashboard/base')">
           <img class="w-7 h-7 object-contain shrink-0" :src="CustomLogo" alt="logo" />
-          <span class="text-[17px] font-bold truncate max-[1012px]:hidden text-zinc-800 dark:text-zinc-100 tracking-tight leading-none mt-0.5"> MSLX 管理中心 </span>
+          <span class="text-[17px] font-bold truncate max-[1012px]:hidden text-[var(--td-text-color-primary)] tracking-tight leading-none mt-0.5"> MSLX 管理中心 </span>
         </span>
 
         <div v-if="layout == 'side'" class="flex lg:hidden ml-1 items-center">

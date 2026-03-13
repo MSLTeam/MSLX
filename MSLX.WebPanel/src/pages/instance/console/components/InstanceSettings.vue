@@ -46,7 +46,7 @@ defineExpose({ open });
           v-for="(item, index) in menuItems"
           :key="index"
           class="relative flex flex-col md:flex-row items-center justify-center md:justify-start flex-1 md:flex-none h-auto md:h-12 px-2 py-3 md:py-0 md:px-5 cursor-pointer text-xs md:text-sm transition-all duration-200 gap-1 md:gap-2.5 group"
-          :class="currentTab === index ? 'text-[var(--color-primary)] font-bold bg-white/80 dark:bg-zinc-800/50 md:bg-transparent' : 'text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200/50 dark:hover:bg-zinc-800/40'"
+          :class="currentTab === index ? 'text-[var(--color-primary)] font-bold bg-white/80 dark:bg-zinc-800/50 md:bg-transparent' : 'text-[var(--td-text-color-secondary)] hover:bg-zinc-200/50 dark:hover:bg-zinc-800/40'"
           @click="currentTab = index"
         >
           <div

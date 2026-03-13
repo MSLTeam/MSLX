@@ -19,7 +19,7 @@ html[theme-mode='dark'] .t-textarea__inner, .dark .t-textarea__inner {
 }
 
 .t-input__inner::placeholder, .t-textarea__inner::placeholder {
-  @apply text-zinc-400 dark:text-zinc-500;
+  @apply text-[var(--td-text-color-secondary)];
 }
 
 /* 表单 Label 标签 */

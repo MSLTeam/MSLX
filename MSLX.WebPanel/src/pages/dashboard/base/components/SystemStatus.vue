@@ -195,10 +195,10 @@ onUnmounted(async () => {
         <div class="flex justify-between items-center h-[100px] w-full gap-2">
 
           <div class="flex flex-col justify-center min-w-[100px] shrink-0">
-            <div class="text-[13px] text-zinc-500 dark:text-zinc-400 font-medium">CPU 使用率</div>
+            <div class="text-[13px] text-[var(--td-text-color-secondary)] font-medium">CPU 使用率</div>
             <div class="flex items-baseline my-1">
-              <span class="text-3xl font-bold font-mono text-zinc-800 dark:text-zinc-100 leading-none">{{ currentStats.cpu }}</span>
-              <span class="text-xs ml-0.5 text-zinc-500 dark:text-zinc-400">%</span>
+              <span class="text-3xl font-bold font-mono text-[var(--td-text-color-primary)] leading-none">{{ currentStats.cpu }}</span>
+              <span class="text-xs ml-0.5 text-[var(--td-text-color-secondary)]">%</span>
             </div>
 
             <t-tag v-if="isConnected" theme="success" shape="round" size="small" class="w-fit mt-1">
@@ -223,16 +223,16 @@ onUnmounted(async () => {
         <div class="flex justify-between items-center h-[100px] w-full gap-2">
 
           <div class="flex flex-col justify-center min-w-[100px] shrink-0">
-            <div class="text-[13px] text-zinc-500 dark:text-zinc-400 font-medium">内存使用率</div>
+            <div class="text-[13px] text-[var(--td-text-color-secondary)] font-medium">内存使用率</div>
             <div class="flex items-baseline my-1">
-              <span class="text-3xl font-bold font-mono text-zinc-800 dark:text-zinc-100 leading-none">{{ currentStats.memUsage }}</span>
-              <span class="text-xs ml-0.5 text-zinc-500 dark:text-zinc-400">%</span>
+              <span class="text-3xl font-bold font-mono text-[var(--td-text-color-primary)] leading-none">{{ currentStats.memUsage }}</span>
+              <span class="text-xs ml-0.5 text-[var(--td-text-color-secondary)]">%</span>
             </div>
 
             <div class="mt-1 flex items-baseline gap-1 font-mono">
               <span class="text-[14px] font-bold text-zinc-700 dark:text-zinc-200">{{ (currentStats.memUsed / 1024).toFixed(1) }}</span>
-              <span class="text-[11px] text-zinc-400 dark:text-zinc-500 mx-0.5">/</span>
-              <span class="text-[11px] text-zinc-500 dark:text-zinc-400">{{ (currentStats.memTotal / 1024).toFixed(1) }} GB</span>
+              <span class="text-[11px] text-[var(--td-text-color-secondary)] mx-0.5">/</span>
+              <span class="text-[11px] text-[var(--td-text-color-secondary)]">{{ (currentStats.memTotal / 1024).toFixed(1) }} GB</span>
             </div>
 
           </div>

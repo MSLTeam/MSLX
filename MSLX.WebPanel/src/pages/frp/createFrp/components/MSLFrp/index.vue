@@ -288,7 +288,7 @@ async function handleDeleteTunnel() {
 </script>
 
 <template>
-  <div class="mx-auto pb-6 text-zinc-800 dark:text-zinc-200">
+  <div class="mx-auto pb-6 text-[var(--td-text-color-primary)]">
 
     <div v-if="mslUserToken === ''" class="flex items-center justify-center min-h-[70vh] list-item-anim">
       <div class="design-card relative w-full max-w-md bg-white/80 dark:bg-zinc-800/80 backdrop-blur-xl rounded-3xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-xl p-10 text-center overflow-hidden">
@@ -299,8 +299,8 @@ async function handleDeleteTunnel() {
           <div class="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
             <img src="https://user.mslmc.net/assets/png/msl-user-msl-user-logo-512-transparent-BjXu1GPW.png" alt="msl-user-logo" class="text-[var(--color-primary)]" />
           </div>
-          <h2 class="text-2xl font-extrabold text-zinc-900 dark:text-zinc-100 !mb-2 tracking-tight">欢迎登录 MSLFrp</h2>
-          <p class="text-sm text-zinc-500 dark:text-zinc-400 !mb-8 font-medium">登录您的 MSL 账户以使用内网穿透服务</p>
+          <h2 class="text-2xl font-extrabold text-[var(--td-text-color-primary)] !mb-2 tracking-tight">欢迎登录 MSLFrp</h2>
+          <p class="text-sm text-[var(--td-text-color-secondary)] !mb-8 font-medium">登录您的 MSL 账户以使用内网穿透服务</p>
 
           <div class="w-full flex flex-col gap-4">
             <t-button block theme="primary" size="large" class="!rounded-xl !h-12 !font-bold shadow-md shadow-[var(--color-primary-light)]/30 hover:shadow-[var(--color-primary-light)]/50" @click="jumpLogin">
@@ -322,7 +322,7 @@ async function handleDeleteTunnel() {
       <div v-if="userInfo" class="design-card list-item-anim bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm p-5 sm:p-6" style="animation-delay: 0s;">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60">
           <div class="flex flex-col">
-            <h3 class="text-lg font-bold text-zinc-900 dark:text-zinc-100 m-0 leading-none">MSLFrp 用户信息</h3>
+            <h3 class="text-lg font-bold text-[var(--td-text-color-primary)] m-0 leading-none">MSLFrp 用户信息</h3>
           </div>
           <div class="flex items-center gap-2">
             <t-button variant="outline" theme="success" size="small" class="!rounded-lg hover:!bg-[var(--color-success)]/10" @click="changeUrl('https://user.mslmc.net/store/buy')">订阅会员服务</t-button>
@@ -336,9 +336,9 @@ async function handleDeleteTunnel() {
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800">
-            <div class="text-[11px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1">用户昵称</div>
+            <div class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1">用户昵称</div>
             <div class="flex items-center gap-2">
-              <span class="text-lg font-bold text-zinc-800 dark:text-zinc-200 truncate">{{ userInfo.name }}</span>
+              <span class="text-lg font-bold text-[var(--td-text-color-primary)] truncate">{{ userInfo.name }}</span>
               <t-tag :theme="userInfo.realNameStatus ? 'success' : 'warning'" variant="light" size="small" class="!rounded cursor-pointer !font-bold !px-1.5" @click="changeUrl('https://user.mslmc.net/user/profile')">
                 {{ userInfo.realNameStatus ? '已实名' : '未实名' }}
               </t-tag>
@@ -346,18 +346,18 @@ async function handleDeleteTunnel() {
           </div>
 
           <div class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800">
-            <div class="text-[11px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1">隧道限额</div>
-            <div class="text-lg font-bold text-zinc-800 dark:text-zinc-200 font-mono">{{ userInfo.maxTunnelCount }} <span class="text-sm font-medium text-zinc-500">条</span></div>
+            <div class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1">隧道限额</div>
+            <div class="text-lg font-bold text-[var(--td-text-color-primary)] font-mono">{{ userInfo.maxTunnelCount }} <span class="text-sm font-medium text-zinc-500">条</span></div>
           </div>
 
           <div class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800">
-            <div class="text-[11px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1">速率限制</div>
-            <div class="text-lg font-bold text-zinc-800 dark:text-zinc-200 font-mono">{{ (userInfo.boundLimit / 1024) * 8 }} <span class="text-sm font-medium text-zinc-500">Mbps</span></div>
+            <div class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1">速率限制</div>
+            <div class="text-lg font-bold text-[var(--td-text-color-primary)] font-mono">{{ (userInfo.boundLimit / 1024) * 8 }} <span class="text-sm font-medium text-zinc-500">Mbps</span></div>
           </div>
 
           <div class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800">
-            <div class="text-[11px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1">会员到期时间</div>
-            <div class="text-[15px] font-bold text-zinc-800 dark:text-zinc-200 font-mono mt-0.5">
+            <div class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1">会员到期时间</div>
+            <div class="text-[15px] font-bold text-[var(--td-text-color-primary)] font-mono mt-0.5">
               {{ userInfo.outdated === 3749682420 ? '长期有效' : formatTime(userInfo.outdated) }}
             </div>
           </div>
@@ -368,7 +368,7 @@ async function handleDeleteTunnel() {
 
         <div class="lg:col-span-5 xl:col-span-4 design-card list-item-anim flex flex-col bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md rounded-2xl border border-zinc-200/50 dark:border-zinc-700/50 shadow-sm h-[580px]" style="animation-delay: 0.1s;">
           <div class="flex items-center justify-between p-4 sm:p-5 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 shrink-0">
-            <h3 class="text-base font-bold text-zinc-900 dark:text-zinc-100 m-0">我的隧道</h3>
+            <h3 class="text-base font-bold text-[var(--td-text-color-primary)] m-0">我的隧道</h3>
             <div class="flex items-center gap-1">
               <t-button size="small" variant="text" class="!px-2 hover:!bg-zinc-100 dark:hover:!bg-zinc-700/50" :loading="loading" @click="handleRefresh">
                 <template #icon><refresh-icon /></template>刷新
@@ -392,12 +392,12 @@ async function handleDeleteTunnel() {
                 @click="selectedTunnelId = tunnel.id"
               >
                 <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 mr-3 transition-colors"
-                     :class="selectedTunnelId === tunnel.id ? 'bg-[var(--color-primary)] text-white shadow-md shadow-[var(--color-primary)]/30' : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 group-hover:text-zinc-800 dark:group-hover:text-zinc-200'">
+                     :class="selectedTunnelId === tunnel.id ? 'bg-[var(--color-primary)] text-white shadow-md shadow-[var(--color-primary)]/30' : 'bg-zinc-100 dark:bg-zinc-900 text-[var(--td-text-color-secondary)] group-hover:text-zinc-800 dark:group-hover:text-zinc-200'">
                   <server-icon size="20px" />
                 </div>
                 <div class="flex-1 min-w-0 mr-3">
-                  <div class="font-bold text-sm truncate transition-colors" :class="selectedTunnelId === tunnel.id ? 'text-[var(--color-primary)]' : 'text-zinc-800 dark:text-zinc-200'">{{ tunnel.name }}</div>
-                  <div class="text-[11px] text-zinc-500 dark:text-zinc-400 truncate mt-0.5">{{ nodesMap[tunnel.node_id] || `Node ${tunnel.node_id}` }}</div>
+                  <div class="font-bold text-sm truncate transition-colors" :class="selectedTunnelId === tunnel.id ? 'text-[var(--color-primary)]' : 'text-[var(--td-text-color-primary)]'">{{ tunnel.name }}</div>
+                  <div class="text-[11px] text-[var(--td-text-color-secondary)] truncate mt-0.5">{{ nodesMap[tunnel.node_id] || `Node ${tunnel.node_id}` }}</div>
                 </div>
                 <div class="shrink-0">
                   <t-tag v-if="tunnel.status === 1" theme="success" variant="light" size="small" class="!rounded !font-bold !px-1.5">在线</t-tag>
@@ -418,8 +418,8 @@ async function handleDeleteTunnel() {
           <template v-if="currentTunnel">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 shrink-0">
               <div class="flex flex-col min-w-0">
-                <h3 class="text-xl font-extrabold text-zinc-900 dark:text-zinc-100 m-0 truncate">{{ currentTunnel.name }}</h3>
-                <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1 truncate">{{ currentTunnel.remarks || '暂无备注' }}</p>
+                <h3 class="text-xl font-extrabold text-[var(--td-text-color-primary)] m-0 truncate">{{ currentTunnel.name }}</h3>
+                <p class="text-xs text-[var(--td-text-color-secondary)] mt-1 truncate">{{ currentTunnel.remarks || '暂无备注' }}</p>
               </div>
               <div class="shrink-0">
                 <t-popconfirm content="确认删除此隧道吗？将无法恢复！" theme="danger" placement="bottom-right" @confirm="handleDeleteTunnel">
@@ -434,18 +434,18 @@ async function handleDeleteTunnel() {
             <div class="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 flex flex-col justify-center">
-                  <span class="text-[11px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">所在节点</span>
-                  <span class="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate" :title="currentNodeName">{{ currentNodeName }}</span>
+                  <span class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1.5">所在节点</span>
+                  <span class="text-sm font-bold text-[var(--td-text-color-primary)] truncate" :title="currentNodeName">{{ currentNodeName }}</span>
                 </div>
 
                 <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 flex flex-col justify-center">
-                  <span class="text-[11px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">协议类型</span>
+                  <span class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1.5">协议类型</span>
                   <span class="text-sm font-bold text-[var(--color-primary)] uppercase tracking-wide">{{ currentTunnel.type }}</span>
                 </div>
 
                 <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 flex flex-col justify-center">
-                  <span class="text-[11px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">本地地址</span>
-                  <span class="text-sm font-mono font-bold text-zinc-800 dark:text-zinc-200">{{ currentTunnel.local_ip }}:{{ currentTunnel.local_port }}</span>
+                  <span class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1.5">本地地址</span>
+                  <span class="text-sm font-mono font-bold text-[var(--td-text-color-primary)]">{{ currentTunnel.local_ip }}:{{ currentTunnel.local_port }}</span>
                 </div>
 
                 <div class="p-4 bg-emerald-50/50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/30 flex flex-col justify-center">
@@ -454,13 +454,13 @@ async function handleDeleteTunnel() {
                 </div>
 
                 <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 flex flex-col justify-center">
-                  <span class="text-[11px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">今日流量</span>
-                  <span class="text-sm font-mono font-bold text-zinc-800 dark:text-zinc-200">{{ formatBytes(currentTunnel.today_traffic * 1024 * 1024) }}</span>
+                  <span class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1.5">今日流量</span>
+                  <span class="text-sm font-mono font-bold text-[var(--td-text-color-primary)]">{{ formatBytes(currentTunnel.today_traffic * 1024 * 1024) }}</span>
                 </div>
 
                 <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-zinc-200/50 dark:border-zinc-700/50 flex flex-col justify-center">
-                  <span class="text-[11px] font-extrabold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5">总流量</span>
-                  <span class="text-sm font-mono font-bold text-zinc-800 dark:text-zinc-200">{{ formatBytes(currentTunnel.total_traffic * 1024 * 1024) }}</span>
+                  <span class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1.5">总流量</span>
+                  <span class="text-sm font-mono font-bold text-[var(--td-text-color-primary)]">{{ formatBytes(currentTunnel.total_traffic * 1024 * 1024) }}</span>
                 </div>
               </div>
 

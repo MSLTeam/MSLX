@@ -206,7 +206,7 @@ onMounted(fetchData);
     <div class="flex items-center justify-between mt-5 mb-4 pb-2 border-b border-dashed border-zinc-200 dark:border-zinc-700">
       <div class="flex items-center gap-2">
         <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
-        <h2 class="text-base font-bold text-zinc-800 dark:text-zinc-200 m-0">定时计划任务</h2>
+        <h2 class="text-base font-bold text-[var(--td-text-color-primary)] m-0">定时计划任务</h2>
       </div>
 
       <t-space v-if="!isCreating">
@@ -238,8 +238,8 @@ onMounted(fetchData);
             { title: '执行操作', desc: '选择触发时要执行的动作类型', key: 'type' }
           ]" :key="idx" class="flex flex-col md:flex-row md:items-start justify-between p-5 border-b border-dashed border-zinc-100 dark:border-zinc-800 last:border-0">
             <div class="flex-1 md:max-w-[40%] pr-0 md:pr-8 mb-3 md:mb-0">
-              <div class="text-sm font-bold text-zinc-800 dark:text-zinc-200">{{ field.title }}</div>
-              <div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">{{ field.desc }}</div>
+              <div class="text-sm font-bold text-[var(--td-text-color-primary)]">{{ field.title }}</div>
+              <div class="text-xs text-[var(--td-text-color-secondary)] mt-1">{{ field.desc }}</div>
             </div>
             <div class="flex-1 md:max-w-[60%] w-full flex items-center gap-2">
               <t-input v-if="field.key === 'name'" v-model="formData.name" placeholder="请输入任务名称" class="flex-1" />
@@ -253,8 +253,8 @@ onMounted(fetchData);
 
           <div v-if="formData.type === 'command' || formData.type === 'restart'" class="flex flex-col md:flex-row md:items-start justify-between p-5 border-b border-dashed border-zinc-100 dark:border-zinc-800">
             <div class="flex-1 md:max-w-[40%] pr-0 md:pr-8 mb-3 md:mb-0">
-              <div class="text-sm font-bold text-zinc-800 dark:text-zinc-200">{{ formData.type === 'restart' ? '重启提示语' : '控制台命令' }}</div>
-              <div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+              <div class="text-sm font-bold text-[var(--td-text-color-primary)]">{{ formData.type === 'restart' ? '重启提示语' : '控制台命令' }}</div>
+              <div class="text-xs text-[var(--td-text-color-secondary)] mt-1">
                 {{ formData.type === 'restart' ? '重启前发送给玩家的消息' : '直接输入内容，不需要加 /' }}
               </div>
             </div>
@@ -265,8 +265,8 @@ onMounted(fetchData);
 
           <div class="flex items-center justify-between p-5">
             <div class="flex-1 pr-8">
-              <div class="text-sm font-bold text-zinc-800 dark:text-zinc-200">启用状态</div>
-              <div class="text-xs text-zinc-500 dark:text-zinc-400 mt-1">暂时禁用此任务而不删除它</div>
+              <div class="text-sm font-bold text-[var(--td-text-color-primary)]">启用状态</div>
+              <div class="text-xs text-[var(--td-text-color-secondary)] mt-1">暂时禁用此任务而不删除它</div>
             </div>
             <t-switch v-model="formData.enable" />
           </div>
@@ -283,7 +283,7 @@ onMounted(fetchData);
 
     <t-loading :loading="loading" show-overlay>
       <div class="flex flex-col gap-3 mt-2">
-        <div v-if="taskList.length === 0 && !loading" class="flex flex-col items-center justify-center p-12 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl text-zinc-400 dark:text-zinc-500">
+        <div v-if="taskList.length === 0 && !loading" class="flex flex-col items-center justify-center p-12 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl text-[var(--td-text-color-secondary)]">
           <span class="text-sm font-medium">暂无任务，请点击上方创建</span>
         </div>
 
@@ -293,7 +293,7 @@ onMounted(fetchData);
               <t-tag size="small" :theme="item.enable ? 'success' : 'warning'" variant="light-outline" class="!rounded-md">
                 {{ item.enable ? '运行中' : '已暂停' }}
               </t-tag>
-              <span class="text-base font-bold text-zinc-800 dark:text-zinc-200 truncate">{{ item.name }}</span>
+              <span class="text-base font-bold text-[var(--td-text-color-primary)] truncate">{{ item.name }}</span>
             </div>
 
             <div class="flex flex-wrap items-center gap-3 text-xs">
@@ -302,12 +302,12 @@ onMounted(fetchData);
                 {{ item.type }}
               </t-tag>
 
-              <div class="flex items-center gap-1.5 px-2 py-1 bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 rounded-md font-mono">
+              <div class="flex items-center gap-1.5 px-2 py-1 bg-zinc-100 dark:bg-zinc-800 text-[var(--td-text-color-secondary)] rounded-md font-mono">
                 <time-icon class="text-sm" /> {{ item.cron }}
               </div>
             </div>
 
-            <div v-if="item.payload" class="mt-3 text-xs text-zinc-400 dark:text-zinc-500 bg-zinc-50 dark:bg-zinc-800/30 p-2 rounded-md border border-zinc-100 dark:border-zinc-800/50 truncate" :title="item.payload">
+            <div v-if="item.payload" class="mt-3 text-xs text-[var(--td-text-color-secondary)] bg-zinc-50 dark:bg-zinc-800/30 p-2 rounded-md border border-zinc-100 dark:border-zinc-800/50 truncate" :title="item.payload">
               {{ item.payload }}
             </div>
           </div>
