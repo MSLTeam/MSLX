@@ -218,7 +218,7 @@ async function handleUseTunnel() {
     });
 
     if (res.code === 200) {
-      await createFrpTunnel(currentTunnel.value.name, res.data, 'MSLFrp');
+      await createFrpTunnel(`${currentTunnel.value.name} | ${currentNodeName.value}`, res.data, 'MSLFrp');
     } else {
       MessagePlugin.error(res.msg);
     }

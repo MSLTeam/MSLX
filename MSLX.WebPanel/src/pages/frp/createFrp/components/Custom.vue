@@ -25,7 +25,7 @@ const rules: FormRules<FormData> = {
 
 const onSubmit: FormProps['onSubmit'] = async ({ validateResult }) => {
   if (validateResult === true) {
-    await createFrpTunnel(formData.name, formData.content, 'Custom', formData.type);
+    await createFrpTunnel(formData.name, formData.content, 'Custom', formData.type,false);
   } else {
     MessagePlugin.warning('请检查表单填写');
   }

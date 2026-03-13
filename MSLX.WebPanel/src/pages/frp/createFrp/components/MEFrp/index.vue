@@ -220,7 +220,7 @@ async function handleUseTunnel() {
     );
 
     if (res && res.config) {
-      await createFrpTunnel(currentTunnel.value.proxyName, res.config, 'ME Frp');
+      await createFrpTunnel(`${currentTunnel.value.proxyName} | ${currentNodeName.value}`, res.config, 'ME Frp');
       MessagePlugin.success('配置已成功加载');
     } else {
       MessagePlugin.error('获取配置失败');
