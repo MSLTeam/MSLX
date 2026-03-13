@@ -88,6 +88,17 @@ public class FileUtils
 
         return false;
     }
+    
+    // string转encoding
+    public static Encoding GetFileEncodingByString(string? encodingName)
+    {
+        return encodingName?.ToLower() switch
+        {
+            "gbk" => Encoding.GetEncoding("gbk"),
+            "utf-8-bom" => new UTF8Encoding(true),
+            _ => new UTF8Encoding(false) 
+        };
+    }
 }
 
 // 读取服务器配置文件

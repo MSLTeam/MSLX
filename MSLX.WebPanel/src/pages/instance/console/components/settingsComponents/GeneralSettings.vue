@@ -41,6 +41,7 @@ const isPathEditable = ref(false);
 // 编码选项
 const encodingOptions = [
   { label: 'UTF-8', value: 'utf-8' },
+  { label: 'UTF-8 With BOM', value: 'utf-8-bom' },
   { label: 'GBK', value: 'gbk' },
 ];
 
