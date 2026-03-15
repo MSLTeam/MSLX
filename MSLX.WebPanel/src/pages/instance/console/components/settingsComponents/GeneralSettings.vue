@@ -810,6 +810,7 @@ onUnmounted(() => {
       :close-on-overlay-click="false"
       :close-btn="false"
       width="600px"
+      attach="body"
     >
       <div class="flex flex-col gap-4 pt-2">
         <t-progress theme="plump" :percentage="progressPercent" :label="`${progressPercent}%`" />
@@ -829,11 +830,10 @@ onUnmounted(() => {
 <style scoped lang="less">
 @reference "@/style/tailwind/index.css";
 
-/* === 极致还原且绝对不会断行的内存输入框 === */
+/* === 内存输入框 === */
 .memory-input-group {
   display: flex;
   align-items: center;
-  /* 1. 严格约束最大宽度 */
   max-width: 110px;
   width: 100%;
 
@@ -846,10 +846,10 @@ onUnmounted(() => {
       border-top-right-radius: 0 !important;
       border-bottom-right-radius: 0 !important;
       border-right: none !important;
-      padding: 0 !important; /* 移除内边距，更紧凑 */
+      padding: 0 !important;
     }
 
-    /* 2. 让数字绝对居中 */
+    /* 数字绝对居中 */
     :deep(.t-input__inner) {
       text-align: center !important;
     }
@@ -857,7 +857,7 @@ onUnmounted(() => {
 
   /* 右边的单位选择器 */
   .select-right {
-    width: 40px !important; /* 3. 严格缩窄单位宽度 */
+    width: 40px !important;
     flex-shrink: 0;
 
     :deep(.t-input) {
@@ -867,11 +867,10 @@ onUnmounted(() => {
       padding: 0 !important;
     }
 
-    /* 4. 修复单位文字不居中问题 */
     :deep(.t-input__inner) {
       text-align: center !important;
-      padding: 0 !important; /* 强制去除内边距，确保文字完全居中 */
-      font-size: 12px !important; /* 字体稍微改小一点，更显精致 */
+      padding: 0 !important;
+      font-size: 12px !important;
       color: var(--td-text-color-secondary) !important;
     }
 

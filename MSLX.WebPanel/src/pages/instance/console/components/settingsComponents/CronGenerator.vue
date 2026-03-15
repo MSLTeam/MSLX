@@ -12,7 +12,6 @@ const props = defineProps({
 const emits = defineEmits(['update:visible', 'confirm']);
 
 // --- 模式管理 ---
-// 增加 preset 模式，并将默认打开的面板设为预设模式
 const mode = ref<'preset' | 'novice' | 'pro'>('preset');
 
 // --- 预设模式数据 ---

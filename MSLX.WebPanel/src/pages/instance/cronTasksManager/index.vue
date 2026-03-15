@@ -299,7 +299,6 @@ onMounted(() => {
 
       <template v-else-if="groupedInstances.length > 0">
         <div class="flex flex-col gap-5">
-          <transition-group name="list-anim" appear>
             <div
               v-for="(instance, index) in groupedInstances"
               :key="instance.id"
@@ -307,7 +306,7 @@ onMounted(() => {
               :style="{ animationDelay: `${index * 0.05}s` }"
             >
               <div
-                class="design-card flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300 hover:border-[var(--color-primary)]/30"
+                class="design-card flex flex-col bg-[var(--td-bg-color-container)]/80  rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300 hover:border-[var(--color-primary)]/30"
                 :class="{ 'opacity-80': !instance.tasks?.length }"
               >
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 border-b border-dashed border-zinc-200 dark:border-zinc-700/60">
@@ -407,7 +406,6 @@ onMounted(() => {
                 </div>
               </div>
             </div>
-          </transition-group>
         </div>
       </template>
 

@@ -196,7 +196,8 @@ async function initDashboardData() {
       }
     }
   } catch (e: any) {
-    MessagePlugin.error('数据加载失败: ' + e.message);
+    MessagePlugin.error('数据加载失败，已自动退出ME Frp: ' + e.message);
+    handleLogout();
   } finally {
     loading.value = false;
   }

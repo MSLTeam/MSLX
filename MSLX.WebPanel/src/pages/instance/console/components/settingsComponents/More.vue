@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { ImageIcon, RefreshIcon, UploadIcon } from 'tdesign-icons-vue-next';
 import { downloadFileStream, finishUpload, initUpload, saveUploadedFile, uploadChunk } from '@/api/files';
 
 const route = useRoute();
-const instanceId = parseInt(route.params.serverId as string);
+const instanceId = computed(() => parseInt(route.params.serverId as string));
 
 // --- 状态管理 ---
 const loading = ref(false);
@@ -44,7 +44,7 @@ const fetchCurrentIcon = async () => {
   errorMsg.value = '';
 
   try {
-    const blobData = await downloadFileStream(instanceId, 'server-icon.png');
+    const blobData = await downloadFileStream(instanceId.value, 'server-icon.png');
     const blob = (blobData as any).data || blobData;
 
     if (blob instanceof Blob) {
@@ -201,8 +201,8 @@ const confirmCropAndUpload = async () => {
     await uploadChunk(uploadId, 0, blob);
     await finishUpload(uploadId, 1);
 
-    // 指定保存到实例根目录的 server-icon.png
-    await saveUploadedFile(instanceId, uploadId, 'server-icon.png', '');
+    //  server-icon.png
+    await saveUploadedFile(instanceId.value, uploadId, 'server-icon.png', '');
 
     MessagePlugin.success('服务器图标已成功更新！');
     showCropDialog.value = false;
@@ -220,43 +220,72 @@ const confirmCropAndUpload = async () => {
 onMounted(() => {
   fetchCurrentIcon();
 });
+
+watch(
+  () => route.params.serverId,
+  (newId) => {
+    if (route.name !== 'InstanceConsole') {
+      return;
+    }
+    if (newId) {
+      currentIconUrl.value = null;
+      localImageSrc.value = '';
+      fetchCurrentIcon();
+    }
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
   <div class="flex flex-col mx-auto w-full pb-6">
-
     <div v-if="errorMsg" class="mb-4">
-      <t-alert theme="error" :message="errorMsg" closeable class="!rounded-xl shadow-sm border border-red-100 dark:border-red-900/50" @close="errorMsg = ''">
+      <t-alert
+        theme="error"
+        :message="errorMsg"
+        closeable
+        class="!rounded-xl shadow-sm border border-red-100 dark:border-red-900/50"
+        @close="errorMsg = ''"
+      >
         <template #operation>
-          <span class="cursor-pointer ml-2 font-bold text-red-600 dark:text-red-400 hover:opacity-80 transition-opacity" @click="fetchCurrentIcon">重试</span>
+          <span
+            class="cursor-pointer ml-2 font-bold text-red-600 dark:text-red-400 hover:opacity-80 transition-opacity"
+            @click="fetchCurrentIcon"
+            >重试</span
+          >
         </template>
       </t-alert>
     </div>
 
     <t-loading :loading="loading" show-overlay>
-
-      <div class="flex items-center gap-2 mt-5 mb-4 pb-2 border-b border-dashed border-zinc-200/60 dark:border-zinc-700/60">
+      <div
+        class="flex items-center gap-2 mt-5 mb-4 pb-2 border-b border-dashed border-zinc-200/60 dark:border-zinc-700/60"
+      >
         <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
         <h2 class="text-base font-bold text-[var(--td-text-color-primary)] m-0">外观设置</h2>
       </div>
 
       <div class="flex flex-col md:flex-row md:items-center justify-between py-4 gap-4">
-
         <div class="flex-1 md:pr-8">
           <div class="text-sm font-bold text-[var(--td-text-color-primary)]">服务器图标</div>
           <div class="text-xs text-[var(--td-text-color-secondary)] mt-1.5 leading-relaxed">
-            上传自定义的 JPG / PNG 图片替换现有的 server-icon.png。<br>
+            上传自定义的 JPG / PNG 图片替换现有的 server-icon.png。<br />
             系统将提供可视化裁剪工具，并自动帮您转换为标准的 64x64 服务器图标文件。
           </div>
         </div>
 
         <div class="flex items-center gap-4 shrink-0 w-full md:w-auto mt-2 md:mt-0">
-
           <input ref="fileInput" type="file" accept="image/png, image/jpeg" class="hidden" @change="onFileSelect" />
 
-          <div class="w-[72px] h-[72px] shrink-0 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl flex justify-center items-center bg-zinc-50 dark:bg-zinc-900/50 overflow-hidden shadow-inner">
+          <div
+            class="w-[72px] h-[72px] shrink-0 border border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl flex justify-center items-center bg-zinc-50 dark:bg-zinc-900/50 overflow-hidden shadow-inner"
+          >
             <template v-if="currentIconUrl">
-              <img :src="currentIconUrl" alt="Server Icon" class="w-16 h-16 rounded shadow-sm [image-rendering:pixelated]" />
+              <img
+                :src="currentIconUrl"
+                alt="Server Icon"
+                class="w-16 h-16 rounded shadow-sm [image-rendering:pixelated]"
+              />
             </template>
             <template v-else>
               <div class="flex flex-col items-center text-[var(--td-text-color-secondary)] gap-1 opacity-80">
@@ -270,14 +299,17 @@ onMounted(() => {
             <t-button theme="primary" block class="!rounded-lg shadow-sm !m-0" @click="triggerSelectFile">
               <template #icon><upload-icon /></template> 选择新图标
             </t-button>
-            <t-button variant="outline" block class="!rounded-lg !bg-zinc-50 dark:!bg-zinc-800/50 !border-zinc-200 dark:!border-zinc-700 hover:!bg-zinc-100 dark:hover:!bg-zinc-800 !text-zinc-700 dark:!text-zinc-300 transition-colors !m-0" @click="fetchCurrentIcon">
+            <t-button
+              variant="outline"
+              block
+              class="!rounded-lg !bg-zinc-50 dark:!bg-zinc-800/50 !border-zinc-200 dark:!border-zinc-700 hover:!bg-zinc-100 dark:hover:!bg-zinc-800 !text-zinc-700 dark:!text-zinc-300 transition-colors !m-0"
+              @click="fetchCurrentIcon"
+            >
               <template #icon><refresh-icon /></template> 刷新图标
             </t-button>
           </div>
-
         </div>
       </div>
-
     </t-loading>
 
     <t-dialog
@@ -289,14 +321,24 @@ onMounted(() => {
       @confirm="confirmCropAndUpload"
     >
       <div v-loading="loading" class="flex flex-col items-center p-5 md:p-6 bg-zinc-50/50 dark:bg-zinc-950/20">
-
-        <p class="text-xs text-[var(--td-text-color-secondary)] mb-5 text-center bg-[var(--td-bg-color-container)]/80 px-4 py-2.5 rounded-lg border border-zinc-200/60 dark:border-zinc-700/60 shadow-sm backdrop-blur-md">
-          请拖动和缩放亮色方框，选择需要截取的区域。生成后将自动转为 <b class="text-zinc-700 dark:text-zinc-300">64x64</b> 的标准尺寸。
+        <p
+          class="text-xs text-[var(--td-text-color-secondary)] mb-5 text-center bg-[var(--td-bg-color-container)]/80 px-4 py-2.5 rounded-lg border border-zinc-200/60 dark:border-zinc-700/60 shadow-sm backdrop-blur-md"
+        >
+          请拖动和缩放亮色方框，选择需要截取的区域。生成后将自动转为
+          <b class="text-zinc-700 dark:text-zinc-300">64x64</b> 的标准尺寸。
         </p>
 
-        <div v-if="localImageSrc" class="relative max-w-full max-h-[400px] select-none cropper-bg-pattern rounded-lg overflow-hidden border border-zinc-200/80 dark:border-zinc-700/80 shadow-inner">
-
-          <img ref="sourceImageRef" :src="localImageSrc" class="block max-w-full max-h-[400px]" draggable="false" @load="initCropBox" />
+        <div
+          v-if="localImageSrc"
+          class="relative max-w-full max-h-[400px] select-none cropper-bg-pattern rounded-lg overflow-hidden border border-zinc-200/80 dark:border-zinc-700/80 shadow-inner"
+        >
+          <img
+            ref="sourceImageRef"
+            :src="localImageSrc"
+            class="block max-w-full max-h-[400px]"
+            draggable="false"
+            @load="initCropBox"
+          />
 
           <div class="absolute inset-0 bg-black/60 pointer-events-none"></div>
 
@@ -328,11 +370,9 @@ onMounted(() => {
               @mousedown.stop="(e) => startDrag(e, 'resize')"
             ></div>
           </div>
-
         </div>
       </div>
     </t-dialog>
-
   </div>
 </template>
 
