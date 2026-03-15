@@ -1,6 +1,6 @@
 {
-  "version": "1.3.1",
-  "buildTime": "2026-03-14 00:01:13",
+  "version": "1.3.2",
+  "buildTime": "2026-03-15 19:03:34",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -74,10 +74,82 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "503d96cc1789605adfd95d987944885168877bbf",
-  "commitMsg": "style(webpanel): 调高二级文本透明度",
+  "commitId": "714cd36da2546115625fe76f2e9e1f2977034343",
+  "commitMsg": "fix(webpanel): 修复实例设置-更多功能内容无法正常重载的问题",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "714cd36da2546115625fe76f2e9e1f2977034343",
+      "commitTime": "2026-03-15 18:06:09 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复实例设置-更多功能内容无法正常重载的问题"
+    },
+    {
+      "commitId": "d43e6df5b34df0e96c2eb99dc290b76cb62f9e57",
+      "commitTime": "2026-03-15 17:56:36 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 支持批量启动/停止/重启/删除服务端实例 #52"
+    },
+    {
+      "commitId": "f99fe398fdeb72ad223f3f4855e9540c648ac854",
+      "commitTime": "2026-03-15 17:43:55 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复全局定时任务页面动画闪烁的问题"
+    },
+    {
+      "commitId": "f77344cd225ae6e4b13c9e021dd2414d4be10ed7",
+      "commitTime": "2026-03-15 17:22:49 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): chmlfrp配置文件自动转换为toml格式"
+    },
+    {
+      "commitId": "358b61c1bd1d129dbfea8873af884b965c70b154",
+      "commitTime": "2026-03-15 17:14:57 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修正SakuraFrp添加隧道中远程端口描述"
+    },
+    {
+      "commitId": "0fa9507184a2effd78ae3e0061ef5aef23c91768",
+      "commitTime": "2026-03-15 17:11:51 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 隧道服务新增ChmlFrp支持 #73"
+    },
+    {
+      "commitId": "d9514c3a3b154d47ff5f59551b5f11354370ae8b",
+      "commitTime": "2026-03-15 16:35:52 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 隧道服务链接失败时自动清理登录记录"
+    },
+    {
+      "commitId": "cf4f325a8deb095df13916d82ce01d9d72bcbc74",
+      "commitTime": "2026-03-15 16:30:38 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 隧道服务新增SakuraFrp支持"
+    },
+    {
+      "commitId": "355b6e2a1d07fae68007ba5143eb956b79d2b4de",
+      "commitTime": "2026-03-15 15:13:41 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): NeoForge/Forge纯模组服务端下载时支持选择具体子版本 #85"
+    },
+    {
+      "commitId": "0ef5d633d9fb6ec765eb30cec9ebe00c00fd74cb",
+      "commitTime": "2026-03-15 14:25:33 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复更新实例进度的弹窗未正常显示的问题"
+    },
+    {
+      "commitId": "caf8c46f2d95f92992125ef7e7e1dd7a7e102275",
+      "commitTime": "2026-03-14 00:08:02 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #81 from MSLTeam/dev"
+    },
+    {
+      "commitId": "cbb0dd811dd933f199cd61ddac2969a4237f59a2",
+      "commitTime": "2026-03-14 00:06:56 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.3.1-release"
+    },
     {
       "commitId": "503d96cc1789605adfd95d987944885168877bbf",
       "commitTime": "2026-03-13 23:59:42 +0800",
@@ -305,78 +377,6 @@
       "commitTime": "2026-03-08 14:21:48 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "refactor(webpanel): 重构文件列表样式"
-    },
-    {
-      "commitId": "b2373c67cb37b97f09377416934502d3400d2a49",
-      "commitTime": "2026-03-08 13:45:07 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复下拉组件样式适配问题"
-    },
-    {
-      "commitId": "15841cabe006e4f658be40d957b67286e7feaf04",
-      "commitTime": "2026-03-08 13:22:01 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复表格组件样式适配问题"
-    },
-    {
-      "commitId": "a6db28d538332a470312a824229572346d1f3589",
-      "commitTime": "2026-03-08 01:05:30 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
-    },
-    {
-      "commitId": "ec0c21c459b8f310eaadb091affe6bf2f8be3023",
-      "commitTime": "2026-03-08 01:05:20 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(webpanel): 重构实例设置相关组件"
-    },
-    {
-      "commitId": "1e2731d7fb206c99071b9b55a0b5acee8332e1e0",
-      "commitTime": "2026-03-08 00:55:32 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): Cron表达式生成器新增预设模式 & 重构样式"
-    },
-    {
-      "commitId": "89a1dd3b265da802fabca56e436062632780645e",
-      "commitTime": "2026-03-07 23:04:48 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 对 fnos app 运行环境下禁用内置更新"
-    },
-    {
-      "commitId": "5d848c941269fea29780daa0e8b3e3b64cb122f6",
-      "commitTime": "2026-03-07 22:19:12 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
-    },
-    {
-      "commitId": "9b79e2c1acd11266033e1f49c8635883d67e8317",
-      "commitTime": "2026-03-07 22:19:08 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(daemon): 修正飞牛应用包构建逻辑"
-    },
-    {
-      "commitId": "756d1254e45cd64a9c18d6512a4a38684a9b3507",
-      "commitTime": "2026-03-07 21:20:26 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(webpanel): 重构服务器控制台相关组件样式"
-    },
-    {
-      "commitId": "f9a3fc01c085f2cfe0fd41a65e2bec24850c4d20",
-      "commitTime": "2026-03-07 20:31:36 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(webpanel): 重构隧道控制台相关布局"
-    },
-    {
-      "commitId": "98eb3cf16b6e8024615f0e997bc9288f356035dd",
-      "commitTime": "2026-03-07 19:10:52 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 优化一些组件动画效果"
-    },
-    {
-      "commitId": "add922129c113d210466d2254811d211705f3b10",
-      "commitTime": "2026-03-07 19:07:08 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复全局备份 & 定时任务页面加载出现的频闪问题"
     }
   ]
 }
