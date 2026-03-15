@@ -54,6 +54,7 @@ const groupedNodes = computed(() => {
 
 const generateRandomData = () => {
   form.name = 'MSL_' + generateRandomString(6);
+  form.remote = (Math.floor(Math.random() * (65535 - 10000 + 1)) + 10000).toString();
 };
 
 const fetchNodes = async () => {
@@ -211,8 +212,11 @@ onMounted(() => {
             </t-form-item>
           </t-col>
           <t-col :xs="12" :sm="6">
-            <t-form-item label="绑定域名/端口">
-              <t-input v-model="form.remote" placeholder="支持留空">
+            <t-form-item label="远程端口">
+              <t-input v-model="form.remote" placeholder="留空由服务端分配">
+                <template #suffix>
+                  <t-button variant="text" size="small" @click="generateRandomData">随机</t-button>
+                </template>
               </t-input>
             </t-form-item>
           </t-col>
