@@ -76,7 +76,8 @@ const loadData = async () => {
       //MessagePlugin.success('配置加载成功');
     }
   } catch (e: any) {
-    MessagePlugin.error(`读取配置文件失败: ${e.message}`);
+    console.error(`读取配置文件失败: ${e.message}`);
+    //MessagePlugin.error(`读取配置文件失败: ${e.message}`);
   } finally {
     loading.value = false;
   }
