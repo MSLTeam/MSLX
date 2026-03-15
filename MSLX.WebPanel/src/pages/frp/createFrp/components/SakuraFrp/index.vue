@@ -140,7 +140,9 @@ async function initDashboardData() {
       }
     }
   } catch (e: any) {
-    MessagePlugin.error('数据加载失败: ' + e.message);
+    const errorMsg = e.response?.data?.msg || e.msg || e.message || 'Token失效或网络异常';
+    MessagePlugin.error(`数据加载失败，已自动退出Sakura Frp: ${errorMsg}`);
+    handleLogout();
   } finally {
     loading.value = false;
   }
