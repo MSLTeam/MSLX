@@ -810,6 +810,7 @@ onUnmounted(() => {
       :close-on-overlay-click="false"
       :close-btn="false"
       width="600px"
+      attach="body"
     >
       <div class="flex flex-col gap-4 pt-2">
         <t-progress theme="plump" :percentage="progressPercent" :label="`${progressPercent}%`" />
