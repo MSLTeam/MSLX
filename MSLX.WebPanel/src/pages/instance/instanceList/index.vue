@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onMounted, reactive } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import {
   AddIcon,
   CheckCircleFilledIcon,
@@ -9,12 +9,13 @@ import {
   LoadingIcon,
   MinusCircleFilledIcon,
   RefreshIcon,
+  FilterIcon
 } from 'tdesign-icons-vue-next';
-import { MessagePlugin } from 'tdesign-vue-next';
+import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next';
 import { useInstanceListStore } from '@/store/modules/instance';
 import type { InstanceListModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
-import { postDeleteInstance } from '@/api/instance';
+import { postDeleteInstance, postInstanceAction } from '@/api/instance';
 
 // 导入logo资源
 import neoforgedImg from '@/assets/serverLogos/neoforged.png';
@@ -47,10 +48,93 @@ const getStatusConfig = (status: number) => {
   }
 };
 
-const handleCardClick = (item: InstanceListModel) => {
-  // 跳转服务器控制台
-  changeUrl(`/instance/console/${item.id}`);
+// ================= 批量操作状态管理 =================
+const isBatchMode = ref(false);
+const selectedIds = ref<number[]>([]);
+const batchLoading = ref(false);
+
+const toggleBatchMode = () => {
+  isBatchMode.value = !isBatchMode.value;
+  selectedIds.value = []; // 每次切换模式重置选中状态
 };
+
+// 实例卡片点击事件
+const handleCardClick = (item: InstanceListModel) => {
+  if (isBatchMode.value) {
+    // 选中卡片
+    const index = selectedIds.value.indexOf(item.id);
+    if (index === -1) {
+      selectedIds.value.push(item.id);
+    } else {
+      selectedIds.value.splice(index, 1);
+    }
+  } else {
+    changeUrl(`/instance/console/${item.id}`);
+  }
+};
+
+// 批量执行操作
+const handleBatchAction = (action: 'start' | 'stop' | 'restart' | 'delete') => {
+  if (selectedIds.value.length === 0) {
+    MessagePlugin.warning('请先选择要操作的实例');
+    return;
+  }
+
+  const actionMap = {
+    start: '启动',
+    stop: '停止',
+    restart: '重启',
+    delete: '删除',
+  };
+  const actionName = actionMap[action];
+  const isDelete = action === 'delete';
+
+  const confirmDialog = DialogPlugin.confirm({
+    header: `确认批量${actionName}`,
+    body: `您确定要对已选中的 ${selectedIds.value.length} 个实例执行${actionName}操作吗？${
+      isDelete ? '（注意：删除操作不可逆，批量删除默认不清理磁盘上的服务端数据文件）' : ''
+    }`,
+    theme: isDelete ? 'danger' : 'primary' as any,
+    onConfirm: async () => {
+      confirmDialog.hide();
+      batchLoading.value = true;
+      const msg = MessagePlugin.loading(`正在批量${actionName}中，请稍候...`);
+
+      try {
+        const promises = selectedIds.value.map((id) => {
+          if (isDelete) {
+            return postDeleteInstance(id, false);
+          } else {
+            return postInstanceAction(id, action);
+          }
+        });
+
+        const results = await Promise.allSettled(promises);
+
+        const rejected = results.filter((p) => p.status === 'rejected');
+        if (rejected.length > 0) {
+          MessagePlugin.warning({
+            content: `操作完成，但有 ${rejected.length} 个实例执行${actionName}失败`,
+            duration: 5000,
+          });
+        } else {
+          MessagePlugin.success(`批量${actionName}操作成功`);
+        }
+
+        // 刷新列表并清中状态
+        selectedIds.value = [];
+        isBatchMode.value = false;
+        await store.refreshInstanceList();
+      } catch (e: any) {
+        MessagePlugin.error(`批量操作出现异常: ${e.message}`);
+      } finally {
+        MessagePlugin.close(msg);
+        batchLoading.value = false;
+      }
+    },
+  });
+};
+
 
 const getImageUrl = (name: string, id: number) => {
   if (name.includes('http')) return name;
@@ -86,6 +170,7 @@ const formatCore = (core: string) => {
   }
 };
 
+// 单独删除状态
 const deleteState = reactive({
   visible: false,
   loading: false,
@@ -95,25 +180,19 @@ const deleteState = reactive({
 
 const handleDelete = (e: MouseEvent, item: InstanceListModel) => {
   e.stopPropagation();
-
   deleteState.item = item;
-  deleteState.deleteFile = false; // 默认不勾选，防止误删文件
+  deleteState.deleteFile = false;
   deleteState.loading = false;
-
   deleteState.visible = true;
 };
 
 const handleConfirmDelete = async () => {
   if (!deleteState.item) return;
-
-  deleteState.loading = true; // 显示按钮加载圈
-
+  deleteState.loading = true;
   try {
     await postDeleteInstance(deleteState.item.id, deleteState.deleteFile);
-
     MessagePlugin.success('删除成功');
     deleteState.visible = false;
-
     await store.refreshInstanceList();
   } catch (e: any) {
     MessagePlugin.error('删除失败: ' + e.message);
@@ -128,22 +207,43 @@ const handleConfirmDelete = async () => {
     <div
       class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
     >
-      <div class="flex flex-col gap-1 items-start">
+      <div class="flex flex-col gap-1 items-start shrink-0">
         <h2 class="text-lg font-bold tracking-tight text-[var(--td-text-color-primary)] m-0">服务端列表</h2>
         <p class="text-sm text-[var(--td-text-color-secondary)] m-0">
           管理您的 Minecraft 服务器实例，监控运行状态与核心版本
         </p>
       </div>
 
-      <div class="flex items-center gap-3">
-        <t-button variant="dashed" @click="store.refreshInstanceList">
-          <template #icon><refresh-icon /></template>
-          刷新列表
-        </t-button>
-        <t-button v-if="userStore.isAdmin" theme="primary" @click="changeUrl('/instance/create')">
-          <template #icon><add-icon /></template>
-          添加服务端
-        </t-button>
+      <div class="flex flex-col sm:flex-row items-center gap-3">
+        <template v-if="!isBatchMode">
+          <t-button variant="outline" :disabled="!store.instanceList?.length" @click="toggleBatchMode">
+            <template #icon><filter-icon /></template>
+            批量操作
+          </t-button>
+          <t-button variant="dashed" @click="store.refreshInstanceList">
+            <template #icon><refresh-icon /></template>
+            刷新列表
+          </t-button>
+          <t-button v-if="userStore.isAdmin" theme="primary" @click="changeUrl('/instance/create')">
+            <template #icon><add-icon /></template>
+            添加服务端
+          </t-button>
+        </template>
+
+        <template v-else>
+          <div class="flex items-center bg-zinc-100 dark:bg-zinc-800/80 rounded-lg p-1">
+            <span class="px-3 text-sm font-medium text-[var(--td-text-color-secondary)]">
+              已选 <span class="text-[var(--color-primary)] font-bold">{{ selectedIds.length }}</span> 项
+            </span>
+            <div class="flex items-center border-l border-[var(--td-component-border)] pl-1 ml-1 gap-1">
+              <t-button size="small" theme="primary" variant="text" :disabled="!selectedIds.length || batchLoading" @click="handleBatchAction('start')">启动</t-button>
+              <t-button size="small" theme="warning" variant="text" :disabled="!selectedIds.length || batchLoading" @click="handleBatchAction('restart')">重启</t-button>
+              <t-button size="small" theme="danger" variant="text" :disabled="!selectedIds.length || batchLoading" @click="handleBatchAction('stop')">停止</t-button>
+              <t-button v-if="userStore.isAdmin" size="small" theme="danger" variant="text" :disabled="!selectedIds.length || batchLoading" @click="handleBatchAction('delete')">删除</t-button>
+            </div>
+          </div>
+          <t-button variant="outline" :disabled="batchLoading" @click="toggleBatchMode">取消批量</t-button>
+        </template>
       </div>
     </div>
 
@@ -157,9 +257,16 @@ const handleConfirmDelete = async () => {
             :style="{ animationDelay: `${index * 0.05}s` }"
           >
             <div
-              class="design-card h-full group flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm hover:shadow-md hover:border-[var(--color-primary)]/50 transition-colors duration-300 p-5 gap-4 cursor-pointer"
+              class="design-card relative h-full group flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm hover:shadow-md hover:border-[var(--color-primary)]/50 transition-all duration-300 p-5 gap-4 cursor-pointer"
+              :class="{
+                '!border-[var(--color-primary)] !bg-[var(--color-primary)]/5 shadow-md': isBatchMode && selectedIds.includes(item.id)
+              }"
               @click="handleCardClick(item)"
             >
+              <div v-if="isBatchMode" class="absolute top-4 right-4 z-10 pointer-events-none">
+                <t-checkbox :checked="selectedIds.includes(item.id)" />
+              </div>
+
               <div class="flex items-center gap-4">
                 <div class="relative shrink-0">
                   <t-avatar
@@ -180,13 +287,13 @@ const handleConfirmDelete = async () => {
                   </span>
                 </div>
 
-                <div class="flex-1 min-w-0">
+                <div class="flex-1 min-w-0 pr-4">
                   <div class="flex items-center">
                     <h4 class="text-base font-bold text-[var(--td-text-color-primary)] truncate tracking-tight">
                       {{ item.name }}
                     </h4>
                     <span class="text-xs font-mono text-[var(--td-text-color-secondary)] ml-2 opacity-70 shrink-0"
-                      >#{{ item.id }}</span
+                    >#{{ item.id }}</span
                     >
                   </div>
 
@@ -215,9 +322,10 @@ const handleConfirmDelete = async () => {
                 <span
                   class="text-xs text-[var(--td-text-color-secondary)] group-hover:text-[var(--color-primary)] transition-colors font-semibold"
                 >
-                  控制台 →
+                  {{ isBatchMode ? (selectedIds.includes(item.id) ? '点击取消选择' : '点击选择实例') : '控制台 →' }}
                 </span>
-                <div class="flex items-center gap-1">
+
+                <div class="flex items-center gap-1" v-if="!isBatchMode">
                   <t-button
                     v-if="userStore.isAdmin"
                     class="hover:!bg-red-500/10"
@@ -246,7 +354,7 @@ const handleConfirmDelete = async () => {
 
     <t-dialog
       v-model:visible="deleteState.visible"
-      :confirm-btn="{ content: '确认删除', theme: 'danger' }"
+      :confirm-btn="{ content: '确认删除', theme: 'danger', loading: deleteState.loading }"
       cancel-btn="取消"
       header="确认删除服务端"
       @confirm="handleConfirmDelete"
