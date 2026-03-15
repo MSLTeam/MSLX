@@ -19,9 +19,16 @@ export async function getServerCoreGameVersion(name:string){
   });
 }
 
-export async function getServerCoreDownloadInfo(name:string, version:string){
+export async function getServerCoreBuilds(name:string, version:string){
+  return await request.get<ServerCoreGameVersionModel[]>({
+    url: `/query/server/${name}/${version}`,
+    baseURL: 'https://api.mslmc.cn/v3',
+  });
+}
+
+export async function getServerCoreDownloadInfo(name:string, version:string, build:string = 'latest'){
   return await request.get<ServerCoreDownloadInfoModel>({
-    url: `/download/server/${name}/${version}`,
+    url: `/download/server/${name}/${version}?build=${build}`,
     baseURL: 'https://api.mslmc.cn/v3'
   });
 }

@@ -13,6 +13,10 @@ export interface ServerCoreGameVersionModel{
   versionList: string[];
 }
 
+export interface ServerCoreBuildsModel{
+  builds: string[];
+}
+
 export interface ServerCoreDownloadInfoModel{
   url: string;
   sha256?: string;
