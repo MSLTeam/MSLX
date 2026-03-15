@@ -5,6 +5,7 @@ import Index from '@/pages/frp/createFrp/components/MSLFrp/index.vue';
 import MSLP2P from '@/pages/frp/createFrp/components/MSLP2P.vue';
 import MEFrp from '@/pages/frp/createFrp/components/MEFrp/index.vue';
 import SakuraFrp from '@/pages/frp/createFrp/components/SakuraFrp/index.vue';
+import ChmlFrp from '@/pages/frp/createFrp/components/ChmlFrp/index.vue';
 
 const value = ref(1);
 </script>
@@ -27,7 +28,8 @@ const value = ref(1);
           <t-radio-button :value="1">MSLFrp</t-radio-button>
           <t-radio-button :value="2">MSL 联机</t-radio-button>
           <t-radio-button :value="3">ME Frp</t-radio-button>
-          <t-radio-button :value="4">Sakura Frp</t-radio-button>
+          <t-radio-button :value="4">ChmlFrp</t-radio-button>
+          <t-radio-button :value="5">Sakura Frp</t-radio-button>
           <t-radio-button :value="888">自定义配置</t-radio-button>
         </t-radio-group>
       </div>
@@ -47,6 +49,10 @@ const value = ref(1);
       </div>
 
       <div v-show="value === 4" class="list-item-anim" style="animation-delay: 0.1s;">
+        <chml-frp />
+      </div>
+
+      <div v-show="value === 5" class="list-item-anim" style="animation-delay: 0.1s;">
         <sakura-frp />
       </div>
 
