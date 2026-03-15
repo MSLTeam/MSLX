@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
-import { MessagePlugin, type FormProps, FormRules } from 'tdesign-vue-next';
-import { createFrpTunnel } from '@/pages/frp/createFrp/utils/create';
+import { type FormProps, FormRules, MessagePlugin } from 'tdesign-vue-next';
+import { convertIniToToml, createFrpTunnel } from '@/pages/frp/createFrp/utils/create';
 
 // 表单数据接口
 interface FormData {
@@ -25,7 +25,7 @@ const rules: FormRules<FormData> = {
 
 const onSubmit: FormProps['onSubmit'] = async ({ validateResult }) => {
   if (validateResult === true) {
-    await createFrpTunnel(formData.name, formData.content, 'Custom', formData.type,false);
+    await createFrpTunnel(formData.name, formData.content, 'Custom', formData.type, false);
   } else {
     MessagePlugin.warning('请检查表单填写');
   }
@@ -34,126 +34,26 @@ const onSubmit: FormProps['onSubmit'] = async ({ validateResult }) => {
 const onReset = () => {
   MessagePlugin.info('表单已重置');
 };
-const convertIniToToml = () => {
-  const content = formData.content.trim();
-  if (!content) {
-    MessagePlugin.warning('请先输入 INI 配置内容');
-    return;
-  }
-
-  // 特殊字段映射表：定义 INI 字段到 TOML 字段的路径映射
-  const keyMapping: Record<string, string> = {
-    tls_enable: 'transport.tls.enable',
-    token: 'auth.token',
-    protocol: 'transport.protocol',
-    pool_count: 'transport.poolCount',
-    tcp_mux: 'transport.tcpMux',
-    login_fail_exit: 'loginFailExit',
-    custom_domains: 'customDomains',
-    locations: 'locations',
-    host_header_rewrite: 'hostHeaderRewrite',
-    role: 'role',
-    sk: 'sk',
-  };
-
+const handleConvertIniToToml = () => {
   try {
-    const lines = content.split(/\r?\n/);
-    let currentSection = '';
-    const rootParams: Record<string, any> = {};
-    const proxies: Record<string, any>[] = [];
-    let currentProxy: Record<string, any> | null = null;
-
-    lines.forEach((line) => {
-      const trimmed = line.trim();
-      // 跳过空行和注释
-      if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith(';')) return;
-
-      // 匹配 Section: [xxx]
-      const sectionMatch = trimmed.match(/^\[(.+)\]$/);
-      if (sectionMatch) {
-        currentSection = sectionMatch[1];
-        if (currentSection === 'common') {
-          currentProxy = null;
-        } else {
-          // 创建新的代理节点
-          currentProxy = { name: currentSection };
-          proxies.push(currentProxy);
-        }
-        return;
-      }
-
-      // 匹配 Key-Value: key = value
-      const kvMatch = trimmed.match(/^([^=]+)=(.*)$/);
-      if (kvMatch) {
-        const rawKey = kvMatch[1].trim();
-        let value: string | number | boolean = kvMatch[2].trim();
-
-        // --- Key 转换逻辑 ---
-        let key = rawKey;
-
-        // 优先使用映射表
-        if (keyMapping[rawKey]) {
-          key = keyMapping[rawKey];
-        } else {
-          // 默认处理：snake_case -> camelCase
-          key = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-          // 修正常见缩写
-          key = key.replace(/Ip/g, 'IP');
-        }
-
-        // --- Value 类型推断 ---
-        if (value === 'true') value = true;
-        else if (value === 'false') value = false;
-        else if (!isNaN(Number(value)) && value !== '') value = Number(value);
-        else value = String(value);
-
-        // --- 赋值 ---
-        if (currentSection === 'common' || !currentSection) {
-          rootParams[key] = value;
-        } else if (currentProxy) {
-          currentProxy[key] = value;
-        }
-      }
-    });
-
-    // 构建 TOML 字符串
-    let tomlOutput = '';
-
-    // 写入根节点 (Common)
-    Object.entries(rootParams).forEach(([k, v]) => {
-      const valStr = typeof v === 'string' ? `"${v}"` : v;
-      tomlOutput += `${k} = ${valStr}\n`;
-    });
-
-    // 写入 Proxies
-    proxies.forEach((proxy) => {
-      tomlOutput += `\n[[proxies]]\n`;
-      Object.entries(proxy).forEach(([k, v]) => {
-        const valStr = typeof v === 'string' ? `"${v}"` : v;
-        tomlOutput += `${k} = ${valStr}\n`;
-      });
-    });
-
-    // 更新表单
-    formData.content = tomlOutput.trim();
+    formData.content = convertIniToToml(formData.content);
     formData.type = 'toml';
     MessagePlugin.success('已转换为 TOML');
   } catch (e) {
-    console.error(e);
-    MessagePlugin.error('转换失败，请检查输入格式');
+    MessagePlugin.error(`转换失败: ${e.message || '未知错误'}`);
   }
 };
 </script>
 <template>
   <div class="custom-frp-container">
-    <div class="design-card bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm p-6 sm:p-8">
-
+    <div
+      class="design-card bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm p-6 sm:p-8"
+    >
       <div class="flex items-center gap-2 mb-6 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60">
         <h3 class="text-lg font-bold text-[var(--td-text-color-primary)] m-0 leading-none">自定义 Frp 隧道</h3>
       </div>
 
       <t-form ref="formRef" :data="formData" :rules="rules" label-align="top" @reset="onReset" @submit="onSubmit">
-
         <t-form-item label="隧道名称" name="name">
           <t-input v-model="formData.name" placeholder="请输入隧道名称" class="!w-full sm:!w-96" />
         </t-form-item>
@@ -172,7 +72,7 @@ const convertIniToToml = () => {
                 theme="primary"
                 size="small"
                 class="!rounded-md hover:!bg-[var(--color-primary)]/10"
-                @click="convertIniToToml"
+                @click="handleConvertIniToToml"
               >
                 一键转 TOML
               </t-button>
@@ -189,11 +89,23 @@ const convertIniToToml = () => {
           />
         </t-form-item>
 
-        <div class="mt-8 pt-5 border-t border-dashed border-zinc-200/70 dark:border-zinc-700/60 flex items-center gap-3">
-          <t-button theme="primary" type="submit" class="!rounded-xl !font-bold !px-8 shadow-md shadow-[var(--color-primary-light)]/30 hover:shadow-[var(--color-primary-light)]/50">保存配置</t-button>
-          <t-button theme="default" variant="base" type="reset" class="!bg-zinc-100 dark:!bg-zinc-800/80 !border-none !text-zinc-700 dark:!text-zinc-300 hover:!bg-zinc-200 dark:hover:!bg-zinc-700 !rounded-xl !font-bold">重置</t-button>
+        <div
+          class="mt-8 pt-5 border-t border-dashed border-zinc-200/70 dark:border-zinc-700/60 flex items-center gap-3"
+        >
+          <t-button
+            theme="primary"
+            type="submit"
+            class="!rounded-xl !font-bold !px-8 shadow-md shadow-[var(--color-primary-light)]/30 hover:shadow-[var(--color-primary-light)]/50"
+            >保存配置</t-button
+          >
+          <t-button
+            theme="default"
+            variant="base"
+            type="reset"
+            class="!bg-zinc-100 dark:!bg-zinc-800/80 !border-none !text-zinc-700 dark:!text-zinc-300 hover:!bg-zinc-200 dark:hover:!bg-zinc-700 !rounded-xl !font-bold"
+            >重置</t-button
+          >
         </div>
-
       </t-form>
     </div>
   </div>
@@ -208,12 +120,14 @@ const convertIniToToml = () => {
   font-size: 13px;
   line-height: 1.6;
   white-space: pre;
-@apply !text-zinc-800 dark:!text-zinc-300;
+  @apply !text-zinc-800 dark:!text-zinc-300;
 }
 
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 .fade-enter-from,
 .fade-leave-to {
