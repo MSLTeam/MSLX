@@ -1,4 +1,4 @@
-using System.Net.NetworkInformation;
+﻿using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -40,15 +40,10 @@ public class PlatFormServices
             }
             else
             {
-                // Linux/macOS：优先尝试获取系统级别的 machine-id
-                platformId = GetLinuxMachineId();
-
-                // 回退机器名 + MAC地址 作为指纹
-                if (string.IsNullOrEmpty(platformId))
-                {
-                    string macAddress = GetMacAddress();
-                    platformId = $"{Environment.MachineName}-{macAddress}";
-                }
+                string machineId = GetLinuxMachineId();
+                string machineName = Environment.MachineName;
+                string userName = Environment.UserName;
+                platformId = $"{machineId}-{machineName}-{userName}";
             }
 
             // 格式化
@@ -63,7 +58,7 @@ public class PlatFormServices
         }
     }
 
-// 尝试获取 Linux 的机器 ID
+    // 尝试获取 Linux 的机器 ID
     private static string GetLinuxMachineId()
     {
         try
@@ -82,24 +77,6 @@ public class PlatFormServices
         return string.Empty;
     }
 
-    // 获取MAC地址
-    private static string GetMacAddress()
-    {
-        try
-        {
-            var activeMac = NetworkInterface.GetAllNetworkInterfaces()
-                .Where(nic => nic.OperationalStatus == OperationalStatus.Up
-                              && nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
-                .Select(nic => nic.GetPhysicalAddress().ToString())
-                .FirstOrDefault(mac => !string.IsNullOrEmpty(mac));
-
-            return activeMac ?? "NOMAC";
-        }
-        catch
-        {
-            return "NOMAC";
-        }
-    }
 
     public static string GetFormattedVersion()
     {

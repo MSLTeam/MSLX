@@ -63,15 +63,10 @@ internal partial class PlatformHelper
             }
             else
             {
-                // Linux/macOS：优先尝试获取系统级别的 machine-id
-                platformId = GetLinuxMachineId();
-
-                // 回退机器名 + MAC地址 作为指纹
-                if (string.IsNullOrEmpty(platformId))
-                {
-                    string macAddress = GetMacAddress();
-                    platformId = $"{Environment.MachineName}-{macAddress}";
-                }
+                string machineId = GetLinuxMachineId();
+                string machineName = Environment.MachineName;
+                string userName = Environment.UserName;
+                platformId = $"{machineId}-{machineName}-{userName}";
             }
 
             // 生成 MD5，使用相同的盐值
@@ -103,25 +98,6 @@ internal partial class PlatformHelper
         }
 
         return string.Empty;
-    }
-
-    // 获取MAC地址
-    private static string GetMacAddress()
-    {
-        try
-        {
-            var activeMac = NetworkInterface.GetAllNetworkInterfaces()
-                .Where(nic => nic.OperationalStatus == OperationalStatus.Up
-                              && nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
-                .Select(nic => nic.GetPhysicalAddress().ToString())
-                .FirstOrDefault(mac => !string.IsNullOrEmpty(mac));
-
-            return activeMac ?? "NOMAC";
-        }
-        catch
-        {
-            return "NOMAC";
-        }
     }
 
     public static bool IsLocalService()
