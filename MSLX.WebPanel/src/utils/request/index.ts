@@ -37,6 +37,7 @@ const transform: AxiosTransform = {
 
     // 检查响应数据是否是项目期望的 { code, message } 标准结构
     const hasStandardStructure = data &&
+      typeof data === 'object' &&
       Reflect.has(data, 'code') &&
       Reflect.has(data, 'message');
 
