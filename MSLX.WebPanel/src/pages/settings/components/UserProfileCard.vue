@@ -213,7 +213,7 @@ const handleUnbindMSL = () => {
 </script>
 
 <template>
-  <div class="design-card list-item-anim relative flex flex-col bg-[var(--td-bg-color-container)]/80rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300">
+  <div class="design-card list-item-anim relative flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300">
 
     <t-loading :loading="loading" show-overlay>
       <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-6 sm:p-8 pb-8 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 relative overflow-hidden">
