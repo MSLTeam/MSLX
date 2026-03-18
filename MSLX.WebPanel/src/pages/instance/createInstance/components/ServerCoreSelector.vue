@@ -147,11 +147,7 @@ const fetchVersions = async (coreName: string) => {
   versionList.value = [];
   try {
     const res = await getServerCoreGameVersion(coreName);
-    if (Array.isArray(res) && res.length > 0) {
-      versionList.value = res[0].versionList || [];
-    } else if (res && !Array.isArray(res)) {
-      versionList.value = (res as any).versionList || [];
-    }
+    versionList.value = res.versions || [];
   } catch (error) {
     MessagePlugin.error(`获取 ${coreName} 版本列表失败`);
     console.error(error);
@@ -179,7 +175,7 @@ const fetchBuilds = async (coreName: string, version: string) => {
 
   try {
     const res: any = await getServerCoreBuilds(coreName, version);
-    const builds = res?.builds || [];
+    const builds = res || [];
     if (builds && builds.length > 0) {
       buildList.value = builds;
     } else {

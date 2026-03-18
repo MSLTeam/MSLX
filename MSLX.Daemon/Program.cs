@@ -233,7 +233,7 @@ try
         logger.LogWarning($"MSLAPI V3 主服务连接异常 ({msg})，尝试切换至备用 API...");
 
         // 切换备用地址
-        MSLApi.ApiUrl = "https://api.mslmc.net/v3";
+        MSLApi.ApiUrl = "https://api.mslmc.net/v4";
 
         var (backupSuccess, _, backupMsg) = await MSLApi.GetDataAsync("/");
         if (backupSuccess)

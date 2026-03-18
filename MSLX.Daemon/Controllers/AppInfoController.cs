@@ -139,7 +139,7 @@ public class AppInfoController : ControllerBase
             var inContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER");
 
             var localVerObj = Assembly.GetEntryAssembly()?.GetName().Version ?? new Version("0.0.0.0");
-            HttpService.HttpResponse res = await MSLApi.GetAsync("/query/update?software=MSLX", null);
+            HttpService.HttpResponse res = await MSLApi.GetAsync("/software/update?software=MSLX", null);
 
             if (res.IsSuccessStatusCode)
             {
