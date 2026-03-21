@@ -1,6 +1,6 @@
 {
-  "version": "1.3.2",
-  "buildTime": "2026-03-15 19:03:34",
+  "version": "1.3.3",
+  "buildTime": "2026-03-21 20:24:41",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -74,10 +74,136 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "714cd36da2546115625fe76f2e9e1f2977034343",
-  "commitMsg": "fix(webpanel): 修复实例设置-更多功能内容无法正常重载的问题",
+  "commitId": "c2f14cef86b945e83575845c93f5293d3898eb8f",
+  "commitMsg": "perf(webpanel): 服务端下载组件拦截下载BDS端",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "c2f14cef86b945e83575845c93f5293d3898eb8f",
+      "commitTime": "2026-03-21 20:23:41 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(webpanel): 服务端下载组件拦截下载BDS端"
+    },
+    {
+      "commitId": "4d0b0071d04f5cb03bc9f23097c0559621824738",
+      "commitTime": "2026-03-21 20:19:58 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(webpanel): 优化文件管理器删除文件的UI表现"
+    },
+    {
+      "commitId": "438ea480e29730143c2f7aabd0a88da310a72832",
+      "commitTime": "2026-03-21 20:16:22 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 基岩版更新期间阻止关闭弹窗 #84"
+    },
+    {
+      "commitId": "a46435b24cb2063ddf236d740b36382a84bf1260",
+      "commitTime": "2026-03-21 20:04:35 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 新增基岩版一键更新功能（位于实例设置-更多功能中） #84"
+    },
+    {
+      "commitId": "2877502f170744f8d5b4d807c9e1584f7e5fe8f8",
+      "commitTime": "2026-03-21 19:36:28 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 文件管理器新增离线下载功能"
+    },
+    {
+      "commitId": "22a241ce13df58046e0851cb8467664b07c8cf2d",
+      "commitTime": "2026-03-21 19:36:02 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复全局管理员APIKey权限丢失的问题"
+    },
+    {
+      "commitId": "d3d9a584a288ef2e826de99ec531d9cbc0c42365",
+      "commitTime": "2026-03-21 16:57:37 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 防止非Linux系统执行基岩版服务端chmod权限指令 #84"
+    },
+    {
+      "commitId": "064cff21dfaddc5435a6dacb364d0c2826f420bf",
+      "commitTime": "2026-03-21 16:56:40 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修正基岩版默认关闭指令为stop #84"
+    },
+    {
+      "commitId": "0b6e93467ab71a05b897f4a654d64aa51c47a7ce",
+      "commitTime": "2026-03-21 16:48:41 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 新增基岩版一键部署功能 #84"
+    },
+    {
+      "commitId": "a6c044c107ebcaa214c4ca9cd8c5c1417579e02e",
+      "commitTime": "2026-03-20 23:27:39 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 新增密码错误封禁策略"
+    },
+    {
+      "commitId": "e3ec2624d28f4149e43cb8d314d569aa6f9f52f5",
+      "commitTime": "2026-03-18 23:34:31 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 更新 MSLAPI 接口到 V4 版本"
+    },
+    {
+      "commitId": "a943448f7e372c59985aecfbb131b5fb510c3530",
+      "commitTime": "2026-03-17 23:11:19 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复输入输出编码错误的出现UTF-8 With BOM的选项"
+    },
+    {
+      "commitId": "5307b69bfbf59a30b270d8c7701f625f48314cfd",
+      "commitTime": "2026-03-16 17:09:42 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): Q弹的头像特效"
+    },
+    {
+      "commitId": "b51e8779ab53be0acf7509b6a93234d8c13c3356",
+      "commitTime": "2026-03-16 17:05:03 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复设置页面个人资料页面圆角效果丢失问题"
+    },
+    {
+      "commitId": "93c78a85e3d422659ccd7dbfa8bf8562197e0079",
+      "commitTime": "2026-03-16 17:02:29 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 页面顶部用户下拉弹窗更好看"
+    },
+    {
+      "commitId": "472319425a8f2389c840278e57f733c90faf6fcc",
+      "commitTime": "2026-03-16 16:52:53 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复服务端列表页面特定宽度下的溢出问题"
+    },
+    {
+      "commitId": "e30427a750406d73fa012f37d5e0b16400de1664",
+      "commitTime": "2026-03-15 20:10:55 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #89 from MSLTeam/dev"
+    },
+    {
+      "commitId": "558fb06df97d94e6ceb9b5a2877577ee59a87c6f",
+      "commitTime": "2026-03-15 20:10:21 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon): 更新版本号到v1.3.2.1 - hotfix"
+    },
+    {
+      "commitId": "3b1ad5b16dd8df7d06d029de69f127bcefa1fc8f",
+      "commitTime": "2026-03-15 20:07:51 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon & desktop): 修复设备ID生成逻辑"
+    },
+    {
+      "commitId": "c2b90d80a445025ad522cdfad717d2be71c101b3",
+      "commitTime": "2026-03-15 19:05:46 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #88 from MSLTeam/dev"
+    },
+    {
+      "commitId": "0d45b15eb4acf9ddb7f9a5cd31c9b8bc3fc4c613",
+      "commitTime": "2026-03-15 19:04:05 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.3.2-release版本"
+    },
     {
       "commitId": "714cd36da2546115625fe76f2e9e1f2977034343",
       "commitTime": "2026-03-15 18:06:09 +0800",
@@ -251,132 +377,6 @@
       "commitTime": "2026-03-10 22:42:14 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
-    },
-    {
-      "commitId": "44b5162280411d9ef7dd832251a4200145ccf470",
-      "commitTime": "2026-03-10 22:41:58 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 增加对较老内核浏览器兼容性支持 & 新增较老浏览器的警告信息"
-    },
-    {
-      "commitId": "130876f4d5e0d9d02587d489ad9b203b309878da",
-      "commitTime": "2026-03-10 10:41:05 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #76 from MSLTeam/dev"
-    },
-    {
-      "commitId": "0cb9040f762d0961026a8ada6894ceceb8af422c",
-      "commitTime": "2026-03-10 10:39:40 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "build(daemon): 修复fnos构建版本号逻辑"
-    },
-    {
-      "commitId": "7c9dd7aa42e0052ddd1ded9f6e86e4384ef9a687",
-      "commitTime": "2026-03-08 20:08:45 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修正更新弹窗位置异常的问题"
-    },
-    {
-      "commitId": "111149d010a412f8d6fe918f653948c3d845d755",
-      "commitTime": "2026-03-08 19:59:36 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #75 from MSLTeam/dev"
-    },
-    {
-      "commitId": "1faf36bf1e368142de4403cbe58c11891afd570d",
-      "commitTime": "2026-03-08 19:59:02 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.3.0.1 - hotfix"
-    },
-    {
-      "commitId": "bd9afebacaa96a7a57a4f98bcd005fc0c0a094f8",
-      "commitTime": "2026-03-08 19:56:44 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复气泡弹窗样式异常问题"
-    },
-    {
-      "commitId": "571b28c2aa6458d2c042f43f06d8871bb8312662",
-      "commitTime": "2026-03-08 19:50:24 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复全局定时任务页面动画冲突问题"
-    },
-    {
-      "commitId": "6a5f6200b97e795a41c17a5a4e12c8f2f084b020",
-      "commitTime": "2026-03-08 19:45:19 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 优化移动端下拉菜单的交互体验"
-    },
-    {
-      "commitId": "7153ab3a7227350ed85ba31f55a4e80f83364352",
-      "commitTime": "2026-03-08 19:32:29 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复菜单在侧边栏折叠模式下icon偏移的问题"
-    },
-    {
-      "commitId": "aa3b1bf346362f3c0b28bcfb3edb9c1e2b23ae3a",
-      "commitTime": "2026-03-08 19:21:44 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复终端组件在移动端坍缩的问题"
-    },
-    {
-      "commitId": "0fd540d0d8247640cb4ebab6438170d575dc710e",
-      "commitTime": "2026-03-08 19:09:34 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复终端组件毛玻璃模糊度样式丢失的问题"
-    },
-    {
-      "commitId": "34b1c176f6a51a6a327495eceecca7e3a6e8be24",
-      "commitTime": "2026-03-08 16:51:18 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #74 from MSLTeam/dev"
-    },
-    {
-      "commitId": "29b902e2ab8fd4712976d8b56e57badc6a124376",
-      "commitTime": "2026-03-08 16:49:38 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.3.0"
-    },
-    {
-      "commitId": "b8fd60f6e4f8c7281a3d1695f5d306f6126aec91",
-      "commitTime": "2026-03-08 16:48:02 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(webpanel): 移除无用资源"
-    },
-    {
-      "commitId": "7b6983b25877a649add034c59a6eef250ebaa3f5",
-      "commitTime": "2026-03-08 16:43:48 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复alert组件奇怪的模糊加载问题"
-    },
-    {
-      "commitId": "315e88d449a72c4aa54e97e93632c85d39896e2f",
-      "commitTime": "2026-03-08 16:36:43 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(webpanel): 重构更新弹窗的样式"
-    },
-    {
-      "commitId": "aa7c8104e0c0eb4864c46c52ce8fdfb2c52d5d14",
-      "commitTime": "2026-03-08 14:27:17 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(webpanel): 隧道列表的按钮加个icon"
-    },
-    {
-      "commitId": "67d99cf0d8e8d30679164d09322ea69ad4581a46",
-      "commitTime": "2026-03-08 14:26:03 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(webpanel): 服务端列表的新增按钮加个icon"
-    },
-    {
-      "commitId": "56d11035bd8af9eb5013cea3b8a0a4c6615f336b",
-      "commitTime": "2026-03-08 14:25:13 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(webpanel): 重构404页面"
-    },
-    {
-      "commitId": "e3975d91cd3877b8005b842f74cfef0aa5f3dff5",
-      "commitTime": "2026-03-08 14:21:48 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(webpanel): 重构文件列表样式"
     }
   ]
 }

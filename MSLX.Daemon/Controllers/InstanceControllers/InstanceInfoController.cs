@@ -1,5 +1,4 @@
-﻿using System.Text;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
@@ -165,6 +164,7 @@ public class InstanceInfoController : ControllerBase
                         name = server.Name,
                         basePath = server.Base,
                         java = server.Java,
+                        args = server.Args,
                         minM = server.MinM,
                         maxM = server.MaxM,
                         core = server.Core,

@@ -27,6 +27,28 @@ public class ServerDeploymentService
     }
 
     /// <summary>
+    /// 远程下载压缩包
+    /// </summary>
+    public async Task<string> DownloadPackageAsync(string serverId, string packageFileUrl,string packageFileSha256, ReportProgress report)
+    {
+        if (string.IsNullOrEmpty(packageFileUrl)) return string.Empty;
+        try
+        {
+            string packageFileKey = Guid.NewGuid().ToString("N");
+            string savePath = Path.Combine(IConfigBase.GetAppDataPath(), "Temp", "Uploads", packageFileKey + ".tmp");
+            bool success =
+                await DownloadAndValidateAsync(packageFileUrl, savePath, $"服务端压缩包文件", packageFileSha256, report);
+            if (!success) throw new Exception("服务端压缩文件下载失败！");
+            return packageFileKey;
+        }
+        catch (Exception ex)
+        {
+            await report($"{ex.Message}", -1, true, ex);
+            throw;
+        }
+    }
+
+    /// <summary>
     /// 处理整合包解压与目录调整
     /// </summary>
     public async Task DeployPackageAsync(string serverId, string packageFileKey, string targetDir, ReportProgress report)
@@ -84,6 +106,38 @@ public class ServerDeploymentService
         finally
         {
             try { File.Delete(tempFilePath); } catch { }
+        }
+    }
+
+    /// <summary>
+    /// 基岩版服务端权限处理
+    /// </summary>
+    public async Task ChmodBedrockServerAsync(string serverId, string targetDir, ReportProgress report)
+    {
+        try
+        {
+            if(PlatFormServices.GetOs() != "Linux") return;
+            string binPath = Path.Combine(targetDir, "bedrock_server");
+            
+            if (File.Exists(binPath))
+            {
+                var psi = new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "chmod",
+                    Arguments = $"+x \"{binPath}\"",
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                };
+
+                using var process = System.Diagnostics.Process.Start(psi);
+                if (process != null)
+                {
+                    await process.WaitForExitAsync();
+                }
+            }
+        }
+        catch 
+        { 
         }
     }
 

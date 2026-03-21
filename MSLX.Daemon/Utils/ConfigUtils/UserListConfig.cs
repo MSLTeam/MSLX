@@ -321,6 +321,7 @@ public class UserListConfig : IDisposable
     /// </summary>
     public bool HasResourcePermission(string userId,string type, int id)
     {
+        if(userId == "system-admin") return true; // 全局APIKey
         _userListLock.EnterReadLock();
         try
         {

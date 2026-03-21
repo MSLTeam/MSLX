@@ -28,6 +28,7 @@ export interface InstanceInfoModel {
   name: string;
   basePath: string;
   java: string;
+  args: string;
   core: string;
   minM: number;
   maxM: number;

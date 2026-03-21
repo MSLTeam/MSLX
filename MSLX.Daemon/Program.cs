@@ -8,7 +8,6 @@ using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.BackgroundTasks;
 using MSLX.Daemon.Utils.ConfigUtils;
-using System.Diagnostics;
 using System.Reflection;
 
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
@@ -233,7 +232,7 @@ try
         logger.LogWarning($"MSLAPI V3 主服务连接异常 ({msg})，尝试切换至备用 API...");
 
         // 切换备用地址
-        MSLApi.ApiUrl = "https://api.mslmc.net/v3";
+        MSLApi.ApiUrl = "https://api.mslmc.net/v4";
 
         var (backupSuccess, _, backupMsg) = await MSLApi.GetDataAsync("/");
         if (backupSuccess)

@@ -205,16 +205,16 @@ const handleConfirmDelete = async () => {
 <template>
   <div class="mx-auto flex flex-col gap-6 text-[var(--td-text-color-primary)] pb-5">
     <div
-      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
+      class="design-card flex flex-col sm:flex-row flex-wrap sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
     >
-      <div class="flex flex-col gap-1 items-start shrink-0">
+      <div class="flex flex-col gap-1 items-start shrink-0 flex-1 min-w-0">
         <h2 class="text-lg font-bold tracking-tight text-[var(--td-text-color-primary)] m-0">服务端列表</h2>
         <p class="text-sm text-[var(--td-text-color-secondary)] m-0">
           管理您的 Minecraft 服务器实例，监控运行状态与核心版本
         </p>
       </div>
 
-      <div class="flex flex-col sm:flex-row items-center gap-3">
+      <div class="flex flex-col sm:flex-row flex-wrap items-center sm:justify-end gap-3">
         <template v-if="!isBatchMode">
           <t-button variant="outline" :disabled="!store.instanceList?.length" @click="toggleBatchMode">
             <template #icon><filter-icon /></template>
@@ -288,8 +288,8 @@ const handleConfirmDelete = async () => {
                 </div>
 
                 <div class="flex-1 min-w-0 pr-4">
-                  <div class="flex items-center">
-                    <h4 class="text-base font-bold text-[var(--td-text-color-primary)] truncate tracking-tight">
+                  <div class="flex items-center min-w-0">
+                    <h4 class="flex-1 text-base font-bold text-[var(--td-text-color-primary)] truncate tracking-tight">
                       {{ item.name }}
                     </h4>
                     <span class="text-xs font-mono text-[var(--td-text-color-secondary)] ml-2 opacity-70 shrink-0"
@@ -297,18 +297,18 @@ const handleConfirmDelete = async () => {
                     >
                   </div>
 
-                  <div class="mt-2 flex items-center gap-4">
-                    <div class="flex items-center gap-1.5 text-xs text-[var(--td-text-color-secondary)]">
-                      <cpu-icon class="opacity-80" size="14px" />
+                  <div class="mt-2 flex items-center gap-4 w-full">
+                    <div class="flex-1 min-w-0 flex items-center gap-1.5 text-xs text-[var(--td-text-color-secondary)]">
+                      <cpu-icon class="opacity-80 shrink-0" size="14px" />
                       <span class="truncate font-medium">{{ formatCore(item.core) }}</span>
                     </div>
                     <div
                       :class="
-                        getStatusConfig(item.status).theme === 'success'
-                          ? 'text-emerald-600 dark:text-emerald-400'
-                          : 'text-[var(--td-text-color-secondary)]'
-                      "
-                      class="text-xs font-bold"
+      getStatusConfig(item.status).theme === 'success'
+        ? 'text-emerald-600 dark:text-emerald-400'
+        : 'text-[var(--td-text-color-secondary)]'
+    "
+                      class="text-xs font-bold shrink-0 whitespace-nowrap"
                     >
                       {{ getStatusConfig(item.status).label }}
                     </div>

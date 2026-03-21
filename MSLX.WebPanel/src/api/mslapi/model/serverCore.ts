@@ -10,12 +10,9 @@ export interface ServerCoreClassifyModel {
 }
 
 export interface ServerCoreGameVersionModel{
-  versionList: string[];
+  versions: string[];
 }
 
-export interface ServerCoreBuildsModel{
-  builds: string[];
-}
 
 export interface ServerCoreDownloadInfoModel{
   url: string;

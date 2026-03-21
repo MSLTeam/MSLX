@@ -173,29 +173,66 @@ const navToHelper = () => {
             </t-tooltip>
           </div>
 
-          <t-dropdown :min-column-width="140" trigger="click">
-            <template #dropdown>
-              <t-dropdown-menu>
-                <t-dropdown-item class="operations-dropdown-item" @click="handleNav('/settings')">
-                  <t-icon name="user-circle" class="text-lg mr-2"></t-icon>
-                  <span>个人中心</span>
-                </t-dropdown-item>
-                <t-dropdown-item class="operations-dropdown-item danger-item" @click="handleLogout">
-                  <t-icon name="poweroff" class="text-lg mr-2"></t-icon>
-                  <span>退出登录</span>
-                </t-dropdown-item>
-              </t-dropdown-menu>
-            </template>
+          <t-popup
+            trigger="click"
+            placement="bottom-right"
+            :overlay-inner-style="{ padding: '0', background: 'transparent', boxShadow: 'none' }"
+            attach="body"
+          >
             <t-button class="user-profile-btn" theme="default" variant="text">
               <template #icon>
                 <img :src="userStore.userInfo.avatar" class="w-8 h-8 rounded-full object-cover ring-2 ring-zinc-100 dark:ring-zinc-700/80 shadow-sm" alt="avatar" />
               </template>
-              <div class="flex items-center text-sm font-bold text-zinc-700 dark:text-zinc-200 ml-1">
-                {{ userStore.userInfo.name }}
+              <div class="flex items-center text-sm font-bold text-zinc-700 dark:text-zinc-200 ml-1 truncate max-w-[100px]">
+                {{ userStore.userInfo.name || userStore.userInfo.username || '用户' }}
               </div>
               <template #suffix><t-icon name="chevron-down" class="text-zinc-400 text-xs ml-0.5" /></template>
             </t-button>
-          </t-dropdown>
+
+            <template #content>
+              <div class="flex flex-col w-[240px] bg-white dark:bg-zinc-800 rounded-xl shadow-xl border border-zinc-100 dark:border-zinc-700/60 overflow-hidden mt-1">
+
+                <div class="px-4 py-4 flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-700/60 bg-zinc-50/50 dark:bg-zinc-800/50">
+                  <img
+                    :src="userStore.userInfo.avatar"
+                    class="w-10 h-10 rounded-full object-cover ring-2 ring-zinc-200 dark:ring-zinc-600 shadow-sm shrink-0"
+                    alt="avatar"
+                  />
+                  <div class="flex flex-col min-w-0 flex-1">
+                    <span class="text-sm font-bold text-zinc-800 dark:text-zinc-100 truncate">
+                      {{ userStore.userInfo.name || userStore.userInfo.username || '未知用户' }}
+                    </span>
+                    <span class="text-xs text-zinc-500 dark:text-zinc-400 mt-1 flex items-center gap-1.5">
+                      <span
+                        class="inline-block w-1.5 h-1.5 rounded-full"
+                        :class="userStore.isAdmin ? 'bg-emerald-500' : 'bg-blue-500'"
+                      ></span>
+                      {{ userStore.isAdmin ? '管理员' : '普通用户' }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="p-2 flex flex-col gap-1">
+                  <div
+                    class="flex items-center px-3 py-2 text-sm text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700/50 rounded-lg cursor-pointer transition-colors"
+                    @click="handleNav('/settings')"
+                  >
+                    <t-icon name="user-circle" class="text-lg mr-2 opacity-70"></t-icon>
+                    <span class="font-medium">个人中心</span>
+                  </div>
+
+                  <div
+                    class="flex items-center px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 rounded-lg cursor-pointer transition-colors"
+                    @click="handleLogout"
+                  >
+                    <t-icon name="poweroff" class="text-lg mr-2 opacity-70"></t-icon>
+                    <span class="font-medium">退出登录</span>
+                  </div>
+                </div>
+
+              </div>
+            </template>
+          </t-popup>
 
           <div class="hidden lg:flex items-center">
             <t-tooltip placement="bottom" content="系统设置">

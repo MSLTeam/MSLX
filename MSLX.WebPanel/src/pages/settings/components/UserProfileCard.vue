@@ -210,18 +210,43 @@ const handleUnbindMSL = () => {
     },
   });
 };
+
+// 头像特效状态
+const isAvatarAnimating = ref(false);
+const handleAvatarClick = () => {
+  if (isAvatarAnimating.value) return; // 别一直点啊～
+  isAvatarAnimating.value = true;
+  setTimeout(() => {
+    isAvatarAnimating.value = false;
+  }, 600);
+};
 </script>
 
 <template>
-  <div class="design-card list-item-anim relative flex flex-col bg-[var(--td-bg-color-container)]/80rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300">
+  <div class="design-card list-item-anim relative flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300">
 
     <t-loading :loading="loading" show-overlay>
       <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-6 sm:p-8 pb-8 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 relative overflow-hidden">
 
         <div class="absolute -top-10 -right-10 w-40 h-40 bg-[var(--color-primary)]/5 rounded-full blur-3xl pointer-events-none"></div>
 
-        <div class="relative shrink-0">
-          <t-avatar :image="userInfo.avatar" size="84px" shape="circle" class="ring-4 ring-white dark:ring-zinc-800 shadow-lg !bg-[var(--color-primary)]/10 !text-[var(--color-primary)] z-10 transition-transform hover:scale-105">
+        <div class="relative shrink-0 group cursor-pointer" @click="handleAvatarClick">
+
+          <div
+            class="absolute inset-0 rounded-full z-0 pointer-events-none transition-opacity"
+            :class="isAvatarAnimating ? 'animate-magic-burst' : 'opacity-0'"
+            style="background: radial-gradient(circle, var(--color-primary-light) 0%, transparent 70%);"
+          ></div>
+
+          <t-avatar
+            :image="userInfo.avatar"
+            size="84px"
+            shape="circle"
+            class="ring-4 ring-white dark:ring-zinc-800 shadow-lg !bg-[var(--color-primary)]/10 !text-[var(--color-primary)] z-10 transition-all duration-300 relative"
+            :class="[
+              isAvatarAnimating ? 'animate-jelly-pop' : 'group-hover:scale-105 group-hover:-rotate-6 group-hover:shadow-xl group-hover:shadow-[var(--color-primary)]/20'
+            ]"
+          >
             <span class="font-extrabold text-3xl">{{ userInfo.name ? userInfo.name.slice(0, 1).toUpperCase() : 'U' }}</span>
           </t-avatar>
         </div>
@@ -384,4 +409,36 @@ const handleUnbindMSL = () => {
   }
 }
 
+
+// 头像特效
+
+@keyframes jellyPop {
+  0% { transform: scale(1); }
+  30% { transform: scale(0.85); }
+  50% { transform: scale(1.15); }
+  65% { transform: scale(0.95); }
+  80% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes magicBurst {
+  0% {
+    box-shadow: 0 0 0 0 var(--color-primary);
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  100% {
+    box-shadow: 0 0 0 35px transparent;
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+
+.animate-jelly-pop {
+  animation: jellyPop 0.6s cubic-bezier(0.25, 1, 0.5, 1) both;
+}
+
+.animate-magic-burst {
+  animation: magicBurst 0.6s cubic-bezier(0.1, 0.8, 0.3, 1) both;
+}
 </style>

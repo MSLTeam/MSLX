@@ -8,7 +8,7 @@ namespace MSLX.Daemon.Utils;
     // MSLAPI3
     public class MSLApi
     {
-    public static string ApiUrl { get; set; } = "https://api.mslmc.cn/v3";
+    public static string ApiUrl { get; set; } = "https://api.mslmc.cn/v4";
 
     public async static Task<(bool Success, object? Data, string? Msg)> GetDataAsync(string path, string dataKey = "data", Dictionary<string, string>? queryParameters = null)
         {
