@@ -326,20 +326,26 @@ const handleDelete = (row?: any) => {
     targets = [...selectedRowKeys.value];
   }
   if (targets.length === 0) return;
+
   const confirmDialog = DialogPlugin.confirm({
     header: '确认删除',
     body: `确定要永久删除这 ${targets.length} 项吗？`,
     theme: 'danger',
     onConfirm: async () => {
+      confirmDialog.hide();
+
+      const loadingMsg = MessagePlugin.loading('正在删除中...');
+
       try {
         const fullPaths = targets.map((name) => (currentPath.value ? `${currentPath.value}/${name}` : name));
         await deleteFiles(instanceId.value, fullPaths);
         MessagePlugin.success('删除成功');
         selectedRowKeys.value = [];
         handleRefresh();
-        confirmDialog.hide();
       } catch {
         MessagePlugin.error('删除失败');
+      } finally {
+        MessagePlugin.close(loadingMsg);
       }
     },
   });
