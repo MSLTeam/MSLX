@@ -2,21 +2,25 @@
 import { ref } from 'vue';
 import QuickMode from './components/QuickMode.vue';
 import CustomMode from './components/CustomMode.vue';
-import PackageMode from './components/PackageMode.vue'
+import PackageMode from './components/PackageMode.vue';
+import BedrockMode from '@/pages/instance/createInstance/components/BedrockMode.vue';
 
 const value = ref(1);
 </script>
 <template>
   <div class="mx-auto flex flex-col gap-6 text-[var(--td-text-color-primary)] pb-5">
-
     <div
       class="design-card list-item-anim flex flex-col sm:flex-row sm:items-center justify-between gap-5 p-5 sm:p-6 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
-      style="animation-delay: 0s;"
+      style="animation-delay: 0s"
     >
       <div class="flex items-center gap-3">
         <div class="flex flex-col">
-          <h2 class="text-lg font-bold text-[var(--td-text-color-primary)] m-0 leading-none tracking-tight">创建服务端实例</h2>
-          <span class="text-xs text-[var(--td-text-color-secondary)] mt-1.5 font-medium">选择适合您的部署模式，快速建立或深度定制您的 Minecraft 服务器</span>
+          <h2 class="text-lg font-bold text-[var(--td-text-color-primary)] m-0 leading-none tracking-tight">
+            创建服务端实例
+          </h2>
+          <span class="text-xs text-[var(--td-text-color-secondary)] mt-1.5 font-medium"
+            >选择适合您的部署模式，快速建立或深度定制您的 Minecraft 服务器</span
+          >
         </div>
       </div>
 
@@ -24,25 +28,29 @@ const value = ref(1);
         <t-radio-group v-model="value" variant="default-filled">
           <t-radio-button :value="1">快速模式</t-radio-button>
           <t-radio-button :value="2">上传整合包</t-radio-button>
-          <t-radio-button :value="3">自定义模式</t-radio-button>
+          <t-radio-button :value="3">基岩版</t-radio-button>
+          <t-radio-button :value="10">自定义模式</t-radio-button>
         </t-radio-group>
       </div>
     </div>
 
     <div class="relative w-full">
-      <div v-show="value === 1" class="list-item-anim" style="animation-delay: 0.1s;">
+      <div v-show="value === 1" class="list-item-anim" style="animation-delay: 0.1s">
         <quick-mode />
       </div>
 
-      <div v-show="value === 2" class="list-item-anim" style="animation-delay: 0.1s;">
+      <div v-show="value === 2" class="list-item-anim" style="animation-delay: 0.1s">
         <package-mode />
       </div>
 
-      <div v-show="value === 3" class="list-item-anim" style="animation-delay: 0.1s;">
+      <div v-show="value === 3" class="list-item-anim" style="animation-delay: 0.1s">
+        <bedrock-mode />
+      </div>
+
+      <div v-show="value === 10" class="list-item-anim" style="animation-delay: 0.1s">
         <custom-mode />
       </div>
     </div>
-
   </div>
 </template>
 
