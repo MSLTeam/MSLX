@@ -217,10 +217,12 @@ const handleClose = () => {
     v-model:visible="isVisible"
     header="自动更新基岩版"
     :footer="false"
-    :close-on-overlay-click="!isProcessing"
+    :close-btn="!isProcessing || currentAction === 'success' || currentAction === 'error'"
+    :close-on-esc-keydown="!isProcessing || currentAction === 'success' || currentAction === 'error'"
+    :close-on-overlay-click="!isProcessing || currentAction === 'success' || currentAction === 'error'"
     :on-close="handleClose"
-    width="480px"
     attach="body"
+    width="480px"
   >
     <div v-if="currentAction === 'idle'" class="flex flex-col gap-4 py-2">
       <div
@@ -252,6 +254,17 @@ const handleClose = () => {
     </div>
 
     <div v-else class="flex flex-col items-center gap-4 py-4 w-full">
+      <t-alert
+        v-if="isProcessing && currentAction !== 'success' && currentAction !== 'error'"
+        theme="warning"
+        class="!w-full !rounded-xl !mb-2 border border-red-200 dark:border-red-900/50"
+      >
+        <template #message>
+          <div class="text-xs font-bold leading-relaxed">
+            基岩版服务端更新中：请勿关闭、刷新此页面或离开当前页面，否则可能导致服务端文件损坏！
+          </div>
+        </template>
+      </t-alert>
       <div class="flex justify-center items-center h-10">
         <check-circle-filled-icon v-if="currentAction === 'success'" class="text-emerald-500 text-[40px]" />
         <error-circle-filled-icon v-else-if="currentAction === 'error'" class="text-red-500 text-[40px]" />
