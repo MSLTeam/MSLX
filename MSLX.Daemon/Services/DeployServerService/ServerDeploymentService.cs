@@ -116,6 +116,7 @@ public class ServerDeploymentService
     {
         try
         {
+            if(PlatFormServices.GetOs() != "Linux") return;
             string binPath = Path.Combine(targetDir, "bedrock_server");
             
             if (File.Exists(binPath))
