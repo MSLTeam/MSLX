@@ -8,7 +8,6 @@ using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.BackgroundTasks;
 using MSLX.Daemon.Utils.ConfigUtils;
-using System.Diagnostics;
 using System.Reflection;
 
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);

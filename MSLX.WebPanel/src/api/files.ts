@@ -185,7 +185,21 @@ export function moveFiles(instanceId: number, sourcePaths: string[], targetPath:
 // 上传图片到静态资源文件夹
 export function uploadFilesToStaticImages(fileKey: string,fileName: string) {
   return request.post({
-    url: `api/static/images/upload`,
+    url: `/api/static/images/upload`,
     data: { fileKey, fileName },
+  });
+}
+
+// 离线下载相关
+export async function addOfflineDownloadTask(instanceId: number, path: string, url: string,filename: string) {
+  return await request.post({
+    url: `/api/files/instance/${instanceId}/download`,
+    data: { path, url, filename },
+  });
+}
+
+export function getOfflineDownloadTaskStatus(taskId: string) {
+  return request.get<{ status: string; progress: number; message: string }>({
+    url: `/api/files/task/download/${taskId}`,
   });
 }

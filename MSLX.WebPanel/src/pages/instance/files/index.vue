@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router';
 import {
   AppIcon,
   CloudUploadIcon,
+  CloudDownloadIcon,
   CodeIcon,
   DeleteIcon,
   DownloadIcon,
@@ -26,6 +27,7 @@ import {
   SearchIcon,
   FilterIcon,
   EditIcon,
+  FolderAddIcon,
 } from 'tdesign-icons-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import {
@@ -46,6 +48,7 @@ import ImagePreview from './components/ImagePreview.vue';
 import FileCompressor from './components/FileCompressor.vue';
 import FileDecompress from './components/FileDecompress.vue';
 import FilePermission from './components/FilePermission.vue';
+import FileOfflineDownloader from './components/FileOfflineDownloader.vue';
 import { changeUrl } from '@/router';
 import { useUserStore } from '@/store';
 
@@ -74,6 +77,7 @@ const showCompressor = ref(false);
 const showDecompressor = ref(false);
 const showPermissionDialog = ref(false);
 const showCreateFolderDialog = ref(false);
+const showOfflineDownloader = ref(false);
 
 // 临时数据
 const newFolderName = ref('');
@@ -594,11 +598,12 @@ onUnmounted(() => {
 
 <template>
   <div class="flex flex-col mx-auto w-full pb-8">
-
-    <div class="card-enter-anim design-card bg-[var(--td-bg-color-container)] border-y md:border border-zinc-200/60 dark:border-zinc-700/60 md:rounded-xl shadow-sm flex flex-col min-h-[calc(100vh-100px)] md:min-h-[600px] -mx-4 md:mx-0 overflow-hidden">
-
-      <div class="sticky top-0 z-10 p-3 md:px-5 md:py-4 !bg-inherit border-b border-zinc-200/60 dark:border-zinc-800 flex items-center justify-between gap-4 overflow-x-auto hide-scrollbar">
-
+    <div
+      class="card-enter-anim design-card bg-[var(--td-bg-color-container)] border-y md:border border-zinc-200/60 dark:border-zinc-700/60 md:rounded-xl shadow-sm flex flex-col min-h-[calc(100vh-100px)] md:min-h-[600px] -mx-4 md:mx-0 overflow-hidden"
+    >
+      <div
+        class="sticky top-0 z-10 p-3 md:px-5 md:py-4 !bg-inherit border-b border-zinc-200/60 dark:border-zinc-800 flex items-center justify-between gap-4 overflow-x-auto hide-scrollbar"
+      >
         <div class="flex-1 flex items-center min-w-max">
           <t-breadcrumb :max-item-width="isMobile ? '80px' : '150px'">
             <t-breadcrumb-item
@@ -614,15 +619,31 @@ onUnmounted(() => {
         </div>
 
         <div class="flex items-center gap-2 shrink-0 min-w-max">
-          <t-input v-model="searchKey" placeholder="搜索文件..." class="!rounded-lg shadow-sm" :style="{ width: isMobile ? '120px' : '200px' }">
+          <t-input
+            v-model="searchKey"
+            placeholder="搜索文件..."
+            class="!rounded-lg shadow-sm"
+            :style="{ width: isMobile ? '120px' : '200px' }"
+          >
             <template #prefix-icon><search-icon class="text-zinc-400" /></template>
           </t-input>
 
-          <t-select v-model="sortType" :options="sortOptions" class="!rounded-lg shadow-sm" :style="{ width: isMobile ? '110px' : '140px' }" placeholder="排序">
+          <t-select
+            v-model="sortType"
+            :options="sortOptions"
+            class="!rounded-lg shadow-sm"
+            :style="{ width: isMobile ? '110px' : '140px' }"
+            placeholder="排序"
+          >
             <template #prefixIcon><filter-icon class="text-zinc-400" /></template>
           </t-select>
 
-          <t-button variant="outline" size="medium" class="!rounded-lg !m-0" @click="changeUrl(`/instance/console/${instanceId}`)">
+          <t-button
+            variant="outline"
+            size="medium"
+            class="!rounded-lg !m-0"
+            @click="changeUrl(`/instance/console/${instanceId}`)"
+          >
             <template #icon><rollback-icon /></template>
             <span v-if="!isMobile">控制台</span>
           </t-button>
@@ -640,6 +661,9 @@ onUnmounted(() => {
                 <t-dropdown-item value="folder" @click="handleOpenCreateFolder">
                   <folder-add-icon class="mr-2" /> <span>新建文件夹</span>
                 </t-dropdown-item>
+                <t-dropdown-item value="download" @click="showOfflineDownloader = true">
+                  <cloud-download-icon class="mr-2" /> <span>离线下载</span>
+                </t-dropdown-item>
               </t-dropdown-menu>
             </template>
           </t-dropdown>
@@ -655,7 +679,9 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="flex-1 w-full bg-transparent overflow-hidden [&_.t-table]:!border-t-0 [&_.t-table\_\_header]:!border-t-0 [&_.t-table\_\_header>tr>th]:!border-t-0">
+      <div
+        class="flex-1 w-full bg-transparent overflow-hidden [&_.t-table]:!border-t-0 [&_.t-table\_\_header]:!border-t-0 [&_.t-table\_\_header>tr>th]:!border-t-0"
+      >
         <t-table
           v-model:selected-row-keys="selectedRowKeys"
           :data="filteredFileList"
@@ -668,8 +694,14 @@ onUnmounted(() => {
         >
           <template #name="{ row }">
             <div class="flex items-center py-1.5 cursor-pointer group" @click.stop="handleRowClick(row)">
-              <component :is="getFileIcon(row).icon" class="text-xl mr-2 shrink-0 transition-transform group-hover:scale-110" :style="{ color: getFileIcon(row).color }" />
-              <span class="font-medium text-[var(--td-text-color-primary)] group-hover:text-[var(--color-primary)] transition-colors truncate max-w-[calc(100vw-140px)] md:max-w-full">
+              <component
+                :is="getFileIcon(row).icon"
+                class="text-xl mr-2 shrink-0 transition-transform group-hover:scale-110"
+                :style="{ color: getFileIcon(row).color }"
+              />
+              <span
+                class="font-medium text-[var(--td-text-color-primary)] group-hover:text-[var(--color-primary)] transition-colors truncate max-w-[calc(100vw-140px)] md:max-w-full"
+              >
                 {{ row.name }}
               </span>
             </div>
@@ -680,7 +712,13 @@ onUnmounted(() => {
           </template>
 
           <template #permission="{ row }">
-            <t-tag v-if="row.permission" variant="light-outline" size="small" class="!font-mono !rounded !justify-center !text-center">{{ row.permission }}</t-tag>
+            <t-tag
+              v-if="row.permission"
+              variant="light-outline"
+              size="small"
+              class="!font-mono !rounded !justify-center !text-center"
+              >{{ row.permission }}</t-tag
+            >
           </template>
 
           <template #lastModified="{ row }">
@@ -690,16 +728,29 @@ onUnmounted(() => {
           <template #operation="{ row }">
             <div class="op-actions" @click.stop>
               <t-dropdown :placement="isMobile ? 'bottom-right' : 'bottom'">
-                <t-button variant="text" shape="square" size="medium" class="!rounded-md hover:!bg-zinc-100 dark:hover:!bg-zinc-800 transition-colors">
+                <t-button
+                  variant="text"
+                  shape="square"
+                  size="medium"
+                  class="!rounded-md hover:!bg-zinc-100 dark:hover:!bg-zinc-800 transition-colors"
+                >
                   <more-icon />
                 </t-button>
                 <template #dropdown>
                   <t-dropdown-menu>
-                    <t-dropdown-item v-if="isArchive(row.name) && row.type !== 'folder'" value="decompress" @click="handleOpenDecompress(row)">
+                    <t-dropdown-item
+                      v-if="isArchive(row.name) && row.type !== 'folder'"
+                      value="decompress"
+                      @click="handleOpenDecompress(row)"
+                    >
                       <file-zip-icon class="mr-2" /> <span>解压</span>
                     </t-dropdown-item>
 
-                    <t-dropdown-item v-if="!(row.type === 'folder' || isArchive(row.name))" value="edit" @click="isImage(row.name) ? openPreview(row.name) : openEditor(row.name)">
+                    <t-dropdown-item
+                      v-if="!(row.type === 'folder' || isArchive(row.name))"
+                      value="edit"
+                      @click="isImage(row.name) ? openPreview(row.name) : openEditor(row.name)"
+                    >
                       <image-icon v-if="isImage(row.name)" class="mr-2" />
                       <edit-icon v-else class="mr-2" />
                       <span>{{ isImage(row.name) ? '预览' : '编辑' }}</span>
@@ -717,7 +768,11 @@ onUnmounted(() => {
                       <edit-icon class="mr-2" /> <span>重命名</span>
                     </t-dropdown-item>
 
-                    <t-dropdown-item value="delete" class="danger-item !text-red-500 hover:!bg-red-50 dark:hover:!bg-red-500/10 transition-colors" @click="handleDelete(row)">
+                    <t-dropdown-item
+                      value="delete"
+                      class="danger-item !text-red-500 hover:!bg-red-50 dark:hover:!bg-red-500/10 transition-colors"
+                      @click="handleDelete(row)"
+                    >
                       <delete-icon class="mr-2" /> <span>删除</span>
                     </t-dropdown-item>
                   </t-dropdown-menu>
@@ -737,8 +792,10 @@ onUnmounted(() => {
     </div>
 
     <transition name="slide-up">
-      <div v-if="hasSelection" class="design-card fixed bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 w-11/12 md:w-max min-w-[280px] bg-[var(--td-bg-color-container)] border border-zinc-200/60 dark:border-zinc-700/60 shadow-[0_8px_30px_rgba(0,0,0,0.12)] rounded-full px-4 py-2.5 flex justify-between items-center z-[500] gap-4">
-
+      <div
+        v-if="hasSelection"
+        class="design-card fixed bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 w-11/12 md:w-max min-w-[280px] bg-[var(--td-bg-color-container)] border border-zinc-200/60 dark:border-zinc-700/60 shadow-[0_8px_30px_rgba(0,0,0,0.12)] rounded-full px-4 py-2.5 flex justify-between items-center z-[500] gap-4"
+      >
         <div class="text-sm font-medium text-zinc-700 dark:text-zinc-300 shrink-0">
           <template v-if="!isMobile">已选 </template>
           <span class="text-[var(--color-primary)] font-bold text-base mx-1">{{ selectedRowKeys.length }}</span>
@@ -746,19 +803,43 @@ onUnmounted(() => {
         </div>
 
         <div class="flex items-center gap-1 md:gap-1.5 overflow-x-auto hide-scrollbar">
-          <t-button size="small" variant="text" theme="primary" class="!rounded-full hover:!bg-[var(--color-primary)]/10" @click="handleCopy()">
+          <t-button
+            size="small"
+            variant="text"
+            theme="primary"
+            class="!rounded-full hover:!bg-[var(--color-primary)]/10"
+            @click="handleCopy()"
+          >
             <template #icon><file-copy-icon /></template><span v-if="!isMobile">复制</span>
           </t-button>
 
-          <t-button size="small" variant="text" theme="primary" class="!rounded-full hover:!bg-[var(--color-primary)]/10" @click="handleCut()">
+          <t-button
+            size="small"
+            variant="text"
+            theme="primary"
+            class="!rounded-full hover:!bg-[var(--color-primary)]/10"
+            @click="handleCut()"
+          >
             <template #icon><swap-icon /></template><span v-if="!isMobile">剪切</span>
           </t-button>
 
-          <t-button size="small" variant="text" theme="primary" class="!rounded-full hover:!bg-[var(--color-primary)]/10" @click="handleCompress()">
+          <t-button
+            size="small"
+            variant="text"
+            theme="primary"
+            class="!rounded-full hover:!bg-[var(--color-primary)]/10"
+            @click="handleCompress()"
+          >
             <template #icon><file-zip-icon /></template><span v-if="!isMobile">压缩</span>
           </t-button>
 
-          <t-button size="small" variant="text" theme="primary" class="!rounded-full hover:!bg-[var(--color-primary)]/10" @click="handleDownload()">
+          <t-button
+            size="small"
+            variant="text"
+            theme="primary"
+            class="!rounded-full hover:!bg-[var(--color-primary)]/10"
+            @click="handleDownload()"
+          >
             <template #icon><download-icon /></template><span v-if="!isMobile">下载</span>
           </t-button>
 
@@ -773,17 +854,31 @@ onUnmounted(() => {
             <template #icon><lock-on-icon /></template><span v-if="!isMobile">权限</span>
           </t-button>
 
-          <t-button size="small" variant="text" theme="danger" class="!rounded-full hover:!bg-red-500/10" @click="handleDelete()">
+          <t-button
+            size="small"
+            variant="text"
+            theme="danger"
+            class="!rounded-full hover:!bg-red-500/10"
+            @click="handleDelete()"
+          >
             <template #icon><delete-icon /></template><span v-if="!isMobile">删除</span>
           </t-button>
 
           <div class="w-[1px] h-4 bg-zinc-200 dark:bg-zinc-700 mx-1 shrink-0"></div>
-          <t-button size="small" variant="text" class="!rounded-full !text-zinc-500 hover:!bg-zinc-200 dark:hover:!bg-zinc-700 shrink-0" @click="selectedRowKeys = []">取消</t-button>
+          <t-button
+            size="small"
+            variant="text"
+            class="!rounded-full !text-zinc-500 hover:!bg-zinc-200 dark:hover:!bg-zinc-700 shrink-0"
+            @click="selectedRowKeys = []"
+            >取消</t-button
+          >
         </div>
       </div>
 
-      <div v-else-if="hasClipboard" class="design-card fixed bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 w-11/12 md:w-max min-w-[280px] bg-[var(--td-bg-color-container)] border-2 border-[var(--color-primary)] shadow-[0_8px_30px_rgba(0,0,0,0.12)] shadow-[var(--color-primary)]/20 rounded-full px-5 py-3 flex justify-between items-center z-[501] gap-4">
-
+      <div
+        v-else-if="hasClipboard"
+        class="design-card fixed bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 w-11/12 md:w-max min-w-[280px] bg-[var(--td-bg-color-container)] border-2 border-[var(--color-primary)] shadow-[0_8px_30px_rgba(0,0,0,0.12)] shadow-[var(--color-primary)]/20 rounded-full px-5 py-3 flex justify-between items-center z-[501] gap-4"
+      >
         <div class="text-sm font-medium text-zinc-700 dark:text-zinc-300 shrink-0">
           <span v-if="clipboardMode === 'copy'">准备复制</span>
           <span v-else>准备移动</span>
@@ -796,7 +891,12 @@ onUnmounted(() => {
             粘贴在此处
           </t-button>
 
-          <t-button variant="text" theme="default" class="!rounded-full hover:!bg-zinc-200 dark:hover:!bg-zinc-700" @click="handleCancelPaste">
+          <t-button
+            variant="text"
+            theme="default"
+            class="!rounded-full hover:!bg-zinc-200 dark:hover:!bg-zinc-700"
+            @click="handleCancelPaste"
+          >
             <template #icon><close-icon /></template>
             取消
           </t-button>
@@ -804,20 +904,60 @@ onUnmounted(() => {
       </div>
     </transition>
 
-    <file-editor v-model:visible="showEditor" :file-name="editorFileName" :content="editorContent" :loading="isSaving" @save="handleSaveFile" />
+    <file-editor
+      v-model:visible="showEditor"
+      :file-name="editorFileName"
+      :content="editorContent"
+      :loading="isSaving"
+      @save="handleSaveFile"
+    />
     <t-dialog v-model:visible="showCreateDialog" header="新建文件" :on-confirm="handleConfirmCreate">
       <t-input v-model="newFileName" placeholder="输入文件名" :autofocus="true" @enter="handleConfirmCreate" />
     </t-dialog>
     <t-dialog v-model:visible="showRenameDialog" header="重命名" :on-confirm="handleConfirmRename">
       <t-input v-model="renameNewName" placeholder="输入新名称" :autofocus="true" @enter="handleConfirmRename" />
     </t-dialog>
-    <file-uploader v-model:visible="showBatchUploader" :instance-id="instanceId" :current-path="currentPath" @success="handleUploadSuccess" />
+    <file-uploader
+      v-model:visible="showBatchUploader"
+      :instance-id="instanceId"
+      :current-path="currentPath"
+      @success="handleUploadSuccess"
+    />
     <image-preview v-model:visible="showImagePreview" :file-name="previewFileName" :image-blob-url="previewUrl" />
-    <file-compressor v-model:visible="showCompressor" :instance-id="instanceId" :current-path="currentPath" :files="compressTargets" @success="handleCompressSuccess" />
-    <file-decompress v-model:visible="showDecompressor" :instance-id="instanceId" :current-path="currentPath" :file-name="decompressTargetFile" @success="handleDecompressSuccess" />
-    <file-permission v-model:visible="showPermissionDialog" :instance-id="instanceId" :current-path="currentPath" :targets="permissionTargets" @success="handlePermissionSuccess" />
+    <file-compressor
+      v-model:visible="showCompressor"
+      :instance-id="instanceId"
+      :current-path="currentPath"
+      :files="compressTargets"
+      @success="handleCompressSuccess"
+    />
+    <file-decompress
+      v-model:visible="showDecompressor"
+      :instance-id="instanceId"
+      :current-path="currentPath"
+      :file-name="decompressTargetFile"
+      @success="handleDecompressSuccess"
+    />
+    <file-offline-downloader
+      v-model:visible="showOfflineDownloader"
+      :instance-id="instanceId"
+      :current-path="currentPath"
+      @success="handleRefresh"
+    />
+    <file-permission
+      v-model:visible="showPermissionDialog"
+      :instance-id="instanceId"
+      :current-path="currentPath"
+      :targets="permissionTargets"
+      @success="handlePermissionSuccess"
+    />
     <t-dialog v-model:visible="showCreateFolderDialog" header="新建文件夹" :on-confirm="handleConfirmCreateFolder">
-      <t-input v-model="newFolderName" placeholder="输入文件夹名称" :autofocus="true" @enter="handleConfirmCreateFolder" />
+      <t-input
+        v-model="newFolderName"
+        placeholder="输入文件夹名称"
+        :autofocus="true"
+        @enter="handleConfirmCreateFolder"
+      />
     </t-dialog>
   </div>
 </template>
@@ -858,7 +998,9 @@ onUnmounted(() => {
 /* ================= 悬浮条进出动画 ================= */
 .slide-up-enter-active,
 .slide-up-leave-active {
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+  transition:
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.3s ease;
 }
 .slide-up-enter-from,
 .slide-up-leave-to {
@@ -892,7 +1034,7 @@ onUnmounted(() => {
 }
 .generate-row-delays(15);
 
-:deep(.t-table tbody tr:nth-child(n+16)) {
+:deep(.t-table tbody tr:nth-child(n + 16)) {
   animation-delay: 0.35s;
 }
 </style>
