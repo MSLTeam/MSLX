@@ -4,6 +4,9 @@ import { useRoute } from 'vue-router';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { ImageIcon, RefreshIcon, UploadIcon } from 'tdesign-icons-vue-next';
 import { downloadFileStream, finishUpload, initUpload, saveUploadedFile, uploadChunk } from '@/api/files';
+import BedrockAutoUpdater from './MoreComponents/BedrockAutoUpdater.vue';
+import { getInstanceInfo } from '@/api/instance';
+import { InstanceInfoModel } from '@/api/model/instance';
 
 const route = useRoute();
 const instanceId = computed(() => parseInt(route.params.serverId as string));
@@ -216,9 +219,29 @@ const confirmCropAndUpload = async () => {
   }
 };
 
+// 基岩版更新相关
+const instanceInfo = ref<InstanceInfoModel | null>(null);
+const showBedrockUpdater = ref(false);
+const fetchInstanceInfo = async () => {
+  try {
+    instanceInfo.value = await getInstanceInfo(instanceId.value);
+  } catch (e) {
+    console.error('获取实例信息失败', e);
+  }
+};
+
+const handleOpenBedrockUpdater = () => {
+  if (instanceInfo.value?.status !== 0) {
+    MessagePlugin.warning('实例正在运行中，请先关闭服务器后再进行更新操作！');
+    return;
+  }
+  showBedrockUpdater.value = true;
+};
+
 // --- 生命周期 ---
 onMounted(() => {
   fetchCurrentIcon();
+  fetchInstanceInfo();
 });
 
 watch(
@@ -231,6 +254,7 @@ watch(
       currentIconUrl.value = null;
       localImageSrc.value = '';
       fetchCurrentIcon();
+      fetchInstanceInfo();
     }
   },
   { immediate: true },
@@ -311,6 +335,42 @@ watch(
         </div>
       </div>
     </t-loading>
+
+    <div class="flex flex-col mx-auto w-full pb-6">
+      <t-loading :loading="loading" show-overlay>
+        <div v-if="instanceInfo?.args?.includes('bedrock_server')" class="mt-8">
+          <div
+            class="flex items-center gap-2 mb-4 pb-2 border-b border-dashed border-zinc-200/60 dark:border-zinc-700/60"
+          >
+            <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
+            <h2 class="text-base font-bold text-[var(--td-text-color-primary)] m-0">基岩版管理</h2>
+          </div>
+
+          <div class="flex flex-col md:flex-row md:items-center justify-between py-4 gap-4">
+            <div class="flex-1 md:pr-8">
+              <div class="text-sm font-bold text-[var(--td-text-color-primary)]">服务端自动更新</div>
+              <div class="text-xs text-[var(--td-text-color-secondary)] mt-1.5 leading-relaxed">
+                全自动下载官方最新版并覆盖更新当前文件。<br />
+                强烈建议在更新前备份数据（如<code class="mx-1 px-1 bg-zinc-100 dark:bg-zinc-800 rounded">worlds</code
+                >目录）。
+              </div>
+            </div>
+
+            <div class="flex items-center gap-4 shrink-0 w-full md:w-auto mt-2 md:mt-0">
+              <t-button theme="primary" class="!rounded-lg shadow-sm" @click="handleOpenBedrockUpdater">
+                获取并自动更新
+              </t-button>
+            </div>
+          </div>
+        </div>
+      </t-loading>
+
+      <bedrock-auto-updater
+        v-model:visible="showBedrockUpdater"
+        :instance-id="instanceId"
+        @success="fetchInstanceInfo"
+      />
+    </div>
 
     <t-dialog
       v-model:visible="showCropDialog"
