@@ -94,7 +94,7 @@ public class ServerCreationService : BackgroundService
             Args = request.args ?? "",
             IgnoreEula = request.ignoreEula,
             InputEncoding = "utf-8",
-            StopCommand = request.java == "none" ? "^c" : "stop",
+            StopCommand = request.java == "none" ? ((request.args ?? "").Contains("bedrock_server") ? "stop" : "^c") : "stop",
             MonitorPlayers = request.java == "none" ? false : true,
             OutputEncoding = PlatFormServices.GetOs() == "Windows"? "gbk" : "utf-8",
             FileEncoding = PlatFormServices.GetOs() == "Windows"? "gbk" : "utf-8",
