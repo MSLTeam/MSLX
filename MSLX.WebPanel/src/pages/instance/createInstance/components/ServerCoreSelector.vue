@@ -192,6 +192,10 @@ const fetchBuilds = async (coreName: string, version: string) => {
 
 // 获取下载链接并返回给父组件
 const fetchDownloadInfo = async (core: string, version: string, build: string) => {
+  if (core === 'bedrock-server') {
+    MessagePlugin.warning('不支持在此部署基岩版官方版服务端，请使用基岩版一键部署/更新功能！');
+    return;
+  }
   const loadingInstance = MessagePlugin.loading('正在获取核心下载信息...', 0);
 
   try {
@@ -445,7 +449,13 @@ watch(
       :z-index="10270"
     >
       <div class="min-h-[150px] max-h-[50vh] overflow-y-auto custom-scrollbar p-2">
-        <t-loading v-if="loadingBuilds" :loading="loadingBuilds" size="small" text="获取构建版本中..." class="flex justify-center mt-10" />
+        <t-loading
+          v-if="loadingBuilds"
+          :loading="loadingBuilds"
+          size="small"
+          text="获取构建版本中..."
+          class="flex justify-center mt-10"
+        />
 
         <template v-else>
           <div v-if="buildList.length > 0" class="flex flex-col gap-2">
@@ -457,16 +467,24 @@ watch(
             >
               <div class="flex items-center gap-3">
                 <t-icon name="server" class="text-zinc-400 group-hover:text-[var(--color-primary)] transition-colors" />
-                <span class="font-mono text-sm font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-[var(--color-primary)] transition-colors">
-                {{ build }}
-              </span>
+                <span
+                  class="font-mono text-sm font-bold text-zinc-700 dark:text-zinc-300 group-hover:text-[var(--color-primary)] transition-colors"
+                >
+                  {{ build }}
+                </span>
               </div>
 
               <div class="flex items-center">
-              <span v-if="index === 0 && build !== 'latest'" class="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/50">
-                推荐/最新
-              </span>
-                <t-icon name="chevron-right" class="ml-2 text-zinc-300 group-hover:text-[var(--color-primary)] transition-colors" />
+                <span
+                  v-if="index === 0 && build !== 'latest'"
+                  class="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/50"
+                >
+                  推荐/最新
+                </span>
+                <t-icon
+                  name="chevron-right"
+                  class="ml-2 text-zinc-300 group-hover:text-[var(--color-primary)] transition-colors"
+                />
               </div>
             </div>
           </div>
