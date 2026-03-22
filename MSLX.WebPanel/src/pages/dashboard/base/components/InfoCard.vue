@@ -4,6 +4,7 @@ import { useUserStore } from '@/store';
 import pkg from '@/../package.json';
 import { useInstanceListStore } from '@/store/modules/instance';
 import { onMounted } from 'vue';
+import { changeUrl } from '@/router';
 const userStore = useUserStore();
 const instanceListStore = useInstanceListStore();
 
@@ -13,13 +14,19 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="design-card w-full bg-white dark:bg-zinc-800 p-5 sm:p-6 rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300">
-
+  <div
+    class="design-card w-full bg-white dark:bg-zinc-800 p-5 sm:p-6 rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300"
+  >
     <div class="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
-
-      <div class="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200/80 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-500 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 transition-all group">
+      <div
+        class="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200/80 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-500 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 transition-all group cursor-pointer"
+        @click="changeUrl('/instance/list')"
+      >
         <span class="flex items-center gap-2 text-[var(--td-text-color-secondary)] shrink-0 text-sm">
-          <t-icon name="server" class="text-[var(--td-text-color-secondary)] group-hover:text-[var(--color-primary)] transition-colors duration-300" />
+          <t-icon
+            name="server"
+            class="text-[var(--td-text-color-secondary)] group-hover:text-[var(--color-primary)] transition-colors duration-300"
+          />
           <span>在线实例：</span>
         </span>
         <span class="text-[var(--td-text-color-primary)] font-semibold text-sm text-right break-all pl-2">
@@ -27,9 +34,14 @@ onMounted(() => {
         </span>
       </div>
 
-      <div class="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200/80 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-500 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 transition-all group">
+      <div
+        class="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200/80 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-500 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 transition-all group"
+      >
         <span class="flex items-center gap-2 text-[var(--td-text-color-secondary)] shrink-0 text-sm">
-          <t-icon name="logo-codepen" class="text-[var(--td-text-color-secondary)] group-hover:text-[var(--color-primary)] transition-colors duration-300" />
+          <t-icon
+            name="logo-codepen"
+            class="text-[var(--td-text-color-secondary)] group-hover:text-[var(--color-primary)] transition-colors duration-300"
+          />
           <span>NET环境：</span>
         </span>
         <span class="text-[var(--td-text-color-primary)] font-semibold text-sm text-right break-all pl-2">
@@ -37,9 +49,14 @@ onMounted(() => {
         </span>
       </div>
 
-      <div class="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200/80 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-500 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 transition-all group">
+      <div
+        class="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200/80 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-500 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 transition-all group"
+      >
         <span class="flex items-center gap-2 text-[var(--td-text-color-secondary)] shrink-0 text-sm">
-          <t-icon name="dashboard" class="text-[var(--td-text-color-secondary)] group-hover:text-[var(--color-primary)] transition-colors duration-300" />
+          <t-icon
+            name="dashboard"
+            class="text-[var(--td-text-color-secondary)] group-hover:text-[var(--color-primary)] transition-colors duration-300"
+          />
           <span>面板版本：</span>
         </span>
         <t-tooltip :content="pkg.version" max-width="400px">
@@ -49,9 +66,14 @@ onMounted(() => {
         </t-tooltip>
       </div>
 
-      <div class="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200/80 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-500 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 transition-all group">
+      <div
+        class="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200/80 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-500 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 transition-all group"
+      >
         <span class="flex items-center gap-2 text-[var(--td-text-color-secondary)] shrink-0 text-sm">
-          <t-icon name="cloud" class="text-[var(--td-text-color-secondary)] group-hover:text-[var(--color-primary)] transition-colors duration-300" />
+          <t-icon
+            name="cloud"
+            class="text-[var(--td-text-color-secondary)] group-hover:text-[var(--color-primary)] transition-colors duration-300"
+          />
           <span>节点版本：</span>
         </span>
         <t-tooltip :content="`v${userStore.userInfo.version}`" max-width="400px">
@@ -61,9 +83,14 @@ onMounted(() => {
         </t-tooltip>
       </div>
 
-      <div class="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200/80 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-500 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 transition-all group">
+      <div
+        class="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200/80 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-500 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 transition-all group"
+      >
         <span class="flex items-center gap-2 text-[var(--td-text-color-secondary)] shrink-0 text-sm">
-          <t-icon name="desktop" class="text-[var(--td-text-color-secondary)] group-hover:text-[var(--color-primary)] transition-colors duration-300" />
+          <t-icon
+            name="desktop"
+            class="text-[var(--td-text-color-secondary)] group-hover:text-[var(--color-primary)] transition-colors duration-300"
+          />
           <span>主机名：</span>
         </span>
         <span class="text-[var(--td-text-color-primary)] font-semibold text-sm text-right truncate min-w-0 pl-2">
@@ -71,9 +98,14 @@ onMounted(() => {
         </span>
       </div>
 
-      <div class="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200/80 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-500 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 transition-all group">
+      <div
+        class="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200/80 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-500 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 transition-all group"
+      >
         <span class="flex items-center gap-2 text-[var(--td-text-color-secondary)] shrink-0 text-sm">
-          <t-icon name="system-code" class="text-[var(--td-text-color-secondary)] group-hover:text-[var(--color-primary)] transition-colors duration-300" />
+          <t-icon
+            name="system-code"
+            class="text-[var(--td-text-color-secondary)] group-hover:text-[var(--color-primary)] transition-colors duration-300"
+          />
           <span>系统类型：</span>
         </span>
         <span class="text-[var(--td-text-color-primary)] font-semibold text-sm text-right break-all pl-2">
@@ -81,9 +113,14 @@ onMounted(() => {
         </span>
       </div>
 
-      <div class="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200/80 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-500 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 transition-all group">
+      <div
+        class="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200/80 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-500 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 transition-all group"
+      >
         <span class="flex items-center gap-2 text-[var(--td-text-color-secondary)] shrink-0 text-sm">
-          <t-icon name="system-setting" class="text-[var(--td-text-color-secondary)] group-hover:text-[var(--color-primary)] transition-colors duration-300" />
+          <t-icon
+            name="system-setting"
+            class="text-[var(--td-text-color-secondary)] group-hover:text-[var(--color-primary)] transition-colors duration-300"
+          />
           <span>系统版本：</span>
         </span>
         <t-tooltip :content="userStore.userInfo.systemInfo.osVersion" max-width="400px">
@@ -93,9 +130,14 @@ onMounted(() => {
         </t-tooltip>
       </div>
 
-      <div class="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200/80 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-500 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 transition-all group">
+      <div
+        class="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200/80 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-500 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 transition-all group"
+      >
         <span class="flex items-center gap-2 text-[var(--td-text-color-secondary)] shrink-0 text-sm">
-          <t-icon name="check-circle" class="text-[var(--td-text-color-secondary)] group-hover:text-[var(--color-primary)] transition-colors duration-300" />
+          <t-icon
+            name="check-circle"
+            class="text-[var(--td-text-color-secondary)] group-hover:text-[var(--color-primary)] transition-colors duration-300"
+          />
           <span>版本匹配：</span>
         </span>
         <span class="flex justify-end pl-2">
@@ -107,7 +149,6 @@ onMounted(() => {
           </t-tag>
         </span>
       </div>
-
     </div>
   </div>
 </template>
