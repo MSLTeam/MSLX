@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
 using MSLX.Daemon.Hubs;
@@ -9,8 +9,19 @@ using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.BackgroundTasks;
 using MSLX.Daemon.Utils.ConfigUtils;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
+// 控制台关闭事件处理
+if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+{
+    WindowsConsoleHandler.Initialize();
+}
+else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+{
+    UnixConsoleHandler.Initialize();
+}
 
 var builder = WebApplication.CreateBuilder(args);
 

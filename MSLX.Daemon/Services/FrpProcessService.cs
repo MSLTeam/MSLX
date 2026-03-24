@@ -1,7 +1,8 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Formats.Tar;
+using System.Runtime.InteropServices;
 using System.Text;
 using Downloader;
 using Microsoft.AspNetCore.SignalR;
@@ -30,6 +31,7 @@ public class FrpProcessService
 
     private readonly ConcurrentDictionary<int, FrpContext> _activeProcesses = new();
     private const int MaxLogLines = 200;
+    private int _isStopping = 0; // 防重复停止标志 (0=未停止, 1=正在停止)
     
     private readonly string _frpcExecutablePath;
     private readonly string _toolsDir;
@@ -49,6 +51,16 @@ public class FrpProcessService
         // 生命周期事件（启动/退出）
         _appLifetime.ApplicationStopping.Register(StopAllFrp);
         _appLifetime.ApplicationStarted.Register(OnAppStarted);
+
+        // 注册控制台关闭事件处理
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            WindowsConsoleHandler.RegisterCleanupAction(StopAllFrp);
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            UnixConsoleHandler.RegisterCleanupAction(StopAllFrp);
+        }
     }
 
     public bool IsFrpRunning(int id)
@@ -397,17 +409,54 @@ private async Task<bool> DownloadFrpcAsync(int id, FrpContext context)
 
     private void StopAllFrp()
     {
-        if (_activeProcesses.IsEmpty) return;
+        // 防重复执行检查
+        if (Interlocked.CompareExchange(ref _isStopping, 1, 0) != 0)
+        {
+            _logger.LogDebug("StopAllFrp 已在执行中，跳过重复调用");
+            return;
+        }
+
+        if (_activeProcesses.IsEmpty)
+        {
+            _logger.LogInformation("没有正在运行的 FRP 隧道需要停止");
+            return;
+        }
+
+        _logger.LogInformation($"正在停止 {_activeProcesses.Count} 个 FRP 隧道...");
+        int stoppedCount = 0;
+        int failedCount = 0;
+
         foreach (var kvp in _activeProcesses)
         {
+            int id = kvp.Key;
+            var context = kvp.Value;
             try
             {
-                var context = kvp.Value;
-                if (context.Process != null && !context.Process.HasExited) context.Process.Kill(true);
+                if (context.Process != null && !context.Process.HasExited)
+                {
+                    context.Process.Kill(true);
+                    context.Process.WaitForExit(2000); // 等待最多2秒
+                    stoppedCount++;
+                    _logger.LogInformation($"FRP 隧道 [{id}] 已停止 (PID: {context.Process.Id})");
+                }
             }
-            catch { }
+            catch (InvalidOperationException ex)
+            {
+                // 进程已经退出
+                _logger.LogDebug($"FRP 隧道 [{id}] 进程已经退出");
+            }
+            catch (Exception ex)
+            {
+                failedCount++;
+                _logger.LogError(ex, $"停止 FRP 隧道 [{id}] 时发生错误");
+            }
         }
+
         _activeProcesses.Clear();
+        _logger.LogInformation($"FRP 隧道停止完成: 成功 {stoppedCount} 个, 失败 {failedCount} 个");
+
+        // 重置停止标志，允许下次调用
+        Interlocked.Exchange(ref _isStopping, 0);
     }
 
     private void OnAppStarted()
