@@ -89,7 +89,11 @@ public class InstanceInfoController : ControllerBase
                     core = item["Core"]?.Value<string>(),
                     icon,
                     status = serverStatus,
-                    statusText = serverStatusText
+                    statusText = serverStatusText,
+                    extra = new
+                    {
+                        onlinePlayers = _mcServerService.GetOnlinePlayers(id).Count + 1
+                    }
                 };
             })
             .OrderByDescending(x => x.id)
@@ -172,6 +176,7 @@ public class InstanceInfoController : ControllerBase
                         statusText = serverStatusText,
                         uptime = _mcServerService.GetServerUptime(id),
                         monitorPlayers = server.MonitorPlayers,
+                        onlinePlayers = _mcServerService.GetOnlinePlayers(id).Count,
                         mcConfig = new
                         {
                             difficulty,
