@@ -371,10 +371,10 @@ public class MCServerService
                 Arguments = args,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-                RedirectStandardInput = true, // 允许输入命令
+                RedirectStandardInput = true,
                 UseShellExecute = false,
                 CreateNoWindow = true,
-                // 应用编码配置
+                // 编码配置
                 StandardOutputEncoding = outputEncoding,
                 StandardErrorEncoding = outputEncoding,
                 StandardInputEncoding = inputEncoding
@@ -422,6 +422,7 @@ public class MCServerService
             // 启动进程
             if (process.Start())
             {
+                ProcessTracker.Track(process, false);
                 context.Process = process;
                 context.IsInitializing = false; // 初始化完成
 

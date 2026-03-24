@@ -151,6 +151,7 @@ public class FrpProcessService
             // 启动
             if (process.Start())
             {
+                ProcessTracker.Track(process, true);
                 context.Process = process;
                 context.IsInitializing = false; // 初始化完成
                 
