@@ -92,7 +92,7 @@ public class InstanceInfoController : ControllerBase
                     statusText = serverStatusText,
                     extra = new
                     {
-                        onlinePlayers = _mcServerService.GetOnlinePlayers(id).Count + 1
+                        onlinePlayers = _mcServerService.GetOnlinePlayers(id).Count,
                     }
                 };
             })
