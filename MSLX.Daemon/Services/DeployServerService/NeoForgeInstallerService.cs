@@ -250,6 +250,7 @@ public class NeoForgeInstallerService
             ReportLog($"正在下载 {InstallName} 所需要的运行库文件···");
 
             var tasks = new List<Task<(bool Success, string ErrorMessage)>>(); // 存储下载任务列表
+            var fallbackDict = new Dictionary<string, string>(); // 相对路径/原始下载地址
 
             /* 下载用法
             var taskCore = downloader.DownloadFileAsync(
@@ -287,10 +288,12 @@ public class NeoForgeInstallerService
                     string? _dlurl = artifactToken["url"]?.ToString();
                     if (string.IsNullOrEmpty(_dlurl))
                         continue;
+                    
+                    string? path = artifactToken["path"]?.ToString();
+                    fallbackDict[path] = _dlurl;
 
                     _dlurl = ReplaceStr(_dlurl);
-
-                    string? path = artifactToken["path"]?.ToString();
+                    
                     if (string.IsNullOrEmpty(path))
                         continue;
 
@@ -321,10 +324,12 @@ public class NeoForgeInstallerService
                     string? _dlurl = artifactToken["url"]?.ToString();
                     if (string.IsNullOrEmpty(_dlurl))
                         continue;
+                    
+                    string? path = artifactToken["path"]?.ToString();
+                    fallbackDict[path] = _dlurl; // 路径/原始地址
 
                     _dlurl = ReplaceStr(_dlurl);
-
-                    string? path = artifactToken["path"]?.ToString();
+                    
                     if (string.IsNullOrEmpty(path))
                         continue;
 
@@ -366,22 +371,14 @@ public class NeoForgeInstallerService
 
                     string libPath = NameToPath(libName);
 
-                    string _dlurl;
                     string? libUrl = lib["url"]?.ToString();
+                    string rawUrl = string.IsNullOrEmpty(libUrl)
+                        ? "https://maven.minecraftforge.net/" + libPath
+                        : libUrl.TrimEnd('/') + "/" + libPath;
 
-                    if (string.IsNullOrEmpty(libUrl))
-                    {
-                        _dlurl = ReplaceStr("https://maven.minecraftforge.net/" + libPath);
-                    }
-                    else
-                    {
-                        //_dlurl = ReplaceStr(lib["url"]?.ToString() ?? "" + NameToPath(lib["name"]?.ToString() ?? ""));
-
-                        _dlurl = ReplaceStr(libUrl.TrimEnd('/') + "/" + libPath);
-                    }
-
-                    if (string.IsNullOrEmpty(_dlurl))
-                        continue;
+                    fallbackDict[libPath] = rawUrl; // 路径/原始地址
+                    string _dlurl = ReplaceStr(rawUrl);
+                    if (string.IsNullOrEmpty(_dlurl)) continue;
 
                     ReportLog($"[ {InstallName} 运行库]下载：" + libPath);
 
@@ -401,21 +398,60 @@ public class NeoForgeInstallerService
             // 所有文件成功添加到下载 等待下崽崽完成～
             ReportLog($"正在等待所有库文件下载完成···");
 
-            var results = await Task.WhenAll(tasks);
+            await Task.WhenAll(tasks);
 
-            foreach (var result in results)
+            // 检查文件下载/尝试回退补漏
+            string originalMirror = InstallMirrorsName;
+            string[] mirrorOptions = { "MSL镜像源", "MSL镜像源 - 备用", "官方源" };
+            int currentMirrorIndex = Array.IndexOf(mirrorOptions, originalMirror);
+            if (currentMirrorIndex == -1) currentMirrorIndex = 0;
+            
+            for (int i = 0; i < 2; i++)
             {
-                if (!result.Success)
+                var missingFiles = fallbackDict.Where(kv => {
+                    string targetFile = Path.Combine(InstallBasePath, "libraries", kv.Key);
+                    string tempDownloadFile = targetFile + ".download";
+        
+                    // 以防有下载失败的文件 删掉
+                    if (File.Exists(tempDownloadFile)) File.Delete(tempDownloadFile);
+
+                    return !File.Exists(targetFile) || new FileInfo(targetFile).Length == 0;
+                }).ToList();
+
+                if (missingFiles.Count == 0) break; 
+
+                currentMirrorIndex = (currentMirrorIndex + 1) % 3; // 轮换下载源
+                InstallMirrorsName = mirrorOptions[currentMirrorIndex];
+                ReportLog($"检测到 {missingFiles.Count} 个文件缺失或损坏，正在切换至 {InstallMirrorsName} 尝试补漏...");
+
+                var patchTasks = new List<Task<(bool Success, string ErrorMessage)>>();
+                foreach (var kv in missingFiles)
                 {
-                    ReportLog($"检测到有文件下载失败，原因: {result.ErrorMessage}");
+                    patchTasks.Add(downloader.DownloadFileAsync(
+                        ReplaceStr(kv.Value),
+                        Path.Combine(InstallBasePath, "libraries", kv.Key),
+                        async (progress, speed) =>
+                        {
+                            ReportLog($"正在下载 {kv.Key} 进度: {progress:0.00}% | 下载速度: {speed}");
+                        }
+                    ));
                 }
+                await Task.WhenAll(patchTasks);
             }
 
-            // 检查是否全部成功
-            if (results.All(x => x.Success))
+            InstallMirrorsName = originalMirror;
+
+            // 兜底校验
+            if (fallbackDict.Any(kv => {
+                    string targetFile = Path.Combine(InstallBasePath, "libraries", kv.Key);
+                    return !File.Exists(targetFile) || new FileInfo(targetFile).Length == 0;
+                }))
             {
-                ReportLog("所有文件下载完成！");
+                ReportLog("部分运行库文件所有源均下载失败，安装终止！");
+                return (false, InstallMcVersion);
             }
+
+            ReportLog("所有库文件下载且校验完成！");
 
             // 复制一些文件
             if (InstallVersionType == 1 && !InstallerPath.Contains("neoforge"))
@@ -726,11 +762,11 @@ public class NeoForgeInstallerService
         //是否使用镜像源
         if (InstallMirrorsName == "MSL镜像源")
         {
-            str = str.Replace("https://maven.neoforged.net", "https://neoforge.mirrors.mslmc.cn");
-            str = str.Replace("https://maven.minecraftforge.net", "https://forge-maven.mirrors.mslmc.cn");
-            str = str.Replace("https://files.minecraftforge.net", "https://forge-files.mirrors.mslmc.cn");
-            str = str.Replace("https://libraries.minecraft.net", "https://mclibs.mirrors.mslmc.cn");
-            str = str.Replace("https://piston-meta.mojang.com", "https://mc-meta.mirrors.mslmc.cn");
+            str = str.Replace("https://maven.neoforged.net", "https://v2.mirrors.mslmc.cn/libs/neoforge");
+            str = str.Replace("https://maven.minecraftforge.net", "https://v2.mirrors.mslmc.cn/libs/forge-maven");
+            str = str.Replace("https://files.minecraftforge.net", "https://v2.mirrors.mslmc.cn/libs/forge-files");
+            str = str.Replace("https://libraries.minecraft.net", "https://v2.mirrors.mslmc.cn/libs/mc-libs");
+            str = str.Replace("https://piston-meta.mojang.com", "https://v2.mirrors.mslmc.cn/libs/mc-meta");
             str = str.Replace("piston-data.mojang.com/v1/objects/", "file.mslmc.cn/mirrors/vanilla/");
         }
 
@@ -738,11 +774,11 @@ public class NeoForgeInstallerService
         if (InstallMirrorsName == "MSL镜像源 - 备用")
         {
             //改成镜像源的部分
-            str = str.Replace("https://maven.neoforged.net", "https://neoforge.mc-mirrors.aino.cyou");
-            str = str.Replace("https://maven.minecraftforge.net", "https://forge-maven.mc-mirrors.aino.cyou");
-            str = str.Replace("https://files.minecraftforge.net", "https://forge-files.mc-mirrors.aino.cyou");
-            str = str.Replace("https://libraries.minecraft.net", "https://mclibs.mc-mirrors.aino.cyou");
-            str = str.Replace("https://piston-meta.mojang.com", "https://mcmeta.mc-mirrors.aino.cyou");
+            str = str.Replace("https://maven.neoforged.net", "https://neoforge.mirrors.mslmc.cn");
+            str = str.Replace("https://maven.minecraftforge.net", "https://forge-maven.mirrors.mslmc.cn");
+            str = str.Replace("https://files.minecraftforge.net", "https://forge-files.mirrors.mslmc.cn");
+            str = str.Replace("https://libraries.minecraft.net", "https://mclibs.mirrors.mslmc.cn");
+            str = str.Replace("https://piston-meta.mojang.com", "https://mc-meta.mirrors.mslmc.cn");
             str = str.Replace("piston-data.mojang.com/v1/objects/", "file.mslmc.cn/mirrors/vanilla/");
         }
 
