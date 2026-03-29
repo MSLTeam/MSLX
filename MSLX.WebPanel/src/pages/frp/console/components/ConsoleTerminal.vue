@@ -222,6 +222,28 @@ const clear = () => {
   writeWelcomeMsg();
 };
 
+// 移动端下触控滚动逻辑
+let touchStartY = 0;
+
+const handleTouchStart = (e: TouchEvent) => {
+  touchStartY = e.touches[0].clientY;
+};
+
+const handleTouchMove = (e: TouchEvent) => {
+  if (!term) return;
+
+  const touchCurrentY = e.touches[0].clientY;
+  const deltaY = touchStartY - touchCurrentY;
+
+  const lineHeight = 19.6;
+  const linesToScroll = Math.trunc(deltaY / lineHeight);
+
+  if (Math.abs(linesToScroll) >= 1) {
+    term.scrollLines(linesToScroll);
+    touchStartY = touchCurrentY + (deltaY % lineHeight);
+  }
+};
+
 defineExpose({ writeln, clear });
 
 // 监听 ID 变化重连
@@ -253,20 +275,27 @@ onUnmounted(async () => {
 });
 </script>
 <template>
-  <div ref="terminalWrapper" class="terminal-wrapper flex-1 flex flex-col bg-[var(--td-bg-color-container)]/80 border border-[var(--td-component-border)] rounded-xl overflow-hidden shadow-sm relative w-full h-full">
-
-    <div class="h-[38px] shrink-0 bg-transparent border-b border-[var(--td-component-border)] flex items-center px-4 relative z-10">
+  <div
+    ref="terminalWrapper"
+    class="terminal-wrapper flex-1 flex flex-col bg-[var(--td-bg-color-container)]/80 border border-[var(--td-component-border)] rounded-xl overflow-hidden shadow-sm relative w-full h-full"
+  >
+    <div
+      class="h-[38px] shrink-0 bg-transparent border-b border-[var(--td-component-border)] flex items-center px-4 relative z-10"
+    >
       <div class="flex gap-1.5 mr-4">
         <span class="w-2.5 h-2.5 rounded-full bg-[#ff5f56]"></span>
         <span class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></span>
         <span class="w-2.5 h-2.5 rounded-full bg-[#27c93f]"></span>
       </div>
-      <div class="text-[var(--td-text-color-secondary)] text-xs font-mono">
-        MSLX - Frp 控制台 | {{ frpId }}
-      </div>
+      <div class="text-[var(--td-text-color-secondary)] text-xs font-mono">MSLX - Frp 控制台 | {{ frpId }}</div>
     </div>
 
-    <div ref="terminalBody" class="absolute top-[38px] bottom-[50px] left-0 right-0 py-1.5 pl-2.5 z-[1] terminal-body-container"></div>
+    <div
+      ref="terminalBody"
+      class="absolute top-[38px] bottom-[50px] left-0 right-0 py-1.5 pl-2.5 z-[1] terminal-body-container"
+      @touchstart="handleTouchStart"
+      @touchmove.prevent="handleTouchMove"
+    ></div>
   </div>
 </template>
 
@@ -280,6 +309,7 @@ onUnmounted(async () => {
   :deep(.xterm-screen),
   :deep(.xterm-scrollable-element) {
     background-color: transparent !important;
+    touch-action: none;
   }
 
   :deep(.xterm-viewport) {
