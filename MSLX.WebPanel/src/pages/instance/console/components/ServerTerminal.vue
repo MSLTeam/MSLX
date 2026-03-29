@@ -222,6 +222,29 @@ const clear = () => {
   term?.clear();
   writeWelcomeMsg();
 };
+
+// 移动端下触控滚动逻辑
+let touchStartY = 0;
+
+const handleTouchStart = (e: TouchEvent) => {
+  touchStartY = e.touches[0].clientY;
+};
+
+const handleTouchMove = (e: TouchEvent) => {
+  if (!term) return;
+
+  const touchCurrentY = e.touches[0].clientY;
+  const deltaY = touchStartY - touchCurrentY;
+
+  const lineHeight = 19.6;
+  const linesToScroll = Math.trunc(deltaY / lineHeight);
+
+  if (Math.abs(linesToScroll) >= 1) {
+    term.scrollLines(linesToScroll);
+    touchStartY = touchCurrentY + (deltaY % lineHeight);
+  }
+};
+
 defineExpose({ writeln, clear });
 
 // 监听 ServerId 变化
@@ -255,9 +278,13 @@ onUnmounted(async () => {
 </script>
 
 <template>
-  <div ref="terminalWrapper" class="terminal-wrapper flex-1 flex flex-col bg-[var(--td-bg-color-container)]/80 border border-[var(--td-component-border)] rounded-xl overflow-hidden shadow-sm relative w-full h-full">
-
-    <div class="h-[38px] shrink-0 bg-transparent border-b border-[var(--td-component-border)] flex items-center px-4 relative z-10 select-none">
+  <div
+    ref="terminalWrapper"
+    class="terminal-wrapper flex-1 flex flex-col bg-[var(--td-bg-color-container)]/80 border border-[var(--td-component-border)] rounded-xl overflow-hidden shadow-sm relative w-full h-full"
+  >
+    <div
+      class="h-[38px] shrink-0 bg-transparent border-b border-[var(--td-component-border)] flex items-center px-4 relative z-10 select-none"
+    >
       <div class="flex gap-1.5 mr-4">
         <span class="w-2.5 h-2.5 rounded-full bg-[#ff5f56]"></span>
         <span class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></span>
@@ -268,9 +295,16 @@ onUnmounted(async () => {
       </div>
     </div>
 
-    <div ref="terminalBody" class="absolute top-[38px] bottom-[50px] left-0 right-0 py-1.5 pl-2.5 z-[1] terminal-body-container"></div>
+    <div
+      ref="terminalBody"
+      class="absolute top-[38px] bottom-[50px] left-0 right-0 py-1.5 pl-2.5 z-[1] terminal-body-container"
+      @touchstart="handleTouchStart"
+      @touchmove.prevent="handleTouchMove"
+    ></div>
 
-    <div class="absolute bottom-0 left-0 right-0 h-[50px] flex items-center px-4 bg-transparent border-t border-[var(--td-component-border)] z-10 gap-3">
+    <div
+      class="absolute bottom-0 left-0 right-0 h-[50px] flex items-center px-4 bg-transparent border-t border-[var(--td-component-border)] z-10 gap-3"
+    >
       <input
         v-model="inputCommand"
         class="flex-1 h-8 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-700 rounded-md px-3 text-[var(--td-text-color-primary)] font-mono text-[13px] outline-none transition-all focus:border-[var(--color-primary)] focus:bg-white dark:focus:bg-zinc-900 placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
@@ -296,6 +330,7 @@ onUnmounted(async () => {
   :deep(.xterm-screen),
   :deep(.xterm-scrollable-element) {
     background-color: transparent !important;
+    touch-action: none;
   }
 
   :deep(.xterm-viewport) {

@@ -9,7 +9,8 @@ import {
   LoadingIcon,
   MinusCircleFilledIcon,
   RefreshIcon,
-  FilterIcon
+  FilterIcon,
+  UsergroupIcon,
 } from 'tdesign-icons-vue-next';
 import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next';
 import { useInstanceListStore } from '@/store/modules/instance';
@@ -94,7 +95,7 @@ const handleBatchAction = (action: 'start' | 'stop' | 'restart' | 'delete') => {
     body: `您确定要对已选中的 ${selectedIds.value.length} 个实例执行${actionName}操作吗？${
       isDelete ? '（注意：删除操作不可逆，批量删除默认不清理磁盘上的服务端数据文件）' : ''
     }`,
-    theme: isDelete ? 'danger' : 'primary' as any,
+    theme: isDelete ? 'danger' : ('primary' as any),
     onConfirm: async () => {
       confirmDialog.hide();
       batchLoading.value = true;
@@ -134,7 +135,6 @@ const handleBatchAction = (action: 'start' | 'stop' | 'restart' | 'delete') => {
     },
   });
 };
-
 
 const getImageUrl = (name: string, id: number) => {
   if (name.includes('http')) return name;
@@ -236,10 +236,39 @@ const handleConfirmDelete = async () => {
               已选 <span class="text-[var(--color-primary)] font-bold">{{ selectedIds.length }}</span> 项
             </span>
             <div class="flex items-center border-l border-[var(--td-component-border)] pl-1 ml-1 gap-1">
-              <t-button size="small" theme="primary" variant="text" :disabled="!selectedIds.length || batchLoading" @click="handleBatchAction('start')">启动</t-button>
-              <t-button size="small" theme="warning" variant="text" :disabled="!selectedIds.length || batchLoading" @click="handleBatchAction('restart')">重启</t-button>
-              <t-button size="small" theme="danger" variant="text" :disabled="!selectedIds.length || batchLoading" @click="handleBatchAction('stop')">停止</t-button>
-              <t-button v-if="userStore.isAdmin" size="small" theme="danger" variant="text" :disabled="!selectedIds.length || batchLoading" @click="handleBatchAction('delete')">删除</t-button>
+              <t-button
+                size="small"
+                theme="primary"
+                variant="text"
+                :disabled="!selectedIds.length || batchLoading"
+                @click="handleBatchAction('start')"
+                >启动</t-button
+              >
+              <t-button
+                size="small"
+                theme="warning"
+                variant="text"
+                :disabled="!selectedIds.length || batchLoading"
+                @click="handleBatchAction('restart')"
+                >重启</t-button
+              >
+              <t-button
+                size="small"
+                theme="danger"
+                variant="text"
+                :disabled="!selectedIds.length || batchLoading"
+                @click="handleBatchAction('stop')"
+                >停止</t-button
+              >
+              <t-button
+                v-if="userStore.isAdmin"
+                size="small"
+                theme="danger"
+                variant="text"
+                :disabled="!selectedIds.length || batchLoading"
+                @click="handleBatchAction('delete')"
+                >删除</t-button
+              >
             </div>
           </div>
           <t-button variant="outline" :disabled="batchLoading" @click="toggleBatchMode">取消批量</t-button>
@@ -259,7 +288,8 @@ const handleConfirmDelete = async () => {
             <div
               class="design-card relative h-full group flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm hover:shadow-md hover:border-[var(--color-primary)]/50 transition-all duration-300 p-5 gap-4 cursor-pointer"
               :class="{
-                '!border-[var(--color-primary)] !bg-[var(--color-primary)]/5 shadow-md': isBatchMode && selectedIds.includes(item.id)
+                '!border-[var(--color-primary)] !bg-[var(--color-primary)]/5 shadow-md':
+                  isBatchMode && selectedIds.includes(item.id),
               }"
               @click="handleCardClick(item)"
             >
@@ -293,7 +323,7 @@ const handleConfirmDelete = async () => {
                       {{ item.name }}
                     </h4>
                     <span class="text-xs font-mono text-[var(--td-text-color-secondary)] ml-2 opacity-70 shrink-0"
-                    >#{{ item.id }}</span
+                      >#{{ item.id }}</span
                     >
                   </div>
 
@@ -302,12 +332,21 @@ const handleConfirmDelete = async () => {
                       <cpu-icon class="opacity-80 shrink-0" size="14px" />
                       <span class="truncate font-medium">{{ formatCore(item.core) }}</span>
                     </div>
+
+                    <div
+                      v-if="item.extra && item.extra.onlinePlayers > 0 && item.status === 2"
+                      class="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded-md shrink-0 whitespace-nowrap"
+                    >
+                      <usergroup-icon size="14px" />
+                      <span class="font-bold">{{ item.extra.onlinePlayers }}</span>
+                    </div>
+
                     <div
                       :class="
-      getStatusConfig(item.status).theme === 'success'
-        ? 'text-emerald-600 dark:text-emerald-400'
-        : 'text-[var(--td-text-color-secondary)]'
-    "
+                        getStatusConfig(item.status).theme === 'success'
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : 'text-[var(--td-text-color-secondary)]'
+                      "
                       class="text-xs font-bold shrink-0 whitespace-nowrap"
                     >
                       {{ getStatusConfig(item.status).label }}

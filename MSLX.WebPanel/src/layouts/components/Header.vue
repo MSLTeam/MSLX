@@ -2,13 +2,13 @@
 import { computed, ref } from 'vue';
 import type { PropType } from 'vue';
 import { useRouter } from 'vue-router';
-import { useSettingStore,useUserStore } from '@/store';
+import { useSettingStore, useUserStore } from '@/store';
 import { getActive } from '@/router';
 import { prefix } from '@/config/global';
 import type { MenuRoute } from '@/types/interface';
 
 import MenuContent from './MenuContent.vue';
-import CustomLogo from "@/assets/logo.png";
+import CustomLogo from '@/assets/logo.png';
 
 const userStore = useUserStore();
 
@@ -100,21 +100,38 @@ const navToGitHub = () => {
 const navToHelper = () => {
   window.open('https://mslx.mslmc.cn');
 };
+
+// --- 头像特效状态控制 ---
+const isAvatarAnimating = ref(false);
+const handleAvatarClick = () => {
+  if (isAvatarAnimating.value) return;
+  isAvatarAnimating.value = true;
+  setTimeout(() => {
+    isAvatarAnimating.value = false;
+  }, 600);
+};
 </script>
 <template>
   <div
     :class="[
-    layoutCls,
-    'design-card w-full bg-white dark:bg-zinc-800 transition-all duration-300 relative z-50',
-    { 'enable-custom-theme': settingStore.enableCustomTheme }
-  ]"
+      layoutCls,
+      'design-card w-full bg-white dark:bg-zinc-800 transition-all duration-300 relative z-50',
+      { 'enable-custom-theme': settingStore.enableCustomTheme },
+    ]"
   >
-
     <t-head-menu :class="[menuCls, 'header-menu-clear']" :theme="theme" expand-type="popup" :value="active">
       <template #logo>
-        <span v-if="showLogo" class="flex items-center cursor-pointer mr-1 lg:mr-6 gap-2.5" @click="handleNav('/dashboard/base')">
+        <span
+          v-if="showLogo"
+          class="flex items-center cursor-pointer mr-1 lg:mr-6 gap-2.5"
+          @click="handleNav('/dashboard/base')"
+        >
           <img class="w-7 h-7 object-contain shrink-0" :src="CustomLogo" alt="logo" />
-          <span class="text-[17px] font-bold truncate max-[1012px]:hidden text-[var(--td-text-color-primary)] tracking-tight leading-none mt-0.5"> MSLX 管理中心 </span>
+          <span
+            class="text-[17px] font-bold truncate max-[1012px]:hidden text-[var(--td-text-color-primary)] tracking-tight leading-none mt-0.5"
+          >
+            MSLX 管理中心
+          </span>
         </span>
 
         <div v-if="layout == 'side'" class="flex lg:hidden ml-1 items-center">
@@ -158,7 +175,6 @@ const navToHelper = () => {
 
       <template #operations>
         <div class="flex items-center gap-1 sm:gap-2">
-
           <div class="hidden lg:flex items-center gap-1 sm:gap-2">
             <t-tooltip placement="bottom" content="代码仓库">
               <t-button theme="default" shape="square" variant="text" class="header-btn" @click="navToGitHub">
@@ -181,23 +197,41 @@ const navToHelper = () => {
           >
             <t-button class="user-profile-btn" theme="default" variant="text">
               <template #icon>
-                <img :src="userStore.userInfo.avatar" class="w-8 h-8 rounded-full object-cover ring-2 ring-zinc-100 dark:ring-zinc-700/80 shadow-sm" alt="avatar" />
+                <img
+                  :src="userStore.userInfo.avatar"
+                  class="w-8 h-8 rounded-full object-cover ring-2 ring-zinc-100 dark:ring-zinc-700/80 shadow-sm"
+                  alt="avatar"
+                />
               </template>
-              <div class="flex items-center text-sm font-bold text-zinc-700 dark:text-zinc-200 ml-1 truncate max-w-[100px]">
+              <div
+                class="flex items-center text-sm font-bold text-zinc-700 dark:text-zinc-200 ml-1 truncate max-w-[100px]"
+              >
                 {{ userStore.userInfo.name || userStore.userInfo.username || '用户' }}
               </div>
               <template #suffix><t-icon name="chevron-down" class="text-zinc-400 text-xs ml-0.5" /></template>
             </t-button>
 
             <template #content>
-              <div class="flex flex-col w-[240px] bg-white dark:bg-zinc-800 rounded-xl shadow-xl border border-zinc-100 dark:border-zinc-700/60 overflow-hidden mt-1">
+              <div
+                class="flex flex-col w-[240px] bg-white dark:bg-zinc-800 rounded-xl shadow-xl border border-zinc-100 dark:border-zinc-700/60 overflow-hidden mt-1"
+              >
+                <div
+                  class="px-4 py-4 flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-700/60 bg-zinc-50/50 dark:bg-zinc-800/50"
+                >
+                  <div class="relative shrink-0 group cursor-pointer" @click="handleAvatarClick">
+                    <div
+                      class="absolute inset-0 rounded-full z-0 pointer-events-none transition-opacity"
+                      :class="isAvatarAnimating ? 'animate-magic-burst' : 'opacity-0'"
+                      style="background: radial-gradient(circle, var(--color-primary-light) 0%, transparent 70%)"
+                    ></div>
 
-                <div class="px-4 py-4 flex items-center gap-3 border-b border-zinc-100 dark:border-zinc-700/60 bg-zinc-50/50 dark:bg-zinc-800/50">
-                  <img
-                    :src="userStore.userInfo.avatar"
-                    class="w-10 h-10 rounded-full object-cover ring-2 ring-zinc-200 dark:ring-zinc-600 shadow-sm shrink-0"
-                    alt="avatar"
-                  />
+                    <img
+                      :src="userStore.userInfo.avatar"
+                      class="w-10 h-10 rounded-full object-cover ring-2 ring-[var(--color-primary)]/30 shadow-sm transition-all duration-300 relative z-10"
+                      :class="[isAvatarAnimating ? 'animate-jelly-pop' : 'group-hover:rotate-6 group-hover:scale-105']"
+                      alt="avatar"
+                    />
+                  </div>
                   <div class="flex flex-col min-w-0 flex-1">
                     <span class="text-sm font-bold text-zinc-800 dark:text-zinc-100 truncate">
                       {{ userStore.userInfo.name || userStore.userInfo.username || '未知用户' }}
@@ -229,7 +263,6 @@ const navToHelper = () => {
                     <span class="font-medium">退出登录</span>
                   </div>
                 </div>
-
               </div>
             </template>
           </t-popup>
@@ -265,7 +298,6 @@ const navToHelper = () => {
               </t-button>
             </t-dropdown>
           </div>
-
         </div>
       </template>
     </t-head-menu>
@@ -295,7 +327,6 @@ const navToHelper = () => {
   }
 }
 
-
 // 击穿底色
 :deep(.t-menu),
 :deep(.t-head-menu),
@@ -314,7 +345,7 @@ const navToHelper = () => {
 }
 
 :deep(.t-head-menu__inner) {
-@apply px-4 sm:px-6;
+  @apply px-4 sm:px-6;
 }
 
 // 击穿伪元素
@@ -324,20 +355,19 @@ const navToHelper = () => {
   display: none !important;
 }
 
-
 .header-menu-reset {
   :deep(.t-menu__item) {
     min-width: unset;
-  @apply px-4 mx-1 rounded-xl transition-all border-none !important;
+    @apply px-4 mx-1 rounded-xl transition-all border-none !important;
   }
 }
 
 :deep(.header-btn) {
-@apply !border-none !bg-transparent hover:!bg-zinc-100 dark:hover:!bg-zinc-700/50 !text-zinc-600 dark:!text-zinc-300 transition-colors !rounded-lg;
+  @apply !border-none !bg-transparent hover:!bg-zinc-100 dark:hover:!bg-zinc-700/50 !text-zinc-600 dark:!text-zinc-300 transition-colors !rounded-lg;
 }
 
 :deep(.user-profile-btn) {
-@apply !border-none !bg-transparent hover:!bg-zinc-100 dark:hover:!bg-zinc-700/50 !px-2 !py-1 !rounded-xl transition-colors !h-auto;
+  @apply !border-none !bg-transparent hover:!bg-zinc-100 dark:hover:!bg-zinc-700/50 !px-2 !py-1 !rounded-xl transition-colors !h-auto;
 }
 
 /* 修复暗黑模式下菜单文字颜色 */
@@ -367,7 +397,7 @@ const navToHelper = () => {
   position: fixed !important;
   top: 48px !important;
   left: 0 !important;
-  width: 100vw !important;    /* 满宽 */
+  width: 100vw !important; /* 满宽 */
   max-width: 100vw !important;
   transform: none !important;
   margin-top: 0 !important;
@@ -380,7 +410,7 @@ const navToHelper = () => {
 
 /* 放大移动端菜单项 */
 :global(.mobile-full-width-popup .t-menu__item) {
-@apply !h-12 !text-[15px];
+  @apply !h-12 !text-[15px];
 }
 
 /* ================== Header 底边线强化 ================== */
@@ -402,5 +432,48 @@ const navToHelper = () => {
 
 :deep(.t-head-menu) {
   background-color: transparent !important;
+}
+
+/* q弹头像特效 */
+@keyframes jellyPop {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(0.85);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  65% {
+    transform: scale(0.95);
+  }
+  80% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes magicBurst {
+  0% {
+    box-shadow: 0 0 0 0 var(--color-primary);
+    opacity: 0.8;
+    transform: scale(1);
+  }
+  100% {
+    box-shadow: 0 0 0 35px transparent;
+    opacity: 0;
+    transform: scale(1.2);
+  }
+}
+
+.animate-jelly-pop {
+  animation: jellyPop 0.6s cubic-bezier(0.25, 1, 0.5, 1) both;
+}
+
+.animate-magic-burst {
+  animation: magicBurst 0.6s cubic-bezier(0.1, 0.8, 0.3, 1) both;
 }
 </style>

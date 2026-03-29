@@ -21,6 +21,9 @@ export interface InstanceListModel {
   core: string;
   icon: string;
   status: number;
+  extra: {
+    onlinePlayers: number;
+  }
 }
 
 export interface InstanceInfoModel {

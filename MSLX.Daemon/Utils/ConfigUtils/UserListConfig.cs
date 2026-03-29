@@ -228,6 +228,18 @@ public class UserListConfig : IDisposable
 
     public UserInfo? GetUserById(string id)
     {
+        if (id == "system-admin")
+        {
+            return new UserInfo
+            {
+                Id = "system-admin",
+                Username = "MSLX Manager",
+                Name = "MSLX Manager",
+                Role = "admin",
+                Resources = new List<string>() 
+            };
+        }
+
         _userListLock.EnterReadLock();
         try
         {

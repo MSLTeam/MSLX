@@ -7,6 +7,7 @@ using SukiUI.Dialogs;
 using SukiUI.Toasts;
 using System;
 using System.Diagnostics;
+using System.Formats.Tar;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -114,14 +115,14 @@ namespace MSLX.Desktop.Utils
         /// <summary>
         /// 解压并启动Daemon程序
         /// </summary>
-        /// <param name="zipFilePath">下载的压缩包路径</param>
+        /// <param name="archiveFilePath">下载的压缩包路径（支持.zip和.tar.gz格式）</param>
         /// <returns>是否成功启动</returns>
-        public static async Task<(bool Success, string Message)> UnzipAndStartDaemon(string zipFilePath)
+        public static async Task<(bool Success, string Message)> UnzipAndStartDaemon(string archiveFilePath)
         {
             try
             {
                 // 验证文件是否存在
-                if (!File.Exists(zipFilePath))
+                if (!File.Exists(archiveFilePath))
                 {
                     return (false, "压缩包文件不存在！");
                 }
@@ -135,8 +136,20 @@ namespace MSLX.Desktop.Utils
                     Directory.CreateDirectory(daemonPath);
                 }
 
-                // 解压文件
-                await ZipFile.ExtractToDirectoryAsync(zipFilePath, daemonPath, overwriteFiles: true);
+                // 根据文件扩展名选择解压方式
+                string fileExtension = Path.GetExtension(archiveFilePath).ToLowerInvariant();
+                string fileName = Path.GetFileName(archiveFilePath).ToLowerInvariant();
+
+                if (fileExtension == ".zip")
+                {
+                    // 解压zip格式
+                    await ZipFile.ExtractToDirectoryAsync(archiveFilePath, daemonPath, overwriteFiles: true);
+                }                
+                else if (fileName.EndsWith(".tar.gz") || fileName.EndsWith(".tgz"))
+                {
+                    // 解压tar.gz格式
+                    await ExtractTarGzAsync(archiveFilePath, daemonPath);
+                }
 
                 // 查找并启动Daemon可执行文件
                 var (started, message) = await StartDaemon(daemonPath);
@@ -144,7 +157,7 @@ namespace MSLX.Desktop.Utils
                 // 清理下载的压缩包
                 try
                 {
-                    File.Delete(zipFilePath);
+                    File.Delete(archiveFilePath);
                 }
                 catch { }
 
@@ -154,6 +167,18 @@ namespace MSLX.Desktop.Utils
             {
                 return (false, $"解压或启动Daemon失败: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// 解压tar.gz格式文件
+        /// </summary>
+        /// <param name="tarGzPath">tar.gz文件路径</param>
+        /// <param name="destinationPath">解压目标目录</param>
+        private static async Task ExtractTarGzAsync(string tarGzPath, string destinationPath)
+        {
+            await using FileStream fileStream = File.OpenRead(tarGzPath);
+            await using GZipStream gzipStream = new GZipStream(fileStream, CompressionMode.Decompress);
+            await TarFile.ExtractToDirectoryAsync(gzipStream, destinationPath, overwriteFiles: true);
         }
 
         /// <summary>
