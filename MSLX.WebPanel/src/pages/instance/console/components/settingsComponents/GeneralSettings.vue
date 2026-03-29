@@ -471,7 +471,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col mx-auto w-full pb-8 overflow-hidden">
+  <div class="flex flex-col mx-auto w-full relative">
     <t-loading :loading="loading" show-overlay>
       <t-form
         ref="formRef"
@@ -1006,19 +1006,24 @@ onUnmounted(() => {
 
         <div
           v-if="userStore.isAdmin"
-          class="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-zinc-200 dark:border-zinc-800"
+          class="sticky bottom-1 z-50 ml-auto w-max flex items-center gap-2 p-1.5 mt-2 mb-2 border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xl shadow-black/10 dark:shadow-black/40 rounded-full transition-all"
         >
+          <t-button
+            theme="default"
+            variant="text"
+            class="!rounded-full !px-5 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+            @click="initData"
+          >
+            重置更改
+          </t-button>
+
           <t-button
             theme="primary"
             type="submit"
-            size="large"
-            class="!rounded-lg shadow-sm w-full sm:w-auto"
+            class="!rounded-full !px-6 shadow-md shadow-[var(--color-primary)]/30"
             :loading="submitting"
           >
             保存设置
-          </t-button>
-          <t-button theme="default" variant="base" size="large" class="!rounded-lg w-full sm:w-auto" @click="initData">
-            重置更改
           </t-button>
         </div>
       </t-form>
