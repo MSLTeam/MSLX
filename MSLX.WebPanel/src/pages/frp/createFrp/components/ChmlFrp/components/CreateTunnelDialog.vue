@@ -1,27 +1,18 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { request } from '@/utils/request';
 import { generateRandomString } from '@/utils/tools';
-
-interface NodeInfo {
-  id: number;
-  name: string;
-  area: string;
-  nodegroup: string;
-  notes: string;
-}
+import { createChmlFrpTunnel, fetchChmlFrpNodes, type ChmlFrpNodeInfo } from '../auth';
 
 const props = defineProps<{
   visible: boolean;
-  token: string;
 }>();
 
 const emit = defineEmits(['update:visible', 'success']);
 
 const loading = ref(false);
 const submitting = ref(false);
-const nodes = ref<NodeInfo[]>([]);
+const nodes = ref<ChmlFrpNodeInfo[]>([]);
 
 const form = reactive({
   nodeName: '', // ChmlFrp使用节点名称绑定
@@ -34,9 +25,8 @@ const form = reactive({
 
 const selectedNode = computed(() => nodes.value.find((n) => n.name === form.nodeName) || null);
 
-// 按照 nodegroup 对节点进行分组
 const groupedNodes = computed(() => {
-  const groupsMap = new Map<string, { label: string; value: string; children: NodeInfo[] }>();
+  const groupsMap = new Map<string, { label: string; value: string; children: ChmlFrpNodeInfo[] }>();
 
   nodes.value.forEach((node) => {
     let groupLabel = node.nodegroup;
@@ -60,16 +50,7 @@ const generateRandomData = () => {
 const fetchNodes = async () => {
   loading.value = true;
   try {
-    const res = await request.get(
-      {
-        url: '/node',
-        baseURL: 'https://cf-v2.uapis.cn',
-        headers: { Authorization: `Bearer ${props.token}` },
-      },
-      { withToken: false },
-    );
-
-    const resData = res?.code === 200 ? res.data : res;
+    const resData = await fetchChmlFrpNodes();
 
     if (Array.isArray(resData)) {
       nodes.value = resData;
@@ -112,26 +93,17 @@ const handleConfirm = async () => {
 
   submitting.value = true;
   try {
-    const res: any = await request.post(
-      {
-        url: '/create_tunnel',
-        baseURL: 'https://cf-v2.uapis.cn',
-        headers: { Authorization: `Bearer ${props.token}` },
-        data: {
-          token: props.token,
-          tunnelname: form.tunnelname,
-          node: form.nodeName,
-          localip: form.localip,
-          porttype: form.porttype,
-          localport: parseInt(form.localport),
-          encryption: false,
-          compression: false,
-          extraparams: '',
-          remoteport: parseInt(form.remoteport) || 0,
-        },
-      },
-      { withToken: false },
-    );
+    const res: any = await createChmlFrpTunnel({
+      tunnelname: form.tunnelname,
+      node: form.nodeName,
+      localip: form.localip,
+      porttype: form.porttype,
+      localport: parseInt(form.localport),
+      encryption: false,
+      compression: false,
+      extraparams: '',
+      remoteport: parseInt(form.remoteport) || 0,
+    });
 
     if (res && res.code && res.code !== 200) {
       throw new Error(res.msg || '指定的端口不合法或发生未知错误');
@@ -149,7 +121,7 @@ const handleConfirm = async () => {
 };
 
 onMounted(() => {
-  if (props.token) fetchNodes();
+  fetchNodes();
 });
 </script>
 
@@ -171,7 +143,12 @@ onMounted(() => {
         class="pt-2.5 overflow-x-hidden [&_.t-form__item]:!mb-[22px]"
       >
         <t-form-item label="选择节点" name="nodeName">
-          <t-select v-model="form.nodeName" placeholder="请选择节点" @change="generateRandomData" :popup-props="{ overlayClassName: 'max-h-[300px]' }">
+          <t-select
+            v-model="form.nodeName"
+            placeholder="请选择节点"
+            :popup-props="{ overlayClassName: 'max-h-[300px]' }"
+            @change="generateRandomData"
+          >
             <t-option-group v-for="group in groupedNodes" :key="group.value" :label="group.label">
               <t-option v-for="node in group.children" :key="node.id" :value="node.name" :label="node.name">
                 <div class="flex justify-between items-center w-full">
