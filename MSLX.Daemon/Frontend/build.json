@@ -1,6 +1,6 @@
 {
   "version": "1.3.4",
-  "buildTime": "2026-03-29 16:06:49",
+  "buildTime": "2026-04-01 03:47:00",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -74,10 +74,34 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "956ff76a6e454d8f110ca758e758486a13f25585",
-  "commitMsg": "perf(webpanel): 更多Q弹头像特效！",
-  "commitAuthor": "luluxiaoyu",
+  "commitId": "d1fabaf6232f0d6984b6ffba22105ea8bc06b913",
+  "commitMsg": "Merge pull request #97 from Hongbro886/fix-95",
+  "commitAuthor": "小宇",
   "history": [
+    {
+      "commitId": "d1fabaf6232f0d6984b6ffba22105ea8bc06b913",
+      "commitTime": "2026-03-29 17:57:53 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #97 from Hongbro886/fix-95"
+    },
+    {
+      "commitId": "b9a75129f00c5413514c8a090018b02f5c75a84e",
+      "commitTime": "2026-03-29 17:36:14 +0800",
+      "commitAuthor": "whoa",
+      "commitMsg": "fix(webpanel):修复更新程序无法正确检测所有实例是否都被退出的问题"
+    },
+    {
+      "commitId": "bf48af318ef07e971049c83adda3be83379ac05f",
+      "commitTime": "2026-03-29 16:10:20 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #94 from MSLTeam/dev"
+    },
+    {
+      "commitId": "129b1e3ec2f119cd4ed1b155af94dfc463c5cc93",
+      "commitTime": "2026-03-29 16:07:33 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.3.4"
+    },
     {
       "commitId": "956ff76a6e454d8f110ca758e758486a13f25585",
       "commitTime": "2026-03-29 15:57:04 +0800",
@@ -353,30 +377,6 @@
       "commitTime": "2026-03-15 14:25:33 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "fix(webpanel): 修复更新实例进度的弹窗未正常显示的问题"
-    },
-    {
-      "commitId": "caf8c46f2d95f92992125ef7e7e1dd7a7e102275",
-      "commitTime": "2026-03-14 00:08:02 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #81 from MSLTeam/dev"
-    },
-    {
-      "commitId": "cbb0dd811dd933f199cd61ddac2969a4237f59a2",
-      "commitTime": "2026-03-14 00:06:56 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.3.1-release"
-    },
-    {
-      "commitId": "503d96cc1789605adfd95d987944885168877bbf",
-      "commitTime": "2026-03-13 23:59:42 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 调高二级文本透明度"
-    },
-    {
-      "commitId": "87635410801aafa17b50a60e03858bbc9137abd8",
-      "commitTime": "2026-03-13 23:57:43 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 优化Frp服务商登录窗口的毛玻璃效果"
     }
   ]
 }
