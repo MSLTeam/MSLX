@@ -1,13 +1,7 @@
 <script setup lang="ts">
-import {
-  UserCircleIcon,
-  ServerIcon,
-  CloudIcon,
-  AddIcon,
-  PlayCircleIcon,
-  RefreshIcon,
-} from 'tdesign-icons-vue-next';
+import { UserCircleIcon, ServerIcon, CloudIcon, AddIcon, PlayCircleIcon, RefreshIcon } from 'tdesign-icons-vue-next';
 import { changeUrl } from '@/router';
+import { openLoginPopup } from '@/utils/popup';
 import { onBeforeUnmount, onMounted, ref, computed } from 'vue';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { convertIniToToml, createFrpTunnel } from '@/pages/frp/createFrp/utils/create';
@@ -39,6 +33,7 @@ const tunnels = ref<ChmlFrpTunnel[]>([]);
 const selectedTunnelId = ref<number | null>(null);
 
 const authSession = ref<DeviceAuthorizationResponse | null>(null);
+const popupWindow = ref<Window | null>(null);
 const authMessage = ref('将在新标签页中打开授权页面');
 const authError = ref('');
 const isAuthorizing = ref(false);
@@ -67,6 +62,9 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   stopPolling();
+  if (popupWindow.value && !popupWindow.value.closed) {
+    popupWindow.value.close();
+  }
 });
 
 function stopPolling() {
@@ -131,6 +129,7 @@ async function pollToken(deviceCode: string, intervalSeconds: number) {
     const tokenResponse = await exchangeDeviceCodeForToken(deviceCode);
 
     if (tokenResponse.access_token) {
+      if (popupWindow.value) popupWindow.value.close();
       await finishLogin(tokenResponse.access_token, {
         refresh_token: tokenResponse.refresh_token,
         expires_in: tokenResponse.expires_in,
@@ -183,8 +182,8 @@ async function openAuthorizationPage(session = authSession.value) {
     return;
   }
 
-  changeUrl(target);
-  authMessage.value = '授权页已打开，完成授权后此页面会自动继续';
+  popupWindow.value = openLoginPopup(target, 'ChmlFrp 授权登录', 600, 600);
+  authMessage.value = '授权弹窗已打开，完成授权后此页面会自动继续';
 }
 
 async function startDeviceAuthorization() {
@@ -349,8 +348,12 @@ async function handleDeleteTunnel() {
           </div>
 
           <div v-else class="w-full">
-            <div class="rounded-2xl border border-[var(--td-component-border)] bg-[var(--td-bg-color-secondarycontainer)]/70 p-6">
-              <div class="text-xs font-bold uppercase tracking-widest text-[var(--td-text-color-secondary)]">设备码</div>
+            <div
+              class="rounded-2xl border border-[var(--td-component-border)] bg-[var(--td-bg-color-secondarycontainer)]/70 p-6"
+            >
+              <div class="text-xs font-bold uppercase tracking-widest text-[var(--td-text-color-secondary)]">
+                设备码
+              </div>
               <div class="mt-3 text-3xl font-black tracking-[0.3em] text-[var(--td-text-color-primary)]">
                 {{ authSession.user_code || '-' }}
               </div>
@@ -389,7 +392,11 @@ async function handleDeleteTunnel() {
           </div>
 
           <div class="mt-6 pt-4 border-t border-dashed border-zinc-200 dark:border-zinc-700 w-full">
-            <t-button variant="text" size="small" class="text-zinc-500 hover:text-[var(--color-primary)]" @click="changeUrl('https://panel.chmlfrp.net')"
+            <t-button
+              variant="text"
+              size="small"
+              class="text-zinc-500 hover:text-[var(--color-primary)]"
+              @click="changeUrl('https://panel.chmlfrp.net')"
               >ChmlFrp 控制台</t-button
             >
           </div>
@@ -720,11 +727,7 @@ async function handleDeleteTunnel() {
       </div>
     </div>
 
-    <create-tunnel-dialog
-      v-if="showCreateDialog"
-      v-model:visible="showCreateDialog"
-      @success="handleCreateSuccess"
-    />
+    <create-tunnel-dialog v-if="showCreateDialog" v-model:visible="showCreateDialog" @success="handleCreateSuccess" />
   </div>
 </template>
 

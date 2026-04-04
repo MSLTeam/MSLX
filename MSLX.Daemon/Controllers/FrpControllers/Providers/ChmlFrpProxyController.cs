@@ -6,7 +6,7 @@ using MSLX.Daemon.Utils;
 using Newtonsoft.Json.Linq;
 using System.Text.Json;
 
-namespace MSLX.Daemon.Controllers.FrpControllers;
+namespace MSLX.Daemon.Controllers.FrpControllers.Providers;
 
 [ApiController]
 [Route("api/frp/chmlfrp")]
