@@ -1,173 +1,234 @@
 <script setup lang="ts">
-import {
-  UserCircleIcon,
-  ServerIcon,
-  CloudIcon,
-  AddIcon,
-  PlayCircleIcon,
-  RefreshIcon,
-  KeyIcon,
-  LockOnIcon,
-} from 'tdesign-icons-vue-next';
+import { UserCircleIcon, ServerIcon, CloudIcon, AddIcon, PlayCircleIcon, RefreshIcon } from 'tdesign-icons-vue-next';
 import { changeUrl } from '@/router';
-import { onMounted, ref, computed } from 'vue';
-import { request } from '@/utils/request';
+import { openLoginPopup } from '@/utils/popup';
+import { onBeforeUnmount, onMounted, ref, computed } from 'vue';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { convertIniToToml, createFrpTunnel } from '@/pages/frp/createFrp/utils/create';
 import CreateTunnelDialog from './components/CreateTunnelDialog.vue';
+import {
+  clearStoredChmlFrpUser,
+  createDeviceAuthorization,
+  deleteChmlFrpTunnel,
+  exchangeDeviceCodeForToken,
+  fetchChmlFrpTunnelConfig,
+  fetchChmlFrpTunnels,
+  fetchChmlFrpUserInfo,
+  getStoredChmlFrpUser,
+  loginWithAccessToken,
+  saveStoredChmlFrpUser,
+  type ChmlFrpTunnel,
+  type ChmlFrpUserInfo,
+  type DeviceAuthorizationResponse,
+  type DeviceTokenResponse,
+  type StoredChmlFrpUser,
+} from './auth';
 
 const showCreateDialog = ref(false);
-const chmlToken = ref('');
+const chmlUser = ref<StoredChmlFrpUser | null>(null);
 
-// 数据状态
 const loading = ref(false);
-const userInfo = ref<any>(null);
-const tunnels = ref<any[]>([]);
+const userInfo = ref<ChmlFrpUserInfo | null>(null);
+const tunnels = ref<ChmlFrpTunnel[]>([]);
 const selectedTunnelId = ref<number | null>(null);
 
-// 登录相关状态
-const loginType = ref('password');
-const loginForm = ref({
-  username: '',
-  password: '',
-  token: '',
-});
-const isLoggingIn = ref(false);
+const authSession = ref<DeviceAuthorizationResponse | null>(null);
+const popupWindow = ref<Window | null>(null);
+const authMessage = ref('将在新标签页中打开授权页面');
+const authError = ref('');
+const isAuthorizing = ref(false);
+const isPolling = ref(false);
+let pollingTimer: number | null = null;
 
 const handleCreateSuccess = () => {
-  initDashboardData();
+  void initDashboardData();
 };
 
 const currentTunnel = computed(() => {
   return tunnels.value.find((t) => t.id === selectedTunnelId.value) || null;
 });
 
+const hasChmlAuth = computed(() => {
+  return Boolean(chmlUser.value?.accessToken || chmlUser.value?.usertoken);
+});
+
 onMounted(() => {
-  const token = localStorage.getItem('chmlfrp-user-token');
-  if (token) {
-    chmlToken.value = token;
-    initDashboardData();
+  const storedUser = getStoredChmlFrpUser();
+  if (storedUser) {
+    chmlUser.value = storedUser;
+    void initDashboardData(false);
   }
 });
 
-// 账号密码登录
-async function handlePasswordLogin() {
-  if (!loginForm.value.username || !loginForm.value.password) {
-    MessagePlugin.warning('请填写完整的账号和密码');
-    return;
+onBeforeUnmount(() => {
+  stopPolling();
+  if (popupWindow.value && !popupWindow.value.closed) {
+    popupWindow.value.close();
   }
-  isLoggingIn.value = true;
-  try {
-    const res = await request.post(
-      {
-        url: '/login',
-        baseURL: 'https://cf-v2.uapis.cn',
-        data: {
-          username: loginForm.value.username,
-          password: loginForm.value.password,
-        },
-      },
-      { withToken: false },
-    );
+});
 
-    const resData = res?.code === 200 ? res.data : res;
+function stopPolling() {
+  if (pollingTimer !== null) {
+    window.clearTimeout(pollingTimer);
+    pollingTimer = null;
+  }
+  isPolling.value = false;
+}
 
-    if (resData && resData.usertoken) {
-      MessagePlugin.success('登录成功');
-      await handleTokenLogin(resData.usertoken);
-    } else {
-      MessagePlugin.error('登录失败：账号或密码错误');
-    }
-  } catch (e: any) {
-    const errorMsg = e.response?.data?.msg || e.msg || e.message || '未知错误';
-    MessagePlugin.error('登录异常: ' + errorMsg);
-  } finally {
-    isLoggingIn.value = false;
+function resetAuthorizationState() {
+  stopPolling();
+  authSession.value = null;
+  authMessage.value = '将在新标签页中打开授权页面';
+  authError.value = '';
+  isAuthorizing.value = false;
+}
+
+function syncStoredUserInfo(nextUserInfo: ChmlFrpUserInfo) {
+  const currentUser = getStoredChmlFrpUser() || chmlUser.value;
+  const mergedUser: StoredChmlFrpUser = {
+    username: nextUserInfo.username,
+    usergroup: nextUserInfo.usergroup,
+    userimg: nextUserInfo.userimg,
+    usertoken: nextUserInfo.usertoken,
+    accessToken: currentUser?.accessToken,
+    refreshToken: currentUser?.refreshToken,
+    accessTokenExpiresAt: currentUser?.accessTokenExpiresAt,
+    tokenType: currentUser?.tokenType,
+    tunnelCount: nextUserInfo.tunnelCount,
+    tunnel: nextUserInfo.tunnel,
+  };
+
+  chmlUser.value = mergedUser;
+  saveStoredChmlFrpUser(mergedUser);
+}
+
+async function finishLogin(
+  accessToken: string,
+  tokenResponse?: Pick<DeviceTokenResponse, 'refresh_token' | 'expires_in' | 'token_type'>,
+) {
+  const authedUser = await loginWithAccessToken(accessToken, tokenResponse);
+  saveStoredChmlFrpUser(authedUser);
+  chmlUser.value = authedUser;
+  resetAuthorizationState();
+  const loaded = await initDashboardData();
+  if (loaded) {
+    MessagePlugin.success('ChmlFrp 授权登录成功');
   }
 }
 
-// Token (密钥) 登录验证
-async function handleTokenLogin(tokenToVerify?: string) {
-  const token = tokenToVerify || loginForm.value.token;
-  if (!token) {
-    MessagePlugin.warning('请输入密钥 Token');
-    return;
-  }
-  isLoggingIn.value = true;
-  try {
-    const res = await request.get(
-      {
-        url: '/userinfo',
-        baseURL: 'https://cf-v2.uapis.cn',
-        headers: { Authorization: `Bearer ${token}` },
-      },
-      { withToken: false },
-    );
-
-    const resData = res?.code === 200 ? res.data : res;
-
-    if (resData && resData.username) {
-      MessagePlugin.success('身份验证成功');
-      chmlToken.value = token;
-      localStorage.setItem('chmlfrp-user-token', token);
-      userInfo.value = resData;
-      await initDashboardData();
-    } else {
-      MessagePlugin.error('登录失败：未获取到有效的用户信息');
-    }
-  } catch (e: any) {
-    const errorMsg = e.response?.data?.msg || e.msg || e.message || '未知错误';
-    MessagePlugin.error('验证失败: ' + errorMsg);
-  } finally {
-    isLoggingIn.value = false;
-  }
+function scheduleTokenPolling(deviceCode: string, intervalSeconds: number) {
+  stopPolling();
+  pollingTimer = window.setTimeout(() => {
+    void pollToken(deviceCode, intervalSeconds);
+  }, intervalSeconds * 1000);
 }
 
-// 加载仪表盘数据
-async function initDashboardData() {
-  loading.value = true;
+async function pollToken(deviceCode: string, intervalSeconds: number) {
+  isPolling.value = true;
   try {
-    // 获取用户信息
-    const userRes = await request.get(
-      {
-        url: '/userinfo',
-        baseURL: 'https://cf-v2.uapis.cn',
-        headers: { Authorization: `Bearer ${chmlToken.value}` },
-      },
-      { withToken: false },
-    );
+    const tokenResponse = await exchangeDeviceCodeForToken(deviceCode);
 
-    const userData = userRes?.code === 200 ? userRes.data : userRes;
-
-    if (userData && userData.username) {
-      userInfo.value = userData;
-    } else {
-      handleLogout();
+    if (tokenResponse.access_token) {
+      if (popupWindow.value) popupWindow.value.close();
+      await finishLogin(tokenResponse.access_token, {
+        refresh_token: tokenResponse.refresh_token,
+        expires_in: tokenResponse.expires_in,
+        token_type: tokenResponse.token_type,
+      });
       return;
     }
 
-    // 获取隧道列表
-    const tunnelsRes = await request.get(
-      {
-        url: '/tunnel',
-        baseURL: 'https://cf-v2.uapis.cn',
-        headers: { Authorization: `Bearer ${chmlToken.value}` },
-      },
-      { withToken: false },
-    );
-
-    const tunnelsData = tunnelsRes?.code === 200 ? tunnelsRes.data : tunnelsRes;
-
-    if (Array.isArray(tunnelsData)) {
-      tunnels.value = tunnelsData || [];
-      if (tunnels.value.length > 0 && !selectedTunnelId.value) {
-        selectedTunnelId.value = tunnels.value[0].id;
-      }
+    if (tokenResponse.error === 'authorization_pending') {
+      authMessage.value = '请在浏览器中确认授权';
+      scheduleTokenPolling(deviceCode, intervalSeconds);
+      return;
     }
+
+    if (tokenResponse.error === 'slow_down') {
+      authMessage.value = '请求过于频繁，正在自动重试...';
+      scheduleTokenPolling(deviceCode, intervalSeconds + 5);
+      return;
+    }
+
+    if (tokenResponse.error === 'expired_token') {
+      stopPolling();
+      authError.value = '这次设备授权已过期，请重新开始授权。';
+      return;
+    }
+
+    if (tokenResponse.error === 'access_denied') {
+      stopPolling();
+      authError.value = '你已取消本次授权，请重新开始。';
+      return;
+    }
+
+    throw new Error(tokenResponse.error_description || tokenResponse.error || '获取访问令牌失败');
   } catch (e: any) {
-    const errorMsg = e.response?.data?.msg || e.msg || e.message || 'Token失效或网络异常';
-    MessagePlugin.error(`数据加载失败，已自动退出 ChmlFrp: ${errorMsg}`);
-    handleLogout();
+    stopPolling();
+    authError.value = e?.message || '授权失败，请稍后重试';
+  }
+}
+
+async function openAuthorizationPage(session = authSession.value) {
+  if (!session) {
+    authError.value = '请先开始授权流程';
+    return;
+  }
+
+  const target = session.verification_uri_complete || session.verification_uri;
+
+  if (!target) {
+    authError.value = '账户中心未返回可用的授权地址';
+    return;
+  }
+
+  popupWindow.value = openLoginPopup(target, 'ChmlFrp 授权登录', 600, 600);
+  authMessage.value = '授权弹窗已打开，完成授权后此页面会自动继续';
+}
+
+async function startDeviceAuthorization() {
+  resetAuthorizationState();
+  isAuthorizing.value = true;
+  authMessage.value = '正在获取授权信息...';
+
+  try {
+    const session = await createDeviceAuthorization();
+    authSession.value = session;
+    await openAuthorizationPage(session);
+    const intervalSeconds = Math.max(Number(session.interval || 5), 1);
+    void pollToken(session.device_code, intervalSeconds);
+  } catch (e: any) {
+    stopPolling();
+    authSession.value = null;
+    authError.value = e?.message || '启动授权失败';
+  } finally {
+    isAuthorizing.value = false;
+  }
+}
+
+async function initDashboardData(showFailureMessage = true) {
+  loading.value = true;
+  try {
+    const [nextUserInfo, nextTunnels] = await Promise.all([fetchChmlFrpUserInfo(), fetchChmlFrpTunnels()]);
+
+    userInfo.value = nextUserInfo;
+    tunnels.value = nextTunnels || [];
+    syncStoredUserInfo(nextUserInfo);
+
+    if (tunnels.value.length === 0) {
+      selectedTunnelId.value = null;
+    } else if (!tunnels.value.some((item) => item.id === selectedTunnelId.value)) {
+      selectedTunnelId.value = tunnels.value[0].id;
+    }
+
+    return true;
+  } catch (e: any) {
+    const errorMsg = e?.response?.data?.msg || e?.msg || e?.message || '授权已失效或网络异常';
+    if (showFailureMessage) {
+      MessagePlugin.error(`ChmlFrp 数据加载失败：${errorMsg}`);
+    }
+    handleLogout(false);
+    return false;
   } finally {
     loading.value = false;
   }
@@ -181,30 +242,16 @@ async function handleUseTunnel() {
   isAddingTunnel.value = true;
 
   try {
-    const res = await request.get(
-      {
-        url: `/tunnel_config?node=${encodeURIComponent(currentTunnel.value.node)}&tunnel_names=${encodeURIComponent(currentTunnel.value.name)}`,
-        baseURL: 'https://cf-v2.uapis.cn',
-        headers: { Authorization: `Bearer ${chmlToken.value}` },
-      },
-      { withToken: false },
+    const configText = await fetchChmlFrpTunnelConfig(currentTunnel.value.node, currentTunnel.value.name);
+    await createFrpTunnel(
+      `${currentTunnel.value.name} | ${currentTunnel.value.node}`,
+      convertIniToToml(configText),
+      'ChmlFrp',
+      'toml',
     );
-
-    const configText = res?.code === 200 ? res.data : res;
-
-    if (configText && typeof configText === 'string') {
-      await createFrpTunnel(
-        `${currentTunnel.value.name} | ${currentTunnel.value.node}`,
-        convertIniToToml(configText),
-        'ChmlFrp',
-        'toml',
-      );
-      MessagePlugin.success('配置文件已成功加载');
-    } else {
-      MessagePlugin.error('获取配置失败：内容为空或格式异常');
-    }
+    MessagePlugin.success('配置文件已成功加载');
   } catch (e: any) {
-    const errorMsg = e.response?.data?.msg || e.msg || e.message || '未知错误';
+    const errorMsg = e?.response?.data?.msg || e?.msg || e?.message || '未知错误';
     MessagePlugin.error(`获取配置异常: ${errorMsg}`);
   } finally {
     isAddingTunnel.value = false;
@@ -215,18 +262,27 @@ const handleAddTunnel = () => {
   showCreateDialog.value = true;
 };
 
-function handleLogout() {
-  chmlToken.value = '';
+function handleLogout(showMessage = true) {
+  resetAuthorizationState();
+  chmlUser.value = null;
   userInfo.value = null;
   tunnels.value = [];
   selectedTunnelId.value = null;
-  localStorage.removeItem('chmlfrp-user-token');
-  MessagePlugin.success('已退出登录');
+  clearStoredChmlFrpUser();
+  if (showMessage) {
+    MessagePlugin.success('已断开 ChmlFrp 授权');
+  }
+}
+
+function handleLogoutConfirm() {
+  handleLogout();
 }
 
 async function handleRefresh() {
-  await initDashboardData();
-  MessagePlugin.success('数据已更新');
+  const loaded = await initDashboardData();
+  if (loaded) {
+    MessagePlugin.success('数据已更新');
+  }
 }
 
 const isDeleting = ref(false);
@@ -235,14 +291,7 @@ async function handleDeleteTunnel() {
   isDeleting.value = true;
 
   try {
-    const res: any = await request.get(
-      {
-        url: `/delete_tunnel?tunnelid=${currentTunnel.value.id}`,
-        baseURL: 'https://cf-v2.uapis.cn',
-        headers: { Authorization: `Bearer ${chmlToken.value}` },
-      },
-      { withToken: false },
-    );
+    const res: any = await deleteChmlFrpTunnel(currentTunnel.value.id);
 
     if (res && res.code && res.code !== 200) {
       throw new Error(res.msg || '删除失败');
@@ -262,7 +311,7 @@ async function handleDeleteTunnel() {
 
 <template>
   <div class="mx-auto pb-6 text-[var(--td-text-color-primary)]">
-    <div v-if="chmlToken === ''" class="flex items-center justify-center min-h-[70vh] list-item-anim">
+    <div v-if="!hasChmlAuth" class="flex items-center justify-center min-h-[70vh] list-item-anim">
       <div
         class="design-card relative w-full max-w-md bg-[var(--td-bg-color-container)]/80 rounded-3xl border border-[var(--td-component-border)] shadow-xl p-10 text-center overflow-hidden"
       >
@@ -281,78 +330,66 @@ async function handleDeleteTunnel() {
           </div>
           <h2 class="text-2xl font-extrabold text-[var(--td-text-color-primary)] !mb-2 tracking-tight">登录 ChmlFrp</h2>
           <p class="text-sm text-[var(--td-text-color-secondary)] !mb-6 font-medium">
-            选择您的登录方式以接入内网穿透服务
+            使用浏览器完成官方授权，MSLX 会自动同步您的 ChmlFrp 账户
           </p>
 
-          <t-radio-group v-model="loginType" variant="default-filled" class="!mb-6">
-            <t-radio-button value="password">账号密码登录</t-radio-button>
-            <t-radio-button value="token">密钥直接登录</t-radio-button>
-          </t-radio-group>
+          <div v-if="!authSession" class="w-full">
+            <t-button
+              block
+              theme="primary"
+              size="large"
+              :loading="isAuthorizing"
+              class="!rounded-xl !h-12 !font-bold shadow-md shadow-[var(--color-primary-light)]/30 hover:shadow-[var(--color-primary-light)]/50"
+              @click="startDeviceAuthorization"
+            >
+              <template #icon><user-circle-icon /></template>
+              授权登录
+            </t-button>
+          </div>
 
-          <t-form
-            v-if="loginType === 'password'"
-            :data="loginForm"
-            label-width="0"
-            @submit="handlePasswordLogin"
-            class="w-full text-left"
+          <div v-else class="w-full">
+            <div
+              class="rounded-2xl border border-[var(--td-component-border)] bg-[var(--td-bg-color-secondarycontainer)]/70 p-6"
+            >
+              <div class="text-xs font-bold uppercase tracking-widest text-[var(--td-text-color-secondary)]">
+                设备码
+              </div>
+              <div class="mt-3 text-3xl font-black tracking-[0.3em] text-[var(--td-text-color-primary)]">
+                {{ authSession.user_code || '-' }}
+              </div>
+            </div>
+
+            <div class="mt-4 flex flex-col gap-3">
+              <t-button
+                block
+                theme="primary"
+                size="large"
+                class="!rounded-xl !h-12 !font-bold shadow-md shadow-[var(--color-primary-light)]/30 hover:shadow-[var(--color-primary-light)]/50"
+                @click="openAuthorizationPage()"
+              >
+                重新打开授权页
+              </t-button>
+            </div>
+
+            <div class="mt-4 flex min-h-[22px] items-center justify-center">
+              <t-button
+                variant="text"
+                size="small"
+                :loading="isAuthorizing"
+                class="!h-auto !px-0 text-[var(--color-primary)]"
+                @click="startDeviceAuthorization"
+              >
+                重新开始授权
+              </t-button>
+            </div>
+          </div>
+
+          <div
+            v-if="authError"
+            class="mt-4 w-full rounded-2xl border border-red-200/80 bg-red-50/80 px-4 py-3 text-sm text-red-500 dark:border-red-900/60 dark:bg-red-950/20"
           >
-            <t-form-item name="username" class="!mb-4">
-              <t-input
-                v-model="loginForm.username"
-                size="large"
-                placeholder="邮箱账号/用户名"
-                clearable
-                class="!rounded-xl"
-              >
-                <template #prefix-icon><user-circle-icon class="opacity-60" /></template>
-              </t-input>
-            </t-form-item>
-            <t-form-item name="password" class="!mb-6">
-              <t-input
-                v-model="loginForm.password"
-                size="large"
-                type="password"
-                placeholder="请输入密码"
-                clearable
-                class="!rounded-xl"
-              >
-                <template #prefix-icon><lock-on-icon class="opacity-60" /></template>
-              </t-input>
-            </t-form-item>
-            <t-button
-              block
-              theme="primary"
-              type="submit"
-              size="large"
-              :loading="isLoggingIn"
-              class="!rounded-xl !h-12 !font-bold shadow-md shadow-[var(--color-primary-light)]/30 hover:shadow-[var(--color-primary-light)]/50"
-              >登录账号</t-button
-            >
-          </t-form>
-
-          <t-form v-else :data="loginForm" label-width="0" @submit="() => handleTokenLogin()" class="w-full text-left">
-            <t-form-item name="token" class="!mb-6">
-              <t-input
-                v-model="loginForm.token"
-                size="large"
-                type="password"
-                placeholder="请输入 ChmlFrp 密钥"
-                clearable
-                class="!rounded-xl"
-              >
-                <template #prefix-icon><key-icon class="opacity-60" /></template>
-              </t-input>
-            </t-form-item>
-            <t-button
-              block
-              theme="primary"
-              type="submit"
-              size="large"
-              :loading="isLoggingIn"
-              class="!rounded-xl !h-12 !font-bold shadow-md shadow-[var(--color-primary-light)]/30 hover:shadow-[var(--color-primary-light)]/50"
-              >验证密钥</t-button
-            >
-          </t-form>
+            {{ authError }}
+          </div>
 
           <div class="mt-6 pt-4 border-t border-dashed border-zinc-200 dark:border-zinc-700 w-full">
             <t-button
@@ -360,7 +397,7 @@ async function handleDeleteTunnel() {
               size="small"
               class="text-zinc-500 hover:text-[var(--color-primary)]"
               @click="changeUrl('https://panel.chmlfrp.net')"
-              >ChmlFrp 主页</t-button
+              >ChmlFrp 控制台</t-button
             >
           </div>
         </div>
@@ -397,7 +434,7 @@ async function handleDeleteTunnel() {
               userInfo.usergroup
             }}</t-tag>
             <div class="w-px h-4 bg-zinc-200 dark:bg-zinc-700 mx-1"></div>
-            <t-popconfirm content="确认断开 ChmlFrp 的连接吗？" @confirm="handleLogout">
+            <t-popconfirm content="确认断开 ChmlFrp 的连接吗？" @confirm="handleLogoutConfirm">
               <t-button variant="text" theme="danger" size="small" class="!rounded-lg hover:!bg-red-500/10"
                 >退出登录</t-button
               >
@@ -690,18 +727,12 @@ async function handleDeleteTunnel() {
       </div>
     </div>
 
-    <create-tunnel-dialog
-      v-if="showCreateDialog"
-      v-model:visible="showCreateDialog"
-      :token="chmlToken"
-      @success="handleCreateSuccess"
-    />
+    <create-tunnel-dialog v-if="showCreateDialog" v-model:visible="showCreateDialog" @success="handleCreateSuccess" />
   </div>
 </template>
 
 <style scoped lang="less">
 @import '@/style/scrollbar';
-@reference "@/style/tailwind/index.css";
 
 /* 首次渲染阶梯滑入动画 */
 .list-item-anim {
@@ -736,7 +767,12 @@ async function handleDeleteTunnel() {
 }
 
 :deep(.t-loading__overlay) {
-  @apply !rounded-2xl !bg-white/50 dark:!bg-zinc-900/50;
+  border-radius: 1rem !important;
+  background: rgb(255 255 255 / 50%) !important;
   animation: smoothLoadingGlass 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards !important;
+}
+
+:global(.dark) :deep(.t-loading__overlay) {
+  background: rgb(24 24 27 / 50%) !important;
 }
 </style>

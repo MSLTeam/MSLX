@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onUnmounted } from 'vue';
+import { computed, ref, onUnmounted, watch } from 'vue';
 import {
   DownloadIcon,
   CloseIcon,
@@ -40,6 +40,16 @@ const errorMessage = ref('');
 
 // SignalR 实例
 let hubConnection: HubConnection | null = null;
+
+// 当弹窗重新打开时，重置状态
+const resetErrorStates = () => {
+  hasRunningServers.value = false;
+  isDockerEnv.value = false;
+  errorMessage.value = '';
+  isUpdating.value = false;
+  updateSuccess.value = false;
+  updateProgress.value = 0;
+};
 
 // === 计算属性 ===
 const isBeta = computed(() => props.updateInfo?.status === 'beta');
@@ -86,6 +96,12 @@ const handleSkip = () => {
 const reloadPage = () => {
   window.location.reload();
 };
+watch(() => props.visible, (newVal, oldVal) => {
+  if (newVal && !oldVal) {
+    // 弹窗打开时重置状态
+    resetErrorStates();
+  }
+});
 
 // === SignalR 逻辑 ===
 const stopSignalR = async () => {

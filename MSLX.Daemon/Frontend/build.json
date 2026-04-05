@@ -1,6 +1,6 @@
 {
-  "version": "1.3.4",
-  "buildTime": "2026-03-29 16:06:49",
+  "version": "1.3.5",
+  "buildTime": "2026-04-05 17:10:36",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -74,10 +74,88 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "956ff76a6e454d8f110ca758e758486a13f25585",
-  "commitMsg": "perf(webpanel): 更多Q弹头像特效！",
+  "commitId": "89086442333f955353a835b9330c3527a3a5699a",
+  "commitMsg": "fix(webpanel): 修复部分输入框的异常样式",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "89086442333f955353a835b9330c3527a3a5699a",
+      "commitTime": "2026-04-05 17:09:09 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复部分输入框的异常样式"
+    },
+    {
+      "commitId": "2aa48b7c2bf03855aa2003644ce9e43c52b6786e",
+      "commitTime": "2026-04-05 16:20:27 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(webpanel): 更新ChmlFrp配置信息"
+    },
+    {
+      "commitId": "2a929e8f3171de2580fbf4323a36286e02fb79cd",
+      "commitTime": "2026-04-05 16:13:33 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 关于页面新增贡献者鸣谢列表"
+    },
+    {
+      "commitId": "9062e78ac42e2c17e76a6b29cb95ae037b42def5",
+      "commitTime": "2026-04-05 16:05:49 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 移除背景美化模式下顶部导航栏异常的毛玻璃效果"
+    },
+    {
+      "commitId": "c300e7e1c328cb6c6df414dc98280e5578b9ad80",
+      "commitTime": "2026-04-05 11:45:21 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #103 from Hongbro886/fix-102"
+    },
+    {
+      "commitId": "c5fff9f57225756a4a2bb6c522368480346b2b6d",
+      "commitTime": "2026-04-05 09:49:55 +0800",
+      "commitAuthor": "whoa",
+      "commitMsg": "fix(webpanel):将MEFrp的注册链接指向正确的地址"
+    },
+    {
+      "commitId": "60d17acdee98442370ca866dee54daa4838ff6c0",
+      "commitTime": "2026-04-05 00:05:38 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(webpanel): 优化ChmlFrp登录弹窗的的方式"
+    },
+    {
+      "commitId": "b1a5b1bbebfe4e933db7bae99c96313091eea7f4",
+      "commitTime": "2026-04-01 15:54:46 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #100 from chaoji233/feature/chmlfrp-auth"
+    },
+    {
+      "commitId": "798b57d659b02a8443c23927676c300e255c33ad",
+      "commitTime": "2026-04-01 03:55:57 +0800",
+      "commitAuthor": "chaoji233",
+      "commitMsg": "feat(daemon & webpanel): 重构 ChmlFrp 模块以支持新版 OAuth 设备码授权"
+    },
+    {
+      "commitId": "d1fabaf6232f0d6984b6ffba22105ea8bc06b913",
+      "commitTime": "2026-03-29 17:57:53 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #97 from Hongbro886/fix-95"
+    },
+    {
+      "commitId": "b9a75129f00c5413514c8a090018b02f5c75a84e",
+      "commitTime": "2026-03-29 17:36:14 +0800",
+      "commitAuthor": "whoa",
+      "commitMsg": "fix(webpanel):修复更新程序无法正确检测所有实例是否都被退出的问题"
+    },
+    {
+      "commitId": "bf48af318ef07e971049c83adda3be83379ac05f",
+      "commitTime": "2026-03-29 16:10:20 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #94 from MSLTeam/dev"
+    },
+    {
+      "commitId": "129b1e3ec2f119cd4ed1b155af94dfc463c5cc93",
+      "commitTime": "2026-03-29 16:07:33 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.3.4"
+    },
     {
       "commitId": "956ff76a6e454d8f110ca758e758486a13f25585",
       "commitTime": "2026-03-29 15:57:04 +0800",
@@ -299,84 +377,6 @@
       "commitTime": "2026-03-15 18:06:09 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "fix(webpanel): 修复实例设置-更多功能内容无法正常重载的问题"
-    },
-    {
-      "commitId": "d43e6df5b34df0e96c2eb99dc290b76cb62f9e57",
-      "commitTime": "2026-03-15 17:56:36 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 支持批量启动/停止/重启/删除服务端实例 #52"
-    },
-    {
-      "commitId": "f99fe398fdeb72ad223f3f4855e9540c648ac854",
-      "commitTime": "2026-03-15 17:43:55 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复全局定时任务页面动画闪烁的问题"
-    },
-    {
-      "commitId": "f77344cd225ae6e4b13c9e021dd2414d4be10ed7",
-      "commitTime": "2026-03-15 17:22:49 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): chmlfrp配置文件自动转换为toml格式"
-    },
-    {
-      "commitId": "358b61c1bd1d129dbfea8873af884b965c70b154",
-      "commitTime": "2026-03-15 17:14:57 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修正SakuraFrp添加隧道中远程端口描述"
-    },
-    {
-      "commitId": "0fa9507184a2effd78ae3e0061ef5aef23c91768",
-      "commitTime": "2026-03-15 17:11:51 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel & daemon): 隧道服务新增ChmlFrp支持 #73"
-    },
-    {
-      "commitId": "d9514c3a3b154d47ff5f59551b5f11354370ae8b",
-      "commitTime": "2026-03-15 16:35:52 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 隧道服务链接失败时自动清理登录记录"
-    },
-    {
-      "commitId": "cf4f325a8deb095df13916d82ce01d9d72bcbc74",
-      "commitTime": "2026-03-15 16:30:38 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel & daemon): 隧道服务新增SakuraFrp支持"
-    },
-    {
-      "commitId": "355b6e2a1d07fae68007ba5143eb956b79d2b4de",
-      "commitTime": "2026-03-15 15:13:41 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): NeoForge/Forge纯模组服务端下载时支持选择具体子版本 #85"
-    },
-    {
-      "commitId": "0ef5d633d9fb6ec765eb30cec9ebe00c00fd74cb",
-      "commitTime": "2026-03-15 14:25:33 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复更新实例进度的弹窗未正常显示的问题"
-    },
-    {
-      "commitId": "caf8c46f2d95f92992125ef7e7e1dd7a7e102275",
-      "commitTime": "2026-03-14 00:08:02 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #81 from MSLTeam/dev"
-    },
-    {
-      "commitId": "cbb0dd811dd933f199cd61ddac2969a4237f59a2",
-      "commitTime": "2026-03-14 00:06:56 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.3.1-release"
-    },
-    {
-      "commitId": "503d96cc1789605adfd95d987944885168877bbf",
-      "commitTime": "2026-03-13 23:59:42 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 调高二级文本透明度"
-    },
-    {
-      "commitId": "87635410801aafa17b50a60e03858bbc9137abd8",
-      "commitTime": "2026-03-13 23:57:43 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 优化Frp服务商登录窗口的毛玻璃效果"
     }
   ]
 }

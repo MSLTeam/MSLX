@@ -427,7 +427,7 @@ const handleAvatarClick = () => {
 /* 当开启美化时，使用极细的高光线*/
 .design-card.enable-custom-theme {
   border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
-  backdrop-filter: blur(20px);
+  //backdrop-filter: blur(20px);
 }
 
 :deep(.t-head-menu) {

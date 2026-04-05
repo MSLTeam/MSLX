@@ -343,7 +343,7 @@ async function handleDeleteTunnel() {
           </t-form>
 
           <div class="mt-6 pt-4 border-t border-dashed border-zinc-200 dark:border-zinc-700 w-full">
-            <t-button variant="text" size="small" class="text-zinc-500 hover:text-[var(--color-primary)]" @click="changeUrl('https://www.mefrp.com/register')">还没有账户？注册 ME Frp</t-button>
+            <t-button variant="text" size="small" class="text-zinc-500 hover:text-[var(--color-primary)]" @click="changeUrl('https://www.mefrp.com/auth/register')">还没有账户？注册 ME Frp</t-button>
           </div>
         </div>
       </div>
