@@ -2,7 +2,7 @@ import { request } from '@/utils/request';
 
 const API_BASE_URL = '/api/frp/chmlfrp';
 const ACCOUNT_OAUTH_ISSUER = 'https://account-api.qzhua.net';
-const ACCOUNT_OAUTH_CLIENT_ID = '019d4510d87276958d6248aed40407e3';
+const ACCOUNT_OAUTH_CLIENT_ID = '019d5ca3e01c75a3919eb0022069e9c1';
 const STORAGE_KEY = 'chmlfrp_user';
 const LEGACY_STORAGE_KEY = 'chmlfrp-user-token';
 const DEVICE_CODE_DEFAULT_SCOPE = 'profile email offline_access chmlfrp_api';

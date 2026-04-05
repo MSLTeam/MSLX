@@ -4,7 +4,6 @@ using Microsoft.Extensions.Primitives;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Utils;
 using Newtonsoft.Json.Linq;
-using System.Text.Json;
 
 namespace MSLX.Daemon.Controllers.FrpControllers.Providers;
 
@@ -37,7 +36,7 @@ public class ChmlFrpProxyController : ControllerBase
             $"{ChmlFrpApiBaseUrl}/tunnel_config?node={Uri.EscapeDataString(node)}&tunnel_names={Uri.EscapeDataString(tunnelName)}");
 
     [HttpPost("create-tunnel")]
-    public async Task<IActionResult> CreateTunnel([FromBody] JsonElement body)
+    public async Task<IActionResult> CreateTunnel([FromBody] JToken body)
     {
         var response = await GeneralApi.PostAsync(
             $"{ChmlFrpApiBaseUrl}/create_tunnel",
@@ -67,13 +66,15 @@ public class ChmlFrpProxyController : ControllerBase
 
     private IActionResult BuildActionResult(HttpService.HttpResponse response)
     {
+        var contentData = ParseResponseContent(response.Content);
+
         if (response.IsSuccessStatusCode)
         {
             return Ok(new ApiResponse<object?>
             {
                 Code = 200,
                 Message = "请求成功",
-                Data = ParseResponseContent(response.Content)
+                Data = contentData
             });
         }
 
@@ -81,17 +82,14 @@ public class ChmlFrpProxyController : ControllerBase
         return StatusCode(statusCode, new ApiResponse<object?>
         {
             Code = statusCode,
-            Message = ExtractErrorMessage(response.Content, response.ResponseException),
-            Data = ParseResponseContent(response.Content)
+            Message = ExtractErrorMessage(contentData, response.ResponseException),
+            Data = contentData
         });
     }
 
     private static object? ParseResponseContent(string? content)
     {
-        if (string.IsNullOrWhiteSpace(content))
-        {
-            return null;
-        }
+        if (string.IsNullOrWhiteSpace(content)) return null;
 
         try
         {
@@ -103,29 +101,20 @@ public class ChmlFrpProxyController : ControllerBase
         }
     }
 
-    private static string ExtractErrorMessage(string? content, object? responseException)
+    private static string ExtractErrorMessage(object? parsedContent, object? responseException)
     {
-        if (!string.IsNullOrWhiteSpace(content))
+        if (parsedContent is JToken token)
         {
-            try
-            {
-                var token = JToken.Parse(content);
-                var message = token["msg"]?.ToString()
-                              ?? token["message"]?.ToString()
-                              ?? token["error_description"]?.ToString()
-                              ?? token["error"]?.ToString();
-                if (!string.IsNullOrWhiteSpace(message))
-                {
-                    return message;
-                }
-            }
-            catch
-            {
-                if (!string.IsNullOrWhiteSpace(content))
-                {
-                    return content;
-                }
-            }
+            var message = token["msg"]?.ToString()
+                          ?? token["message"]?.ToString()
+                          ?? token["error_description"]?.ToString()
+                          ?? token["error"]?.ToString();
+            
+            if (!string.IsNullOrWhiteSpace(message)) return message;
+        }
+        else if (parsedContent is string str && !string.IsNullOrWhiteSpace(str))
+        {
+            return str;
         }
 
         return responseException?.ToString() ?? "请求失败";

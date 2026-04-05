@@ -112,7 +112,7 @@ async function finishLogin(
   resetAuthorizationState();
   const loaded = await initDashboardData();
   if (loaded) {
-    MessagePlugin.success('ChmlFrp 授权成功');
+    MessagePlugin.success('ChmlFrp 授权登录成功');
   }
 }
 
@@ -343,7 +343,7 @@ async function handleDeleteTunnel() {
               @click="startDeviceAuthorization"
             >
               <template #icon><user-circle-icon /></template>
-              浏览器授权登录
+              授权登录
             </t-button>
           </div>
 
