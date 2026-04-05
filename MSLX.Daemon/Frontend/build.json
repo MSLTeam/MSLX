@@ -1,6 +1,6 @@
 {
-  "version": "1.3.5",
-  "buildTime": "2026-04-05 17:10:36",
+  "version": "1.3.5.1",
+  "buildTime": "2026-04-05 17:25:31",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -74,10 +74,40 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "89086442333f955353a835b9330c3527a3a5699a",
-  "commitMsg": "fix(webpanel): 修复部分输入框的异常样式",
+  "commitId": "5f60e847653ef56543b803880a92bd60b350d0c6",
+  "commitMsg": "Merge remote-tracking branch 'origin/master' into dev",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "5f60e847653ef56543b803880a92bd60b350d0c6",
+      "commitTime": "2026-04-05 17:15:42 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge remote-tracking branch 'origin/master' into dev"
+    },
+    {
+      "commitId": "b7762d4ef05c4db2f5ba4b4fe893d29751c7b1d2",
+      "commitTime": "2026-04-05 17:13:46 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #104 from MSLTeam/dev"
+    },
+    {
+      "commitId": "d22cbe0652bbca6d60f33aa3f7984bc0e225460a",
+      "commitTime": "2026-04-05 17:12:27 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
+    },
+    {
+      "commitId": "f523ae2a4d6864267bfcec97c255420f9d62d888",
+      "commitTime": "2026-04-05 17:12:08 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(webpanel & daemon): 更新到v1.3.5版本"
+    },
+    {
+      "commitId": "0ebd6e1deab2138fbb42ea95aa21deb1ed1430f3",
+      "commitTime": "2026-04-05 17:11:46 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(webpanel & daemon): 更新到v1.3.5版本"
+    },
     {
       "commitId": "89086442333f955353a835b9330c3527a3a5699a",
       "commitTime": "2026-04-05 17:09:09 +0800",
@@ -347,36 +377,6 @@
       "commitTime": "2026-03-15 20:10:55 +0800",
       "commitAuthor": "小宇",
       "commitMsg": "Merge pull request #89 from MSLTeam/dev"
-    },
-    {
-      "commitId": "558fb06df97d94e6ceb9b5a2877577ee59a87c6f",
-      "commitTime": "2026-03-15 20:10:21 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon): 更新版本号到v1.3.2.1 - hotfix"
-    },
-    {
-      "commitId": "3b1ad5b16dd8df7d06d029de69f127bcefa1fc8f",
-      "commitTime": "2026-03-15 20:07:51 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon & desktop): 修复设备ID生成逻辑"
-    },
-    {
-      "commitId": "c2b90d80a445025ad522cdfad717d2be71c101b3",
-      "commitTime": "2026-03-15 19:05:46 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #88 from MSLTeam/dev"
-    },
-    {
-      "commitId": "0d45b15eb4acf9ddb7f9a5cd31c9b8bc3fc4c613",
-      "commitTime": "2026-03-15 19:04:05 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.3.2-release版本"
-    },
-    {
-      "commitId": "714cd36da2546115625fe76f2e9e1f2977034343",
-      "commitTime": "2026-03-15 18:06:09 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复实例设置-更多功能内容无法正常重载的问题"
     }
   ]
 }
