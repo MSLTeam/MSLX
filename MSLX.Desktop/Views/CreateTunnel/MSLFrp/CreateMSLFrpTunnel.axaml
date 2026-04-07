@@ -1,0 +1,226 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="MSLX.Desktop.Views.CreateTunnel.MSLFrp.CreateMSLFrpTunnel">
+  <Grid>
+    <TabControl x:Name="MainTabControl" IsVisible="False">
+
+      <!-- 隧道列表 -->
+      <TabItem Header="我的隧道">
+        <Grid Margin="10">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+          </Grid.ColumnDefinitions>
+
+          <!-- 左：隧道列表 -->
+          <suki:GlassCard Margin="0,0,10,0">
+            <Grid RowDefinitions="Auto * Auto">
+              <TextBlock Text="隧道列表：" FontWeight="Bold" FontSize="16"/>
+              <ListBox x:Name="TunnelListBox" Margin="0,5,0,0" Grid.Row="1"
+                       SelectionChanged="TunnelListBox_SelectionChanged">
+              </ListBox>
+              <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="*"/>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Content="刷新" Classes="Flat" Click="RefreshTunnels_Click"/>
+                <Button Grid.Column="1" Margin="5,0,5,0" Content="删除隧道"
+                        Classes="Flat Accent" Background="Red" Click="DeleteTunnel_Click"/>
+              </Grid>
+            </Grid>
+          </suki:GlassCard>
+
+          <!-- 右：用户/隧道信息 -->
+          <Grid Grid.Column="1">
+            <ScrollViewer>
+              <StackPanel Spacing="10">
+
+                <!-- 用户信息卡片 -->
+                <suki:GlassCard>
+                  <Grid>
+                    <StackPanel>
+                      <TextBlock Text="用户信息" Margin="3" FontWeight="Bold" FontSize="16"/>
+                      <TextBlock Margin="3">
+                        <Run Text="用户名："/>
+                        <Run x:Name="UsernameText"/>
+                      </TextBlock>
+                      <TextBlock Margin="3">
+                        <Run Text="用户组："/>
+                        <Run x:Name="UserGroupText"/>
+                      </TextBlock>
+                      <TextBlock Margin="3">
+                        <Run Text="最大隧道数："/>
+                        <Run x:Name="UserMaxTunnelsText"/>
+                      </TextBlock>
+                      <TextBlock Margin="3">
+                        <Run Text="到期时间："/>
+                        <Run x:Name="UserOutdatedText"/>
+                      </TextBlock>
+                    </StackPanel>
+                    <Grid VerticalAlignment="Top" HorizontalAlignment="Right">
+                      <StackPanel Spacing="5">
+                        <Button Classes="Flat" Content="打开官网" Click="OpenWebsite_Click"/>
+                        <Button Classes="Flat Accent" Background="Red" Content="退出登录" Click="ExitLogin_Click"/>
+                      </StackPanel>
+                    </Grid>
+                  </Grid>
+                </suki:GlassCard>
+
+                <!-- 隧道信息卡片 -->
+                <suki:GlassCard>
+                  <StackPanel Spacing="10">
+                    <TextBlock Text="隧道信息" FontWeight="Bold" FontSize="16"/>
+                    <TextBlock>
+                      <Run Text="名称："/>
+                      <Run x:Name="TunnelIdText"/>
+                    </TextBlock>
+                    <TextBlock>
+                      <Run Text="备注："/>
+                      <Run x:Name="TunnelRemarksText"/>
+                    </TextBlock>
+                    <TextBlock>
+                      <Run Text="状态："/>
+                      <Run x:Name="TunnelStatusText"/>
+                    </TextBlock>
+                    <TextBlock>
+                      <Run Text="本地端口："/>
+                      <Run x:Name="TunnelLocalPortText"/>
+                    </TextBlock>
+                    <TextBlock>
+                      <Run Text="远程端口："/>
+                      <Run x:Name="TunnelRemotePortText"/>
+                    </TextBlock>
+                    <TextBlock>
+                      <Run Text="节点："/>
+                      <Run x:Name="TunnelNodeText"/>
+                    </TextBlock>
+                    <Button Content="使用该隧道" Height="50" Classes="Flat"
+                            FontSize="18" Click="UseTunnel_Click"/>
+                  </StackPanel>
+                </suki:GlassCard>
+
+              </StackPanel>
+            </ScrollViewer>
+          </Grid>
+        </Grid>
+      </TabItem>
+
+      <!-- 创建隧道 -->
+      <TabItem Header="创建隧道">
+        <Grid Grid.ColumnDefinitions="* *" Margin="10">
+
+          <!-- 左：节点列表 -->
+          <Grid Margin="0,0,10,0">
+            <suki:GlassCard>
+              <Grid RowDefinitions="Auto * Auto">
+                <TextBlock Text="节点列表：" FontSize="16" FontWeight="Bold"/>
+                <ListBox x:Name="NodeListBox" Margin="0,5,0,0" Grid.Row="1"
+                         SelectionChanged="NodeListBox_SelectionChanged">
+                </ListBox>
+                <Button Grid.Row="2" Content="刷新" Classes="Flat" Click="RefreshNodes_Click"/>
+              </Grid>
+            </suki:GlassCard>
+          </Grid>
+
+          <!-- 右：节点信息 + 创建隧道表单 -->
+          <Grid Grid.Column="1">
+            <ScrollViewer>
+              <StackPanel Spacing="10">
+
+                <!-- 节点信息卡片 -->
+                <suki:GlassCard>
+                  <StackPanel Spacing="10">
+                    <TextBlock Text="节点信息：" FontSize="16" FontWeight="Bold"/>
+                    <TextBlock>
+                      <Run Text="节点名称："/>
+                      <Run x:Name="NodeNameText"/>
+                    </TextBlock>
+                    <TextBlock>
+                      <Run Text="信息："/>
+                      <Run x:Name="NodeRemarksText"/>
+                    </TextBlock>
+                  </StackPanel>
+                </suki:GlassCard>
+
+                <!-- 创建隧道表单卡片 -->
+                <suki:GlassCard>
+                  <StackPanel Spacing="10">
+                    <TextBlock Text="填写隧道信息：" FontSize="16" FontWeight="Bold"/>
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                      <TextBlock VerticalAlignment="Center" Text="隧道名称："/>
+                      <TextBox x:Name="CreateNameBox" MinWidth="150"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                      <TextBlock VerticalAlignment="Center" Text="协议类型："/>
+                      <ComboBox x:Name="CreateTypeCombo" MinWidth="150" SelectedIndex="0">
+                        <ComboBoxItem>tcp</ComboBoxItem>
+                        <ComboBoxItem x:Name="UdpItem">udp</ComboBoxItem>
+                        <ComboBoxItem x:Name="HttpItem">http</ComboBoxItem>
+                        <ComboBoxItem x:Name="HttpsItem">https</ComboBoxItem>
+                      </ComboBox>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                      <TextBlock VerticalAlignment="Center" Text="本地IP："/>
+                      <TextBox x:Name="CreateLocalIpBox" MinWidth="150"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                      <TextBlock VerticalAlignment="Center" Text="本地端口："/>
+                      <NumericUpDown x:Name="CreateLocalPortBox" MinWidth="150"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                      <TextBlock VerticalAlignment="Center" Text="远程端口："/>
+                      <NumericUpDown x:Name="CreateRemotePortBox" MinWidth="150"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                      <TextBlock VerticalAlignment="Center" Text="使用KCP协议传输："/>
+                      <ToggleSwitch x:Name="CreateKcpToggle"/>
+                    </StackPanel>
+                    <Button Content="创建隧道" Height="50" Classes="Flat"
+                            FontSize="18" Click="CreateTunnel_Click"/>
+                  </StackPanel>
+                </suki:GlassCard>
+
+              </StackPanel>
+            </ScrollViewer>
+          </Grid>
+        </Grid>
+      </TabItem>
+    </TabControl>
+
+    <!-- === 登录页面 === -->
+    <Grid x:Name="LoginGrid" HorizontalAlignment="Center" VerticalAlignment="Center">
+      <StackPanel>
+        <TextBlock Text="在使用MSL Frp服务之前，请先登录您的MSL账户"
+                   FontSize="18" FontWeight="Bold" Margin="0,0,0,30"/>
+        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+          <TextBlock VerticalAlignment="Center" Text="邮箱: " FontSize="15" Margin="0,0,3,0"/>
+          <TextBox x:Name="AccountBox" MinWidth="200"/>
+        </StackPanel>
+        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal" Margin="0,6,0,0">
+          <TextBlock VerticalAlignment="Center" Text="密码: " FontSize="15" Margin="0,0,3,0"/>
+          <TextBox x:Name="PasswordBox" MinWidth="200" PasswordChar="*"/>
+        </StackPanel>
+        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal" Margin="0,6,0,0">
+          <TextBlock VerticalAlignment="Center" Text="2FA: " FontSize="15" Margin="0,0,3,0"/>
+          <TextBox x:Name="TwoFaBox" MinWidth="200" PasswordChar="*"/>
+        </StackPanel>
+        <StackPanel Margin="0,3,0,20" HorizontalAlignment="Center" Orientation="Horizontal">
+          <ToggleSwitch x:Name="SaveLoginToggle"/>
+          <TextBlock Text="保存登录状态" VerticalAlignment="Center"/>
+        </StackPanel>
+        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+          <Button Width="100" Classes="Flat" IsDefault="True"
+                  Content="登录" Click="LoginButton_Click"/>
+          <Button Width="100" Content="注册"
+                  Margin="10,0,0,0" Click="RegisterButton_Click"/>
+        </StackPanel>
+      </StackPanel>
+    </Grid>
+
+  </Grid>
+</UserControl>

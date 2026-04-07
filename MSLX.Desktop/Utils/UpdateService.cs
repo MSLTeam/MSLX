@@ -444,7 +444,6 @@ namespace MSLX.Desktop.Utils
                     if (data.Stage == "restarting")
                     {
                         await _updateService.DisconnectAsync();
-                        _updateService.Dispose();
                         await Task.Delay(500);
                         DialogService.ToastManager.Dismiss(toast);
                         DialogService.DialogManager.CreateDialog()
@@ -468,7 +467,6 @@ namespace MSLX.Desktop.Utils
                     else if (!autoRestart && data.Stage == "completed")
                     {
                         await _updateService.DisconnectAsync();
-                        _updateService.Dispose();
                         await Task.Delay(500);
                         DialogService.ToastManager.Dismiss(toast);
                         await DaemonManager.StopRunningDaemon();
@@ -588,7 +586,6 @@ namespace MSLX.Desktop.Utils
                         .TryShow();
 
                     await _updateService.DisconnectAsync();
-                    _updateService.Dispose();
                     return;
                 }
 
@@ -607,7 +604,6 @@ namespace MSLX.Desktop.Utils
                             .TryShow();
 
                         await _updateService.DisconnectAsync();
-                        _updateService.Dispose();
                         return;
                     }
                 }
