@@ -197,18 +197,6 @@
       <StackPanel>
         <TextBlock Text="在使用MSL Frp服务之前，请先登录您的MSL账户"
                    FontSize="18" FontWeight="Bold" Margin="0,0,0,30"/>
-        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
-          <TextBlock VerticalAlignment="Center" Text="邮箱: " FontSize="15" Margin="0,0,3,0"/>
-          <TextBox x:Name="AccountBox" MinWidth="200"/>
-        </StackPanel>
-        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal" Margin="0,6,0,0">
-          <TextBlock VerticalAlignment="Center" Text="密码: " FontSize="15" Margin="0,0,3,0"/>
-          <TextBox x:Name="PasswordBox" MinWidth="200" PasswordChar="*"/>
-        </StackPanel>
-        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal" Margin="0,6,0,0">
-          <TextBlock VerticalAlignment="Center" Text="2FA: " FontSize="15" Margin="0,0,3,0"/>
-          <TextBox x:Name="TwoFaBox" MinWidth="200" PasswordChar="*"/>
-        </StackPanel>
         <StackPanel Margin="0,3,0,20" HorizontalAlignment="Center" Orientation="Horizontal">
           <ToggleSwitch x:Name="SaveLoginToggle"/>
           <TextBlock Text="保存登录状态" VerticalAlignment="Center"/>

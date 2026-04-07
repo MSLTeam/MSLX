@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
@@ -942,8 +942,8 @@ public partial class CreateMCServer : UserControl
         BottomActionBorder.IsVisible = true;
 
         ResetForm();
-        SideMenuHelper.MainSideMenuHelper?.NavigateTo<InstanceListPage>();
-        SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
+        SideMenuHelper.Current?.NavigateTo<InstanceListPage>();
+        SideMenuHelper.Current?.NavigateRemove(this);
 
         _ = InstanceListPage.LoadServersList();
     }
@@ -972,8 +972,8 @@ public partial class CreateMCServer : UserControl
         }
 
         ResetForm();
-        SideMenuHelper.MainSideMenuHelper?.NavigateTo<InstanceListPage>();
-        SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
+        SideMenuHelper.Current?.NavigateTo<InstanceListPage>();
+        SideMenuHelper.Current?.NavigateRemove(this);
     }
 
     /// <summary>

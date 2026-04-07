@@ -79,7 +79,7 @@ public partial class HomePage : UserControl
     {
         // SukiTheme.GetInstance().ChangeColorTheme(SukiColor.Orange);
         // SukiTheme.GetInstance().SwitchBaseTheme();
-        SideMenuHelper.MainSideMenuHelper?.NavigateTo(new SukiSideMenuItem
+        SideMenuHelper.Current?.NavigateTo(new SukiSideMenuItem
         {
             Header = "123",
             Icon = new Material.Icons.Avalonia.MaterialIcon()

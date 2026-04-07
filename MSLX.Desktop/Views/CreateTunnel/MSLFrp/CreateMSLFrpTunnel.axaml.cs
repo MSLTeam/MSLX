@@ -10,7 +10,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Net.Http.Headers;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using static MSLX.Desktop.Models.MSLFrpModel;
 
@@ -72,21 +74,6 @@ public partial class CreateMSLFrpTunnel : UserControl
     // 登录
     private async void LoginButton_Click(object? sender, RoutedEventArgs e)
     {
-        var account = AccountBox.Text;
-        var password = PasswordBox.Text;
-        var twoFa = TwoFaBox.Text;
-
-        if (string.IsNullOrEmpty(account) || string.IsNullOrEmpty(password))
-        {
-            DialogService.ToastManager.CreateToast()
-                .OfType(NotificationType.Error)
-                .WithTitle("错误")
-                .WithContent("请填写账户密码。")
-                .Dismiss().After(TimeSpan.FromSeconds(3))
-                .Queue();
-            return;
-        }
-
         try
         {
             DialogService.DialogManager.CreateDialog()
@@ -94,14 +81,52 @@ public partial class CreateMSLFrpTunnel : UserControl
                 .WithContent("正在登录，请稍候...")
                 .TryShow();
 
+            Random rand = new Random();
+            string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            string randomString = string.Empty;
+
+            for (int i = 0; i < 32; i++)
+            {
+                randomString += chars[rand.Next(chars.Length)];
+            }
+            string csrf = randomString;
+            var postData = new Dictionary<string, string>
+            {
+                { "csrf", csrf },
+                { "appid", "eixl7BLlidSZ7POjdhZsAGTXKyu" }
+            };
+
             var response = await MSLUserService.PostAsync(
-                "/user/login",
-                HttpService.PostContentType.Json,
-                new { email = account, password, twoFactorAuthKey = twoFa }
+                "/oauth/createAppLogin",
+                HttpService.PostContentType.FormUrlEncoded,
+                postData
             );
 
-            DialogService.DialogManager.DismissDialog();
+            if (response.IsSuccess&& response.Content != null)
+            {
+                JObject _json = JObject.Parse(response.Content);
+                if (_json["code"]?.Value<int>() != 200 || _json["data"] == null)
+                {
+                    return;
+                }
+                JObject data = _json["data"] as JObject ?? new JObject();
+                string url = data["url"]?.Value<string>() ?? string.Empty;
+                string ssid = data["ssid"]?.Value<string>() ?? string.Empty;
 
+                if (string.IsNullOrEmpty(url) && string.IsNullOrEmpty(ssid))
+                {
+                    return;
+                }
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+                StartPolling(ssid, csrf); // 轮询
+            }
+            else
+            {
+                return;
+            }
+
+            DialogService.DialogManager.DismissDialog();
+            
             JObject json = JObject.Parse(response.Content);
             if (json["code"]?.Value<int>() == 200)
             {
@@ -129,6 +154,157 @@ public partial class CreateMSLFrpTunnel : UserControl
         }
     }
 
+    private CancellationTokenSource _pollingCts; // 取消轮询
+    private async void StartPolling(string ssid, string csrf)
+    {
+        _pollingCts = new CancellationTokenSource();
+        var cancellationToken = _pollingCts.Token;
+
+        try
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                var response = await MSLUserService.GetAsync(
+                    $"/oauth/appLogin?ssid={ssid}&csrf={csrf}",null
+                    
+                );
+
+                if (cancellationToken.IsCancellationRequested) return;
+                JObject ContentInfo = JObject.Parse(response.Content);
+                if (response.IsSuccess)
+                {
+                    var appToken = ContentInfo?["token"]?.Value<string>();
+                    if (!string.IsNullOrEmpty(appToken))
+                    {
+                        await CompleteBrowserLogin(appToken);
+                        return; // 结束轮询
+                    }
+                    else
+                    {
+                        // 继续轮询
+
+                    }
+                }
+                else
+                {
+                    // 出现错误
+                    // 取消轮询
+                    _pollingCts?.Cancel();
+                    return; // 结束轮询
+                }
+
+                // 延迟
+                await Task.Delay(3000, cancellationToken);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+
+        }
+        catch (Exception ex)
+        {
+            // 取消轮询
+            _pollingCts?.Cancel();
+        }
+        finally
+        {
+            if (_pollingCts != null)
+            {
+                _pollingCts.Dispose();
+                _pollingCts = null;
+            }
+        }
+    }
+
+    private async Task CompleteBrowserLogin(string appToken)
+    {
+        var (Code, Msg, ContentInfo) = await UserLogin(
+            appToken,
+            string.Empty, // email
+            string.Empty, // password
+            string.Empty, // auth2FA
+            false
+        );
+
+        if (Code == 200)
+        {
+            
+        }
+    }
+    public async Task<(int Code, string Msg, JObject ContentInfo)> UserLogin(string token, string email = "", string password = "", string auth2fa = "", bool saveToken = false)
+    {
+        if (string.IsNullOrEmpty(token))
+        {
+            // 发送邮箱和密码，请求登录，获取MSL-User-Token
+            try
+            {
+                JObject body;
+                if (string.IsNullOrEmpty(auth2fa))
+                {
+                    body = new JObject
+                    {
+                        ["email"] = email,
+                        ["password"] = password
+                    };
+                }
+                else
+                {
+                    body = new JObject
+                    {
+                        ["email"] = email,
+                        ["password"] = password,
+                        ["twoFactorAuthKey"] = auth2fa
+                    };
+                }
+                HttpResponse res = await MSLUserService.PostAsync("/user/login", 0, body);
+                if (res.IsSuccess)
+                {
+                    JObject LoginResponse = JObject.Parse((string)res.Content);
+                    if (LoginResponse["code"].Value<int>() != 200)
+                    {
+                        return ((int)LoginResponse["code"], LoginResponse["msg"].ToString(), LoginResponse);
+                    }
+                    token = LoginResponse["data"]["token"].ToString();
+                }
+                else
+                {
+                    return ((int)res.StatusCode, res.Content.ToString(), null);
+                }
+            }
+            catch (Exception ex)
+            {
+                return (0, ex.Message, null);
+            }
+        }
+
+        try
+        {
+            var headersAction = new Action<HttpRequestHeaders>(headers =>
+            {
+                headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            });
+            HttpResponse res = await HttpService.GetAsync("/frp/userInfo", headersAction,uaType:UAManager.UAType.MSLX);
+            if (res.IsSuccess)
+            {
+                var loginRes = JObject.Parse(res.Content.ToString());
+                if ((int)loginRes["code"] != 200)
+                {
+                    return ((int)loginRes["code"], loginRes["msg"].ToString(), null);
+                }
+                //UserToken = token;
+
+                // 用户登陆成功后，发送POST请求续期Token
+                _ = await HttpService.PostAsync("/user/renewToken", HttpService.PostContentType.None, configureHeaders: headersAction);
+                return (200, string.Empty, JObject.Parse(res.Content.ToString()));
+            }
+            return (200, string.Empty, null);
+        }
+        catch (Exception ex)
+        {
+            return (0, ex.Message, null);
+        }
+    }
+
     private void RegisterButton_Click(object? sender, RoutedEventArgs e)
     {
         Process.Start(new ProcessStartInfo("https://user.mslmc.net/register") { UseShellExecute = true });
@@ -144,8 +320,7 @@ public partial class CreateMSLFrpTunnel : UserControl
                 .WithContent(new TextBlock { Text = "获取用户信息……" });
             dialog.TryShow();
 
-            var response = await MSLUserService.GetAsync("/frp/userInfo", null,
-                new Dictionary<string, string> { ["Authorization"] = $"Bearer {_userToken}" });
+            var response = await MSLUserService.GetAsync("/frp/userInfo", new Dictionary<string, string> { ["Authorization"] = $"Bearer {_userToken}" });
 
             DialogService.DialogManager.DismissDialog();
 
@@ -215,8 +390,7 @@ public partial class CreateMSLFrpTunnel : UserControl
     {
         try
         {
-            var response = await MSLUserService.GetAsync("/frp/nodeList", null,
-                new Dictionary<string, string> { ["Authorization"] = $"Bearer {_userToken}" });
+            var response = await MSLUserService.GetAsync("/frp/nodeList", new Dictionary<string, string> { ["Authorization"] = $"Bearer {_userToken}" });
 
             if (response.IsSuccess!=true || response.Content == null)
             {
@@ -285,8 +459,7 @@ public partial class CreateMSLFrpTunnel : UserControl
     {
         try
         {
-            var response = await MSLUserService.GetAsync("/frp/getTunnelList", null,
-                new Dictionary<string, string> { ["Authorization"] = $"Bearer {_userToken}" });
+            var response = await MSLUserService.GetAsync("/frp/getTunnelList", new Dictionary<string, string> { ["Authorization"] = $"Bearer {_userToken}" });
 
             if (!response.IsSuccess || response.Content == null)
             {
@@ -410,11 +583,14 @@ public partial class CreateMSLFrpTunnel : UserControl
         }
         try
         {
-            var response = await MSLUserService.GetAsync(
-                "/frp/getTunnelConfig",
-                new Dictionary<string, string> { ["id"] = _selectedTunnel.Id.ToString() },
-                new Dictionary<string, string> { ["Authorization"] = $"Bearer {_userToken}" }
-            );
+            var response = await HttpService.GetAsync(
+    "/frp/getTunnelConfig",
+    new Dictionary<string, string> { ["id"] = _selectedTunnel.Id.ToString() },
+    headers =>
+    {
+        headers.Authorization = new AuthenticationHeaderValue("Bearer", _userToken);
+    }
+);
             if (!response.IsSuccess || response.Content == null)
             {
                 DialogService.ToastManager.CreateToast()
@@ -552,8 +728,7 @@ public partial class CreateMSLFrpTunnel : UserControl
     {
         try
         {
-            var response = await MSLUserService.GetAsync("/user/logout", null,
-                new Dictionary<string, string> { ["Authorization"] = $"Bearer {_userToken}" });
+            var response = await MSLUserService.GetAsync("/user/logout", new Dictionary<string, string> { ["Authorization"] = $"Bearer {_userToken}" });
             JObject json = JObject.Parse(response?.Content ?? string.Empty);
             if (json["code"]?.Value<int>() == 200)
             {

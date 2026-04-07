@@ -21,7 +21,7 @@ namespace MSLX.Desktop.Utils.API
         /// <param name="path">路径，如“/notice”</param>
         /// <param name="queryParameters">query参数，可直接加在路径后面“?query=md”，也可在此通过Dictionary进行设置</param>
         /// <returns>Httpservice.HttpResponse</returns>
-        public async static Task<HttpResponse> GetAsync(string path, Dictionary<string, string>? queryParameters, Dictionary<string, string>? headers = null)
+        public async static Task<HttpResponse> GetAsync(string path, Dictionary<string, string>? queryParameters)
         {
             // 确保路径以 "/" 开头
             if (!path.StartsWith("/"))

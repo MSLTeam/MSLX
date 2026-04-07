@@ -70,7 +70,7 @@ public partial class InstanceListPage : UserControl
         {
             if (instancePages.TryGetValue(serverId, out SukiSideMenuItem? value))
             {
-                SideMenuHelper.MainSideMenuHelper?.NavigateTo(value);
+                SideMenuHelper.Current?.NavigateTo(value);
                 return;
             }
             var serverPage = new SukiUI.Controls.SukiSideMenuItem
@@ -84,7 +84,7 @@ public partial class InstanceListPage : UserControl
                 PageContent = new InstanceInfo.InstancePage(server.ID)
             };
             instancePages[serverId] = serverPage;
-            SideMenuHelper.MainSideMenuHelper?.NavigateTo(serverPage, true, 2);
+            SideMenuHelper.Current?.NavigateTo(serverPage, true, 2);
         }
     }
 
@@ -160,7 +160,7 @@ public partial class InstanceListPage : UserControl
 
     private void CreateInstance_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        SideMenuHelper.MainSideMenuHelper?.NavigateTo(new SukiUI.Controls.SukiSideMenuItem
+        SideMenuHelper.Current?.NavigateTo(new SukiUI.Controls.SukiSideMenuItem
         {
             Header = "创建实例",
             Icon = new MaterialIcon()

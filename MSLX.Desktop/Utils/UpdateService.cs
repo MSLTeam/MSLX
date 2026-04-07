@@ -452,7 +452,7 @@ namespace MSLX.Desktop.Utils
                             .TryShow();
                         await Task.Delay(10000);
                         DialogService.DialogManager.DismissDialog();
-                        SideMenuHelper.MainSideMenuHelper?.NavigateTo(new SukiSideMenuItem
+                        SideMenuHelper.Current?.NavigateTo(new SukiSideMenuItem
                         {
                             Header = "欢迎",
                             Icon = new MaterialIcon()
@@ -462,7 +462,7 @@ namespace MSLX.Desktop.Utils
                             PageContent = new WelcomePage(),
                             IsContentMovable = false
                         }, true, 0);
-                        SideMenuHelper.MainSideMenuHelper?.HideMainPages(0);
+                        SideMenuHelper.Current?.HideMainPages(0);
                     }
                     else if (!autoRestart && data.Stage == "completed")
                     {
@@ -519,7 +519,7 @@ namespace MSLX.Desktop.Utils
                                 break;
                         }
                         DialogService.DialogManager.DismissDialog();
-                        SideMenuHelper.MainSideMenuHelper?.NavigateTo(new SukiSideMenuItem
+                        SideMenuHelper.Current?.NavigateTo(new SukiSideMenuItem
                         {
                             Header = "欢迎",
                             Icon = new MaterialIcon()
@@ -529,7 +529,7 @@ namespace MSLX.Desktop.Utils
                             PageContent = new WelcomePage(),
                             IsContentMovable = false
                         }, true, 0);
-                        SideMenuHelper.MainSideMenuHelper?.HideMainPages(0);
+                        SideMenuHelper.Current?.HideMainPages(0);
                     }
                 };
 

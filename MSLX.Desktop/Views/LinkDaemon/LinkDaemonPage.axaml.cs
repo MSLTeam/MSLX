@@ -48,8 +48,8 @@ public partial class LinkDaemonPage : UserControl
                 ConfigService.Config.WriteConfigKey("DaemonApiKey", key);
             }
             // 验证成功，跳转到主页面
-            SideMenuHelper.MainSideMenuHelper?.ShowMainPages();
-            SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
+            SideMenuHelper.Current?.ShowMainPages();
+            SideMenuHelper.Current?.NavigateRemove(this);
 
             _ = UpdateService.UpdateDaemonApp(true);
         }
@@ -57,8 +57,8 @@ public partial class LinkDaemonPage : UserControl
 
     private void DownloadDaemonBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        SideMenuHelper.MainSideMenuHelper?.NavigateRemove<LinkDaemonPage>();
-        SideMenuHelper.MainSideMenuHelper?.NavigateTo(new SukiSideMenuItem
+        SideMenuHelper.Current?.NavigateRemove<LinkDaemonPage>();
+        SideMenuHelper.Current?.NavigateTo(new SukiSideMenuItem
         {
             Header = "下载守护程序",
             Icon = new MaterialIcon()

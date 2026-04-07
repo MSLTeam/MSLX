@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils;
 using MSLX.Desktop.Utils.API;
+using MSLX.Desktop.Views.CreateTunnel.MSLFrp;
 using Newtonsoft.Json.Linq;
 using SukiUI.Toasts;
 using System;
@@ -63,10 +64,17 @@ public partial class TunnelListPage : UserControl
 
     private async void AddBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        /*
         DialogService.ToastManager.CreateToast()
             .WithTitle("在写了在写了")
             .WithContent("别捉急~")
             .Dismiss().After(TimeSpan.FromSeconds(5))
             .Queue();
+        */
+        SideMenuHelper.Current.NavigateTo(new SukiUI.Controls.SukiSideMenuItem
+        {
+            Header = "添加隧道",
+            PageContent=new CreateMSLFrpTunnel()
+        });
     }
 }
