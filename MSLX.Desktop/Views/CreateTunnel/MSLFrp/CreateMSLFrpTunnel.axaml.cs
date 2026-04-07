@@ -119,33 +119,10 @@ public partial class CreateMSLFrpTunnel : UserControl
                 }
                 Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
                 StartPolling(ssid, csrf); // 轮询
-            }
-            else
-            {
                 return;
             }
-
             DialogService.DialogManager.DismissDialog();
-            
-            JObject json = JObject.Parse(response.Content);
-            if (json["code"]?.Value<int>() == 200)
-            {
-                _userToken = json["data"]?["token"]?.Value<string>() ?? string.Empty;
-
-                if (SaveLoginToggle.IsChecked == true)
-                    ConfigService.Config.WriteConfigKey("MSLUserToken", _userToken);
-
-                await GetFrpInfoAsync();
-            }
-            else
-            {
-                DialogService.ToastManager.CreateToast()
-                .OfType(NotificationType.Error)
-                .WithTitle("登录失败")
-                .WithContent(json["msg"]?.Value<string>() ?? "未知错误！")
-                .Dismiss().After(TimeSpan.FromSeconds(3))
-                .Queue();
-            }
+            return;
         }
         catch (Exception ex)
         {
@@ -173,7 +150,7 @@ public partial class CreateMSLFrpTunnel : UserControl
                 JObject ContentInfo = JObject.Parse(response.Content);
                 if (response.IsSuccess)
                 {
-                    var appToken = ContentInfo?["token"]?.Value<string>();
+                    var appToken = ContentInfo?["data"]?["token"]?.Value<string>();
                     if (!string.IsNullOrEmpty(appToken))
                     {
                         await CompleteBrowserLogin(appToken);
@@ -218,6 +195,7 @@ public partial class CreateMSLFrpTunnel : UserControl
 
     private async Task CompleteBrowserLogin(string appToken)
     {
+        Console.WriteLine(appToken);
         var (Code, Msg, ContentInfo) = await UserLogin(
             appToken,
             string.Empty, // email
@@ -225,10 +203,18 @@ public partial class CreateMSLFrpTunnel : UserControl
             string.Empty, // auth2FA
             false
         );
-
         if (Code == 200)
         {
-            
+            _userToken = appToken;
+        
+            if (SaveLoginToggle.IsChecked == true)
+                ConfigService.Config.WriteConfigKey("MSLUserToken", _userToken);
+
+            await GetFrpInfoAsync(); 
+        }
+        else
+        {
+            DialogService.DialogManager.DismissDialog(); 
         }
     }
     public async Task<(int Code, string Msg, JObject ContentInfo)> UserLogin(string token, string email = "", string password = "", string auth2fa = "", bool saveToken = false)
