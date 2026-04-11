@@ -1,6 +1,6 @@
 {
-  "version": "1.3.5.1",
-  "buildTime": "2026-04-05 17:25:31",
+  "version": "1.3.6",
+  "buildTime": "2026-04-11 23:22:58",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -74,10 +74,76 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "5f60e847653ef56543b803880a92bd60b350d0c6",
-  "commitMsg": "Merge remote-tracking branch 'origin/master' into dev",
+  "commitId": "2b828254f997e05eac8cbd6826ffdc1cd2b9621e",
+  "commitMsg": "perf(webpanel): 优化模组/插件管理页面的一些样式",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "2b828254f997e05eac8cbd6826ffdc1cd2b9621e",
+      "commitTime": "2026-04-11 22:51:28 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(webpanel): 优化模组/插件管理页面的一些样式"
+    },
+    {
+      "commitId": "6dea7a04d6f7c7ae8d95ccd2df0720c855e73bbc",
+      "commitTime": "2026-04-11 22:35:15 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复部分长文本框边框样式丢失的问题"
+    },
+    {
+      "commitId": "b3064f991c50f5b2910c6dc9a233ba4fc45b217a",
+      "commitTime": "2026-04-11 21:50:48 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 隧道列表动画同步实例列表的动画效果"
+    },
+    {
+      "commitId": "9be6b915fd0dcfb36f314469c109ecb02567991c",
+      "commitTime": "2026-04-11 21:36:39 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 更新时支持自动结束运行中的实例 #98"
+    },
+    {
+      "commitId": "b802547d4f9241fc4740202b7db34a9d00c4acd2",
+      "commitTime": "2026-04-11 20:38:18 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 基岩版Windows系统下备份功能暂时使用英语提示信息防止乱码问题"
+    },
+    {
+      "commitId": "4032b28dece915fb089fd315a0a88dfa54c3a2dd",
+      "commitTime": "2026-04-08 00:12:27 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(desktop): 修好了MSLFrp OAuth登录逻辑喵"
+    },
+    {
+      "commitId": "be84caa3d55e3e200af211e622c168772da48185",
+      "commitTime": "2026-04-07 22:38:00 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "perf(desktop): 登录模块--成功了，但成功了一半，后面继续写吧！先睡觉！"
+    },
+    {
+      "commitId": "416ac43ab6d451cb979d52d68de93e9664024d9f",
+      "commitTime": "2026-04-07 12:31:42 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "feat(desktop): 完善创建Frp隧道功能（暂不可用）"
+    },
+    {
+      "commitId": "c9161a9cb4585337acc4e6cd5a46833fc08889e1",
+      "commitTime": "2026-04-06 21:31:26 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 服务端备份新增基岩版兼容处理"
+    },
+    {
+      "commitId": "71291ac46cc4c4eaaff52b64960ac830ef83e9c3",
+      "commitTime": "2026-04-05 17:27:16 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #105 from MSLTeam/dev"
+    },
+    {
+      "commitId": "c39d5634dd0edf3212dad6a15b9e3f499e7be987",
+      "commitTime": "2026-04-05 17:26:28 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(webpanel & daemon): 修复构建前端资源丢失 & 更新到v1.3.5.1版本"
+    },
     {
       "commitId": "5f60e847653ef56543b803880a92bd60b350d0c6",
       "commitTime": "2026-04-05 17:15:42 +0800",
@@ -311,72 +377,6 @@
       "commitTime": "2026-03-21 19:36:02 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "fix(daemon): 修复全局管理员APIKey权限丢失的问题"
-    },
-    {
-      "commitId": "d3d9a584a288ef2e826de99ec531d9cbc0c42365",
-      "commitTime": "2026-03-21 16:57:37 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 防止非Linux系统执行基岩版服务端chmod权限指令 #84"
-    },
-    {
-      "commitId": "064cff21dfaddc5435a6dacb364d0c2826f420bf",
-      "commitTime": "2026-03-21 16:56:40 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修正基岩版默认关闭指令为stop #84"
-    },
-    {
-      "commitId": "0b6e93467ab71a05b897f4a654d64aa51c47a7ce",
-      "commitTime": "2026-03-21 16:48:41 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 新增基岩版一键部署功能 #84"
-    },
-    {
-      "commitId": "a6c044c107ebcaa214c4ca9cd8c5c1417579e02e",
-      "commitTime": "2026-03-20 23:27:39 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 新增密码错误封禁策略"
-    },
-    {
-      "commitId": "e3ec2624d28f4149e43cb8d314d569aa6f9f52f5",
-      "commitTime": "2026-03-18 23:34:31 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 更新 MSLAPI 接口到 V4 版本"
-    },
-    {
-      "commitId": "a943448f7e372c59985aecfbb131b5fb510c3530",
-      "commitTime": "2026-03-17 23:11:19 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复输入输出编码错误的出现UTF-8 With BOM的选项"
-    },
-    {
-      "commitId": "5307b69bfbf59a30b270d8c7701f625f48314cfd",
-      "commitTime": "2026-03-16 17:09:42 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): Q弹的头像特效"
-    },
-    {
-      "commitId": "b51e8779ab53be0acf7509b6a93234d8c13c3356",
-      "commitTime": "2026-03-16 17:05:03 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复设置页面个人资料页面圆角效果丢失问题"
-    },
-    {
-      "commitId": "93c78a85e3d422659ccd7dbfa8bf8562197e0079",
-      "commitTime": "2026-03-16 17:02:29 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 页面顶部用户下拉弹窗更好看"
-    },
-    {
-      "commitId": "472319425a8f2389c840278e57f733c90faf6fcc",
-      "commitTime": "2026-03-16 16:52:53 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复服务端列表页面特定宽度下的溢出问题"
-    },
-    {
-      "commitId": "e30427a750406d73fa012f37d5e0b16400de1664",
-      "commitTime": "2026-03-15 20:10:55 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #89 from MSLTeam/dev"
     }
   ]
 }
