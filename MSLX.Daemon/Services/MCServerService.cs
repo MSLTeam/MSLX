@@ -697,7 +697,7 @@ public class MCServerService
     /// <summary>
     /// 停止所有服务器
     /// </summary>
-    private void StopAllServers()
+    public void StopAllServers()
     {
         if (_activeServers.IsEmpty) return;
 

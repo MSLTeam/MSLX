@@ -8,6 +8,7 @@ import {
   CheckCircleIcon,
   StopCircleIcon,
   LinkIcon,
+  InfoCircleIcon,
 } from 'tdesign-icons-vue-next';
 import { HubConnectionBuilder, LogLevel, HubConnection } from '@microsoft/signalr';
 import { MessagePlugin } from 'tdesign-vue-next';
@@ -96,12 +97,15 @@ const handleSkip = () => {
 const reloadPage = () => {
   window.location.reload();
 };
-watch(() => props.visible, (newVal, oldVal) => {
-  if (newVal && !oldVal) {
-    // 弹窗打开时重置状态
-    resetErrorStates();
-  }
-});
+watch(
+  () => props.visible,
+  (newVal, oldVal) => {
+    if (newVal && !oldVal) {
+      // 弹窗打开时重置状态
+      resetErrorStates();
+    }
+  },
+);
 
 // === SignalR 逻辑 ===
 const stopSignalR = async () => {
@@ -280,16 +284,23 @@ onUnmounted(() => {
         <div class="mt-2.5 flex items-center gap-2">
           <t-tag variant="outline" size="small" class="!font-mono !rounded-md">{{ updateInfo?.currentVersion }}</t-tag>
           <span class="text-zinc-400 font-mono font-bold">→</span>
-          <t-tag theme="primary" variant="light-outline" size="small" class="!font-mono !rounded-md">{{ updateInfo?.latestVersion }}</t-tag>
+          <t-tag theme="primary" variant="light-outline" size="small" class="!font-mono !rounded-md">{{
+            updateInfo?.latestVersion
+          }}</t-tag>
         </div>
       </div>
-      <t-button v-if="!isUpdating" variant="text" shape="circle" class="hover:!bg-zinc-100 dark:hover:!bg-zinc-800" @click="handleClose">
+      <t-button
+        v-if="!isUpdating"
+        variant="text"
+        shape="circle"
+        class="hover:!bg-zinc-100 dark:hover:!bg-zinc-800"
+        @click="handleClose"
+      >
         <template #icon><close-icon /></template>
       </t-button>
     </div>
 
     <div class="mb-6 min-h-[120px] flex flex-col justify-center">
-
       <div v-if="updateSuccess" class="flex flex-col items-center text-center py-2">
         <check-circle-icon size="48px" class="text-emerald-500 mb-4 drop-shadow-sm" />
         <p class="text-base font-bold text-[var(--td-text-color-primary)] m-0 mb-1">MSLX守护进程端已成功更新</p>
@@ -299,13 +310,21 @@ onUnmounted(() => {
       <div v-else-if="isDockerEnv" class="py-2">
         <t-alert theme="warning" title="检测到 Docker 环境" class="!rounded-xl">
           <template #message>
-            当前程序运行在 <b>Docker 容器</b> 内，不支持热更新。<br />请使用以下命令或者参照 <b>官方文档</b> 更新。<br />
-            <t-link theme="primary" href="https://mslx.mslmc.cn/docs/install/docker/" target="_blank" class="mt-1 align-baseline">
+            当前程序运行在 <b>Docker 容器</b> 内，不支持热更新。<br />请使用以下命令或者参照
+            <b>官方文档</b> 更新。<br />
+            <t-link
+              theme="primary"
+              href="https://mslx.mslmc.cn/docs/install/docker/"
+              target="_blank"
+              class="mt-1 align-baseline"
+            >
               <b>Docker安装/更新文档</b>
             </t-link>
           </template>
         </t-alert>
-        <div class="mt-3 bg-[#1e1e1e] text-[#d4d4d4] p-3 rounded-xl font-mono text-[13px] break-all select-all shadow-inner border border-black/20">
+        <div
+          class="mt-3 bg-[#1e1e1e] text-[#d4d4d4] p-3 rounded-xl font-mono text-[13px] break-all select-all shadow-inner border border-black/20"
+        >
           sudo docker compose pull && docker compose up -d <span class="text-zinc-500"># 指令仅适用于Compose部署</span>
         </div>
       </div>
@@ -318,7 +337,10 @@ onUnmounted(() => {
         </p>
       </div>
 
-      <div v-else-if="updateStatusText.includes('等待服务端确认权限')" class="flex flex-col items-center text-center py-4">
+      <div
+        v-else-if="updateStatusText.includes('等待服务端确认权限')"
+        class="flex flex-col items-center text-center py-4"
+      >
         <p class="text-base font-bold text-[var(--td-text-color-primary)] m-0 mb-2">请在服务端确认权限</p>
         <p class="text-sm text-[var(--td-text-color-secondary)] m-0 leading-relaxed">
           macOS 系统已弹出提示：<br />
@@ -329,7 +351,9 @@ onUnmounted(() => {
 
       <div v-else-if="isUpdating || errorMessage" class="py-2">
         <template v-if="errorMessage">
-          <div class="flex items-center gap-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 p-3.5 rounded-xl border border-red-100 dark:border-red-900/50">
+          <div
+            class="flex items-center gap-2 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 p-3.5 rounded-xl border border-red-100 dark:border-red-900/50"
+          >
             <error-circle-icon class="shrink-0 text-lg" />
             <span class="text-sm font-medium">{{ errorMessage }}</span>
           </div>
@@ -339,7 +363,11 @@ onUnmounted(() => {
             <span class="font-medium text-[var(--color-primary)]">{{ updateStatusText }}</span>
             <span class="text-xs font-mono text-[var(--td-text-color-secondary)]">{{ updateSpeed }}</span>
           </div>
-          <t-progress theme="plump" :percentage="updateProgress" :status="updateProgress >= 100 ? 'active' : 'success'" />
+          <t-progress
+            theme="plump"
+            :percentage="updateProgress"
+            :status="updateProgress >= 100 ? 'active' : 'success'"
+          />
         </template>
       </div>
 
@@ -347,7 +375,8 @@ onUnmounted(() => {
         <t-alert v-if="isMacOS" theme="warning" variant="outline" class="!rounded-xl !text-[13px] leading-relaxed">
           <template #message>
             <strong>macOS 用户请注意：</strong><br />
-            受 Apple 安全机制 (Gatekeeper) 限制，更新重启后应用可能无法自动启动。如遇此情况，请前往「系统设置 > 隐私与安全性」手动允许应用运行。
+            受 Apple 安全机制 (Gatekeeper) 限制，更新重启后应用可能无法自动启动。如遇此情况，请前往「系统设置 >
+            隐私与安全性」手动允许应用运行。
           </template>
         </t-alert>
 
@@ -355,7 +384,16 @@ onUnmounted(() => {
           <template #message>
             <strong>Linux 用户提示：</strong>
             <ul class="m-0 mt-1 pl-4 leading-relaxed opacity-90 space-y-1">
-              <li>如使用一键脚本部署，推荐优先参考 <t-link theme="primary" href="https://mslx.mslmc.cn/docs/install/linux/" target="_blank" class="align-baseline font-bold">官方文档</t-link>。</li>
+              <li>
+                如使用一键脚本部署，推荐优先参考
+                <t-link
+                  theme="primary"
+                  href="https://mslx.mslmc.cn/docs/install/linux/"
+                  target="_blank"
+                  class="align-baseline font-bold"
+                  >官方文档</t-link
+                >。
+              </li>
               <li>若启用 <strong>Systemd</strong> 托管，请确保服务名称为 <code>mslx</code>，否则无法自动重启。</li>
               <li>如果更新完成后仍然是旧版本，请尝试手动重启服务或手动更新！</li>
             </ul>
@@ -364,33 +402,70 @@ onUnmounted(() => {
 
         <div class="flex flex-col gap-1.5 mt-1">
           <div class="text-[13px] font-bold text-[var(--td-text-color-secondary)] tracking-wider">更新内容</div>
-          <div class="bg-zinc-50 dark:bg-zinc-900/50 rounded-xl p-3.5 max-h-[200px] overflow-y-auto border border-zinc-200/60 dark:border-zinc-700/50 shadow-inner custom-scrollbar">
+          <div
+            class="bg-zinc-50 dark:bg-zinc-900/50 rounded-xl p-3.5 max-h-[200px] overflow-y-auto border border-zinc-200/60 dark:border-zinc-700/50 shadow-inner custom-scrollbar"
+          >
             <div class="font-mono text-[13px] leading-relaxed whitespace-pre-wrap text-zinc-700 dark:text-zinc-300">
               {{ updateInfo?.log || '暂无详细日志' }}
             </div>
           </div>
         </div>
+        <div class="mt-4 px-1">
+          <span class="text-[12px] text-zinc-400">
+            <info-circle-icon size="14px" class="inline-block mr-1" />
+            更新将自动重启守护进程，运行中的实例将被强制停止，建议您在更新前手动结束所有实例以保存数据。
+          </span>
+        </div>
       </div>
     </div>
 
     <div v-if="!updateSuccess && !isDockerEnv && !hasRunningServers" class="flex flex-col gap-3">
-      <t-button theme="primary" block size="large" :loading="isUpdating" :disabled="isUpdating" class="!rounded-xl shadow-sm" @click="handleAutoUpdate">
+      <t-button
+        theme="primary"
+        block
+        size="large"
+        :loading="isUpdating"
+        :disabled="isUpdating"
+        class="!rounded-xl shadow-sm"
+        @click="handleAutoUpdate"
+      >
         <template #icon><cloud-download-icon /></template>
         {{ isUpdating ? '正在更新...' : '立即更新' }}
       </t-button>
 
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <t-button variant="outline" block class="!rounded-xl !m-0" :disabled="!downloadInfo?.file || isUpdating" @click="openLink(downloadInfo?.file || '')">
+        <t-button
+          variant="outline"
+          block
+          class="!rounded-xl !m-0"
+          :disabled="!downloadInfo?.file || isUpdating"
+          @click="openLink(downloadInfo?.file || '')"
+        >
           <template #icon><download-icon /></template> 下载新版本
         </t-button>
-        <t-button variant="dashed" block class="!rounded-xl !m-0" :disabled="!downloadInfo?.web || isUpdating" @click="openLink(downloadInfo?.web || '')">
+        <t-button
+          variant="dashed"
+          block
+          class="!rounded-xl !m-0"
+          :disabled="!downloadInfo?.web || isUpdating"
+          @click="openLink(downloadInfo?.web || '')"
+        >
           <template #icon><link-icon /></template> 前往下载页
         </t-button>
       </div>
 
       <div v-if="!isUpdating" class="mt-2 flex justify-center">
-        <t-popconfirm content="确定要跳过此版本吗？跳过后将不再提示该版本。后续可在设置中更新。" theme="warning" @confirm="handleSkip">
-          <t-link theme="default" hover="color" size="small" class="!text-zinc-400 hover:!text-zinc-600 dark:hover:!text-zinc-300">
+        <t-popconfirm
+          content="确定要跳过此版本吗？跳过后将不再提示该版本。后续可在设置中更新。"
+          theme="warning"
+          @confirm="handleSkip"
+        >
+          <t-link
+            theme="default"
+            hover="color"
+            size="small"
+            class="!text-zinc-400 hover:!text-zinc-600 dark:hover:!text-zinc-300"
+          >
             跳过此版本
           </t-link>
         </t-popconfirm>
@@ -406,7 +481,9 @@ onUnmounted(() => {
     </div>
 
     <div v-if="hasRunningServers" class="flex flex-col gap-3 mt-4">
-      <t-button theme="primary" size="large" block class="!rounded-xl shadow-sm" @click="toInstanceList">前往实例列表管理</t-button>
+      <t-button theme="primary" size="large" block class="!rounded-xl shadow-sm" @click="toInstanceList"
+        >前往实例列表管理</t-button
+      >
       <t-button variant="outline" size="large" block class="!rounded-xl !m-0" @click="handleClose">暂不更新</t-button>
     </div>
   </t-dialog>
