@@ -15,8 +15,7 @@
   transition: all 0.2s cubic-bezier(0.38, 0, 0.24, 1);
 }
 
-.t-input .t-input__inner,
-.t-textarea__inner {
+.t-input .t-input__inner {
   @apply !bg-transparent !shadow-none !border-none !outline-none;
   background: transparent !important;
 }
@@ -71,6 +70,22 @@ html[theme-mode='dark'] .t-input,
 .t-select-input__wrap .t-tag__close,
 .t-select__wrap .t-tag__close {
   @apply !mt-0.5 !ml-1 !text-zinc-400 hover:!text-red-500 transition-colors;
+}
+
+/* === textarea 边框丢失修复 === */
+.global-layout-bg.custom-theme-enabled .t-textarea__inner,
+.t-textarea__inner {
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+}
+
+html[theme-mode='dark'] .t-textarea__inner,
+.dark .t-textarea__inner {
+  box-shadow: inset 0 0 0 1px #3f3f46 !important;
+}
+
+.t-textarea__inner:focus,
+.t-textarea__inner:focus-within {
+  box-shadow: inset 0 0 0 2px var(--color-primary) !important;
 }
 
 

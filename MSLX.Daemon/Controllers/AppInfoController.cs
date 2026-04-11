@@ -105,7 +105,7 @@ public class AppInfoController : ControllerBase
                 ["targetFrontendVersion"] = new JObject
                 {
                     ["desktop"] = "1.0.0",
-                    ["panel"] = "1.3.5.1"
+                    ["panel"] = "1.3.6"
                 },
                 ["systemInfo"] = systemInfo
             };
@@ -286,6 +286,7 @@ public class AppInfoController : ControllerBase
             });
         }
 
+        /*
         // 运行状态预检
         if (_serverService.HasRunningServers())
         {
@@ -294,7 +295,7 @@ public class AppInfoController : ControllerBase
                 Code = 400,
                 Message = "无法更新：当前有服务器实例正在运行！\n请先停止所有服务器实例后再尝试更新。",
             });
-        }
+        } */
 
         // 启动后台更新任务
         _ = Task.Run(async () => await PerformUpdateProcessAsync(autoRestart));
@@ -363,6 +364,11 @@ public class AppInfoController : ControllerBase
 
             if (autoRestart)
             {
+                if (_serverService.HasRunningServers())
+                {
+                    await SendUpdateProgressAsync(100, "0 KB/s", "restarting", "正在关闭运行中的实例...");
+                    _serverService.StopAllServers();
+                }
                 await SendUpdateProgressAsync(100, "0 KB/s", "restarting", "准备重启守护进程...");
                 await StartUpdateScriptAndExitAsync(newFileTempName, isWindows);
             }

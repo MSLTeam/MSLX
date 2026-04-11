@@ -62,9 +62,9 @@ public partial class WelcomePage : UserControl
                         if (isSuccess)
                         {
                             // 验证成功，跳转到主页面
-                            SideMenuHelper.MainSideMenuHelper?.ShowMainPages();
-                            SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
-                            SideMenuHelper.MainSideMenuHelper?.NavigateTo<HomePage>();
+                            SideMenuHelper.Current?.ShowMainPages();
+                            SideMenuHelper.Current?.NavigateRemove(this);
+                            SideMenuHelper.Current?.NavigateTo<HomePage>();
 
                             _ = UpdateService.UpdateDaemonApp(false);
                         }
@@ -84,9 +84,9 @@ public partial class WelcomePage : UserControl
                     if (await DaemonManager.GetKeyAndLinkDaemon(false,false))
                     {
                         // 验证成功，跳转到主页面
-                        SideMenuHelper.MainSideMenuHelper?.ShowMainPages();
-                        SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
-                        SideMenuHelper.MainSideMenuHelper?.NavigateTo<HomePage>();
+                        SideMenuHelper.Current?.ShowMainPages();
+                        SideMenuHelper.Current?.NavigateRemove(this);
+                        SideMenuHelper.Current?.NavigateTo<HomePage>();
                     }
                     else
                     {
@@ -101,9 +101,9 @@ public partial class WelcomePage : UserControl
                 if (isSuccess)
                 {
                     // 验证成功，跳转到主页面
-                    SideMenuHelper.MainSideMenuHelper?.ShowMainPages();
-                    SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
-                    SideMenuHelper.MainSideMenuHelper?.NavigateTo<HomePage>();
+                    SideMenuHelper.Current?.ShowMainPages();
+                    SideMenuHelper.Current?.NavigateRemove(this);
+                    SideMenuHelper.Current?.NavigateTo<HomePage>();
 
                     _ = UpdateService.UpdateDaemonApp(true);
                 }
@@ -146,9 +146,9 @@ public partial class WelcomePage : UserControl
                 if (isSuccess)
                 {
                     // 验证成功，跳转到主页面
-                    SideMenuHelper.MainSideMenuHelper?.ShowMainPages();
-                    SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
-                    SideMenuHelper.MainSideMenuHelper?.NavigateTo<HomePage>();
+                    SideMenuHelper.Current?.ShowMainPages();
+                    SideMenuHelper.Current?.NavigateRemove(this);
+                    SideMenuHelper.Current?.NavigateTo<HomePage>();
                     return;
                 }
             }
@@ -195,11 +195,11 @@ public partial class WelcomePage : UserControl
 
     private void Next_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
+        SideMenuHelper.Current?.NavigateRemove(this);
         int tag = (int)(Next.Tag ?? 0);
         if (tag == 0)
         {
-            SideMenuHelper.MainSideMenuHelper?.NavigateTo(new SukiSideMenuItem
+            SideMenuHelper.Current?.NavigateTo(new SukiSideMenuItem
             {
                 Header = "下载守护程序",
                 Icon = new MaterialIcon()
@@ -212,7 +212,7 @@ public partial class WelcomePage : UserControl
         }
         else
         {
-            SideMenuHelper.MainSideMenuHelper?.NavigateTo(new SukiSideMenuItem
+            SideMenuHelper.Current?.NavigateTo(new SukiSideMenuItem
             {
                 Header = "链接守护程序",
                 Icon = new MaterialIcon()

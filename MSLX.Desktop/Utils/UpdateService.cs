@@ -444,7 +444,6 @@ namespace MSLX.Desktop.Utils
                     if (data.Stage == "restarting")
                     {
                         await _updateService.DisconnectAsync();
-                        _updateService.Dispose();
                         await Task.Delay(500);
                         DialogService.ToastManager.Dismiss(toast);
                         DialogService.DialogManager.CreateDialog()
@@ -453,7 +452,7 @@ namespace MSLX.Desktop.Utils
                             .TryShow();
                         await Task.Delay(10000);
                         DialogService.DialogManager.DismissDialog();
-                        SideMenuHelper.MainSideMenuHelper?.NavigateTo(new SukiSideMenuItem
+                        SideMenuHelper.Current?.NavigateTo(new SukiSideMenuItem
                         {
                             Header = "欢迎",
                             Icon = new MaterialIcon()
@@ -463,12 +462,11 @@ namespace MSLX.Desktop.Utils
                             PageContent = new WelcomePage(),
                             IsContentMovable = false
                         }, true, 0);
-                        SideMenuHelper.MainSideMenuHelper?.HideMainPages(0);
+                        SideMenuHelper.Current?.HideMainPages(0);
                     }
                     else if (!autoRestart && data.Stage == "completed")
                     {
                         await _updateService.DisconnectAsync();
-                        _updateService.Dispose();
                         await Task.Delay(500);
                         DialogService.ToastManager.Dismiss(toast);
                         await DaemonManager.StopRunningDaemon();
@@ -521,7 +519,7 @@ namespace MSLX.Desktop.Utils
                                 break;
                         }
                         DialogService.DialogManager.DismissDialog();
-                        SideMenuHelper.MainSideMenuHelper?.NavigateTo(new SukiSideMenuItem
+                        SideMenuHelper.Current?.NavigateTo(new SukiSideMenuItem
                         {
                             Header = "欢迎",
                             Icon = new MaterialIcon()
@@ -531,7 +529,7 @@ namespace MSLX.Desktop.Utils
                             PageContent = new WelcomePage(),
                             IsContentMovable = false
                         }, true, 0);
-                        SideMenuHelper.MainSideMenuHelper?.HideMainPages(0);
+                        SideMenuHelper.Current?.HideMainPages(0);
                     }
                 };
 
@@ -588,7 +586,6 @@ namespace MSLX.Desktop.Utils
                         .TryShow();
 
                     await _updateService.DisconnectAsync();
-                    _updateService.Dispose();
                     return;
                 }
 
@@ -607,7 +604,6 @@ namespace MSLX.Desktop.Utils
                             .TryShow();
 
                         await _updateService.DisconnectAsync();
-                        _updateService.Dispose();
                         return;
                     }
                 }

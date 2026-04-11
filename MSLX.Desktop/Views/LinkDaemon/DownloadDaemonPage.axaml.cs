@@ -163,9 +163,9 @@ public partial class DownloadDaemonPage : UserControl
                         ConfigService.Config.WriteConfigKey("AutoRunDaemon", true);
                     }
                     // 验证成功，跳转到主页面
-                    SideMenuHelper.MainSideMenuHelper?.ShowMainPages();
-                    SideMenuHelper.MainSideMenuHelper?.NavigateRemove(this);
-                    SideMenuHelper.MainSideMenuHelper?.NavigateTo<HomePage>();
+                    SideMenuHelper.Current?.ShowMainPages();
+                    SideMenuHelper.Current?.NavigateRemove(this);
+                    SideMenuHelper.Current?.NavigateTo<HomePage>();
                 }
             }
         }
@@ -240,8 +240,8 @@ public partial class DownloadDaemonPage : UserControl
 
     private void LinkDaemonBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs? e)
     {
-        SideMenuHelper.MainSideMenuHelper?.NavigateRemove<DownloadDaemonPage>();
-        SideMenuHelper.MainSideMenuHelper?.NavigateTo(new SukiSideMenuItem
+        SideMenuHelper.Current?.NavigateRemove<DownloadDaemonPage>();
+        SideMenuHelper.Current?.NavigateTo(new SukiSideMenuItem
         {
             Header = "链接守护程序",
             Icon = new MaterialIcon()

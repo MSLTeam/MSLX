@@ -8,7 +8,7 @@ namespace MSLX.Desktop.Utils
     public class SideMenuHelper
     {
         public SukiSideMenu SideMenu { get; set; } = new SukiSideMenu();
-        public static SideMenuHelper? MainSideMenuHelper { get; set; }
+        public static SideMenuHelper Current { get; set; } = new();
 
         public void NavigateTo<T>() where T : UserControl
         {

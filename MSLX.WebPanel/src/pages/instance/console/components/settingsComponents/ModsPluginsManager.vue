@@ -296,10 +296,10 @@ watch(() => route.params.serverId, (newId) => {
 
         <template #status="{ row }">
           <t-tag v-if="row.status === 'enabled'" theme="success" variant="light" class="!rounded-md">
-            <template #icon><check-circle-icon /></template>已启用
+            <template #icon><check-circle-icon /></template>启用
           </t-tag>
           <t-tag v-else theme="default" variant="light" class="!rounded-md !text-zinc-500 dark:!text-zinc-400">
-            <template #icon><close-circle-icon /></template>已禁用
+            <template #icon><close-circle-icon /></template>禁用
           </t-tag>
         </template>
 
@@ -311,7 +311,6 @@ watch(() => route.params.serverId, (newId) => {
               size="medium"
               @change="toggleStatus(row)"
             >
-              <template #label="slotProps">{{ slotProps.value ? '开' : '关' }}</template>
             </t-switch>
 
             <t-popconfirm content="确定要删除此文件吗？" theme="danger" @confirm="handleAction('delete', [row.name])">

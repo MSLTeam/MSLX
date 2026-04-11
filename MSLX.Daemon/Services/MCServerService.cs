@@ -697,7 +697,7 @@ public class MCServerService
     /// <summary>
     /// 停止所有服务器
     /// </summary>
-    private void StopAllServers()
+    public void StopAllServers()
     {
         if (_activeServers.IsEmpty) return;
 
@@ -1088,28 +1088,54 @@ public class MCServerService
             RecordLog(instanceId, context, "[MSLX-Backup] 正在备份中，请勿重复操作。");
             return;
         }
-
+        bool isBedrock = false;
         try
         {
             context.IsBackuping = true;
             var server = IConfigBase.ServerList.GetServer(instanceId);
             if (server == null) return;
 
+            // 拦截基岩版逻辑
+            if (File.Exists(Path.Combine(server.Base, "bedrock_server")) ||
+                File.Exists(Path.Combine(server.Base, "bedrock_server.exe")))
+            {
+                isBedrock = true;
+            }
+
             if (IsServerRunning(instanceId))
             {
-                SendCommand(instanceId, "save-off");
-                await Task.Delay(1000);
-                SendCommand(instanceId, "save-all");
-                SendCommand(instanceId,
-                    "tellraw @a [{\"text\":\"[\",\"color\":\"yellow\"},{\"text\":\"MSLX\",\"color\":\"green\"},{\"text\":\"]\",\"color\":\"yellow\"},{\"text\":\"正在进行服务器存档备份，请勿关闭服务器哦，否则可能造成回档！备份期间不会影响正常游戏~\",\"color\":\"aqua\"}]");
-                RecordLog(instanceId, context, "[MSLX-Backup] 正在备份服务器存档...");
+                if (isBedrock)
+                {
+                    SendCommand(instanceId, "save hold");
+                    if (PlatFormServices.GetOs() == "Windows") // Windows下目前输入中文会乱码 暂时这么解决叭
+                    {
+                        SendCommand(instanceId,
+                            "tellraw @a {\"rawtext\":[{\"text\":\"[MSLX] Backup in progress ~\"}]}");
+                    }
+                    else
+                    {
+                        SendCommand(instanceId,
+                            "tellraw @a {\"rawtext\":[{\"text\":\"§e[§aMSLX§e] §b正在进行服务器存档备份，请勿关闭服务器哦，否则可能造成回档！备份期间不会影响正常游戏~\"}]}");
+                    }
+                    RecordLog(instanceId, context, "[MSLX-Backup] 正在备份基岩版服务器存档...");
+                    await Task.Delay(server.BackupDelay * 1000);
+                }
+                else
+                {
+                    SendCommand(instanceId, "save-off");
+                    await Task.Delay(1000);
+                    SendCommand(instanceId, "save-all");
+                    SendCommand(instanceId,
+                        "tellraw @a [{\"text\":\"[\",\"color\":\"yellow\"},{\"text\":\"MSLX\",\"color\":\"green\"},{\"text\":\"]\",\"color\":\"yellow\"},{\"text\":\"正在进行服务器存档备份，请勿关闭服务器哦，否则可能造成回档！备份期间不会影响正常游戏~\",\"color\":\"aqua\"}]");
+                    RecordLog(instanceId, context, "[MSLX-Backup] 正在备份服务器存档...");
 
-                await Task.Delay(server.BackupDelay * 1000); // 等待延迟时间进行保存
+                    await Task.Delay(server.BackupDelay * 1000); // 等待延迟时间进行保存
+                }
             }
 
             // 获取需要备份的内容
-            string worldPath = "world";
-            if (File.Exists(Path.Combine(server.Base, "server.properties")))
+            string worldPath = isBedrock ? "worlds" : "world";
+            if (File.Exists(Path.Combine(server.Base, "server.properties")) && !isBedrock)
             {
                 dynamic config = ServerPropertiesLoader.Load(Path.Combine(server.Base, "server.properties"),
                     FileUtils.GetFileEncodingByString(server.FileEncoding));
@@ -1134,9 +1160,26 @@ public class MCServerService
                 _logger.LogWarning("未找到任何世界存档文件夹（包括主世界、下界、末地），备份失败！");
                 if (IsServerRunning(instanceId))
                 {
-                    SendCommand(instanceId, "save-on");
-                    SendCommand(instanceId,
-                        "tellraw @a [{\"text\":\"[\",\"color\":\"yellow\"},{\"text\":\"MSLX\",\"color\":\"green\"},{\"text\":\"]\",\"color\":\"yellow\"},{\"text\":\"备份失败！未找到任何世界存档文件夹！\",\"color\":\"red\"}]");
+                    if (isBedrock)
+                    {
+                        SendCommand(instanceId, "save resume");
+                        if (PlatFormServices.GetOs() == "Windows")
+                        {
+                            SendCommand(instanceId,
+                                "tellraw @a {\"rawtext\":[{\"text\":\"[MSLX] Backup failed !\"}]}");
+                        }
+                        else
+                        {
+                            SendCommand(instanceId,
+                                "tellraw @a {\"rawtext\":[{\"text\":\"§e[§aMSLX§e] §c备份失败！未找到任何世界存档文件夹！\"}]}");
+                        }
+                    }
+                    else
+                    {
+                        SendCommand(instanceId, "save-on");
+                        SendCommand(instanceId,
+                            "tellraw @a [{\"text\":\"[\",\"color\":\"yellow\"},{\"text\":\"MSLX\",\"color\":\"green\"},{\"text\":\"]\",\"color\":\"yellow\"},{\"text\":\"备份失败！未找到任何世界存档文件夹！\",\"color\":\"red\"}]");
+                    }
                 }
 
                 return;
@@ -1239,27 +1282,67 @@ public class MCServerService
                     {
                         formattedSize = $"{fileSizeInBytes} Bytes";
                     }
+                    
+                    string tellrawMessage;
 
-                    string tellrawMessage = $"tellraw @a [";
-                    tellrawMessage += "{\"text\":\"[\",\"color\":\"yellow\"},";
-                    tellrawMessage += "{\"text\":\"MSLX\",\"color\":\"green\"},";
-                    tellrawMessage += "{\"text\":\"]\",\"color\":\"yellow\"},";
-                    tellrawMessage += "{\"text\":\" 服务器存档备份完成！\\n\",\"color\":\"aqua\"},";
-                    tellrawMessage += $"{{\"text\":\"文件名: \",\"color\":\"gray\"}},";
-                    tellrawMessage += $"{{\"text\":\"{fileName}\",\"color\":\"white\"}},";
-                    tellrawMessage += $"{{\"text\":\"\\n大小: \",\"color\":\"gray\"}},";
-                    tellrawMessage += $"{{\"text\":\"{formattedSize}\",\"color\":\"white\"}}";
-                    tellrawMessage += "]";
-                    SendCommand(instanceId, "save-on");
-                    SendCommand(instanceId, tellrawMessage);
+                    if (isBedrock)
+                    {
+                        tellrawMessage =
+                            $"tellraw @a {{\"rawtext\":[{{\"text\":\"§e[§aMSLX§e]§b 服务器存档备份完成！\\n§7文件名: §f{fileName}\\n§7大小: §f{formattedSize}\"}}]}}";
+
+                        SendCommand(instanceId, "save resume");
+                    }
+                    else
+                    {
+                        tellrawMessage = $"tellraw @a [";
+                        tellrawMessage += "{\"text\":\"[\",\"color\":\"yellow\"},";
+                        tellrawMessage += "{\"text\":\"MSLX\",\"color\":\"green\"},";
+                        tellrawMessage += "{\"text\":\"]\",\"color\":\"yellow\"},";
+                        tellrawMessage += "{\"text\":\" 服务器存档备份完成！\\n\",\"color\":\"aqua\"},";
+                        tellrawMessage += $"{{\"text\":\"文件名: \",\"color\":\"gray\"}},";
+                        tellrawMessage += $"{{\"text\":\"{fileName}\",\"color\":\"white\"}},";
+                        tellrawMessage += $"{{\"text\":\"\\n大小: \",\"color\":\"gray\"}},";
+                        tellrawMessage += $"{{\"text\":\"{formattedSize}\",\"color\":\"white\"}}";
+                        tellrawMessage += "]";
+
+                        SendCommand(instanceId, "save-on");
+                    }
+                    
+                    if (PlatFormServices.GetOs() == "Windows" && isBedrock)
+                    {
+                        SendCommand(instanceId,
+                            "tellraw @a {\"rawtext\":[{\"text\":\"[MSLX] Backup finished !\"}]}");
+                    }
+                    else
+                    {
+                        SendCommand(instanceId, tellrawMessage);
+                    }
                 }
                 catch (Exception ex)
                 {
                     RecordLog(instanceId, context, "[MSL备份] 无法获取备份文件信息：" + ex.Message);
                     _logger.LogWarning("无法获取备份文件信息：" + ex.ToString());
-                    SendCommand(instanceId, "save-on");
-                    SendCommand(instanceId,
-                        "tellraw @a [{\"text\":\"[\",\"color\":\"yellow\"},{\"text\":\"MSLX\",\"color\":\"green\"},{\"text\":\"]\",\"color\":\"yellow\"},{\"text\":\"服务器存档备份完成！\",\"color\":\"aqua\"}]");
+
+                    // 异常
+                    if (isBedrock)
+                    {
+                        SendCommand(instanceId, "save resume");
+                        if (PlatFormServices.GetOs() == "Windows")
+                        {
+                            SendCommand(instanceId,
+                                "tellraw @a {\"rawtext\":[{\"text\":\"[MSLX] Backup finished !\"}]}");
+                        }
+                        else
+                        {
+                            SendCommand(instanceId, "tellraw @a {\"rawtext\":[{\"text\":\"§e[§aMSLX§e] §b服务器存档备份完成！\"}]}");
+                        }
+                    }
+                    else
+                    {
+                        SendCommand(instanceId, "save-on");
+                        SendCommand(instanceId,
+                            "tellraw @a [{\"text\":\"[\",\"color\":\"yellow\"},{\"text\":\"MSLX\",\"color\":\"green\"},{\"text\":\"]\",\"color\":\"yellow\"},{\"text\":\"服务器存档备份完成！\",\"color\":\"aqua\"}]");
+                    }
                 }
             }
 
@@ -1276,7 +1359,15 @@ public class MCServerService
             // 最后这里再执行一次 不知道有啥意义 留着吧 qwq
             if (IsServerRunning(instanceId))
             {
-                SendCommand(instanceId, "save-on");
+                if (isBedrock)
+                {
+                    SendCommand(instanceId, "save resume");
+                }
+                else
+                {
+                    SendCommand(instanceId, "save-on");
+                }
+                
             }
         }
     }

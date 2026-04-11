@@ -15,10 +15,10 @@ public partial class MainWindow : SukiWindow
 
         this.DialogManager.Manager = DialogService.DialogManager;
         this.ToastManager.Manager = DialogService.ToastManager;
-        SideMenuHelper.MainSideMenuHelper = new SideMenuHelper();
-        SideMenuHelper.MainSideMenuHelper.SideMenu = this.MainSideMenu;
+        SideMenuHelper.Current = new SideMenuHelper();
+        SideMenuHelper.Current.SideMenu = this.MainSideMenu;
         this.MainSideMenu.ItemsSource = PageStore.MainPages;
-        SideMenuHelper.MainSideMenuHelper?.HideMainPages(0);
+        SideMenuHelper.Current?.HideMainPages(0);
     }
 
     private void MainWindow_Closing(object? sender, WindowClosingEventArgs e)
