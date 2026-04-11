@@ -113,7 +113,7 @@ onMounted(() => {
 <template>
   <div class="mx-auto flex flex-col gap-6 text-[var(--td-text-color-primary)] pb-5">
     <div
-      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80  rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
+      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
     >
       <div class="flex flex-col gap-1 items-start">
         <h2 class="text-lg font-bold tracking-tight text-[var(--td-text-color-primary)] m-0">隧道列表</h2>
@@ -163,8 +163,8 @@ onMounted(() => {
         <div
           v-for="(item, index) in tunnelsStore.frpList"
           :key="item.id"
-          :style="{ '--i': index }"
-          class="design-card group flex flex-col bg-[var(--td-bg-color-container)]/80  rounded-2xl border border-[var(--td-component-border)] shadow-sm hover:shadow-md hover:border-[var(--color-primary)]/50 transition-all duration-300 p-5 gap-5 cursor-pointer"
+          :style="{ animationDelay: `${index * 0.05}s` }"
+          class="list-item-anim design-card group flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm hover:shadow-md hover:border-[var(--color-primary)]/50 transition-all duration-300 p-5 gap-5 cursor-pointer"
           @click="handleCardClick(item)"
         >
           <div class="flex items-center justify-between gap-3">
@@ -191,7 +191,8 @@ onMounted(() => {
 
           <div class="flex items-center gap-8 px-0.5">
             <div class="flex flex-col gap-1.5">
-              <span class="text-[10px] text-[var(--td-text-color-secondary)] uppercase tracking-widest font-black opacity-80"
+              <span
+                class="text-[10px] text-[var(--td-text-color-secondary)] uppercase tracking-widest font-black opacity-80"
                 >提供商</span
               >
               <div class="flex items-center gap-2 text-[var(--td-text-color-primary)]">
@@ -201,7 +202,8 @@ onMounted(() => {
             </div>
 
             <div class="flex flex-col gap-1.5">
-              <span class="text-[10px] text-[var(--td-text-color-secondary)] uppercase tracking-widest font-black opacity-80"
+              <span
+                class="text-[10px] text-[var(--td-text-color-secondary)] uppercase tracking-widest font-black opacity-80"
                 >配置格式</span
               >
               <div>
@@ -293,14 +295,15 @@ onMounted(() => {
 @reference "@/style/tailwind/index.css";
 
 /* 列表进场动画 */
-.grid > div {
+.list-item-anim {
   animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  will-change: transform, opacity;
 }
 
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(16px);
   }
   to {
     opacity: 1;
