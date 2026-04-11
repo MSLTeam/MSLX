@@ -1107,8 +1107,16 @@ public class MCServerService
                 if (isBedrock)
                 {
                     SendCommand(instanceId, "save hold");
-                    SendCommand(instanceId,
-                        "tellraw @a {\"rawtext\":[{\"text\":\"§e[§aMSLX§e] §b正在进行服务器存档备份，请勿关闭服务器哦，否则可能造成回档！备份期间不会影响正常游戏~\"}]}");
+                    if (PlatFormServices.GetOs() == "Windows") // Windows下目前输入中文会乱码 暂时这么解决叭
+                    {
+                        SendCommand(instanceId,
+                            "tellraw @a {\"rawtext\":[{\"text\":\"[MSLX] Backup in progress ~\"}]}");
+                    }
+                    else
+                    {
+                        SendCommand(instanceId,
+                            "tellraw @a {\"rawtext\":[{\"text\":\"§e[§aMSLX§e] §b正在进行服务器存档备份，请勿关闭服务器哦，否则可能造成回档！备份期间不会影响正常游戏~\"}]}");
+                    }
                     RecordLog(instanceId, context, "[MSLX-Backup] 正在备份基岩版服务器存档...");
                     await Task.Delay(server.BackupDelay * 1000);
                 }
@@ -1155,8 +1163,16 @@ public class MCServerService
                     if (isBedrock)
                     {
                         SendCommand(instanceId, "save resume");
-                        SendCommand(instanceId,
-                            "tellraw @a {\"rawtext\":[{\"text\":\"§e[§aMSLX§e] §c备份失败！未找到任何世界存档文件夹！\"}]}");
+                        if (PlatFormServices.GetOs() == "Windows")
+                        {
+                            SendCommand(instanceId,
+                                "tellraw @a {\"rawtext\":[{\"text\":\"[MSLX] Backup failed !\"}]}");
+                        }
+                        else
+                        {
+                            SendCommand(instanceId,
+                                "tellraw @a {\"rawtext\":[{\"text\":\"§e[§aMSLX§e] §c备份失败！未找到任何世界存档文件夹！\"}]}");
+                        }
                     }
                     else
                     {
@@ -1292,7 +1308,15 @@ public class MCServerService
                         SendCommand(instanceId, "save-on");
                     }
                     
-                    SendCommand(instanceId, tellrawMessage);
+                    if (PlatFormServices.GetOs() == "Windows" && isBedrock)
+                    {
+                        SendCommand(instanceId,
+                            "tellraw @a {\"rawtext\":[{\"text\":\"[MSLX] Backup finished !\"}]}");
+                    }
+                    else
+                    {
+                        SendCommand(instanceId, tellrawMessage);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -1303,7 +1327,15 @@ public class MCServerService
                     if (isBedrock)
                     {
                         SendCommand(instanceId, "save resume");
-                        SendCommand(instanceId, "tellraw @a {\"rawtext\":[{\"text\":\"§e[§aMSLX§e] §b服务器存档备份完成！\"}]}");
+                        if (PlatFormServices.GetOs() == "Windows")
+                        {
+                            SendCommand(instanceId,
+                                "tellraw @a {\"rawtext\":[{\"text\":\"[MSLX] Backup finished !\"}]}");
+                        }
+                        else
+                        {
+                            SendCommand(instanceId, "tellraw @a {\"rawtext\":[{\"text\":\"§e[§aMSLX§e] §b服务器存档备份完成！\"}]}");
+                        }
                     }
                     else
                     {
