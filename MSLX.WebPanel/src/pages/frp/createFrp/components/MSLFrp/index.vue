@@ -7,6 +7,7 @@ import {
   AddIcon,
   PlayCircleIcon,
   RefreshIcon,
+  ErrorCircleFilledIcon,
 } from 'tdesign-icons-vue-next';
 import { changeUrl } from '@/router';
 import { onMounted, onUnmounted, ref, computed } from 'vue';
@@ -49,6 +50,7 @@ interface Tunnel {
   status: number;
   today_traffic: number;
   total_traffic: number;
+  ban: string;
 }
 
 interface NodeInfo {
@@ -289,25 +291,51 @@ async function handleDeleteTunnel() {
 
 <template>
   <div class="mx-auto pb-6 text-[var(--td-text-color-primary)]">
-
     <div v-if="mslUserToken === ''" class="flex items-center justify-center min-h-[70vh] list-item-anim">
-      <div class="design-card relative w-full max-w-md bg-[var(--td-bg-color-container)]/80 rounded-3xl border border-[var(--td-component-border)] shadow-xl p-10 text-center overflow-hidden">
-        <div class="absolute -top-20 -right-20 w-60 h-60 bg-[var(--color-primary)]/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-[var(--color-primary)]/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div
+        class="design-card relative w-full max-w-md bg-[var(--td-bg-color-container)]/80 rounded-3xl border border-[var(--td-component-border)] shadow-xl p-10 text-center overflow-hidden"
+      >
+        <div
+          class="absolute -top-20 -right-20 w-60 h-60 bg-[var(--color-primary)]/10 rounded-full blur-3xl pointer-events-none"
+        ></div>
+        <div
+          class="absolute -bottom-10 -left-10 w-40 h-40 bg-[var(--color-primary)]/10 rounded-full blur-3xl pointer-events-none"
+        ></div>
 
         <div class="relative z-10 flex flex-col items-center">
           <div class="w-20 h-20 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
-            <img src="https://user.mslmc.net/assets/png/msl-user-msl-user-logo-512-transparent-BjXu1GPW.png" alt="msl-user-logo" class="text-[var(--color-primary)]" />
+            <img
+              src="https://user.mslmc.net/assets/png/msl-user-msl-user-logo-512-transparent-BjXu1GPW.png"
+              alt="msl-user-logo"
+              class="text-[var(--color-primary)]"
+            />
           </div>
-          <h2 class="text-2xl font-extrabold text-[var(--td-text-color-primary)] !mb-2 tracking-tight">欢迎登录 MSLFrp</h2>
-          <p class="text-sm text-[var(--td-text-color-secondary)] !mb-8 font-medium">登录您的 MSL 账户以使用内网穿透服务</p>
+          <h2 class="text-2xl font-extrabold text-[var(--td-text-color-primary)] !mb-2 tracking-tight">
+            欢迎登录 MSLFrp
+          </h2>
+          <p class="text-sm text-[var(--td-text-color-secondary)] !mb-3 font-medium">
+            MSLFrp 是由 MSLX 的开发团队 MSLTeam 联合开发运营的内网穿透服务，登录您的 MSL 账号即可开始使用。
+          </p>
 
           <div class="w-full flex flex-col gap-4">
-            <t-button block theme="primary" size="large" class="!rounded-xl !h-12 !font-bold shadow-md shadow-[var(--color-primary-light)]/30 hover:shadow-[var(--color-primary-light)]/50" @click="jumpLogin">
+            <t-button
+              block
+              theme="primary"
+              size="large"
+              class="!rounded-xl !h-12 !font-bold shadow-md shadow-[var(--color-primary-light)]/30 hover:shadow-[var(--color-primary-light)]/50"
+              @click="jumpLogin"
+            >
               <template #icon><user-circle-icon /></template>
-              跳转用户中心登录
+              授权登录
             </t-button>
-            <t-button theme="default" variant="outline" block size="large" class="!rounded-xl !h-12 !font-bold !bg-white/50 dark:!bg-zinc-900/50 !border-zinc-200 dark:!border-zinc-700 hover:!text-[var(--color-primary)] hover:!border-[var(--color-primary)]/50 !ml-0" @click="changeUrl('https://user.mslmc.net/register')">
+            <t-button
+              theme="default"
+              variant="outline"
+              block
+              size="large"
+              class="!rounded-xl !h-12 !font-bold !bg-white/50 dark:!bg-zinc-900/50 !border-zinc-200 dark:!border-zinc-700 hover:!text-[var(--color-primary)] hover:!border-[var(--color-primary)]/50 !ml-0"
+              @click="changeUrl('https://user.mslmc.net/register')"
+            >
               <template #icon><user-add-icon /></template>
               注册 MSL 账户
             </t-button>
@@ -319,44 +347,95 @@ async function handleDeleteTunnel() {
     <div v-else id="app-space" class="relative flex flex-col gap-6">
       <t-loading attach="#app-space" :loading="loading" text="加载数据中..." />
 
-      <div v-if="userInfo" class="design-card list-item-anim bg-[var(--td-bg-color-container)]/80  rounded-2xl border border-[var(--td-component-border)] shadow-sm p-5 sm:p-6" style="animation-delay: 0s;">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60">
+      <div
+        v-if="userInfo"
+        class="design-card list-item-anim bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm p-5 sm:p-6"
+        style="animation-delay: 0s"
+      >
+        <div
+          class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60"
+        >
           <div class="flex flex-col">
             <h3 class="text-lg font-bold text-[var(--td-text-color-primary)] m-0 leading-none">MSLFrp 用户信息</h3>
           </div>
           <div class="flex items-center gap-2">
-            <t-button variant="outline" theme="success" size="small" class="!rounded-lg hover:!bg-[var(--color-success)]/10" @click="changeUrl('https://user.mslmc.net/store/buy')">订阅会员服务</t-button>
-            <t-tag theme="primary" variant="light-outline" class="!rounded-md !font-bold">{{ userInfo.user_group_name }}</t-tag>
+            <t-button
+              variant="outline"
+              theme="success"
+              size="small"
+              class="!rounded-lg hover:!bg-[var(--color-success)]/10"
+              @click="changeUrl('https://user.mslmc.net/store/buy')"
+              >订阅会员服务</t-button
+            >
+            <t-tag theme="primary" variant="light-outline" class="!rounded-md !font-bold">{{
+              userInfo.user_group_name
+            }}</t-tag>
             <div class="w-px h-4 bg-zinc-200 dark:bg-zinc-700 mx-1"></div>
             <t-popconfirm content="确认退出登录吗？" @confirm="handleLogout">
-              <t-button variant="text" theme="danger" size="small" class="!rounded-lg hover:!bg-red-500/10">退出登录</t-button>
+              <t-button variant="text" theme="danger" size="small" class="!rounded-lg hover:!bg-red-500/10"
+                >退出登录</t-button
+              >
             </t-popconfirm>
           </div>
         </div>
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800">
-            <div class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1">用户昵称</div>
+          <div
+            class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800"
+          >
+            <div
+              class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1"
+            >
+              用户昵称
+            </div>
             <div class="flex items-center gap-2">
               <span class="text-lg font-bold text-[var(--td-text-color-primary)] truncate">{{ userInfo.name }}</span>
-              <t-tag :theme="userInfo.realNameStatus ? 'success' : 'warning'" variant="light" size="small" class="!rounded cursor-pointer !font-bold !px-1.5" @click="changeUrl('https://user.mslmc.net/user/profile')">
+              <t-tag
+                :theme="userInfo.realNameStatus ? 'success' : 'warning'"
+                variant="light"
+                size="small"
+                class="!rounded cursor-pointer !font-bold !px-1.5"
+                @click="changeUrl('https://user.mslmc.net/user/profile')"
+              >
                 {{ userInfo.realNameStatus ? '已实名' : '未实名' }}
               </t-tag>
             </div>
           </div>
 
-          <div class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800">
-            <div class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1">隧道限额</div>
-            <div class="text-lg font-bold text-[var(--td-text-color-primary)] font-mono">{{ userInfo.maxTunnelCount }} <span class="text-sm font-medium text-zinc-500">条</span></div>
+          <div
+            class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800"
+          >
+            <div
+              class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1"
+            >
+              隧道限额
+            </div>
+            <div class="text-lg font-bold text-[var(--td-text-color-primary)] font-mono">
+              {{ userInfo.maxTunnelCount }} <span class="text-sm font-medium text-zinc-500">条</span>
+            </div>
           </div>
 
-          <div class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800">
-            <div class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1">速率限制</div>
-            <div class="text-lg font-bold text-[var(--td-text-color-primary)] font-mono">{{ (userInfo.boundLimit / 1024) * 8 }} <span class="text-sm font-medium text-zinc-500">Mbps</span></div>
+          <div
+            class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800"
+          >
+            <div
+              class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1"
+            >
+              速率限制
+            </div>
+            <div class="text-lg font-bold text-[var(--td-text-color-primary)] font-mono">
+              {{ (userInfo.boundLimit / 1024) * 8 }} <span class="text-sm font-medium text-zinc-500">Mbps</span>
+            </div>
           </div>
 
-          <div class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800">
-            <div class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1">会员到期时间</div>
+          <div
+            class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800"
+          >
+            <div
+              class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1"
+            >
+              会员到期时间
+            </div>
             <div class="text-[15px] font-bold text-[var(--td-text-color-primary)] font-mono mt-0.5">
               {{ userInfo.outdated === 3749682420 ? '长期有效' : formatTime(userInfo.outdated) }}
             </div>
@@ -365,15 +444,30 @@ async function handleDeleteTunnel() {
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-        <div class="lg:col-span-5 xl:col-span-4 design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80  rounded-2xl border border-[var(--td-component-border)] shadow-sm h-[580px]" style="animation-delay: 0.1s;">
-          <div class="flex items-center justify-between p-4 sm:p-5 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 shrink-0">
+        <div
+          class="lg:col-span-5 xl:col-span-4 design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm h-[580px]"
+          style="animation-delay: 0.1s"
+        >
+          <div
+            class="flex items-center justify-between p-4 sm:p-5 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 shrink-0"
+          >
             <h3 class="text-base font-bold text-[var(--td-text-color-primary)] m-0">我的隧道</h3>
             <div class="flex items-center gap-1">
-              <t-button size="small" variant="text" class="!px-2 hover:!bg-zinc-100 dark:hover:!bg-zinc-700/50" :loading="loading" @click="handleRefresh">
+              <t-button
+                size="small"
+                variant="text"
+                class="!px-2 hover:!bg-zinc-100 dark:hover:!bg-zinc-700/50"
+                :loading="loading"
+                @click="handleRefresh"
+              >
                 <template #icon><refresh-icon /></template>刷新
               </t-button>
-              <t-button size="small" variant="text" class="!px-2 hover:!bg-[var(--color-primary)]/10 hover:!text-[var(--color-primary)]" @click="showDomainDialog = true">
+              <t-button
+                size="small"
+                variant="text"
+                class="!px-2 hover:!bg-[var(--color-primary)]/10 hover:!text-[var(--color-primary)]"
+                @click="showDomainDialog = true"
+              >
                 <template #icon><cloud-icon /></template>子域名
               </t-button>
               <t-button size="small" theme="primary" class="!px-3 !ml-1 !rounded-lg" @click="handleAddTunnel">
@@ -388,20 +482,63 @@ async function handleDeleteTunnel() {
                 v-for="tunnel in tunnels"
                 :key="tunnel.id"
                 class="group flex items-center p-3 rounded-xl cursor-pointer transition-all duration-300 border"
-                :class="selectedTunnelId === tunnel.id ? 'bg-[var(--color-primary)]/10 border-[var(--color-primary)]/30 shadow-sm' : 'bg-transparent border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-700/50 hover:border-zinc-200 dark:hover:border-zinc-600'"
+                :class="
+                  selectedTunnelId === tunnel.id
+                    ? 'bg-[var(--color-primary)]/10 border-[var(--color-primary)]/30 shadow-sm'
+                    : 'bg-transparent border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-700/50 hover:border-zinc-200 dark:hover:border-zinc-600'
+                "
                 @click="selectedTunnelId = tunnel.id"
               >
-                <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 mr-3 transition-colors"
-                     :class="selectedTunnelId === tunnel.id ? 'bg-[var(--color-primary)] text-white shadow-md shadow-[var(--color-primary)]/30' : 'bg-zinc-100 dark:bg-zinc-900 text-[var(--td-text-color-secondary)] group-hover:text-zinc-800 dark:group-hover:text-zinc-200'">
+                <div
+                  class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 mr-3 transition-colors"
+                  :class="
+                    selectedTunnelId === tunnel.id
+                      ? 'bg-[var(--color-primary)] text-white shadow-md shadow-[var(--color-primary)]/30'
+                      : 'bg-zinc-100 dark:bg-zinc-900 text-[var(--td-text-color-secondary)] group-hover:text-zinc-800 dark:group-hover:text-zinc-200'
+                  "
+                >
                   <server-icon size="20px" />
                 </div>
                 <div class="flex-1 min-w-0 mr-3">
-                  <div class="font-bold text-sm truncate transition-colors" :class="selectedTunnelId === tunnel.id ? 'text-[var(--color-primary)]' : 'text-[var(--td-text-color-primary)]'">{{ tunnel.name }}</div>
-                  <div class="text-[11px] text-[var(--td-text-color-secondary)] truncate mt-0.5">{{ nodesMap[tunnel.node_id] || `Node ${tunnel.node_id}` }}</div>
+                  <div
+                    class="font-bold text-sm truncate transition-colors"
+                    :class="
+                      selectedTunnelId === tunnel.id
+                        ? 'text-[var(--color-primary)]'
+                        : 'text-[var(--td-text-color-primary)]'
+                    "
+                  >
+                    {{ tunnel.name }}
+                  </div>
+                  <div class="text-[11px] text-[var(--td-text-color-secondary)] truncate mt-0.5">
+                    {{ nodesMap[tunnel.node_id] || `Node ${tunnel.node_id}` }}
+                  </div>
                 </div>
-                <div class="shrink-0">
-                  <t-tag v-if="tunnel.status === 1" theme="success" variant="light" size="small" class="!rounded !font-bold !px-1.5">在线</t-tag>
-                  <t-tag v-else theme="default" variant="light" size="small" class="!rounded !font-bold !px-1.5 !text-zinc-500">未启动</t-tag>
+                <div class="shrink-0 flex-center">
+                  <t-tag
+                    v-if="tunnel.status === 1"
+                    theme="success"
+                    variant="light"
+                    size="small"
+                    class="!rounded !font-bold !px-1.5"
+                    >在线</t-tag
+                  >
+                  <t-tag
+                    v-if="tunnel.status === 0"
+                    theme="default"
+                    variant="light"
+                    size="small"
+                    class="!rounded !font-bold !px-1.5 !text-zinc-500"
+                    >未启动</t-tag
+                  >
+                  <t-tag
+                    v-if="tunnel.ban !== null"
+                    theme="danger"
+                    variant="light"
+                    size="small"
+                    class="!rounded !font-bold !px-1.5 !ml-2"
+                    >封禁中</t-tag
+                  >
                 </div>
               </div>
             </div>
@@ -413,17 +550,35 @@ async function handleDeleteTunnel() {
           </div>
         </div>
 
-        <div class="lg:col-span-7 xl:col-span-8 design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80  rounded-2xl border border-[var(--td-component-border)] shadow-sm h-[580px]" style="animation-delay: 0.2s;">
-
+        <div
+          class="lg:col-span-7 xl:col-span-8 design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm h-[580px]"
+          style="animation-delay: 0.2s"
+        >
           <template v-if="currentTunnel">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 shrink-0">
+            <div
+              class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 shrink-0"
+            >
               <div class="flex flex-col min-w-0">
-                <h3 class="text-xl font-extrabold text-[var(--td-text-color-primary)] m-0 truncate">{{ currentTunnel.name }}</h3>
-                <p class="text-xs text-[var(--td-text-color-secondary)] mt-1 truncate">{{ currentTunnel.remarks || '暂无备注' }}</p>
+                <h3 class="text-xl font-extrabold text-[var(--td-text-color-primary)] m-0 truncate">
+                  {{ currentTunnel.name }}
+                </h3>
+                <p class="text-xs text-[var(--td-text-color-secondary)] mt-1 truncate">
+                  {{ currentTunnel.remarks || '暂无备注' }}
+                </p>
               </div>
               <div class="shrink-0">
-                <t-popconfirm content="确认删除此隧道吗？将无法恢复！" theme="danger" placement="bottom-right" @confirm="handleDeleteTunnel">
-                  <t-button theme="danger"  class="!rounded-lg hover:!bg-red-500 hover:!text-white transition-colors" :loading="isDeleting">
+                <t-popconfirm
+                  content="确认删除此隧道吗？将无法恢复！"
+                  theme="danger"
+                  placement="bottom-right"
+                  @confirm="handleDeleteTunnel"
+                >
+                  <t-button
+                    :disabled="currentTunnel.ban !== null"
+                    theme="danger"
+                    class="!rounded-lg hover:!bg-red-500 hover:!text-white transition-colors"
+                    :loading="isDeleting"
+                  >
                     <template #icon><t-icon name="delete" /></template>
                     删除隧道
                   </t-button>
@@ -433,41 +588,115 @@ async function handleDeleteTunnel() {
 
             <div class="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-[var(--td-component-border)] flex flex-col justify-center">
-                  <span class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1.5">所在节点</span>
-                  <span class="text-sm font-bold text-[var(--td-text-color-primary)] truncate" :title="currentNodeName">{{ currentNodeName }}</span>
+                <div
+                  class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-[var(--td-component-border)] flex flex-col justify-center"
+                >
+                  <span
+                    class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1.5"
+                    >所在节点</span
+                  >
+                  <span
+                    class="text-sm font-bold text-[var(--td-text-color-primary)] truncate"
+                    :title="currentNodeName"
+                    >{{ currentNodeName }}</span
+                  >
                 </div>
 
-                <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-[var(--td-component-border)] flex flex-col justify-center">
-                  <span class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1.5">协议类型</span>
-                  <span class="text-sm font-bold text-[var(--color-primary)] uppercase tracking-wide">{{ currentTunnel.type }}</span>
+                <div
+                  class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-[var(--td-component-border)] flex flex-col justify-center"
+                >
+                  <span
+                    class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1.5"
+                    >协议类型</span
+                  >
+                  <span class="text-sm font-bold text-[var(--color-primary)] uppercase tracking-wide">{{
+                    currentTunnel.type
+                  }}</span>
                 </div>
 
-                <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-[var(--td-component-border)] flex flex-col justify-center">
-                  <span class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1.5">本地地址</span>
-                  <span class="text-sm font-mono font-bold text-[var(--td-text-color-primary)]">{{ currentTunnel.local_ip }}:{{ currentTunnel.local_port }}</span>
+                <div
+                  class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-[var(--td-component-border)] flex flex-col justify-center"
+                >
+                  <span
+                    class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1.5"
+                    >本地地址</span
+                  >
+                  <span class="text-sm font-mono font-bold text-[var(--td-text-color-primary)]"
+                    >{{ currentTunnel.local_ip }}:{{ currentTunnel.local_port }}</span
+                  >
                 </div>
 
-                <div class="p-4 bg-emerald-50/50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/30 flex flex-col justify-center">
-                  <span class="text-[11px] font-extrabold text-emerald-600/80 dark:text-emerald-500/80 uppercase tracking-widest mb-1.5">远程公网端口</span>
-                  <span class="text-lg font-mono font-extrabold text-emerald-600 dark:text-emerald-400">{{ currentTunnel.remote_port }}</span>
+                <div
+                  class="p-4 bg-emerald-50/50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/30 flex flex-col justify-center"
+                >
+                  <span
+                    class="text-[11px] font-extrabold text-emerald-600/80 dark:text-emerald-500/80 uppercase tracking-widest mb-1.5"
+                    >远程公网端口</span
+                  >
+                  <span class="text-lg font-mono font-extrabold text-emerald-600 dark:text-emerald-400">{{
+                    currentTunnel.remote_port
+                  }}</span>
                 </div>
 
-                <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-[var(--td-component-border)] flex flex-col justify-center">
-                  <span class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1.5">今日流量</span>
-                  <span class="text-sm font-mono font-bold text-[var(--td-text-color-primary)]">{{ formatBytes(currentTunnel.today_traffic * 1024 * 1024) }}</span>
+                <div
+                  class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-[var(--td-component-border)] flex flex-col justify-center"
+                >
+                  <span
+                    class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1.5"
+                    >今日流量</span
+                  >
+                  <span class="text-sm font-mono font-bold text-[var(--td-text-color-primary)]">{{
+                    formatBytes(currentTunnel.today_traffic * 1024 * 1024)
+                  }}</span>
                 </div>
 
-                <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-[var(--td-component-border)] flex flex-col justify-center">
-                  <span class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1.5">总流量</span>
-                  <span class="text-sm font-mono font-bold text-[var(--td-text-color-primary)]">{{ formatBytes(currentTunnel.total_traffic * 1024 * 1024) }}</span>
+                <div
+                  class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-[var(--td-component-border)] flex flex-col justify-center"
+                >
+                  <span
+                    class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1.5"
+                    >总流量</span
+                  >
+                  <span class="text-sm font-mono font-bold text-[var(--td-text-color-primary)]">{{
+                    formatBytes(currentTunnel.total_traffic * 1024 * 1024)
+                  }}</span>
                 </div>
               </div>
 
+              <div v-if="currentTunnel.ban !== null" class="mt-8">
+                <t-alert theme="error">
+                  <template #icon><error-circle-filled-icon /></template>
+                  <template #title>隧道被封禁</template>
+                  {{ currentTunnel.ban }}
+                </t-alert>
+
+              </div>
+
               <div class="mt-8">
-                <t-button theme="primary" size="large" :loading="isAddingTunnel" block class="!rounded-xl !h-12 !font-bold shadow-md shadow-[var(--color-primary-light)]/40 hover:shadow-[var(--color-primary-light)]/60 transition-shadow text-base" @click="handleUseTunnel">
+                <t-button
+                  v-if="currentTunnel.ban === null"
+                  theme="primary"
+                  size="large"
+                  :loading="isAddingTunnel"
+                  block
+                  class="!rounded-xl !h-12 !font-bold shadow-md shadow-[var(--color-primary-light)]/40 hover:shadow-[var(--color-primary-light)]/60 transition-shadow text-base"
+                  @click="handleUseTunnel"
+                >
                   <template #icon><play-circle-icon /></template>
                   使用此隧道
+                </t-button>
+                <t-button
+                  v-else
+                  disabled
+                  theme="danger"
+                  size="large"
+                  :loading="isAddingTunnel"
+                  block
+                  class="!rounded-xl !h-12 !font-bold shadow-md shadow-[var(--color-primary-light)]/40 hover:shadow-[var(--color-primary-light)]/60 transition-shadow text-base"
+                  @click="handleUseTunnel"
+                >
+                  <template #icon><error-circle-filled-icon /></template>
+                  被封禁的隧道无法添加使用
                 </t-button>
               </div>
             </div>
@@ -482,13 +711,22 @@ async function handleDeleteTunnel() {
               <p class="text-sm text-zinc-500">请在左侧列表中选择一个隧道以查看详细信息和连接参数</p>
             </div>
           </template>
-
         </div>
       </div>
     </div>
 
-    <create-tunnel-dialog v-if="showCreateDialog" v-model:visible="showCreateDialog" :token="mslUserToken" @success="handleCreateSuccess" />
-    <domain-manager-dialog v-if="showDomainDialog" v-model:visible="showDomainDialog" :token="mslUserToken" :tunnels="tunnels" />
+    <create-tunnel-dialog
+      v-if="showCreateDialog"
+      v-model:visible="showCreateDialog"
+      :token="mslUserToken"
+      @success="handleCreateSuccess"
+    />
+    <domain-manager-dialog
+      v-if="showDomainDialog"
+      v-model:visible="showDomainDialog"
+      :token="mslUserToken"
+      :tunnels="tunnels"
+    />
   </div>
 </template>
 
@@ -524,7 +762,7 @@ async function handleDeleteTunnel() {
 }
 
 :deep(.t-loading__overlay) {
-@apply !rounded-2xl !bg-white/50 dark:!bg-zinc-900/50;
+  @apply !rounded-2xl !bg-white/50 dark:!bg-zinc-900/50;
   animation: smoothLoadingGlass 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards !important;
 }
 
