@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -106,9 +107,11 @@ namespace MSLX.Desktop.Utils
                 {
                     url = AppendQueryParameters(url, queryParameters);
                 }
+                Debug.WriteLine($"准备发送HTTP GET请求 - URL: {url}");
                 // 应用自定义请求头
                 configureHeaders?.Invoke(httpClient.DefaultRequestHeaders);
                 Console.WriteLine($"HTTP GET: {url}");
+                Debug.WriteLine($"HTTP GET: {url}");
 
                 // 传递 CancellationToken
                 var response = await httpClient.GetAsync(url, cancellationToken);
@@ -118,17 +121,20 @@ namespace MSLX.Desktop.Utils
                 if (!response.IsSuccessStatusCode)
                 {
                     Console.WriteLine($"HTTP GET 返回非成功状态码: {response.StatusCode} - {url}");
+                    Debug.WriteLine($"HTTP GET 返回非成功状态码: {response.StatusCode} - {url}");
                 }
             }
             catch (OperationCanceledException)
             {
                 httpResponse.Exception = new OperationCanceledException("请求已取消");
                 Console.WriteLine($"HTTP GET已取消 - URL: {url}");
+                Debug.WriteLine($"HTTP GET已取消 - URL: {url}");
             }
             catch (Exception ex)
             {
                 httpResponse.Exception = ex;
                 Console.WriteLine($"HTTP GET异常: {ex.Message} - URL: {url}");
+                Debug.WriteLine($"HTTP GET异常: {ex.Message} - URL: {url}");
             }
             httpClient.Dispose();
             return httpResponse;

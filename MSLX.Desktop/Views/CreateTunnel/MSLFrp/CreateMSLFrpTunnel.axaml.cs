@@ -196,11 +196,8 @@ public partial class CreateMSLFrpTunnel : UserControl
     private async Task CompleteBrowserLogin(string appToken)
     {
         Console.WriteLine(appToken);
-        var (Code, Msg, ContentInfo) = await UserLogin(
+        var (Code, Msg, Response) = await UserLogin(
             appToken,
-            string.Empty, // email
-            string.Empty, // password
-            string.Empty, // auth2FA
             false
         );
         if (Code == 200)
@@ -210,15 +207,19 @@ public partial class CreateMSLFrpTunnel : UserControl
             if (SaveLoginToggle.IsChecked == true)
                 ConfigService.Config.WriteConfigKey("MSLUserToken", _userToken);
 
-            await GetFrpInfoAsync(); 
+            await GetFrpInfoAsync(Response); 
         }
         else
         {
             DialogService.DialogManager.DismissDialog(); 
         }
     }
-    public async Task<(int Code, string Msg, JObject ContentInfo)> UserLogin(string token, string email = "", string password = "", string auth2fa = "", bool saveToken = false)
+
+    public async Task<(int Code, string Msg, HttpResponse Response)> UserLogin(string token,
+        // string email = "", string password = "", string auth2fa = "",
+        bool saveToken = false)
     {
+        /*
         if (string.IsNullOrEmpty(token))
         {
             // 发送邮箱和密码，请求登录，获取MSL-User-Token
@@ -262,14 +263,15 @@ public partial class CreateMSLFrpTunnel : UserControl
                 return (0, ex.Message, null);
             }
         }
-
+        */
         try
         {
             var headersAction = new Action<HttpRequestHeaders>(headers =>
             {
                 headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             });
-            HttpResponse res = await HttpService.GetAsync("/frp/userInfo", headersAction,uaType:UAManager.UAType.MSLX);
+            HttpResponse res = await MSLUserService.GetAsync("/frp/userInfo",null,headersAction);
+
             if (res.IsSuccess)
             {
                 var loginRes = JObject.Parse(res.Content.ToString());
@@ -281,7 +283,7 @@ public partial class CreateMSLFrpTunnel : UserControl
 
                 // 用户登陆成功后，发送POST请求续期Token
                 _ = await HttpService.PostAsync("/user/renewToken", HttpService.PostContentType.None, configureHeaders: headersAction);
-                return (200, string.Empty, JObject.Parse(res.Content.ToString()));
+                return (200, string.Empty, res);
             }
             return (200, string.Empty, null);
         }
@@ -297,7 +299,7 @@ public partial class CreateMSLFrpTunnel : UserControl
     }
 
     // 获取信息
-    private async Task GetFrpInfoAsync()
+    private async Task GetFrpInfoAsync(HttpResponse? response=null)
     {
         try
         {
@@ -306,9 +308,18 @@ public partial class CreateMSLFrpTunnel : UserControl
                 .WithContent(new TextBlock { Text = "获取用户信息……" });
             dialog.TryShow();
 
-            var response = await MSLUserService.GetAsync("/frp/userInfo", new Dictionary<string, string> { ["Authorization"] = $"Bearer {_userToken}" });
+            if (response == null)
+            {
+                var headersAction = new Action<HttpRequestHeaders>(headers =>
+                {
+                    headers.Authorization = new AuthenticationHeaderValue("Bearer", _userToken);
+                });
+                response = await MSLUserService.GetAsync("/frp/userInfo", null, headersAction);
+            }
 
             DialogService.DialogManager.DismissDialog();
+
+            Debug.WriteLine(response);
 
             if (!response.IsSuccess || response.Content == null)
             {

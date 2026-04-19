@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -21,7 +22,7 @@ namespace MSLX.Desktop.Utils.API
         /// <param name="path">路径，如“/notice”</param>
         /// <param name="queryParameters">query参数，可直接加在路径后面“?query=md”，也可在此通过Dictionary进行设置</param>
         /// <returns>Httpservice.HttpResponse</returns>
-        public async static Task<HttpResponse> GetAsync(string path, Dictionary<string, string>? queryParameters)
+        public async static Task<HttpResponse> GetAsync(string path, Dictionary<string, string>? queryParameters, Action<HttpRequestHeaders>? configureHeaders = null)
         {
             // 确保路径以 "/" 开头
             if (!path.StartsWith("/"))
@@ -29,6 +30,7 @@ namespace MSLX.Desktop.Utils.API
             return await HttpService.GetAsync(
                 ApiUrl + path,
                 queryParameters,
+                configureHeaders,
                 uaType: UAManager.UAType.MSLX);
         }
 
