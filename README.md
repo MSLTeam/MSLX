@@ -45,13 +45,12 @@ MSLX 是由 MSLTeam 开发的跨平台服务端管理工具。项目基于前后
 * **官方网站：** [mslx.mslmc.cn](https://mslx.mslmc.cn)
 * **视频演示：** [【B站】MSLX 功能介绍及使用教程](https://www.bilibili.com/video/BV13NkWBxEwg/)
 
-## 💬 交流与反馈
+## Star History
 
-如果在使用中遇到问题，或有新功能建议，欢迎提交 [Issue](https://github.com/MSLTeam/MSLX/issues)，或加入群聊与我们交流：
-
-* QQ 交流群 ①：`1145888872`
-* QQ 交流群 ②：`234477679`
-
-## 💖 支持我们
-
-如果 MSLX 对你的开服或项目托管有帮助，欢迎[在爱发电上赞助 MSLTeam](https://afdian.com/a/makabaka123)，支持项目的持续开发与维护！
+<a href="https://www.star-history.com/?repos=MSLTeam%2FMSLX&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=MSLTeam/MSLX&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=MSLTeam/MSLX&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=MSLTeam/MSLX&type=date&legend=top-left" />
+ </picture>
+</a>
