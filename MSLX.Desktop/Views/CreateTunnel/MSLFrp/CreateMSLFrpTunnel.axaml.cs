@@ -102,7 +102,7 @@ public partial class CreateMSLFrpTunnel : UserControl
                 postData
             );
 
-            if (response.IsSuccess&& response.Content != null)
+            if (response.IsSuccess && response.Content != null)
             {
                 JObject _json = JObject.Parse(response.Content);
                 if (_json["code"]?.Value<int>() != 200 || _json["data"] == null)
@@ -131,7 +131,7 @@ public partial class CreateMSLFrpTunnel : UserControl
         }
     }
 
-    private CancellationTokenSource _pollingCts; // 取消轮询
+    private CancellationTokenSource? _pollingCts;
     private async void StartPolling(string ssid, string csrf)
     {
         _pollingCts = new CancellationTokenSource();
@@ -142,8 +142,8 @@ public partial class CreateMSLFrpTunnel : UserControl
             while (!cancellationToken.IsCancellationRequested)
             {
                 var response = await MSLUserService.GetAsync(
-                    $"/oauth/appLogin?ssid={ssid}&csrf={csrf}",null
-                    
+                    $"/oauth/appLogin?ssid={ssid}&csrf={csrf}", null
+
                 );
 
                 if (cancellationToken.IsCancellationRequested) return;
@@ -154,12 +154,13 @@ public partial class CreateMSLFrpTunnel : UserControl
                     if (!string.IsNullOrEmpty(appToken))
                     {
                         await CompleteBrowserLogin(appToken);
-                        return; // 结束轮询
+                        break; // 结束轮询
                     }
                     else
                     {
                         // 继续轮询
-
+                        await Task.Delay(3000, cancellationToken);
+                        continue;
                     }
                 }
                 else
@@ -167,29 +168,24 @@ public partial class CreateMSLFrpTunnel : UserControl
                     // 出现错误
                     // 取消轮询
                     _pollingCts?.Cancel();
-                    return; // 结束轮询
+                    break; // 结束轮询
                 }
-
-                // 延迟
-                await Task.Delay(3000, cancellationToken);
             }
         }
         catch (TaskCanceledException)
         {
-
+            _pollingCts?.Cancel();
         }
         catch (Exception ex)
         {
+            Debug.WriteLine(ex.Message);
             // 取消轮询
             _pollingCts?.Cancel();
         }
         finally
         {
-            if (_pollingCts != null)
-            {
-                _pollingCts.Dispose();
-                _pollingCts = null;
-            }
+            _pollingCts?.Dispose();
+            _pollingCts = null;
         }
     }
 
@@ -203,81 +199,34 @@ public partial class CreateMSLFrpTunnel : UserControl
         if (Code == 200)
         {
             _userToken = appToken;
-        
+
             if (SaveLoginToggle.IsChecked == true)
                 ConfigService.Config.WriteConfigKey("MSLUserToken", _userToken);
 
-            await GetFrpInfoAsync(Response); 
+            await GetFrpInfoAsync(Response);
         }
         else
         {
-            DialogService.DialogManager.DismissDialog(); 
+            DialogService.DialogManager.DismissDialog();
         }
     }
 
-    public async Task<(int Code, string Msg, HttpResponse Response)> UserLogin(string token,
-        // string email = "", string password = "", string auth2fa = "",
-        bool saveToken = false)
+    public async Task<(int Code, string Msg, HttpResponse? Response)> UserLogin(string token, bool saveToken = false)
     {
-        /*
-        if (string.IsNullOrEmpty(token))
-        {
-            // 发送邮箱和密码，请求登录，获取MSL-User-Token
-            try
-            {
-                JObject body;
-                if (string.IsNullOrEmpty(auth2fa))
-                {
-                    body = new JObject
-                    {
-                        ["email"] = email,
-                        ["password"] = password
-                    };
-                }
-                else
-                {
-                    body = new JObject
-                    {
-                        ["email"] = email,
-                        ["password"] = password,
-                        ["twoFactorAuthKey"] = auth2fa
-                    };
-                }
-                HttpResponse res = await MSLUserService.PostAsync("/user/login", 0, body);
-                if (res.IsSuccess)
-                {
-                    JObject LoginResponse = JObject.Parse((string)res.Content);
-                    if (LoginResponse["code"].Value<int>() != 200)
-                    {
-                        return ((int)LoginResponse["code"], LoginResponse["msg"].ToString(), LoginResponse);
-                    }
-                    token = LoginResponse["data"]["token"].ToString();
-                }
-                else
-                {
-                    return ((int)res.StatusCode, res.Content.ToString(), null);
-                }
-            }
-            catch (Exception ex)
-            {
-                return (0, ex.Message, null);
-            }
-        }
-        */
         try
         {
             var headersAction = new Action<HttpRequestHeaders>(headers =>
             {
                 headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             });
-            HttpResponse res = await MSLUserService.GetAsync("/frp/userInfo",null,headersAction);
+            HttpResponse res = await MSLUserService.GetAsync("/frp/userInfo", null, headersAction);
 
             if (res.IsSuccess)
             {
                 var loginRes = JObject.Parse(res.Content.ToString());
-                if ((int)loginRes["code"] != 200)
+                if (loginRes["code"]?.Value<int>() != 200)
                 {
-                    return ((int)loginRes["code"], loginRes["msg"].ToString(), null);
+                    return (loginRes["code"]?.Value<int>() ?? 0, loginRes["msg"]?.ToString() ?? string.Empty, null);
                 }
                 //UserToken = token;
 
@@ -299,7 +248,7 @@ public partial class CreateMSLFrpTunnel : UserControl
     }
 
     // 获取信息
-    private async Task GetFrpInfoAsync(HttpResponse? response=null)
+    private async Task GetFrpInfoAsync(HttpResponse? response = null)
     {
         try
         {
@@ -389,7 +338,7 @@ public partial class CreateMSLFrpTunnel : UserControl
         {
             var response = await MSLUserService.GetAsync("/frp/nodeList", new Dictionary<string, string> { ["Authorization"] = $"Bearer {_userToken}" });
 
-            if (response.IsSuccess!=true || response.Content == null)
+            if (response.IsSuccess != true || response.Content == null)
             {
                 DialogService.ToastManager.CreateToast()
                 .OfType(NotificationType.Error)
@@ -609,9 +558,6 @@ public partial class CreateMSLFrpTunnel : UserControl
                 .Queue();
                 return;
             }
-            
-
-
         }
         catch (Exception ex)
         {
