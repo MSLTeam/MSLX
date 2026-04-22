@@ -52,7 +52,15 @@ public class UserController : ControllerBase
         // 基本信息
         if (request.Name != null) user.Name = request.Name;
         if (request.Avatar != null) user.Avatar = request.Avatar;
-        if (request.Username != null) user.Username = request.Username;
+        if (!string.IsNullOrWhiteSpace(request.Username) && request.Username != user.Username)
+        {
+            var existingUser = IConfigBase.UserList.GetUserByUsername(request.Username);
+            if (existingUser != null)
+            {
+                return BadRequest(new ApiResponse<object> { Code = 400, Message = "该用户名已被占用" });
+            }
+            user.Username = request.Username;
+        }
 
         // 更新密码
         if (!string.IsNullOrEmpty(request.Password))

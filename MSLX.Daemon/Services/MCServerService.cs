@@ -456,6 +456,7 @@ public class MCServerService
             try
             {
                 context.IsStopping = true;
+                _logger.LogInformation($"正在准备停止服务端实例: {instanceId}");
 
                 _ = Task.Run(() =>
                 {
@@ -507,10 +508,12 @@ public class MCServerService
                                     // 超时未退出 -> 强制树形结束
                                     context.Process.Kill(true);
                                     RecordLog(instanceId, context, "[MSLX] 服务器超时，已强制结束进程树");
+                                    _logger.LogWarning($"服务器实例 {instanceId} 关闭超时，已强制结束进程树");
                                 }
                                 else
                                 {
                                     RecordLog(instanceId, context, "[MSLX] 服务器已正常关闭");
+                                    _logger.LogInformation($"服务器实例 {instanceId} 已正常关闭");
                                 }
                             }
                             catch (Exception ex)
@@ -525,6 +528,7 @@ public class MCServerService
                                 }
 
                                 RecordLog(instanceId, context, $"[MSLX] 停止过程出错，已强制结束: {ex.Message}");
+                                _logger.LogWarning($"服务器实例 {instanceId} 停止过程出错，已强制结束: {ex.Message}");
                             }
                         }
                     }
@@ -590,6 +594,7 @@ public class MCServerService
     public async Task<(bool success, string message)> RestartServer(uint instanceId)
     {
         _restartingServers.TryAdd(instanceId, true);
+        _logger.LogInformation($"正在准备重启服务端实例: {instanceId}");
 
         try
         {
@@ -622,6 +627,7 @@ public class MCServerService
 
                     if (waitedMs >= maxWaitSeconds * 1000)
                     {
+                        _logger.LogWarning($"重启实例 {instanceId} 失败：等待服务器停止超时 ({maxWaitSeconds}s)。请尝试手动强制结束。");
                         return (false, $"重启失败：等待服务器停止超时 ({maxWaitSeconds}s)。请尝试手动强制结束。");
                     }
                 }
@@ -718,7 +724,7 @@ public class MCServerService
                     }
                     catch
                     {
-                        context.Process.Kill();
+                        context.Process.Kill(true);
                     }
                 }
             }

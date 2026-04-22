@@ -105,7 +105,7 @@ public class AppInfoController : ControllerBase
                 ["targetFrontendVersion"] = new JObject
                 {
                     ["desktop"] = "1.0.0",
-                    ["panel"] = "1.3.6"
+                    ["panel"] = "1.3.7"
                 },
                 ["systemInfo"] = systemInfo
             };
@@ -366,10 +366,10 @@ public class AppInfoController : ControllerBase
             {
                 if (_serverService.HasRunningServers())
                 {
-                    await SendUpdateProgressAsync(100, "0 KB/s", "restarting", "正在关闭运行中的实例...");
+                    await SendUpdateProgressAsync(100, "0 KB/s", "preparing", "正在关闭运行中的实例...");
                     _serverService.StopAllServers();
                 }
-                await SendUpdateProgressAsync(100, "0 KB/s", "restarting", "准备重启守护进程...");
+                await SendUpdateProgressAsync(100, "0 KB/s", "preparing", "准备重启守护进程...");
                 await StartUpdateScriptAndExitAsync(newFileTempName, isWindows);
             }
             else
