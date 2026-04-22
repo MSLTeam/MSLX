@@ -192,6 +192,7 @@ public partial class CreateMSLFrpTunnel : UserControl
     private async Task CompleteBrowserLogin(string appToken)
     {
         Console.WriteLine(appToken);
+        MSLUserService.SetUserToken(appToken);
         var (Code, Msg, Response) = await UserLogin(
             appToken,
             false
@@ -208,6 +209,12 @@ public partial class CreateMSLFrpTunnel : UserControl
         else
         {
             DialogService.DialogManager.DismissDialog();
+            DialogService.ToastManager.CreateToast()
+                .OfType(NotificationType.Error)
+                .WithTitle("登录失败")
+                .WithContent(Msg)
+                .Dismiss().After(TimeSpan.FromSeconds(3))
+                .Queue();
         }
     }
 
@@ -215,11 +222,7 @@ public partial class CreateMSLFrpTunnel : UserControl
     {
         try
         {
-            var headersAction = new Action<HttpRequestHeaders>(headers =>
-            {
-                headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            });
-            HttpResponse res = await MSLUserService.GetAsync("/frp/userInfo", null, headersAction);
+            HttpResponse res = await MSLUserService.GetAsync("/frp/userInfo", null);
 
             if (res.IsSuccess)
             {
@@ -231,7 +234,7 @@ public partial class CreateMSLFrpTunnel : UserControl
                 //UserToken = token;
 
                 // 用户登陆成功后，发送POST请求续期Token
-                _ = await HttpService.PostAsync("/user/renewToken", HttpService.PostContentType.None, configureHeaders: headersAction);
+                _ = await HttpService.PostAsync("/user/renewToken", HttpService.PostContentType.None);
                 return (200, string.Empty, res);
             }
             return (200, string.Empty, null);
@@ -257,14 +260,7 @@ public partial class CreateMSLFrpTunnel : UserControl
                 .WithContent(new TextBlock { Text = "获取用户信息……" });
             dialog.TryShow();
 
-            if (response == null)
-            {
-                var headersAction = new Action<HttpRequestHeaders>(headers =>
-                {
-                    headers.Authorization = new AuthenticationHeaderValue("Bearer", _userToken);
-                });
-                response = await MSLUserService.GetAsync("/frp/userInfo", null, headersAction);
-            }
+            response ??= await MSLUserService.GetAsync("/frp/userInfo", null);
 
             DialogService.DialogManager.DismissDialog();
 
@@ -480,8 +476,7 @@ public partial class CreateMSLFrpTunnel : UserControl
             var response = await MSLUserService.PostAsync(
                 "/frp/deleteTunnel",
                 HttpService.PostContentType.Json,
-                new Dictionary<string, string> { ["id"] = _selectedTunnel.Id.ToString() },
-                new Dictionary<string, string> { ["Authorization"] = $"Bearer {_userToken}" }
+                new Dictionary<string, string> { ["id"] = _selectedTunnel.Id.ToString() }
             );
             JObject json = JObject.Parse(response.Content ?? string.Empty);
             if (json["code"]?.Value<int>() == 200)
@@ -630,8 +625,7 @@ public partial class CreateMSLFrpTunnel : UserControl
                     ["type"] = type,
                     ["remarks"] = $"Create By MSLX {Assembly.GetExecutingAssembly().GetName().Version}",
                     ["use_kcp"] = CreateKcpToggle.IsChecked == true ? "true" : "false"
-                },
-                new Dictionary<string, string> { ["Authorization"] = $"Bearer {_userToken}" }
+                }
             );
             JObject json = JObject.Parse(response?.Content ?? string.Empty);
             if (json["code"]?.Value<int>() == 200)

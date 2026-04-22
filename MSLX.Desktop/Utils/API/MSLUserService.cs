@@ -15,6 +15,14 @@ namespace MSLX.Desktop.Utils.API
     internal class MSLUserService
     {
         public static string ApiUrl { get; } = "https://user.mslmc.net/api";
+        private static string UserToken { get; set; } = string.Empty;
+
+        public static void SetUserToken(string token)
+        {
+            UserToken = token;
+        }
+
+        public static void ClearUserToken() => UserToken = string.Empty;
 
         /// <summary>
         /// 普通ApiGet请求
@@ -22,15 +30,21 @@ namespace MSLX.Desktop.Utils.API
         /// <param name="path">路径，如“/notice”</param>
         /// <param name="queryParameters">query参数，可直接加在路径后面“?query=md”，也可在此通过Dictionary进行设置</param>
         /// <returns>Httpservice.HttpResponse</returns>
-        public async static Task<HttpResponse> GetAsync(string path, Dictionary<string, string>? queryParameters, Action<HttpRequestHeaders>? configureHeaders = null)
+        public async static Task<HttpResponse> GetAsync(string path, Dictionary<string, string>? queryParameters = null)
         {
             // 确保路径以 "/" 开头
             if (!path.StartsWith("/"))
                 path = "/" + path;
+
+            var headersAction = new Action<HttpRequestHeaders>(headers =>
+            {
+                headers.Authorization = new AuthenticationHeaderValue("Bearer", UserToken);
+            });
+
             return await HttpService.GetAsync(
                 ApiUrl + path,
                 queryParameters,
-                configureHeaders,
+                headersAction,
                 uaType: UAManager.UAType.MSLX);
         }
 
@@ -42,21 +56,23 @@ namespace MSLX.Desktop.Utils.API
         /// <param name="data">发送数据</param>
         /// <param name="headers">请求头</param>
         /// <returns>Httpservice.HttpResponse</returns>
-        public async static Task<HttpResponse> PostAsync(string path, HttpService.PostContentType postContentType, object data, Dictionary<string, string>? headers = null)
+        public async static Task<HttpResponse> PostAsync(string path, HttpService.PostContentType postContentType, object data)
         {
             // 确保路径以 "/" 开头
             if (!path.StartsWith("/"))
                 path = "/" + path;
+
+            var headersAction = new Action<HttpRequestHeaders>(headers =>
+            {
+                headers.Authorization = new AuthenticationHeaderValue("Bearer", UserToken);
+            });
+
             return await HttpService.PostAsync(
                 ApiUrl + path,
                 null,
                 postContentType,
                 data,
-                headers != null ? reqHeaders =>
-                {
-                    foreach (var header in headers)
-                        reqHeaders.TryAddWithoutValidation(header.Key, header.Value);
-                } : null,
+                headersAction,
                 UAManager.UAType.MSLX);
         }
     }
