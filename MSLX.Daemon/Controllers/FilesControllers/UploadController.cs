@@ -1,9 +1,10 @@
 ﻿using System.IO.Compression;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory; 
+using Microsoft.Extensions.Caching.Memory;
 using MSLX.Daemon.Models;
 using MSLX.Daemon.Models.Files;
+using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using Newtonsoft.Json.Linq;
 
@@ -15,7 +16,7 @@ public class UploadController : ControllerBase
 {
     private readonly string _tempPath;
     private readonly IMemoryCache _memoryCache;
-    
+
     public UploadController(IMemoryCache memoryCache)
     {
         _memoryCache = memoryCache;
@@ -95,10 +96,11 @@ public class UploadController : ControllerBase
         }
 
         var finalPath = Path.Combine(_tempPath, uploadId + ".tmp");
-        
+
         // 获取所有分片文件
         var chunks = Directory.GetFiles(_tempPath, $"{uploadId}_*")
-            .OrderBy(f => {
+            .OrderBy(f =>
+            {
                 // 解析文件名中的 index
                 var fileName = Path.GetFileName(f);
                 var parts = fileName.Split('_');
@@ -137,7 +139,13 @@ public class UploadController : ControllerBase
             // 清理分片
             foreach (var chunk in chunks)
             {
-                try { System.IO.File.Delete(chunk); } catch { }
+                try
+                {
+                    System.IO.File.Delete(chunk);
+                }
+                catch
+                {
+                }
             }
         }
 
@@ -163,12 +171,12 @@ public class UploadController : ControllerBase
         {
             return BadRequest(new ApiResponse<string> { Code = 400, Message = "ID 格式错误" });
         }
-        
+
         // 从缓存移除
         _memoryCache.Remove($"Upload_Session_{uploadId}");
 
         var mergedPath = Path.Combine(_tempPath, uploadId + ".tmp");
-        
+
         try
         {
             // 删除合并后的文件
@@ -181,7 +189,13 @@ public class UploadController : ControllerBase
             var chunks = Directory.GetFiles(_tempPath, $"{uploadId}_*");
             foreach (var chunk in chunks)
             {
-                try { System.IO.File.Delete(chunk); } catch { }
+                try
+                {
+                    System.IO.File.Delete(chunk);
+                }
+                catch
+                {
+                }
             }
 
             return Ok(new ApiResponse<string> { Code = 200, Message = "清理成功" });
@@ -191,7 +205,7 @@ public class UploadController : ControllerBase
             return StatusCode(500, new ApiResponse<string> { Code = 500, Message = $"删除失败: {ex.Message}" });
         }
     }
-    
+
     // 检查压缩包里面的jar文件 给整合包模式用的
     [HttpGet("inspect/{uploadId}")]
     public IActionResult InspectArchive(string uploadId)
@@ -212,7 +226,6 @@ public class UploadController : ControllerBase
         {
             using var archive = ZipFile.OpenRead(finalPath);
             
-            // 判定根目录逻辑
             // 获取所有 Entry 的顶层路径片段
             var topLevelSegments = archive.Entries
                 .Where(e => !string.IsNullOrEmpty(e.FullName))
@@ -227,11 +240,9 @@ public class UploadController : ControllerBase
             if (topLevelSegments.Count == 1)
             {
                 var potentialRoot = topLevelSegments[0];
-                
-                // 检查这是否真的是个目录：
-                // 逻辑：存在任意文件以 "potentialRoot/" 开头，且长度大于它（说明里面有东西）
-                // 注意：ZipEntry 有时单独存目录项，有时不存，所以靠路径匹配最稳
-                bool isFolderWrapper = archive.Entries.Any(e => 
+
+                // 检查这是否真的是个目录
+                bool isFolderWrapper = archive.Entries.Any(e =>
                     e.FullName.StartsWith(potentialRoot + "/", StringComparison.OrdinalIgnoreCase));
 
                 if (isFolderWrapper)
@@ -240,11 +251,11 @@ public class UploadController : ControllerBase
                 }
             }
 
-            // 扫描jar包
+            // 扫描普通的单jar文件核心
             var jarFiles = archive.Entries
-                .Where(e => 
-                    !e.FullName.EndsWith("/") && // 排除目录本身
-                    e.FullName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase) // 只要 jar
+                .Where(e =>
+                        !e.FullName.EndsWith("/") && // 排除目录本身
+                        e.FullName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase) // 只要 jar
                 )
                 .Select(e =>
                 {
@@ -253,15 +264,70 @@ public class UploadController : ControllerBase
                     {
                         if (!e.FullName.StartsWith(basePrefix, StringComparison.OrdinalIgnoreCase))
                             return null; // 不在根目录下
-                        
+
                         // 获取相对路径
-                        return e.FullName.Substring(basePrefix.Length); 
+                        return e.FullName.Substring(basePrefix.Length);
                     }
+
                     return e.FullName;
                 })
                 .Where(name => !string.IsNullOrEmpty(name)) // 过滤掉不符合前缀的
-                .Where(name => !name!.Contains("/")) // 关键：不递归子目录
+                .Where(name => !name!.Contains("/")) // 不递归子目录
                 .ToList();
+
+            // 纯 NeoForge / Forge 端扫描
+            bool isWindows = PlatFormServices.GetOs() == "Windows";
+            string targetArgFile = isWindows ? "win_args.txt" : "unix_args.txt";
+
+            var loaderPaths = new[]
+            {
+                $"{basePrefix}libraries/net/neoforged/neoforge/",
+                $"{basePrefix}libraries/net/minecraftforge/forge/"
+            };
+
+            foreach (var basePath in loaderPaths)
+            {
+                var versions = archive.Entries
+                    .Where(e => e.FullName.StartsWith(basePath, StringComparison.OrdinalIgnoreCase) &&
+                                e.FullName.Length > basePath.Length)
+                    .Select(e =>
+                    {
+                        var relativePath = e.FullName.Substring(basePath.Length);
+                        var parts = relativePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+                        return parts.Length > 0 ? parts[0] : null;
+                    })
+                    .Where(v => v != null)
+                    .Distinct()
+                    .ToList();
+
+                foreach (var version in versions)
+                {
+                    string versionPrefix = $"{basePath}{version}/";
+
+                    // 检查该版本目录下是否至少有一个 jar 文件，用以判断安装情况
+                    bool hasJar = archive.Entries.Any(e =>
+                        e.FullName.StartsWith(versionPrefix, StringComparison.OrdinalIgnoreCase) &&
+                        e.FullName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase) &&
+                        !e.FullName.Substring(versionPrefix.Length).Contains("/")
+                    );
+
+                    if (hasJar)
+                    {
+                        var argEntry = archive.Entries.FirstOrDefault(e =>
+                            e.FullName.Equals($"{versionPrefix}{targetArgFile}", StringComparison.OrdinalIgnoreCase));
+
+                        if (argEntry != null)
+                        {
+                            // 获取相对路径
+                            string relativePath = string.IsNullOrEmpty(basePrefix)
+                                ? argEntry.FullName
+                                : argEntry.FullName.Substring(basePrefix.Length);
+                            
+                            jarFiles.Add($"@{relativePath}");
+                        }
+                    }
+                }
+            }
 
             return Ok(new ApiResponse<JObject>
             {
@@ -274,7 +340,6 @@ public class UploadController : ControllerBase
                     ["detectedRoot"] = basePrefix
                 }
             });
-
         }
         catch (InvalidDataException)
         {

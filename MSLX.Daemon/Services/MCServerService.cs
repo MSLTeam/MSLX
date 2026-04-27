@@ -724,7 +724,7 @@ public class MCServerService
                     }
                     catch
                     {
-                        context.Process.Kill();
+                        context.Process.Kill(true);
                     }
                 }
             }

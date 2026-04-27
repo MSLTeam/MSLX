@@ -105,7 +105,7 @@ public class AppInfoController : ControllerBase
                 ["targetFrontendVersion"] = new JObject
                 {
                     ["desktop"] = "1.0.0",
-                    ["panel"] = "1.3.7"
+                    ["panel"] = "1.3.8"
                 },
                 ["systemInfo"] = systemInfo
             };
@@ -366,10 +366,10 @@ public class AppInfoController : ControllerBase
             {
                 if (_serverService.HasRunningServers())
                 {
-                    await SendUpdateProgressAsync(100, "0 KB/s", "restarting", "正在关闭运行中的实例...");
+                    await SendUpdateProgressAsync(100, "0 KB/s", "preparing", "正在关闭运行中的实例...");
                     _serverService.StopAllServers();
                 }
-                await SendUpdateProgressAsync(100, "0 KB/s", "restarting", "准备重启守护进程...");
+                await SendUpdateProgressAsync(100, "0 KB/s", "preparing", "准备重启守护进程...");
                 await StartUpdateScriptAndExitAsync(newFileTempName, isWindows);
             }
             else
@@ -377,7 +377,7 @@ public class AppInfoController : ControllerBase
                 // 不自动重启，只通知前端更新完成
                 await SendUpdateProgressAsync(100, "0 KB/s", "completed", "更新文件准备完成，等待重启...");
 
-                // 发送更新完成通知（包含新文件路径信息）
+                // 发送更新完成通知
                 await _updateHubContext.Clients.All.SendAsync("UpdateCompleted", new
                 {
                     newFilePath = newFileTempName,

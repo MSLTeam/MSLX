@@ -10,6 +10,7 @@ import {
   ImageIcon,
   LogoQqIcon,
   LinkIcon,
+  DocumentLocationIcon,
 } from 'tdesign-icons-vue-next';
 
 import { getSelfInfo, updateSelfInfo } from '@/api/user';
@@ -17,6 +18,7 @@ import type { UserInfoModel, UpdateUserRequest } from '@/api/model/user';
 import { useUserStore } from '@/store';
 import { request } from '@/utils/request';
 import { isInternalNetwork } from '@/utils/tools';
+import { changeUrl } from '@/router';
 
 const userStore = useUserStore();
 
@@ -223,19 +225,22 @@ const handleAvatarClick = () => {
 </script>
 
 <template>
-  <div class="design-card list-item-anim relative flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300">
-
+  <div
+    class="design-card list-item-anim relative flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300"
+  >
     <t-loading :loading="loading" show-overlay>
-      <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-6 sm:p-8 pb-8 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 relative overflow-hidden">
-
-        <div class="absolute -top-10 -right-10 w-40 h-40 bg-[var(--color-primary)]/5 rounded-full blur-3xl pointer-events-none"></div>
+      <div
+        class="flex flex-col sm:flex-row items-center sm:items-start gap-6 p-6 sm:p-8 pb-8 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 relative overflow-hidden"
+      >
+        <div
+          class="absolute -top-10 -right-10 w-40 h-40 bg-[var(--color-primary)]/5 rounded-full blur-3xl pointer-events-none"
+        ></div>
 
         <div class="relative shrink-0 group cursor-pointer" @click="handleAvatarClick">
-
           <div
             class="absolute inset-0 rounded-full z-0 pointer-events-none transition-opacity"
             :class="isAvatarAnimating ? 'animate-magic-burst' : 'opacity-0'"
-            style="background: radial-gradient(circle, var(--color-primary-light) 0%, transparent 70%);"
+            style="background: radial-gradient(circle, var(--color-primary-light) 0%, transparent 70%)"
           ></div>
 
           <t-avatar
@@ -244,10 +249,14 @@ const handleAvatarClick = () => {
             shape="circle"
             class="ring-4 ring-white dark:ring-zinc-800 shadow-lg !bg-[var(--color-primary)]/10 !text-[var(--color-primary)] z-10 transition-all duration-300 relative"
             :class="[
-              isAvatarAnimating ? 'animate-jelly-pop' : 'group-hover:scale-105 group-hover:-rotate-6 group-hover:shadow-xl group-hover:shadow-[var(--color-primary)]/20'
+              isAvatarAnimating
+                ? 'animate-jelly-pop'
+                : 'group-hover:scale-105 group-hover:-rotate-6 group-hover:shadow-xl group-hover:shadow-[var(--color-primary)]/20',
             ]"
           >
-            <span class="font-extrabold text-3xl">{{ userInfo.name ? userInfo.name.slice(0, 1).toUpperCase() : 'U' }}</span>
+            <span class="font-extrabold text-3xl">{{
+              userInfo.name ? userInfo.name.slice(0, 1).toUpperCase() : 'U'
+            }}</span>
           </t-avatar>
         </div>
 
@@ -256,20 +265,31 @@ const handleAvatarClick = () => {
             <h1 class="text-2xl font-extrabold tracking-tight text-[var(--td-text-color-primary)] m-0 leading-none">
               {{ userInfo.name || '未设置昵称' }}
             </h1>
-            <span v-if="userInfo.role === 'admin'" class="inline-flex items-center px-2.5 py-1 rounded-md bg-[var(--color-success)]/10 text-[var(--color-success)] font-extrabold text-[11px] tracking-wider uppercase border border-[var(--color-success)]/20 shadow-sm">
+            <span
+              v-if="userInfo.role === 'admin'"
+              class="inline-flex items-center px-2.5 py-1 rounded-md bg-[var(--color-success)]/10 text-[var(--color-success)] font-extrabold text-[11px] tracking-wider uppercase border border-[var(--color-success)]/20 shadow-sm"
+            >
               管理员
             </span>
-            <span v-else class="inline-flex items-center px-2.5 py-1 rounded-md bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-extrabold text-[11px] tracking-wider uppercase border border-[var(--color-primary)]/20 shadow-sm">
+            <span
+              v-else
+              class="inline-flex items-center px-2.5 py-1 rounded-md bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-extrabold text-[11px] tracking-wider uppercase border border-[var(--color-primary)]/20 shadow-sm"
+            >
               普通用户
             </span>
           </div>
 
           <div class="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-sm mt-1">
-            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100/80 dark:bg-zinc-900/50 border border-[var(--td-component-border)] text-[var(--td-text-color-secondary)] font-mono font-medium shadow-inner">
+            <div
+              class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100/80 dark:bg-zinc-900/50 border border-[var(--td-component-border)] text-[var(--td-text-color-secondary)] font-mono font-medium shadow-inner"
+            >
               <span class="text-[var(--td-text-color-secondary)] font-bold">@</span>{{ userInfo.username }}
             </div>
 
-            <div v-if="userInfo.lastLoginTime" class="flex items-center gap-1.5 text-xs text-[var(--td-text-color-secondary)] font-medium">
+            <div
+              v-if="userInfo.lastLoginTime"
+              class="flex items-center gap-1.5 text-xs text-[var(--td-text-color-secondary)] font-medium"
+            >
               <time-icon class="opacity-70 text-[var(--color-primary)]" size="14px" />
               上次登录: <span class="font-mono">{{ new Date(userInfo.lastLoginTime).toLocaleString() }}</span>
             </div>
@@ -279,7 +299,6 @@ const handleAvatarClick = () => {
 
       <div class="p-5 sm:p-6 sm:px-8 pt-6">
         <t-form ref="userForm" :data="userInfo" :label-width="120" label-align="left" @submit="onUserSubmit">
-
           <t-form-item label="头像设置">
             <div class="flex flex-col items-start gap-3 w-full">
               <t-radio-group v-model="avatarMode" variant="default-filled" @change="handleModeChange">
@@ -288,7 +307,12 @@ const handleAvatarClick = () => {
               </t-radio-group>
 
               <div class="w-full">
-                <t-input v-if="avatarMode === 'qq'" v-model="qqNumber" placeholder="输入 QQ 号自动获取头像" type="number">
+                <t-input
+                  v-if="avatarMode === 'qq'"
+                  v-model="qqNumber"
+                  placeholder="输入 QQ 号自动获取头像"
+                  type="number"
+                >
                   <template #prefix-icon><user-icon class="opacity-60 text-zinc-400" /></template>
                 </t-input>
                 <t-input v-else v-model="userInfo.avatar" placeholder="请输入图片 URL 链接">
@@ -308,7 +332,9 @@ const handleAvatarClick = () => {
 
           <t-form-item label="API Key">
             <template #help>
-              <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block">用于 MSLX 桌面版或第三方工具连接的凭证，请妥善保管。</span>
+              <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block"
+                >用于 MSLX 桌面版或第三方工具连接的凭证，请妥善保管。API文档请点击上方蓝色图标前往查看。</span
+              >
             </template>
             <t-input
               :value="userInfo.apiKey"
@@ -319,11 +345,34 @@ const handleAvatarClick = () => {
             >
               <template #suffix>
                 <div class="flex items-center gap-1">
-                  <t-button variant="text" size="small" class="hover:!bg-[var(--color-primary)]/10 hover:!text-[var(--color-primary)] !h-auto !w-auto !p-1.5 !rounded-md" title="复制" @click="copyApiKey">
+                  <t-button
+                    variant="text"
+                    size="small"
+                    class="hover:!bg-[var(--color-primary)]/10 hover:!text-[var(--color-primary)] !h-auto !w-auto !p-1.5 !rounded-md"
+                    title="复制"
+                    @click="copyApiKey"
+                  >
                     <t-icon name="file-copy" />
                   </t-button>
+                  <t-button
+                    variant="text"
+                    theme="primary"
+                    size="small"
+                    class="hover:!bg-[var(--color-primary)]/10 hover:!text-[var(--color-primary)] !h-auto !w-auto !p-1.5 !rounded-md"
+                    title="MSLX 守护进程 API文档"
+                    @click="changeUrl('https://apidoc-mslx.mslmc.cn')"
+                  >
+                    <document-location-icon />
+                  </t-button>
                   <div class="w-[1px] h-3 bg-zinc-200 dark:bg-zinc-700 mx-0.5"></div>
-                  <t-button variant="text" theme="danger" size="small" class="hover:!bg-red-500/10 hover:!text-red-500 !h-auto !w-auto !p-1.5 !rounded-md" title="重置 Key" @click="resetApiKey">
+                  <t-button
+                    variant="text"
+                    theme="danger"
+                    size="small"
+                    class="hover:!bg-red-500/10 hover:!text-red-500 !h-auto !w-auto !p-1.5 !rounded-md"
+                    title="重置 Key"
+                    @click="resetApiKey"
+                  >
                     <refresh-icon />
                   </t-button>
                 </div>
@@ -336,21 +385,37 @@ const handleAvatarClick = () => {
 
             <t-form-item label="MSL 账户绑定">
               <template #help>
-                <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1.5 inline-block">绑定后可使用 MSL 账户一键快捷登录本控制台。</span>
+                <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1.5 inline-block"
+                  >绑定后可使用 MSL 账户一键快捷登录本控制台。</span
+                >
               </template>
 
               <div v-if="userInfo.openMSLID && userInfo.openMSLID !== '0'" class="flex items-center gap-3">
-                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-success)]/10 text-[var(--color-success)] font-bold text-xs border border-[var(--color-success)]/20 shadow-sm">
+                <span
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-success)]/10 text-[var(--color-success)] font-bold text-xs border border-[var(--color-success)]/20 shadow-sm"
+                >
                   <check-circle-icon size="15px" />
                   已绑定 <span class="font-mono ml-1 opacity-80">(UID: {{ userInfo.openMSLID }})</span>
                 </span>
-                <t-button theme="danger" variant="text" size="small" class="hover:!bg-red-500/10" @click="handleUnbindMSL">
+                <t-button
+                  theme="danger"
+                  variant="text"
+                  size="small"
+                  class="hover:!bg-red-500/10"
+                  @click="handleUnbindMSL"
+                >
                   解除绑定
                 </t-button>
               </div>
 
               <div v-else>
-                <t-button theme="primary" variant="outline" :loading="bindLoading" class="!border-[var(--color-primary)]/30 hover:!bg-[var(--color-primary)]/10" @click="handleBindMSL">
+                <t-button
+                  theme="primary"
+                  variant="outline"
+                  :loading="bindLoading"
+                  class="!border-[var(--color-primary)]/30 hover:!bg-[var(--color-primary)]/10"
+                  @click="handleBindMSL"
+                >
                   <template #icon><link-icon /></template>
                   绑定 MSL 账户
                 </t-button>
@@ -364,7 +429,10 @@ const handleAvatarClick = () => {
             <t-switch v-model="securityState.changePassword" />
           </t-form-item>
 
-          <div v-if="securityState.changePassword" class="bg-zinc-50/50 dark:bg-zinc-800/30 p-4 rounded-xl border border-[var(--td-component-border)] mt-4 w-full">
+          <div
+            v-if="securityState.changePassword"
+            class="bg-zinc-50/50 dark:bg-zinc-800/30 p-4 rounded-xl border border-[var(--td-component-border)] mt-4 w-full"
+          >
             <t-form-item label="新密码" required-mark label-width="80">
               <t-input v-model="securityState.newPassword" type="password" placeholder="请输入新密码">
                 <template #prefix-icon><lock-on-icon class="opacity-60 text-zinc-400" /></template>
@@ -379,11 +447,15 @@ const handleAvatarClick = () => {
           </div>
 
           <div class="mt-8 pt-5 border-t border-dashed border-zinc-200/70 dark:border-zinc-700/60">
-            <t-button theme="primary" type="submit" :loading="submitLoading" class="!h-10 !w-full sm:!w-auto sm:!px-10 !font-bold tracking-widest !rounded-xl shadow-md shadow-[var(--color-primary-light)]/40 hover:shadow-[var(--color-primary-light)]/60 transition-shadow">
+            <t-button
+              theme="primary"
+              type="submit"
+              :loading="submitLoading"
+              class="!h-10 !w-full sm:!w-auto sm:!px-10 !font-bold tracking-widest !rounded-xl shadow-md shadow-[var(--color-primary-light)]/40 hover:shadow-[var(--color-primary-light)]/60 transition-shadow"
+            >
               保存个人资料
             </t-button>
           </div>
-
         </t-form>
       </div>
     </t-loading>
@@ -409,16 +481,27 @@ const handleAvatarClick = () => {
   }
 }
 
-
 // 头像特效
 
 @keyframes jellyPop {
-  0% { transform: scale(1); }
-  30% { transform: scale(0.85); }
-  50% { transform: scale(1.15); }
-  65% { transform: scale(0.95); }
-  80% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(0.85);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  65% {
+    transform: scale(0.95);
+  }
+  80% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 @keyframes magicBurst {

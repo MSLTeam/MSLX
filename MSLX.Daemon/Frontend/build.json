@@ -1,6 +1,6 @@
 {
-  "version": "1.3.7",
-  "buildTime": "2026-04-19 17:35:16",
+  "version": "1.3.8",
+  "buildTime": "2026-04-27 17:48:00",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -74,10 +74,76 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "651f7a82b1eb66498cadada5c00596f967f63eba",
-  "commitMsg": "chore(daemon): 服务端实例相关新增了一些日志输出",
+  "commitId": "378de5495011520f94aa834f4cac810bdd0f96b9",
+  "commitMsg": "feat(daemon): 导入整合包创建服务端时支持扫描纯 NeoForge / Forge 的启动参数",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "378de5495011520f94aa834f4cac810bdd0f96b9",
+      "commitTime": "2026-04-27 17:46:04 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 导入整合包创建服务端时支持扫描纯 NeoForge / Forge 的启动参数"
+    },
+    {
+      "commitId": "97901bca247247bfc2fd507a12499fbdc3ce7445",
+      "commitTime": "2026-04-27 17:12:51 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 设置中新增MSLX API文档跳转图标"
+    },
+    {
+      "commitId": "4db94facd103a73c69c5fd97761fa2761d8e12f2",
+      "commitTime": "2026-04-27 17:05:52 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
+    },
+    {
+      "commitId": "1fcbba1b08f0c2a7f774c6ce0de16fbbd2ef2f5b",
+      "commitTime": "2026-04-27 17:05:20 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 日志分析功能新增一键复制prompt功能 #117"
+    },
+    {
+      "commitId": "93db0405245d692025519eb73b3e9ae7aca9f415",
+      "commitTime": "2026-04-22 21:39:49 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "fix(desktop): 修复MSLFrp服务登录后无法获取隧道列表等信息的bug（依旧还没彻底完善，继续挤牙膏QwQ ）"
+    },
+    {
+      "commitId": "d2076e8732d48a59361d4239c6d3b54510c74c79",
+      "commitTime": "2026-04-22 21:13:38 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
+    },
+    {
+      "commitId": "cb359ccc0364be574529604c076884690a05131b",
+      "commitTime": "2026-04-22 21:13:21 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "style(desktop): 优化代码"
+    },
+    {
+      "commitId": "826801d364df58e97e0d71b74af51d4d9c0b7de6",
+      "commitTime": "2026-04-19 22:12:44 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复更新过程停止实例的阶段传递了错误的状态标识"
+    },
+    {
+      "commitId": "f2921a0c8452f6b1d2614c7ccaf9a6a9cf448421",
+      "commitTime": "2026-04-19 22:00:54 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复更新关闭全部实例时未正常结束进程树的问题"
+    },
+    {
+      "commitId": "e8c88dbd237be06df7a077cf799bf93b08b60939",
+      "commitTime": "2026-04-19 17:36:34 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #115 from MSLTeam/dev"
+    },
+    {
+      "commitId": "4efca219d672ed60ee1690c45efbabb40593749b",
+      "commitTime": "2026-04-19 17:35:56 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.3.7版本"
+    },
     {
       "commitId": "651f7a82b1eb66498cadada5c00596f967f63eba",
       "commitTime": "2026-04-19 17:27:40 +0800",
@@ -311,72 +377,6 @@
       "commitTime": "2026-03-29 15:57:04 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "perf(webpanel): 更多Q弹头像特效！"
-    },
-    {
-      "commitId": "320e4b3d97a8fcca33c56726958536f4d646a626",
-      "commitTime": "2026-03-29 15:49:14 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 优化实例设置中服务器配置 & 常规配置页面的保存按钮位置"
-    },
-    {
-      "commitId": "de8598a97e4d186197d120031a5362be79e635d1",
-      "commitTime": "2026-03-29 15:22:35 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复移动端下终端日志滚动困难的问题"
-    },
-    {
-      "commitId": "c12cd6b50a3efb21e8dabbec7d35fc615e7d01e7",
-      "commitTime": "2026-03-28 23:55:01 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): NeoForge安装新增安装文件排漏换源重下功能 & 更新NeoForge安装镜像源"
-    },
-    {
-      "commitId": "aaed6678ea4342076ad643473b93b2a10c924f7b",
-      "commitTime": "2026-03-25 19:25:58 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复未删除的示例数据"
-    },
-    {
-      "commitId": "264e83ded564cb73dfd093743508ad38103ef56b",
-      "commitTime": "2026-03-24 21:34:08 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 尝试修复Windows下MSLX非正常退出时frpc未退出的问题 #67"
-    },
-    {
-      "commitId": "f20cd58fa330f6f4cae271d9e8b834205a3a008d",
-      "commitTime": "2026-03-24 21:17:49 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel & instance): 服务端列表添加在线玩家显示功能 #72"
-    },
-    {
-      "commitId": "5b82c30213d3a4a65933705efa2db39965f7ce55",
-      "commitTime": "2026-03-24 21:08:41 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复使用全局APIKey无法获取实例 & 隧道列表的问题"
-    },
-    {
-      "commitId": "82bfd3c5a4a41fd01b3b943d7c0613b891b94cf5",
-      "commitTime": "2026-03-24 12:20:38 +0800",
-      "commitAuthor": "Weheal",
-      "commitMsg": "Merge pull request #92 from Hongbro886/dev"
-    },
-    {
-      "commitId": "36d063bb0782944af467d392cac73fcaed65ee67",
-      "commitTime": "2026-03-23 20:53:03 +0800",
-      "commitAuthor": "Hongbro886",
-      "commitMsg": "Merge branch 'MSLTeam:dev' into dev"
-    },
-    {
-      "commitId": "d1a18b29895c1356a3a5ab45a8b671b3bd593584",
-      "commitTime": "2026-03-23 20:49:55 +0800",
-      "commitAuthor": "whoa",
-      "commitMsg": "feat(DaemonManager): 添加 tar.gz 格式解压支持"
-    },
-    {
-      "commitId": "e7907534fa49b9ab4fdbfabb2df91329f282a783",
-      "commitTime": "2026-03-23 16:40:41 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "docs(readme): 更新README"
     }
   ]
 }
