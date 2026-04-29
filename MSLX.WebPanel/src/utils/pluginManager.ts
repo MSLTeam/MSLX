@@ -1,6 +1,7 @@
 import router, { asyncRouterList } from '@/router';
 import Layout from '@/layouts/index.vue';
-import { getPermissionStore } from '@/store';
+import { getPermissionStore, useUserStore } from '@/store';
+import { getPluginList } from '@/api/plugins';
 
 let pluginsLoaded = false;
 
@@ -11,11 +12,27 @@ export function arePluginsLoaded() {
 export async function loadAllPlugins() {
   if (pluginsLoaded) return;
 
-  // const pluginUrls = ['http://localhost:5001/mslx-plugin-entry.js'];
-  // await Promise.all(pluginUrls.map((url) => loadPlugin(url)));
+  // 开发模式下可以在这加载插件
+  // await loadPlugin("http://localhost:5001/mslx-plugin-entry.js");
 
-  pluginsLoaded = true;
-  console.log('[MSLX Plugin] 🎉 所有插件加载初始化完毕！');
+  try {
+    const plugins = await getPluginList();
+
+    if (!plugins || plugins.length === 0) {
+      pluginsLoaded = true;
+      return;
+    }
+    const userStore = useUserStore();
+    const { baseUrl } = userStore;
+    const pluginUrls = plugins.map((plugin) => `${baseUrl || window.location.origin}${plugin.entryPath}`);
+
+    await Promise.all(pluginUrls.map((url) => loadPlugin(url)));
+
+    pluginsLoaded = true;
+    console.log('[MSLX Plugin] 🎉 所有插件加载完毕！');
+  } catch (error) {
+    console.error('[MSLX Plugin] 获取插件列表失败:', error);
+  }
 }
 
 function findMenuByName(menus: any[], name: string): any {
