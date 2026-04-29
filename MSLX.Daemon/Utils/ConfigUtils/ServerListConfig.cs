@@ -1,5 +1,6 @@
 ﻿using MSLX.Daemon.Models;
 using Newtonsoft.Json.Linq;
+using MSLX.SDK.Models;
 
 namespace MSLX.Daemon.Utils.ConfigUtils
 {

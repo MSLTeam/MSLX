@@ -3,7 +3,9 @@ using MSLX.Daemon.Models;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.IServices;
 using Newtonsoft.Json.Linq;
+using MSLX.SDK.Models;
 
 namespace MSLX.Daemon.Controllers.InstanceControllers;
 
@@ -11,8 +13,8 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
 [ApiController]
 public class InstanceInfoController : ControllerBase
 {
-    private readonly MCServerService _mcServerService;
-    public InstanceInfoController(MCServerService mcServerService)
+    private readonly IMCServerService _mcServerService;
+    public InstanceInfoController(IMCServerService mcServerService)
     {
         _mcServerService = mcServerService;
     }

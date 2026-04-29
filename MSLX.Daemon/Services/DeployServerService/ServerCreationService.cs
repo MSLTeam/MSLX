@@ -6,6 +6,7 @@ using MSLX.Daemon.Models.Tasks;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.Daemon.Utils.BackgroundTasks;
+using MSLX.SDK.Models;
 
 namespace MSLX.Daemon.Services;
 

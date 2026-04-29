@@ -7,6 +7,8 @@ using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.Daemon.Utils.BackgroundTasks;
+using MSLX.SDK.IServices;
+using MSLX.SDK.Models;
 
 namespace MSLX.Daemon.Controllers.InstanceControllers;
 
@@ -14,10 +16,10 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
 [ApiController]
 public class InstanceSettingsController : ControllerBase
 {
-    private readonly MCServerService _mcServerService;
+    private readonly IMCServerService _mcServerService;
     private readonly IBackgroundTaskQueue<UpdateServerTask> _updateQueue;
 
-    public InstanceSettingsController(MCServerService mcServerService,
+    public InstanceSettingsController(IMCServerService mcServerService,
         IBackgroundTaskQueue<UpdateServerTask> updateQueue)
     {
         _mcServerService = mcServerService;

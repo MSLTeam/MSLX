@@ -1,17 +1,18 @@
 ﻿using Cronos;
 using MSLX.Daemon.Models.Instance;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.IServices;
 
 namespace MSLX.Daemon.Services
 {
     public class TaskSchedulerService : BackgroundService
     {
         private readonly ILogger<TaskSchedulerService> _logger;
-        private readonly MCServerService _mcService;
+        private readonly IMCServerService _mcService;
 
         public TaskSchedulerService(
             ILogger<TaskSchedulerService> logger,
-            MCServerService mcService)
+            IMCServerService mcService)
         {
             _logger = logger;
             _mcService = mcService;

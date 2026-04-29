@@ -45,4 +45,8 @@
 	<ItemGroup>
 		<EmbeddedResource Include="Frontend/**" LogicalName="wwwroot/%(RecursiveDir)%(FileName)%(Extension)" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\MSLX.SDK\MSLX.SDK.csproj" />
+	</ItemGroup>
 </Project>

@@ -1,0 +1,32 @@
+name: Publish MSLX SDK to NuGet
+
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 拉取源仓库
+        uses: actions/checkout@v4
+
+      - name: 设置运行环境
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: 还原依赖
+        run: dotnet restore MSLX/MSLX.SDK.csproj
+
+      - name: 构建
+        run: dotnet build MSLX/MSLX.SDK.csproj -c Release --no-restore
+
+      - name: 打包SDK
+        run: dotnet pack MSLX.SDK/MSLX.SDK.csproj -c Release --no-build -o ./out /p:Version=1.0.${{ github.run_number }}
+
+      - name: 推送到 NuGet
+        run: dotnet nuget push ./out/*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json --skip-duplicate

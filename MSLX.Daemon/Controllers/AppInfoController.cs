@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using MSLX.SDK.IServices;
 
 namespace MSLX.Daemon.Controllers;
 
@@ -19,13 +20,13 @@ public class AppInfoController : ControllerBase
 {
     private readonly IHubContext<DaemonUpdateHub> _updateHubContext;
     private readonly IHostApplicationLifetime _appLifetime;
-    private readonly MCServerService _serverService;
+    private readonly IMCServerService _serverService;
 
     // 构造函数注入
     public AppInfoController(
             IHubContext<DaemonUpdateHub> updateHubContext,
             IHostApplicationLifetime appLifetime,
-            MCServerService serverService)
+            IMCServerService serverService)
     {
         _updateHubContext = updateHubContext;
         _appLifetime = appLifetime;
