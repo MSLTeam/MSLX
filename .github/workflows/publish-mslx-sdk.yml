@@ -1,4 +1,4 @@
-name: Publish MSLX SDK to NuGet
+name: 推送 MSLX.SDK Nuget
 
 on:
   push:
@@ -20,10 +20,10 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: 还原依赖
-        run: dotnet restore MSLX/MSLX.SDK.csproj
+        run: dotnet restore MSLX.SDK/MSLX.SDK.csproj
 
       - name: 构建
-        run: dotnet build MSLX/MSLX.SDK.csproj -c Release --no-restore
+        run: dotnet build MSLX.SDK/MSLX.SDK.csproj -c Release --no-restore
 
       - name: 打包SDK
         run: dotnet pack MSLX.SDK/MSLX.SDK.csproj -c Release --no-build -o ./out /p:Version=1.0.${{ github.run_number }}
