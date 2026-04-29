@@ -11,6 +11,7 @@ using SixLabors.ImageSharp.Processing;
 using System.IO.Compression;
 using System.Text.Json;
 using MSLX.Daemon.Utils;
+using MSLX.SDK.IServices;
 
 namespace MSLX.Daemon.Controllers.InstanceControllers;
 
@@ -18,7 +19,7 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
 [ApiController]
 public class PlayerManagerController : ControllerBase
 {
-    private readonly MCServerService _mcServerService;
+    private readonly IMCServerService _mcServerService;
 
     // MC的日期时间格式
     private readonly string _mcDateTimeFormat = "yyyy-MM-dd HH:mm:ss zzz";
@@ -30,7 +31,7 @@ public class PlayerManagerController : ControllerBase
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
-    public PlayerManagerController(MCServerService mcServerService)
+    public PlayerManagerController(IMCServerService mcServerService)
     {
         _mcServerService = mcServerService;
     }

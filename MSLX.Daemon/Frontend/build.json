@@ -1,6 +1,6 @@
 {
-  "version": "1.3.8",
-  "buildTime": "2026-04-27 17:48:00",
+  "version": "1.3.8.1",
+  "buildTime": "2026-04-29 22:51:43",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -74,10 +74,52 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "378de5495011520f94aa834f4cac810bdd0f96b9",
-  "commitMsg": "feat(daemon): 导入整合包创建服务端时支持扫描纯 NeoForge / Forge 的启动参数",
+  "commitId": "a3e02f6d240a6e06b8912f72f268202e2a82efe3",
+  "commitMsg": "feat(daemon & webpanel): 完整插件加载流程",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "a3e02f6d240a6e06b8912f72f268202e2a82efe3",
+      "commitTime": "2026-04-29 22:48:34 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 完整插件加载流程"
+    },
+    {
+      "commitId": "81b5ffcdc28494db4db681f8c29b07dc963a17e6",
+      "commitTime": "2026-04-29 15:50:06 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(sdk): 修复开源协议名称错误"
+    },
+    {
+      "commitId": "2da9e6e7e8ab7a0442870f7bcff74a4af6747a55",
+      "commitTime": "2026-04-29 15:48:02 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(sdk): 修复构建路径错误"
+    },
+    {
+      "commitId": "5611f0aa8913fa0afcedd7e5017d694c3aacad40",
+      "commitTime": "2026-04-29 15:44:00 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & sdk): 拆分DTO模型到SDK中 & 新增插件加载功能"
+    },
+    {
+      "commitId": "d8168145de5a26eafcc197eb9c4f114b3a9f5c12",
+      "commitTime": "2026-04-29 13:50:28 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 网页控制台新增载入ESM JS 插件支持"
+    },
+    {
+      "commitId": "f8913933577683e857e384ad97435104413bfbd4",
+      "commitTime": "2026-04-27 17:51:54 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #118 from MSLTeam/dev"
+    },
+    {
+      "commitId": "4f445ab5265923b14bb063d92b5088d2a2669666",
+      "commitTime": "2026-04-27 17:48:34 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新到 v1.3.8 版本"
+    },
     {
       "commitId": "378de5495011520f94aa834f4cac810bdd0f96b9",
       "commitTime": "2026-04-27 17:46:04 +0800",
@@ -335,48 +377,6 @@
       "commitTime": "2026-04-05 00:05:38 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "perf(webpanel): 优化ChmlFrp登录弹窗的的方式"
-    },
-    {
-      "commitId": "b1a5b1bbebfe4e933db7bae99c96313091eea7f4",
-      "commitTime": "2026-04-01 15:54:46 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #100 from chaoji233/feature/chmlfrp-auth"
-    },
-    {
-      "commitId": "798b57d659b02a8443c23927676c300e255c33ad",
-      "commitTime": "2026-04-01 03:55:57 +0800",
-      "commitAuthor": "chaoji233",
-      "commitMsg": "feat(daemon & webpanel): 重构 ChmlFrp 模块以支持新版 OAuth 设备码授权"
-    },
-    {
-      "commitId": "d1fabaf6232f0d6984b6ffba22105ea8bc06b913",
-      "commitTime": "2026-03-29 17:57:53 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #97 from Hongbro886/fix-95"
-    },
-    {
-      "commitId": "b9a75129f00c5413514c8a090018b02f5c75a84e",
-      "commitTime": "2026-03-29 17:36:14 +0800",
-      "commitAuthor": "whoa",
-      "commitMsg": "fix(webpanel):修复更新程序无法正确检测所有实例是否都被退出的问题"
-    },
-    {
-      "commitId": "bf48af318ef07e971049c83adda3be83379ac05f",
-      "commitTime": "2026-03-29 16:10:20 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #94 from MSLTeam/dev"
-    },
-    {
-      "commitId": "129b1e3ec2f119cd4ed1b155af94dfc463c5cc93",
-      "commitTime": "2026-03-29 16:07:33 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新版本号到 v1.3.4"
-    },
-    {
-      "commitId": "956ff76a6e454d8f110ca758e758486a13f25585",
-      "commitTime": "2026-03-29 15:57:04 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 更多Q弹头像特效！"
     }
   ]
 }

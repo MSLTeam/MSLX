@@ -12,6 +12,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MSLX.Desktop", "MSLX.Deskto
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SukiUI", "SukiUI\SukiUI\SukiUI.csproj", "{E1BFAE3D-08CF-5322-3DCC-A88E0863D9C2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MSLX.SDK", "MSLX.SDK\MSLX.SDK.csproj", "{9B401DBE-033D-4933-AE91-FA46EFE21C8D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,6 +32,10 @@ Global
 		{E1BFAE3D-08CF-5322-3DCC-A88E0863D9C2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E1BFAE3D-08CF-5322-3DCC-A88E0863D9C2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E1BFAE3D-08CF-5322-3DCC-A88E0863D9C2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9B401DBE-033D-4933-AE91-FA46EFE21C8D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B401DBE-033D-4933-AE91-FA46EFE21C8D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B401DBE-033D-4933-AE91-FA46EFE21C8D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B401DBE-033D-4933-AE91-FA46EFE21C8D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

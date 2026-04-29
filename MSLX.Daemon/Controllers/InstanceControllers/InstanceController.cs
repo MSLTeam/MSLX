@@ -4,6 +4,7 @@ using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
 using System.Threading.Tasks;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.IServices;
 
 namespace MSLX.Daemon.Controllers.InstanceControllers;
 
@@ -11,9 +12,9 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
 [ApiController]
 public class InstanceController : ControllerBase
 {
-    private readonly MCServerService _mcServerService;
+    private readonly IMCServerService _mcServerService;
 
-    public InstanceController(MCServerService mcServerService)
+    public InstanceController(IMCServerService mcServerService)
     {
         _mcServerService = mcServerService;
     }

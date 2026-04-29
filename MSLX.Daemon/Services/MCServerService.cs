@@ -10,12 +10,14 @@ using System.IO.Compression;
 using System.Management;
 using System.Text;
 using System.Text.RegularExpressions;
+using MSLX.SDK.IServices;
+using MSLX.SDK.Models;
 
 namespace MSLX.Daemon.Services;
 
-public class MCServerService
+public class MCServerService: IMCServerService
 {
-    private readonly ILogger<MCServerService> _logger;
+    private readonly ILogger<IMCServerService> _logger;
     private readonly IHubContext<InstanceConsoleHub> _hubContext;
     private readonly IHostApplicationLifetime _appLifetime;
 
@@ -56,7 +58,7 @@ public class MCServerService
     private static readonly Regex AnsiColorRegex = new Regex(@"\x1B\[[0-9;]*[a-zA-Z]", RegexOptions.Compiled);
 
     public MCServerService(
-        ILogger<MCServerService> logger,
+        ILogger<IMCServerService> logger,
         IHubContext<InstanceConsoleHub> hubContext,
         IHostApplicationLifetime appLifetime)
     {

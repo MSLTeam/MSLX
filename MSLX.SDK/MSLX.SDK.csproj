@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+
+        <IsPackable>true</IsPackable>
+        <PackageId>MSLX.SDK</PackageId>
+        <Version>1.0.0</Version> 
+        <Authors>luluxiaoyu;MSLTeam</Authors>
+        <Company>MSLTeam</Company>
+        <Description>MSLX Daemon 插件开发 SDK。</Description>
+        <PackageTags>MSLX;Minecraft;Plugin;SDK</PackageTags>
+        <RepositoryUrl>https://github.com/MSLTeam/MSLX</RepositoryUrl> 
+        <RepositoryType>git</RepositoryType>
+        <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
+    </PropertyGroup>
+
+</Project>

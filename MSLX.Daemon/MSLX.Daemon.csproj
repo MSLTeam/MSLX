@@ -6,9 +6,9 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
 		<ApplicationIcon>icon.ico</ApplicationIcon>
-		<Version>1.3.8-release</Version>
-		<FileVersion>1.3.8</FileVersion>
-		<AssemblyVersion>1.3.8</AssemblyVersion>
+		<Version>1.3.8.1-beta</Version>
+		<FileVersion>1.3.8.1</FileVersion>
+		<AssemblyVersion>1.3.8.1</AssemblyVersion>
 		<Copyright>Copyright © 2021 - 2026 MSLTeam</Copyright>
 		<AssemblyName>MSLX-Daemon</AssemblyName>
 		<AssemblyTitle>MSLX.Daemon</AssemblyTitle>
@@ -44,5 +44,9 @@
 
 	<ItemGroup>
 		<EmbeddedResource Include="Frontend/**" LogicalName="wwwroot/%(RecursiveDir)%(FileName)%(Extension)" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\MSLX.SDK\MSLX.SDK.csproj" />
 	</ItemGroup>
 </Project>

@@ -1,7 +1,7 @@
 ﻿
 using System.Text;
 
-namespace MSLX.Daemon.Models;
+namespace MSLX.SDK.Models;
     public class McServerInfo
     {
         public class ServerInfo

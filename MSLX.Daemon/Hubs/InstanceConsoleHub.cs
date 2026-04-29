@@ -3,24 +3,22 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.IServices;
 
 namespace MSLX.Daemon.Hubs
 {
     [Authorize]
     public class InstanceConsoleHub : Hub
     {
-        private readonly MCServerService _mcServerService;
+        private readonly IMCServerService _mcServerService;
 
-        public InstanceConsoleHub(MCServerService mcServerService)
+        public InstanceConsoleHub(IMCServerService mcServerService)
         {
             _mcServerService = mcServerService;
         }
 
         /// <summary>
         /// 内部辅助方法：鉴权
-        /// </summary>
-        /// <summary>
-        /// 内部辅助方法：极速鉴权
         /// </summary>
         private bool HasPermission(uint instanceId)
         {

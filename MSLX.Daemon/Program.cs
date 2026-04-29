@@ -9,10 +9,12 @@ using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.BackgroundTasks;
 using MSLX.Daemon.Utils.ConfigUtils;
 using System.Reflection;
+using MSLX.SDK.IServices;
 
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
 var builder = WebApplication.CreateBuilder(args);
+
 
 // 日志级别配置
 builder.Logging.SetMinimumLevel(LogLevel.Information);
@@ -98,8 +100,10 @@ builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationM
 // 注册单例服务
 builder.Services.AddSingleton<FrpProcessService>();
 builder.Services.AddSingleton(typeof(IBackgroundTaskQueue<>), typeof(BackgroundTaskQueue<>));
-builder.Services.AddSingleton<MCServerService>();
+builder.Services.AddSingleton<IMCServerService,MCServerService>();
 builder.Services.AddSingleton<SystemMonitor>();
+var pluginManager = new PluginManager();
+builder.Services.AddSingleton(pluginManager);
 
 // 后台服务注册
 builder.Services.AddHostedService<ServerCreationService>();
@@ -122,7 +126,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 });
 
 // 错误中间件
-builder.Services.AddControllers()
+var mvcBuilder = builder.Services.AddControllers()
     .ConfigureApiBehaviorOptions(options =>
     {
         options.InvalidModelStateResponseFactory = context =>
@@ -138,6 +142,46 @@ builder.Services.AddControllers()
             return new BadRequestObjectResult(response);
         };
     });
+
+// 插件加载
+var loadedPlugins = new List<LoadedPlugin>();
+var pluginsPath = Path.Combine(IConfigBase.GetAppDataPath(), "Plugins");
+using var pluginLoggerSource = LoggerFactory.Create(l => l.AddConsole());
+var pluginLogger = pluginLoggerSource.CreateLogger("PluginLoader");
+if (Directory.Exists(pluginsPath))
+{
+    foreach (var dllPath in Directory.GetFiles(pluginsPath, "*.dll"))
+    {
+        try
+        {
+            var assembly = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyPath(dllPath);
+            
+            var pluginType = assembly.GetTypes().FirstOrDefault(t => 
+                typeof(MSLX.SDK.IPlugin).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
+
+            if (pluginType != null)
+            {
+                var pluginInstance = (MSLX.SDK.IPlugin)Activator.CreateInstance(pluginType)!;
+                
+                pluginManager.Plugins.Add(new LoadedPlugin { 
+                    Assembly = assembly, 
+                    Metadata = pluginInstance 
+                });
+                
+                // 注册 API
+                mvcBuilder.PartManager.ApplicationParts.Add(new Microsoft.AspNetCore.Mvc.ApplicationParts.AssemblyPart(assembly));
+                loadedPlugins.Add(new LoadedPlugin { Assembly = assembly, Metadata = pluginInstance });
+                
+                pluginLogger.LogInformation($"[MSLX Plugin] 插件加载成功: {pluginInstance.Name} v{pluginInstance.Version} by @{pluginInstance.Developer}");
+            }
+        }
+        catch (Exception ex) { pluginLogger.LogError($"[MSLX Plugin] 插件加载失败: {ex.Message}"); }
+    }
+}
+else
+{
+    Directory.CreateDirectory(pluginsPath);
+}
 
 builder.Services.AddMemoryCache();
 
@@ -176,6 +220,26 @@ app.UseStaticFiles(new StaticFileOptions
     FileProvider = embeddedProvider,
     RequestPath = "" 
 });
+
+// 加载插件的静态资源
+foreach (var plugin in loadedPlugins)
+{
+    try
+    {
+        var fileProvider = new ManifestEmbeddedFileProvider(plugin.Assembly, "Frontend/dist");
+
+        app.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = fileProvider,
+            RequestPath = $"/plugins/{plugin.Metadata.Id.ToLower()}/{plugin.Metadata.Version}"
+        });
+        logger.LogInformation($"[MSLX Plugin] 映射资源: /plugins/{plugin.Metadata.Id.ToLower()}");
+    }
+    catch(Exception ex)
+    {
+         /* 忽略无前端资源的插件 */
+    }
+}
 
 // 自定义的中间件
 app.UseMiddleware<BlockLoopbackMiddleware>(); 
@@ -251,3 +315,4 @@ catch (Exception ex)
 }
 
 app.Run();
+

@@ -6,7 +6,8 @@ using Newtonsoft.Json.Linq;
 using MSLX.Daemon.Models.Instance; 
 using MSLX.Daemon.Models.Tasks;
 using MSLX.Daemon.Services;
-using MSLX.Daemon.Utils.BackgroundTasks; 
+using MSLX.Daemon.Utils.BackgroundTasks;
+using MSLX.SDK.IServices;
 
 namespace MSLX.Daemon.Controllers.InstanceControllers;
 
@@ -16,10 +17,10 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
 public class CreateInstanceController : ControllerBase
 {
     private readonly IBackgroundTaskQueue<CreateServerTask> _taskQueue; // 注入后台队列
-    private readonly MCServerService _mcServerService;
+    private readonly IMCServerService _mcServerService;
 
     // 注入队列
-    public CreateInstanceController(IBackgroundTaskQueue<CreateServerTask> taskQueue,MCServerService mcServerService)
+    public CreateInstanceController(IBackgroundTaskQueue<CreateServerTask> taskQueue,IMCServerService mcServerService)
     {
         _taskQueue = taskQueue;
         _mcServerService = mcServerService;

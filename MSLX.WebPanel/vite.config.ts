@@ -36,7 +36,7 @@ export default defineConfig(({ mode }: ConfigEnv) => {
         },
       },
     },
-    plugins: [vue(),tailwindcss(), vueJsx(), svgLoader()],
+    plugins: [vue(), tailwindcss(), vueJsx(), svgLoader()],
     server: {
       port: 1102,
       host: '0.0.0.0',
@@ -45,6 +45,10 @@ export default defineConfig(({ mode }: ConfigEnv) => {
           target: 'http://localhost:1027',
           changeOrigin: true,
           ws: true,
+        },
+        '/plugins': {
+          target: 'http://localhost:1027',
+          changeOrigin: true,
         },
       },
     },
