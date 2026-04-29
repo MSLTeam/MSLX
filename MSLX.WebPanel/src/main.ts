@@ -1,15 +1,28 @@
 import { createApp } from 'vue';
 
-import TDesign from 'tdesign-vue-next';
+import * as Vue from 'vue';
+import * as VueRouter from 'vue-router';
+import * as Pinia from 'pinia';
+import * as TDesign from 'tdesign-vue-next';
+import * as MSLXStores from './store';
 import 'tdesign-vue-next/es/style/index.css';
 
-import '@/style/tailwind/index.css'; // 引入 tailwind css
+import '@/style/tailwind/index.css'; // tailwind css
 
 import { store } from './store';
 import router from './router';
 import '@/style/index.less';
 import './permission';
 import App from './App.vue';
+import { request } from '@/utils/request';
+
+// 映射出去给插件用的东西
+(window as any).Vue = Vue;
+(window as any).VueRouter = VueRouter;
+(window as any).Pinia = Pinia;
+(window as any).TDesign = TDesign;
+(window as any).mslxRequest = request;
+(window as any).MSLX_Stores = MSLXStores;
 
 const app = createApp(App);
 

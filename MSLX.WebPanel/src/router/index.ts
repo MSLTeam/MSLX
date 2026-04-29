@@ -40,11 +40,6 @@ const defaultRouterList: Array<RouteRecordRaw> = [
     name: '404',
     component: () => import('@/pages/notFound/index.vue'),
   },
-  {
-    path: '/:w+',
-    name: '404Page',
-    redirect: '/404',
-  },
 ];
 
 export const allRoutes = [...defaultRouterList, ...asyncRouterList];
