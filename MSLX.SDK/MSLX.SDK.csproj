@@ -14,7 +14,7 @@
         <PackageTags>MSLX;Minecraft;Plugin;SDK</PackageTags>
         <RepositoryUrl>https://github.com/MSLTeam/MSLX</RepositoryUrl> 
         <RepositoryType>git</RepositoryType>
-        <PackageLicenseExpression>AGPL-3.0</PackageLicenseExpression>
+        <PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
     </PropertyGroup>
 
 </Project>
