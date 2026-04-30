@@ -9,7 +9,7 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using MSLX.SDK.IServices;
+using MSLX.Daemon.Services;
 using MSLX.SDK.Models;
 
 namespace MSLX.Daemon.Controllers;

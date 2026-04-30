@@ -98,7 +98,7 @@ builder.Services.AddSignalR();
 builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler, CustomAuthorizationResultHandler>();
 
 // 注册单例服务
-builder.Services.AddSingleton<FrpProcessService>();
+builder.Services.AddSingleton<IFrpProcessService, FrpProcessService>();
 builder.Services.AddSingleton(typeof(IBackgroundTaskQueue<>), typeof(BackgroundTaskQueue<>));
 builder.Services.AddSingleton<IMCServerService,MCServerService>();
 builder.Services.AddSingleton<SystemMonitor>();
@@ -113,7 +113,7 @@ builder.Services.AddHostedService<TaskSchedulerService>();
 builder.Services.AddHostedService<SystemMonitorWorker>();
 
 // 瞬时服务注册
-builder.Services.AddScoped<JavaScannerService>();
+builder.Services.AddScoped<IJavaScannerService,JavaScannerService>();
 builder.Services.AddTransient<NeoForgeInstallerService>();
 builder.Services.AddTransient<ServerDeploymentService>();
 
@@ -277,8 +277,8 @@ lifetime.ApplicationStarted.Register(() =>
 });
 
 // 显示实例化服务
-app.Services.GetService<FrpProcessService>();
-app.Services.GetService<MCServerService>();
+app.Services.GetService<IFrpProcessService>();
+app.Services.GetService<IMCServerService>();
 
 logger.LogInformation("正在检查 MSLAPI V3 主服务连通性...");
 try

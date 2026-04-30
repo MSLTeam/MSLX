@@ -2,6 +2,7 @@
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.IServices;
 using MSLX.SDK.Models;
 using MSLX.SDK.Models.Frp;
 using Newtonsoft.Json.Linq;
@@ -14,10 +15,10 @@ namespace MSLX.Daemon.Controllers.FrpControllers;
 [Route("api/frp")]
 public class FrpController : ControllerBase
 {
-    private readonly FrpProcessService _frpService;
+    private readonly IFrpProcessService _frpService;
 
     // 注入进程服务
-    public FrpController(FrpProcessService frpService)
+    public FrpController(IFrpProcessService frpService)
     {
         _frpService = frpService;
     }

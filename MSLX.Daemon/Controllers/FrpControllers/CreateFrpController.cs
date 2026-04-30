@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.IServices;
 using MSLX.SDK.Models;
 using MSLX.SDK.Models.Frp;
 using Newtonsoft.Json.Linq;
@@ -13,8 +14,8 @@ namespace MSLX.Daemon.Controllers.FrpControllers;
 [Authorize(Roles = "admin")]
 public class CreateFrpController : ControllerBase
 {
-    private readonly FrpProcessService _frpService;
-    public CreateFrpController(FrpProcessService frpService)
+    private readonly IFrpProcessService _frpService;
+    public CreateFrpController(IFrpProcessService frpService)
     {
         _frpService = frpService;
     }
