@@ -18,20 +18,7 @@ const updateScreenWidth = () => {
   screenWidth.value = window.innerWidth;
 };
 
-// 🚨 使用 TDesign 原生 Icon 替换缩略图
-const LAYOUT_OPTIONS = [
-  { value: 'side', text: '侧边栏', icon: 'view-column' },
-  { value: 'top', text: '顶栏导航', icon: 'view-agenda' },
-];
-
 const COLOR_OPTIONS = ['default', 'cyan', 'green', 'yellow', 'orange', 'red', 'pink', 'purple', 'dynamic'];
-
-// 🚨 使用 TDesign 原生 Icon 替换引入的 SVG
-const MODE_OPTIONS = [
-  { type: 'auto', text: '跟随系统', icon: 'desktop' },
-  { type: 'light', text: '明亮模式', icon: 'sunny' },
-  { type: 'dark', text: '暗黑模式', icon: 'moon' },
-];
 
 const initStyleConfig = () => {
   const styleConfig = { ...STYLE_CONFIG };
@@ -45,6 +32,25 @@ const initStyleConfig = () => {
 };
 
 const formData = ref({ ...initStyleConfig() });
+
+// 跟随系统
+const isAutoMode = computed({
+  get: () => formData.value.mode === 'auto',
+  set: (val) => {
+    formData.value.mode = val ? 'auto' : 'light';
+  },
+});
+
+// 手动模式
+const isDarkMode = computed({
+  get: () => formData.value.mode === 'dark',
+  set: (val) => {
+    if (!isAutoMode.value) {
+      formData.value.mode = val ? 'dark' : 'light';
+    }
+  },
+});
+
 if (isMobile.value && formData.value.layout === 'side') {
   formData.value.layout = 'top';
 }
@@ -111,81 +117,174 @@ watchEffect(() => {
   >
     <div class="p-6 sm:p-8 space-y-10 pb-24">
       <t-form ref="form" :data="formData" label-align="left" class="space-y-10">
-
+        <!-- 主题模式设置 -->
         <section>
-          <div class="setting-title">主题模式</div>
-          <t-radio-group v-model="formData.mode" class="custom-radio-group">
-            <t-radio-button v-for="item in MODE_OPTIONS" :key="item.type" :value="item.type" class="icon-card-radio">
-              <div class="flex flex-col items-center justify-center gap-2">
-                <t-icon :name="item.icon" class="text-[28px] transition-transform duration-300 group-hover:scale-110" />
-                <span class="text-[13px] font-medium">{{ item.text }}</span>
+          <div class="text-[13px] font-bold text-[var(--td-text-color-secondary)] mb-4 tracking-widest uppercase">
+            主题模式
+          </div>
+          <div class="flex flex-col gap-3">
+            <div
+              class="flex items-center justify-between p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-700/50 transition-colors hover:border-zinc-300 dark:hover:border-zinc-600"
+            >
+              <div class="flex flex-col">
+                <span class="text-[14px] font-bold text-[var(--td-text-color-primary)]">跟随系统</span>
+                <span class="text-[11px] text-zinc-400 mt-0.5">自动切换明暗外观</span>
               </div>
-            </t-radio-button>
-          </t-radio-group>
+              <t-switch v-model="isAutoMode" size="large" />
+            </div>
+
+            <div
+              v-show="!isAutoMode"
+              class="flex items-center justify-between p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-700/50 transition-colors hover:border-zinc-300 dark:hover:border-zinc-600 animate-fade-in"
+            >
+              <div class="flex flex-col">
+                <span class="text-[14px] font-bold text-[var(--td-text-color-primary)]">暗黑模式</span>
+                <span class="text-[11px] text-zinc-400 mt-0.5">手动开启或关闭</span>
+              </div>
+              <t-switch v-model="isDarkMode" size="large" />
+            </div>
+          </div>
         </section>
 
+        <!-- 个性化设置 -->
         <section>
-          <div class="setting-title">个性化</div>
-          <div class="flex items-center justify-between p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-[var(--td-component-border)] transition-colors hover:border-zinc-300 dark:hover:border-zinc-600">
+          <div class="text-[13px] font-bold text-[var(--td-text-color-secondary)] mb-4 tracking-widest uppercase">
+            个性化
+          </div>
+          <div
+            class="flex items-center justify-between p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-700/50 transition-colors hover:border-zinc-300 dark:hover:border-zinc-600"
+          >
             <div class="flex flex-col">
               <span class="text-[14px] font-bold text-[var(--td-text-color-primary)]">开启背景美化</span>
               <span class="text-[11px] text-zinc-400 mt-0.5">启用毛玻璃卡片与自定义壁纸</span>
             </div>
-            <t-switch v-model="formData.enableCustomTheme" />
+            <t-switch v-model="formData.enableCustomTheme" size="large" />
+          </div>
+        </section>
+
+        <!-- 🚀 颜值升级：带背景托盘与光环聚焦的主题色面板 -->
+        <section>
+          <div class="text-[13px] font-bold text-[var(--td-text-color-secondary)] mb-4 tracking-widest uppercase">
+            主题色
+          </div>
+          <div class="p-5 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-700/50">
+            <div class="flex flex-wrap gap-4 items-center">
+              <div
+                v-for="item in COLOR_OPTIONS.slice(0, -1)"
+                :key="item"
+                class="relative flex items-center justify-center w-5 h-5 rounded-full cursor-pointer transition-all duration-300"
+                :class="[
+                  formData.brandTheme === item
+                    ? 'ring-2 ring-offset-2 ring-offset-[#f8fafc] dark:ring-offset-[#18181b] ring-[var(--color-primary)] scale-110'
+                    : 'hover:scale-125 hover:shadow-sm',
+                ]"
+                @click="formData.brandTheme = item"
+              >
+                <!-- 色块 -->
+                <color-container :value="item" class="!w-full !h-full !rounded-full !border-none" />
+              </div>
+
+              <!-- 分割线 -->
+              <div class="w-[1px] h-4 bg-zinc-200 dark:bg-zinc-700 mx-1"></div>
+
+              <!-- 自定义拾色器按钮 -->
+              <t-popup
+                destroy-on-close
+                placement="bottom-right"
+                trigger="click"
+                :visible="isColoPickerDisplay"
+                :overlay-style="{ padding: 0 }"
+                @visible-change="onPopupVisibleChange"
+              >
+                <template #content>
+                  <t-color-picker-panel
+                    class="custom-color-picker"
+                    :on-change="changeColor"
+                    :color-modes="['monochrome']"
+                    format="HEX"
+                    :swatch-colors="[]"
+                  />
+                </template>
+                <div
+                  class="dynamic-color-btn relative flex items-center justify-center w-5 h-5 rounded-full cursor-pointer transition-all duration-300"
+                  :class="[
+                    formData.brandTheme === COLOR_OPTIONS[COLOR_OPTIONS.length - 1]
+                      ? 'ring-2 ring-offset-2 ring-offset-[#f8fafc] dark:ring-offset-[#18181b] ring-[var(--color-primary)] scale-110'
+                      : 'hover:scale-125 hover:shadow-sm',
+                  ]"
+                >
+                  <div
+                    class="w-full h-full rounded-full border border-zinc-200/50 dark:border-zinc-600/50"
+                    style="
+                      background: conic-gradient(
+                        from 180deg,
+                        #ff0000,
+                        #ff8000,
+                        #ffff00,
+                        #00ff00,
+                        #00ffff,
+                        #0000ff,
+                        #8000ff,
+                        #ff00ff,
+                        #ff0000
+                      );
+                    "
+                  ></div>
+                </div>
+              </t-popup>
+            </div>
           </div>
         </section>
 
         <section>
-          <div class="setting-title">主题色</div>
-          <t-radio-group v-model="formData.brandTheme" class="color-radio-group flex-wrap">
-            <t-radio-button
-              v-for="item in COLOR_OPTIONS.slice(0, -1)"
-              :key="item"
-              :value="item"
-              class="color-dot-wrapper"
-            >
-              <color-container :value="item" />
-            </t-radio-button>
+          <div class="text-[13px] font-bold text-[var(--td-text-color-secondary)] mb-4 tracking-widest uppercase">
+            导航布局
+          </div>
+          <div
+            class="flex items-center justify-between p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-700/50 transition-colors hover:border-zinc-300 dark:hover:border-zinc-600"
+          >
+            <div class="flex flex-col">
+              <span class="text-[14px] font-bold text-[var(--td-text-color-primary)]">当前布局</span>
+              <span class="text-[11px] text-zinc-400 mt-0.5">选择侧边栏或顶部导航</span>
+            </div>
 
-            <t-popup
-              destroy-on-close
-              placement="bottom-right"
-              trigger="click"
-              :visible="isColoPickerDisplay"
-              :overlay-style="{ padding: 0 }"
-              @visible-change="onPopupVisibleChange"
+            <!-- 滑动底座 -->
+            <div
+              class="relative flex items-center bg-zinc-200/60 dark:bg-zinc-800/80 rounded-lg p-1 w-[130px] h-[34px]"
             >
-              <template #content>
-                <t-color-picker-panel
-                  class="custom-color-picker"
-                  :on-change="changeColor"
-                  :color-modes="['monochrome']"
-                  format="HEX"
-                  :swatch-colors="[]"
-                />
-              </template>
-              <t-radio-button
-                :value="COLOR_OPTIONS[COLOR_OPTIONS.length - 1]"
-                class="color-dot-wrapper dynamic-color-btn"
+              <!-- 动态滑块 -->
+              <div
+                class="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white dark:bg-zinc-600 rounded-md shadow-sm transition-transform duration-300 ease-out"
+                :class="formData.layout === 'top' ? 'translate-x-full' : 'translate-x-0'"
+              ></div>
+
+              <!-- 侧边栏按钮 -->
+              <div
+                class="relative z-10 flex-1 flex items-center justify-center text-[12px] font-medium rounded-md cursor-pointer transition-colors duration-300 select-none"
+                :class="
+                  formData.layout === 'side'
+                    ? 'text-zinc-800 dark:text-zinc-100'
+                    : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'
+                "
+                @click="formData.layout = 'side'"
               >
-                <color-container :value="COLOR_OPTIONS[COLOR_OPTIONS.length - 1]" />
-              </t-radio-button>
-            </t-popup>
-          </t-radio-group>
-        </section>
-
-        <section>
-          <div class="setting-title">导航布局</div>
-          <t-radio-group v-model="formData.layout" class="custom-radio-group">
-            <t-radio-button v-for="item in LAYOUT_OPTIONS" :key="item.value" :value="item.value" class="icon-card-radio">
-              <div class="flex flex-col items-center justify-center gap-2">
-                <t-icon :name="item.icon" class="text-[28px] transition-transform duration-300 group-hover:scale-110" />
-                <span class="text-[13px] font-medium">{{ item.text }}</span>
+                侧边栏
               </div>
-            </t-radio-button>
-          </t-radio-group>
+              <!-- 顶栏按钮 -->
+              <div
+                class="relative z-10 flex-1 flex items-center justify-center text-[12px] font-medium rounded-md cursor-pointer transition-colors duration-300 select-none"
+                :class="
+                  formData.layout === 'top'
+                    ? 'text-zinc-800 dark:text-zinc-100'
+                    : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'
+                "
+                @click="formData.layout = 'top'"
+              >
+                顶栏
+              </div>
+            </div>
+          </div>
         </section>
-
       </t-form>
     </div>
   </t-drawer>
@@ -194,71 +293,44 @@ watchEffect(() => {
 <style scoped>
 @reference "@/style/tailwind/index.css";
 
-/* ================== 抽屉基础样式穿透 ================== */
+/* 抽屉基础样式穿透 */
 :deep(.t-drawer__content-wrapper) {
   @apply !bg-white dark:!bg-zinc-800 !border-l !border-zinc-200/50 dark:!border-zinc-700/50;
 }
-
 :deep(.t-drawer__header) {
   @apply !px-6 !py-5 !border-b !border-zinc-100 dark:!border-zinc-700/50;
 }
 :deep(.t-drawer__header-title) {
   @apply !text-[16px] !font-bold !text-zinc-800 dark:!text-zinc-100;
 }
-
-:deep(.t-drawer__body) { @apply !p-0; }
-
-/* ================== 小标题 ================== */
-.setting-title {
-  @apply text-[13px] font-bold text-[var(--td-text-color-secondary)] mb-4 tracking-widest uppercase;
-}
-
-/* ================== 单选组通用 ================== */
-.custom-radio-group, .color-radio-group {
-  @apply !flex !w-full !p-0 !border-none !bg-transparent !gap-3;
-}
-
-/* ================== Icon 卡片式单选 ================== */
-:deep(.icon-card-radio) {
-  @apply !flex-1 !h-auto !p-4 !rounded-xl !border-2 !border-zinc-100 dark:!border-zinc-700/50 !bg-zinc-50/50 dark:!bg-zinc-900/30 !text-zinc-500 dark:!text-zinc-400 !transition-all !duration-300;
-}
-
-/* 强行抹除内部 label 的 padding */
-:deep(.icon-card-radio .t-radio-button__label) {
-  @apply !px-0 !w-full;
-}
-
-/* Hover 状态 */
-:deep(.icon-card-radio:hover:not(.t-is-checked)) {
-  @apply !border-zinc-300 dark:!border-zinc-500 !text-zinc-700 dark:!text-zinc-200;
-}
-
-/* 选中状态*/
-:deep(.icon-card-radio.t-is-checked) {
-  @apply !border-[var(--color-primary)] !bg-[var(--color-primary-light)]/15 dark:!bg-[var(--color-primary)]/10 !text-[var(--color-primary)] !shadow-sm !scale-[1.02];
-}
-
-:deep(.color-dot-wrapper) {
-  @apply !h-auto !p-1.5 !rounded-full !border-2 !border-transparent !bg-transparent !transition-all duration-300;
-}
-
-:deep(.color-dot-wrapper .t-radio-button__label) {
+:deep(.t-drawer__body) {
   @apply !p-0;
 }
 
-:deep(.color-dot-wrapper:hover:not(.t-is-checked)) {
-  @apply !bg-[var(--td-bg-color-secondarycontainer)]/50;
+:deep(.t-color-container) {
+  @apply !p-0 !border-none;
 }
 
-:deep(.color-dot-wrapper.t-is-checked) {
-  @apply !border-[var(--color-primary)] !scale-110 !shadow-md;
-}
-
-/* ================== 自定义拾色器弹窗 ================== */
+/* 自定义拾色器弹窗 */
 :deep(.custom-color-picker) {
   @apply !bg-white dark:!bg-zinc-800 !border !border-zinc-200/50 dark:!border-zinc-700/50 !shadow-2xl !rounded-2xl;
 }
 :deep(.custom-color-picker .t-color-picker__panel) {
   @apply !bg-transparent;
+}
+
+/* 淡入动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
 }
 </style>
