@@ -6,7 +6,7 @@ using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using Newtonsoft.Json.Linq;
 
-namespace MSLX.Daemon.Services;
+namespace MSLX.Daemon.Services.DeployServerService;
 
 public class NeoForgeInstallerService
 {
