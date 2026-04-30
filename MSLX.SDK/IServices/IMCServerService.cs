@@ -1,4 +1,4 @@
-﻿namespace MSLX.SDK.Services;
+﻿namespace MSLX.SDK.IServices;
 
 public interface IMCServerService
 {
