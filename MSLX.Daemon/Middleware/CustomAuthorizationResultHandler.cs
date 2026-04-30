@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authorization.Policy;
-using MSLX.Daemon.Models;
+using MSLX.SDK.Models;
 
 namespace MSLX.Daemon.Middleware;
 

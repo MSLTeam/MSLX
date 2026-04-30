@@ -1,0 +1,56 @@
+using System.ComponentModel.DataAnnotations;
+
+namespace MSLX.SDK.Models.Settings;
+
+public class UpdateSettingsRequest
+{
+    [Required(ErrorMessage = "防火墙配置-是否允许本地回环地址访问 (fireWallBanLocalAddr) 不能为空")]
+    public Boolean FireWallBanLocalAddr { get; set; }
+
+    [Required(ErrorMessage = "是否在启动时打开 Web 控制台 (openWebConsoleOnLaunch) 不能为空")]
+    public Boolean OpenWebConsoleOnLaunch { get; set; }
+
+    [AllowedValues("Official", "MSL Mirrors", "MSL Mirrors Backup",
+        ErrorMessage = "NeoForge/Forge镜像源参数 (neoForgeInstallerMirrors) 错误")]
+    [Required(ErrorMessage = "NeoForge/Forge安装镜像源 (neoForgeInstallerMirrors) 不能为空")]
+    public string NeoForgeInstallerMirrors { get; set; }
+
+    [Required(ErrorMessage = "监听地址 (listenHost) 不能为空")]
+    public string ListenHost { get; set; }
+
+    [Required(ErrorMessage = "监听端口 (listenPort) 不能为空")]
+    [Range(1, 65536, ErrorMessage = "监听端口 (listenPort) 错误")]
+    public uint ListenPort { get; set; }
+
+    [RegularExpression(@"^$|^.{27}$", ErrorMessage = "MSL OAuth Client ID 格式错误")]
+    public string OAuthMSLClientID { get; set; } = "";
+
+    [RegularExpression(@"^$|^.{112}$", ErrorMessage = "MSL OAuth Client Secret 格式错误")]
+    public string OAuthMSLClientSecret { get; set; } = "";
+}
+
+public class UpdateWebPanelStyleSettingsRequest
+{
+    public string WebPanelStyleLightBackground { get; set; } = "";
+    public string WebPanelStyleDarkBackground { get; set; } = "";
+
+    [Range(0.01, 1.0, ErrorMessage = "参数错误")]
+    public double WebPanelStyleLightBackgroundOpacity { get; set; } = 1.0;
+
+    [Range(0.01, 1.0, ErrorMessage = "参数错误")]
+    public double WebPanelStyleDarkBackgroundOpacity { get; set; } = 1.0;
+
+    [Range(0.01, 1.0, ErrorMessage = "参数错误")]
+    public double WebPanelStyleLightComponentsOpacity { get; set; } = 0.4;
+
+    [Range(0.01, 1.0, ErrorMessage = "参数错误")]
+    public double WebPanelStyleDarkComponentsOpacity { get; set; } = 0.6;
+    
+    [Range(0.0, 50.0, ErrorMessage = "透明度仅支持设置0-50")]
+    public double WebpPanelTerminalBlurLight { get; set; } = 5.0;
+    
+    [Range(0.0, 50.0, ErrorMessage = "透明度仅支持设置0-50")]
+    public double WebpPanelTerminalBlurDark { get; set; } = 5.0;
+    [Range(0, 2, ErrorMessage = "日志染色级别参数错误")]
+    public int WebPanelColorizeLogLevel { get; set; } = 1;
+}

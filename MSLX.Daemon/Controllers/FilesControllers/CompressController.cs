@@ -2,10 +2,10 @@ using System.IO.Compression;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
-using MSLX.Daemon.Models;
-using MSLX.Daemon.Models.Files;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.Models;
+using MSLX.SDK.Models.Files;
 
 namespace MSLX.Daemon.Controllers.FilesControllers;
 

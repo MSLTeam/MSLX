@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
-using MSLX.Daemon.Models;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using System.Net;
+using MSLX.SDK.Models;
 
 namespace MSLX.Daemon.Controllers.AuthControllers;
 

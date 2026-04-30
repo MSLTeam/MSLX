@@ -1,0 +1,43 @@
+name: 推送 MSLX.SDK Dev
+
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+
+jobs:
+  build-and-publish-dev:
+    runs-on: ubuntu-latest
+    name: 构建并发布 MSLX.SDK Dev
+
+    steps:
+      - name: 签出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 .NET 10 环境
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: 生成动态预览版本号
+        id: version
+        shell: bash
+        run: |
+          BASE_VERSION=$(grep -oP '(?<=<Version>)[^<]+' MSLX.SDK/MSLX.SDK.csproj)
+          TIMESTAMP=$(TZ=Asia/Hong_Kong date +'%Y%m%d.%H%M')
+          FINAL_VERSION="${BASE_VERSION}-dev.${TIMESTAMP}"
+          
+          echo "PACKAGE_VERSION=$FINAL_VERSION" >> $GITHUB_ENV
+          echo "准备发布预览版: $FINAL_VERSION"
+
+      - name: 构建 SDK
+        run: |
+          dotnet restore MSLX.SDK/MSLX.SDK.csproj
+          dotnet build MSLX.SDK/MSLX.SDK.csproj -c Release --no-restore
+
+      - name: 打包 SDK
+        run: dotnet pack MSLX.SDK/MSLX.SDK.csproj -c Release --no-build -o ./out /p:PackageVersion=${{ env.PACKAGE_VERSION }}
+
+      - name: 推送到 NuGet
+        run: dotnet nuget push ./out/*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json --skip-duplicate

@@ -3,13 +3,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Middleware;
-using MSLX.Daemon.Models;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.BackgroundTasks;
 using MSLX.Daemon.Utils.ConfigUtils;
 using System.Reflection;
+using MSLX.Daemon.Services.DeployServerService;
 using MSLX.SDK.IServices;
+using MSLX.SDK.Models;
 
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
@@ -98,7 +99,7 @@ builder.Services.AddSignalR();
 builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler, CustomAuthorizationResultHandler>();
 
 // 注册单例服务
-builder.Services.AddSingleton<FrpProcessService>();
+builder.Services.AddSingleton<IFrpProcessService, FrpProcessService>();
 builder.Services.AddSingleton(typeof(IBackgroundTaskQueue<>), typeof(BackgroundTaskQueue<>));
 builder.Services.AddSingleton<IMCServerService,MCServerService>();
 builder.Services.AddSingleton<SystemMonitor>();
@@ -113,7 +114,7 @@ builder.Services.AddHostedService<TaskSchedulerService>();
 builder.Services.AddHostedService<SystemMonitorWorker>();
 
 // 瞬时服务注册
-builder.Services.AddScoped<JavaScannerService>();
+builder.Services.AddScoped<IJavaScannerService,JavaScannerService>();
 builder.Services.AddTransient<NeoForgeInstallerService>();
 builder.Services.AddTransient<ServerDeploymentService>();
 
@@ -172,7 +173,7 @@ if (Directory.Exists(pluginsPath))
                 mvcBuilder.PartManager.ApplicationParts.Add(new Microsoft.AspNetCore.Mvc.ApplicationParts.AssemblyPart(assembly));
                 loadedPlugins.Add(new LoadedPlugin { Assembly = assembly, Metadata = pluginInstance });
                 
-                pluginLogger.LogInformation($"[MSLX Plugin] 插件加载成功: {pluginInstance.Name} v{pluginInstance.Version} by @{pluginInstance.Developer}");
+                pluginLogger.LogInformation($"[MSLX Plugin] 正在加载插件: {pluginInstance.Name} v{pluginInstance.Version} by @{pluginInstance.Developer}");
             }
         }
         catch (Exception ex) { pluginLogger.LogError($"[MSLX Plugin] 插件加载失败: {ex.Message}"); }
@@ -269,16 +270,59 @@ app.MapFallbackToFile("index.html", new StaticFileOptions
 });
 
 var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+// 启动事件
 lifetime.ApplicationStarted.Register(() =>
 {
-    // 启动事件
-    // 咦？怎么什么也没有？
     logger.LogInformation("MSLX 守护进程服务已就绪！欢迎使用~");
+    var pluginManager = app.Services.GetRequiredService<PluginManager>();
+
+    // 调用插件的初始化方法
+    int successCount = 0;
+    foreach (var plugin in pluginManager.Plugins)
+    {
+        try
+        {
+            plugin.Metadata.OnLoad();
+
+            logger.LogInformation($"[MSLX Plugin] 插件已成功加载: {plugin.Metadata.Name}");
+            successCount++;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"[MSLX Plugin] 插件 {plugin.Metadata.Name} 启动失败 (OnLoad 异常): {ex.Message}");
+        }
+    }
+
+    if (pluginManager.Plugins.Count > 0)
+    {
+        logger.LogInformation($"[MSLX Plugin] 插件加载完毕，共 {successCount}/{pluginManager.Plugins.Count} 个插件成功运行。");
+    }
+
+});
+// 关闭事件
+lifetime.ApplicationStopping.Register(() =>
+{
+    logger.LogInformation("MSLX 守护进程正在停止，正在释放插件资源...");
+
+    var pluginManager = app.Services.GetRequiredService<PluginManager>();
+
+    foreach (var plugin in pluginManager.Plugins)
+    {
+        try
+        {
+            plugin.Metadata.OnUnload();
+            logger.LogInformation($"[MSLX Plugin] 插件已卸载: {plugin.Metadata.Name}");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"[MSLX Plugin] 插件 {plugin.Metadata.Name} 卸载时发生异常: {ex.Message}");
+        }
+    }
 });
 
 // 显示实例化服务
-app.Services.GetService<FrpProcessService>();
-app.Services.GetService<MCServerService>();
+app.Services.GetService<IFrpProcessService>();
+app.Services.GetService<IMCServerService>();
 
 logger.LogInformation("正在检查 MSLAPI V3 主服务连通性...");
 try
@@ -313,6 +357,13 @@ catch (Exception ex)
 {
     logger.LogError($"API 检测阶段发生未捕获的异常: {ex.Message}。进程将继续运行。");
 }
+
+
+// 注册代理方法给SDK
+MSLX.SDK.MSLX.Initialize(
+    new MSLX.Daemon.Adapters.DaemonConfigProvider(),
+    new MSLX.Daemon.Adapters.DaemonLoggerProvider(loggerFactory)
+);
 
 app.Run();
 

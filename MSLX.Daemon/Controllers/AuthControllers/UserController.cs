@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using MSLX.Daemon.Models;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.Models;
 
 namespace MSLX.Daemon.Controllers.AuthControllers;
 

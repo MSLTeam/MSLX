@@ -1,17 +1,18 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using MSLX.Daemon.Models.Instance;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.IServices;
+using MSLX.SDK.Models.Instance;
 using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Services;
 
-public class JavaScannerService
+public class JavaScannerService : IJavaScannerService
 {
-    private readonly ILogger<JavaScannerService> _logger;
+    private readonly ILogger<IJavaScannerService> _logger;
 
-    public JavaScannerService(ILogger<JavaScannerService> logger)
+    public JavaScannerService(ILogger<IJavaScannerService> logger)
     {
         _logger = logger;
     }

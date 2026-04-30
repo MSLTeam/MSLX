@@ -8,13 +8,14 @@ using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.IServices;
 using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Services;
 
-public class FrpProcessService
+public class FrpProcessService : IFrpProcessService
 {
-    private readonly ILogger<FrpProcessService> _logger;
+    private readonly ILogger<IFrpProcessService> _logger;
     private readonly IHubContext<FrpConsoleHub> _hubContext; 
     private readonly IHostApplicationLifetime _appLifetime; 
 
@@ -34,7 +35,7 @@ public class FrpProcessService
     private readonly string _frpcExecutablePath;
     private readonly string _toolsDir;
 
-    public FrpProcessService(ILogger<FrpProcessService> logger, IHubContext<FrpConsoleHub> hubContext, IHostApplicationLifetime appLifetime)
+    public FrpProcessService(ILogger<IFrpProcessService> logger, IHubContext<FrpConsoleHub> hubContext, IHostApplicationLifetime appLifetime)
     {
         _logger = logger;
         _hubContext = hubContext;

@@ -1,30 +1,34 @@
-// MSLX.SDK/IPlugin.cs
+﻿// MSLX.SDK/IPlugin.cs
 namespace MSLX.SDK
 {
     public interface IPlugin
     {
         // 插件唯一标识 仅支持英文
-        string Id { get; } 
-        
+        string Id { get; }
+
         // 插件名称
-        string Name { get; }
-        
+        string Name => "未命名插件";
+
         // 插件描述
-        string Description { get; }
-        
+        string Description => "这个开发者很懒，什么都没写。";
+
         // 插件版本
-        string Version { get; }
-        
+        string Version => "1.0.0";
+
         // 主项目最低版本
-        string MinLoaderVersion { get; }
+        string MinLoaderVersion => "1.3.8.1";
 
         // 开发者名称
-        string Developer { get; }
+        string Developer => "不知道哇！";
 
         // 开发者主页
-        string AuthorUrl { get; }
+        string AuthorUrl => "https://github.com/MSLTeam";
 
         // 插件项目主页
-        string PluginUrl { get; }
+        string PluginUrl => "https://github.com/MSLTeam";
+
+        // 初始化 & 结束加载方法
+        void OnLoad() { }
+        void OnUnload() { }
     }
 }

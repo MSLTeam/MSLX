@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
-using MSLX.Daemon.Models;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using Newtonsoft.Json.Linq;

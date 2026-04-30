@@ -1,14 +1,14 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Caching.Memory;
 using MSLX.Daemon.Hubs;
-using MSLX.Daemon.Models;
-using MSLX.Daemon.Models.Tasks;
+using MSLX.Daemon.Services.DeployServerService;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.Daemon.Utils.BackgroundTasks;
 using MSLX.SDK.Models;
+using MSLX.SDK.Models.Tasks;
 
-namespace MSLX.Daemon.Services;
+namespace MSLX.Daemon.Services.DeployServerService;
 
 public class ServerCreationService : BackgroundService
 {

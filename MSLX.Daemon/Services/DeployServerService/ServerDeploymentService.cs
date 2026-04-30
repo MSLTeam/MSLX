@@ -7,7 +7,7 @@ using System.Formats.Tar;
 using System.IO.Compression;
 using System.Text.RegularExpressions;
 
-namespace MSLX.Daemon.Services;
+namespace MSLX.Daemon.Services.DeployServerService;
 
 /// <summary>
 /// 核心部署服务：负责下载、解压、文件移动、Forge安装等具体子操作

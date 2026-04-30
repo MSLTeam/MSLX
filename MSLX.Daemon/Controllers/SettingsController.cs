@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MSLX.Daemon.Models;
-using MSLX.Daemon.Models.Settings;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.Models;
+using MSLX.SDK.Models.Settings;
 
 namespace MSLX.Daemon.Controllers;
 

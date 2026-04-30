@@ -1,4 +1,4 @@
-﻿using MSLX.Daemon.Models.Instance;
+﻿using MSLX.SDK.Models.Instance;
 using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Utils.ConfigUtils

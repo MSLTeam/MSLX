@@ -1,0 +1,60 @@
+name: 发布 MSLX.SDK
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write 
+
+jobs:
+  build-and-publish-release:
+    runs-on: ubuntu-latest
+    name: 构建并发布正式版
+
+    steps:
+      - name: 签出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 .NET 10 环境
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: 确定正式版本号
+        id: version
+        shell: bash
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            RAW_TAG="${{ github.ref_name }}"
+            FINAL_VERSION="${RAW_TAG#v}"
+            echo "触发正式构建，使用 Tag 版本号: $FINAL_VERSION"
+          else
+            BASE_VERSION=$(grep -oP '(?<=<Version>)[^<]+' MSLX.SDK/MSLX.SDK.csproj)
+            TIMESTAMP=$(TZ=Asia/Hong_Kong date +'%Y%m%d.%H%M')
+            FINAL_VERSION="${BASE_VERSION}-beta.${TIMESTAMP}"
+            echo "手动触发构建，使用测试版本号: $FINAL_VERSION"
+          fi
+          
+          echo "PACKAGE_VERSION=$FINAL_VERSION" >> $GITHUB_ENV
+
+      - name: 构建 SDK
+        run: |
+          dotnet restore MSLX.SDK/MSLX.SDK.csproj
+          dotnet build MSLX.SDK/MSLX.SDK.csproj -c Release --no-restore
+
+      - name: 打包 SDK
+        run: dotnet pack MSLX.SDK/MSLX.SDK.csproj -c Release --no-build -o ./out /p:PackageVersion=${{ env.PACKAGE_VERSION }}
+
+      - name: 推送到 NuGet
+        run: dotnet nuget push ./out/*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: 上传到 GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./out/*.nupkg
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || env.PACKAGE_VERSION }}
+          generate_release_notes: true
+          prerelease: ${{ github.ref_type != 'tag' }}

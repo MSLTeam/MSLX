@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
-using MSLX.Daemon.Models;
 using MSLX.Daemon.Services;
+using MSLX.SDK.IServices;
+using MSLX.SDK.Models;
 using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Controllers.InstanceControllers;
@@ -9,9 +10,9 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
 [ApiController]
 public class JavaController : ControllerBase
 {
-    private readonly JavaScannerService _javaScanner;
+    private readonly IJavaScannerService _javaScanner;
 
-    public JavaController(JavaScannerService javaScanner)
+    public JavaController(IJavaScannerService javaScanner)
     {
         _javaScanner = javaScanner;
     }

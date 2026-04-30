@@ -3,15 +3,16 @@ using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils.ConfigUtils;
 using System.Security.Claims;
+using MSLX.SDK.IServices;
 
 namespace MSLX.Daemon.Hubs;
 
 [Authorize]
 public class FrpConsoleHub : Hub
 {
-    private readonly FrpProcessService _frpService;
+    private readonly IFrpProcessService _frpService;
     
-    public FrpConsoleHub(FrpProcessService frpService)
+    public FrpConsoleHub(IFrpProcessService frpService)
     {
         _frpService = frpService;
     }
