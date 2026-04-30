@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 
-namespace MSLX.Daemon.Models;
+namespace MSLX.SDK.Models;
 
 public class UserInfo
 {

@@ -1,4 +1,4 @@
-namespace MSLX.Daemon.Models.Tasks
+namespace MSLX.SDK.Models.Tasks
 {
     /// <summary>
     /// 用于在 IMemoryCache 中存储的最终状态对象

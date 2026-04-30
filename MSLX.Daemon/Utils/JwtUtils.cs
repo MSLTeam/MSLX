@@ -1,9 +1,9 @@
 using Microsoft.IdentityModel.Tokens;
-using MSLX.Daemon.Models;
 using MSLX.Daemon.Utils.ConfigUtils;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using MSLX.SDK.Models;
 
 namespace MSLX.Daemon.Utils;
 

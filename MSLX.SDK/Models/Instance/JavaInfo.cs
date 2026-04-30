@@ -1,4 +1,4 @@
-namespace MSLX.Daemon.Models.Instance;
+namespace MSLX.SDK.Models.Instance;
 
 public class JavaInfo
 {

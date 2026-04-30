@@ -3,13 +3,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Middleware;
-using MSLX.Daemon.Models;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.BackgroundTasks;
 using MSLX.Daemon.Utils.ConfigUtils;
 using System.Reflection;
 using MSLX.SDK.IServices;
+using MSLX.SDK.Models;
 
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 

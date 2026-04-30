@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace MSLX.Daemon.Models.Instance;
+namespace MSLX.SDK.Models.Instance;
 
 
 public class WhitelistItem

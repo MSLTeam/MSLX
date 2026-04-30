@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Caching.Memory; // 1. 【新增】 引入缓存
-using MSLX.Daemon.Models.Tasks; // 2. 【新增】 引入我们定义的状态模型
+using Microsoft.Extensions.Caching.Memory;
+using MSLX.SDK.Models.Tasks; // 1. 【新增】 引入缓存
+
+// 2. 【新增】 引入我们定义的状态模型
 
 
 namespace MSLX.Daemon.Hubs;

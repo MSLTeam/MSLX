@@ -1,4 +1,4 @@
-namespace MSLX.Daemon.Models;
+namespace MSLX.SDK.Models.Frp;
 
 public class FrpInfoResponse
 {

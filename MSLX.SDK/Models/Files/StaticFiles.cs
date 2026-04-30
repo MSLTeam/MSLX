@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MSLX.Daemon.Models.Files;
+namespace MSLX.SDK.Models.Files;
 
 public class UploadStaticFilesRequest
 {

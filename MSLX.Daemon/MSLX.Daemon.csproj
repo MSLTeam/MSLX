@@ -26,7 +26,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
-		<PackageReference Include="Cronos" Version="0.11.1" />
+		<PackageReference Include="Cronos" Version="0.13.0" />
 		<PackageReference Include="Downloader" Version="4.1.0" />
 		<PackageReference Include="fNbt" Version="1.0.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.2" />
@@ -48,5 +48,9 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\MSLX.SDK\MSLX.SDK.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Models\Files\" />
 	</ItemGroup>
 </Project>

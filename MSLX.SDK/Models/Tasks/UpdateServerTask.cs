@@ -1,6 +1,6 @@
-using MSLX.Daemon.Models.Instance;
+using MSLX.SDK.Models.Instance;
 
-namespace MSLX.Daemon.Models.Tasks;
+namespace MSLX.SDK.Models.Tasks;
 
 public class UpdateServerTask
 {

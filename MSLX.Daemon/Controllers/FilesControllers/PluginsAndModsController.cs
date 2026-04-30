@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
-using MSLX.Daemon.Models;
-using MSLX.Daemon.Models.Files;
 using MSLX.Daemon.Utils.ConfigUtils;
 using System.IO.Compression; 
 using System.Text.Json;  
 using System.Text.RegularExpressions;
 using MSLX.Daemon.Utils;
+using MSLX.SDK.Models;
+using MSLX.SDK.Models.Files;
 
 namespace MSLX.Daemon.Controllers.FilesControllers;
 

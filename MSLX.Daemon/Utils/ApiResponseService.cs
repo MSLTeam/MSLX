@@ -1,4 +1,4 @@
-using MSLX.Daemon.Models;
+using MSLX.SDK.Models;
 
 namespace MSLX.Daemon.Utils
 {

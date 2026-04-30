@@ -1,8 +1,8 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using MSLX.Daemon.Models.Instance;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.Models.Instance;
 using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Services;

@@ -1,8 +1,6 @@
 ﻿using fNbt;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MSLX.Daemon.Models;
-using MSLX.Daemon.Models.Instance;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils.ConfigUtils;
 using SixLabors.ImageSharp;
@@ -12,6 +10,8 @@ using System.IO.Compression;
 using System.Text.Json;
 using MSLX.Daemon.Utils;
 using MSLX.SDK.IServices;
+using MSLX.SDK.Models;
+using MSLX.SDK.Models.Instance;
 
 namespace MSLX.Daemon.Controllers.InstanceControllers;
 

@@ -1,11 +1,11 @@
 ﻿using Downloader;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MSLX.Daemon.Models;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using Newtonsoft.Json.Linq;
 using System.Net;
+using MSLX.SDK.Models;
 
 namespace MSLX.Daemon.Controllers.AuthControllers;
 

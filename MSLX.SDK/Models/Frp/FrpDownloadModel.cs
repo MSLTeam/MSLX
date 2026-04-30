@@ -1,6 +1,4 @@
-using Newtonsoft.Json;
-
-namespace MSLX.Daemon.Models.Frp;
+namespace MSLX.SDK.Models.Frp;
 
 public class FrpDownloadApiResponse
 {

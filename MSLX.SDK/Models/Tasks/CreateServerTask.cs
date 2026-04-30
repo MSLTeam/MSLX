@@ -1,6 +1,6 @@
-using MSLX.Daemon.Models.Instance;
+using MSLX.SDK.Models.Instance;
 
-namespace MSLX.Daemon.Models.Tasks;
+namespace MSLX.SDK.Models.Tasks;
     /// <summary>
     /// 封装一个创建服务器任务所需的所有信息
     /// </summary>

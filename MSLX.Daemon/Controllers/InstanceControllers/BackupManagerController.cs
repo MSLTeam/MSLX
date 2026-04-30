@@ -1,9 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using MSLX.Daemon.Models;
-using MSLX.Daemon.Models.Instance;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.Models;
+using MSLX.SDK.Models.Instance;
 
 namespace MSLX.Daemon.Controllers.InstanceControllers;
 

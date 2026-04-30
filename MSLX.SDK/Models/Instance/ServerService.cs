@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MSLX.Daemon.Models.Instance;
+namespace MSLX.SDK.Models.Instance;
 public class ServerActionRequest
 {
     [Required(ErrorMessage = "服务器ID不能为空")]

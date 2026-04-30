@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MSLX.Daemon.Models.Settings;
+namespace MSLX.SDK.Models.Settings;
 
 public class UpdateSettingsRequest
 {

@@ -2,10 +2,10 @@
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
-using MSLX.Daemon.Models;
-using MSLX.Daemon.Models.Files;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.Models;
+using MSLX.SDK.Models.Files;
 using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Controllers.FilesControllers;

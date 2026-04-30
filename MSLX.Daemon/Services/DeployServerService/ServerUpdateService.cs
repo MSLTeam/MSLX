@@ -1,9 +1,9 @@
 ﻿using Downloader;
 using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
-using MSLX.Daemon.Models.Tasks;
 using MSLX.Daemon.Utils.BackgroundTasks;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.Models.Tasks;
 
 namespace MSLX.Daemon.Services;
 

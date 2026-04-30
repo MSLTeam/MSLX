@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MSLX.Daemon.Models;
-using MSLX.Daemon.Models.Frp;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.Models;
+using MSLX.SDK.Models.Frp;
 using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Controllers.FrpControllers;

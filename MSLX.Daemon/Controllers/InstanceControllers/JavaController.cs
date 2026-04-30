@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using MSLX.Daemon.Models;
 using MSLX.Daemon.Services;
+using MSLX.SDK.Models;
 using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Controllers.InstanceControllers;

@@ -1,4 +1,4 @@
-namespace MSLX.Daemon.Models.Files;
+namespace MSLX.SDK.Models.Files;
 
 public class FileUploadMergeRequest
 { 

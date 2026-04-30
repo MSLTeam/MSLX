@@ -1,4 +1,4 @@
-﻿namespace MSLX.Daemon.Models
+﻿namespace MSLX.SDK.Models
 {
     public class ApiResponse<T>
     {

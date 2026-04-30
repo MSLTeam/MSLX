@@ -1,13 +1,12 @@
 ﻿using fNbt;
 using Microsoft.AspNetCore.Mvc;
-using MSLX.Daemon.Models;
-using MSLX.Daemon.Models.Instance;
 using MSLX.Daemon.Utils.ConfigUtils;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using System.IO.Compression;
 using MSLX.Daemon.Utils;
+using MSLX.SDK.Models;
 
 namespace MSLX.Daemon.Controllers.InstanceControllers;
 
