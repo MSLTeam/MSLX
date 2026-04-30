@@ -173,7 +173,7 @@ if (Directory.Exists(pluginsPath))
                 mvcBuilder.PartManager.ApplicationParts.Add(new Microsoft.AspNetCore.Mvc.ApplicationParts.AssemblyPart(assembly));
                 loadedPlugins.Add(new LoadedPlugin { Assembly = assembly, Metadata = pluginInstance });
                 
-                pluginLogger.LogInformation($"[MSLX Plugin] 插件加载成功: {pluginInstance.Name} v{pluginInstance.Version} by @{pluginInstance.Developer}");
+                pluginLogger.LogInformation($"[MSLX Plugin] 正在加载插件: {pluginInstance.Name} v{pluginInstance.Version} by @{pluginInstance.Developer}");
             }
         }
         catch (Exception ex) { pluginLogger.LogError($"[MSLX Plugin] 插件加载失败: {ex.Message}"); }
