@@ -284,7 +284,7 @@ lifetime.ApplicationStarted.Register(() =>
         {
             plugin.Metadata.OnLoad();
 
-            logger.LogInformation($"[MSLX Plugin] 插件业务已启动: {plugin.Metadata.Name}");
+            logger.LogInformation($"[MSLX Plugin] 插件已成功加载: {plugin.Metadata.Name}");
             successCount++;
         }
         catch (Exception ex)
@@ -358,7 +358,12 @@ catch (Exception ex)
     logger.LogError($"API 检测阶段发生未捕获的异常: {ex.Message}。进程将继续运行。");
 }
 
-MSLX.SDK.MSLX.Initialize(new MSLX.Daemon.Adapters.DaemonConfigProvider());
+
+// 注册代理方法给SDK
+MSLX.SDK.MSLX.Initialize(
+    new MSLX.Daemon.Adapters.DaemonConfigProvider(),
+    new MSLX.Daemon.Adapters.DaemonLoggerProvider(loggerFactory)
+);
 
 app.Run();
 
