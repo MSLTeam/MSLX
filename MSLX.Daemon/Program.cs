@@ -270,11 +270,54 @@ app.MapFallbackToFile("index.html", new StaticFileOptions
 });
 
 var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+// 启动事件
 lifetime.ApplicationStarted.Register(() =>
 {
-    // 启动事件
-    // 咦？怎么什么也没有？
     logger.LogInformation("MSLX 守护进程服务已就绪！欢迎使用~");
+    var pluginManager = app.Services.GetRequiredService<PluginManager>();
+
+    // 调用插件的初始化方法
+    int successCount = 0;
+    foreach (var plugin in pluginManager.Plugins)
+    {
+        try
+        {
+            plugin.Metadata.OnLoad();
+
+            logger.LogInformation($"[MSLX Plugin] 插件业务已启动: {plugin.Metadata.Name}");
+            successCount++;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"[MSLX Plugin] 插件 {plugin.Metadata.Name} 启动失败 (OnLoad 异常): {ex.Message}");
+        }
+    }
+
+    if (pluginManager.Plugins.Count > 0)
+    {
+        logger.LogInformation($"[MSLX Plugin] 插件加载完毕，共 {successCount}/{pluginManager.Plugins.Count} 个插件成功运行。");
+    }
+
+});
+// 关闭事件
+lifetime.ApplicationStopping.Register(() =>
+{
+    logger.LogInformation("MSLX 守护进程正在停止，正在释放插件资源...");
+
+    var pluginManager = app.Services.GetRequiredService<PluginManager>();
+
+    foreach (var plugin in pluginManager.Plugins)
+    {
+        try
+        {
+            plugin.Metadata.OnUnload();
+            logger.LogInformation($"[MSLX Plugin] 插件已卸载: {plugin.Metadata.Name}");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"[MSLX Plugin] 插件 {plugin.Metadata.Name} 卸载时发生异常: {ex.Message}");
+        }
+    }
 });
 
 // 显示实例化服务
@@ -314,6 +357,8 @@ catch (Exception ex)
 {
     logger.LogError($"API 检测阶段发生未捕获的异常: {ex.Message}。进程将继续运行。");
 }
+
+MSLX.SDK.MSLX.Initialize(new MSLX.Daemon.Adapters.DaemonConfigProvider());
 
 app.Run();
 

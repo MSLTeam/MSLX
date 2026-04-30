@@ -47,10 +47,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\MSLX.SDK\MSLX.SDK.csproj" />
+	  <Compile Remove="Models\**" />
+	  <Content Remove="Models\**" />
+	  <EmbeddedResource Remove="Models\**" />
+	  <None Remove="Models\**" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Models\Files\" />
+	  <ProjectReference Include="..\MSLX.SDK\MSLX.SDK.csproj" />
 	</ItemGroup>
 </Project>
