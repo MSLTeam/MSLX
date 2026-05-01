@@ -1,6 +1,6 @@
 {
-  "version": "1.3.8.1",
-  "buildTime": "2026-04-29 22:51:43",
+  "version": "1.4.0",
+  "buildTime": "2026-05-01 17:32:37",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -74,10 +74,112 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "a3e02f6d240a6e06b8912f72f268202e2a82efe3",
-  "commitMsg": "feat(daemon & webpanel): 完整插件加载流程",
+  "commitId": "4dfbe35afbb9aa1dd5f101271424ab8d5a73d18d",
+  "commitMsg": "feat(daemon & webpanel): 新增插件管理页面",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "4dfbe35afbb9aa1dd5f101271424ab8d5a73d18d",
+      "commitTime": "2026-05-01 17:13:19 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 新增插件管理页面"
+    },
+    {
+      "commitId": "aaa467e267a7aeac4e3348f1f188fcf25793a5bd",
+      "commitTime": "2026-05-01 16:47:40 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(sdk): 更新图标默认值"
+    },
+    {
+      "commitId": "9c9fb09bf1a25f6e24b5661d1679040d7d71aabb",
+      "commitTime": "2026-05-01 16:36:01 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(sdk): 更新插件元数据字段"
+    },
+    {
+      "commitId": "e6f2023ac807583314816d5c566dff5c542b0cc6",
+      "commitTime": "2026-04-30 23:30:23 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "refactor(webpanel): 重构样式设置组件"
+    },
+    {
+      "commitId": "ce1ed5885bcea7a6154e437301ff5ff8e3f4431a",
+      "commitTime": "2026-04-30 22:47:17 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #120 from MSLTeam/dev"
+    },
+    {
+      "commitId": "5179c70748ed612b792425a7b30b8e7e3977d88c",
+      "commitTime": "2026-04-30 22:42:02 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & sdk): 更新到v1.3.8.2-beta版本"
+    },
+    {
+      "commitId": "38fe69d91e2233312748351efae29d04b0410369",
+      "commitTime": "2026-04-30 21:52:33 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 优化插件系统对Logger的调用"
+    },
+    {
+      "commitId": "14b176ee43c3ec959a6a46b9922b2e7087fe43ca",
+      "commitTime": "2026-04-30 21:46:19 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & sdk): SDK提供Logger调用方法"
+    },
+    {
+      "commitId": "8a3476f23c2f7c974d950a9ebc0708c74a9cb46f",
+      "commitTime": "2026-04-30 21:41:19 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(daemon): 修改加载描述"
+    },
+    {
+      "commitId": "3d38b6f62c56d53b5ac69dee597c63dcd0f00b43",
+      "commitTime": "2026-04-30 21:14:34 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon & sdk): 修复SDK命名空间引用错误"
+    },
+    {
+      "commitId": "41af7000cd1fe87313489ca657c3dd00b938112e",
+      "commitTime": "2026-04-30 21:07:41 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(sdk): 修复命名空间错误"
+    },
+    {
+      "commitId": "c68f850f2bea5e1a79b9daf514c2e7ea842dfd23",
+      "commitTime": "2026-04-30 20:53:12 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(sdk & daemon): 映射配置文件类到SDK中"
+    },
+    {
+      "commitId": "f5bc8735ef6d9861e870b595c9bbdafdd3d6c3f1",
+      "commitTime": "2026-04-30 13:40:49 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修正部署服务的命名空间"
+    },
+    {
+      "commitId": "8908d4e74f1d0db397834bcd860d5ece12302a7c",
+      "commitTime": "2026-04-30 13:32:47 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "refactor(daemon & sdk): 提取Java扫描部分 & Frp进程部分方法接口到SDK"
+    },
+    {
+      "commitId": "910a633a2dfb9394979348e9269cffeca637163e",
+      "commitTime": "2026-04-30 12:57:29 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "refactor(daemon & sdk): 将守护进程端的模型重构到SDK"
+    },
+    {
+      "commitId": "c4ad308985b53eca621a03cca3ddedebed457a17",
+      "commitTime": "2026-04-29 22:53:23 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #119 from MSLTeam/dev"
+    },
+    {
+      "commitId": "0f33b67b649d061d2d411c136bae9522fc7d426e",
+      "commitTime": "2026-04-29 22:52:38 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新到 v1.3.8.1-beta 版本"
+    },
     {
       "commitId": "a3e02f6d240a6e06b8912f72f268202e2a82efe3",
       "commitTime": "2026-04-29 22:48:34 +0800",
@@ -275,108 +377,6 @@
       "commitTime": "2026-04-08 00:12:27 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "fix(desktop): 修好了MSLFrp OAuth登录逻辑喵"
-    },
-    {
-      "commitId": "be84caa3d55e3e200af211e622c168772da48185",
-      "commitTime": "2026-04-07 22:38:00 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "perf(desktop): 登录模块--成功了，但成功了一半，后面继续写吧！先睡觉！"
-    },
-    {
-      "commitId": "416ac43ab6d451cb979d52d68de93e9664024d9f",
-      "commitTime": "2026-04-07 12:31:42 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "feat(desktop): 完善创建Frp隧道功能（暂不可用）"
-    },
-    {
-      "commitId": "c9161a9cb4585337acc4e6cd5a46833fc08889e1",
-      "commitTime": "2026-04-06 21:31:26 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 服务端备份新增基岩版兼容处理"
-    },
-    {
-      "commitId": "71291ac46cc4c4eaaff52b64960ac830ef83e9c3",
-      "commitTime": "2026-04-05 17:27:16 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #105 from MSLTeam/dev"
-    },
-    {
-      "commitId": "c39d5634dd0edf3212dad6a15b9e3f499e7be987",
-      "commitTime": "2026-04-05 17:26:28 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(webpanel & daemon): 修复构建前端资源丢失 & 更新到v1.3.5.1版本"
-    },
-    {
-      "commitId": "5f60e847653ef56543b803880a92bd60b350d0c6",
-      "commitTime": "2026-04-05 17:15:42 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge remote-tracking branch 'origin/master' into dev"
-    },
-    {
-      "commitId": "b7762d4ef05c4db2f5ba4b4fe893d29751c7b1d2",
-      "commitTime": "2026-04-05 17:13:46 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #104 from MSLTeam/dev"
-    },
-    {
-      "commitId": "d22cbe0652bbca6d60f33aa3f7984bc0e225460a",
-      "commitTime": "2026-04-05 17:12:27 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
-    },
-    {
-      "commitId": "f523ae2a4d6864267bfcec97c255420f9d62d888",
-      "commitTime": "2026-04-05 17:12:08 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(webpanel & daemon): 更新到v1.3.5版本"
-    },
-    {
-      "commitId": "0ebd6e1deab2138fbb42ea95aa21deb1ed1430f3",
-      "commitTime": "2026-04-05 17:11:46 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(webpanel & daemon): 更新到v1.3.5版本"
-    },
-    {
-      "commitId": "89086442333f955353a835b9330c3527a3a5699a",
-      "commitTime": "2026-04-05 17:09:09 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复部分输入框的异常样式"
-    },
-    {
-      "commitId": "2aa48b7c2bf03855aa2003644ce9e43c52b6786e",
-      "commitTime": "2026-04-05 16:20:27 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(webpanel): 更新ChmlFrp配置信息"
-    },
-    {
-      "commitId": "2a929e8f3171de2580fbf4323a36286e02fb79cd",
-      "commitTime": "2026-04-05 16:13:33 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 关于页面新增贡献者鸣谢列表"
-    },
-    {
-      "commitId": "9062e78ac42e2c17e76a6b29cb95ae037b42def5",
-      "commitTime": "2026-04-05 16:05:49 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 移除背景美化模式下顶部导航栏异常的毛玻璃效果"
-    },
-    {
-      "commitId": "c300e7e1c328cb6c6df414dc98280e5578b9ad80",
-      "commitTime": "2026-04-05 11:45:21 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #103 from Hongbro886/fix-102"
-    },
-    {
-      "commitId": "c5fff9f57225756a4a2bb6c522368480346b2b6d",
-      "commitTime": "2026-04-05 09:49:55 +0800",
-      "commitAuthor": "whoa",
-      "commitMsg": "fix(webpanel):将MEFrp的注册链接指向正确的地址"
-    },
-    {
-      "commitId": "60d17acdee98442370ca866dee54daa4838ff6c0",
-      "commitTime": "2026-04-05 00:05:38 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 优化ChmlFrp登录弹窗的的方式"
     }
   ]
 }
