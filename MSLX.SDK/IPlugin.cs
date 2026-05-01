@@ -12,7 +12,7 @@
         string Description => "这个开发者很懒，什么都没写。";
 
         // 插件图标 (应该打包在前端资源中)
-        string Icon => "";
+        string Icon => "https://www.mslmc.cn/logo.png";
 
         // 插件版本
         string Version => "1.0.0";
