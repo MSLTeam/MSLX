@@ -1,6 +1,6 @@
 {
   "version": "1.4.1",
-  "buildTime": "2026-05-05 17:44:58",
+  "buildTime": "2026-05-05 17:48:02",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -74,10 +74,22 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "4243a1038a03bad36a7b2be9370ce0ebb313dd21",
-  "commitMsg": "feat(webpanel & daemon): 新增插件市场功能",
+  "commitId": "3f53b64a268be2a41060cd38e360e5b6dc053f83",
+  "commitMsg": "fix(webpanel): 修复默认账号修改提醒按钮的路由错误 fix #123",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "3f53b64a268be2a41060cd38e360e5b6dc053f83",
+      "commitTime": "2026-05-05 17:47:33 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复默认账号修改提醒按钮的路由错误 fix #123"
+    },
+    {
+      "commitId": "a365cb631cc9573e2b83392ce7eac220e500ffac",
+      "commitTime": "2026-05-05 17:45:49 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel & sdk): 更新到 v1.4.1 版本"
+    },
     {
       "commitId": "4243a1038a03bad36a7b2be9370ce0ebb313dd21",
       "commitTime": "2026-05-05 17:43:38 +0800",
@@ -365,18 +377,6 @@
       "commitTime": "2026-04-11 23:24:32 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "bumpver(daemon & webpanel): 更新版本号到v1.3.6"
-    },
-    {
-      "commitId": "2b828254f997e05eac8cbd6826ffdc1cd2b9621e",
-      "commitTime": "2026-04-11 22:51:28 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 优化模组/插件管理页面的一些样式"
-    },
-    {
-      "commitId": "6dea7a04d6f7c7ae8d95ccd2df0720c855e73bbc",
-      "commitTime": "2026-04-11 22:35:15 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复部分长文本框边框样式丢失的问题"
     }
   ]
 }
