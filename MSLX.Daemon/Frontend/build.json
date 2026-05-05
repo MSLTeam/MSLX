@@ -1,6 +1,6 @@
 {
-  "version": "1.4.0",
-  "buildTime": "2026-05-01 17:32:37",
+  "version": "1.4.1",
+  "buildTime": "2026-05-05 17:48:02",
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.4",
     "@codemirror/lang-json": "^6.0.2",
@@ -74,10 +74,46 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "4dfbe35afbb9aa1dd5f101271424ab8d5a73d18d",
-  "commitMsg": "feat(daemon & webpanel): 新增插件管理页面",
+  "commitId": "3f53b64a268be2a41060cd38e360e5b6dc053f83",
+  "commitMsg": "fix(webpanel): 修复默认账号修改提醒按钮的路由错误 fix #123",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "3f53b64a268be2a41060cd38e360e5b6dc053f83",
+      "commitTime": "2026-05-05 17:47:33 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复默认账号修改提醒按钮的路由错误 fix #123"
+    },
+    {
+      "commitId": "a365cb631cc9573e2b83392ce7eac220e500ffac",
+      "commitTime": "2026-05-05 17:45:49 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel & sdk): 更新到 v1.4.1 版本"
+    },
+    {
+      "commitId": "4243a1038a03bad36a7b2be9370ce0ebb313dd21",
+      "commitTime": "2026-05-05 17:43:38 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 新增插件市场功能"
+    },
+    {
+      "commitId": "aaf1e024d237117228726feb1b32cc0c142c4e8e",
+      "commitTime": "2026-05-01 18:06:56 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复顶部导航个人中心跳转地址错误"
+    },
+    {
+      "commitId": "44bdbcbac30cb3406e763699c6ffd0015839ced5",
+      "commitTime": "2026-05-01 17:35:53 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #121 from MSLTeam/dev"
+    },
+    {
+      "commitId": "bacc7e1fdaceb26e18c980ac0a7a2d609ffab266",
+      "commitTime": "2026-05-01 17:34:03 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(sdk & daemon & webpanel): 更新到 v1.4.0-release 版本"
+    },
     {
       "commitId": "4dfbe35afbb9aa1dd5f101271424ab8d5a73d18d",
       "commitTime": "2026-05-01 17:13:19 +0800",
@@ -341,42 +377,6 @@
       "commitTime": "2026-04-11 23:24:32 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "bumpver(daemon & webpanel): 更新版本号到v1.3.6"
-    },
-    {
-      "commitId": "2b828254f997e05eac8cbd6826ffdc1cd2b9621e",
-      "commitTime": "2026-04-11 22:51:28 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 优化模组/插件管理页面的一些样式"
-    },
-    {
-      "commitId": "6dea7a04d6f7c7ae8d95ccd2df0720c855e73bbc",
-      "commitTime": "2026-04-11 22:35:15 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复部分长文本框边框样式丢失的问题"
-    },
-    {
-      "commitId": "b3064f991c50f5b2910c6dc9a233ba4fc45b217a",
-      "commitTime": "2026-04-11 21:50:48 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 隧道列表动画同步实例列表的动画效果"
-    },
-    {
-      "commitId": "9be6b915fd0dcfb36f314469c109ecb02567991c",
-      "commitTime": "2026-04-11 21:36:39 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 更新时支持自动结束运行中的实例 #98"
-    },
-    {
-      "commitId": "b802547d4f9241fc4740202b7db34a9d00c4acd2",
-      "commitTime": "2026-04-11 20:38:18 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 基岩版Windows系统下备份功能暂时使用英语提示信息防止乱码问题"
-    },
-    {
-      "commitId": "4032b28dece915fb089fd315a0a88dfa54c3a2dd",
-      "commitTime": "2026-04-08 00:12:27 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(desktop): 修好了MSLFrp OAuth登录逻辑喵"
     }
   ]
 }
