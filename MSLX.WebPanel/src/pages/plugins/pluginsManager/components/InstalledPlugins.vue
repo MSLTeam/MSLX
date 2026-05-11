@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { UserIcon, LinkIcon, InfoCircleIcon, HomeIcon, ExtensionIcon, StoreIcon } from 'tdesign-icons-vue-next';
+import {
+  UserIcon, LinkIcon, HomeIcon, ExtensionIcon, StoreIcon,
+  PlayCircleIcon, StopCircleIcon, DeleteIcon, RollbackIcon
+} from 'tdesign-icons-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 
 import Result from '@/components/result/index.vue';
 import { useUserStore } from '@/store';
 import type { PluginListModel } from '@/api/model/plugins';
-import { getPluginList } from '@/api/plugins';
+import { getPluginList, postPluginAction } from '@/api/plugins';
 
 const userStore = useUserStore();
 const loading = ref(true);
+const actionLoading = ref(false);
 const isError = ref(false);
 const plugins = ref<PluginListModel[]>([]);
 
@@ -30,6 +34,43 @@ async function getList() {
   }
 }
 
+// 处理插件action
+async function handleAction(id: string, action: string) {
+  if (actionLoading.value) return;
+
+  let loadingInstance: any = null;
+
+  try {
+    actionLoading.value = true;
+
+    loadingInstance = await MessagePlugin.loading('正在处理...');
+
+    await postPluginAction(id, action);
+
+    MessagePlugin.success('操作成功');
+
+    // 刷新
+    await getList();
+  } catch (error: any) {
+    console.error(error);
+    MessagePlugin.error('操作失败: ' + (error.message || '未知错误'));
+  } finally {
+    if (loadingInstance) {
+      loadingInstance.close();
+    }
+    actionLoading.value = false;
+  }
+}
+
+// 状态标签颜色映射
+const getStatusTheme = (status: string) => {
+  if (status === '已启用') return 'success';
+  if (status === '已禁用') return 'default';
+  if (status === '加载失败') return 'danger';
+  if (status?.includes('下次重启')) return 'warning';
+  return 'primary';
+};
+
 const resolveUrl = (path: string) => {
   if (!path) return '';
   if (path.startsWith('http')) return path;
@@ -47,7 +88,7 @@ onMounted(() => {
 
 <template>
   <div class="relative min-h-[400px]">
-    <div v-if="loading" class="flex flex-col items-center justify-center py-24">
+    <div v-if="loading && plugins.length === 0" class="flex flex-col items-center justify-center py-24">
       <t-loading size="medium" text="正在扫描本地已安装插件..." />
     </div>
 
@@ -82,7 +123,7 @@ onMounted(() => {
         <div class="flex flex-col md:flex-row items-start md:items-center gap-5">
           <div class="shrink-0">
             <div
-              class="w-16 h-16 rounded-xl border border-[var(--td-component-border)] overflow-hidden bg-zinc-50 dark:bg-zinc-900/50 flex items-center justify-center shadow-inner group-hover:shadow-md transition-shadow"
+              class="w-16 h-16 rounded-xl border border-[var(--td-component-border)] overflow-hidden bg-zinc-50 dark:bg-zinc-900/50 flex items-center justify-center shadow-inner group-hover:shadow-md transition-shadow relative"
             >
               <img
                 v-if="item.icon"
@@ -99,10 +140,21 @@ onMounted(() => {
               <h3 class="text-base font-bold text-[var(--td-text-color-primary)] truncate m-0 tracking-tight">
                 {{ item.name }}
               </h3>
-              <t-tag size="small" variant="light-outline" theme="primary" class="!px-2 !rounded-md"
-                >v{{ item.version }}</t-tag
+
+              <!-- 动态状态标签 -->
+              <t-tag
+                size="small"
+                :theme="getStatusTheme(item.status)"
+                variant="light"
+                class="!px-2 !rounded-md"
               >
-              <span class="text-xs font-mono text-[var(--td-text-color-secondary)] opacity-60">ID: {{ item.id }}</span>
+                {{ item.status || '未知状态' }}
+              </t-tag>
+
+              <t-tag size="small" variant="outline" theme="default" class="!px-2 !rounded-md">
+                v{{ item.version }}
+              </t-tag>
+              <span class="text-xs font-mono text-[var(--td-text-color-secondary)] opacity-60 truncate">ID: {{ item.id }}</span>
             </div>
             <p class="text-sm text-[var(--td-text-color-secondary)] m-0 leading-relaxed line-clamp-2">
               {{ item.description || '该插件暂无详细说明。' }}
@@ -112,60 +164,90 @@ onMounted(() => {
           <div
             class="shrink-0 flex flex-wrap md:flex-nowrap items-center gap-6 md:pl-6 md:border-l border-dashed border-zinc-200 dark:border-zinc-700/60 mt-2 md:mt-0 pt-3 md:pt-0 border-t md:border-t-0 w-full md:w-auto"
           >
-            <div class="flex flex-col gap-1.5 min-w-[100px]">
-              <span
-                class="text-[10px] text-[var(--td-text-color-secondary)] uppercase tracking-widest font-black opacity-80"
-                >DEVELOPER</span
-              >
+            <!-- 开发者信息 -->
+            <div class="flex flex-col gap-1.5 min-w-[90px]">
+              <span class="text-[10px] text-[var(--td-text-color-secondary)] uppercase tracking-widest font-black opacity-80">DEVELOPER</span>
               <div class="flex items-center gap-2 text-[var(--td-text-color-primary)]">
                 <user-icon size="14px" class="text-[var(--color-primary)] opacity-70" />
                 <a
                   v-if="item.authorUrl"
                   :href="item.authorUrl"
                   target="_blank"
-                  class="text-sm font-bold hover:text-[var(--color-primary)] transition-colors cursor-pointer decoration-none"
-                  >{{ item.developer }}</a
-                >
-                <span v-else class="text-sm font-bold">{{ item.developer }}</span>
+                  class="text-sm font-bold hover:text-[var(--color-primary)] transition-colors cursor-pointer decoration-none truncate max-w-[100px]"
+                >{{ item.developer }}</a>
+                <span v-else class="text-sm font-bold truncate max-w-[100px]">{{ item.developer }}</span>
               </div>
             </div>
 
-            <div class="flex flex-col gap-1.5">
-              <span
-                class="text-[10px] text-[var(--td-text-color-secondary)] uppercase tracking-widest font-black opacity-80"
-                >MIN SDK</span
-              >
-              <div class="flex items-center gap-2 text-[var(--td-text-color-primary)]">
-                <info-circle-icon size="14px" class="text-orange-400 opacity-70" />
-                <span class="text-sm font-mono font-bold">{{ item.minSDKVersion }}</span>
-              </div>
-            </div>
-
-            <div class="flex items-center gap-2 ml-auto">
+            <!-- 外链工具栏 -->
+            <div class="flex items-center gap-2">
               <t-tooltip v-if="item.pluginUrl" content="插件主页">
-                <t-button
-                  shape="square"
-                  variant="outline"
-                  size="small"
-                  :href="item.pluginUrl"
-                  target="_blank"
-                  class="!rounded-lg hover:!text-[var(--color-primary)] hover:!border-[var(--color-primary)] transition-colors"
-                >
+                <t-button shape="square" variant="text" size="small" :href="item.pluginUrl" target="_blank" class="hover:!text-[var(--color-primary)] transition-colors">
                   <template #icon><link-icon /></template>
                 </t-button>
               </t-tooltip>
               <t-tooltip v-if="item.authorUrl" content="开发者主页">
-                <t-button
-                  shape="square"
-                  variant="outline"
-                  size="small"
-                  :href="item.authorUrl"
-                  target="_blank"
-                  class="!rounded-lg hover:!text-[var(--color-primary)] hover:!border-[var(--color-primary)] transition-colors"
-                >
+                <t-button shape="square" variant="text" size="small" :href="item.authorUrl" target="_blank" class="hover:!text-[var(--color-primary)] transition-colors">
                   <template #icon><home-icon /></template>
                 </t-button>
               </t-tooltip>
+            </div>
+
+            <!-- 操作按钮区域 -->
+            <div class="flex items-center gap-2 pl-4 border-l border-zinc-200 dark:border-zinc-700/60 ml-auto md:ml-0">
+
+              <!-- 撤销操作 (仅在有待处理任务时显示) -->
+              <t-button
+                v-if="item.status?.includes('下次重启')"
+                size="small"
+                theme="default"
+                variant="outline"
+                :disabled="actionLoading"
+                @click="handleAction(item.id, 'cancel')"
+              >
+                <template #icon><rollback-icon /></template>
+                撤销
+              </t-button>
+
+              <!-- 启用 / 禁用 (互斥显示，在无待处理任务时显示) -->
+              <template v-else>
+                <t-button
+                  v-if="item.status === '已禁用'"
+                  size="small"
+                  theme="primary"
+                  variant="outline"
+                  :disabled="actionLoading"
+                  @click="handleAction(item.id, 'enable')"
+                >
+                  <template #icon><play-circle-icon /></template>
+                  启用
+                </t-button>
+                <t-button
+                  v-if="item.status === '已启用'"
+                  size="small"
+                  theme="warning"
+                  variant="outline"
+                  :disabled="actionLoading"
+                  @click="handleAction(item.id, 'disable')"
+                >
+                  <template #icon><stop-circle-icon /></template>
+                  禁用
+                </t-button>
+              </template>
+
+              <!-- 删除按钮 (安全气泡确认) -->
+              <t-popconfirm
+                v-if="!item.status?.includes('下次重启删除')"
+                content="确认要在下次重启后彻底删除该插件及依赖吗？"
+                theme="danger"
+                placement="top-right"
+                @confirm="handleAction(item.id, 'delete')"
+              >
+                <t-button size="small" theme="danger" variant="text" :disabled="actionLoading">
+                  <template #icon><delete-icon /></template>
+                </t-button>
+              </t-popconfirm>
+
             </div>
           </div>
         </div>

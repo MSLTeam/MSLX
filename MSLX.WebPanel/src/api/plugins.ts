@@ -13,6 +13,13 @@ export async function getPluginList(){
   });
 }
 
+export async function postPluginAction(id:string, action:string){
+  return await request.post({
+    url: `/api/plugins/action`,
+    data: {id, action}
+  });
+}
+
 export async function postInstallPlugin(downloadUrl: string, fileName: string, overwrite: boolean = true) {
   return await request.post<InstalPluginResponse>({
     url: '/api/plugins/install',
