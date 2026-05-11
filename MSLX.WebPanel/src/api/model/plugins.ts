@@ -9,6 +9,7 @@ export interface PluginListModel {
   authorUrl: string;
   pluginUrl: string;
   entryPath: string;
+  status: string;
 }
 
 export interface InstalPluginResponse {

@@ -149,12 +149,63 @@ var loadedPlugins = new List<LoadedPlugin>();
 var pluginsPath = Path.Combine(IConfigBase.GetAppDataPath(), "Plugins");
 using var pluginLoggerSource = LoggerFactory.Create(l => l.AddConsole());
 var pluginLogger = pluginLoggerSource.CreateLogger("PluginLoader");
-if (Directory.Exists(pluginsPath))
+
+if (!Directory.Exists(pluginsPath))
 {
+    Directory.CreateDirectory(pluginsPath);
+}
+else
+{
+    // 处理删除插件
+    foreach (var deleteFile in Directory.GetFiles(pluginsPath, "*.dll.delete"))
+    {
+        var targetDll = deleteFile.Substring(0, deleteFile.Length - 7); 
+        try
+        {
+            if (File.Exists(targetDll)) 
+            {
+                File.Delete(targetDll);
+            }
+            File.Delete(deleteFile);
+            pluginLogger.LogInformation($"[MSLX Plugin] 已清理待删除插件文件: {Path.GetFileName(targetDll)}");
+        }
+        catch (Exception ex)
+        {
+            pluginLogger.LogWarning($"[MSLX Plugin] 无法删除插件文件 {Path.GetFileName(targetDll)}: {ex.Message}");
+        }
+    }
+
+    // 处理插件更新
+    foreach (var newFile in Directory.GetFiles(pluginsPath, "*.dll.new"))
+    {
+        var targetDll = newFile.Substring(0, newFile.Length - 4);
+        try
+        {
+            if (File.Exists(targetDll)) 
+            {
+                File.Delete(targetDll);
+            }
+            File.Move(newFile, targetDll);
+            pluginLogger.LogInformation($"[MSLX Plugin] 已应用插件更新/安装: {Path.GetFileName(targetDll)}");
+        }
+        catch (Exception ex)
+        {
+            pluginLogger.LogWarning($"[MSLX Plugin] 无法应用插件更新 {Path.GetFileName(targetDll)}: {ex.Message}");
+        }
+    }
+
+    // 加载dll
     foreach (var dllPath in Directory.GetFiles(pluginsPath, "*.dll"))
     {
         try
         {
+            var disabledMarker = dllPath + ".disabled";
+            if (File.Exists(disabledMarker))
+            {
+                pluginLogger.LogInformation($"[MSLX Plugin] 插件被禁用，跳过加载: {Path.GetFileName(dllPath)}");
+                continue; 
+            }
+            
             var assembly = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyPath(dllPath);
             
             var pluginType = assembly.GetTypes().FirstOrDefault(t => 
@@ -176,12 +227,11 @@ if (Directory.Exists(pluginsPath))
                 pluginLogger.LogInformation($"[MSLX Plugin] 正在加载插件: {pluginInstance.Name} v{pluginInstance.Version} by @{pluginInstance.Developer}");
             }
         }
-        catch (Exception ex) { pluginLogger.LogError($"[MSLX Plugin] 插件加载失败: {ex.Message}"); }
+        catch (Exception ex) 
+        { 
+            pluginLogger.LogError($"[MSLX Plugin] 插件加载失败 ({Path.GetFileName(dllPath)}): {ex.Message}"); 
+        }
     }
-}
-else
-{
-    Directory.CreateDirectory(pluginsPath);
 }
 
 builder.Services.AddMemoryCache();

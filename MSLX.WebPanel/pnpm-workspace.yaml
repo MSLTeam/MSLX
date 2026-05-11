@@ -1,0 +1,5 @@
+allowBuilds:
+  core-js-pure: true
+  esbuild: true
+  less: true
+  vue-demi: true
