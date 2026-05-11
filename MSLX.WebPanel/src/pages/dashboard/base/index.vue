@@ -98,7 +98,7 @@ const getDelay = (baseIndex: number) => {
       <template #operation>
         <span
           class="cursor-pointer font-bold flex items-center gap-1 hover:opacity-80 transition-opacity"
-          @click="changeUrl('/settings')"
+          @click="changeUrl('/settings/profile')"
         >
           去修改 <i class="fa-solid fa-arrow-right text-sm"></i>
         </span>

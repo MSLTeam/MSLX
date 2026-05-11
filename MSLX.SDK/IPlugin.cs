@@ -1,5 +1,4 @@
-﻿// MSLX.SDK/IPlugin.cs
-namespace MSLX.SDK
+﻿namespace MSLX.SDK
 {
     public interface IPlugin
     {
@@ -12,11 +11,14 @@ namespace MSLX.SDK
         // 插件描述
         string Description => "这个开发者很懒，什么都没写。";
 
+        // 插件图标 (应该打包在前端资源中)
+        string Icon => "https://www.mslmc.cn/logo.png";
+
         // 插件版本
         string Version => "1.0.0";
 
         // 主项目最低版本
-        string MinLoaderVersion => "1.3.8.1";
+        string MinSDKVersion => "1.3.8.1";
 
         // 开发者名称
         string Developer => "不知道哇！";

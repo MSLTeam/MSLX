@@ -249,7 +249,7 @@ const handleAvatarClick = () => {
                 <div class="p-2 flex flex-col gap-1">
                   <div
                     class="flex items-center px-3 py-2 text-sm text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700/50 rounded-lg cursor-pointer transition-colors"
-                    @click="handleNav('/settings')"
+                    @click="handleNav('/settings/profile')"
                   >
                     <t-icon name="user-circle" class="text-lg mr-2 opacity-70"></t-icon>
                     <span class="font-medium">个人中心</span>
