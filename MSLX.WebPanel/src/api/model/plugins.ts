@@ -4,4 +4,5 @@ export interface PluginListModel {
   version: string;
   developer: string;
   entryPath: string;
+  status: string;
 }

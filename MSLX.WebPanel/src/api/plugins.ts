@@ -6,3 +6,13 @@ export async function getPluginList(){
     url: '/api/plugins/list'
   });
 }
+
+export async function postPluginAction(id:string, action:string){
+  return await request.post({
+    url: '/api/plugins/action',
+    data:{
+      id,
+      action
+    }
+  });
+}
