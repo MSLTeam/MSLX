@@ -12,7 +12,7 @@ public class InstallPluginRequest
 
     [Required(ErrorMessage = "文件名不能为空")]
     [MaxLength(255, ErrorMessage = "文件名不能超过 255 个字符")]
-    [RegularExpression(@"^[a-zA-Z0-9_\-\.]+\.dll$", ErrorMessage = "文件名非法：只能包含字母、数字、横杠、下划线，且必须以 .dll 结尾（严禁包含路径符号）")]
+    [RegularExpression(@"^[a-zA-Z0-9_\-\.]+\.(dll|new)$", ErrorMessage = "文件名非法：只能包含字母、数字、横杠、下划线、点，且必须以 .dll 或 .new 结尾（严禁包含路径符号）")]
     public string FileName { get; set; } = string.Empty;
 
     public bool Overwrite { get; set; } = false;

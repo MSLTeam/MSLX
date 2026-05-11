@@ -35,10 +35,6 @@ public class PluginManagerController : ControllerBase
         }
 
         var safeFileName = Path.GetFileName(request.FileName);
-        if (!safeFileName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
-        {
-            return BadRequest(new ApiResponse<object> { Code = 400, Message = "仅支持下载 .dll 格式的插件" });
-        }
 
         var pluginsPath = Path.Combine(IConfigBase.GetAppDataPath(), "Plugins");
         var filePath = Path.Combine(pluginsPath, safeFileName);

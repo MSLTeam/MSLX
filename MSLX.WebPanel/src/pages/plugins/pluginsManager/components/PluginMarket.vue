@@ -111,7 +111,7 @@ const handleInstallVersion = async (version: MarketPluginVersionModel) => {
 
   const safeFileName = formatFileName(activePlugin.value.appId).replace(/[^a-zA-Z0-9_\-.]/g, '');
   try {
-    const res = await postInstallPlugin(version.downloadLink, safeFileName, true);
+    const res = await postInstallPlugin(version.downloadLink, `${safeFileName}.new`, true);
     pollInstallStatus(res.taskId);
   } catch (error: any) {
     installState.isInstalling = false;
