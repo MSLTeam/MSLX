@@ -28,6 +28,13 @@ import LogAnalysisDialog from './LogAnalysis.vue';
 import PlayerListCard from './PlayerManagerComponents/PlayerListCard.vue';
 import { changeUrl } from '@/router';
 import MapRender from '@/pages/instance/console/components/MapRender.vue';
+import { usePluginUIStore } from '@/store';
+import { usePluginSlot } from '@/hooks/usePluginSlot';
+import PluginSlot from '@/components/PluginSlot.vue';
+
+const { setPluginRef, openPluginDialog } = usePluginSlot();
+
+const pluginUIStore = usePluginUIStore();
 
 // --- Props & Emits ---
 const props = defineProps<{
@@ -126,29 +133,35 @@ onUnmounted(() => {
 
 <template>
   <div class="flex flex-col gap-5 h-full">
-
-    <div class="design-card bg-[var(--td-bg-color-container)]/80  rounded-xl border border-[var(--td-component-border)] shadow-sm p-5">
-
+    <div
+      class="design-card bg-[var(--td-bg-color-container)]/80 rounded-xl border border-[var(--td-component-border)] shadow-sm p-5"
+    >
       <div class="flex justify-between items-center mb-5">
-        <div class="flex items-center gap-2 font-bold text-sm"
-             :class="{
-               'text-zinc-500': status === 0,
-               'text-[var(--color-primary)]': status === 1 || status === 4,
-               'text-[var(--color-success)]': status === 2,
-               'text-[var(--color-warning)]': status === 3
-             }">
+        <div
+          class="flex items-center gap-2 font-bold text-sm"
+          :class="{
+            'text-zinc-500': status === 0,
+            'text-[var(--color-primary)]': status === 1 || status === 4,
+            'text-[var(--color-success)]': status === 2,
+            'text-[var(--color-warning)]': status === 3,
+          }"
+        >
           <span class="relative flex h-2.5 w-2.5">
-            <span v-if="status === 1 || status === 2 || status === 4"
-                  class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-                  :class="status === 2 ? 'bg-[var(--color-success)]' : 'bg-[var(--color-primary)]'">
+            <span
+              v-if="status === 1 || status === 2 || status === 4"
+              class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+              :class="status === 2 ? 'bg-[var(--color-success)]' : 'bg-[var(--color-primary)]'"
+            >
             </span>
-            <span class="relative inline-flex rounded-full h-2.5 w-2.5"
-                  :class="{
-                    'bg-zinc-400 dark:bg-zinc-600': status === 0,
-                    'bg-[var(--color-primary)]': status === 1 || status === 4,
-                    'bg-[var(--color-success)]': status === 2,
-                    'bg-[var(--color-warning)]': status === 3
-                  }">
+            <span
+              class="relative inline-flex rounded-full h-2.5 w-2.5"
+              :class="{
+                'bg-zinc-400 dark:bg-zinc-600': status === 0,
+                'bg-[var(--color-primary)]': status === 1 || status === 4,
+                'bg-[var(--color-success)]': status === 2,
+                'bg-[var(--color-warning)]': status === 3,
+              }"
+            >
             </span>
           </span>
           {{ statusConfig.text }}
@@ -159,7 +172,6 @@ onUnmounted(() => {
       </div>
 
       <div class="flex flex-col gap-2.5">
-
         <t-button
           v-if="status === 0"
           theme="primary"
@@ -167,7 +179,10 @@ onUnmounted(() => {
           block
           :loading="loading"
           class="!rounded-lg !h-10 !font-bold shadow-sm"
-          @click="$emit('clear-log'); $emit('start');"
+          @click="
+            $emit('clear-log');
+            $emit('start');
+          "
         >
           <template #icon><play-circle-icon /></template>启动实例
         </t-button>
@@ -198,7 +213,11 @@ onUnmounted(() => {
               block
               :loading="loading"
               class="!rounded-lg !h-10 !font-bold transition-all duration-300"
-              :class="loading ? '!bg-[var(--color-primary)]/10 !border-[var(--color-primary)]/30' : '!bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20'"
+              :class="
+                loading
+                  ? '!bg-[var(--color-primary)]/10 !border-[var(--color-primary)]/30'
+                  : '!bg-red-500/10 !border-red-500/30 !text-red-500 hover:!bg-red-500/20'
+              "
             >
               <template #icon><close-circle-icon v-if="!loading" /></template>
               {{ loading ? '正在处理...' : '强制结束' }}
@@ -207,17 +226,28 @@ onUnmounted(() => {
         </template>
 
         <div class="flex gap-2 w-full mt-1.5">
-          <t-button variant="outline" class="flex-1 !rounded-lg !h-8 !bg-zinc-100 dark:!bg-zinc-800 !border-zinc-200 dark:!border-zinc-700 !text-zinc-700 dark:!text-zinc-300 hover:!bg-zinc-200 dark:hover:!bg-zinc-700 transition-colors" @click="changeUrl(`/instance/files/${serverId}`)">
+          <t-button
+            variant="outline"
+            class="flex-1 !rounded-lg !h-8 !bg-zinc-100 dark:!bg-zinc-800 !border-zinc-200 dark:!border-zinc-700 !text-zinc-700 dark:!text-zinc-300 hover:!bg-zinc-200 dark:hover:!bg-zinc-700 transition-colors"
+            @click="changeUrl(`/instance/files/${serverId}`)"
+          >
             <template #icon><folder-icon /></template>文件管理
           </t-button>
 
-          <t-button variant="outline" class="flex-1 !rounded-lg !h-8 !bg-zinc-100 dark:!bg-zinc-800 !border-zinc-200 dark:!border-zinc-700 !text-zinc-700 dark:!text-zinc-300 hover:!bg-zinc-200 dark:hover:!bg-zinc-700 transition-colors" @click="handleOpenSettings">
+          <t-button
+            variant="outline"
+            class="flex-1 !rounded-lg !h-8 !bg-zinc-100 dark:!bg-zinc-800 !border-zinc-200 dark:!border-zinc-700 !text-zinc-700 dark:!text-zinc-300 hover:!bg-zinc-200 dark:hover:!bg-zinc-700 transition-colors"
+            @click="handleOpenSettings"
+          >
             <template #icon><setting-icon /></template>实例设置
           </t-button>
         </div>
 
         <t-dropdown trigger="click" :min-column-width="120" placement="bottom">
-          <t-button block class="!rounded-lg !h-8 mt-0.5 !bg-[var(--color-primary)]/5 !border-[var(--color-primary)]/20 !text-[var(--color-primary)] hover:!bg-[var(--color-primary)]/10 transition-colors">
+          <t-button
+            block
+            class="!rounded-lg !h-8 mt-0.5 !bg-[var(--color-primary)]/5 !border-[var(--color-primary)]/20 !text-[var(--color-primary)] hover:!bg-[var(--color-primary)]/10 transition-colors"
+          >
             <template #icon><more-icon /></template>更多功能
           </t-button>
 
@@ -234,14 +264,29 @@ onUnmounted(() => {
             <t-dropdown-item @click="showLogAnalysisDialog = true">
               <template #prefix-icon><analytics-icon /></template>日志分析
             </t-dropdown-item>
+
+            <!--插件扩展区域 instance-console-dropdown -->
+            <t-dropdown-item
+              v-for="(ext, index) in pluginUIStore.extensions['instance-console-dropdown']"
+              :key="'dropdown-menu-' + index"
+              @click="openPluginDialog(index)"
+            >
+              <template #prefix-icon>
+                <component :is="ext.icon" v-if="typeof ext.icon === 'object'" />
+                <span v-else>{{ ext.icon || '🧩' }}</span>
+              </template>
+              {{ ext.label }}
+            </t-dropdown-item>
           </t-dropdown-menu>
         </t-dropdown>
-
+        <!--插件扩展区域 instance-console-dropdown -->
+        <plugin-slot name="instance-console-dropdown" :server-id="serverId" :render-ref="setPluginRef" />
       </div>
     </div>
 
-    <div class="design-card flex flex-col bg-[var(--td-bg-color-container)]/80  rounded-xl border border-[var(--td-component-border)] shadow-sm p-5">
-
+    <div
+      class="design-card flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-xl border border-[var(--td-component-border)] shadow-sm p-5"
+    >
       <div class="flex justify-between items-center mb-4 pb-4 border-b border-zinc-200/60 dark:border-zinc-700/60">
         <h3 class="text-sm font-bold text-[var(--td-text-color-primary)] m-0">实例概览</h3>
         <t-radio-group v-model="activeTab" variant="default-filled" size="small">
@@ -252,41 +297,69 @@ onUnmounted(() => {
 
       <div class="flex-1 min-h-0">
         <div v-if="activeTab === 'info'" class="flex flex-col gap-1.5">
-
           <div class="flex justify-between items-center py-1">
-            <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]"><desktop-icon size="14px" /> 实例名称</div>
-            <div class="font-bold text-sm text-[var(--td-text-color-primary)] truncate max-w-[150px]">{{ serverInfo?.name }}</div>
+            <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]">
+              <desktop-icon size="14px" /> 实例名称
+            </div>
+            <div class="font-bold text-sm text-[var(--td-text-color-primary)] truncate max-w-[150px]">
+              {{ serverInfo?.name }}
+            </div>
           </div>
 
           <template v-if="serverInfo?.java !== 'none'">
             <div class="flex justify-between items-center py-1">
-              <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]"><dashboard-icon size="14px" /> 内存限制</div>
-              <div class="font-mono text-sm font-bold text-[var(--td-text-color-primary)]">{{ serverInfo?.maxM }} MB</div>
+              <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]">
+                <dashboard-icon size="14px" /> 内存限制
+              </div>
+              <div class="font-mono text-sm font-bold text-[var(--td-text-color-primary)]">
+                {{ serverInfo?.maxM }} MB
+              </div>
             </div>
 
             <div class="flex justify-between items-center py-1">
-              <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]"><enter-icon size="14px" /> 运行端口</div>
-              <div class="font-mono text-sm font-bold text-[var(--color-primary)]">{{ serverInfo?.mcConfig?.serverPort }}</div>
+              <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]">
+                <enter-icon size="14px" /> 运行端口
+              </div>
+              <div class="font-mono text-sm font-bold text-[var(--color-primary)]">
+                {{ serverInfo?.mcConfig?.serverPort }}
+              </div>
             </div>
 
             <div class="flex justify-between items-center py-1">
-              <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]"><arrow-left-right-1-icon size="14px" /> 游戏难度</div>
-              <t-tag theme="primary" variant="light" size="small" class="!rounded">{{ serverInfo?.mcConfig?.difficulty }}</t-tag>
+              <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]">
+                <arrow-left-right-1-icon size="14px" /> 游戏难度
+              </div>
+              <t-tag theme="primary" variant="light" size="small" class="!rounded">{{
+                serverInfo?.mcConfig?.difficulty
+              }}</t-tag>
             </div>
 
             <div class="flex justify-between items-center py-1">
-              <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]"><wink-icon size="14px" /> 游戏模式</div>
+              <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]">
+                <wink-icon size="14px" /> 游戏模式
+              </div>
               <t-tag variant="light" size="small" class="!rounded">{{ serverInfo?.mcConfig?.gamemode }}</t-tag>
             </div>
 
             <div class="flex justify-between items-center py-1">
-              <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]"><folder-icon size="14px" /> 游戏地图</div>
-              <div class="text-xs font-bold text-[var(--td-text-color-primary)]">{{ serverInfo?.mcConfig?.levelName }}</div>
+              <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]">
+                <folder-icon size="14px" /> 游戏地图
+              </div>
+              <div class="text-xs font-bold text-[var(--td-text-color-primary)]">
+                {{ serverInfo?.mcConfig?.levelName }}
+              </div>
             </div>
 
             <div class="flex justify-between items-center py-1">
-              <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]"><user-unlocked-icon size="14px" /> 正版验证</div>
-              <t-tag :theme="serverInfo?.mcConfig?.onlineMode === 'true' ? 'success' : 'warning'" variant="light" size="small" class="!rounded">
+              <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]">
+                <user-unlocked-icon size="14px" /> 正版验证
+              </div>
+              <t-tag
+                :theme="serverInfo?.mcConfig?.onlineMode === 'true' ? 'success' : 'warning'"
+                variant="light"
+                size="small"
+                class="!rounded"
+              >
                 {{ serverInfo?.mcConfig?.onlineMode === 'true' ? '开启' : '关闭' }}
               </t-tag>
             </div>
@@ -294,14 +367,20 @@ onUnmounted(() => {
 
           <template v-else>
             <div class="flex justify-between items-center py-1">
-              <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]"><dashboard-icon size="14px" /> 模式</div>
+              <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]">
+                <dashboard-icon size="14px" /> 模式
+              </div>
               <t-tag theme="warning" variant="light" size="small" class="!rounded">自定义模式</t-tag>
             </div>
           </template>
 
           <div class="flex justify-between items-center py-1 mt-1">
-            <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]"><time-icon size="14px" /> 运行时长</div>
-            <div class="font-mono text-sm font-bold text-[var(--td-text-color-primary)]">{{ status === 2 ? formattedUptime : '--:--:--' }}</div>
+            <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)]">
+              <time-icon size="14px" /> 运行时长
+            </div>
+            <div class="font-mono text-sm font-bold text-[var(--td-text-color-primary)]">
+              {{ status === 2 ? formattedUptime : '--:--:--' }}
+            </div>
           </div>
         </div>
 
@@ -312,7 +391,10 @@ onUnmounted(() => {
             :is-running="status === 2"
             :max-memory="serverInfo.java === 'none' ? 0 : serverInfo.maxM || 4096"
           />
-          <div v-else class="flex-1 flex items-center justify-center text-[var(--td-text-color-secondary)] text-sm font-medium">
+          <div
+            v-else
+            class="flex-1 flex items-center justify-center text-[var(--td-text-color-secondary)] text-sm font-medium"
+          >
             实例未运行
           </div>
         </div>
@@ -320,6 +402,9 @@ onUnmounted(() => {
     </div>
 
     <player-list-card v-if="serverInfo?.monitorPlayers" :server-id="serverId" :status="status" class="design-card" />
+
+    <!--插件扩展区域 instance-console-overview-bottom -->
+    <plugin-slot name="instance-console-overview-bottom" :server-id="serverId" :status="status" />
 
     <instance-settings ref="settingsRef" :server-id="serverId" @success="handleSettingsSaved" />
     <log-analysis-dialog v-model:visible="showLogAnalysisDialog" :server-id="serverId" />
