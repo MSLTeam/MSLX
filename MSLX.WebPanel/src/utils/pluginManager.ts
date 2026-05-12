@@ -14,7 +14,7 @@ export async function loadAllPlugins() {
   if (pluginsLoaded) return;
 
   // 开发模式下可以在这加载插件
-  await loadPlugin("http://localhost:5001/mslx-plugin-entry.js");
+  // await loadPlugin("http://localhost:5001/mslx-plugin-entry.js");
 
   try {
     const plugins = await getPluginList();
