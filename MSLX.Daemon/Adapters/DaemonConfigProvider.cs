@@ -21,8 +21,27 @@ public class DaemonConfigProvider : IMSLXConfig
     public IFrpConfigBridge Frp { get; } = new FrpConfigBridge();
     public ITaskConfigBridge Tasks { get; } = new TaskConfigBridge();
     public IUserConfigBridge Users { get; } = new UserConfigBridge();
+    
+    public IPluginConfigBridge GetPluginConfig(string pluginId) 
+    {
+        return new PluginConfigBridge(pluginId);
+    }
 }
 
+
+public class PluginConfigBridge : IPluginConfigBridge
+{
+    private readonly string _pluginId;
+    public PluginConfigBridge(string pluginId) => _pluginId = pluginId;
+    
+    private PluginConfigService Service => IConfigBase.GetPluginConfigService(_pluginId);
+
+    public string GetDataPath() => Service.GetDataPath();
+    public JObject ReadConfig() => Service.ReadConfig();
+    public JToken? ReadConfigKey(string key) => Service.ReadConfigKey(key);
+    public void WriteConfig(JObject content) => Service.WriteConfig(content);
+    public void WriteConfigKey(string key, JToken value) => Service.WriteConfigKey(key, value);
+}
 
 public class MainConfigBridge : IMainConfigBridge
 {
