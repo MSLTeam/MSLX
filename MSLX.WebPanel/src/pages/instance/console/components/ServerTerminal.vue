@@ -34,6 +34,61 @@ let cleanupCmdResult: (() => void) | null = null;
 let commandBuffer = '';
 const inputCommand = ref('');
 
+// === 命令历史记录功能 ===
+const LOCAL_STORAGE_KEY = 'mslx_console_history';
+const commandHistory = ref<string[]>([]);
+const historyIndex = ref(-1);
+
+// 加载历史记录
+const loadHistory = () => {
+  const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+  if (stored) {
+    try {
+      commandHistory.value = JSON.parse(stored);
+      historyIndex.value = commandHistory.value.length;
+    } catch (e) {
+      console.error('解析指令历史记录失败', e);
+    }
+  }
+};
+
+// 记录到历史
+const addCommandToHistory = (cmd: string) => {
+  const trimmedCmd = cmd.trim();
+  if (!trimmedCmd) return;
+  if (commandHistory.value[commandHistory.value.length - 1] !== trimmedCmd) {
+    commandHistory.value.push(trimmedCmd);
+    // 最大存储数量
+    if (commandHistory.value.length > 15) {
+      commandHistory.value.shift();
+    }
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(commandHistory.value));
+  }
+  historyIndex.value = commandHistory.value.length;
+};
+
+// 向上切换
+const handleHistoryUp = () => {
+  if (commandHistory.value.length === 0) return;
+  if (historyIndex.value > 0) {
+    historyIndex.value--;
+    inputCommand.value = commandHistory.value[historyIndex.value];
+  }
+};
+
+// 向下切换
+const handleHistoryDown = () => {
+  if (commandHistory.value.length === 0) return;
+  if (historyIndex.value < commandHistory.value.length - 1) {
+    historyIndex.value++;
+    inputCommand.value = commandHistory.value[historyIndex.value];
+  } else {
+    historyIndex.value = commandHistory.value.length;
+    inputCommand.value = '';
+  }
+};
+// ======
+
 // 主题配置
 const termThemes = {
   dark: {
@@ -162,6 +217,7 @@ const handleSendInput = async () => {
 // 使用 Store 发送指令
 const sendCommandToServer = async (cmd: string) => {
   try {
+    addCommandToHistory(cmd);
     await hubStore.sendCommand(cmd);
   } catch (err: any) {
     term?.writeln(`\x1b[1;31m[Error] ${err.message}\x1b[0m`);
@@ -261,6 +317,7 @@ watch(
 
 onMounted(async () => {
   await nextTick();
+  loadHistory();
   initTerminal();
 
   themeObserver = new MutationObserver(updateTerminalTheme);
@@ -309,6 +366,8 @@ onUnmounted(async () => {
         v-model="inputCommand"
         class="flex-1 h-8 bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200 dark:border-zinc-700 rounded-md px-3 text-[var(--td-text-color-primary)] font-mono text-[13px] outline-none transition-all focus:border-[var(--color-primary)] focus:bg-white dark:focus:bg-zinc-900 placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
         placeholder="发送控制台指令..."
+        @keydown.up.prevent="handleHistoryUp"
+        @keydown.down.prevent="handleHistoryDown"
         @keyup.enter="handleSendInput"
       />
       <button
