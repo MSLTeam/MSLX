@@ -1,7 +1,8 @@
 {
-  "version": "1.4.2",
-  "buildTime": "2026-05-11 23:18:26",
+  "version": "1.4.3",
+  "buildTime": "2026-05-14 21:19:01",
   "dependencies": {
+    "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
     "@codemirror/lang-html": "^6.4.11",
     "@codemirror/lang-javascript": "^6.2.4",
@@ -76,10 +77,76 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "8acfcd0a5bb3d5f2617b4dcc0915e5673c6b1b36",
-  "commitMsg": "fix(webpanel): 修复依赖丢失",
+  "commitId": "ec55253757124368eb1b3271837466111e04b852",
+  "commitMsg": "fix(webpanel): 修复依赖丢失 #130",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "ec55253757124368eb1b3271837466111e04b852",
+      "commitTime": "2026-05-14 21:18:17 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复依赖丢失 #130"
+    },
+    {
+      "commitId": "8dbd1f3bbc03477b9bf9b8fc313652bbf21e5706",
+      "commitTime": "2026-05-14 17:03:33 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 新增插件组件插槽"
+    },
+    {
+      "commitId": "a3f57f48b4585f86f17cebe7c5c8324cc1ce462f",
+      "commitTime": "2026-05-14 16:50:51 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复依赖错误"
+    },
+    {
+      "commitId": "ea8f382a60b5b1754a8422b749c644cfb3593762",
+      "commitTime": "2026-05-14 16:18:08 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 实例控制台输入框新增历史记录功能 (上下方向键切换) #129"
+    },
+    {
+      "commitId": "edf4cbf8048ea34e469def4e83639cac22472fa9",
+      "commitTime": "2026-05-13 16:20:12 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(sdk): 忘记改sdk版本号了qaq"
+    },
+    {
+      "commitId": "6433c2c9e404a9ee0cd85cb5ac270021cbc89e6f",
+      "commitTime": "2026-05-13 16:13:02 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & sdk): 给插件提供专用的插件数据目录 & 简易配置读写方法"
+    },
+    {
+      "commitId": "1b3819f142e321f555eaaac034266fc536636967",
+      "commitTime": "2026-05-13 00:07:06 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 移除开发的临时加载插件接口"
+    },
+    {
+      "commitId": "41951713aa4770dc8d77ada5702b57e6faad7d67",
+      "commitTime": "2026-05-13 00:06:11 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 网页控制台插件支持在插槽中注入组件"
+    },
+    {
+      "commitId": "54de8b5420d82418188a6b870ee5bceb4aa0d426",
+      "commitTime": "2026-05-11 23:22:52 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #128 from MSLTeam/dev"
+    },
+    {
+      "commitId": "8e9fca6b68136e8aeb410a460add62f88b5da426",
+      "commitTime": "2026-05-11 23:19:12 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本到v1.4.2"
+    },
+    {
+      "commitId": "f3a1b393df364538c3cc2b4870c0549167af1f51",
+      "commitTime": "2026-05-11 23:18:46 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新版本到v1.4.2"
+    },
     {
       "commitId": "8acfcd0a5bb3d5f2617b4dcc0915e5673c6b1b36",
       "commitTime": "2026-05-11 23:17:26 +0800",
@@ -313,72 +380,6 @@
       "commitTime": "2026-04-27 17:46:04 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "feat(daemon): 导入整合包创建服务端时支持扫描纯 NeoForge / Forge 的启动参数"
-    },
-    {
-      "commitId": "97901bca247247bfc2fd507a12499fbdc3ce7445",
-      "commitTime": "2026-04-27 17:12:51 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 设置中新增MSLX API文档跳转图标"
-    },
-    {
-      "commitId": "4db94facd103a73c69c5fd97761fa2761d8e12f2",
-      "commitTime": "2026-04-27 17:05:52 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
-    },
-    {
-      "commitId": "1fcbba1b08f0c2a7f774c6ce0de16fbbd2ef2f5b",
-      "commitTime": "2026-04-27 17:05:20 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 日志分析功能新增一键复制prompt功能 #117"
-    },
-    {
-      "commitId": "93db0405245d692025519eb73b3e9ae7aca9f415",
-      "commitTime": "2026-04-22 21:39:49 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "fix(desktop): 修复MSLFrp服务登录后无法获取隧道列表等信息的bug（依旧还没彻底完善，继续挤牙膏QwQ ）"
-    },
-    {
-      "commitId": "d2076e8732d48a59361d4239c6d3b54510c74c79",
-      "commitTime": "2026-04-22 21:13:38 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
-    },
-    {
-      "commitId": "cb359ccc0364be574529604c076884690a05131b",
-      "commitTime": "2026-04-22 21:13:21 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "style(desktop): 优化代码"
-    },
-    {
-      "commitId": "826801d364df58e97e0d71b74af51d4d9c0b7de6",
-      "commitTime": "2026-04-19 22:12:44 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复更新过程停止实例的阶段传递了错误的状态标识"
-    },
-    {
-      "commitId": "f2921a0c8452f6b1d2614c7ccaf9a6a9cf448421",
-      "commitTime": "2026-04-19 22:00:54 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复更新关闭全部实例时未正常结束进程树的问题"
-    },
-    {
-      "commitId": "e8c88dbd237be06df7a077cf799bf93b08b60939",
-      "commitTime": "2026-04-19 17:36:34 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #115 from MSLTeam/dev"
-    },
-    {
-      "commitId": "4efca219d672ed60ee1690c45efbabb40593749b",
-      "commitTime": "2026-04-19 17:35:56 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.3.7版本"
-    },
-    {
-      "commitId": "651f7a82b1eb66498cadada5c00596f967f63eba",
-      "commitTime": "2026-04-19 17:27:40 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(daemon): 服务端实例相关新增了一些日志输出"
     }
   ]
 }
