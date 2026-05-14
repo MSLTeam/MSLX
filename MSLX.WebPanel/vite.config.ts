@@ -17,6 +17,7 @@ export default defineConfig(({ mode }: ConfigEnv) => {
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
+      dedupe: ['@codemirror/state', '@codemirror/view', '@codemirror/language', '@codemirror/commands'],
     },
     css: {
       lightningcss: {

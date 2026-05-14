@@ -26,6 +26,18 @@ public interface IMSLXConfig
 
     /// <summary>用户列表 (UserList.json) </summary>
     IUserConfigBridge Users { get; }
+    
+    /// <summary> 获取指定插件的独立配置控制器 </summary>
+    IPluginConfigBridge GetPluginConfig(string pluginId);
+}
+
+public interface IPluginConfigBridge
+{
+    string GetDataPath();
+    JObject ReadConfig();
+    JToken? ReadConfigKey(string key);
+    void WriteConfig(JObject content);
+    void WriteConfigKey(string key, JToken value);
 }
 
 public interface IMainConfigBridge

@@ -1,7 +1,8 @@
 import router, { asyncRouterList } from '@/router';
 import Layout from '@/layouts/index.vue';
-import { getPermissionStore, useUserStore } from '@/store';
+import { getPermissionStore, usePluginUIStore, useUserStore } from '@/store';
 import { getPluginList } from '@/api/plugins';
+import { markRaw } from 'vue';
 
 let pluginsLoaded = false;
 
@@ -53,51 +54,72 @@ export async function loadPlugin(pluginUrl: string) {
     const module = await import(/* @vite-ignore */ url);
     const plugin = module.pluginConfig;
 
-    if (!plugin || !plugin.routes) return;
+    if (!plugin) return;
 
-    const permissionStore = getPermissionStore();
+    // 加载插件路由
+    if (plugin.routes) {
+      const permissionStore = getPermissionStore();
 
-    const reactiveRouters = permissionStore.routers || [];
-    const searchSource = reactiveRouters.length > 0 ? reactiveRouters : asyncRouterList;
+      const reactiveRouters = permissionStore.routers || [];
+      const searchSource = reactiveRouters.length > 0 ? reactiveRouters : asyncRouterList;
 
-    let hasChanges = false;
+      let hasChanges = false;
 
-    plugin.routes.forEach((rawRoute: any) => {
-      const route = { ...rawRoute };
+      plugin.routes.forEach((rawRoute: any) => {
+        const route = { ...rawRoute };
 
-      if (route.component === 'HOST_LAYOUT') {
-        route.component = Layout;
-      }
-
-      const parentName = route.parentName;
-      delete route.parentName;
-
-      if (parentName) {
-        const parentMenu = findMenuByName(searchSource, parentName);
-
-        if (parentMenu) {
-          if (!route.path.startsWith('/')) {
-            route.path = `${parentMenu.path}/${route.path}`;
-          }
-
-          router.addRoute(parentName, route);
-
-          parentMenu.children = parentMenu.children ? [...parentMenu.children] : [];
-          parentMenu.children.push(route);
-          hasChanges = true;
-        } else {
-          console.error(`[MSLX Plugin] 找不到父菜单 [${parentName}]！`);
+        if (route.component === 'HOST_LAYOUT') {
+          route.component = Layout;
         }
-      } else {
-        router.addRoute(route);
-        if (reactiveRouters) reactiveRouters.push(route);
-        if (searchSource !== reactiveRouters) searchSource.push(route);
-        hasChanges = true;
-      }
-    });
 
-    if (hasChanges && permissionStore.routers) {
-      permissionStore.routers = [...reactiveRouters];
+        const parentName = route.parentName;
+        delete route.parentName;
+
+        if (parentName) {
+          const parentMenu = findMenuByName(searchSource, parentName);
+
+          if (parentMenu) {
+            if (!route.path.startsWith('/')) {
+              route.path = `${parentMenu.path}/${route.path}`;
+            }
+
+            router.addRoute(parentName, route);
+
+            parentMenu.children = parentMenu.children ? [...parentMenu.children] : [];
+            parentMenu.children.push(route);
+            hasChanges = true;
+          } else {
+            console.error(`[MSLX Plugin] 找不到父菜单 [${parentName}]！`);
+          }
+        } else {
+          router.addRoute(route);
+          if (reactiveRouters) reactiveRouters.push(route);
+          if (searchSource !== reactiveRouters) searchSource.push(route);
+          hasChanges = true;
+        }
+      });
+
+      if (hasChanges && permissionStore.routers) {
+        permissionStore.routers = [...reactiveRouters];
+      }
+    }
+
+    // 加载组件注入
+    if (plugin.extensions && Array.isArray(plugin.extensions)) {
+      const pluginUIStore = usePluginUIStore();
+
+      plugin.extensions.forEach((ext: any) => {
+        if (ext.slot && ext.component) {
+          const extensionItem = {
+            ...ext,
+            component: markRaw(ext.component),
+          };
+
+          pluginUIStore.registerExtension(ext.slot, extensionItem);
+
+          console.log(`[MSLX Plugin] UI扩展项挂载至插槽 [${ext.slot}] 成功!`);
+        }
+      });
     }
 
     console.log(`[MSLX Plugin]  插件 [${plugin.name}] 路由挂载成功!`);

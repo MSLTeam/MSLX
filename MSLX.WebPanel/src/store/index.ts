@@ -13,5 +13,6 @@ export * from './modules/webpanel';
 export * from './modules/instance';
 export * from './modules/frp';
 export * from './modules/user';
+export * from './modules/pluginUI';
 
 export default store;
