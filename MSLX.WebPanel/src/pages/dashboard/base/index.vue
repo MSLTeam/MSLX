@@ -7,6 +7,7 @@ import InfoCard from './components/InfoCard.vue';
 import SystemStatus from './components/SystemStatus.vue';
 import Announcement from './components/Announcement.vue';
 import { changeUrl } from '@/router';
+import PluginSlot from '@/components/PluginSlot.vue';
 
 const userStore = useUserStore();
 
@@ -37,18 +38,20 @@ const browserWarning = computed(() => {
   if (isOldWindows.value) {
     return {
       title: '系统版本过旧 (Windows 7/8)',
-      message: '受限于操作系统，您的 Chrome/Edge 浏览器已被官方永远停更在 109 版本，无法渲染本控制面板的现代 UI。请升级至 Windows 10/11，或改用受支持的 Firefox 浏览器！',
+      message:
+        '受限于操作系统，您的 Chrome/Edge 浏览器已被官方永远停更在 109 版本，无法渲染本控制面板的现代 UI。请升级至 Windows 10/11，或改用受支持的 Firefox 浏览器！',
       btnText: '获取 Firefox',
-      url: 'https://www.mozilla.org/zh-CN/firefox/new/'
+      url: 'https://www.mozilla.org/zh-CN/firefox/new/',
     };
   }
 
   // 如果是旧浏览器，但在现代系统上
   return {
     title: '浏览器内核版本过低',
-    message: '检测到您当前的浏览器不支持部分现代 Web 技术。为了保证 MSLX 面板的正常显示与完整功能，强烈建议您升级浏览器。',
+    message:
+      '检测到您当前的浏览器不支持部分现代 Web 技术。为了保证 MSLX 面板的正常显示与完整功能，强烈建议您升级浏览器。',
     btnText: '获取新版 Chrome',
-    url: 'https://www.google.cn/chrome/'
+    url: 'https://www.google.cn/chrome/',
   };
 });
 
@@ -68,14 +71,13 @@ const getDelay = (baseIndex: number) => {
 
 <template>
   <div class="flex flex-col gap-6 mx-auto w-full min-h-screen pb-6">
-
     <t-alert
       v-if="browserWarning"
       theme="error"
       :title="browserWarning.title"
       :message="browserWarning.message"
       class="list-item-anim w-full shadow-sm"
-      style="animation-delay: 0s;"
+      style="animation-delay: 0s"
     >
       <template #operation>
         <span
@@ -108,6 +110,8 @@ const getDelay = (baseIndex: number) => {
     <banner class="list-item-anim" :style="{ animationDelay: getDelay(0) }" />
     <info-card class="list-item-anim" :style="{ animationDelay: getDelay(1) }" />
     <system-status class="list-item-anim" :style="{ animationDelay: getDelay(2) }" />
+    <!--插件扩展区域 dashboard-index-after-system-status -->
+    <plugin-slot class="list-item-anim" name="dashboard-index-after-system-status" />
     <announcement class="list-item-anim" :style="{ animationDelay: getDelay(3) }" />
   </div>
 </template>
