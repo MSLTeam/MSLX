@@ -48,4 +48,13 @@
 	<ItemGroup>
 	  <Folder Include="Styles\" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Update="Views\CreateTunnel\MSLFrp\CreateMSLFrpTunnel.axaml.cs">
+	    <DependentUpon>CreateMSLFrpTunnel.axaml</DependentUpon>
+	  </Compile>
+	  <Compile Update="Views\CreateTunnel\MSLFrp\MainPage.axaml.cs">
+	    <DependentUpon>MainPage.axaml</DependentUpon>
+	  </Compile>
+	</ItemGroup>
 </Project>

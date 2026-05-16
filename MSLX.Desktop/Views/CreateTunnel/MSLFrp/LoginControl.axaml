@@ -1,0 +1,24 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="MSLX.Desktop.Views.CreateTunnel.MSLFrp.LoginControl">
+  <!-- === 登录页面 === -->
+    <Grid x:Name="LoginGrid" HorizontalAlignment="Center" VerticalAlignment="Center">
+      <StackPanel>
+        <TextBlock Text="在使用MSL Frp服务之前，请先登录您的MSL账户"
+                   FontSize="18" FontWeight="Bold" Margin="0,0,0,30"/>
+        <StackPanel Margin="0,3,0,20" HorizontalAlignment="Center" Orientation="Horizontal">
+          <ToggleSwitch x:Name="SaveLoginToggle"/>
+          <TextBlock Text="保存登录状态" VerticalAlignment="Center"/>
+        </StackPanel>
+        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+          <Button Width="100" Classes="Flat" IsDefault="True"
+                  Content="登录" Click="LoginButton_Click"/>
+          <Button Width="100" Content="注册"
+                  Margin="10,0,0,0" Click="RegisterButton_Click"/>
+        </StackPanel>
+      </StackPanel>
+    </Grid>
+</UserControl>

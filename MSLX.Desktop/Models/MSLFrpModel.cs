@@ -4,7 +4,7 @@ using System.Text;
 
 namespace MSLX.Desktop.Models
 {
-    internal class MSLFrpModel
+    public class MSLFrpModel
     {
         public class Tunnel
         {
