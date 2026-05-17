@@ -5,8 +5,13 @@
              xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
              xmlns:icons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:models="clr-namespace:MSLX.Desktop.Models"
+             xmlns:vm="clr-namespace:MSLX.Desktop.ViewModels"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="MSLX.Desktop.Views.TunnelListPage">
+             x:Class="MSLX.Desktop.Views.TunnelListPage"
+             x:DataType="vm:TunnelListPageViewModel">
+    <UserControl.DataContext>
+        <vm:TunnelListPageViewModel/>
+    </UserControl.DataContext>
   <suki:GlassCard Margin="10">
     <Grid RowDefinitions="Auto,*">
         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="15">
@@ -20,7 +25,7 @@
         </StackPanel>
 
         <ScrollViewer Grid.Row="1">
-            <ItemsControl ItemsSource="{x:Static models:TunnelModel.TunnelList}">
+            <ItemsControl ItemsSource="{Binding Tunnels}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <suki:GlassCard Margin="10">
@@ -38,11 +43,17 @@
                                         <TextBlock Text="{Binding StatusText}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontSize="12"/>
                                     </Border>
                                     
-                                    <Button IsEnabled="{Binding !Status}" Foreground="Green">
+                                    <Button IsEnabled="{Binding !Status}" Foreground="Green"
+                                            Click="RunTunnel_Click" Tag="{Binding ID}">
                                         <icons:MaterialIcon Kind="Play"/>
                                     </Button>
-                                    <Button IsEnabled="{Binding Status}" Foreground="Red">
+                                    <Button IsEnabled="{Binding Status}" Foreground="Red"
+                                            Click="StopTunnel_Click" Tag="{Binding ID}">
                                         <icons:MaterialIcon Kind="Stop"/>
+                                    </Button>
+                                    <Button Foreground="Blue"
+                                            Click="TunnelLogs_Click" Tag="{Binding ID}">
+                                        <icons:MaterialIcon Kind="FileDocument"/>
                                     </Button>
                                 </StackPanel>
                             </Grid>

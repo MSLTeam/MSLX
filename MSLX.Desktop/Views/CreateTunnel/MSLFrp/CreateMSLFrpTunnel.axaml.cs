@@ -42,18 +42,14 @@ public partial class CreateMSLFrpTunnel : UserControl
     }
 
     // 页面切换
-    private void ShowLoginPage()
+    public void ShowLoginPage()
     {
         this.Content = _loginControl;
-        //LoginGrid.IsVisible = true;
-        //MainTabControl.IsVisible = false;
     }
 
-    private void ShowMainPage()
+    public void ShowMainPage()
     {
         this.Content = _mainPage;
-        //LoginGrid.IsVisible = false;
-        //MainTabControl.IsVisible = true;
     }
 
     // 获取信息

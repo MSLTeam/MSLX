@@ -19,6 +19,39 @@ namespace MSLX.Desktop.ViewModels.CreateTunnel.MSLFrp
         [ObservableProperty]
         private Node? _selectedNode;
 
+        public int SelectedTunnelIndex
+        {
+            get => _selectedTunnelIndex;
+            set
+            {
+                if (SetProperty(ref _selectedTunnelIndex, value))
+                {
+                    OnPropertyChanged(nameof(SelectedTunnelIndex));
+                }
+                if (value != -1)
+                {
+                    SelectedTunnel = Tunnels[value];
+                }
+            }
+        }
+        private int _selectedTunnelIndex = -1;
+
+        public int SelectedNodeIndex
+        {
+            get => _selectedNodeIndex;
+            set
+            {
+                if (SetProperty(ref _selectedNodeIndex, value))
+                {
+                    OnPropertyChanged(nameof(SelectedNodeIndex));
+                }
+                if (value != -1)
+                {
+                    SelectedNode = Nodes[value];
+                }
+            }
+        }
+        private int _selectedNodeIndex = -1;
 
     }
 }

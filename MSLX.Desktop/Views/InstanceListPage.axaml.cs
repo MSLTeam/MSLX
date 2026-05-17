@@ -4,6 +4,7 @@ using Material.Icons.Avalonia;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils;
 using MSLX.Desktop.Utils.API;
+using MSLX.Desktop.Views.CreateInstance;
 using Newtonsoft.Json.Linq;
 using SukiUI.Controls;
 using SukiUI.Dialogs;
@@ -160,15 +161,11 @@ public partial class InstanceListPage : UserControl
 
     private void CreateInstance_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        SideMenuHelper.Current?.NavigateTo(new SukiUI.Controls.SukiSideMenuItem
+        if(SideMenuHelper.Current.SideMenu.Items.Contains(PageStore.CreateMCServerMenuItem))
         {
-            Header = "创建实例",
-            Icon = new MaterialIcon()
-            {
-                Kind = MaterialIconKind.AddCircle,
-            },
-            IsContentMovable = false,
-            PageContent = PageStore.CreateMCServerPage
-        }, true, 2);
+            SideMenuHelper.Current.NavigateTo<CreateMCServer>();
+            return;
+        }
+        SideMenuHelper.Current?.NavigateTo(PageStore.CreateMCServerMenuItem, true, 2);
     }
 }

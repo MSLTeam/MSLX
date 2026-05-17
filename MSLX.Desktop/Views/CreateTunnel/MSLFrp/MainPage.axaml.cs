@@ -9,11 +9,8 @@ using SukiUI.Dialogs;
 using SukiUI.Toasts;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Diagnostics;
-using System.Net.Http.Headers;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
 using static MSLX.Desktop.Models.MSLFrpModel;
 
@@ -24,7 +21,7 @@ public partial class MainPage : UserControl
     private string _userToken = string.Empty;
 
     private readonly Dictionary<int, string> _nodeMap = new();
-    private CreateMSLFrpTunnel FatherControl {  get; set; }
+    private CreateMSLFrpTunnel FatherControl { get; set; }
 
     public class UserInfo
     {
@@ -36,7 +33,7 @@ public partial class MainPage : UserControl
 
     private UserInfo _userInfo = new();
 
-    // ViewModel 作为数据中心
+    // ViewModel
     private MainPageViewModel _vm = new();
 
     public MainPage(CreateMSLFrpTunnel fatherControl, UserInfo userInfo)
@@ -54,41 +51,20 @@ public partial class MainPage : UserControl
     // 初始化
     private async void OnInitialized(object? sender, EventArgs e)
     {
-        // 绑定列表数据源
-        //TunnelListBox.ItemsSource = _tunnels;
-        //NodeListBox.ItemsSource = _nodes;
-
         // 设置默认值
+        CreateNameBox.Text = $"MSLX_{DateTime.Now:yyMMddHHmmss}";
         CreateLocalIpBox.Text = "127.0.0.1";
         CreateLocalPortBox.Value = 25565;
+        var random = new Random();
+        CreateRemotePortBox.Value = random.Next(10000, 65535);
 
-        UsernameText.Text =_userInfo.Username;
+        UsernameText.Text = _userInfo.Username;
         UserGroupText.Text = _userInfo.UserGroup;
         UserMaxTunnelsText.Text = _userInfo.UserMaxTunnels;
         UserOutdatedText.Text = _userInfo.UserOutdated;
 
-        /*
-        // 尝试自动登录
-        var token = ConfigService.Config.ReadConfigKey("MSLUserToken")?.ToString();
-        if (!string.IsNullOrEmpty(token))
-        {
-            _userToken = token;
-            await FatherControl.GetFrpInfoAsync();
-        }
-        else
-        {
-            ShowLoginPage();
-        }
-        */
-
         await GetNodes();
         await GetTunnels();
-    }
-
-    private void ShowLoginPage()
-    {
-        //LoginGrid.IsVisible = true;
-        MainTabControl.IsVisible = false;
     }
 
     private async Task GetNodes()
@@ -287,20 +263,13 @@ public partial class MainPage : UserControl
         }
         try
         {
-            var response = await HttpService.GetAsync(
-    "/frp/getTunnelConfig",
-    new Dictionary<string, string> { ["id"] = _vm.SelectedTunnel.Id.ToString() },
-    headers =>
-    {
-        headers.Authorization = new AuthenticationHeaderValue("Bearer", _userToken);
-    }
-);
+            var response = await MSLUserService.GetAsync("/frp/getTunnelConfig", new Dictionary<string, string> { ["id"] = _vm.SelectedTunnel.Id.ToString() });
             if (!response.IsSuccess || response.Content == null)
             {
                 DialogService.ToastManager.CreateToast()
                 .OfType(NotificationType.Error)
                 .WithTitle("隧道配置失败")
-                .WithContent("获取隧道配置失败")
+                .WithContent("获取隧道配置失败" + response.StatusCode)
                 .Dismiss().After(TimeSpan.FromSeconds(3))
                 .Queue();
                 return;
@@ -316,6 +285,31 @@ public partial class MainPage : UserControl
                 .Queue();
                 return;
             }
+            // Debug.WriteLine(json);
+            var frpConfig = json["data"]?.Value<string>();
+            if (string.IsNullOrEmpty(frpConfig))
+            {
+                DialogService.ToastManager.CreateToast()
+                .OfType(NotificationType.Error)
+                .WithTitle("隧道配置失败")
+                .WithContent("配置为空")
+                .Dismiss().After(TimeSpan.FromSeconds(3))
+                .Queue();
+                return;
+            }
+            await DaemonAPIService.PostApiAsync("/api/frp/add", null, HttpService.PostContentType.Json, new Dictionary<string, string>
+            {
+                {"name",_vm.SelectedTunnel.Name },
+                {"provider","MSLFrp" },
+                {"config",frpConfig },
+                {"format","toml" }
+            });
+            DialogService.ToastManager.CreateToast()
+                .OfType(NotificationType.Success)
+                .WithTitle("成功")
+                .WithContent("隧道配置已发送到守护进程！")
+                .Dismiss().After(TimeSpan.FromSeconds(3))
+                .Queue();
         }
         catch (Exception ex)
         {
@@ -368,7 +362,7 @@ public partial class MainPage : UserControl
             if (json["code"]?.Value<int>() == 200)
             {
                 DialogService.ToastManager.CreateToast()
-                .OfType(NotificationType.Error)
+                .OfType(NotificationType.Success)
                 .WithTitle("成功")
                 .WithContent("隧道创建成功！")
                 .Dismiss().After(TimeSpan.FromSeconds(3))
@@ -414,7 +408,7 @@ public partial class MainPage : UserControl
                 .Dismiss().After(TimeSpan.FromSeconds(3))
                 .Queue();
                 _userToken = string.Empty;
-                ShowLoginPage();
+                FatherControl.ShowLoginPage();
             }
         }
         catch (Exception ex)
