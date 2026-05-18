@@ -32,17 +32,32 @@ public partial class TunnelListPage : UserControl
             JObject res = await DaemonAPIService.GetJsonContentAsync("/api/frp/list");
             JArray tunnels = (JArray)res["data"]!;
 
+            foreach(var tunnel in _vm.Tunnels)
+            {
+                if(tunnel != null&&tunnel.Status && tunnel.SignalRService != null)
+                {
+                    await tunnel.SignalRService.LeaveGroupAsync(tunnel.ID);
+                    await tunnel.SignalRService.DisposeAsync();
+                }
+            }
             _vm.Tunnels.Clear();
             foreach (JObject item in tunnels.Cast<JObject>())
             {
-                _vm.Tunnels.Add(new TunnelModel
+                var tunnelModel = new TunnelModel
                 {
                     ID = (int)item["id"]!,
                     Name = (string)item["name"]!,
                     Service = (string)item["service"]!,
                     ConfigType = (string)item["configType"]!,
                     Status = (bool)item["status"]!
-                });
+                };
+                if (tunnelModel.Status)
+                {
+                    tunnelModel.SignalRService = new FrpTunnelSignalRService();
+                    _ = ConnectSignalRAsync(tunnelModel.SignalRService, tunnelModel.ID);
+                }
+                _vm.Tunnels.Add(tunnelModel);
+
             }
         }
         catch (Exception ex)
@@ -59,6 +74,7 @@ public partial class TunnelListPage : UserControl
                                 .WithTitle("刷新成功！")
                                 .WithContent($"隧道列表已成功刷新！")
                                 .Dismiss().After(TimeSpan.FromSeconds(5))
+                                .WithActionButton("关闭", _ => { }, true)
                                 .Queue();
     }
 
@@ -86,25 +102,20 @@ public partial class TunnelListPage : UserControl
                         .WithTitle("启动成功！")
                         .WithContent("隧道启动成功！连接地址请在日志中查看。")
                         .Dismiss().After(TimeSpan.FromSeconds(5))
+                        .WithActionButton("关闭", _ => { }, true)
                         .Queue();
                     await LoadTunnelList();
-                    var tunnel = _vm.Tunnels.FirstOrDefault(t => t.ID == tunnelId);
-                    if (tunnel != null)
-                    {
-                        tunnel.SignalRService = new FrpTunnelSignalRService();
-                        _=ConnectSignalRAsync(tunnel.SignalRService, tunnelId);
-                    }
                 }
-               
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"启动隧道失败: {ex.Message}");
+                Debug.WriteLine($"启动隧道失败: {ex.Message}");
                 DialogService.ToastManager.CreateToast()
                                         .OfType(Avalonia.Controls.Notifications.NotificationType.Error)
                                         .WithTitle("启动失败！")
                                         .WithContent($"启动隧道时发生错误: {ex.Message}")
                                         .Dismiss().After(TimeSpan.FromSeconds(5))
+                                        .WithActionButton("关闭", _ => { }, true)
                                         .Queue();
             }
         }
@@ -124,18 +135,20 @@ public partial class TunnelListPage : UserControl
                         .WithTitle("停止成功！")
                         .WithContent("隧道停止成功！")
                         .Dismiss().After(TimeSpan.FromSeconds(5))
+                        .WithActionButton("关闭", _ => { }, true)
                         .Queue();
                     await LoadTunnelList();
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"停止隧道失败: {ex.Message}");
+                Debug.WriteLine($"停止隧道失败: {ex.Message}");
                 DialogService.ToastManager.CreateToast()
                                         .OfType(Avalonia.Controls.Notifications.NotificationType.Error)
                                         .WithTitle("停止失败！")
                                         .WithContent($"停止隧道时发生错误: {ex.Message}")
                                         .Dismiss().After(TimeSpan.FromSeconds(5))
+                                        .WithActionButton("关闭", _ => { }, true)
                                         .Queue();
             }
         }
@@ -158,7 +171,7 @@ public partial class TunnelListPage : UserControl
                 };
                 DialogService.DialogManager.CreateDialog()
                     .WithTitle($"隧道日志 - {tunnel.Name}")
-                    .WithContent(textblock)
+                    .WithContent(new ScrollViewer { Content = textblock })
                     .WithActionButton("关闭", _ => { }, true)
                     .TryShow();
             }
