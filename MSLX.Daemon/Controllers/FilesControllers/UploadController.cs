@@ -253,26 +253,32 @@ public class UploadController : ControllerBase
 
             // 扫描普通的单jar文件核心
             var jarFiles = archive.Entries
-                .Where(e =>
-                        !e.FullName.EndsWith("/") && // 排除目录本身
-                        e.FullName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase) // 只要 jar
+                // 处理Windows下的路径符号
+                .Select(e => new { 
+                    Entry = e, 
+                    NormalizedName = e.FullName.Replace('\\', '/') 
+                })
+                .Where(x =>
+                        !x.NormalizedName.EndsWith("/") && // 排除目录本身
+                        x.NormalizedName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase) // 只要 jar
                 )
-                .Select(e =>
+                .Select(x =>
                 {
+                    var name = x.NormalizedName;
                     // 如果有 basePrefix 只处理在这个目录下的文件
                     if (!string.IsNullOrEmpty(basePrefix))
                     {
-                        if (!e.FullName.StartsWith(basePrefix, StringComparison.OrdinalIgnoreCase))
+                        if (!name.StartsWith(basePrefix, StringComparison.OrdinalIgnoreCase))
                             return null; // 不在根目录下
 
                         // 获取相对路径
-                        return e.FullName.Substring(basePrefix.Length);
+                        return name.Substring(basePrefix.Length);
                     }
 
-                    return e.FullName;
+                    return name;
                 })
                 .Where(name => !string.IsNullOrEmpty(name)) // 过滤掉不符合前缀的
-                .Where(name => !name!.Contains("/")) // 不递归子目录
+                .Where(name => !name!.Contains("/")) 
                 .ToList();
 
             // 纯 NeoForge / Forge 端扫描
