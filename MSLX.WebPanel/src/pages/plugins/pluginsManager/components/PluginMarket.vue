@@ -195,11 +195,10 @@ onMounted(() => {
               <h3 class="text-base font-bold text-[var(--td-text-color-primary)] truncate m-0 tracking-tight">
                 {{ item.name }}
               </h3>
-              <span
-                class="text-xs text-[var(--td-text-color-secondary)] font-mono opacity-60 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded shrink-0"
-              >
-                {{ item.appId }}
-              </span>
+              <!-- 官方插件通过判断开发者uid 哈哈哈 -->
+              <t-tag v-if="item.developerUid === 1 || item.developerUid === 5" theme="success">MSLX 官方</t-tag>
+              <t-tag v-else theme="primary">社区插件</t-tag>
+              <t-tag>{{ item.appId }}</t-tag>
             </div>
             <p class="text-sm text-[var(--td-text-color-secondary)] line-clamp-2 m-0 leading-relaxed max-w-2xl">
               {{ item.shortDesc }}
