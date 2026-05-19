@@ -414,7 +414,8 @@ catch (Exception ex)
 MSLX.SDK.MSLX.Initialize(
     new DaemonConfigProvider(),
     new DaemonLoggerProvider(loggerFactory),
-    new DaemonDownloadProvider()
+    new DaemonDownloadProvider(),
+    new DaemonHttpProvider()
 );
 
 app.Run();
