@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Services;
 using MSLX.Desktop.Utils;
@@ -18,11 +19,20 @@ namespace MSLX.Desktop.Views;
 public partial class TunnelListPage : UserControl
 {
     private TunnelListPageViewModel _vm = new();
+    private readonly FrpTunnelSignalRService _signalR = FrpTunnelSignalRService.Shared;
+    private int CurrentTunnelID = -1; // 当前查看日志的隧道ID
+
     public TunnelListPage()
     {
         InitializeComponent();
         _vm = (TunnelListPageViewModel)this.DataContext!;
-        this.Initialized += (s, e) => _ = LoadTunnelList();
+        _signalR.LogReceived += OnLogReceived;
+
+        this.Initialized += async (s, e) =>
+        {
+            await _signalR.ConnectAsync(); // 建立唯一连接
+            await LoadTunnelList();
+        };
     }
 
     public async Task LoadTunnelList()
@@ -32,32 +42,18 @@ public partial class TunnelListPage : UserControl
             JObject res = await DaemonAPIService.GetJsonContentAsync("/api/frp/list");
             JArray tunnels = (JArray)res["data"]!;
 
-            foreach(var tunnel in _vm.Tunnels)
-            {
-                if(tunnel != null&&tunnel.Status && tunnel.SignalRService != null)
-                {
-                    await tunnel.SignalRService.LeaveGroupAsync(tunnel.ID);
-                    await tunnel.SignalRService.DisposeAsync();
-                }
-            }
             _vm.Tunnels.Clear();
+
             foreach (JObject item in tunnels.Cast<JObject>())
             {
-                var tunnelModel = new TunnelModel
+                _vm.Tunnels.Add(new TunnelModel
                 {
                     ID = (int)item["id"]!,
                     Name = (string)item["name"]!,
                     Service = (string)item["service"]!,
                     ConfigType = (string)item["configType"]!,
                     Status = (bool)item["status"]!
-                };
-                if (tunnelModel.Status)
-                {
-                    tunnelModel.SignalRService = new FrpTunnelSignalRService();
-                    _ = ConnectSignalRAsync(tunnelModel.SignalRService, tunnelModel.ID);
-                }
-                _vm.Tunnels.Add(tunnelModel);
-
+                });
             }
         }
         catch (Exception ex)
@@ -154,59 +150,43 @@ public partial class TunnelListPage : UserControl
         }
     }
 
-    private async void TunnelLogs_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private async void TunnelLogs_Click(object? sender, RoutedEventArgs e)
     {
-        if (sender is Button btn && btn.Tag is int tunnelId)
+        if (sender is not Button btn || btn.Tag is not int tunnelId) return;
+
+        var tunnel = _vm.Tunnels.FirstOrDefault(t => t.ID == tunnelId);
+        if (tunnel == null) return;
+        CurrentTunnelID = tunnel.ID;
+        // 打开弹窗前 JoinGroup
+        await _signalR.JoinGroupAsync(tunnelId);
+
+        var textBlock = new TextBlock
         {
-            var tunnel = _vm.Tunnels.FirstOrDefault(t => t.ID == tunnelId);
-            if (tunnel != null)
+            [!TextBlock.TextProperty] = new Avalonia.Data.Binding(nameof(tunnel.Logs)) { Source = tunnel },
+            TextWrapping = Avalonia.Media.TextWrapping.Wrap
+        };
+
+        DialogService.DialogManager.CreateDialog()
+            .WithTitle($"隧道日志 - {tunnel.Name}")
+            .WithContent(new ScrollViewer { Content = textBlock })
+            .WithActionButton("关闭", async _ =>
             {
-                var textblock = new TextBlock
-                {
-                    [!TextBlock.TextProperty] = new Avalonia.Data.Binding(nameof(tunnel.Logs))
-                    {
-                        Source = tunnel
-                    },
-                    TextWrapping = Avalonia.Media.TextWrapping.Wrap
-                };
-                DialogService.DialogManager.CreateDialog()
-                    .WithTitle($"隧道日志 - {tunnel.Name}")
-                    .WithContent(new ScrollViewer { Content = textblock })
-                    .WithActionButton("关闭", _ => { }, true)
-                    .TryShow();
-            }
-        }
+                // 关闭弹窗时 LeaveGroup
+                await _signalR.LeaveGroupAsync(tunnelId);
+                CurrentTunnelID = -1;
+                tunnel.Logs = string.Empty; // 清空日志内容，避免下次打开时看到旧日志
+            }, true)
+            .TryShow();
     }
 
-    #region SignalR 连接
-    private async Task ConnectSignalRAsync(FrpTunnelSignalRService _signalR, int _instanceId)
+    #region SignalR
+
+    private void OnLogReceived(string log)
     {
-        _signalR.ConnectionStateChanged += OnConnectionStateChanged;
-        _signalR.LogReceived += OnLogReceived;
-
-        try
-        {
-            await _signalR.ConnectAsync(_instanceId);
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[连接失败] FrpTunnelSignalRService: {ex.Message}");
-        }
+        if(CurrentTunnelID == -1) return; // 没有正在查看日志的隧道
+        var tunnel = _vm.Tunnels.FirstOrDefault(t => t.ID == CurrentTunnelID);
+        tunnel?.Logs += log + Environment.NewLine;
     }
 
-    private void OnLogReceived(int tunnelID, string log)
-    {
-        var tunnel = _vm.Tunnels.FirstOrDefault(t => t.ID == tunnelID);
-        if (tunnel != null)
-        {
-            tunnel.Logs += log + Environment.NewLine;
-        }
-    }
-
-    private void OnConnectionStateChanged(bool connected)
-    {
-        if (!connected)
-            Debug.WriteLine($"[SignalR 断开连接，尝试重连...] FrpTunnelSignalRService");
-    }
     #endregion
 }

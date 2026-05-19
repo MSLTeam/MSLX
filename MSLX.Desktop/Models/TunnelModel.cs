@@ -17,5 +17,5 @@ public partial class TunnelModel : ObservableObject
 
     [ObservableProperty]
     private string _logs = string.Empty;
-    public FrpTunnelSignalRService? SignalRService { get; set; }
+    // public FrpTunnelSignalRService? SignalRService { get; set; } // 注入 SignalR 服务实例以接收日志，目前暂无计划使用，后续若使用独立窗口显示日志则可用上
 }
