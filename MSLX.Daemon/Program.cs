@@ -8,6 +8,7 @@ using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.BackgroundTasks;
 using MSLX.Daemon.Utils.ConfigUtils;
 using System.Reflection;
+using MSLX.Daemon.Adapters;
 using MSLX.Daemon.Services.DeployServerService;
 using MSLX.SDK.IServices;
 using MSLX.SDK.Models;
@@ -411,8 +412,9 @@ catch (Exception ex)
 
 // 注册代理方法给SDK
 MSLX.SDK.MSLX.Initialize(
-    new MSLX.Daemon.Adapters.DaemonConfigProvider(),
-    new MSLX.Daemon.Adapters.DaemonLoggerProvider(loggerFactory)
+    new DaemonConfigProvider(),
+    new DaemonLoggerProvider(loggerFactory),
+    new DaemonDownloadProvider()
 );
 
 app.Run();
