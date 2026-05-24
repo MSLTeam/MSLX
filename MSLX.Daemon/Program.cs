@@ -216,6 +216,28 @@ else
             {
                 var pluginInstance = (MSLX.SDK.IPlugin)Activator.CreateInstance(pluginType)!;
                 
+                // 检查MinSdkVersion
+                try
+                {
+                    var hostVersion = Assembly.GetEntryAssembly()?.GetName().Version ?? new Version("0.0.0.0");
+                    var minSdkStr = pluginInstance.MinSDKVersion; 
+                    
+                    if (!string.IsNullOrWhiteSpace(minSdkStr))
+                    {
+                        if (Version.TryParse(minSdkStr.TrimStart('v', 'V'), out var minVersion))
+                        {
+                            if (minVersion > hostVersion)
+                            {
+                                pluginLogger.LogWarning($"[MSLX Plugin] [兼容性警告] 插件 '{pluginInstance.Name}' 要求最低节点版本 v{minVersion}，当前版本 v{hostVersion}，可能存在运行风险！");
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    pluginLogger.LogDebug($"[MSLX Plugin] 校验插件 '{pluginInstance.Name}' 版本依赖时发生异常: {ex.Message}");
+                }
+                
                 pluginManager.Plugins.Add(new LoadedPlugin { 
                     Assembly = assembly, 
                     Metadata = pluginInstance 
