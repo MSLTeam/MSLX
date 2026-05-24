@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import {
   UserIcon,
   LinkIcon,
@@ -12,7 +12,7 @@ import {
   RollbackIcon,
   RocketFilledIcon,
 } from 'tdesign-icons-vue-next';
-import { MessagePlugin } from 'tdesign-vue-next';
+import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 
 import Result from '@/components/result/index.vue';
 import { useUserStore } from '@/store';
@@ -156,28 +156,47 @@ const handleUpdate = async (pluginId: string, currentVersion: string) => {
   const updateInfo = availableUpdates.value[pluginId];
   if (!updateInfo || updateInfo.versionName === currentVersion) return;
 
-  updateState.isUpdating = true;
-  updateState.targetId = pluginId;
-  updateState.progress = 0;
-  updateState.message = '正在请求下载...';
+  const executeUpdate = async () => {
+    updateState.isUpdating = true;
+    updateState.targetId = pluginId;
+    updateState.progress = 0;
+    updateState.message = '正在请求下载...';
 
-  const formatFileName = (appId: string) => {
-    return (
-      appId
-        .split('-')
-        .map((word) => (word.toLowerCase() === 'mslx' ? 'MSLX' : word.charAt(0).toUpperCase() + word.slice(1)))
-        .join('.') + '.dll'
-    );
+    const formatFileName = (appId: string) => {
+      return (
+        appId
+          .split('-')
+          .map((word) => (word.toLowerCase() === 'mslx' ? 'MSLX' : word.charAt(0).toUpperCase() + word.slice(1)))
+          .join('.') + '.dll'
+      );
+    };
+    const safeFileName = formatFileName(pluginId).replace(/[^a-zA-Z0-9_\-.]/g, '');
+
+    try {
+      const res = await postInstallPlugin(updateInfo.downloadLink, `${safeFileName}.new`, true);
+      pollUpdateStatus(res.taskId, pluginId);
+    } catch (error: any) {
+      updateState.isUpdating = false;
+      updateState.targetId = '';
+      MessagePlugin.error(`提交更新失败: ${error.message}`);
+    }
   };
-  const safeFileName = formatFileName(pluginId).replace(/[^a-zA-Z0-9_\-.]/g, '');
 
-  try {
-    const res = await postInstallPlugin(updateInfo.downloadLink, `${safeFileName}.new`, true);
-    pollUpdateStatus(res.taskId, pluginId);
-  } catch (error: any) {
-    updateState.isUpdating = false;
-    updateState.targetId = '';
-    MessagePlugin.error(`提交更新失败: ${error.message}`);
+  // 检查minSdk
+  if (requiresHigherSdk(updateInfo.minSdkVersion)) {
+    const confirmDialog = DialogPlugin.confirm({
+      header: '存在兼容性风险',
+      body: `该插件更新要求节点版本至少为 v${updateInfo.minSdkVersion}，而您当前版本为 v${currentSystemVersion.value}。强制更新可能导致插件无法正常运行，是否继续？`,
+      theme: 'warning',
+      onConfirm: () => {
+        executeUpdate();
+        confirmDialog.hide();
+      },
+      onClose: () => confirmDialog.hide(),
+    });
+  } else {
+    // 版本兼容
+    executeUpdate();
   }
 };
 
@@ -214,6 +233,32 @@ const pollUpdateStatus = (taskId: string, pluginId: string) => {
       MessagePlugin.error(`查询更新进度异常: ${error.message}`);
     }
   }, 1000);
+};
+
+// minSdk版本对比
+const currentSystemVersion = computed(() => {
+  const rawVersion = userStore.userInfo.version || '';
+  const match = rawVersion.match(/v?(\d+(\.\d+)+)/);
+  return match ? match[1] : '0.0.0';
+});
+
+const compareVersion = (v1: string, v2: string) => {
+  if (!v1 || !v2) return 0;
+  const parts1 = v1.split('.').map(Number);
+  const parts2 = v2.split('.').map(Number);
+  const len = Math.max(parts1.length, parts2.length);
+  for (let i = 0; i < len; i++) {
+    const num1 = parts1[i] || 0;
+    const num2 = parts2[i] || 0;
+    if (num1 > num2) return 1;
+    if (num1 < num2) return -1;
+  }
+  return 0;
+};
+
+const requiresHigherSdk = (minSdk?: string) => {
+  if (!minSdk) return false;
+  return compareVersion(minSdk, currentSystemVersion.value) > 0;
 };
 
 defineExpose({ getList });
@@ -292,12 +337,15 @@ onMounted(() => {
               >
                 <t-tag
                   size="small"
-                  theme="primary"
+                  :theme="requiresHigherSdk(availableUpdates[item.id].minSdkVersion) ? 'danger' : 'primary'"
                   variant="light"
                   class="!px-2 !rounded-md cursor-pointer hover:opacity-80"
                 >
                   <template #icon><rocket-filled-icon /></template>
                   新版本 v{{ availableUpdates[item.id].versionName }}
+                  <span v-if="requiresHigherSdk(availableUpdates[item.id].minSdkVersion)" class="ml-1 opacity-80">
+                    (需 MSLX >= {{ availableUpdates[item.id].minSdkVersion }})
+                  </span>
                 </t-tag>
               </t-tooltip>
               <span class="text-xs font-mono text-[var(--td-text-color-secondary)] opacity-60 truncate"
@@ -364,7 +412,9 @@ onMounted(() => {
               <!-- 更新按钮/进度条 -->
               <div
                 v-if="
-                  availableUpdates[item.id] && availableUpdates[item.id].versionName !== item.version && item.status!== '下次重启更新'
+                  availableUpdates[item.id] &&
+                  availableUpdates[item.id].versionName !== item.version &&
+                  item.status !== '下次重启更新'
                 "
                 class="mr-2 border-r border-dashed border-zinc-200 dark:border-zinc-700/60 pr-4"
               >
@@ -381,7 +431,7 @@ onMounted(() => {
                 <t-button
                   v-else
                   size="small"
-                  theme="success"
+                  :theme="requiresHigherSdk(availableUpdates[item.id].minSdkVersion) ? 'danger' : 'success'"
                   variant="outline"
                   :disabled="actionLoading || updateState.isUpdating"
                   @click="handleUpdate(item.id, item.version)"
@@ -390,7 +440,7 @@ onMounted(() => {
                   更新
                 </t-button>
               </div>
-              <!-- 撤销操作 (仅在有待处理任务时显示) -->
+              <!-- 撤销操作 (有待处理任务才显示) -->
               <t-button
                 v-if="item.status?.includes('下次重启')"
                 size="small"
