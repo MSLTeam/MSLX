@@ -1,6 +1,6 @@
 {
-  "version": "1.4.3",
-  "buildTime": "2026-05-14 21:19:01",
+  "version": "1.4.4",
+  "buildTime": "2026-05-24 22:01:00",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -77,10 +77,136 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "ec55253757124368eb1b3271837466111e04b852",
-  "commitMsg": "fix(webpanel): 修复依赖丢失 #130",
+  "commitId": "4e096f4af183588647731d2170195b433c9d1e87",
+  "commitMsg": "feat(webpanel): 更新贡献者列表",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "4e096f4af183588647731d2170195b433c9d1e87",
+      "commitTime": "2026-05-24 21:57:34 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 更新贡献者列表"
+    },
+    {
+      "commitId": "26788219cfea4fdf21a648487d49c8b164bd7935",
+      "commitTime": "2026-05-24 21:29:04 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 加载插件时如遇到MinSdk版本不足，会提示警告"
+    },
+    {
+      "commitId": "800088b4deeceabf9627ac14241f9110ae8cedf3",
+      "commitTime": "2026-05-24 21:21:50 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 插件市场安装插件新增最低版本提醒和安装警告"
+    },
+    {
+      "commitId": "fc5f52c0019429709b618757fbd4b81c59007492",
+      "commitTime": "2026-05-19 23:27:01 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & sdk): 新增GET/POST的方法映射到SDK"
+    },
+    {
+      "commitId": "7ac0382426fe66d1d5d201e9dc98d613efabd5af",
+      "commitTime": "2026-05-19 22:57:48 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 新增插件一键更新功能"
+    },
+    {
+      "commitId": "96d244c47da1d9dca20f852a1ffb807565c4eb0b",
+      "commitTime": "2026-05-19 22:14:33 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 插件市场新增官方插件tag显示"
+    },
+    {
+      "commitId": "a196133e23d2340b0a7ef317cd7fddb5d97297be",
+      "commitTime": "2026-05-19 21:40:03 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(sdk & daemon): 提供下载器方法到SDK以允许插件调用"
+    },
+    {
+      "commitId": "40ad865d349f6c1b077e4324aa0f1e5a3fb38455",
+      "commitTime": "2026-05-19 21:26:01 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 在隧道服务商处新增插件插槽以支持使用插件扩展Frp服务商"
+    },
+    {
+      "commitId": "e028e1fd41e00d2887f92431412e391b14ea9fee",
+      "commitTime": "2026-05-19 21:25:07 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(sdk): v1.4.4-dev"
+    },
+    {
+      "commitId": "92c8c4239ce4e7a342ef41277ced3af2324a1040",
+      "commitTime": "2026-05-19 21:02:23 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(webpanel & daemon): 可设置强制最大退出时间又120s增加到300s"
+    },
+    {
+      "commitId": "8743b722ce3f45a2eb7ffc5c6ca3b7a0399fb1b3",
+      "commitTime": "2026-05-19 16:33:22 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
+    },
+    {
+      "commitId": "9ba81ffaad6944ecb625b1c2f56c0368ee5dd529",
+      "commitTime": "2026-05-19 16:33:07 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "perf(desktop): 优化frp日志显示功能的连接体验，减少多余资源占用"
+    },
+    {
+      "commitId": "8a0b6e8f558fd9b987425a28d1c57d385ba4dcf0",
+      "commitTime": "2026-05-18 19:06:32 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复部分压缩包在添加时jar包检测错误的问题"
+    },
+    {
+      "commitId": "24e515f95d94464618215f6bf18258c861cb009b",
+      "commitTime": "2026-05-18 18:30:43 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "fix(desktop): 修复desktop连接到已在运行的daemon，且有frp正在运行时，无法获取到历史日志的的bug fix(desktop): frp日志可能会重复显示的bug fix(desktop): frp日志过多时无法滚动查看的问题"
+    },
+    {
+      "commitId": "0a07ba60702f42ecd1f59c2dbe76737e8b89e6bd",
+      "commitTime": "2026-05-17 17:59:03 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "perf(desktop): MSLFrp功能基本完善，现已可用。 style(desktop): 代码优化"
+    },
+    {
+      "commitId": "2dc61c27005d00ee61b726d6ade1e4453089633e",
+      "commitTime": "2026-05-16 23:41:35 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
+    },
+    {
+      "commitId": "7b634e07243e135bd21ca447ea53636bbf2ed1fa",
+      "commitTime": "2026-05-16 23:41:18 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "fix(desktop): 修复无法记录MSLFrp登陆状态的bug style(desktop): 优化数据绑定代码"
+    },
+    {
+      "commitId": "1472adbcd567a6730810355a3c6051cc093f29bc",
+      "commitTime": "2026-05-16 18:00:57 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #132 from LegendarySHT/dev"
+    },
+    {
+      "commitId": "dbea47b2c045f60bb26cfcf66e89b4d7ea8c135d",
+      "commitTime": "2026-05-15 17:48:28 +0800",
+      "commitAuthor": "LegendartSHT",
+      "commitMsg": "fix(MapRenderController): 修复未知方块颜色污染后续渲染的问题"
+    },
+    {
+      "commitId": "3497214436d7abb2e32c1409a6986de121a329b1",
+      "commitTime": "2026-05-14 21:20:51 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #131 from MSLTeam/dev"
+    },
+    {
+      "commitId": "78c2f4c2fe37ffab978c112eccd8147d73848c55",
+      "commitTime": "2026-05-14 21:19:10 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(webpanel & daemon): 更新到v1.4.3版本"
+    },
     {
       "commitId": "ec55253757124368eb1b3271837466111e04b852",
       "commitTime": "2026-05-14 21:18:17 +0800",
@@ -254,132 +380,6 @@
       "commitTime": "2026-04-30 23:30:23 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "refactor(webpanel): 重构样式设置组件"
-    },
-    {
-      "commitId": "ce1ed5885bcea7a6154e437301ff5ff8e3f4431a",
-      "commitTime": "2026-04-30 22:47:17 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #120 from MSLTeam/dev"
-    },
-    {
-      "commitId": "5179c70748ed612b792425a7b30b8e7e3977d88c",
-      "commitTime": "2026-04-30 22:42:02 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & sdk): 更新到v1.3.8.2-beta版本"
-    },
-    {
-      "commitId": "38fe69d91e2233312748351efae29d04b0410369",
-      "commitTime": "2026-04-30 21:52:33 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 优化插件系统对Logger的调用"
-    },
-    {
-      "commitId": "14b176ee43c3ec959a6a46b9922b2e7087fe43ca",
-      "commitTime": "2026-04-30 21:46:19 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & sdk): SDK提供Logger调用方法"
-    },
-    {
-      "commitId": "8a3476f23c2f7c974d950a9ebc0708c74a9cb46f",
-      "commitTime": "2026-04-30 21:41:19 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(daemon): 修改加载描述"
-    },
-    {
-      "commitId": "3d38b6f62c56d53b5ac69dee597c63dcd0f00b43",
-      "commitTime": "2026-04-30 21:14:34 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon & sdk): 修复SDK命名空间引用错误"
-    },
-    {
-      "commitId": "41af7000cd1fe87313489ca657c3dd00b938112e",
-      "commitTime": "2026-04-30 21:07:41 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(sdk): 修复命名空间错误"
-    },
-    {
-      "commitId": "c68f850f2bea5e1a79b9daf514c2e7ea842dfd23",
-      "commitTime": "2026-04-30 20:53:12 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(sdk & daemon): 映射配置文件类到SDK中"
-    },
-    {
-      "commitId": "f5bc8735ef6d9861e870b595c9bbdafdd3d6c3f1",
-      "commitTime": "2026-04-30 13:40:49 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修正部署服务的命名空间"
-    },
-    {
-      "commitId": "8908d4e74f1d0db397834bcd860d5ece12302a7c",
-      "commitTime": "2026-04-30 13:32:47 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(daemon & sdk): 提取Java扫描部分 & Frp进程部分方法接口到SDK"
-    },
-    {
-      "commitId": "910a633a2dfb9394979348e9269cffeca637163e",
-      "commitTime": "2026-04-30 12:57:29 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(daemon & sdk): 将守护进程端的模型重构到SDK"
-    },
-    {
-      "commitId": "c4ad308985b53eca621a03cca3ddedebed457a17",
-      "commitTime": "2026-04-29 22:53:23 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #119 from MSLTeam/dev"
-    },
-    {
-      "commitId": "0f33b67b649d061d2d411c136bae9522fc7d426e",
-      "commitTime": "2026-04-29 22:52:38 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新到 v1.3.8.1-beta 版本"
-    },
-    {
-      "commitId": "a3e02f6d240a6e06b8912f72f268202e2a82efe3",
-      "commitTime": "2026-04-29 22:48:34 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 完整插件加载流程"
-    },
-    {
-      "commitId": "81b5ffcdc28494db4db681f8c29b07dc963a17e6",
-      "commitTime": "2026-04-29 15:50:06 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(sdk): 修复开源协议名称错误"
-    },
-    {
-      "commitId": "2da9e6e7e8ab7a0442870f7bcff74a4af6747a55",
-      "commitTime": "2026-04-29 15:48:02 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(sdk): 修复构建路径错误"
-    },
-    {
-      "commitId": "5611f0aa8913fa0afcedd7e5017d694c3aacad40",
-      "commitTime": "2026-04-29 15:44:00 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & sdk): 拆分DTO模型到SDK中 & 新增插件加载功能"
-    },
-    {
-      "commitId": "d8168145de5a26eafcc197eb9c4f114b3a9f5c12",
-      "commitTime": "2026-04-29 13:50:28 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 网页控制台新增载入ESM JS 插件支持"
-    },
-    {
-      "commitId": "f8913933577683e857e384ad97435104413bfbd4",
-      "commitTime": "2026-04-27 17:51:54 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #118 from MSLTeam/dev"
-    },
-    {
-      "commitId": "4f445ab5265923b14bb063d92b5088d2a2669666",
-      "commitTime": "2026-04-27 17:48:34 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新到 v1.3.8 版本"
-    },
-    {
-      "commitId": "378de5495011520f94aa834f4cac810bdd0f96b9",
-      "commitTime": "2026-04-27 17:46:04 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 导入整合包创建服务端时支持扫描纯 NeoForge / Forge 的启动参数"
     }
   ]
 }
