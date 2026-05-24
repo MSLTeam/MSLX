@@ -33,6 +33,12 @@ const developers = [
 
 const contributors = [
   {
+    name: 'LegendarySHT',
+    role: 'Contributors',
+    avatar: 'https://avatars.githubusercontent.com/u/198100090?s=80&v=4',
+    desc: '优化了地图渲染功能',
+  },
+  {
     name: 'Hongbro886',
     role: 'Contributors',
     avatar: 'https://avatars.githubusercontent.com/u/185684679?s=80&v=4',
