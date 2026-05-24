@@ -205,6 +205,7 @@ public class MapRenderController : ControllerBase
 
                             string blockId = GetBlockNameAtY(sections, x, topY, z);
                             Rgba32 baseColor;
+                            bool matched = false;
 
                             // 水深动态探测逻辑
                             if (blockId == "minecraft:water" || blockId == "minecraft:bubble_column")
@@ -215,6 +216,7 @@ public class MapRenderController : ControllerBase
                                 else if (depth > 5) baseColor = new Rgba32(35, 110, 200);
                                 else if (depth > 2) baseColor = new Rgba32(60, 160, 230);
                                 else baseColor = new Rgba32(100, 200, 230);
+                                matched = true;
                             }
                             else
                             {
@@ -228,22 +230,38 @@ public class MapRenderController : ControllerBase
 
                                 // 去字典里智能匹配
                                 if (BlockColorMap.TryGetValue(blockId, out var color))
+                                {
                                     baseColor = color;
+                                    matched = true;
+                                }
                                 else if (BlockColorMap.TryGetValue(baseId, out color))
+                                {
                                     baseColor = color;
+                                    matched = true;
+                                }
                                 else if (BlockColorMap.TryGetValue(baseId + "_planks", out color))
+                                {
                                     baseColor = color;
+                                    matched = true;
+                                }
                                 else if (BlockColorMap.TryGetValue(baseId + "_block", out color))
+                                {
                                     baseColor = color;
+                                    matched = true;
+                                }
                                 else
                                 {
-                                    // 如果不认识这个方块，直接使用旁边方块的颜色伪装自己！
+                                    // 如果不认识这个方块，使用之前成功匹配的颜色
                                     baseColor = lastKnownColor;
                                 }
                             }
 
-                            // 更新最后一次成功匹配的环境色
-                            lastKnownColor = baseColor;
+                            // 只有成功匹配到已知方块时才更新 lastKnownColor
+                            // 防止模组方块的颜色污染后续渲染
+                            if (matched)
+                            {
+                                lastKnownColor = baseColor;
+                            }
 
                             // 3D 阴影算法
                             int nwY = topY;

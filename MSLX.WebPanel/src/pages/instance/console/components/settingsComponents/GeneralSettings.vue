@@ -917,7 +917,7 @@ onUnmounted(() => {
           <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
             <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">关服强制结束时间</div>
             <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
-              设置在发出Stop指令或关服请求后，等待多久后强制结束进程<br />可设置10 - 120 s
+              设置在发出Stop指令或关服请求后，等待多久后强制结束进程<br />可设置10 - 300 s
             </div>
           </div>
           <div class="w-full md:w-[340px] shrink-0 flex md:justify-end items-center">

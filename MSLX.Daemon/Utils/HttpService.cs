@@ -10,7 +10,7 @@ namespace MSLX.Daemon.Utils;
     {
     public static string ApiUrl { get; set; } = "https://api.mslmc.cn/v4";
 
-    public async static Task<(bool Success, object? Data, string? Msg)> GetDataAsync(string path, string dataKey = "data", Dictionary<string, string>? queryParameters = null)
+    public static async Task<(bool Success, object? Data, string? Msg)> GetDataAsync(string path, string dataKey = "data", Dictionary<string, string>? queryParameters = null)
         {
             var getResponse = await GetAsync(path, queryParameters);
             if (getResponse.IsSuccessStatusCode)
@@ -29,7 +29,7 @@ namespace MSLX.Daemon.Utils;
             }
         }
 
-        public async static Task<HttpService.HttpResponse> GetAsync(string path, Dictionary<string, string>? queryParameters)
+        public static async Task<HttpService.HttpResponse> GetAsync(string path, Dictionary<string, string>? queryParameters)
         {
             using var service = new HttpService();
             service.SetDefaultHeadersUA(UAManager.GetUA(UAManager.UAType.MSLX));
@@ -53,7 +53,7 @@ namespace MSLX.Daemon.Utils;
             return getResponse;
         }
 
-        public async static Task<HttpService.HttpResponse> PostAsync(string path, PostContentType postContentType, object data)
+        public static async Task<HttpService.HttpResponse> PostAsync(string path, PostContentType postContentType, object data)
         {
             using var service = new HttpService();
             service.SetDefaultHeadersUA(UAManager.GetUA(UAManager.UAType.MSLX));
@@ -79,7 +79,7 @@ namespace MSLX.Daemon.Utils;
     {
         public static string ApiUrl { get; } = "https://user.mslmc.net/api";
         
-        public async static Task<HttpService.HttpResponse> GetAsync(string path, Dictionary<string, string>? queryParameters, Dictionary<string, string>? headers = null)
+        public static async Task<HttpService.HttpResponse> GetAsync(string path, Dictionary<string, string>? queryParameters, Dictionary<string, string>? headers = null)
         {
             using var service = new HttpService();
             service.SetDefaultHeadersUA(UAManager.GetUA(UAManager.UAType.MSLX));
@@ -103,7 +103,7 @@ namespace MSLX.Daemon.Utils;
             return getResponse;
         }
 
-        public async static Task<HttpService.HttpResponse> PostAsync(string path, PostContentType postContentType, object data, Dictionary<string, string>? headers = null)
+        public static async Task<HttpService.HttpResponse> PostAsync(string path, PostContentType postContentType, object data, Dictionary<string, string>? headers = null)
         {
             using var service = new HttpService();
             service.SetDefaultHeadersUA(UAManager.GetUA(UAManager.UAType.MSLX));
@@ -130,7 +130,7 @@ namespace MSLX.Daemon.Utils;
         /// <summary>
         /// 通用 Get 请求
         /// </summary>
-        public async static Task<HttpService.HttpResponse> GetAsync(
+        public static async Task<HttpService.HttpResponse> GetAsync(
             string url, 
             Dictionary<string, string>? queryParameters = null, 
             Dictionary<string, string>? headers = null,
@@ -166,7 +166,7 @@ namespace MSLX.Daemon.Utils;
         /// <summary>
         /// 通用 Post 请求
         /// </summary>
-        public async static Task<HttpService.HttpResponse> PostAsync(
+        public static async Task<HttpService.HttpResponse> PostAsync(
             string url, 
             PostContentType postContentType, 
             object data, 

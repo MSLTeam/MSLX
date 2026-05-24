@@ -1,21 +1,41 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import {
-  UserIcon, LinkIcon, HomeIcon, ExtensionIcon, StoreIcon,
-  PlayCircleIcon, StopCircleIcon, DeleteIcon, RollbackIcon
+  UserIcon,
+  LinkIcon,
+  HomeIcon,
+  ExtensionIcon,
+  StoreIcon,
+  PlayCircleIcon,
+  StopCircleIcon,
+  DeleteIcon,
+  RollbackIcon,
+  RocketFilledIcon,
 } from 'tdesign-icons-vue-next';
-import { MessagePlugin } from 'tdesign-vue-next';
+import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 
 import Result from '@/components/result/index.vue';
 import { useUserStore } from '@/store';
 import type { PluginListModel } from '@/api/model/plugins';
-import { getPluginList, postPluginAction } from '@/api/plugins';
+import {
+  getPluginList,
+  postPluginAction,
+  postInstallPlugin,
+  getInstallPluginStatus,
+  getPluginUpdates,
+} from '@/api/plugins';
+import type { MarketPluginVersionModel } from '@/api/model/plugins';
+import NotificationPlugin from 'tdesign-vue-next/es/notification/plugin';
+import { DownloadIcon } from 'tdesign-icons-vue-next';
 
 const userStore = useUserStore();
 const loading = ref(true);
 const actionLoading = ref(false);
 const isError = ref(false);
 const plugins = ref<PluginListModel[]>([]);
+
+const availableUpdates = ref<Record<string, MarketPluginVersionModel & { appId: string }>>({});
+const updateState = reactive({ isUpdating: false, targetId: '', progress: 0, message: '', timer: null as any });
 
 const emit = defineEmits(['go-market']);
 
@@ -25,6 +45,9 @@ async function getList() {
     isError.value = false;
     const res = await getPluginList();
     plugins.value = res;
+    if (plugins.value.length > 0) {
+      checkUpdates(plugins.value.map((p) => p.id));
+    }
   } catch (error: any) {
     console.error(error);
     isError.value = true;
@@ -77,6 +100,165 @@ const resolveUrl = (path: string) => {
   const { baseUrl } = userStore;
   const root = baseUrl || window.location.origin;
   return `${root}${path.startsWith('/') ? '' : '/'}${path}`;
+};
+
+// 插件更新和检查更新相关
+const checkHasUpdate = (localVer: string, remoteVer: string): boolean => {
+  if (!localVer || !remoteVer) return false;
+
+  // 提取版本号
+  const cleanLocal = localVer.split('-')[0];
+  const cleanRemote = remoteVer.split('-')[0];
+
+  // 对比版本号
+  const localParts = cleanLocal.split('.');
+  const remoteParts = cleanRemote.split('.');
+
+  const maxLength = Math.max(localParts.length, remoteParts.length);
+
+  for (let i = 0; i < maxLength; i++) {
+    // 补0
+    const l = parseInt(localParts[i] || '0', 10);
+    const r = parseInt(remoteParts[i] || '0', 10);
+
+    if (isNaN(l) || isNaN(r)) return false;
+
+    if (r > l) return true; // 远端 > 本地，有更新
+    if (r < l) return false; // 远端 < 本地，无更新
+  }
+
+  // 无更新
+  return false;
+};
+
+async function checkUpdates(pluginIds: string[]) {
+  try {
+    const idsStr = pluginIds.join(',');
+    const res = await getPluginUpdates(idsStr);
+
+    const updateMap: Record<string, MarketPluginVersionModel & { appId: string }> = {};
+
+    res.forEach((item) => {
+      // 查找对应的本地插件当前版本
+      const localPlugin = plugins.value.find((p) => p.id === item.appId);
+      if (localPlugin && checkHasUpdate(localPlugin.version, item.versionName)) {
+        updateMap[item.appId] = item;
+      }
+    });
+
+    availableUpdates.value = updateMap;
+  } catch (error) {
+    console.error('检查插件更新失败:', error);
+  }
+}
+
+const handleUpdate = async (pluginId: string, currentVersion: string) => {
+  const updateInfo = availableUpdates.value[pluginId];
+  if (!updateInfo || updateInfo.versionName === currentVersion) return;
+
+  const executeUpdate = async () => {
+    updateState.isUpdating = true;
+    updateState.targetId = pluginId;
+    updateState.progress = 0;
+    updateState.message = '正在请求下载...';
+
+    const formatFileName = (appId: string) => {
+      return (
+        appId
+          .split('-')
+          .map((word) => (word.toLowerCase() === 'mslx' ? 'MSLX' : word.charAt(0).toUpperCase() + word.slice(1)))
+          .join('.') + '.dll'
+      );
+    };
+    const safeFileName = formatFileName(pluginId).replace(/[^a-zA-Z0-9_\-.]/g, '');
+
+    try {
+      const res = await postInstallPlugin(updateInfo.downloadLink, `${safeFileName}.new`, true);
+      pollUpdateStatus(res.taskId, pluginId);
+    } catch (error: any) {
+      updateState.isUpdating = false;
+      updateState.targetId = '';
+      MessagePlugin.error(`提交更新失败: ${error.message}`);
+    }
+  };
+
+  // 检查minSdk
+  if (requiresHigherSdk(updateInfo.minSdkVersion)) {
+    const confirmDialog = DialogPlugin.confirm({
+      header: '存在兼容性风险',
+      body: `该插件更新要求节点版本至少为 v${updateInfo.minSdkVersion}，而您当前版本为 v${currentSystemVersion.value}。强制更新可能导致插件无法正常运行，是否继续？`,
+      theme: 'warning',
+      onConfirm: () => {
+        executeUpdate();
+        confirmDialog.hide();
+      },
+      onClose: () => confirmDialog.hide(),
+    });
+  } else {
+    // 版本兼容
+    executeUpdate();
+  }
+};
+
+const pollUpdateStatus = (taskId: string, pluginId: string) => {
+  if (updateState.timer) clearInterval(updateState.timer);
+  updateState.timer = setInterval(async () => {
+    try {
+      const res = await getInstallPluginStatus(taskId);
+      updateState.progress = res.progress;
+      updateState.message = res.message;
+
+      if (res.status === 'success') {
+        clearInterval(updateState.timer);
+        updateState.isUpdating = false;
+        updateState.targetId = '';
+        delete availableUpdates.value[pluginId]; // 移除已更新的标签
+
+        NotificationPlugin.success({
+          title: '插件更新成功',
+          content: '新版本文件已就绪，将在下次重启时生效。',
+          duration: 5000,
+        });
+        getList();
+      } else if (res.status === 'error') {
+        clearInterval(updateState.timer);
+        updateState.isUpdating = false;
+        updateState.targetId = '';
+        MessagePlugin.error(`更新失败: ${res.message}`);
+      }
+    } catch (error: any) {
+      clearInterval(updateState.timer);
+      updateState.isUpdating = false;
+      updateState.targetId = '';
+      MessagePlugin.error(`查询更新进度异常: ${error.message}`);
+    }
+  }, 1000);
+};
+
+// minSdk版本对比
+const currentSystemVersion = computed(() => {
+  const rawVersion = userStore.userInfo.version || '';
+  const match = rawVersion.match(/v?(\d+(\.\d+)+)/);
+  return match ? match[1] : '0.0.0';
+});
+
+const compareVersion = (v1: string, v2: string) => {
+  if (!v1 || !v2) return 0;
+  const parts1 = v1.split('.').map(Number);
+  const parts2 = v2.split('.').map(Number);
+  const len = Math.max(parts1.length, parts2.length);
+  for (let i = 0; i < len; i++) {
+    const num1 = parts1[i] || 0;
+    const num2 = parts2[i] || 0;
+    if (num1 > num2) return 1;
+    if (num1 < num2) return -1;
+  }
+  return 0;
+};
+
+const requiresHigherSdk = (minSdk?: string) => {
+  if (!minSdk) return false;
+  return compareVersion(minSdk, currentSystemVersion.value) > 0;
 };
 
 defineExpose({ getList });
@@ -142,19 +324,33 @@ onMounted(() => {
               </h3>
 
               <!-- 动态状态标签 -->
-              <t-tag
-                size="small"
-                :theme="getStatusTheme(item.status)"
-                variant="light"
-                class="!px-2 !rounded-md"
-              >
+              <t-tag size="small" :theme="getStatusTheme(item.status)" variant="light" class="!px-2 !rounded-md">
                 {{ item.status || '未知状态' }}
               </t-tag>
 
               <t-tag size="small" variant="outline" theme="default" class="!px-2 !rounded-md">
                 v{{ item.version }}
               </t-tag>
-              <span class="text-xs font-mono text-[var(--td-text-color-secondary)] opacity-60 truncate">ID: {{ item.id }}</span>
+              <t-tooltip
+                v-if="availableUpdates[item.id] && availableUpdates[item.id].versionName !== item.version"
+                :content="`${availableUpdates[item.id].changelog}`"
+              >
+                <t-tag
+                  size="small"
+                  :theme="requiresHigherSdk(availableUpdates[item.id].minSdkVersion) ? 'danger' : 'primary'"
+                  variant="light"
+                  class="!px-2 !rounded-md cursor-pointer hover:opacity-80"
+                >
+                  <template #icon><rocket-filled-icon /></template>
+                  新版本 v{{ availableUpdates[item.id].versionName }}
+                  <span v-if="requiresHigherSdk(availableUpdates[item.id].minSdkVersion)" class="ml-1 opacity-80">
+                    (需 MSLX >= {{ availableUpdates[item.id].minSdkVersion }})
+                  </span>
+                </t-tag>
+              </t-tooltip>
+              <span class="text-xs font-mono text-[var(--td-text-color-secondary)] opacity-60 truncate"
+                >ID: {{ item.id }}</span
+              >
             </div>
             <p class="text-sm text-[var(--td-text-color-secondary)] m-0 leading-relaxed line-clamp-2">
               {{ item.description || '该插件暂无详细说明。' }}
@@ -166,7 +362,10 @@ onMounted(() => {
           >
             <!-- 开发者信息 -->
             <div class="flex flex-col gap-1.5 min-w-[90px]">
-              <span class="text-[10px] text-[var(--td-text-color-secondary)] uppercase tracking-widest font-black opacity-80">DEVELOPER</span>
+              <span
+                class="text-[10px] text-[var(--td-text-color-secondary)] uppercase tracking-widest font-black opacity-80"
+                >DEVELOPER</span
+              >
               <div class="flex items-center gap-2 text-[var(--td-text-color-primary)]">
                 <user-icon size="14px" class="text-[var(--color-primary)] opacity-70" />
                 <a
@@ -174,7 +373,8 @@ onMounted(() => {
                   :href="item.authorUrl"
                   target="_blank"
                   class="text-sm font-bold hover:text-[var(--color-primary)] transition-colors cursor-pointer decoration-none truncate max-w-[100px]"
-                >{{ item.developer }}</a>
+                  >{{ item.developer }}</a
+                >
                 <span v-else class="text-sm font-bold truncate max-w-[100px]">{{ item.developer }}</span>
               </div>
             </div>
@@ -182,12 +382,26 @@ onMounted(() => {
             <!-- 外链工具栏 -->
             <div class="flex items-center gap-2">
               <t-tooltip v-if="item.pluginUrl" content="插件主页">
-                <t-button shape="square" variant="text" size="small" :href="item.pluginUrl" target="_blank" class="hover:!text-[var(--color-primary)] transition-colors">
+                <t-button
+                  shape="square"
+                  variant="text"
+                  size="small"
+                  :href="item.pluginUrl"
+                  target="_blank"
+                  class="hover:!text-[var(--color-primary)] transition-colors"
+                >
                   <template #icon><link-icon /></template>
                 </t-button>
               </t-tooltip>
               <t-tooltip v-if="item.authorUrl" content="开发者主页">
-                <t-button shape="square" variant="text" size="small" :href="item.authorUrl" target="_blank" class="hover:!text-[var(--color-primary)] transition-colors">
+                <t-button
+                  shape="square"
+                  variant="text"
+                  size="small"
+                  :href="item.authorUrl"
+                  target="_blank"
+                  class="hover:!text-[var(--color-primary)] transition-colors"
+                >
                   <template #icon><home-icon /></template>
                 </t-button>
               </t-tooltip>
@@ -195,8 +409,38 @@ onMounted(() => {
 
             <!-- 操作按钮区域 -->
             <div class="flex items-center gap-2 pl-4 border-l border-zinc-200 dark:border-zinc-700/60 ml-auto md:ml-0">
+              <!-- 更新按钮/进度条 -->
+              <div
+                v-if="
+                  availableUpdates[item.id] &&
+                  availableUpdates[item.id].versionName !== item.version &&
+                  item.status !== '下次重启更新'
+                "
+                class="mr-2 border-r border-dashed border-zinc-200 dark:border-zinc-700/60 pr-4"
+              >
+                <!-- 正在更新时显示进度 -->
+                <div
+                  v-if="updateState.isUpdating && updateState.targetId === item.id"
+                  class="flex flex-col items-center w-[80px]"
+                >
+                  <span class="text-[10px] text-[var(--td-brand-color)] mb-1 font-bold">{{ updateState.message }}</span>
+                  <t-progress :percentage="updateState.progress" :label="false" size="small" class="w-full" />
+                </div>
 
-              <!-- 撤销操作 (仅在有待处理任务时显示) -->
+                <!-- 未更新时显示更新按钮 -->
+                <t-button
+                  v-else
+                  size="small"
+                  :theme="requiresHigherSdk(availableUpdates[item.id].minSdkVersion) ? 'danger' : 'success'"
+                  variant="outline"
+                  :disabled="actionLoading || updateState.isUpdating"
+                  @click="handleUpdate(item.id, item.version)"
+                >
+                  <template #icon><download-icon /></template>
+                  更新
+                </t-button>
+              </div>
+              <!-- 撤销操作 (有待处理任务才显示) -->
               <t-button
                 v-if="item.status?.includes('下次重启')"
                 size="small"
@@ -247,7 +491,6 @@ onMounted(() => {
                   <template #icon><delete-icon /></template>
                 </t-button>
               </t-popconfirm>
-
             </div>
           </div>
         </div>

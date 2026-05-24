@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { ref, onMounted, reactive, computed } from 'vue';
 import { DownloadIcon, TimeIcon, LinkIcon, ChevronLeftIcon, ChevronRightIcon } from 'tdesign-icons-vue-next';
-import { MessagePlugin } from 'tdesign-vue-next';
+import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 
 import { getMarketPluginList, getMarketPluginVersions, postInstallPlugin, getInstallPluginStatus } from '@/api/plugins';
 import type { MarketPluginModel, MarketPluginVersionModel } from '@/api/model/plugins';
 import NotificationPlugin from 'tdesign-vue-next/es/notification/plugin';
+import { useUserStore } from '@/store';
 
 const listLoading = ref(false);
 const keyword = ref('');
 const marketList = ref<MarketPluginModel[]>([]);
 const pagination = reactive({ current: 1, pageSize: 10, total: 0 });
+const userStore = useUserStore();
 
 // 搜索
 const handleSearch = (kw: string) => {
@@ -96,26 +98,46 @@ const openVersionDialog = async (plugin: MarketPluginModel) => {
 
 const handleInstallVersion = async (version: MarketPluginVersionModel) => {
   if (!activePlugin.value) return;
-  installState.isInstalling = true;
-  installState.progress = 0;
-  installState.message = '正在请求下载...';
 
-  const formatFileName = (appId: string) => {
-    return (
-      appId
-        .split('-')
-        .map((word) => (word.toLowerCase() === 'mslx' ? 'MSLX' : word.charAt(0).toUpperCase() + word.slice(1)))
-        .join('.') + '.dll'
-    );
+  const executeInstall = async () => {
+    installState.isInstalling = true;
+    installState.progress = 0;
+    installState.message = '正在请求下载...';
+
+    const formatFileName = (appId: string) => {
+      return (
+        appId
+          .split('-')
+          .map((word) => (word.toLowerCase() === 'mslx' ? 'MSLX' : word.charAt(0).toUpperCase() + word.slice(1)))
+          .join('.') + '.dll'
+      );
+    };
+
+    const safeFileName = formatFileName(activePlugin.value!.appId).replace(/[^a-zA-Z0-9_\-.]/g, '');
+    try {
+      const res = await postInstallPlugin(version.downloadLink, `${safeFileName}.new`, true);
+      pollInstallStatus(res.taskId);
+    } catch (error: any) {
+      installState.isInstalling = false;
+      MessagePlugin.error(`提交安装失败: ${error.message}`);
+    }
   };
 
-  const safeFileName = formatFileName(activePlugin.value.appId).replace(/[^a-zA-Z0-9_\-.]/g, '');
-  try {
-    const res = await postInstallPlugin(version.downloadLink, `${safeFileName}.new`, true);
-    pollInstallStatus(res.taskId);
-  } catch (error: any) {
-    installState.isInstalling = false;
-    MessagePlugin.error(`提交安装失败: ${error.message}`);
+  // 检查 SDK 版本
+  if (requiresHigherSdk(version.minSdkVersion)) {
+    const confirmDialog = DialogPlugin.confirm({
+      header: '存在兼容性风险',
+      body: `该插件要求节点版本至少为 v${version.minSdkVersion}，而您当前版本为 v${currentSystemVersion.value}。强制安装可能导致插件无法正常运行，是否继续？`,
+      theme: 'warning',
+      onConfirm: () => {
+        executeInstall();
+        confirmDialog.hide();
+      },
+      onClose: () => confirmDialog.hide(),
+    });
+  } else {
+    // 版本兼容
+    executeInstall();
   }
 };
 
@@ -147,6 +169,33 @@ const pollInstallStatus = (taskId: string) => {
       MessagePlugin.error(`查询进度异常: ${error.message}`);
     }
   }, 1000);
+};
+
+// sdk版本对比
+const currentSystemVersion = computed(() => {
+  const rawVersion = userStore.userInfo.version || '';
+  const match = rawVersion.match(/v?(\d+(\.\d+)+)/);
+  return match ? match[1] : '0.0.0';
+});
+
+// 比较版本号
+const compareVersion = (v1: string, v2: string) => {
+  if (!v1 || !v2) return 0;
+  const parts1 = v1.split('.').map(Number);
+  const parts2 = v2.split('.').map(Number);
+  const len = Math.max(parts1.length, parts2.length);
+  for (let i = 0; i < len; i++) {
+    const num1 = parts1[i] || 0;
+    const num2 = parts2[i] || 0;
+    if (num1 > num2) return 1;
+    if (num1 < num2) return -1;
+  }
+  return 0;
+};
+
+const requiresHigherSdk = (minSdk?: string) => {
+  if (!minSdk) return false;
+  return compareVersion(minSdk, currentSystemVersion.value) > 0;
 };
 
 const onDialogClose = () => {
@@ -195,11 +244,10 @@ onMounted(() => {
               <h3 class="text-base font-bold text-[var(--td-text-color-primary)] truncate m-0 tracking-tight">
                 {{ item.name }}
               </h3>
-              <span
-                class="text-xs text-[var(--td-text-color-secondary)] font-mono opacity-60 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded shrink-0"
-              >
-                {{ item.appId }}
-              </span>
+              <!-- 官方插件通过判断开发者uid 哈哈哈 -->
+              <t-tag v-if="item.developerUid === 1 || item.developerUid === 5" theme="success">MSLX 官方</t-tag>
+              <t-tag v-else theme="primary">社区插件</t-tag>
+              <t-tag>{{ item.appId }}</t-tag>
             </div>
             <p class="text-sm text-[var(--td-text-color-secondary)] line-clamp-2 m-0 leading-relaxed max-w-2xl">
               {{ item.shortDesc }}
@@ -318,6 +366,9 @@ onMounted(() => {
               <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2">
                   <t-tag theme="primary" variant="light">v{{ ver.versionName }}</t-tag>
+                  <t-tag v-if="requiresHigherSdk(ver.minSdkVersion)" theme="danger" variant="light">
+                    要求 MSLX >= {{ ver.minSdkVersion }}
+                  </t-tag>
                   <span class="text-xs text-[var(--td-text-color-secondary)] flex items-center gap-1"
                     ><time-icon /> {{ new Date(ver.createdAt).toLocaleDateString() }}</span
                   >

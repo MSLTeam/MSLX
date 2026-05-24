@@ -3,6 +3,7 @@ import {
   InstalPluginResponse,
   InstalPluginStatusModel,
   MarketPluginPageModel,
+  MarketPluginVersionModel,
   MarketPluginVersionPageModel,
   PluginListModel,
 } from '@/api/model/plugins';
@@ -46,5 +47,13 @@ export async function getMarketPluginVersions(appId: string, params: { page?: nu
   return await request.get<MarketPluginVersionPageModel>({
     url: `https://mslx-plugins-api.mslmc.net/api/plugins/versions/list/${appId}`,
     params,
+  });
+}
+
+// 插件检查更新接口
+export async function getPluginUpdates(plugins: string) {
+  return await request.get<(MarketPluginVersionModel & { appId: string })[]>({
+    url: 'https://mslx-plugins-api.mslmc.net/api/plugins/versions/check-updates',
+    params: { plugins },
   });
 }

@@ -1,8 +1,9 @@
-﻿using Avalonia.Controls;
+using Avalonia.Controls;
 using Material.Icons;
 using Material.Icons.Avalonia;
 using MSLX.Desktop.Views;
 using MSLX.Desktop.Views.CreateInstance;
+using MSLX.Desktop.Views.CreateTunnel.MSLFrp;
 using MSLX.Desktop.Views.LinkDaemon;
 using SukiUI.Controls;
 using System.Collections.ObjectModel;
@@ -72,6 +73,27 @@ namespace MSLX.Desktop.Models
             }
         };
 
-        public static CreateMCServer CreateMCServerPage = new();
+        private static readonly CreateMCServer CreateMCServerPage = new();
+        public static SukiSideMenuItem CreateMCServerMenuItem = new SukiSideMenuItem
+        {
+            Header = "创建实例",
+            Icon = new MaterialIcon()
+            {
+                Kind = MaterialIconKind.AddCircle,
+            },
+            IsContentMovable = false,
+            PageContent = PageStore.CreateMCServerPage
+        };
+        private static readonly CreateMSLFrpTunnel CreateMSLFrpTunnelPage = new();
+        public static SukiSideMenuItem CreateMSLFrpTunnelMenuItem = new SukiSideMenuItem
+        {
+            Header = "添加隧道",
+            Icon = new MaterialIcon()
+            {
+                Kind = MaterialIconKind.AddCircle,
+            },
+            IsContentMovable = false,
+            PageContent = PageStore.CreateMSLFrpTunnelPage
+        };
     }
 }

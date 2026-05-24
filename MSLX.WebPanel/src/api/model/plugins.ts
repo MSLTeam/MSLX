@@ -50,6 +50,7 @@ export interface MarketPluginVersionModel {
   downloadLink: string;
   versionCode: number;
   versionName: string;
+  minSdkVersion: string;
 }
 
 export interface MarketPluginVersionPageModel {
