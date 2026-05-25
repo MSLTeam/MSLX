@@ -34,9 +34,12 @@ public class PluginListController : ControllerBase
             if (System.IO.File.Exists(dllPath + ".delete")) status = "下次重启删除";
             else if (System.IO.File.Exists(dllPath + ".new")) status = "下次重启更新";
             else if (System.IO.File.Exists(dllPath + ".disabled")) status = "下次重启禁用";
-            var iconPath = (p.Metadata.Icon != null && p.Metadata.Icon.StartsWith("http")) 
-                ? "https://www.mslmc.cn/logo.png" 
-                : $"/plugins/{p.Metadata.Id.ToLower()}/{p.Metadata.Version.ToLower()}/{p.Metadata.Icon}";
+            var iconPath = p.Metadata.Icon switch
+            {
+                null or "" => "https://www.mslmc.cn/logo.png",
+                var icon when icon.StartsWith("http", StringComparison.OrdinalIgnoreCase) => icon,
+                var icon => $"/plugins/{p.Metadata.Id.ToLower()}/{p.Metadata.Version.ToLower()}/{icon}"
+            };
 
             resultList.Add(new
             {
