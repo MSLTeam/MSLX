@@ -300,7 +300,9 @@ namespace MSLX.Daemon.Utils;
         {
             return contentType switch
             {
-                PostContentType.Json => new StringContent(JsonSerializer.Serialize(data), Encoding.UTF8, "application/json"),
+                PostContentType.Json => data is string strData 
+                    ? new StringContent(strData, Encoding.UTF8, "application/json")
+                    : new StringContent(JsonSerializer.Serialize(data), Encoding.UTF8, "application/json"),
                 PostContentType.FormUrlEncoded => new FormUrlEncodedContent(data as Dictionary<string, string> ?? new Dictionary<string, string>()),
                 PostContentType.Text => new StringContent(data as string ?? "", Encoding.UTF8, "text/plain"),
                 PostContentType.Octet => new ByteArrayContent(data as byte[] ?? new byte[0]),
