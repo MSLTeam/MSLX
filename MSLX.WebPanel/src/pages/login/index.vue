@@ -125,14 +125,17 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
   transition: all 0.3s ease;
   background-image: var(--custom-bg-light, url('@/assets/bg_light_new.jpg'));
 }
 
 .dark.login-wrapper {
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
   background-image: var(--custom-bg-dark, url('@/assets/bg_night_new.jpg')) !important;
 }
 
