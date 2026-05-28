@@ -49,10 +49,10 @@ public class MCServerService: IMCServerService
 
     // 匹配玩家进入/离开的正则表达式
     private static readonly Regex PlayerJoinedRegex =
-        new Regex(@"\]:\s*(?<player>[a-zA-Z0-9_\-\.\* ]+)\[.*?\]\slogged\sin\swith\sentity\sid", RegexOptions.Compiled);
+        new Regex(@"\]:\s*(?<player>.+?)\[.*?\]\slogged\sin\swith\sentity\sid", RegexOptions.Compiled);
 
     private static readonly Regex PlayerLeftRegex =
-        new Regex(@"\]:\s*(?<player>[a-zA-Z0-9_\-\.\* ]+)\slost\sconnection:", RegexOptions.Compiled);
+        new Regex(@"\]:\s*(?<player>.+?)\slost\sconnection:", RegexOptions.Compiled);
 
     private static readonly Regex AnsiColorRegex = new Regex(@"\x1B\[[0-9;]*[a-zA-Z]", RegexOptions.Compiled);
 
@@ -1012,6 +1012,7 @@ public class MCServerService: IMCServerService
                 if (!File.Exists(authlibPath) || !await FileUtils.ValidateFileSha256Async(authlibPath, sha256))
                 {
                     // 下载
+                    RecordLog(instanceId, context, $"[MSLX] 正在处理下载外置登录库依赖···");
                     var downloader = new ParallelDownloader(parallelCount: 1);
                     var mirroredUrl = downloadUrl.Replace("authlib-injector.yushi.moe",
                         "authlib-injector.mirrors.mslmc.cn");
