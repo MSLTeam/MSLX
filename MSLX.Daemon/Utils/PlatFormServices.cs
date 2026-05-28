@@ -102,36 +102,37 @@ public class PlatFormServices
     {
         try
         {
-            // 检查GUI环境
-            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform
-                    .Linux))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY")))
+                var display = Environment.GetEnvironmentVariable("DISPLAY");
+                var waylandDisplay = Environment.GetEnvironmentVariable("WAYLAND_DISPLAY");
+            
+                // 没有 X11 DISPLAY & 没有 Wayland DISPLAY → 无头环境
+                if (string.IsNullOrEmpty(display) && string.IsNullOrEmpty(waylandDisplay))
                 {
-                    Console.WriteLine(">> Detected headless environment (no GUI). Browser auto-open skipped.");
+                    Console.WriteLine(">> 当前为纯命令行环境, 跳过浏览器打开······");
                     return;
                 }
             }
 
-            // 尝试打开浏览器
-            if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform
-                    .Windows))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                // Windows: 使用 shell 打开
-                System.Diagnostics.Process.Start(
-                    new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
             }
-            else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices
-                         .OSPlatform.Linux))
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                // Linux: 使用 xdg-open
-                System.Diagnostics.Process.Start("xdg-open", url);
+                var psi = new ProcessStartInfo("xdg-open", url)
+                {
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                Process.Start(psi);
             }
-            else if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices
-                         .OSPlatform.OSX))
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
-                // Mac: 使用 open
-                System.Diagnostics.Process.Start("open", url);
+                Process.Start("open", url);
             }
 
             Console.WriteLine($">> 浏览器打开地址: {url}");
