@@ -24,6 +24,7 @@ export interface SslSettingsResponse {
   enableSsl: boolean;
   hasCertificate: boolean;
   certificateContent?: string | null;
+  isSelfSigned: boolean;
 }
 
 export interface UpdateSslSettingsRequest {

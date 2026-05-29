@@ -12,6 +12,7 @@ const originalData = reactive<SslSettingsResponse>({
   enableSsl: false,
   hasCertificate: false,
   certificateContent: null,
+  isSelfSigned: false,
 });
 
 const formData = reactive({
@@ -20,6 +21,7 @@ const formData = reactive({
   certificate: '',
   privateKey: '',
 });
+const isEditingCert = ref(false);
 
 const emit = defineEmits(['refresh']);
 
@@ -33,6 +35,8 @@ const initData = async () => {
     formData.useSelfSigned = !res.hasCertificate;
     formData.certificate = '';
     formData.privateKey = '';
+
+    isEditingCert.value = !res.hasCertificate;
   } catch (e: any) {
     MessagePlugin.error(e.message || 'SSL 设置加载失败');
   } finally {
@@ -97,9 +101,14 @@ onMounted(() => {
             <div
               class="w-1.5 h-5 bg-[var(--color-primary)] rounded-full shadow-[0_0_8px_var(--color-primary-light)] opacity-90"
             ></div>
-            <h2 class="text-lg font-bold text-[var(--td-text-color-primary)] m-0 leading-none tracking-tight">
-              HTTPS 加密访问 (SSL)
-            </h2>
+            <div class="flex flex-col">
+              <h2 class="text-lg font-bold text-[var(--td-text-color-primary)] m-0 leading-none tracking-tight">
+                HTTPS 加密访问 (SSL)
+              </h2>
+              <span class="text-[11px] sm:text-xs text-amber-600/80 dark:text-amber-500/80 mt-1.5 font-medium"
+                >如果您需要将面板暴露在公网环境，建议您启用本功能 (或者使用Nginx等工具反向代理也可以)。</span
+              >
+            </div>
           </div>
           <t-button variant="dashed" size="small" class="!bg-transparent" @click="handleRefresh">
             <template #icon><refresh-icon /></template>
@@ -166,13 +175,33 @@ onMounted(() => {
                 class="mb-6 p-4 rounded-xl bg-[var(--color-primary)]/5 border border-[var(--color-primary)]/10 flex gap-3"
               >
                 <verified-icon class="text-[var(--color-primary)] shrink-0 mt-0.5" />
-                <div>
-                  <div class="text-sm font-bold text-[var(--td-text-color-primary)]">已配置本地证书</div>
+                <div class="w-full">
+                  <div class="flex items-center justify-between w-full">
+                    <div class="text-sm font-bold text-[var(--td-text-color-primary)] flex items-center gap-2">
+                      已配置本地证书
+                      <span
+                        v-if="originalData.isSelfSigned"
+                        class="px-1.5 py-[1px] rounded text-[10px] font-extrabold bg-amber-500/10 text-amber-600 border border-amber-500/20"
+                      >
+                        本地自签名
+                      </span>
+                    </div>
+
+                    <t-button size="small" variant="outline" @click="isEditingCert = !isEditingCert">
+                      {{ isEditingCert ? '取消修改' : '修改证书' }}
+                    </t-button>
+                  </div>
+
                   <div class="text-[11px] text-[var(--td-text-color-secondary)] mt-1 mb-2">
-                    系统内已有生效的证书。若需更新证书请在下方填入；<b class="text-[var(--td-text-color-primary)]"
-                      >若保持不变，请将下方输入框留空。</b
+                    系统内已有生效的证书。
+                    <span v-if="!isEditingCert">点击右上角按钮以更新或替换证书。</span>
+                    <span v-else
+                      >请在下方填入新的证书内容；<b class="text-[var(--td-text-color-primary)]"
+                        >若放弃修改，请点击右上角取消。</b
+                      ></span
                     >
                   </div>
+
                   <div
                     v-if="originalData.certificateContent"
                     class="whitespace-pre-wrap break-all text-[10px] font-mono text-zinc-400 bg-zinc-100/50 dark:bg-zinc-900/50 p-2 rounded max-h-24 overflow-hidden relative"
@@ -186,37 +215,35 @@ onMounted(() => {
               </div>
             </template>
 
-            <t-form-item label="公钥 (Certificate)">
-              <template #help>
-                <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block"
-                  >Nginx 格式的公钥，通常以 <code>-----BEGIN CERTIFICATE-----</code> 开头。</span
-                >
-              </template>
-              <t-textarea
-                v-model="formData.certificate"
-                :placeholder="
-                  originalData.hasCertificate ? '留空以保持现有证书不变...' : '请粘贴 PEM 格式的公钥内容...'
-                "
-                :autosize="{ minRows: 4, maxRows: 8 }"
-                class="!w-full sm:!w-[500px] !font-mono !text-xs !bg-zinc-50/50 dark:!bg-zinc-900/30"
-              />
-            </t-form-item>
+            <template v-if="isEditingCert">
+              <t-form-item label="公钥 (Certificate)">
+                <template #help>
+                  <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block"
+                    >Nginx 格式的公钥，通常以 <code>-----BEGIN CERTIFICATE-----</code> 开头。</span
+                  >
+                </template>
+                <t-textarea
+                  v-model="formData.certificate"
+                  placeholder="请粘贴 PEM 格式的公钥内容..."
+                  :autosize="{ minRows: 4, maxRows: 8 }"
+                  class="!w-full sm:!w-[500px] !font-mono !text-xs !bg-zinc-50/50 dark:!bg-zinc-900/30"
+                />
+              </t-form-item>
 
-            <t-form-item label="私钥 (Private Key)">
-              <template #help>
-                <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block"
-                  >通常以 <code>-----BEGIN PRIVATE KEY-----</code> 结尾。私钥仅保存在本地服务器。</span
-                >
-              </template>
-              <t-textarea
-                v-model="formData.privateKey"
-                :placeholder="
-                  originalData.hasCertificate ? '留空以保持现有私钥不变...' : '请粘贴 PEM 格式的私钥内容...'
-                "
-                :autosize="{ minRows: 4, maxRows: 8 }"
-                class="!w-full sm:!w-[500px] !font-mono !text-xs !bg-zinc-50/50 dark:!bg-zinc-900/30"
-              />
-            </t-form-item>
+              <t-form-item label="私钥 (Private Key)">
+                <template #help>
+                  <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block"
+                    >通常以 <code>-----BEGIN PRIVATE KEY-----</code> 结尾。私钥仅保存在本地服务器。</span
+                  >
+                </template>
+                <t-textarea
+                  v-model="formData.privateKey"
+                  placeholder="请粘贴 PEM 格式的私钥内容..."
+                  :autosize="{ minRows: 4, maxRows: 8 }"
+                  class="!w-full sm:!w-[500px] !font-mono !text-xs !bg-zinc-50/50 dark:!bg-zinc-900/30"
+                />
+              </t-form-item>
+            </template>
           </template>
 
           <div

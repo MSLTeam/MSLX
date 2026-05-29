@@ -119,6 +119,15 @@ public class SettingsController : ControllerBase
 
         bool hasCert = System.IO.File.Exists(pemPath) && System.IO.File.Exists(keyPath);
         string? certContent = hasCert ? System.IO.File.ReadAllText(pemPath) : null;
+        
+        bool isSelfSigned = false;
+        
+        var activeCert = MSLX.Daemon.Utils.SslCertificateManager.GetCertificate();
+        if (activeCert != null)
+        {
+            isSelfSigned = activeCert.Subject.Contains("MSLX Local Certificate") || 
+                           activeCert.Subject.Contains("MSLX Emergency Temporary Certificate");
+        }
 
         return Ok(new ApiResponse<SslSettingsResponse>
         {
@@ -128,7 +137,8 @@ public class SettingsController : ControllerBase
             {
                 EnableSsl = (bool?)IConfigBase.Config.ReadConfig()["enableSsl"] ?? false,
                 HasCertificate = hasCert,
-                CertificateContent = certContent
+                CertificateContent = certContent,
+                IsSelfSigned = isSelfSigned
             }
         });
     }

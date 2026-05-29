@@ -7,6 +7,7 @@ public class SslSettingsResponse
     public bool EnableSsl { get; set; }
     public bool HasCertificate { get; set; }
     public string? CertificateContent { get; set; } 
+    public bool IsSelfSigned { get; set; }
 }
 public class UpdateSslSettingsRequest : IValidatableObject
 {
