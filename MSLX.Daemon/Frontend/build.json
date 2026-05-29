@@ -1,6 +1,6 @@
 {
-  "version": "1.4.4",
-  "buildTime": "2026-05-24 22:01:00",
+  "version": "1.4.5",
+  "buildTime": "2026-05-29 18:44:29",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -77,10 +77,112 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "4e096f4af183588647731d2170195b433c9d1e87",
-  "commitMsg": "feat(webpanel): 更新贡献者列表",
+  "commitId": "2bc61c1323607305d5d0b64e411b30480bec650c",
+  "commitMsg": "perf(webpanel & daemon): 优化修改证书的界面设计",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "2bc61c1323607305d5d0b64e411b30480bec650c",
+      "commitTime": "2026-05-29 17:52:53 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(webpanel & daemon): 优化修改证书的界面设计"
+    },
+    {
+      "commitId": "e73eda2335d1cfe3b23ba877653fe527cb0c7b38",
+      "commitTime": "2026-05-29 16:39:07 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复移动端下插件管理页面内容溢出的问题"
+    },
+    {
+      "commitId": "e24f6ad8fdf40123ae74c9aef3176fd9eeb1778f",
+      "commitTime": "2026-05-29 16:32:42 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(webpanel): 拆分系统设置为单独的菜单路由"
+    },
+    {
+      "commitId": "a33173327c0c54661215fe20e85577ebb1e60c32",
+      "commitTime": "2026-05-29 12:27:33 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(webpanel): 优化SSL设置模块UI"
+    },
+    {
+      "commitId": "f755d3faf5cd9c1de040d77415d0f5055dcb8d9c",
+      "commitTime": "2026-05-29 12:20:29 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "dev(webpanel): 开发环境下自动切换http/https"
+    },
+    {
+      "commitId": "e28d6973470e4ceb9fc3033e429a54737bc9b08a",
+      "commitTime": "2026-05-29 12:20:08 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 本地丢失SSL证书或SSL证书无效时自动生成一份临时自签名证书"
+    },
+    {
+      "commitId": "924008d77828a9f0cd4647853a36e4b8118567c7",
+      "commitTime": "2026-05-29 09:33:11 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(daemon & webpanel): 优化SSL证书的加载逻辑"
+    },
+    {
+      "commitId": "a88d0d89d5aaf364c690b499fd59d7e67b264714",
+      "commitTime": "2026-05-28 22:52:23 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 新增SSL配置功能(支持本地自签证书 & 上传自定义证书) #96"
+    },
+    {
+      "commitId": "f654ae8b9566fc61f67d730b319f51661f7346b0",
+      "commitTime": "2026-05-28 21:47:05 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复桌面环境打开浏览器时出现的奇怪错误 #124"
+    },
+    {
+      "commitId": "8983509c012fe91a0c06100587fb548f023a2028",
+      "commitTime": "2026-05-28 21:36:28 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复网页控制台登录页面在黑暗模式下背景图不正常缩放的问题"
+    },
+    {
+      "commitId": "89f09cf85ec6d56b05653f2792d38061b368555e",
+      "commitTime": "2026-05-28 21:22:53 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 游戏玩家列表新增中文匹配支持 & 优化下载外置登录库时的状态刷新 #133"
+    },
+    {
+      "commitId": "1f2894298c3ff0d7d8b7850961d46558c39a6315",
+      "commitTime": "2026-05-25 23:01:09 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel & daemon): 修复chmlfrp无法创建隧道的问题 #135"
+    },
+    {
+      "commitId": "ac3879e0201c5b785de922022bc3dc9fa6c0b8ac",
+      "commitTime": "2026-05-25 17:26:15 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(daemon): 优化代码"
+    },
+    {
+      "commitId": "559a90bce3e8592e1fdfca745b5221002ff23135",
+      "commitTime": "2026-05-25 16:59:13 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复部分插件图标无法正常获取的问题"
+    },
+    {
+      "commitId": "5bc46cd0e84567ce720110f44ccb035407e44c57",
+      "commitTime": "2026-05-25 16:28:15 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复插件安装路由权限问题"
+    },
+    {
+      "commitId": "2e0bacb9e0f1022dd738e4840f6f61b64934f567",
+      "commitTime": "2026-05-24 22:02:50 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #134 from MSLTeam/dev"
+    },
+    {
+      "commitId": "aa0c8415b2b5f4b36f7ee2e19dc5312a1126c15b",
+      "commitTime": "2026-05-24 22:01:37 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(webpanel & daemon): 更新到v1.4.4版本"
+    },
     {
       "commitId": "4e096f4af183588647731d2170195b433c9d1e87",
       "commitTime": "2026-05-24 21:57:34 +0800",
@@ -278,108 +380,6 @@
       "commitTime": "2026-05-11 23:17:26 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "fix(webpanel): 修复依赖丢失"
-    },
-    {
-      "commitId": "655a1b6201394da11cae4d3cce8f57bc0ae8e4ec",
-      "commitTime": "2026-05-11 23:16:12 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 优化插件市场安装插件的逻辑"
-    },
-    {
-      "commitId": "e1c58132139ba86ac92b08d1710c17e604fb648b",
-      "commitTime": "2026-05-11 23:10:51 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 网页控制台新增插件禁用/删除功能"
-    },
-    {
-      "commitId": "a386bf9839c73dd46b1dd611304446af67c74b20",
-      "commitTime": "2026-05-11 22:57:54 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
-    },
-    {
-      "commitId": "c288d4c653b9869e8500c8703e763788770a2580",
-      "commitTime": "2026-05-11 22:56:08 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 新增插件操作接口"
-    },
-    {
-      "commitId": "092a0bc8be1f50403da527cc667fcb8293513e04",
-      "commitTime": "2026-05-11 22:45:31 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 新增启动时处理插件删除/禁用/更新的功能"
-    },
-    {
-      "commitId": "e20a387625b2d32be0864a44f8807977b426dda2",
-      "commitTime": "2026-05-05 17:49:45 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #125 from MSLTeam/dev"
-    },
-    {
-      "commitId": "c1310c42991f358db2bbc1c5d2170f4547f2bf6a",
-      "commitTime": "2026-05-05 17:48:18 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "assets(webpanel): 更新前端构建资源到v1.4.1版本"
-    },
-    {
-      "commitId": "3f53b64a268be2a41060cd38e360e5b6dc053f83",
-      "commitTime": "2026-05-05 17:47:33 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复默认账号修改提醒按钮的路由错误 fix #123"
-    },
-    {
-      "commitId": "a365cb631cc9573e2b83392ce7eac220e500ffac",
-      "commitTime": "2026-05-05 17:45:49 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel & sdk): 更新到 v1.4.1 版本"
-    },
-    {
-      "commitId": "4243a1038a03bad36a7b2be9370ce0ebb313dd21",
-      "commitTime": "2026-05-05 17:43:38 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel & daemon): 新增插件市场功能"
-    },
-    {
-      "commitId": "aaf1e024d237117228726feb1b32cc0c142c4e8e",
-      "commitTime": "2026-05-01 18:06:56 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复顶部导航个人中心跳转地址错误"
-    },
-    {
-      "commitId": "44bdbcbac30cb3406e763699c6ffd0015839ced5",
-      "commitTime": "2026-05-01 17:35:53 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #121 from MSLTeam/dev"
-    },
-    {
-      "commitId": "bacc7e1fdaceb26e18c980ac0a7a2d609ffab266",
-      "commitTime": "2026-05-01 17:34:03 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(sdk & daemon & webpanel): 更新到 v1.4.0-release 版本"
-    },
-    {
-      "commitId": "4dfbe35afbb9aa1dd5f101271424ab8d5a73d18d",
-      "commitTime": "2026-05-01 17:13:19 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 新增插件管理页面"
-    },
-    {
-      "commitId": "aaa467e267a7aeac4e3348f1f188fcf25793a5bd",
-      "commitTime": "2026-05-01 16:47:40 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(sdk): 更新图标默认值"
-    },
-    {
-      "commitId": "9c9fb09bf1a25f6e24b5661d1679040d7d71aabb",
-      "commitTime": "2026-05-01 16:36:01 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(sdk): 更新插件元数据字段"
-    },
-    {
-      "commitId": "e6f2023ac807583314816d5c566dff5c542b0cc6",
-      "commitTime": "2026-04-30 23:30:23 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(webpanel): 重构样式设置组件"
     }
   ]
 }
