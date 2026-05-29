@@ -31,8 +31,14 @@ export default [
       {
         path: 'profile',
         name: 'settings',
-        component: () => import('@/pages/settings/index.vue'),
-        meta: { title: '基础设置', icon: 'system-setting', roleCode: ['admin', 'user'] },
+        component: () => import('@/pages/settings/base/index.vue'),
+        meta: { title: '基础设置', icon: 'user-setting', roleCode: ['admin', 'user'] },
+      },
+      {
+        path: 'daemon',
+        name: 'daemonSettings',
+        component: () => import('@/pages/settings/daemon/index.vue'),
+        meta: { title: '系统设置', icon: 'system-setting', roleCode: ['admin'] },
       },
       {
         path: 'plugins',

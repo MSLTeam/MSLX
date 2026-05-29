@@ -3,10 +3,8 @@ import { onMounted, ref } from 'vue';
 import { useWebpanelStore, useUserStore } from '@/store';
 
 import UserProfileCard from './components/UserProfileCard.vue';
-import SystemSettingsCard from './components/SystemSettingsCard.vue';
 import WebPanelStyleCard from './components/WebPanelStyleCard.vue';
 import PluginSlot from '@/components/PluginSlot.vue';
-import SslSettingsCard from '@/pages/settings/components/SslSettingsCard.vue';
 
 const webpanelStore = useWebpanelStore();
 const userStore = useUserStore();
@@ -36,10 +34,6 @@ onMounted(() => {
       <user-profile-card ref="userCardRef" />
 
       <web-panel-style-card v-if="userStore.isAdmin" />
-
-      <system-settings-card v-if="userStore.isAdmin" ref="sysCardRef" @refresh="initAllData" />
-
-      <ssl-settings-card v-if="userStore.isAdmin" />
 
       <!--插件扩展区域 "settings-profile-bottom -->
       <plugin-slot name="settings-profile-bottom" />
