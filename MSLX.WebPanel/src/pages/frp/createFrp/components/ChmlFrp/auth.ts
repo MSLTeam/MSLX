@@ -1,4 +1,7 @@
 import { request } from '@/utils/request';
+// @ts-ignore
+import { Builtin, RawSymbol, RefUnwrapBailTypes, ShallowReactiveMarker, UnwrapRefSimple } from '@vue/reactivity';
+import { Ref, UnwrapRef } from 'vue';
 
 const API_BASE_URL = '/api/frp/chmlfrp';
 const ACCOUNT_OAUTH_ISSUER = 'https://account-api.qzhua.net';
@@ -447,7 +450,34 @@ export async function fetchChmlFrpNodes() {
   throw new Error('获取节点列表失败');
 }
 
-export async function createChmlFrpTunnel(params: CreateChmlFrpTunnelParams) {
+export async function createChmlFrpTunnel(params: {
+  tunnelname: string extends (Builtin | Ref | RefUnwrapBailTypes[keyof RefUnwrapBailTypes] | {
+    [RawSymbol]?: true
+  }) ? string : (string extends Map<infer K, infer V> ? (Map<K, UnwrapRefSimple<V>> & UnwrapRef<Omit<string, keyof Map<any, any>>>) : (string extends WeakMap<infer K, infer V> ? (WeakMap<K, UnwrapRefSimple<V>> & UnwrapRef<Omit<string, keyof WeakMap<any, any>>>) : (string extends Set<infer V> ? (Set<UnwrapRefSimple<V>> & UnwrapRef<Omit<string, keyof Set<any>>>) : (string extends WeakSet<infer V> ? (WeakSet<UnwrapRefSimple<V>> & UnwrapRef<Omit<string, keyof WeakSet<any>>>) : (string extends ReadonlyArray<any> ? { [K in keyof string]: UnwrapRefSimple<string[K]> } : (string extends (object & {
+    [ShallowReactiveMarker]?: never
+  }) ? { [P in keyof string]: P extends symbol ? string[P] : UnwrapRef<string[P]> } : string))))));
+  node: string extends (Builtin | Ref | RefUnwrapBailTypes[keyof RefUnwrapBailTypes] | {
+    [RawSymbol]?: true
+  }) ? string : (string extends Map<infer K, infer V> ? (Map<K, UnwrapRefSimple<V>> & UnwrapRef<Omit<string, keyof Map<any, any>>>) : (string extends WeakMap<infer K, infer V> ? (WeakMap<K, UnwrapRefSimple<V>> & UnwrapRef<Omit<string, keyof WeakMap<any, any>>>) : (string extends Set<infer V> ? (Set<UnwrapRefSimple<V>> & UnwrapRef<Omit<string, keyof Set<any>>>) : (string extends WeakSet<infer V> ? (WeakSet<UnwrapRefSimple<V>> & UnwrapRef<Omit<string, keyof WeakSet<any>>>) : (string extends ReadonlyArray<any> ? { [K in keyof string]: UnwrapRefSimple<string[K]> } : (string extends (object & {
+    [ShallowReactiveMarker]?: never
+  }) ? { [P in keyof string]: P extends symbol ? string[P] : UnwrapRef<string[P]> } : string))))));
+  localip: string extends (Builtin | Ref | RefUnwrapBailTypes[keyof RefUnwrapBailTypes] | {
+    [RawSymbol]?: true
+  }) ? string : (string extends Map<infer K, infer V> ? (Map<K, UnwrapRefSimple<V>> & UnwrapRef<Omit<string, keyof Map<any, any>>>) : (string extends WeakMap<infer K, infer V> ? (WeakMap<K, UnwrapRefSimple<V>> & UnwrapRef<Omit<string, keyof WeakMap<any, any>>>) : (string extends Set<infer V> ? (Set<UnwrapRefSimple<V>> & UnwrapRef<Omit<string, keyof Set<any>>>) : (string extends WeakSet<infer V> ? (WeakSet<UnwrapRefSimple<V>> & UnwrapRef<Omit<string, keyof WeakSet<any>>>) : (string extends ReadonlyArray<any> ? { [K in keyof string]: UnwrapRefSimple<string[K]> } : (string extends (object & {
+    [ShallowReactiveMarker]?: never
+  }) ? { [P in keyof string]: P extends symbol ? string[P] : UnwrapRef<string[P]> } : string))))));
+  porttype: string extends (Builtin | Ref | RefUnwrapBailTypes[keyof RefUnwrapBailTypes] | {
+    [RawSymbol]?: true
+  }) ? string : (string extends Map<infer K, infer V> ? (Map<K, UnwrapRefSimple<V>> & UnwrapRef<Omit<string, keyof Map<any, any>>>) : (string extends WeakMap<infer K, infer V> ? (WeakMap<K, UnwrapRefSimple<V>> & UnwrapRef<Omit<string, keyof WeakMap<any, any>>>) : (string extends Set<infer V> ? (Set<UnwrapRefSimple<V>> & UnwrapRef<Omit<string, keyof Set<any>>>) : (string extends WeakSet<infer V> ? (WeakSet<UnwrapRefSimple<V>> & UnwrapRef<Omit<string, keyof WeakSet<any>>>) : (string extends ReadonlyArray<any> ? { [K in keyof string]: UnwrapRefSimple<string[K]> } : (string extends (object & {
+    [ShallowReactiveMarker]?: never
+  }) ? { [P in keyof string]: P extends symbol ? string[P] : UnwrapRef<string[P]> } : string))))));
+  localport: number;
+  encryption: boolean;
+  compression: boolean;
+  extraparams: string;
+  remoteport: number;
+  token: string
+}) {
   const authorization = await getChmlFrpAuthorizationHeader();
 
   return request.post(

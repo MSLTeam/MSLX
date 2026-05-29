@@ -1,4 +1,4 @@
-import { ConfigEnv, defineConfig } from 'vite';
+import { ConfigEnv, defineConfig, UserConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import tailwindcss from '@tailwindcss/vite';
 import vueJsx from '@vitejs/plugin-vue-jsx';
@@ -7,10 +7,32 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { browserslistToTargets } from 'lightningcss';
 import browserslist from 'browserslist';
+import https from 'node:https';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-export default defineConfig(({ mode }: ConfigEnv) => {
+async function getBackendTarget(port: number = 1027): Promise<string> {
+  return new Promise((resolve) => {
+    const req = https.get(`https://localhost:${port}`, { rejectUnauthorized: false }, () => {
+      resolve(`https://localhost:${port}`);
+    });
+
+    req.on('error', () => {
+      resolve(`http://localhost:${port}`);
+    });
+
+    req.setTimeout(800, () => {
+      req.destroy();
+      resolve(`http://localhost:${port}`);
+    });
+  });
+}
+
+export default defineConfig(async ({ mode:_mode }: ConfigEnv): Promise<UserConfig> => {
+  const targetUrl = await getBackendTarget(1027);
+  console.log(`[Vite Dev] 代理后端路由: ${targetUrl}`);
+  // @ts-ignore
+  // @ts-ignore
   return {
     base: '/',
     resolve: {
@@ -25,6 +47,7 @@ export default defineConfig(({ mode }: ConfigEnv) => {
         drafts: {
           customMedia: true,
         },
+        // @ts-ignore
         minify: true,
       },
       preprocessorOptions: {
@@ -43,13 +66,15 @@ export default defineConfig(({ mode }: ConfigEnv) => {
       host: '0.0.0.0',
       proxy: {
         '/api': {
-          target: 'http://localhost:1027',
+          target: targetUrl,
           changeOrigin: true,
           ws: true,
+          secure: false,
         },
         '/plugins': {
-          target: 'http://localhost:1027',
+          target: targetUrl,
           changeOrigin: true,
+          secure: false,
         },
       },
     },

@@ -105,7 +105,7 @@ public class AppInfoController : ControllerBase
                 ["targetFrontendVersion"] = new JObject
                 {
                     ["desktop"] = "1.0.0",
-                    ["panel"] = "1.4.4"
+                    ["panel"] = "1.4.5"
                 },
                 ["systemInfo"] = systemInfo
             };

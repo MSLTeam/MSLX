@@ -318,7 +318,7 @@ onMounted(() => {
           </div>
 
           <div class="flex-grow min-w-0 flex flex-col gap-1.5">
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3">
               <h3 class="text-base font-bold text-[var(--td-text-color-primary)] truncate m-0 tracking-tight">
                 {{ item.name }}
               </h3>

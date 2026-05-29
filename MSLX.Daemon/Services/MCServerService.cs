@@ -49,10 +49,10 @@ public class MCServerService: IMCServerService
 
     // 匹配玩家进入/离开的正则表达式
     private static readonly Regex PlayerJoinedRegex =
-        new Regex(@"\]:\s*(?<player>[a-zA-Z0-9_\-\.\* ]+)\[.*?\]\slogged\sin\swith\sentity\sid", RegexOptions.Compiled);
+        new Regex(@"\]:\s*(?<player>.+?)\[.*?\]\slogged\sin\swith\sentity\sid", RegexOptions.Compiled);
 
     private static readonly Regex PlayerLeftRegex =
-        new Regex(@"\]:\s*(?<player>[a-zA-Z0-9_\-\.\* ]+)\slost\sconnection:", RegexOptions.Compiled);
+        new Regex(@"\]:\s*(?<player>.+?)\slost\sconnection:", RegexOptions.Compiled);
 
     private static readonly Regex AnsiColorRegex = new Regex(@"\x1B\[[0-9;]*[a-zA-Z]", RegexOptions.Compiled);
 
@@ -200,17 +200,16 @@ public class MCServerService: IMCServerService
     }
 
     /// <summary>
-    /// 辅助方法：根据字符串获取 Encoding
+    /// 获取 Encoding
     /// </summary>
     private Encoding GetEncoding(string? encodingName)
     {
-        // 如果为空，默认返回无 BOM 的 UTF-8
+        // 默认返回无 BOM 的 UTF-8
         if (string.IsNullOrWhiteSpace(encodingName))
             return new UTF8Encoding(false);
 
         try
         {
-            // 归一化编码名称
             var name = encodingName.Trim().ToLower();
 
             // 特殊处理 UTF-8，强制禁用 BOM
@@ -218,14 +217,12 @@ public class MCServerService: IMCServerService
             {
                 return new UTF8Encoding(false);
             }
-
-            // 其他编码（如 GBK, Big5）通常不带 BOM，直接获取即可
             return Encoding.GetEncoding(name);
         }
         catch (Exception)
         {
             _logger.LogWarning($"无法识别编码: {encodingName}，已回退到 UTF-8 (No BOM)");
-            // 回退时也必须使用无 BOM 的 UTF-8
+            // 回退使用无 BOM 的 UTF-8
             return new UTF8Encoding(false);
         }
     }
@@ -1015,6 +1012,7 @@ public class MCServerService: IMCServerService
                 if (!File.Exists(authlibPath) || !await FileUtils.ValidateFileSha256Async(authlibPath, sha256))
                 {
                     // 下载
+                    RecordLog(instanceId, context, $"[MSLX] 正在处理下载外置登录库依赖···");
                     var downloader = new ParallelDownloader(parallelCount: 1);
                     var mirroredUrl = downloadUrl.Replace("authlib-injector.yushi.moe",
                         "authlib-injector.mirrors.mslmc.cn");

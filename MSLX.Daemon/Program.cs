@@ -72,11 +72,44 @@ string finalPort = IConfigBase.Config.ReadConfig()["listenPort"]?.ToString() ?? 
 // 默认值回退
 string targetIp = string.IsNullOrEmpty(finalIp) ? "localhost" : finalIp;
 string targetPort = string.IsNullOrWhiteSpace(finalPort) ? "1027" : finalPort;
+int port = int.Parse(targetPort);
 
-string listenAddr = $"http://{targetIp}:{targetPort}";
+// 检测SSL开启状态
+bool enableSsl = (bool?)IConfigBase.Config.ReadConfig()["enableSsl"] ?? false;
+string protocol = enableSsl ? "https" : "http";
+string listenAddr = $"{protocol}://{targetIp}:{targetPort}";
 
-// 应用监听地址
-builder.WebHost.UseUrls(listenAddr);
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    Action<Microsoft.AspNetCore.Server.Kestrel.Core.ListenOptions> configureListen = listenOptions =>
+    {
+        if (enableSsl)
+        {
+            SslCertificateManager.ReloadCertificate();
+
+            listenOptions.UseHttps(httpsOptions =>
+            {
+                httpsOptions.ServerCertificateSelector = (context, domain) =>
+                {
+                    return SslCertificateManager.GetCertificate(); 
+                };
+            });
+        }
+    };
+    
+    if (targetIp == "0.0.0.0" || targetIp == "*")
+    {
+        serverOptions.ListenAnyIP(port, configureListen);
+    }
+    else if (targetIp.ToLower() == "localhost")
+    {
+        serverOptions.ListenLocalhost(port, configureListen);
+    }
+    else
+    {
+        serverOptions.Listen(System.Net.IPAddress.Parse(targetIp), port, configureListen);
+    }
+});
 
 builder.Services.AddControllers().AddNewtonsoftJson();
 builder.Services.AddEndpointsApiExplorer();

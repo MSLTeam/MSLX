@@ -3,7 +3,6 @@ import { onMounted, ref } from 'vue';
 import { useWebpanelStore, useUserStore } from '@/store';
 
 import UserProfileCard from './components/UserProfileCard.vue';
-import SystemSettingsCard from './components/SystemSettingsCard.vue';
 import WebPanelStyleCard from './components/WebPanelStyleCard.vue';
 import PluginSlot from '@/components/PluginSlot.vue';
 
@@ -33,8 +32,6 @@ onMounted(() => {
   <div class="settings-page">
     <t-space direction="vertical" size="large" style="width: 100%">
       <user-profile-card ref="userCardRef" />
-
-      <system-settings-card v-if="userStore.isAdmin" ref="sysCardRef" @refresh="initAllData" />
 
       <web-panel-style-card v-if="userStore.isAdmin" />
 

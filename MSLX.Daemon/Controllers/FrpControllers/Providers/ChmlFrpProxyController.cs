@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
@@ -34,14 +35,17 @@ public class ChmlFrpProxyController : ControllerBase
     public Task<IActionResult> GetTunnelConfig([FromQuery] string node, [FromQuery] string tunnelName)
         => ForwardGetAsync(
             $"{ChmlFrpApiBaseUrl}/tunnel_config?node={Uri.EscapeDataString(node)}&tunnel_names={Uri.EscapeDataString(tunnelName)}");
-
+    
     [HttpPost("create-tunnel")]
-    public async Task<IActionResult> CreateTunnel([FromBody] JToken body)
+    public async Task<IActionResult> CreateTunnel()
     {
+        using var reader = new StreamReader(Request.Body);
+        var rawBody = await reader.ReadToEndAsync(); 
+
         var response = await GeneralApi.PostAsync(
             $"{ChmlFrpApiBaseUrl}/create_tunnel",
             HttpService.PostContentType.Json,
-            body,
+            rawBody,
             BuildProxyHeaders());
 
         return BuildActionResult(response);

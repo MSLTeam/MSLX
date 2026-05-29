@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Services;
 using MSLX.SDK.Models;
@@ -22,6 +23,7 @@ public class PluginActionController : ControllerBase
     }
 
     [HttpPost("action")]
+    [Authorize(Roles = "admin")]
     public IActionResult HandleAction([FromBody] PluginActionRequest request)
     {
         var dllPath = GetDllPathById(request.Id);

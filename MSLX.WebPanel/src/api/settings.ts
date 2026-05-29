@@ -1,5 +1,10 @@
 import { request } from '@/utils/request';
-import { SettingsModel, WebpanelSettingsModel } from '@/api/model/settings';
+import {
+  SettingsModel,
+  SslSettingsResponse,
+  UpdateSslSettingsRequest,
+  WebpanelSettingsModel,
+} from '@/api/model/settings';
 
 export function getSettings() {
   return request.get<SettingsModel>({
@@ -25,4 +30,17 @@ export function getWebpanelStyleSettings(){
   return request.get<WebpanelSettingsModel>({
     url: '/api/settings/webpanel/style',
   })
+}
+
+export function getSslSettings() {
+  return request.get<SslSettingsResponse>({
+    url: '/api/settings/ssl',
+  });
+}
+
+export function updateSslSettings(data: UpdateSslSettingsRequest) {
+  return request.post({
+    url: '/api/settings/ssl',
+    data,
+  });
 }

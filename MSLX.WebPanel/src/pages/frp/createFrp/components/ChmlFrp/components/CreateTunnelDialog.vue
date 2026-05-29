@@ -2,7 +2,7 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { generateRandomString } from '@/utils/tools';
-import { createChmlFrpTunnel, fetchChmlFrpNodes, type ChmlFrpNodeInfo } from '../auth';
+import { createChmlFrpTunnel, fetchChmlFrpNodes, type ChmlFrpNodeInfo, getStoredChmlFrpUser } from '../auth';
 
 const props = defineProps<{
   visible: boolean;
@@ -43,7 +43,7 @@ const groupedNodes = computed(() => {
 });
 
 const generateRandomData = () => {
-  form.tunnelname = 'MSL_' + generateRandomString(6);
+  form.tunnelname = 'MSLX_' + generateRandomString(6);
   form.remoteport = (Math.floor(Math.random() * (65535 - 10000 + 1)) + 10000).toString();
 };
 
@@ -93,6 +93,7 @@ const handleConfirm = async () => {
 
   submitting.value = true;
   try {
+    const currentUser = getStoredChmlFrpUser();
     const res: any = await createChmlFrpTunnel({
       tunnelname: form.tunnelname,
       node: form.nodeName,
@@ -103,6 +104,7 @@ const handleConfirm = async () => {
       compression: false,
       extraparams: '',
       remoteport: parseInt(form.remoteport) || 0,
+      token: currentUser.usertoken,
     });
 
     if (res && res.code && res.code !== 200) {
@@ -162,8 +164,13 @@ onMounted(() => {
 
         <t-form-item v-if="selectedNode" label="节点详情">
           <div class="w-full flex flex-col gap-2.5">
-            <div class="bg-[var(--td-bg-color-secondarycontainer)] rounded-[var(--td-radius-medium)] p-3 border border-dashed border-[var(--td-component-border)]">
-              <pre class="m-0 whitespace-pre-wrap break-all text-[13px] text-[var(--td-text-color-primary)] leading-[1.6]">{{ selectedNode.notes || '此节点暂无备注' }}</pre>
+            <div
+              class="bg-[var(--td-bg-color-secondarycontainer)] rounded-[var(--td-radius-medium)] p-3 border border-dashed border-[var(--td-component-border)]"
+            >
+              <pre
+                class="m-0 whitespace-pre-wrap break-all text-[13px] text-[var(--td-text-color-primary)] leading-[1.6]"
+                >{{ selectedNode.notes || '此节点暂无备注' }}</pre
+              >
             </div>
           </div>
         </t-form-item>
@@ -203,11 +210,9 @@ onMounted(() => {
             </t-form-item>
           </t-col>
         </t-row>
-
       </t-form>
     </t-loading>
   </t-dialog>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>

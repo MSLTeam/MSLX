@@ -19,3 +19,17 @@ export interface WebpanelSettingsModel {
   webpPanelTerminalBlurDark: number;
   webPanelColorizeLogLevel: number;
 }
+
+export interface SslSettingsResponse {
+  enableSsl: boolean;
+  hasCertificate: boolean;
+  certificateContent?: string | null;
+  isSelfSigned: boolean;
+}
+
+export interface UpdateSslSettingsRequest {
+  enableSsl: boolean;
+  useSelfSignedCert: boolean;
+  certificate?: string;
+  privateKey?: string;
+}
