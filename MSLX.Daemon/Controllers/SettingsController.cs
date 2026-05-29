@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.Models;
 using MSLX.SDK.Models.Settings;
@@ -187,6 +188,10 @@ public class SettingsController : ControllerBase
             }
 
             IConfigBase.Config.WriteConfigKey("enableSsl", request.EnableSsl);
+            if (request.EnableSsl)
+            {
+                SslCertificateManager.ReloadCertificate();
+            }
 
             return Ok(new ApiResponse<object>
             {

@@ -85,18 +85,13 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
     {
         if (enableSsl)
         {
+            SslCertificateManager.ReloadCertificate();
+
             listenOptions.UseHttps(httpsOptions =>
             {
                 httpsOptions.ServerCertificateSelector = (context, domain) =>
                 {
-                    string certDir = Path.Combine(IConfigBase.GetAppConfigPath(), "certs");
-                    string pemPath = Path.Combine(certDir, "server.pem");
-                    string keyPath = Path.Combine(certDir, "server.key");
-                    
-                    using var pemCert = System.Security.Cryptography.X509Certificates.X509Certificate2.CreateFromPemFile(pemPath, keyPath);
-                    
-                    return new System.Security.Cryptography.X509Certificates.X509Certificate2(
-                        pemCert.Export(System.Security.Cryptography.X509Certificates.X509ContentType.Pkcs12));
+                    return SslCertificateManager.GetCertificate(); 
                 };
             });
         }

@@ -43,13 +43,15 @@ export default defineConfig(({ mode }: ConfigEnv) => {
       host: '0.0.0.0',
       proxy: {
         '/api': {
-          target: 'http://localhost:1027',
+          target: 'https://localhost:1027',
           changeOrigin: true,
           ws: true,
+          secure: false,
         },
         '/plugins': {
-          target: 'http://localhost:1027',
+          target: 'https://localhost:1027',
           changeOrigin: true,
+          secure: false,
         },
       },
     },
