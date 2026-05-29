@@ -136,10 +136,12 @@ onMounted(() => {
             </div>
           </t-form-item>
 
-          <t-form-item label="自动生成自签证书">
+          <t-form-item :label="originalData.hasCertificate ? '重新生成自签证书' : '自动生成自签证书'">
             <template #help>
               <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block">
-                开启后系统将自动生成长期本地证书（适合局域网/内网穿透）。关闭则允许您手动配置域名证书。
+                开启后系统将{{
+                  originalData.hasCertificate ? '重新' : '自动'
+                }}生成长期本地自签名证书（适合局域网/内网穿透）。关闭则允许您手动配置域名证书。
               </span>
               <span
                 v-if="formData.useSelfSigned"
@@ -173,7 +175,7 @@ onMounted(() => {
                   </div>
                   <div
                     v-if="originalData.certificateContent"
-                    class="text-[10px] font-mono text-zinc-400 bg-zinc-100/50 dark:bg-zinc-900/50 p-2 rounded max-h-24 overflow-hidden relative"
+                    class="whitespace-pre-wrap break-all text-[10px] font-mono text-zinc-400 bg-zinc-100/50 dark:bg-zinc-900/50 p-2 rounded max-h-24 overflow-hidden relative"
                   >
                     <div
                       class="absolute inset-0 bg-gradient-to-b from-transparent to-zinc-100/90 dark:to-zinc-900/90 pointer-events-none"
@@ -203,7 +205,7 @@ onMounted(() => {
             <t-form-item label="私钥 (Private Key)">
               <template #help>
                 <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block"
-                  >通常以 <code>-----BEGIN PRIVATE KEY-----</code> 结尾。私钥仅保存在本地服务器，绝不上传。</span
+                  >通常以 <code>-----BEGIN PRIVATE KEY-----</code> 结尾。私钥仅保存在本地服务器。</span
                 >
               </template>
               <t-textarea
