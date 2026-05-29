@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using MSLX.Daemon.Utils.ConfigUtils;
 
@@ -25,6 +26,9 @@ namespace MSLX.Daemon.Utils
                 string pemPath = Path.Combine(certDir, "server.pem");
                 string keyPath = Path.Combine(certDir, "server.key");
 
+                bool loadSuccess = false;
+
+                // 自定义证书
                 if (File.Exists(pemPath) && File.Exists(keyPath))
                 {
                     try
@@ -37,14 +41,51 @@ namespace MSLX.Daemon.Utils
                         _cachedCert = newCert;
                         
                         oldCert?.Dispose();
+                        loadSuccess = true;
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[SSL Manager] 重新加载证书失败: {ex.Message}");
-                        throw;
+                        Console.WriteLine($"[SSL Manager] 重新加载自定义证书失败，将启用临时证书: {ex.Message}");
                     }
                 }
+                else
+                {
+                    Console.WriteLine("[SSL Manager] 未找到自定义证书文件，将生成临时证书...");
+                }
+
+                // 临时证书
+                if (!loadSuccess)
+                {
+                    var oldCert = _cachedCert;
+                    _cachedCert = GenerateFallbackCertificate();
+                    oldCert?.Dispose();
+                }
             }
+        }
+        
+        private static X509Certificate2 GenerateFallbackCertificate()
+        {
+            using var rsa = RSA.Create(2048);
+            var dnBuilder = new X500DistinguishedNameBuilder();
+            
+            dnBuilder.AddCommonName("MSLX Emergency Temporary Certificate");
+            
+            dnBuilder.AddOrganizationName("净善宫");
+            dnBuilder.AddOrganizationalUnitName("纳西妲最可爱啦!");
+            dnBuilder.AddLocalityName("Sumeru");
+            dnBuilder.AddCountryOrRegion("CN"); 
+            
+            var req = new CertificateRequest(
+                dnBuilder.Build(),
+                rsa,
+                HashAlgorithmName.SHA256,
+                RSASignaturePadding.Pkcs1);
+            
+            using var cert = req.CreateSelfSigned(
+                DateTimeOffset.UtcNow.AddDays(-1),
+                DateTimeOffset.UtcNow.AddMonths(1));
+            
+            return new X509Certificate2(cert.Export(X509ContentType.Pkcs12));
         }
     }
 }
