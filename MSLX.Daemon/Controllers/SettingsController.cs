@@ -1,9 +1,11 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.Models;
 using MSLX.SDK.Models.Settings;
+using System.Net;
+using System.Security.Cryptography.X509Certificates;
 
 namespace MSLX.Daemon.Controllers;
 
@@ -170,7 +172,13 @@ public class SettingsController : ControllerBase
                     rsa,
                     System.Security.Cryptography.HashAlgorithmName.SHA256,
                     System.Security.Cryptography.RSASignaturePadding.Pkcs1);
-                
+
+                // 把本地回环签进去
+                var sanBuilder = new SubjectAlternativeNameBuilder();
+                sanBuilder.AddDnsName("localhost");
+                sanBuilder.AddIpAddress(IPAddress.Loopback);
+                req.CertificateExtensions.Add(sanBuilder.Build());
+
                 using var cert = req.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1),
                     DateTimeOffset.UtcNow.AddYears(10));
                 
