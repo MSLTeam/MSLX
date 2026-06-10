@@ -39,6 +39,9 @@ public class CreateServerRequest : IValidatableObject
     [RegularExpression(@"^[a-fA-F0-9]{64}$", ErrorMessage = "coreSha256 必须是有效的 64 位十六进制 SHA-256 字符串")]
     public string? packageSha256 { get; set; }
     
+    [RegularExpression(@"^.+\.[zZ][iI][pP]$", ErrorMessage = "本机绝对路径必须是 .zip 格式的压缩包")]
+    public string? packageLocalPath { get; set; }
+    
     // 本地上传压缩包文件（可以同时传服务端jar下载）
     [RegularExpression(@"^[a-fA-F0-9]{32}$", ErrorMessage = "packageFileKey 格式不正确 (请先初始化上传获取此参数)")]
     public string? packageFileKey { get; set; }
@@ -64,6 +67,18 @@ public class CreateServerRequest : IValidatableObject
                 "冲突：'远程下载压缩包 (packageUrl)' 不能与 '本地上传压缩包 (packageFileKey)' 同时使用。请二选一。",
                 new[] { nameof(packageUrl), nameof(packageFileKey) }
             );
+        }
+        
+        // 本机路径上传整合包
+        if (!string.IsNullOrWhiteSpace(packageLocalPath))
+        {
+            if (!string.IsNullOrWhiteSpace(packageFileKey) || !string.IsNullOrWhiteSpace(packageUrl))
+            {
+                yield return new ValidationResult(
+                    "冲突：'本机绝对路径 (packageLocalPath)' 不能与 '压缩包上传' 或 '远程下载' 同时使用。",
+                    new[] { nameof(packageLocalPath) }
+                );
+            }
         }
 
         /*

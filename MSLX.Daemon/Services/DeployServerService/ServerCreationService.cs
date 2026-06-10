@@ -111,14 +111,14 @@ public class ServerCreationService : BackgroundService
             if (!string.IsNullOrEmpty(request.packageUrl))
             {
                 string tempPackageFileKey = await _deploymentService.DownloadPackageAsync(serverIdStr, request.packageUrl, request.packageSha256, progressReporter);
-                await _deploymentService.DeployPackageAsync(serverIdStr, tempPackageFileKey, server.Base, progressReporter);
+                await _deploymentService.DeployPackageAsync(serverIdStr, tempPackageFileKey, null, server.Base, progressReporter);
                 await _deploymentService.ChmodBedrockServerAsync(serverIdStr,server.Base, progressReporter);
             }
             
             // 部署整合包（由于参数拦截 远程下载的话不可能进入这一步 无需额外处理了）
-            if (!string.IsNullOrEmpty(request.packageFileKey))
+            if (!string.IsNullOrEmpty(request.packageFileKey) || !string.IsNullOrEmpty(request.packageLocalPath))
             {
-                await _deploymentService.DeployPackageAsync(serverIdStr, request.packageFileKey, server.Base, progressReporter);
+                await _deploymentService.DeployPackageAsync(serverIdStr, request.packageFileKey, request.packageLocalPath, server.Base, progressReporter);
             }
 
             // 部署 Java

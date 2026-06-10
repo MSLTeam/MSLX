@@ -1,6 +1,8 @@
 import { request } from '@/utils/request';
 import {
   FilesListModel,
+  HostDriveItem,
+  HostFsResponse,
   PluginsAndModsListModel,
   UploadFinishResponse,
   UploadInitResponse,
@@ -49,9 +51,12 @@ export async function deleteUpload(uploadId: string) {
   });
 }
 
-export async function checkPackageJarList(uploadId: string){
+export async function checkPackageJarList(uploadId: string, localPath?: string) {
+  const id = localPath ? '0' : uploadId;
+
   return await request.get<UploadPackageCheckJarResponse>({
-    url: `/api/files/upload/inspect/${uploadId}`,
+    url: `/api/files/upload/inspect/${id}`,
+    params: localPath ? { localPath } : undefined,
     timeout: 60 * 1000,
   });
 }
@@ -201,5 +206,22 @@ export async function addOfflineDownloadTask(instanceId: number, path: string, u
 export function getOfflineDownloadTaskStatus(taskId: string) {
   return request.get<{ status: string; progress: number; message: string }>({
     url: `/api/files/task/download/${taskId}`,
+  });
+}
+
+// host fs
+export async function getHostFilesList(path?: string, searchPattern?: string) {
+  return await request.get<HostFsResponse>({
+    url: '/api/files/root',
+    params: {
+      path: path || undefined,
+      searchPattern: searchPattern || undefined,
+    },
+  });
+}
+
+export async function getHostDrivesList() {
+  return await request.get<HostDriveItem[]>({
+    url: '/api/files/drives',
   });
 }

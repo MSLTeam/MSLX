@@ -50,6 +50,7 @@ const formData = ref<BedrockCreateModel>({
   coreSha256: '',
   coreFileKey: '',
   packageFileKey: '',
+  packageLocalPath: '',
   packageUrl: '',
   packageSha256: '',
   minM: 1027, // Magic number
@@ -98,12 +99,7 @@ const FORM_RULES = computed<FormRules>(() => {
   };
 });
 
-const stepValidationFields = [
-  ['name', 'path'],
-  [],
-  ['args'],
-  [],
-];
+const stepValidationFields = [['name', 'path'], [], ['args'], []];
 
 // 步骤导航
 const prevStep = () => {

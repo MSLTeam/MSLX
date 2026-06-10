@@ -36,10 +36,26 @@ interface UploadTask {
   file: File;
   path: string;
   status: 'pending' | 'uploading' | 'merging' | 'success' | 'error';
-  progress: number;
+  progress: number; // UI 显示进度
   speed: string;
   errorMsg?: string;
   abortController?: AbortController;
+  committedBytes: number; // 已确认上传的字节
+}
+
+// 推算合理的并发数
+function calcConcurrency(speedMBps: number): number {
+  if (speedMBps <= 0) return 2; // 初始默认并发
+  if (speedMBps < 0.5) return 1;
+  if (speedMBps < 2) return 2;
+  return 4;
+}
+
+// 指数退避 + jitter，上限 30s
+function backoffDelay(attempt: number): Promise<void> {
+  const base = Math.min(30_000, 500 * 2 ** attempt);
+  const jitter = Math.random() * base * 0.3;
+  return new Promise((r) => setTimeout(r, base + jitter));
 }
 
 const tasks = ref<UploadTask[]>([]);
@@ -89,7 +105,6 @@ const getTaskIcon = (filename: string) => {
     return { icon: ServiceIcon, color: 'var(--td-gray-color-8)' };
   }
 
-  // 默认图标
   return { icon: FileIcon, color: 'var(--td-brand-color)' };
 };
 
@@ -179,6 +194,7 @@ const addTasksToQueue = (items: { file: File; path: string }[]) => {
       path,
       status: 'pending',
       progress: 0,
+      committedBytes: 0,
       speed: '',
     });
   });
@@ -188,7 +204,7 @@ const processQueue = async () => {
   if (isUploading.value) return;
   isUploading.value = true;
   isCancelAction.value = false;
-  const CONCURRENCY = 3;
+  const CONCURRENCY = 3; // “文件级”并发
   const pendingTasks = tasks.value.filter((t) => t.status === 'pending' || t.status === 'error');
 
   for (let i = 0; i < pendingTasks.length; i += CONCURRENCY) {
@@ -212,48 +228,48 @@ const processQueue = async () => {
 const uploadSingleFile = async (task: UploadTask) => {
   task.status = 'uploading';
   task.progress = 0;
+  task.committedBytes = 0;
   task.abortController = new AbortController();
   const startTime = Date.now();
-  let lastUpdate = 0; // 用于节流 UI 更新
+  let lastUpdate = 0;
+  let currentSpeedMBps = 0; // 用于动态调度并发的实时速度追踪
 
   try {
     const initRes = await initUpload();
     const uploadId = initRes.uploadId;
 
-    // 动态调整分片大小
     const isLargeFile = task.file.size > 200 * 1024 * 1024;
     const CHUNK_SIZE = isLargeFile ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
     const totalChunks = Math.ceil(task.file.size / CHUNK_SIZE);
-
-    // 并发与重试配置
-    const maxConcurrency = 4;
     const maxRetries = 5;
 
-    // 任务队列
     const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i);
-
-    // 分片已上传的字节
-    const chunkProgressMap = new Map<number, number>();
+    // 只记录"正在上传中"的分片进度
+    const activeChunkProgressMap = new Map<number, number>();
 
     // 更新进度和速度
     const updateProgress = () => {
       const now = Date.now();
-      // 100ms/once
       if (now - lastUpdate < 100) return;
       lastUpdate = now;
 
-      // 计算所有分片已上传的总字节数
-      const loadedBytes = Array.from(chunkProgressMap.values()).reduce((sum, val) => sum + val, 0);
+      // 总上传量 = 已完成的分片 + 活跃分片的动态进度
+      let activeLoadedBytes = 0;
+      for (const loaded of activeChunkProgressMap.values()) {
+        activeLoadedBytes += loaded;
+      }
+      const totalLoadedBytes = task.committedBytes + activeLoadedBytes;
 
-      // 计算百分比  剩下5%是合并
-      const percent = Math.min((loadedBytes / task.file.size) * 95, 95);
-      task.progress = Number(percent.toFixed(1));
+      // 计算百分比 (保留 5% 给合并阶段)
+      const percent = Math.min((totalLoadedBytes / task.file.size) * 95, 95);
+
+      task.progress = Math.max(task.progress, Number(percent.toFixed(1)));
 
       // 计算速度
       const elapsed = (now - startTime) / 1000;
       if (elapsed > 0) {
-        const speedVal = loadedBytes / 1024 / 1024 / elapsed;
-        task.speed = speedVal.toFixed(1) + ' MB/s';
+        currentSpeedMBps = totalLoadedBytes / 1024 / 1024 / elapsed;
+        task.speed = currentSpeedMBps.toFixed(1) + ' MB/s';
       }
     };
 
@@ -264,67 +280,90 @@ const uploadSingleFile = async (task: UploadTask) => {
       const start = index * CHUNK_SIZE;
       const end = Math.min(task.file.size, start + CHUNK_SIZE);
       const chunk = task.file.slice(start, end);
-
       let lastError: any;
 
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         if (task.abortController?.signal.aborted) throw new Error('已取消');
 
         try {
-          // 回调单个进度
           await uploadChunk(
             uploadId,
             index,
             chunk,
             (e: any) => {
               if (e && e.loaded) {
-                chunkProgressMap.set(index, e.loaded);
-                updateProgress(); // 触发 UI 更新
+                activeChunkProgressMap.set(index, e.loaded);
+                updateProgress();
               }
             },
             task.abortController?.signal,
           );
 
-          // 确保完整进度
-          chunkProgressMap.set(index, chunk.size);
+          // 成功
+          task.committedBytes += chunk.size;
+          activeChunkProgressMap.delete(index);
           updateProgress();
           return;
         } catch (err: any) {
           lastError = err;
           if (attempt < maxRetries) {
-            // 失败重试 reset掉
-            chunkProgressMap.set(index, 0);
+            // 失败重试：当前分片进度清零
+            activeChunkProgressMap.set(index, 0);
             updateProgress();
-            await new Promise((r) => setTimeout(r, 1000 * attempt));
+
+            await backoffDelay(attempt);
           }
         }
       }
       throw lastError || new Error(`分片 ${index} 失败`);
     };
 
-    // Worker 消费者
-    const worker = async () => {
-      while (chunkIndices.length > 0) {
-        if (task.abortController?.signal.aborted) break;
-        const index = chunkIndices.shift();
-        if (index === undefined) break;
-        await processChunk(index);
-      }
-    };
+    // 动态控制并发
+    await new Promise<void>((resolve, reject) => {
+      let hasError = false;
+      const activeWorkers = new Set<Promise<void>>();
 
-    // 启动并发
-    const workers = Array(Math.min(maxConcurrency, totalChunks))
-      .fill(null)
-      .map(() => worker());
+      const spawnWorkers = () => {
+        if (hasError || task.abortController?.signal.aborted) return;
 
-    await Promise.all(workers);
+        // 动态计算目标并发数
+        const targetConcurrency = Math.min(calcConcurrency(currentSpeedMBps), totalChunks);
+
+        // 如果当前并发数小于目标，并且队列里还有任务，就持续拉起
+        while (activeWorkers.size < targetConcurrency && chunkIndices.length > 0) {
+          const index = chunkIndices.shift()!;
+          const p = processChunk(index)
+            .then(() => {
+              activeWorkers.delete(p);
+              if (chunkIndices.length === 0 && activeWorkers.size === 0) {
+                resolve(); // 全部上传结束了
+              } else {
+                spawnWorkers(); // 继续评估并补齐并发
+              }
+            })
+            .catch((err) => {
+              hasError = true;
+              task.abortController?.abort(); // 取消掉池子里其他的 worker
+              reject(err);
+            });
+          activeWorkers.add(p);
+        }
+
+        // 兜底校验
+        if (chunkIndices.length === 0 && activeWorkers.size === 0 && !hasError) {
+          resolve();
+        }
+      };
+
+      // 启动调度器
+      spawnWorkers();
+    });
 
     if (task.abortController.signal.aborted) throw new Error('已取消');
 
     // 合并阶段
     task.status = 'merging';
     task.speed = '合并中...';
-    // 此时已经是 95% 以上了，稍微再推一下
     task.progress = 98;
 
     await finishUpload(uploadId, totalChunks);
@@ -338,6 +377,7 @@ const uploadSingleFile = async (task: UploadTask) => {
       task.status = 'pending';
       task.speed = '已取消';
       task.progress = 0;
+      task.committedBytes = 0;
     } else {
       task.status = 'error';
       task.errorMsg = err.message || '失败';
@@ -361,15 +401,17 @@ onUnmounted(() => tasks.value.forEach((t) => t.abortController?.abort()));
 
 <template>
   <t-dialog attach="body" :visible="visible" header="批量上传文件" width="650px" :footer="false" @close="handleClose">
-
     <input ref="fileInputRef" type="file" multiple class="hidden" @change="onFileChange" />
     <input ref="folderInputRef" type="file" webkitdirectory class="hidden" @change="onFileChange" />
 
     <div class="flex flex-col gap-4 max-h-[60vh]">
-
       <div
         class="border-2 border-dashed rounded-xl p-6 flex flex-col items-center gap-3 transition-all duration-300"
-        :class="dragOver ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5 scale-[0.99]' : 'border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/40 hover:border-zinc-300 dark:hover:border-zinc-600'"
+        :class="
+          dragOver
+            ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5 scale-[0.99]'
+            : 'border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/40 hover:border-zinc-300 dark:hover:border-zinc-600'
+        "
         @dragover.prevent="dragOver = true"
         @dragleave.prevent="dragOver = false"
         @drop.prevent="handleDrop"
@@ -379,35 +421,64 @@ onUnmounted(() => tasks.value.forEach((t) => t.abortController?.abort()));
           {{ props.allowFolder ? '拖入文件或文件夹至此处' : '拖入文件至此处' }}
         </p>
         <div class="flex gap-3 mt-1">
-          <t-button variant="outline" size="small" class="!rounded-lg !bg-white dark:!bg-zinc-900 !border-zinc-200 dark:!border-zinc-700" @click="handleSelectFiles">
+          <t-button
+            variant="outline"
+            size="small"
+            class="!rounded-lg !bg-white dark:!bg-zinc-900 !border-zinc-200 dark:!border-zinc-700"
+            @click="handleSelectFiles"
+          >
             <template #icon><file-icon /></template> 选择文件
           </t-button>
-          <t-button v-if="props.allowFolder" variant="outline" size="small" class="!rounded-lg !bg-white dark:!bg-zinc-900 !border-zinc-200 dark:!border-zinc-700" @click="handleSelectFolder">
+          <t-button
+            v-if="props.allowFolder"
+            variant="outline"
+            size="small"
+            class="!rounded-lg !bg-white dark:!bg-zinc-900 !border-zinc-200 dark:!border-zinc-700"
+            @click="handleSelectFolder"
+          >
             <template #icon><folder-icon /></template> 选择文件夹
           </t-button>
         </div>
       </div>
 
-      <div v-if="tasks.length > 0" class="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-zinc-700/60">
+      <div
+        v-if="tasks.length > 0"
+        class="flex justify-between items-center pb-2 border-b border-zinc-200 dark:border-zinc-700/60"
+      >
         <span class="text-xs text-[var(--td-text-color-secondary)] font-medium">
           队列: <span class="text-[var(--td-text-color-primary)] font-bold mx-0.5">{{ tasks.length }}</span> 个
           <template v-if="isUploading">
-            <span class="mx-1.5 opacity-50">|</span> 总进度 <span class="text-[var(--color-primary)] font-bold ml-0.5">{{ totalProgress }}%</span>
+            <span class="mx-1.5 opacity-50">|</span> 总进度
+            <span class="text-[var(--color-primary)] font-bold ml-0.5">{{ totalProgress }}%</span>
           </template>
         </span>
         <div class="flex gap-2">
-          <t-button theme="primary" size="small" class="!rounded-md shadow-sm" :disabled="!hasPending || isUploading" @click="processQueue">
+          <t-button
+            theme="primary"
+            size="small"
+            class="!rounded-md shadow-sm"
+            :disabled="!hasPending || isUploading"
+            @click="processQueue"
+          >
             <template #icon><play-circle-icon /></template> {{ isUploading ? '上传中...' : '开始上传' }}
           </t-button>
-          <t-button variant="text" size="small" class="!rounded-md hover:!bg-zinc-100 dark:hover:!bg-zinc-800 !text-zinc-500" @click="clearFinished">
+          <t-button
+            variant="text"
+            size="small"
+            class="!rounded-md hover:!bg-zinc-100 dark:hover:!bg-zinc-800 !text-zinc-500"
+            @click="clearFinished"
+          >
             <template #icon><clear-icon /></template> 清空已完成
           </t-button>
         </div>
       </div>
 
       <div v-if="tasks.length > 0" class="flex-1 overflow-y-auto flex flex-col gap-2 pr-1 custom-scrollbar">
-        <div v-for="(task, index) in tasks" :key="task.id" class="flex items-start gap-3 p-3 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl border border-zinc-100 dark:border-zinc-700/50 hover:border-zinc-200 dark:hover:border-zinc-600 transition-colors group">
-
+        <div
+          v-for="(task, index) in tasks"
+          :key="task.id"
+          class="flex items-start gap-3 p-3 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl border border-zinc-100 dark:border-zinc-700/50 hover:border-zinc-200 dark:hover:border-zinc-600 transition-colors group"
+        >
           <div class="pt-0.5 shrink-0 text-xl">
             <component
               :is="getTaskIcon(getFileName(task.path)).icon"
@@ -417,17 +488,28 @@ onUnmounted(() => tasks.value.forEach((t) => t.abortController?.abort()));
 
           <div class="flex-1 overflow-hidden flex flex-col gap-1">
             <div class="flex justify-between items-center text-[13px]">
-              <div class="font-medium text-[var(--td-text-color-primary)] truncate max-w-[200px] sm:max-w-[280px]" :title="getFileName(task.path)">
+              <div
+                class="font-medium text-[var(--td-text-color-primary)] truncate max-w-[200px] sm:max-w-[280px]"
+                :title="getFileName(task.path)"
+              >
                 {{ getFileName(task.path) }}
               </div>
               <div class="text-[11px] text-[var(--td-text-color-secondary)] flex items-center gap-2 font-mono">
-                <span v-if="task.status === 'error'" class="text-red-500 font-sans font-medium">{{ task.errorMsg }}</span>
+                <span v-if="task.status === 'error'" class="text-red-500 font-sans font-medium">{{
+                  task.errorMsg
+                }}</span>
                 <span v-else>{{ task.speed }}</span>
-                <span class="bg-zinc-200/50 dark:bg-zinc-700/50 px-1.5 py-0.5 rounded">{{ (task.file.size / 1024 / 1024).toFixed(2) }} MB</span>
+                <span class="bg-zinc-200/50 dark:bg-zinc-700/50 px-1.5 py-0.5 rounded"
+                  >{{ (task.file.size / 1024 / 1024).toFixed(2) }} MB</span
+                >
               </div>
             </div>
 
-            <div v-if="getDirectory(task.path)" class="text-[11px] text-[var(--td-text-color-secondary)] flex items-center gap-1 truncate" :title="getDirectory(task.path)">
+            <div
+              v-if="getDirectory(task.path)"
+              class="text-[11px] text-[var(--td-text-color-secondary)] flex items-center gap-1 truncate"
+              :title="getDirectory(task.path)"
+            >
               <folder-icon size="12px" class="shrink-0 opacity-70" /> {{ getDirectory(task.path) }}/
             </div>
 
@@ -454,10 +536,8 @@ onUnmounted(() => tasks.value.forEach((t) => t.abortController?.abort()));
             </t-button>
             <check-circle-filled-icon v-else class="text-emerald-500 text-[18px]" />
           </div>
-
         </div>
       </div>
-
     </div>
   </t-dialog>
 </template>

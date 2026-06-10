@@ -1,6 +1,8 @@
+﻿using Microsoft.AspNetCore.Mvc.Rendering;
+using MSLX.Daemon.Utils.ConfigUtils;
+using System.Net;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
-using MSLX.Daemon.Utils.ConfigUtils;
 
 namespace MSLX.Daemon.Utils
 {
@@ -73,14 +75,19 @@ namespace MSLX.Daemon.Utils
             dnBuilder.AddOrganizationName("净善宫");
             dnBuilder.AddOrganizationalUnitName("纳西妲最可爱啦!");
             dnBuilder.AddLocalityName("Sumeru");
-            dnBuilder.AddCountryOrRegion("CN"); 
-            
+            dnBuilder.AddCountryOrRegion("CN");
             var req = new CertificateRequest(
                 dnBuilder.Build(),
                 rsa,
                 HashAlgorithmName.SHA256,
                 RSASignaturePadding.Pkcs1);
-            
+
+            // 把本地回环签进去
+            var sanBuilder = new SubjectAlternativeNameBuilder();
+            sanBuilder.AddDnsName("localhost");
+            sanBuilder.AddIpAddress(IPAddress.Loopback);
+            req.CertificateExtensions.Add(sanBuilder.Build());
+
             using var cert = req.CreateSelfSigned(
                 DateTimeOffset.UtcNow.AddDays(-1),
                 DateTimeOffset.UtcNow.AddMonths(1));

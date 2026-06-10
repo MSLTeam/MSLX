@@ -3,15 +3,21 @@ import { onUnmounted, ref, watch, onMounted, computed, nextTick } from 'vue';
 import { type FormRules, MessagePlugin } from 'tdesign-vue-next';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { useUserStore } from '@/store';
+import { FolderOpenIcon } from 'tdesign-icons-vue-next';
 
 import ServerCoreSelector from './ServerCoreSelector.vue';
+import HostFileSelector from './HostFileSelector.vue';
 import { getJavaVersionList } from '@/api/mslapi/java';
 import { getLocalJavaList } from '@/api/localJava';
 import { postCreateInstanceQuickMode } from '@/api/instance';
-import { initUpload, uploadChunk, finishUpload, deleteUpload, checkPackageJarList } from '@/api/files';
+import { deleteUpload, checkPackageJarList } from '@/api/files';
 import { CreateInstanceQucikModeModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
 import { useInstanceListStore } from '@/store/modules/instance';
+import { useFileUpload } from '@/hooks/useFileUpload';
+
+const { isUploading, uploadProgress, uploadedFileName, uploadedFileSize, startUpload, removeUploadData } =
+  useFileUpload();
 
 // 状态管理
 const userStore = useUserStore();
@@ -22,13 +28,18 @@ const instanceListStore = useInstanceListStore();
 const currentStep = ref(0);
 const isSubmitting = ref(false);
 
+const showHostFileSelector = ref(false);
+
 const isCreating = ref(false);
 const isSuccess = ref(false);
-const progress = ref(0);
+const progress = ref(0); // SignalR 创建进度
 const statusMessages = ref<{ time: string; message: string; progress: number | null }[]>([]);
 const hubConnection = ref<HubConnection | null>(null);
 const createdServerId = ref<string | null>(null);
 const logContainerRef = ref<HTMLDivElement | null>(null); // 日志容器dom
+
+// 整合包导入方式
+const packageSourceType = ref('upload'); // 'upload' | 'localPath'
 
 // 核心选择相关状态
 const downloadType = ref('online'); // 'online' | 'manual' (仅在未检测到Jar时使用)
@@ -39,12 +50,8 @@ const detectedJars = ref<string[]>([]);
 const isCheckingPackage = ref(false);
 const detectedRoot = ref('');
 
-// 上传相关状态
+// Input DOM 引用
 const uploadInputRef = ref<HTMLInputElement | null>(null);
-const isUploading = ref(false);
-const uploadProgress = ref(0);
-const uploadedFileName = ref('');
-const uploadedFileSize = ref('');
 
 // Java 选择相关状态
 const javaType = ref('online');
@@ -94,6 +101,7 @@ const formData = ref(<CreateInstanceQucikModeModel>{
   coreSha256: '', // 同上
   coreFileKey: '', // 这里不给手动上传核心
   packageFileKey: '', // 整合包 Zip 文件的 Key
+  packageLocalPath: '', // 整合包本地绝对路径
   minM: 2048,
   maxM: 6144,
   args: '',
@@ -112,7 +120,6 @@ const minMComputed = computed({
     return minUnit.value === 'GB' ? formData.value.minM / 1024 : formData.value.minM;
   },
   set: (val) => {
-    // 存入 formData 时总是转回 MB
     formData.value.minM = minUnit.value === 'GB' ? Math.round(val * 1024) : val;
   },
 });
@@ -141,22 +148,38 @@ watch(
   { immediate: true },
 );
 
+// 处理选择本地整合包zip
+const onHostFileSelected = async (absolutePath: string) => {
+  formData.value.packageLocalPath = absolutePath;
+  await analyzePackage('', absolutePath);
+};
+
 // 表单和步骤校验
 const FORM_RULES = computed<FormRules>(() => {
   return {
     name: [{ required: true, message: '实例名称不能为空', trigger: 'blur' }],
-    // 整合包步骤校验
-    packageFileKey: [{ required: true, message: '请上传整合包文件', trigger: 'change' }],
-    // 核心步骤校验
+    packageFileKey: [
+      {
+        validator: (val) => packageSourceType.value === 'localPath' || !!val,
+        message: '请上传整合包文件',
+        type: 'error',
+        trigger: 'change',
+      },
+    ],
+    packageLocalPath: [
+      {
+        validator: (val) => packageSourceType.value === 'upload' || !!val,
+        message: '请输入本机绝对路径',
+        type: 'error',
+        trigger: 'blur',
+      },
+    ],
     core: [
       {
         validator: (val) => {
-          // 检测到了Jar，必须选中一个
           if (detectedJars.value.length > 0) {
             if (!val) return { result: false, message: '请选择一个启动Jar', type: 'error' };
-          }
-          // 没检测到Jar，回退到原逻辑
-          else {
+          } else {
             if (downloadType.value === 'online' && !formData.value.coreUrl) {
               return { result: false, message: '请选择服务端核心', type: 'error' };
             }
@@ -176,11 +199,11 @@ const FORM_RULES = computed<FormRules>(() => {
 });
 
 const stepValidationFields = [
-  ['name', 'path'], // Step 0: 基本信息
-  ['packageFileKey'], // Step 1: 上传整合包
-  ['core', 'coreUrl', 'coreFileKey'], // Step 2: 核心配置
-  ['java'], // Step 3: Java
-  ['minM', 'maxM', 'args'], // Step 4: 资源
+  ['name', 'path'],
+  ['packageFileKey', 'packageLocalPath'],
+  ['core', 'coreUrl', 'coreFileKey'],
+  ['java'],
+  ['minM', 'maxM', 'args'],
   [],
 ];
 
@@ -189,19 +212,29 @@ const prevStep = () => {
 };
 
 const nextStep = async () => {
-  // Step 1 拦截: 必须上传完
   if (currentStep.value === 1) {
-    if (!formData.value.packageFileKey) {
-      MessagePlugin.warning('请先上传服务端整合包(Zip)');
-      return;
-    }
-    if (isUploading.value || isCheckingPackage.value) {
-      MessagePlugin.warning('请等待上传或分析完成');
-      return;
+    if (packageSourceType.value === 'upload') {
+      if (!formData.value.packageFileKey) {
+        MessagePlugin.warning('请先上传服务端整合包(Zip)');
+        return;
+      }
+      if (isUploading.value || isCheckingPackage.value) {
+        MessagePlugin.warning('请等待上传或分析完成');
+        return;
+      }
+    } else {
+      if (!formData.value.packageLocalPath) {
+        MessagePlugin.warning('请输入服务端整合包的绝对路径');
+        return;
+      }
+      if (isCheckingPackage.value) {
+        MessagePlugin.warning('正在分析中，请稍候');
+        return;
+      }
+      await analyzePackage('', formData.value.packageLocalPath);
     }
   }
 
-  // Step 2 拦截: 必须确定核心
   if (currentStep.value === 2) {
     if (detectedJars.value.length > 0) {
       if (!formData.value.core) {
@@ -209,7 +242,6 @@ const nextStep = async () => {
         return;
       }
     } else {
-      // 未检测到 Jar
       if (downloadType.value === 'online' && (!formData.value.coreUrl || !formData.value.core)) {
         MessagePlugin.warning('请选择一个服务端核心');
         return;
@@ -227,7 +259,6 @@ const nextStep = async () => {
     return;
   }
 
-  // 检查当前步骤字段
   const fieldsToValidate = new Set(stepValidationFields[currentStep.value]);
   const hasError = Object.keys(validateResult).some((field) => fieldsToValidate.has(field));
 
@@ -238,24 +269,16 @@ const nextStep = async () => {
   }
 };
 
-// 上传和jar选择
 const triggerFileSelect = () => {
   uploadInputRef.value?.click();
 };
 
-const formatFileSize = (bytes: number) => {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-};
-
+// 文件选择
 const onFileChange = async (event: Event) => {
   const input = event.target as HTMLInputElement;
   if (!input.files || input.files.length === 0) return;
 
-  // 清理旧状态
+  // 清理旧状态的云端文件
   if (formData.value.packageFileKey) {
     try {
       await deleteUpload(formData.value.packageFileKey);
@@ -270,177 +293,41 @@ const onFileChange = async (event: Event) => {
   detectedRoot.value = '';
 
   const file = input.files[0];
-  uploadedFileName.value = file.name;
-  uploadedFileSize.value = formatFileSize(file.size);
-
-  await handleUpload(file);
-  input.value = '';
-};
-
-// 上传分片
-let abortController: AbortController | null = null;
-const handleUpload = async (file: File) => {
-  if (abortController) {
-    abortController.abort();
-  }
-  abortController = new AbortController();
-
-  isUploading.value = true;
-  uploadProgress.value = 0;
-
-  // 动态计算分片大小
-  const isLargeFile = file.size > 200 * 1024 * 1024; // >200MB
-  const chunkSize = isLargeFile ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
-  const totalChunks = Math.ceil(file.size / chunkSize);
-
-  const maxConcurrency = 4; // 并发数
-  const maxRetries = 5; // 重试次数
-
-  // 每个分片已上传的字节数
-  const chunkProgressMap = new Map<number, number>();
-  let lastUpdateTime = 0;
-
-  // 更新进度条
-  const updateProgress = () => {
-    const now = Date.now();
-    // 100ms/onece
-    if (now - lastUpdateTime < 100) return;
-    lastUpdateTime = now;
-
-    const loadedBytes = Array.from(chunkProgressMap.values()).reduce((sum, val) => sum + val, 0);
-    // 2% 合并阶段
-    const percent = Math.min((loadedBytes / file.size) * 98, 98);
-    uploadProgress.value = Number(percent.toFixed(1));
-  };
 
   try {
-    // 获取上传 ID
-    const initRes = await initUpload();
-    const uploadId = (initRes as any).uploadId;
-    if (!uploadId) throw new Error('无法获取上传凭证');
+    const finalKey = await startUpload(file);
 
-    // 准备分片索引
-    const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i);
-
-    // 单个分片处理函数
-    const processChunk = async (index: number) => {
-      if (abortController?.signal.aborted) throw new Error('已取消');
-
-      const start = index * chunkSize;
-      const end = Math.min(file.size, start + chunkSize);
-      const chunkBlob = file.slice(start, end);
-
-      let lastError: any;
-
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        if (abortController?.signal.aborted) throw new Error('已取消');
-
-        try {
-          // 传入进度回调
-          await uploadChunk(
-            uploadId,
-            index,
-            chunkBlob,
-            (e: any) => {
-              if (e && e.loaded) {
-                chunkProgressMap.set(index, e.loaded);
-                updateProgress();
-              }
-            },
-            abortController?.signal,
-          );
-
-          // 强制设置为该分片完整大小
-          chunkProgressMap.set(index, chunkBlob.size);
-          updateProgress();
-          return;
-        } catch (err: any) {
-          lastError = err;
-          // 失败 分片进度归零
-          chunkProgressMap.set(index, 0);
-          updateProgress();
-
-          if (attempt < maxRetries) {
-            await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
-          }
-        }
-      }
-      throw new Error(`分片 ${index} 失败: ${(lastError as any)?.message}`);
-    };
-
-    // 定义 Worker 消费者
-    const worker = async () => {
-      while (chunkIndices.length > 0) {
-        if (abortController?.signal.aborted) break;
-        const index = chunkIndices.shift();
-        if (index !== undefined) {
-          await processChunk(index);
-        }
-      }
-    };
-
-    // 启动并发 Worker
-    const workers = Array(Math.min(maxConcurrency, totalChunks))
-      .fill(null)
-      .map(() => worker());
-
-    await Promise.all(workers);
-
-    if (abortController?.signal.aborted) throw new Error('已取消');
-
-    // 请求合并
-    // 既然都传完了，给点心理安慰，进度条拉满一点
-    uploadProgress.value = 99;
-
-    const finishRes = await finishUpload(uploadId, totalChunks);
-    const finalKey = (finishRes as any).uploadId;
-
-    // 完成
-    uploadProgress.value = 100;
     formData.value.packageFileKey = finalKey;
     MessagePlugin.success('上传成功，正在分析整合包内容...');
 
     // 立即调用分析接口
     await analyzePackage(finalKey);
   } catch (error: any) {
-    // 忽略手动取消的报错
-    if (error.message === '已取消') return;
-
-    abortController?.abort(); // 停止所有请求
-    console.error(error);
-    MessagePlugin.error(`上传失败: ${error.message || '未知错误'}`);
-    uploadedFileName.value = '';
-    uploadProgress.value = 0;
-
-    // 清理逻辑
-    if (formData.value.packageFileKey) {
-      deleteUpload(formData.value.packageFileKey).catch(() => {});
-      formData.value.packageFileKey = ''; // 清空 key
+    if (error.message !== '已取消') {
+      console.error(error);
+      MessagePlugin.error(`上传失败: ${error.message || '未知错误'}`);
+      formData.value.packageFileKey = '';
     }
   } finally {
-    // 非取消状态下才关闭 loading
-    if (!abortController?.signal.aborted) {
-      isUploading.value = false;
-    }
+    input.value = '';
   }
 };
 
-const analyzePackage = async (key: string) => {
+const analyzePackage = async (key: string, localPath?: string) => {
   isCheckingPackage.value = true;
   try {
-    const res = await checkPackageJarList(key);
+    const res = await checkPackageJarList(key, localPath);
 
     detectedJars.value = res.jars || [];
     detectedRoot.value = res.detectedRoot || '';
 
     if (res.count === 1 && res.jars.length > 0) {
-      // 只有一个核心，自动选择
       formData.value.core = res.jars[0];
       MessagePlugin.success(`自动识别到服务端核心: ${res.jars[0]}`);
     } else if (res.count > 1) {
-      MessagePlugin.info(`整合包内检测到 ${res.count} 个服务端核心，请在下一步选择`);
+      MessagePlugin.info(`检测到 ${res.count} 个服务端核心，请在下一步选择`);
     } else {
-      MessagePlugin.warning('未检测到整合包内存在服务端核心，请在下一步手动配置核心');
+      MessagePlugin.warning('未检测到服务端核心，请在下一步手动配置');
     }
   } catch (error: any) {
     MessagePlugin.error('整合包分析失败: ' + error.message);
@@ -449,18 +336,17 @@ const analyzePackage = async (key: string) => {
   }
 };
 
+// 移除文件
 const removeUploadedFile = async () => {
   if (formData.value.packageFileKey) {
-    await deleteUpload(formData.value.packageFileKey);
+    await removeUploadData();
     formData.value.packageFileKey = '';
-    uploadedFileName.value = '';
     detectedJars.value = [];
     formData.value.core = '';
     MessagePlugin.success('文件已移除');
   }
 };
 
-// 核心选择
 const onCoreSelected = (data: { core: string; version: string; url: string; sha256: string; filename: string }) => {
   formData.value.core = data.filename;
   formData.value.coreUrl = data.url;
@@ -469,7 +355,6 @@ const onCoreSelected = (data: { core: string; version: string; url: string; sha2
   MessagePlugin.success(`已选择: ${data.core} (${data.version})`);
 };
 
-// 提交和实时通讯
 const onSubmit = async () => {
   const validateResult = await formRef.value.validate();
   if (validateResult !== true) {
@@ -489,13 +374,16 @@ const onSubmit = async () => {
     args: formData.value.args || null,
   };
 
-  // 清理不需要的字段
+  if (packageSourceType.value === 'localPath') {
+    apiData.packageFileKey = null;
+  } else {
+    apiData.packageLocalPath = null;
+  }
   if (detectedJars.value.length > 0) {
     apiData.coreUrl = null;
     apiData.coreSha256 = null;
     apiData.coreFileKey = null;
   } else {
-    // 没检测到包，使用传统的下载/上传核心逻辑
     if (downloadType.value === 'manual') {
       apiData.coreUrl = null;
       apiData.coreSha256 = null;
@@ -511,7 +399,7 @@ const onSubmit = async () => {
 
     createdServerId.value = serverId.toString();
     isCreating.value = true;
-    currentStep.value = 6; // 跳转到创建页
+    currentStep.value = 6;
 
     await startSignalRConnection(createdServerId.value);
   } catch (error: any) {
@@ -539,7 +427,6 @@ const startSignalRConnection = async (serverId: string) => {
       progress: prog,
     });
 
-    // 自动滚动底部
     nextTick(() => {
       if (logContainerRef.value) {
         logContainerRef.value.scrollTop = logContainerRef.value.scrollHeight;
@@ -588,28 +475,34 @@ const goToHome = () => {
     coreSha256: '',
     coreFileKey: '',
     packageFileKey: '',
+    packageLocalPath: '',
     minM: 2048,
     maxM: 6144,
     args: '',
   };
   detectedJars.value = [];
-  uploadedFileName.value = '';
   downloadType.value = 'online';
   javaType.value = 'online';
+
+  removeUploadData();
 };
-/*
-const viewDetails = () => {
-  router.push('/detail/advanced');
-}; */
 </script>
 
 <template>
   <div class="mx-auto pb-6 text-[var(--td-text-color-primary)]">
-
-    <div class="design-card bg-[var(--td-bg-color-container)]/80 rounded-3xl border border-[var(--td-component-border)] shadow-sm p-6 sm:p-8 transition-all duration-300 flex flex-col md:flex-row gap-8 lg:gap-12 min-h-[600px]">
-
-      <div class="w-full md:w-56 shrink-0 md:border-r border-dashed border-zinc-200/80 dark:border-zinc-700/60 md:pr-8 pb-4 md:pb-0 border-b md:border-b-0">
-        <t-steps layout="vertical" :current="currentStep" status="process" readonly class="custom-steps !bg-transparent !mt-2">
+    <div
+      class="design-card bg-[var(--td-bg-color-container)]/80 rounded-3xl border border-[var(--td-component-border)] shadow-sm p-6 sm:p-8 transition-all duration-300 flex flex-col md:flex-row gap-8 lg:gap-12 min-h-[600px]"
+    >
+      <div
+        class="w-full md:w-56 shrink-0 md:border-r border-dashed border-zinc-200/80 dark:border-zinc-700/60 md:pr-8 pb-4 md:pb-0 border-b md:border-b-0"
+      >
+        <t-steps
+          layout="vertical"
+          :current="currentStep"
+          status="process"
+          readonly
+          class="custom-steps !bg-transparent !mt-2"
+        >
           <t-step-item title="基本信息" content="填写实例名称" />
           <t-step-item title="上传整合包" content="上传服务端 Zip 包" />
           <t-step-item title="核心配置" content="确认启动的服务端核心" />
@@ -623,7 +516,6 @@ const viewDetails = () => {
 
       <div class="flex-1 min-w-0 flex flex-col relative">
         <div v-if="!isCreating && !isSuccess" class="h-full flex flex-col">
-
           <t-form
             ref="formRef"
             :data="formData"
@@ -639,7 +531,11 @@ const viewDetails = () => {
               <t-form-item
                 label="实例路径"
                 name="path"
-                :help="userStore.userInfo.systemInfo.docker ? '您正在使用Docker容器部署，为保数据安全，仅支持使用默认数据路径' : '选填，留空将使用默认路径'"
+                :help="
+                  userStore.userInfo.systemInfo.docker
+                    ? '您正在使用Docker容器部署，为保数据安全，仅支持使用默认数据路径'
+                    : '选填，留空将使用默认路径'
+                "
               >
                 <t-input
                   v-model="formData.path"
@@ -652,10 +548,24 @@ const viewDetails = () => {
 
             <div v-show="currentStep === 1" class="list-item-anim flex-1 pt-1">
               <t-alert theme="info" class="!mb-6 !rounded-xl">
-                <template #message>请上传包含服务端文件的 <b>.zip</b> 压缩包。上传完成后系统将自动分析包内的服务端核心文件。</template>
+                <template #message
+                  >请上传包含服务端文件的 <b>.zip</b> 压缩包，或直接填写守护进程本机上的绝对路径。</template
+                >
               </t-alert>
 
-              <t-form-item label="上传服务端整合包 (Zip)" name="packageFileKey" class="!mb-0">
+              <t-form-item label="整合包来源" class="!mb-4">
+                <t-radio-group v-model="packageSourceType" variant="default-filled">
+                  <t-radio-button value="upload">本地上传</t-radio-button>
+                  <t-radio-button value="localPath">守护进程本机路径</t-radio-button>
+                </t-radio-group>
+              </t-form-item>
+
+              <t-form-item
+                v-if="packageSourceType === 'upload'"
+                label="上传服务端整合包 (Zip)"
+                name="packageFileKey"
+                class="!mb-0"
+              >
                 <div class="w-full sm:w-[32rem]">
                   <input ref="uploadInputRef" accept=".zip" type="file" style="display: none" @change="onFileChange" />
 
@@ -669,45 +579,100 @@ const viewDetails = () => {
                     点击选择 Zip 文件并上传
                   </t-button>
 
-                  <div v-if="isUploading" class="w-full bg-transparent p-4 mt-4 rounded-lg border border-[var(--color-primary)]/40">
-                    <div class="text-sm font-bold text-[var(--td-text-color-primary)] mb-2 truncate">正在上传: {{ uploadedFileName }} ({{ uploadedFileSize }})</div>
+                  <div
+                    v-if="isUploading"
+                    class="w-full bg-transparent p-4 mt-4 rounded-lg border border-[var(--color-primary)]/40"
+                  >
+                    <div class="text-sm font-bold text-[var(--td-text-color-primary)] mb-2 truncate">
+                      正在上传: {{ uploadedFileName }} ({{ uploadedFileSize }})
+                    </div>
                     <t-progress theme="line" :percentage="uploadProgress" />
                     <div class="text-[11px] text-zinc-500 mt-2 text-center">别着急，喝杯咖啡☕️...</div>
                   </div>
 
-                  <div v-if="!isUploading && isCheckingPackage" class="w-full bg-transparent p-4 mt-4 rounded-lg border border-[var(--color-primary)]/40 flex items-center justify-center">
+                  <div
+                    v-if="!isUploading && isCheckingPackage"
+                    class="w-full bg-transparent p-4 mt-4 rounded-lg border border-[var(--color-primary)]/40 flex items-center justify-center"
+                  >
                     <t-loading text="正在分析压缩包结构..." size="small" />
                   </div>
 
-                  <div v-if="formData.packageFileKey && !isUploading && !isCheckingPackage" class="flex items-center gap-3 mt-4 p-3 bg-transparent rounded-lg border border-[var(--color-success)]/40 relative overflow-hidden group">
+                  <div
+                    v-if="formData.packageFileKey && !isUploading && !isCheckingPackage"
+                    class="flex items-center gap-3 mt-4 p-3 bg-transparent rounded-lg border border-[var(--color-success)]/40 relative overflow-hidden group"
+                  >
                     <div class="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-success)] opacity-80"></div>
                     <t-icon name="folder-zip" class="text-[var(--color-success)] text-xl shrink-0 ml-1" />
                     <div class="flex-1 min-w-0">
-                      <div class="font-bold text-sm text-[var(--td-text-color-primary)] truncate">{{ uploadedFileName }}</div>
+                      <div class="font-bold text-sm text-[var(--td-text-color-primary)] truncate">
+                        {{ uploadedFileName }}
+                      </div>
                       <div class="text-[11px] text-[var(--td-text-color-secondary)] truncate mt-0.5">
-                        {{ detectedJars.length > 0 ? `发现 ${detectedJars.length} 个服务端核心文件` : '未发现服务端核心文件' }}
+                        {{
+                          detectedJars.length > 0
+                            ? `发现 ${detectedJars.length} 个服务端核心文件`
+                            : '未发现服务端核心文件'
+                        }}
                         {{ detectedRoot ? `| 根目录: /${detectedRoot}` : '' }}
                       </div>
                     </div>
                     <div class="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <t-button shape="square" variant="text" theme="primary" @click="triggerFileSelect"><t-icon name="swap" /></t-button>
-                      <t-button shape="square" variant="text" theme="danger" class="hover:!bg-red-500/10" @click="removeUploadedFile"><t-icon name="delete" /></t-button>
+                      <t-button shape="square" variant="text" theme="primary" @click="triggerFileSelect"
+                        ><t-icon name="swap"
+                      /></t-button>
+                      <t-button
+                        shape="square"
+                        variant="text"
+                        theme="danger"
+                        class="hover:!bg-red-500/10"
+                        @click="removeUploadedFile"
+                        ><t-icon name="delete"
+                      /></t-button>
                     </div>
                   </div>
+                </div>
+              </t-form-item>
+
+              <t-form-item
+                v-else
+                label="本机绝对路径"
+                name="packageLocalPath"
+                class="!mb-0"
+                help="请确保守护进程有权限读取该路径下的文件"
+              >
+                <div class="flex items-center gap-2 w-full sm:w-[32rem]">
+                  <t-input
+                    v-model="formData.packageLocalPath"
+                    placeholder="例如: /data/mc/modpack.zip"
+                    class="!font-mono !flex-1"
+                    @change="
+                      (val) => {
+                        if (val) analyzePackage('', val as any);
+                      }
+                    "
+                  />
+                  <t-button variant="outline" @click="showHostFileSelector = true" class="shrink-0">
+                    <template #icon><folder-open-icon /></template>
+                    浏览
+                  </t-button>
                 </div>
               </t-form-item>
             </div>
 
             <div v-show="currentStep === 2" class="list-item-anim flex-1 pt-1">
-
               <div v-if="detectedJars.length > 0">
-                <t-alert theme="success" class="!mb-6 !rounded-xl !bg-[var(--color-success)]/10 !border-[var(--color-success)]/20">
-                  <template #message>我们在压缩包中发现了以下服务端核心文件，请选择哪一个作为<b>启动核心</b>。</template>
+                <t-alert
+                  theme="success"
+                  class="!mb-6 !rounded-xl !bg-[var(--color-success)]/10 !border-[var(--color-success)]/20"
+                >
+                  <template #message
+                    >我们在压缩包中发现了以下服务端核心文件，请选择哪一个作为<b>启动核心</b>。</template
+                  >
                 </t-alert>
 
                 <t-form-item label="选择启动核心" name="core">
-                  <t-radio-group v-model="formData.core" class="flex flex-col gap-3">
-                    <div v-for="jar in detectedJars" :key="jar" class="flex items-center">
+                  <t-radio-group v-model="formData.core" class="flex flex-col gap-3 w-full items-start">
+                    <div v-for="jar in detectedJars" :key="jar" class="flex w-full items-center justify-start">
                       <t-radio :value="jar" class="!font-mono !text-sm">{{ jar }}</t-radio>
                     </div>
                   </t-radio-group>
@@ -730,19 +695,42 @@ const viewDetails = () => {
                   <div v-if="downloadType === 'online'">
                     <t-form-item label="选择服务端核心" name="coreUrl" class="!mb-0">
                       <div class="w-full">
-                        <t-button variant="outline" class="!w-full !justify-start !pl-4 !h-10 !bg-transparent border-zinc-200 dark:border-zinc-700 hover:!border-[var(--color-primary)]" @click="showCoreSelector = true">
+                        <t-button
+                          variant="outline"
+                          class="!w-full !justify-start !pl-4 !h-10 !bg-transparent border-zinc-200 dark:border-zinc-700 hover:!border-[var(--color-primary)]"
+                          @click="showCoreSelector = true"
+                        >
                           <template #icon><t-icon name="cloud-download" class="opacity-70" /></template>
                           打开核心库
                         </t-button>
 
-                        <div v-if="formData.core" class="flex items-center gap-3 mt-4 p-3 bg-transparent rounded-lg border border-[var(--color-primary)]/40 shadow-sm relative overflow-hidden group">
+                        <div
+                          v-if="formData.core"
+                          class="flex items-center gap-3 mt-4 p-3 bg-transparent rounded-lg border border-[var(--color-primary)]/40 shadow-sm relative overflow-hidden group"
+                        >
                           <div class="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)] opacity-80"></div>
-                          <t-icon name="check-circle-filled" class="text-[var(--color-primary)] text-xl shrink-0 ml-1" />
+                          <t-icon
+                            name="check-circle-filled"
+                            class="text-[var(--color-primary)] text-xl shrink-0 ml-1"
+                          />
                           <div class="flex-1 min-w-0">
-                            <div class="font-bold text-sm text-[var(--td-text-color-primary)] truncate">{{ formData.core }}</div>
-                            <div class="text-[11px] text-[var(--td-text-color-secondary)] truncate mt-0.5">将在创建时自动下载</div>
+                            <div class="font-bold text-sm text-[var(--td-text-color-primary)] truncate">
+                              {{ formData.core }}
+                            </div>
+                            <div class="text-[11px] text-[var(--td-text-color-secondary)] truncate mt-0.5">
+                              将在创建时自动下载
+                            </div>
                           </div>
-                          <t-button shape="circle" variant="text" theme="danger" class="shrink-0 hover:!bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity" @click="formData.core = ''; formData.coreUrl = '';">
+                          <t-button
+                            shape="circle"
+                            variant="text"
+                            theme="danger"
+                            class="shrink-0 hover:!bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                            @click="
+                              formData.core = '';
+                              formData.coreUrl = '';
+                            "
+                          >
                             <t-icon name="close" />
                           </t-button>
                         </div>
@@ -751,8 +739,14 @@ const viewDetails = () => {
                   </div>
 
                   <div v-if="downloadType === 'manual'" class="mt-2">
-                    <div class="text-sm text-[var(--td-text-color-secondary)] mb-4">请在整合包解压后手动放入核心，或在此处不填写等待创建后手动上传。</div>
-                    <t-alert theme="error" message="此模式下建议确保压缩包内包含核心，或者使用在线下载功能。" class="!rounded-xl" />
+                    <div class="text-sm text-[var(--td-text-color-secondary)] mb-4">
+                      请在整合包解压后手动放入核心，或在此处不填写等待创建后手动上传。
+                    </div>
+                    <t-alert
+                      theme="error"
+                      message="此模式下建议确保压缩包内包含核心，或者使用在线下载功能。"
+                      class="!rounded-xl"
+                    />
                   </div>
                 </div>
               </div>
@@ -763,26 +757,58 @@ const viewDetails = () => {
                 <template #message>
                   <div class="flex flex-col gap-2.5 mt-2">
                     <div class="flex items-center gap-3">
-                      <span class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-[var(--color-primary)] text-white font-bold text-xs tracking-wide shadow-sm">MC 26.1 - 最新版本</span>
-                      <span class="font-extrabold text-xs text-[var(--color-success)] bg-[var(--color-success)]/10 px-2.5 py-1 rounded-md border border-[var(--color-success)]/20">Java 25</span>
+                      <span
+                        class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-[var(--color-primary)] text-white font-bold text-xs tracking-wide shadow-sm"
+                        >MC 26.1 - 最新版本</span
+                      >
+                      <span
+                        class="font-extrabold text-xs text-[var(--color-success)] bg-[var(--color-success)]/10 px-2.5 py-1 rounded-md border border-[var(--color-success)]/20"
+                        >Java 25</span
+                      >
                     </div>
                     <div class="flex items-center gap-3">
-                      <span class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-[var(--color-primary)] text-white font-bold text-xs tracking-wide shadow-sm">MC 1.20.5 - 1.21.11</span>
-                      <span class="font-extrabold text-xs text-[var(--color-success)] bg-[var(--color-success)]/10 px-2.5 py-1 rounded-md border border-[var(--color-success)]/20">Java 21</span>
+                      <span
+                        class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-[var(--color-primary)] text-white font-bold text-xs tracking-wide shadow-sm"
+                        >MC 1.20.5 - 1.21.11</span
+                      >
+                      <span
+                        class="font-extrabold text-xs text-[var(--color-success)] bg-[var(--color-success)]/10 px-2.5 py-1 rounded-md border border-[var(--color-success)]/20"
+                        >Java 21</span
+                      >
                     </div>
                     <div class="flex items-center gap-3">
-                      <span class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-[var(--color-primary)] text-white font-bold text-xs tracking-wide shadow-sm">MC 1.18 - 1.20.4</span>
-                      <span class="font-extrabold text-xs text-[var(--color-success)] bg-[var(--color-success)]/10 px-2.5 py-1 rounded-md border border-[var(--color-success)]/20">Java 17</span>
+                      <span
+                        class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-[var(--color-primary)] text-white font-bold text-xs tracking-wide shadow-sm"
+                        >MC 1.18 - 1.20.4</span
+                      >
+                      <span
+                        class="font-extrabold text-xs text-[var(--color-success)] bg-[var(--color-success)]/10 px-2.5 py-1 rounded-md border border-[var(--color-success)]/20"
+                        >Java 17</span
+                      >
                     </div>
                     <div class="flex items-center gap-3">
-                      <span class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-[var(--color-primary)] text-white font-bold text-xs tracking-wide shadow-sm">MC 1.17 / 1.17.1</span>
-                      <span class="font-extrabold text-xs text-[var(--color-success)] bg-[var(--color-success)]/10 px-2.5 py-1 rounded-md border border-[var(--color-success)]/20">Java 16</span>
+                      <span
+                        class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-[var(--color-primary)] text-white font-bold text-xs tracking-wide shadow-sm"
+                        >MC 1.17 / 1.17.1</span
+                      >
+                      <span
+                        class="font-extrabold text-xs text-[var(--color-success)] bg-[var(--color-success)]/10 px-2.5 py-1 rounded-md border border-[var(--color-success)]/20"
+                        >Java 16</span
+                      >
                     </div>
                     <div class="flex items-center gap-3">
-                      <span class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 font-bold text-xs tracking-wide shadow-sm">MC 1.13 - 更低版本</span>
-                      <span class="font-extrabold text-xs text-[var(--td-text-color-secondary)] bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md border border-zinc-200 dark:border-zinc-700">Java 8</span>
+                      <span
+                        class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 font-bold text-xs tracking-wide shadow-sm"
+                        >MC 1.13 - 更低版本</span
+                      >
+                      <span
+                        class="font-extrabold text-xs text-[var(--td-text-color-secondary)] bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md border border-zinc-200 dark:border-zinc-700"
+                        >Java 8</span
+                      >
                     </div>
-                    <div class="text-[11px] text-[var(--td-text-color-secondary)] mt-1 flex items-center gap-1 font-medium">
+                    <div
+                      class="text-[11px] text-[var(--td-text-color-secondary)] mt-1 flex items-center gap-1 font-medium"
+                    >
                       <t-icon name="info-circle" size="14px" /> 建议直接使用推荐版本，避免兼容性问题。
                     </div>
                   </div>
@@ -800,14 +826,29 @@ const viewDetails = () => {
 
                   <div class="w-full sm:w-[32rem] min-h-[70px] mt-2">
                     <div v-if="javaType === 'online'">
-                      <t-select v-model="selectedJavaVersion" :options="javaVersions" placeholder="请选择 Java 版本" class="!w-full sm:!w-64" />
+                      <t-select
+                        v-model="selectedJavaVersion"
+                        :options="javaVersions"
+                        placeholder="请选择 Java 版本"
+                        class="!w-full sm:!w-64"
+                      />
                     </div>
                     <div v-if="javaType === 'local'" class="flex items-center gap-3">
-                      <t-select v-model="customJavaPath" :options="localJavaVersions" placeholder="请选择 Java" class="!flex-1" />
+                      <t-select
+                        v-model="customJavaPath"
+                        :options="localJavaVersions"
+                        placeholder="请选择 Java"
+                        class="!flex-1"
+                      />
                       <t-button variant="text" @click="fetchJavaVersions(true)">刷新</t-button>
                     </div>
                     <div v-if="javaType === 'env'">
-                      <t-input model-value="java" readonly disabled class="!font-mono !bg-zinc-100 dark:!bg-zinc-800/50" />
+                      <t-input
+                        model-value="java"
+                        readonly
+                        disabled
+                        class="!font-mono !bg-zinc-100 dark:!bg-zinc-800/50"
+                      />
                     </div>
                     <div v-if="javaType === 'custom'">
                       <t-input v-model="customJavaPath" placeholder="C:\Path\To\java.exe" class="!font-mono" />
@@ -822,7 +863,14 @@ const viewDetails = () => {
                 <t-form-item label="最小内存" name="minM" class="!mb-0">
                   <div class="flex items-center gap-2 w-full">
                     <div class="flex-1">
-                      <t-input-number v-model="minMComputed" :min="0" :decimal-places="minUnit === 'GB' ? 1 : 0" placeholder="Xms" theme="column" class="!w-full" />
+                      <t-input-number
+                        v-model="minMComputed"
+                        :min="0"
+                        :decimal-places="minUnit === 'GB' ? 1 : 0"
+                        placeholder="Xms"
+                        theme="column"
+                        class="!w-full"
+                      />
                     </div>
                     <t-select v-model="minUnit" :options="unitOptions" :clearable="false" class="!w-20 shrink-0" />
                   </div>
@@ -831,7 +879,14 @@ const viewDetails = () => {
                 <t-form-item label="最大内存" name="maxM" class="!mb-0">
                   <div class="flex items-center gap-2 w-full">
                     <div class="flex-1">
-                      <t-input-number v-model="maxMComputed" :min="0" :decimal-places="maxUnit === 'GB' ? 1 : 0" placeholder="Xmx" theme="column" class="!w-full" />
+                      <t-input-number
+                        v-model="maxMComputed"
+                        :min="0"
+                        :decimal-places="maxUnit === 'GB' ? 1 : 0"
+                        placeholder="Xmx"
+                        theme="column"
+                        class="!w-full"
+                      />
                     </div>
                     <t-select v-model="maxUnit" :options="unitOptions" :clearable="false" class="!w-20 shrink-0" />
                   </div>
@@ -839,103 +894,198 @@ const viewDetails = () => {
               </div>
 
               <t-form-item label="JVM 参数" name="args" class="!mt-8 w-full sm:w-[40rem]">
-                <t-textarea v-model="formData.args" placeholder="-XX:+UseG1GC" :autosize="{ minRows: 3, maxRows: 6 }" class="!font-mono !bg-transparent" />
+                <t-textarea
+                  v-model="formData.args"
+                  placeholder="-XX:+UseG1GC"
+                  :autosize="{ minRows: 3, maxRows: 6 }"
+                  class="!font-mono !bg-transparent"
+                />
               </t-form-item>
             </div>
 
             <div v-show="currentStep === 5" class="list-item-anim flex-1 pt-1">
-
               <div class="flex flex-col min-w-0 mb-8 pb-6 border-b border-zinc-200 dark:border-zinc-800">
-                <div class="text-3xl font-extrabold text-[var(--td-text-color-primary)] truncate tracking-tight">{{ formData.name }}</div>
+                <div class="text-3xl font-extrabold text-[var(--td-text-color-primary)] truncate tracking-tight">
+                  {{ formData.name }}
+                </div>
                 <div class="text-sm text-[var(--td-text-color-secondary)] mt-2 flex items-center gap-1.5 truncate">
-                  <t-icon name="folder-open" class="opacity-70" /> {{ formData.path || '默认数据路径 (/DaemonData/Servers)' }}
+                  <t-icon name="folder-open" class="opacity-70" />
+                  {{ formData.path || '默认数据路径 (/DaemonData/Servers)' }}
                 </div>
               </div>
 
               <div class="flex flex-col w-full">
-
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80">
-                  <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-1.5 sm:mb-0 shrink-0">服务端整合包</span>
+                <div
+                  class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80"
+                >
+                  <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-1.5 sm:mb-0 shrink-0"
+                    >服务端整合包</span
+                  >
                   <div class="flex flex-col sm:items-end text-left sm:text-right">
                     <div class="flex items-center gap-2">
-                      <span class="text-sm font-bold text-[var(--td-text-color-primary)] truncate max-w-[200px] sm:max-w-[300px]" :title="uploadedFileName">{{ uploadedFileName }}</span>
-                      <t-tag theme="primary" variant="light" size="small" class="!rounded">ZIP</t-tag>
+                      <span
+                        class="text-sm font-bold text-[var(--td-text-color-primary)] truncate max-w-[200px] sm:max-w-[300px]"
+                        :title="packageSourceType === 'upload' ? uploadedFileName : formData.packageLocalPath"
+                      >
+                        {{ packageSourceType === 'upload' ? uploadedFileName : formData.packageLocalPath }}
+                      </span>
+                      <t-tag theme="primary" variant="light" size="small" class="!rounded">
+                        {{ packageSourceType === 'upload' ? 'ZIP' : '本机路径' }}
+                      </t-tag>
                     </div>
-                    <div class="text-[11px] text-zinc-500 mt-1">大小: {{ uploadedFileSize || '未知' }}</div>
+                    <div v-if="packageSourceType === 'upload'" class="text-[11px] text-zinc-500 mt-1">
+                      大小: {{ uploadedFileSize || '未知' }}
+                    </div>
                   </div>
                 </div>
 
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80">
-                  <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-1.5 sm:mb-0 shrink-0">启动核心 (Jar)</span>
+                <div
+                  class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80"
+                >
+                  <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-1.5 sm:mb-0 shrink-0"
+                    >启动核心 (Jar)</span
+                  >
                   <div class="flex flex-col sm:items-end text-left sm:text-right">
                     <div class="flex items-center gap-2">
-                      <span class="text-sm font-bold text-[var(--td-text-color-primary)] truncate max-w-[200px] sm:max-w-[300px]" :title="formData.core">{{ formData.core }}</span>
-                      <t-tag v-if="detectedJars.length > 0" theme="success" variant="light" size="small" class="!rounded">整合包内核心</t-tag>
-                      <t-tag v-else-if="downloadType === 'online'" theme="primary" variant="light" size="small" class="!rounded">在线下载</t-tag>
+                      <span
+                        class="text-sm font-bold text-[var(--td-text-color-primary)] truncate max-w-[200px] sm:max-w-[300px]"
+                        :title="formData.core"
+                        >{{ formData.core }}</span
+                      >
+                      <t-tag
+                        v-if="detectedJars.length > 0"
+                        theme="success"
+                        variant="light"
+                        size="small"
+                        class="!rounded"
+                        >整合包内核心</t-tag
+                      >
+                      <t-tag
+                        v-else-if="downloadType === 'online'"
+                        theme="primary"
+                        variant="light"
+                        size="small"
+                        class="!rounded"
+                        >在线下载</t-tag
+                      >
                       <t-tag v-else theme="warning" variant="light" size="small" class="!rounded">手动配置</t-tag>
                     </div>
                     <div class="text-[11px] text-zinc-500 mt-1 truncate">
                       <span v-if="detectedJars.length > 0">已从压缩包中选定启动文件</span>
-                      <span v-else-if="downloadType === 'online'">来源: MSL 镜像源 ({{ formData.coreUrl ? '已匹配' : '未匹配' }})</span>
+                      <span v-else-if="downloadType === 'online'"
+                        >来源: MSL 镜像源 ({{ formData.coreUrl ? '已匹配' : '未匹配' }})</span
+                      >
                     </div>
                   </div>
                 </div>
 
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80">
-                  <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-1.5 sm:mb-0 shrink-0">Java 运行时</span>
+                <div
+                  class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80"
+                >
+                  <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-1.5 sm:mb-0 shrink-0"
+                    >Java 运行时</span
+                  >
                   <div class="flex flex-col sm:items-end text-left sm:text-right">
                     <div class="flex items-center gap-2">
-                      <span v-if="javaType === 'online'" class="text-sm font-bold text-[var(--td-text-color-primary)]">Java {{ selectedJavaVersion }}</span>
-                      <span v-else class="text-sm font-bold text-[var(--td-text-color-primary)] truncate max-w-[200px] sm:max-w-[300px]" :title="formData.java">{{ formData.java }}</span>
-                      <t-tag v-if="javaType === 'online'" theme="success" variant="light" size="small" class="!rounded">自动安装</t-tag>
-                      <t-tag v-else-if="javaType === 'local'" theme="primary" variant="light" size="small" class="!rounded">本机环境</t-tag>
+                      <span v-if="javaType === 'online'" class="text-sm font-bold text-[var(--td-text-color-primary)]"
+                        >Java {{ selectedJavaVersion }}</span
+                      >
+                      <span
+                        v-else
+                        class="text-sm font-bold text-[var(--td-text-color-primary)] truncate max-w-[200px] sm:max-w-[300px]"
+                        :title="formData.java"
+                        >{{ formData.java }}</span
+                      >
+                      <t-tag v-if="javaType === 'online'" theme="success" variant="light" size="small" class="!rounded"
+                        >自动安装</t-tag
+                      >
+                      <t-tag
+                        v-else-if="javaType === 'local'"
+                        theme="primary"
+                        variant="light"
+                        size="small"
+                        class="!rounded"
+                        >本机环境</t-tag
+                      >
                       <t-tag v-else theme="default" variant="light" size="small" class="!rounded">自定义</t-tag>
                     </div>
-                    <div v-if="javaType === 'online'" class="text-[11px] text-zinc-500 mt-1 truncate">将自动从镜像源下载并解压 JDK</div>
+                    <div v-if="javaType === 'online'" class="text-[11px] text-zinc-500 mt-1 truncate">
+                      将自动从镜像源下载并解压 JDK
+                    </div>
                   </div>
                 </div>
 
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80">
-                  <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-1.5 sm:mb-0 shrink-0">内存分配 (JVM)</span>
+                <div
+                  class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80"
+                >
+                  <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-1.5 sm:mb-0 shrink-0"
+                    >内存分配 (JVM)</span
+                  >
                   <div class="flex items-center gap-3">
-                    <span class="text-sm font-bold text-[var(--color-primary)]">初始 (Xms): {{ minMComputed }} {{ minUnit }}</span>
+                    <span class="text-sm font-bold text-[var(--color-primary)]"
+                      >初始 (Xms): {{ minMComputed }} {{ minUnit }}</span
+                    >
                     <t-icon name="arrow-right" class="text-zinc-300 dark:text-zinc-600" />
-                    <span class="text-sm font-bold text-red-500 dark:text-red-400">最大 (Xmx): {{ maxMComputed }} {{ maxUnit }}</span>
+                    <span class="text-sm font-bold text-red-500 dark:text-red-400"
+                      >最大 (Xmx): {{ maxMComputed }} {{ maxUnit }}</span
+                    >
                   </div>
                 </div>
 
                 <div v-if="formData.args" class="flex flex-col sm:flex-row sm:items-start justify-between py-4">
-                  <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-2 sm:mb-0 shrink-0 mt-1">启动参数</span>
-                  <div class="text-xs font-mono text-[var(--td-text-color-secondary)] break-all leading-relaxed bg-zinc-50/50 dark:bg-zinc-800/30 p-2.5 rounded-lg border border-zinc-100 dark:border-zinc-800 text-left sm:text-right max-w-full sm:max-w-md">
+                  <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-2 sm:mb-0 shrink-0 mt-1"
+                    >启动参数</span
+                  >
+                  <div
+                    class="text-xs font-mono text-[var(--td-text-color-secondary)] break-all leading-relaxed bg-zinc-50/50 dark:bg-zinc-800/30 p-2.5 rounded-lg border border-zinc-100 dark:border-zinc-800 text-left sm:text-right max-w-full sm:max-w-md"
+                  >
                     {{ formData.args }}
                   </div>
                 </div>
-
               </div>
 
-              <t-alert theme="info" class="!mt-8 !rounded-xl !bg-[var(--color-primary)]/5 !border-[var(--color-primary)]/20">
-                <template #message>确认无误后点击下方 <strong class="text-[var(--color-primary)] mx-1">提交创建</strong>，系统自动部署服务端。</template>
+              <t-alert
+                theme="info"
+                class="!mt-8 !rounded-xl !bg-[var(--color-primary)]/5 !border-[var(--color-primary)]/20"
+              >
+                <template #message
+                  >确认无误后点击下方
+                  <strong class="text-[var(--color-primary)] mx-1">提交创建</strong>，系统自动部署服务端。</template
+                >
               </t-alert>
             </div>
 
             <div class="mt-auto pt-6 border-t border-zinc-200 dark:border-zinc-700 flex items-center justify-between">
               <t-button v-if="currentStep > 0 && currentStep < 6" theme="default" @click="prevStep">上一步</t-button>
-              <div v-else></div> <t-button v-if="currentStep < 5" type="button" theme="primary" :loading="isUploading || isCheckingPackage" @click="nextStep">下一步</t-button>
-              <t-button v-if="currentStep === 5" theme="primary" type="submit" :loading="isSubmitting">提交创建</t-button>
+              <div v-else></div>
+              <t-button
+                v-if="currentStep < 5"
+                type="button"
+                theme="primary"
+                :loading="isUploading || isCheckingPackage"
+                @click="nextStep"
+                >下一步</t-button
+              >
+              <t-button v-if="currentStep === 5" theme="primary" type="submit" :loading="isSubmitting"
+                >提交创建</t-button
+              >
             </div>
-
           </t-form>
         </div>
 
         <div v-if="isCreating" class="h-full flex flex-col items-center justify-center py-8 list-item-anim">
-          <div class="text-lg font-bold text-[var(--td-text-color-primary)] mb-2 tracking-tight">正在创建整合包实例 ({{ createdServerId }})</div>
+          <div class="text-lg font-bold text-[var(--td-text-color-primary)] mb-2 tracking-tight">
+            正在创建整合包实例 ({{ createdServerId }})
+          </div>
           <p class="text-sm text-[var(--td-text-color-secondary)] mb-6">正在解压文件并配置环境...</p>
 
           <div class="w-full max-w-lg !my-6">
             <t-progress theme="plump" :percentage="progress" :label="`${progress.toFixed(2)}%`" />
           </div>
 
-          <div class="w-full max-w-2xl bg-white/40 dark:bg-zinc-900/40 rounded-2xl border border-white/60 dark:border-zinc-700/50 p-4 h-64 flex flex-col mt-6 shadow-[0_4px_12px_rgba(0,0,0,0.02)]">
+          <div
+            class="w-full max-w-2xl bg-white/40 dark:bg-zinc-900/40 rounded-2xl border border-white/60 dark:border-zinc-700/50 p-4 h-64 flex flex-col mt-6 shadow-[0_4px_12px_rgba(0,0,0,0.02)]"
+          >
             <div ref="logContainerRef" class="flex-1 overflow-y-auto custom-scrollbar pr-2">
               <div v-for="(log, index) in statusMessages" :key="index" class="text-xs font-mono mb-2 leading-relaxed">
                 <span class="text-[var(--td-text-color-secondary)] mr-2">[{{ log.time }}]</span>
@@ -945,7 +1095,10 @@ const viewDetails = () => {
           </div>
         </div>
 
-        <div v-if="isSuccess" class="h-full flex flex-col items-center justify-center py-8 list-item-anim min-h-[50vh] sm:min-h-[40vh]">
+        <div
+          v-if="isSuccess"
+          class="h-full flex flex-col items-center justify-center py-8 list-item-anim min-h-[50vh] sm:min-h-[40vh]"
+        >
           <t-icon name="check-circle" size="64px" class="text-[var(--color-success)]" />
 
           <div class="text-xl text-[var(--td-text-color-primary)] text-center font-medium leading-[22px] !mt-4">
@@ -957,14 +1110,30 @@ const viewDetails = () => {
           </div>
 
           <div class="flex gap-4">
-            <t-button @click="() => { goToHome(); changeUrl('/instance/list'); }">返回服务端列表</t-button>
-            <t-button theme="default" @click="() => { goToHome(); changeUrl(`/instance/console/${createdServerId}`); }">前往控制台</t-button>
+            <t-button
+              @click="
+                () => {
+                  goToHome();
+                  changeUrl('/instance/list');
+                }
+              "
+              >返回服务端列表</t-button
+            >
+            <t-button
+              theme="default"
+              @click="
+                () => {
+                  goToHome();
+                  changeUrl(`/instance/console/${createdServerId}`);
+                }
+              "
+              >前往控制台</t-button
+            >
           </div>
         </div>
-
       </div>
     </div>
-
+    <host-file-selector v-model:visible="showHostFileSelector" search-pattern="*.zip" @select="onHostFileSelected" />
     <server-core-selector v-model:visible="showCoreSelector" @confirm="onCoreSelected" />
   </div>
 </template>
@@ -978,8 +1147,14 @@ const viewDetails = () => {
   animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
 }
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .custom-scrollbar {
@@ -988,39 +1163,38 @@ const viewDetails = () => {
 
 :deep(.custom-steps) {
   .t-steps-item__inner {
-  @apply !flex !items-start !gap-4 !pb-8 !m-0;
+    @apply !flex !items-start !gap-4 !pb-8 !m-0;
   }
 
   .t-steps-item__icon {
-  @apply !w-8 !h-8 !rounded-full !flex !items-center !justify-center !border-2 !text-sm !font-extrabold !bg-transparent !transition-colors !duration-300 !z-10 !relative;
+    @apply !w-8 !h-8 !rounded-full !flex !items-center !justify-center !border-2 !text-sm !font-extrabold !bg-transparent !transition-colors !duration-300 !z-10 !relative;
   }
   .t-steps-item--process .t-steps-item__icon {
-  @apply !border-[var(--color-primary)] !text-[var(--color-primary)] !bg-[var(--color-primary)]/10 shadow-[0_0_12px_var(--color-primary-light)]/40;
+    @apply !border-[var(--color-primary)] !text-[var(--color-primary)] !bg-[var(--color-primary)]/10 shadow-[0_0_12px_var(--color-primary-light)]/40;
   }
   .t-steps-item--default .t-steps-item__icon {
-  @apply !border-zinc-200 dark:!border-zinc-700 !text-zinc-400 dark:!text-zinc-500 !bg-transparent;
+    @apply !border-zinc-200 dark:!border-zinc-700 !text-zinc-400 dark:!text-zinc-500 !bg-transparent;
   }
   .t-steps-item--finish .t-steps-item__icon {
-  @apply !border-[var(--color-success)] !text-[var(--color-success)] !bg-[var(--color-success)]/10;
+    @apply !border-[var(--color-success)] !text-[var(--color-success)] !bg-[var(--color-success)]/10;
   }
 
   .t-steps-item__title {
-  @apply !text-sm !font-extrabold !text-zinc-800 dark:!text-zinc-200 !leading-none !mb-1.5 !transition-colors;
+    @apply !text-sm !font-extrabold !text-zinc-800 dark:!text-zinc-200 !leading-none !mb-1.5 !transition-colors;
   }
   .t-steps-item--process .t-steps-item__title {
-  @apply !text-[var(--color-primary)];
+    @apply !text-[var(--color-primary)];
   }
   .t-steps-item__description {
-  @apply !text-xs !font-medium !text-zinc-500 dark:!text-zinc-400 !leading-relaxed;
+    @apply !text-xs !font-medium !text-zinc-500 dark:!text-zinc-400 !leading-relaxed;
   }
 
   .t-steps-item:not(:last-child)::after {
     content: '';
-  @apply !absolute !w-[2px] !bg-zinc-200 dark:!bg-zinc-700 !top-8 !bottom-0 !left-[15px] !z-0;
+    @apply !absolute !w-[2px] !bg-zinc-200 dark:!bg-zinc-700 !top-8 !bottom-0 !left-[15px] !z-0;
   }
   .t-steps-item--finish:not(:last-child)::after {
-  @apply !bg-[var(--color-primary)]/50;
+    @apply !bg-[var(--color-primary)]/50;
   }
 }
-
 </style>

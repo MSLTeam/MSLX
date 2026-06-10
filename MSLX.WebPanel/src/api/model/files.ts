@@ -28,3 +28,26 @@ export interface PluginsAndModsListModel{
   disableJarFiles: string[];
   clientJarFiles: string[];
 }
+
+export interface HostFileItem {
+  name: string;
+  path: string;
+  type: 'folder' | 'file';
+  size: number;
+  lastModified: string;
+}
+
+export interface HostFsResponse {
+  currentPath: string;
+  parentPath: string | null;
+  items: HostFileItem[];
+}
+
+export interface HostDriveItem {
+  name: string;
+  path: string;
+  type: 'drive';
+  volumeLabel: string;
+  totalSize: number;
+  availableFreeSpace: number;
+}

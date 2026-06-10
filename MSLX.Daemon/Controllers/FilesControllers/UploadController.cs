@@ -1,5 +1,6 @@
 ﻿using System.IO.Compression;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using MSLX.Daemon.Utils;
@@ -207,24 +208,34 @@ public class UploadController : ControllerBase
     }
 
     // 检查压缩包里面的jar文件 给整合包模式用的
-    [HttpGet("inspect/{uploadId}")]
-    public IActionResult InspectArchive(string uploadId)
+    [HttpGet("inspect/{uploadId?}")]
+    [Authorize(Roles = "admin")]
+    public IActionResult InspectArchive(string? uploadId, [FromQuery] string? localPath = null)
     {
-        // 基础校验
-        if (string.IsNullOrEmpty(uploadId) || !Regex.IsMatch(uploadId, "^[a-fA-F0-9]{32}$"))
+        string finalPath;
+        if (!string.IsNullOrWhiteSpace(localPath))
         {
-            return BadRequest(new ApiResponse<string> { Code = 400, Message = "ID 格式错误" });
+            // 本机路径
+            finalPath = localPath;
+        }
+        else
+        {
+            // 上传的整合包
+            if (string.IsNullOrEmpty(uploadId) || !Regex.IsMatch(uploadId, "^[a-fA-F0-9]{32}$"))
+            {
+                return BadRequest(new ApiResponse<string> { Code = 400, Message = "ID 格式错误" });
+            }
+            finalPath = Path.Combine(_tempPath, uploadId + ".tmp");
         }
 
-        var finalPath = Path.Combine(_tempPath, uploadId + ".tmp");
         if (!System.IO.File.Exists(finalPath))
         {
-            return NotFound(new ApiResponse<string> { Code = 404, Message = "找不到指定的上传文件，可能已过期" });
+            return NotFound(new ApiResponse<string> { Code = 404, Message = "找不到指定的压缩包文件，请检查路径或文件是否已过期" });
         }
 
         try
         {
-            using var archive = ZipFile.OpenRead(finalPath);
+            using var archive = ZipFile.Open(finalPath, ZipArchiveMode.Read, System.Text.Encoding.GetEncoding("GBK"));
             
             // 获取所有 Entry 的顶层路径片段
             var topLevelSegments = archive.Entries

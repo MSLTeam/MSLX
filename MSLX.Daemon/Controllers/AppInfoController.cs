@@ -23,9 +23,9 @@ public class AppInfoController : ControllerBase
 
     // 构造函数注入
     public AppInfoController(
-            IHubContext<DaemonUpdateHub> updateHubContext,
-            IHostApplicationLifetime appLifetime,
-            IMCServerService serverService)
+        IHubContext<DaemonUpdateHub> updateHubContext,
+        IHostApplicationLifetime appLifetime,
+        IMCServerService serverService)
     {
         _updateHubContext = updateHubContext;
         _appLifetime = appLifetime;
@@ -37,7 +37,7 @@ public class AppInfoController : ControllerBase
     {
         // 获取中间件截取的用户名
         var currentUserId = User.FindFirst("UserId")?.Value;
-        
+
         string displayName = "未登录用户";
         string displayAvatar = "https://www.mslmc.cn/logo.png";
         var roles = new List<string>();
@@ -60,7 +60,7 @@ public class AppInfoController : ControllerBase
                     roles.Add("user");
                 }
             }
-            
+
             string osType;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
@@ -90,13 +90,13 @@ public class AppInfoController : ControllerBase
                 ["hostname"] = Environment.MachineName,
                 ["docker"] = IsRunningInContainer(),
             };
-            
+
             var statusData = new JObject
             {
                 ["clientName"] = "MSLX Daemon",
                 ["version"] = PlatFormServices.GetFormattedVersion(),
                 ["id"] = currentUserId,
-                ["user"] = displayName,  
+                ["user"] = displayName,
                 ["username"] = userInfo?.Username ?? "mslx",
                 ["avatar"] = displayAvatar,
                 ["roles"] = JToken.FromObject(roles),
@@ -105,7 +105,7 @@ public class AppInfoController : ControllerBase
                 ["targetFrontendVersion"] = new JObject
                 {
                     ["desktop"] = "1.0.0",
-                    ["panel"] = "1.4.5"
+                    ["panel"] = "1.4.6"
                 },
                 ["systemInfo"] = systemInfo
             };
@@ -117,7 +117,6 @@ public class AppInfoController : ControllerBase
                 Data = statusData
             };
             return Ok(response);
-
         }
         else
         {
@@ -155,7 +154,10 @@ public class AppInfoController : ControllerBase
 
                 bool needUpdate = normalizedRemote > normalizedLocal;
                 string status = "release";
-                string environment = (inContainer != null && inContainer.Equals("true", StringComparison.OrdinalIgnoreCase)) ? "docker" : "native";
+                string environment =
+                    (inContainer != null && inContainer.Equals("true", StringComparison.OrdinalIgnoreCase))
+                        ? "docker"
+                        : "native";
 
                 if (needUpdate)
                 {
@@ -227,7 +229,9 @@ public class AppInfoController : ControllerBase
     {
         try
         {
-            HttpService.HttpResponse res = await MSLApi.GetAsync($"/download/update?software=MSLX&system={PlatFormServices.GetOs().Replace("MacOS","macOS")}&arch={PlatFormServices.GetOsArch().Replace("amd64","x64")}", null);
+            HttpService.HttpResponse res = await MSLApi.GetAsync(
+                $"/download/update?software=MSLX&system={PlatFormServices.GetOs().Replace("MacOS", "macOS")}&arch={PlatFormServices.GetOsArch().Replace("amd64", "x64")}",
+                null);
             if (res.IsSuccessStatusCode)
             {
                 JObject remoteJObj = JObject.Parse(res.Content ?? "{}");
@@ -261,7 +265,7 @@ public class AppInfoController : ControllerBase
         }
     }
 
-#region 更新自身程序
+    #region 更新自身程序
 
     /// <summary>
     /// 检测是否在 Docker 容器内
@@ -321,7 +325,8 @@ public class AppInfoController : ControllerBase
             string archParam = PlatFormServices.GetOsArch().Replace("amd64", "x64");
 
             // 获取下载直链
-            HttpService.HttpResponse res = await MSLApi.GetAsync($"/download/update?software=MSLX&system={osParam}&arch={archParam}", null);
+            HttpService.HttpResponse res =
+                await MSLApi.GetAsync($"/download/update?software=MSLX&system={osParam}&arch={archParam}", null);
 
             if (!res.IsSuccessStatusCode)
                 throw new Exception($"获取下载地址失败: {res.StatusCode}");
@@ -369,6 +374,7 @@ public class AppInfoController : ControllerBase
                     await SendUpdateProgressAsync(100, "0 KB/s", "preparing", "正在关闭运行中的实例...");
                     _serverService.StopAllServers();
                 }
+
                 await SendUpdateProgressAsync(100, "0 KB/s", "preparing", "准备重启守护进程...");
                 await StartUpdateScriptAndExitAsync(newFileTempName, isWindows);
             }
@@ -385,8 +391,6 @@ public class AppInfoController : ControllerBase
                     autoRestart = false
                 });
             }
-
-            
         }
         catch (Exception ex)
         {
@@ -404,7 +408,8 @@ public class AppInfoController : ControllerBase
         {
             using (ZipArchive archive = ZipFile.OpenRead(archivePath))
             {
-                var entry = archive.Entries.FirstOrDefault(e => e.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                var entry = archive.Entries.FirstOrDefault(e =>
+                                e.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
                             ?? archive.Entries.FirstOrDefault();
 
                 if (entry == null) throw new Exception("更新包为空或格式错误");
@@ -428,6 +433,7 @@ public class AppInfoController : ControllerBase
                 }
             }
         }
+
         System.IO.File.Delete(archivePath);
     }
 
@@ -522,7 +528,7 @@ rm -- ""$0""
 ";
             shellContent = shellContent.Replace("\r\n", "\n");
             System.IO.File.WriteAllText(scriptPath, shellContent);
-            
+
             Process.Start("/bin/chmod", $"+x \"{scriptPath}\"").WaitForExit();
 
             // 生成 AppleScript 临时文件
@@ -551,7 +557,7 @@ end tell
 
                 // 权限确认完毕，发送重启信号
                 await SendUpdateProgressAsync(100, "0 KB/s", "restarting", "权限已确认，正在重启...");
-                await Task.Delay(2000); 
+                await Task.Delay(2000);
             }
             catch (Exception ex)
             {
@@ -559,7 +565,13 @@ end tell
             }
             finally
             {
-                try { System.IO.File.Delete(appleScriptPath); } catch { }
+                try
+                {
+                    System.IO.File.Delete(appleScriptPath);
+                }
+                catch
+                {
+                }
             }
         }
         else
@@ -572,50 +584,30 @@ end tell
             string executionCmd = isDotnetDll
                 ? $"dotnet ./{Path.GetFileName(currentModuleFileName)}"
                 : $"./{currentExeName}";
-            
-            string serviceName = "mslx"; 
 
-            string shellContent = $@"
-#!/bin/bash
+            string serviceName = "mslx";
+
+            string shellContent = $@"#!/bin/bash
 cd ""$(dirname ""$0"")""
 sleep 3
 
-# 1. 无论 Systemd 是否重启了进程，Linux 都允许我们强制覆盖文件
-#    此时：磁盘上是新版，内存里可能是 Systemd 刚拉起的旧版
+# 覆盖文件（User=root，无权限问题）
 mv -f ./{newFileTempName} ./{currentExeName}
 chmod +x ./{currentExeName}
 
-# 清除临时变量
-ASPNETCORE_HOSTINGSTARTUPASSEMBLIES= DOTNET_MODIFIABLE_ASSEMBLIES= ASPNETCORE_ENVIRONMENT=Production
-
-# === Systemd 智能处理 ===
 SERVICE_NAME=""{serviceName}""
 
-# 检查是否存在名为 mslx.service 的服务
-if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files --full | grep -q ""$SERVICE_NAME.service""; then
-    echo ""Detected Systemd service: $SERVICE_NAME""
-    
-    # 尝试重启服务 (这将强制加载刚才覆盖的新文件)
-    # 即使 Systemd 刚才自动重启了旧版，这一步也会把它杀掉并启动新版
-    sudo systemctl restart ""$SERVICE_NAME""
-    
-    if [ $? -eq 0 ]; then
-        echo ""Systemd restart success.""
-    else
-        echo ""Systemd restart failed (Permission denied?).""
-        echo ""WARNING: Systemd has likely auto-restarted the OLD version.""
-        echo ""Please run 'sudo systemctl restart $SERVICE_NAME' manually to apply update.""
-    fi
-    
-    # 【关键】只要检测到 Systemd，无论重启成功与否，都直接退出
-    # 绝对不要降级到 nohup，否则会导致双重进程冲突！
+# 检测 system 级 systemd 服务
+if command -v systemctl >/dev/null 2>&1 && systemctl is-enabled ""$SERVICE_NAME"" >/dev/null 2>&1; then
+    echo ""[Update] Systemd service detected. File replaced, exiting.""
+    echo ""[Update] Systemd (Restart=always) will auto-restart with new binary after RestartSec=10.""
     rm -- ""$0""
     exit 0
 fi
 
-# === 仅在非 Systemd 环境下使用 Nohup ===
-echo ""Systemd not detected, falling back to nohup...""
-nohup {executionCmd} < /dev/null > /dev/null 2>&1 &
+# 无 systemd 服务，直接 nohup 拉起
+echo ""[Update] No Systemd service detected, starting via nohup...""
+nohup env ASPNETCORE_HOSTINGSTARTUPASSEMBLIES= DOTNET_MODIFIABLE_ASSEMBLIES= ASPNETCORE_ENVIRONMENT=Production {executionCmd} < /dev/null > ./mslx_update.log 2>&1 &
 
 rm -- ""$0""
 ";
@@ -627,13 +619,13 @@ rm -- ""$0""
             Process.Start(new ProcessStartInfo
             {
                 FileName = "/bin/bash",
-                Arguments = $"\"{scriptPath}\"",
+                Arguments = $"-c \"setsid /bin/bash '{scriptPath}' &\"",
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 WorkingDirectory = appPath
             });
         }
-        
+
         Thread.Sleep(500);
         _appLifetime.StopApplication();
     }
