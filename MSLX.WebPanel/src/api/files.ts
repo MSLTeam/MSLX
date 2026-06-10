@@ -49,9 +49,12 @@ export async function deleteUpload(uploadId: string) {
   });
 }
 
-export async function checkPackageJarList(uploadId: string){
+export async function checkPackageJarList(uploadId: string, localPath?: string) {
+  const id = localPath ? '0' : uploadId;
+
   return await request.get<UploadPackageCheckJarResponse>({
-    url: `/api/files/upload/inspect/${uploadId}`,
+    url: `/api/files/upload/inspect/${id}`,
+    params: localPath ? { localPath } : undefined,
     timeout: 60 * 1000,
   });
 }

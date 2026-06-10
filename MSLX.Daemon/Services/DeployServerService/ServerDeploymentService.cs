@@ -29,7 +29,8 @@ public class ServerDeploymentService
     /// <summary>
     /// 远程下载压缩包
     /// </summary>
-    public async Task<string> DownloadPackageAsync(string serverId, string packageFileUrl,string packageFileSha256, ReportProgress report)
+    public async Task<string> DownloadPackageAsync(string serverId, string packageFileUrl, string packageFileSha256,
+        ReportProgress report)
     {
         if (string.IsNullOrEmpty(packageFileUrl)) return string.Empty;
         try
@@ -51,25 +52,28 @@ public class ServerDeploymentService
     /// <summary>
     /// 处理整合包解压与目录调整
     /// </summary>
-    public async Task DeployPackageAsync(string serverId, string packageFileKey, string targetDir, ReportProgress report)
+    public async Task DeployPackageAsync(string serverId, string? packageFileKey, string? packageLocalPath,
+        string targetDir, ReportProgress report)
     {
-        if (string.IsNullOrEmpty(packageFileKey)) return;
+        if (string.IsNullOrEmpty(packageFileKey) && string.IsNullOrEmpty(packageLocalPath)) return;
 
-        string tempFilePath = Path.Combine(IConfigBase.GetAppDataPath(), "Temp", "Uploads", packageFileKey + ".tmp");
+        string sourceFilePath = !string.IsNullOrEmpty(packageLocalPath)
+            ? packageLocalPath
+            : Path.Combine(IConfigBase.GetAppDataPath(), "Temp", "Uploads", packageFileKey + ".tmp");
 
-        if (!File.Exists(tempFilePath))
+        if (!File.Exists(sourceFilePath))
         {
-            await report("上传的压缩包文件已过期或不存在！", -1, true);
+            await report("压缩包文件不存在或已过期！", -1, true);
             return;
         }
 
         try
         {
-            _logger.LogInformation("开始解压整合包: {Key}", packageFileKey);
+            _logger.LogInformation("开始解压整合包: {Path}", sourceFilePath);
             await report("正在解压服务端整合包...", 10);
 
             // 解压
-            ZipFile.ExtractToDirectory(tempFilePath, targetDir, true);
+            ZipFile.ExtractToDirectory(sourceFilePath, targetDir, System.Text.Encoding.GetEncoding("GBK"), true);
 
             // 去除套娃逻辑
             var rootDirs = Directory.GetDirectories(targetDir);
@@ -86,6 +90,7 @@ public class ServerDeploymentService
                     string destFile = Path.Combine(targetDir, Path.GetFileName(file));
                     File.Move(file, destFile, true);
                 }
+
                 // 移动文件夹
                 foreach (var dir in Directory.GetDirectories(nestedDir))
                 {
@@ -93,6 +98,7 @@ public class ServerDeploymentService
                     if (Directory.Exists(destDir)) Directory.Delete(destDir, true);
                     Directory.Move(dir, destDir);
                 }
+
                 Directory.Delete(nestedDir);
             }
 
@@ -105,7 +111,16 @@ public class ServerDeploymentService
         }
         finally
         {
-            try { File.Delete(tempFilePath); } catch { }
+            if (string.IsNullOrEmpty(packageLocalPath))
+            {
+                try
+                {
+                    File.Delete(sourceFilePath);
+                }
+                catch
+                {
+                }
+            }
         }
     }
 
@@ -116,9 +131,9 @@ public class ServerDeploymentService
     {
         try
         {
-            if(PlatFormServices.GetOs() != "Linux") return;
+            if (PlatFormServices.GetOs() != "Linux") return;
             string binPath = Path.Combine(targetDir, "bedrock_server");
-            
+
             if (File.Exists(binPath))
             {
                 var psi = new System.Diagnostics.ProcessStartInfo
@@ -136,8 +151,8 @@ public class ServerDeploymentService
                 }
             }
         }
-        catch 
-        { 
+        catch
+        {
         }
     }
 
@@ -206,7 +221,8 @@ public class ServerDeploymentService
     /// <summary>
     /// 部署核心文件 (支持用户上传 或 远程下载)
     /// </summary>
-    public async Task DeployCoreAsync(string serverId, string baseDir, string coreName, string? userUploadKey, string? downloadUrl, string? sha256, ReportProgress report)
+    public async Task DeployCoreAsync(string serverId, string baseDir, string coreName, string? userUploadKey,
+        string? downloadUrl, string? sha256, ReportProgress report)
     {
         string destPath = Path.Combine(baseDir, coreName);
         Directory.CreateDirectory(baseDir);
@@ -254,31 +270,32 @@ public class ServerDeploymentService
             {
                 string[] parts = coreName.Split('-');
 
-                targetCoreName = parts[0]; 
-                targetVersion = parts[^1].Replace(".jar",string.Empty);   
+                targetCoreName = parts[0];
+                targetVersion = parts[^1].Replace(".jar", string.Empty);
             }
 
             if (!string.IsNullOrEmpty(targetCoreName) && !string.IsNullOrEmpty(targetVersion))
             {
-                switch(targetCoreName.ToLower())
+                switch (targetCoreName.ToLower())
                 {
                     case "vanilla":
-                        await DownloadVanilla(Path.Combine(baseDir,".fabric","server"), $"{targetVersion}-server.jar", targetVersion, report);
+                        await DownloadVanilla(Path.Combine(baseDir, ".fabric", "server"), $"{targetVersion}-server.jar",
+                            targetVersion, report);
                         break;
                     case "paper":
                     case "leaves":
                     case "folia":
                     case "purpur":
                     case "leaf":
-                        await DownloadVanilla(Path.Combine(baseDir, "cache"), $"mojang_{targetVersion}.jar", targetVersion, report);
+                        await DownloadVanilla(Path.Combine(baseDir, "cache"), $"mojang_{targetVersion}.jar",
+                            targetVersion, report);
                         break;
                 }
             }
-
         }
         catch (Exception ex)
         {
-            await report($"处理原版服务端依赖失败: {ex.Message}",0);
+            await report($"处理原版服务端依赖失败: {ex.Message}", 0);
             // 不需要抛出异常 这不影响正常安装
         }
     }
@@ -294,7 +311,8 @@ public class ServerDeploymentService
             string downUrl = downContext["data"]?["url"]?.ToString() ?? string.Empty;
             string sha256Exp = downContext["data"]?["sha256"]?.ToString() ?? string.Empty;
 
-            bool success = await DownloadAndValidateAsync(downUrl, Path.Combine(path,filename), $"{version} 原版服务端", sha256Exp, report);
+            bool success = await DownloadAndValidateAsync(downUrl, Path.Combine(path, filename), $"{version} 原版服务端",
+                sha256Exp, report);
             if (!success) throw new Exception("下载原版服务端依赖失败");
             await report("原版服务端依赖下载成功。", 99.9);
         }
@@ -308,7 +326,8 @@ public class ServerDeploymentService
     /// 安装 NeoForge/Forge
     /// 返回值: 如果安装成功并需要修改启动命令，返回新的启动参数(args)；否则返回 null
     /// </summary>
-    public async Task<string?> InstallForgeIfNeededAsync(string serverId, string baseDir, string coreName, string javaConfig, ReportProgress report)
+    public async Task<string?> InstallForgeIfNeededAsync(string serverId, string baseDir, string coreName,
+        string javaConfig, ReportProgress report)
     {
         // 简单判断逻辑
         if (!coreName.Contains("forge") || !coreName.EndsWith(".jar") || coreName.Contains("arclight"))
@@ -379,7 +398,8 @@ public class ServerDeploymentService
 
     // 辅助方法
 
-    public async Task<bool> DownloadAndValidateAsync(string? url, string savePath, string itemName, string? sha256, ReportProgress report)
+    public async Task<bool> DownloadAndValidateAsync(string? url, string savePath, string itemName, string? sha256,
+        ReportProgress report)
     {
         if (string.IsNullOrEmpty(url)) return false;
 
@@ -394,7 +414,9 @@ public class ServerDeploymentService
             if ((DateTime.UtcNow - lastReport).TotalMilliseconds > 1000)
             {
                 lastReport = DateTime.UtcNow;
-                await report($"下载 {itemName} 中... {Math.Round(e.ProgressPercentage, 2)}% ({ConvertBytesToReadable(e.AverageBytesPerSecondSpeed)}/s)", e.ProgressPercentage == 100 ? 99.9 : e.ProgressPercentage);
+                await report(
+                    $"下载 {itemName} 中... {Math.Round(e.ProgressPercentage, 2)}% ({ConvertBytesToReadable(e.AverageBytesPerSecondSpeed)}/s)",
+                    e.ProgressPercentage == 100 ? 99.9 : e.ProgressPercentage);
             }
         };
 
@@ -410,7 +432,14 @@ public class ServerDeploymentService
                 if (!string.IsNullOrEmpty(sha256) && !await FileUtils.ValidateFileSha256Async(savePath, sha256))
                 {
                     await report($"{itemName} 校验失败！", -1, true);
-                    try { File.Delete(savePath); } catch { }
+                    try
+                    {
+                        File.Delete(savePath);
+                    }
+                    catch
+                    {
+                    }
+
                     tcs.TrySetResult(false);
                 }
                 else
@@ -433,6 +462,7 @@ public class ServerDeploymentService
             order++;
             bytes = bytes / 1024;
         }
+
         return $"{bytes:0.##} {sizes[order]}";
     }
 
@@ -471,6 +501,7 @@ public class ServerDeploymentService
                 RemoveReadOnlyAttributes(finalDestDir);
                 Directory.Delete(finalDestDir, true);
             }
+
             Directory.CreateDirectory(finalDestDir);
 
             RemoveReadOnlyAttributes(validJavaHome);
@@ -480,6 +511,7 @@ public class ServerDeploymentService
             {
                 Directory.CreateDirectory(dirPath.Replace(validJavaHome, finalDestDir));
             }
+
             // 复制文件
             foreach (string newPath in Directory.GetFiles(validJavaHome, "*.*", SearchOption.AllDirectories))
             {
@@ -497,7 +529,9 @@ public class ServerDeploymentService
                         System.Diagnostics.Process.Start("chmod", $"-R +x \"{binPath}\"").WaitForExit();
                     }
                 }
-                catch { }
+                catch
+                {
+                }
             }
         }
         finally
@@ -509,9 +543,17 @@ public class ServerDeploymentService
                 RemoveReadOnlyAttributes(tempExtractPath);
                 Directory.Delete(tempExtractPath, true);
             }
-            catch { }
+            catch
+            {
+            }
 
-            try { File.Delete(archivePath); } catch { }
+            try
+            {
+                File.Delete(archivePath);
+            }
+            catch
+            {
+            }
         }
     }
 
@@ -550,7 +592,10 @@ public class ServerDeploymentService
             Match match = Regex.Match(batFileContent, @"java\s+@user_jvm_args\.txt\s+(@\S+)");
             return match.Success ? match.Groups[1].Value : null;
         }
-        catch { return null; }
+        catch
+        {
+            return null;
+        }
     }
 
     /// <summary>
@@ -584,13 +629,14 @@ public class ServerDeploymentService
             {
                 if (IsCandidate(file) && !file.Name.Contains("universal"))
                 {
-                    return file.FullName.Replace(dirPath + Path.DirectorySeparatorChar, "").Replace(dirPath + "\\", ""); // 返回相对路径
+                    return file.FullName.Replace(dirPath + Path.DirectorySeparatorChar, "")
+                        .Replace(dirPath + "\\", ""); // 返回相对路径
                 }
             }
 
             foreach (FileInfo file in files)
             {
-                if (IsCandidate(file)) 
+                if (IsCandidate(file))
                 {
                     return file.FullName.Replace(dirPath + Path.DirectorySeparatorChar, "").Replace(dirPath + "\\", "");
                 }
@@ -603,5 +649,4 @@ public class ServerDeploymentService
             return null;
         }
     }
-
 }
