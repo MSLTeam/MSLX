@@ -88,7 +88,7 @@
     "stylelint-less": "^3.0.0",
     "stylelint-order": "^6.0.4",
     "typescript": "^5.5.3",
-    "vite": "^7.3.1",
+    "vite": "^7.3.5",
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
