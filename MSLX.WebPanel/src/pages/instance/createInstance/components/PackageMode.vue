@@ -10,10 +10,14 @@ import HostFileSelector from './HostFileSelector.vue';
 import { getJavaVersionList } from '@/api/mslapi/java';
 import { getLocalJavaList } from '@/api/localJava';
 import { postCreateInstanceQuickMode } from '@/api/instance';
-import { initUpload, uploadChunk, finishUpload, deleteUpload, checkPackageJarList } from '@/api/files';
+import { deleteUpload, checkPackageJarList } from '@/api/files';
 import { CreateInstanceQucikModeModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
 import { useInstanceListStore } from '@/store/modules/instance';
+import { useFileUpload } from '@/hooks/useFileUpload';
+
+const { isUploading, uploadProgress, uploadedFileName, uploadedFileSize, startUpload, removeUploadData } =
+  useFileUpload();
 
 // 状态管理
 const userStore = useUserStore();
@@ -28,7 +32,7 @@ const showHostFileSelector = ref(false);
 
 const isCreating = ref(false);
 const isSuccess = ref(false);
-const progress = ref(0);
+const progress = ref(0); // SignalR 创建进度
 const statusMessages = ref<{ time: string; message: string; progress: number | null }[]>([]);
 const hubConnection = ref<HubConnection | null>(null);
 const createdServerId = ref<string | null>(null);
@@ -46,12 +50,8 @@ const detectedJars = ref<string[]>([]);
 const isCheckingPackage = ref(false);
 const detectedRoot = ref('');
 
-// 上传相关状态
+// Input DOM 引用
 const uploadInputRef = ref<HTMLInputElement | null>(null);
-const isUploading = ref(false);
-const uploadProgress = ref(0);
-const uploadedFileName = ref('');
-const uploadedFileSize = ref('');
 
 // Java 选择相关状态
 const javaType = ref('online');
@@ -120,7 +120,6 @@ const minMComputed = computed({
     return minUnit.value === 'GB' ? formData.value.minM / 1024 : formData.value.minM;
   },
   set: (val) => {
-    // 存入 formData 时总是转回 MB
     formData.value.minM = minUnit.value === 'GB' ? Math.round(val * 1024) : val;
   },
 });
@@ -159,7 +158,6 @@ const onHostFileSelected = async (absolutePath: string) => {
 const FORM_RULES = computed<FormRules>(() => {
   return {
     name: [{ required: true, message: '实例名称不能为空', trigger: 'blur' }],
-    // 整合包步骤校验
     packageFileKey: [
       {
         validator: (val) => packageSourceType.value === 'localPath' || !!val,
@@ -176,16 +174,12 @@ const FORM_RULES = computed<FormRules>(() => {
         trigger: 'blur',
       },
     ],
-    // 核心步骤校验
     core: [
       {
         validator: (val) => {
-          // 检测到了Jar，必须选中一个
           if (detectedJars.value.length > 0) {
             if (!val) return { result: false, message: '请选择一个启动Jar', type: 'error' };
-          }
-          // 没检测到Jar，回退到原逻辑
-          else {
+          } else {
             if (downloadType.value === 'online' && !formData.value.coreUrl) {
               return { result: false, message: '请选择服务端核心', type: 'error' };
             }
@@ -205,11 +199,11 @@ const FORM_RULES = computed<FormRules>(() => {
 });
 
 const stepValidationFields = [
-  ['name', 'path'], // Step 0: 基本信息
-  ['packageFileKey', 'packageLocalPath'], // Step 1: 上传整合包
-  ['core', 'coreUrl', 'coreFileKey'], // Step 2: 核心配置
-  ['java'], // Step 3: Java
-  ['minM', 'maxM', 'args'], // Step 4: 资源
+  ['name', 'path'],
+  ['packageFileKey', 'packageLocalPath'],
+  ['core', 'coreUrl', 'coreFileKey'],
+  ['java'],
+  ['minM', 'maxM', 'args'],
   [],
 ];
 
@@ -218,7 +212,6 @@ const prevStep = () => {
 };
 
 const nextStep = async () => {
-  // Step 1 拦截: 必须上传完
   if (currentStep.value === 1) {
     if (packageSourceType.value === 'upload') {
       if (!formData.value.packageFileKey) {
@@ -242,7 +235,6 @@ const nextStep = async () => {
     }
   }
 
-  // Step 2 拦截: 必须确定核心
   if (currentStep.value === 2) {
     if (detectedJars.value.length > 0) {
       if (!formData.value.core) {
@@ -250,7 +242,6 @@ const nextStep = async () => {
         return;
       }
     } else {
-      // 未检测到 Jar
       if (downloadType.value === 'online' && (!formData.value.coreUrl || !formData.value.core)) {
         MessagePlugin.warning('请选择一个服务端核心');
         return;
@@ -268,7 +259,6 @@ const nextStep = async () => {
     return;
   }
 
-  // 检查当前步骤字段
   const fieldsToValidate = new Set(stepValidationFields[currentStep.value]);
   const hasError = Object.keys(validateResult).some((field) => fieldsToValidate.has(field));
 
@@ -279,24 +269,16 @@ const nextStep = async () => {
   }
 };
 
-// 上传和jar选择
 const triggerFileSelect = () => {
   uploadInputRef.value?.click();
 };
 
-const formatFileSize = (bytes: number) => {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-};
-
+// 文件选择
 const onFileChange = async (event: Event) => {
   const input = event.target as HTMLInputElement;
   if (!input.files || input.files.length === 0) return;
 
-  // 清理旧状态
+  // 清理旧状态的云端文件
   if (formData.value.packageFileKey) {
     try {
       await deleteUpload(formData.value.packageFileKey);
@@ -311,158 +293,23 @@ const onFileChange = async (event: Event) => {
   detectedRoot.value = '';
 
   const file = input.files[0];
-  uploadedFileName.value = file.name;
-  uploadedFileSize.value = formatFileSize(file.size);
-
-  await handleUpload(file);
-  input.value = '';
-};
-
-// 上传分片
-let abortController: AbortController | null = null;
-const handleUpload = async (file: File) => {
-  if (abortController) {
-    abortController.abort();
-  }
-  abortController = new AbortController();
-
-  isUploading.value = true;
-  uploadProgress.value = 0;
-
-  // 动态计算分片大小
-  const isLargeFile = file.size > 200 * 1024 * 1024; // >200MB
-  const chunkSize = isLargeFile ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
-  const totalChunks = Math.ceil(file.size / chunkSize);
-
-  const maxConcurrency = 4; // 并发数
-  const maxRetries = 5; // 重试次数
-
-  // 每个分片已上传的字节数
-  const chunkProgressMap = new Map<number, number>();
-  let lastUpdateTime = 0;
-
-  // 更新进度条
-  const updateProgress = () => {
-    const now = Date.now();
-    // 100ms/onece
-    if (now - lastUpdateTime < 100) return;
-    lastUpdateTime = now;
-
-    const loadedBytes = Array.from(chunkProgressMap.values()).reduce((sum, val) => sum + val, 0);
-    // 2% 合并阶段
-    const percent = Math.min((loadedBytes / file.size) * 98, 98);
-    uploadProgress.value = Number(percent.toFixed(1));
-  };
 
   try {
-    // 获取上传 ID
-    const initRes = await initUpload();
-    const uploadId = (initRes as any).uploadId;
-    if (!uploadId) throw new Error('无法获取上传凭证');
+    const finalKey = await startUpload(file);
 
-    // 准备分片索引
-    const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i);
-
-    // 单个分片处理函数
-    const processChunk = async (index: number) => {
-      if (abortController?.signal.aborted) throw new Error('已取消');
-
-      const start = index * chunkSize;
-      const end = Math.min(file.size, start + chunkSize);
-      const chunkBlob = file.slice(start, end);
-
-      let lastError: any;
-
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        if (abortController?.signal.aborted) throw new Error('已取消');
-
-        try {
-          // 传入进度回调
-          await uploadChunk(
-            uploadId,
-            index,
-            chunkBlob,
-            (e: any) => {
-              if (e && e.loaded) {
-                chunkProgressMap.set(index, e.loaded);
-                updateProgress();
-              }
-            },
-            abortController?.signal,
-          );
-
-          // 强制设置为该分片完整大小
-          chunkProgressMap.set(index, chunkBlob.size);
-          updateProgress();
-          return;
-        } catch (err: any) {
-          lastError = err;
-          // 失败 分片进度归零
-          chunkProgressMap.set(index, 0);
-          updateProgress();
-
-          if (attempt < maxRetries) {
-            await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
-          }
-        }
-      }
-      throw new Error(`分片 ${index} 失败: ${(lastError as any)?.message}`);
-    };
-
-    // 定义 Worker 消费者
-    const worker = async () => {
-      while (chunkIndices.length > 0) {
-        if (abortController?.signal.aborted) break;
-        const index = chunkIndices.shift();
-        if (index !== undefined) {
-          await processChunk(index);
-        }
-      }
-    };
-
-    // 启动并发 Worker
-    const workers = Array(Math.min(maxConcurrency, totalChunks))
-      .fill(null)
-      .map(() => worker());
-
-    await Promise.all(workers);
-
-    if (abortController?.signal.aborted) throw new Error('已取消');
-
-    // 请求合并
-    // 既然都传完了，给点心理安慰，进度条拉满一点
-    uploadProgress.value = 99;
-
-    const finishRes = await finishUpload(uploadId, totalChunks);
-    const finalKey = (finishRes as any).uploadId;
-
-    // 完成
-    uploadProgress.value = 100;
     formData.value.packageFileKey = finalKey;
     MessagePlugin.success('上传成功，正在分析整合包内容...');
 
     // 立即调用分析接口
     await analyzePackage(finalKey);
   } catch (error: any) {
-    // 忽略手动取消的报错
-    if (error.message === '已取消') return;
-
-    abortController?.abort(); // 停止所有请求
-    console.error(error);
-    MessagePlugin.error(`上传失败: ${error.message || '未知错误'}`);
-    uploadedFileName.value = '';
-    uploadProgress.value = 0;
-
-    // 清理逻辑
-    if (formData.value.packageFileKey) {
-      deleteUpload(formData.value.packageFileKey).catch(() => {});
-      formData.value.packageFileKey = ''; // 清空 key
+    if (error.message !== '已取消') {
+      console.error(error);
+      MessagePlugin.error(`上传失败: ${error.message || '未知错误'}`);
+      formData.value.packageFileKey = '';
     }
   } finally {
-    // 非取消状态下才关闭 loading
-    if (!abortController?.signal.aborted) {
-      isUploading.value = false;
-    }
+    input.value = '';
   }
 };
 
@@ -489,18 +336,17 @@ const analyzePackage = async (key: string, localPath?: string) => {
   }
 };
 
+// 移除文件
 const removeUploadedFile = async () => {
   if (formData.value.packageFileKey) {
-    await deleteUpload(formData.value.packageFileKey);
+    await removeUploadData();
     formData.value.packageFileKey = '';
-    uploadedFileName.value = '';
     detectedJars.value = [];
     formData.value.core = '';
     MessagePlugin.success('文件已移除');
   }
 };
 
-// 核心选择
 const onCoreSelected = (data: { core: string; version: string; url: string; sha256: string; filename: string }) => {
   formData.value.core = data.filename;
   formData.value.coreUrl = data.url;
@@ -509,7 +355,6 @@ const onCoreSelected = (data: { core: string; version: string; url: string; sha2
   MessagePlugin.success(`已选择: ${data.core} (${data.version})`);
 };
 
-// 提交和实时通讯
 const onSubmit = async () => {
   const validateResult = await formRef.value.validate();
   if (validateResult !== true) {
@@ -529,7 +374,6 @@ const onSubmit = async () => {
     args: formData.value.args || null,
   };
 
-  // 清理不需要的字段
   if (packageSourceType.value === 'localPath') {
     apiData.packageFileKey = null;
   } else {
@@ -540,7 +384,6 @@ const onSubmit = async () => {
     apiData.coreSha256 = null;
     apiData.coreFileKey = null;
   } else {
-    // 没检测到包，使用传统的下载/上传核心逻辑
     if (downloadType.value === 'manual') {
       apiData.coreUrl = null;
       apiData.coreSha256 = null;
@@ -556,7 +399,7 @@ const onSubmit = async () => {
 
     createdServerId.value = serverId.toString();
     isCreating.value = true;
-    currentStep.value = 6; // 跳转到创建页
+    currentStep.value = 6;
 
     await startSignalRConnection(createdServerId.value);
   } catch (error: any) {
@@ -584,7 +427,6 @@ const startSignalRConnection = async (serverId: string) => {
       progress: prog,
     });
 
-    // 自动滚动底部
     nextTick(() => {
       if (logContainerRef.value) {
         logContainerRef.value.scrollTop = logContainerRef.value.scrollHeight;
@@ -639,14 +481,11 @@ const goToHome = () => {
     args: '',
   };
   detectedJars.value = [];
-  uploadedFileName.value = '';
   downloadType.value = 'online';
   javaType.value = 'online';
+
+  removeUploadData();
 };
-/*
-const viewDetails = () => {
-  router.push('/detail/advanced');
-}; */
 </script>
 
 <template>
@@ -832,8 +671,8 @@ const viewDetails = () => {
                 </t-alert>
 
                 <t-form-item label="选择启动核心" name="core">
-                  <t-radio-group v-model="formData.core" class="flex flex-col gap-3">
-                    <div v-for="jar in detectedJars" :key="jar" class="flex items-center">
+                  <t-radio-group v-model="formData.core" class="flex flex-col gap-3 w-full items-start">
+                    <div v-for="jar in detectedJars" :key="jar" class="flex w-full items-center justify-start">
                       <t-radio :value="jar" class="!font-mono !text-sm">{{ jar }}</t-radio>
                     </div>
                   </t-radio-group>
