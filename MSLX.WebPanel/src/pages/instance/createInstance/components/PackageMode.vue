@@ -3,8 +3,10 @@ import { onUnmounted, ref, watch, onMounted, computed, nextTick } from 'vue';
 import { type FormRules, MessagePlugin } from 'tdesign-vue-next';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { useUserStore } from '@/store';
+import { FolderOpenIcon } from 'tdesign-icons-vue-next';
 
 import ServerCoreSelector from './ServerCoreSelector.vue';
+import HostFileSelector from './HostFileSelector.vue';
 import { getJavaVersionList } from '@/api/mslapi/java';
 import { getLocalJavaList } from '@/api/localJava';
 import { postCreateInstanceQuickMode } from '@/api/instance';
@@ -21,6 +23,8 @@ const instanceListStore = useInstanceListStore();
 
 const currentStep = ref(0);
 const isSubmitting = ref(false);
+
+const showHostFileSelector = ref(false);
 
 const isCreating = ref(false);
 const isSuccess = ref(false);
@@ -144,6 +148,12 @@ watch(
   },
   { immediate: true },
 );
+
+// 处理选择本地整合包zip
+const onHostFileSelected = async (absolutePath: string) => {
+  formData.value.packageLocalPath = absolutePath;
+  await analyzePackage('', absolutePath);
+};
 
 // 表单和步骤校验
 const FORM_RULES = computed<FormRules>(() => {
@@ -455,7 +465,6 @@ const handleUpload = async (file: File) => {
     }
   }
 };
-
 
 const analyzePackage = async (key: string, localPath?: string) => {
   isCheckingPackage.value = true;
@@ -792,11 +801,22 @@ const viewDetails = () => {
                 class="!mb-0"
                 help="请确保守护进程有权限读取该路径下的文件"
               >
-                <t-input
-                  v-model="formData.packageLocalPath"
-                  placeholder="例如: /data/mc/modpack.zip"
-                  class="!w-full sm:!w-[32rem] !font-mono"
-                />
+                <div class="flex items-center gap-2 w-full sm:w-[32rem]">
+                  <t-input
+                    v-model="formData.packageLocalPath"
+                    placeholder="例如: /data/mc/modpack.zip"
+                    class="!font-mono !flex-1"
+                    @change="
+                      (val) => {
+                        if (val) analyzePackage('', val as any);
+                      }
+                    "
+                  />
+                  <t-button variant="outline" @click="showHostFileSelector = true" class="shrink-0">
+                    <template #icon><folder-open-icon /></template>
+                    浏览
+                  </t-button>
+                </div>
               </t-form-item>
             </div>
 
@@ -1274,7 +1294,7 @@ const viewDetails = () => {
         </div>
       </div>
     </div>
-
+    <host-file-selector v-model:visible="showHostFileSelector" search-pattern="*.zip" @select="onHostFileSelected" />
     <server-core-selector v-model:visible="showCoreSelector" @confirm="onCoreSelected" />
   </div>
 </template>
