@@ -110,6 +110,9 @@ const initTerminal = () => {
     allowTransparency: true,
     disableStdin: true,
     convertEol: true,
+    smoothScrollDuration: 200,
+    fastScrollSensitivity: 5,
+    scrollback: 3000,
   });
 
   fitAddon = new FitAddon();
