@@ -1,6 +1,6 @@
 {
-  "version": "1.4.6",
-  "buildTime": "2026-06-10 20:54:27",
+  "version": "1.4.7",
+  "buildTime": "2026-06-21 16:09:25",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -77,10 +77,46 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "4b78d41b003c136c0db5c127e4a29e2ebf231c2c",
-  "commitMsg": "fix(webpanel): 丢了个参数",
+  "commitId": "47e2b7c7a72172c366baed925f678d9752b5fcdb",
+  "commitMsg": "feat(daemon & webpanel): 初始化/重置默认账户时，会生成一个包含默认账户密码信息的文本文件在数据目录",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "47e2b7c7a72172c366baed925f678d9752b5fcdb",
+      "commitTime": "2026-06-21 16:08:03 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 初始化/重置默认账户时，会生成一个包含默认账户密码信息的文本文件在数据目录"
+    },
+    {
+      "commitId": "b8f667da000e85ff7d9e87b4a8048325ca88aafa",
+      "commitTime": "2026-06-21 15:54:06 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复针对部分特定服务端(如Youer端的首次启动)会产生子进程运行的情况导致状态判断错误的问题(此类情况只能监听日志输出,没办法输入命令了)"
+    },
+    {
+      "commitId": "9afff6329679f8cf29fa5f30c2ebe37307222dbc",
+      "commitTime": "2026-06-21 15:04:03 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复创建实例上传文件的进度条进度由于小数导致的宽度乱跳问题 #141"
+    },
+    {
+      "commitId": "e4504c65309e58ed2ffbc23d2c3089668a940bc3",
+      "commitTime": "2026-06-21 14:59:13 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 优化终端的滚动效果 #142"
+    },
+    {
+      "commitId": "fd3dacbd784edd620d7c53f4552bf594be497c07",
+      "commitTime": "2026-06-10 20:55:33 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #139 from MSLTeam/dev"
+    },
+    {
+      "commitId": "1d76c92445193908043629eaafa5ff98143a6b19",
+      "commitTime": "2026-06-10 20:54:40 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新到 v1.4.6 版本"
+    },
     {
       "commitId": "4b78d41b003c136c0db5c127e4a29e2ebf231c2c",
       "commitTime": "2026-06-10 20:54:00 +0800",
@@ -344,42 +380,6 @@
       "commitTime": "2026-05-16 23:41:35 +0800",
       "commitAuthor": "Waheal",
       "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
-    },
-    {
-      "commitId": "7b634e07243e135bd21ca447ea53636bbf2ed1fa",
-      "commitTime": "2026-05-16 23:41:18 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "fix(desktop): 修复无法记录MSLFrp登陆状态的bug style(desktop): 优化数据绑定代码"
-    },
-    {
-      "commitId": "1472adbcd567a6730810355a3c6051cc093f29bc",
-      "commitTime": "2026-05-16 18:00:57 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #132 from LegendarySHT/dev"
-    },
-    {
-      "commitId": "dbea47b2c045f60bb26cfcf66e89b4d7ea8c135d",
-      "commitTime": "2026-05-15 17:48:28 +0800",
-      "commitAuthor": "LegendartSHT",
-      "commitMsg": "fix(MapRenderController): 修复未知方块颜色污染后续渲染的问题"
-    },
-    {
-      "commitId": "3497214436d7abb2e32c1409a6986de121a329b1",
-      "commitTime": "2026-05-14 21:20:51 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #131 from MSLTeam/dev"
-    },
-    {
-      "commitId": "78c2f4c2fe37ffab978c112eccd8147d73848c55",
-      "commitTime": "2026-05-14 21:19:10 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(webpanel & daemon): 更新到v1.4.3版本"
-    },
-    {
-      "commitId": "ec55253757124368eb1b3271837466111e04b852",
-      "commitTime": "2026-05-14 21:18:17 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复依赖丢失 #130"
     }
   ]
 }
