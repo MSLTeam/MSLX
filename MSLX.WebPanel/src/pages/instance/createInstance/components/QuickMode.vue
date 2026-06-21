@@ -12,7 +12,7 @@ import { deleteUpload } from '@/api/files';
 import { CreateInstanceQucikModeModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
 import { useInstanceListStore } from '@/store/modules/instance';
-import { useFileUpload } from '@/hooks/useFileUpload'; // 请根据你实际的文件路径调整
+import { useFileUpload } from '@/hooks/useFileUpload';
 
 const { isUploading, uploadProgress, uploadedFileName, uploadedFileSize, startUpload, removeUploadData } =
   useFileUpload();
@@ -705,7 +705,11 @@ const goToHome = () => {
                         <div class="text-sm font-bold text-[var(--td-text-color-primary)] mb-2 truncate">
                           正在上传: {{ uploadedFileName }} ({{ uploadedFileSize }})
                         </div>
-                        <t-progress theme="line" :percentage="uploadProgress" />
+                        <t-progress
+                          theme="line"
+                          :percentage="uploadProgress"
+                          :label="`${Math.round(uploadProgress)}%`"
+                        />
                         <div class="text-[11px] text-zinc-500 mt-2 text-center">别着急，喝杯茶🍵...</div>
                       </div>
 
@@ -942,7 +946,7 @@ const goToHome = () => {
           <p class="text-sm text-[var(--td-text-color-secondary)] mb-6">请勿关闭此页面，创建过程可能需要几分钟...</p>
 
           <div class="w-full max-w-lg !my-6">
-            <t-progress theme="plump" :percentage="progress" :label="`${progress.toFixed(2)}%`" />
+            <t-progress theme="plump" :percentage="progress" :label="`${progress.toFixed(0)}%`" />
           </div>
 
           <div

@@ -586,7 +586,7 @@ const goToHome = () => {
                     <div class="text-sm font-bold text-[var(--td-text-color-primary)] mb-2 truncate">
                       正在上传: {{ uploadedFileName }} ({{ uploadedFileSize }})
                     </div>
-                    <t-progress theme="line" :percentage="uploadProgress" />
+                    <t-progress theme="line" :percentage="uploadProgress" :label="`${Math.round(uploadProgress)}%`" />
                     <div class="text-[11px] text-zinc-500 mt-2 text-center">别着急，喝杯咖啡☕️...</div>
                   </div>
 
@@ -1080,7 +1080,7 @@ const goToHome = () => {
           <p class="text-sm text-[var(--td-text-color-secondary)] mb-6">正在解压文件并配置环境...</p>
 
           <div class="w-full max-w-lg !my-6">
-            <t-progress theme="plump" :percentage="progress" :label="`${progress.toFixed(2)}%`" />
+            <t-progress theme="plump" :percentage="progress" :label="`${progress.toFixed(0)}%`" />
           </div>
 
           <div
