@@ -161,6 +161,9 @@ const initTerminal = () => {
     theme: isDark ? termThemes.dark : termThemes.light,
     allowTransparency: true,
     convertEol: true,
+    smoothScrollDuration: 200,
+    fastScrollSensitivity: 5,
+    scrollback: 3000,
   });
 
   fitAddon = new FitAddon();

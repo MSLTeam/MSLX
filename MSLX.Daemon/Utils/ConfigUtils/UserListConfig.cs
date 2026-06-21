@@ -32,6 +32,7 @@ public class UserListConfig : IDisposable
             });
             _logger.LogInformation($"已初始化默认管理员用户: mslx / {defaultPassword}");
             _logger.LogInformation($"账号: mslx \n密码: {defaultPassword}");
+            ExportDefaultCredentialsFile("mslx", defaultPassword);
 
             // 这里打开带初始化信息提示的登录页面
             OpenWebBrowser(true);
@@ -70,6 +71,37 @@ public class UserListConfig : IDisposable
         var dir = Path.GetDirectoryName(path);
         if (!Directory.Exists(dir)) Directory.CreateDirectory(dir!);
         if (!File.Exists(path)) File.WriteAllText(path, defaultContent);
+    }
+    
+    private void ExportDefaultCredentialsFile(string username, string password)
+    {
+        try
+        {
+            var txtPath = Path.Combine(IConfigBase.GetAppDataPath(), "默认账户信息.txt");
+            var content = $@"==================================================
+MSLX-Daemon 初始化成功 - 默认管理员凭据
+==================================================
+生成时间: {{DateTime.Now:yyyy-MM-dd HH:mm:ss}}
+
+【安全提示】
+请务必在首次登录控制台后，前往用户管理修改默认的用户名、密码！
+以防止您的守护进程面板被恶意扫描并控制。
+
+【账户信息】
+登录账号: {username}
+默认密码: {password}
+
+【控制台地址】
+如果浏览器未自动打开，请手动访问配置的端口（默认 http://localhost:1027）
+==================================================";
+
+            File.WriteAllText(txtPath, content, System.Text.Encoding.UTF8);
+            _logger.LogInformation($"已将初始账户密码导出至: {txtPath}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"导出默认账户密码文件失败: {ex.Message}");
+        }
     }
 
     public UserInfo? GetUserByApiKey(string apiKey)

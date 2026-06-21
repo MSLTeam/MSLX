@@ -210,11 +210,11 @@ onMounted(() => {
 
         <div class="guide-item">
           <div class="guide-title"><t-icon name="refresh" /> 方式二：初始化默认账户</div>
-          <p class="guide-desc">若无法联系其他管理员，请在服务器端删除以下配置文件：</p>
+          <p class="guide-desc">若无法联系其他管理员，请先停止MSLX，然后在软件数据文件夹删除以下文件：</p>
           <div class="code-block">DaemonData/Configs/UserList.json</div>
           <p>
             <t-alert style="margin-top: 10px"
-              >操作提示：删除该文件后，请<strong>重启守护进程</strong>。系统将自动重新创建包含默认账号密码的初始文件。</t-alert
+              >操作提示：删除该文件后，请<strong>重启MSLX</strong>。系统将自动重新创建包含默认账号密码信息的文件在软件数据目录。</t-alert
             >
           </p>
         </div>
@@ -280,14 +280,14 @@ onMounted(() => {
     }
   }
 
-  // 新增：包裹容器样式
+  // 包裹容器样式
   .btn-wrapper {
     width: 100%;
     display: flex;
     flex-direction: column; // 强制垂直排列
   }
 
-  // 调整一下间距
+  // 间距
   .msl-login-wrapper {
     margin-top: 16px; // 登录按钮和下方文字的间距
     width: 100%;
@@ -295,10 +295,9 @@ onMounted(() => {
     justify-content: center;
   }
 
-  // --- 新增：简约动态文本按钮样式 ---
 
   .msl-login-wrapper {
-    margin-top: 20px; // 与登录按钮拉开一点距离
+    margin-top: 20px;
     width: 100%;
     display: flex;
     justify-content: center;
@@ -310,7 +309,7 @@ onMounted(() => {
     align-items: center;
     justify-content: center;
     font-size: 14px;
-    color: var(--td-text-color-secondary); // 默认灰色，不抢眼
+    color: var(--td-text-color-secondary);
     cursor: pointer;
     padding: 4px 0;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -322,23 +321,23 @@ onMounted(() => {
       transition: transform 0.3s;
     }
 
-    // 关键动效：伪元素下划线
+    // 伪元素下划线
     &::after {
       content: '';
       position: absolute;
       bottom: 0;
-      left: 50%; // 从中间开始
-      width: 0; // 初始宽度为0
+      left: 50%;
+      width: 0;
       height: 2px;
-      background-color: var(--td-brand-color); // 品牌色下划线
-      transition: all 0.3s ease-in-out; // 丝滑动画
-      transform: translateX(-50%); // 居中修正
+      background-color: var(--td-brand-color);
+      transition: all 0.3s ease-in-out;
+      transform: translateX(-50%);
       opacity: 0;
     }
 
     // 悬浮状态
     &:hover {
-      color: var(--td-brand-color); // 文字变色
+      color: var(--td-brand-color);
 
       // 图标轻微上浮
       :deep(.t-icon) {
@@ -352,7 +351,7 @@ onMounted(() => {
       }
     }
 
-    // 点击时的按压感
+    // 点击时
     &:active {
       opacity: 0.8;
       transform: scale(0.98);

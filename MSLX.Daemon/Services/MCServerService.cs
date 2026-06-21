@@ -14,7 +14,7 @@ using MSLX.SDK.Models;
 
 namespace MSLX.Daemon.Services;
 
-public class MCServerService: IMCServerService
+public class MCServerService : IMCServerService
 {
     private readonly ILogger<IMCServerService> _logger;
     private readonly IHubContext<InstanceConsoleHub> _hubContext;
@@ -41,6 +41,14 @@ public class MCServerService: IMCServerService
 
         public Process? MonitorProcess { get; set; } // win下监控的进程
         public int LastMonitoredPid { get; set; } = -1;
+
+        // 用于子进程脱出的监控
+        public object StateLock = new object();
+        public volatile bool IsProcessExited = false;
+        public volatile bool IsStdoutClosed = false;
+        public volatile bool IsStderrClosed = false;
+        public volatile int FinalExitCode = 0;
+        public volatile bool HasTriggeredExit = false;
     }
 
     private readonly ConcurrentDictionary<uint, ServerContext> _activeServers = new(); // 存储运行中实例的状态数据
@@ -81,9 +89,12 @@ public class MCServerService: IMCServerService
         {
             if (context.IsInitializing) return true;
 
-            if (context.Process != null && !context.Process.HasExited)
+            lock (context.StateLock)
             {
-                return true;
+                if (!context.IsProcessExited || !context.IsStdoutClosed || !context.IsStderrClosed)
+                {
+                    return true;
+                }
             }
 
             _activeServers.TryRemove(instanceId, out _);
@@ -115,9 +126,15 @@ public class MCServerService: IMCServerService
                 return (1, "启动中");
             }
 
-            if (context.Process != null && !context.Process.HasExited)
+            if (context.Process != null)
             {
-                return (2, "运行中");
+                lock (context.StateLock)
+                {
+                    if (!context.IsProcessExited || !context.IsStdoutClosed || !context.IsStderrClosed)
+                    {
+                        return (2, "运行中");
+                    }
+                }
             }
         }
 
@@ -217,6 +234,7 @@ public class MCServerService: IMCServerService
             {
                 return new UTF8Encoding(false);
             }
+
             return Encoding.GetEncoding(name);
         }
         catch (Exception)
@@ -406,11 +424,50 @@ public class MCServerService: IMCServerService
             {
                 if (sender is Process p)
                 {
-                    HandleServerExit(instanceId, p.ExitCode);
+                    lock (context.StateLock)
+                    {
+                        context.IsProcessExited = true;
+                        context.FinalExitCode = p.ExitCode; // 暂存退出代码
+                    }
+
+                    // 真退出吗哥？
+                    CheckAndHandleTrueExit(instanceId, context);
                 }
             };
-            process.OutputDataReceived += (sender, e) => RecordLog(instanceId, context, e.Data);
-            process.ErrorDataReceived += (sender, e) => RecordLog(instanceId, context, e.Data);
+
+            process.OutputDataReceived += (sender, e) =>
+            {
+                if (e.Data == null) // EOF了
+                {
+                    lock (context.StateLock)
+                    {
+                        context.IsStdoutClosed = true;
+                    }
+
+                    CheckAndHandleTrueExit(instanceId, context);
+                }
+                else
+                {
+                    RecordLog(instanceId, context, e.Data);
+                }
+            };
+
+            process.ErrorDataReceived += (sender, e) =>
+            {
+                if (e.Data == null) // EOF了
+                {
+                    lock (context.StateLock)
+                    {
+                        context.IsStderrClosed = true;
+                    }
+
+                    CheckAndHandleTrueExit(instanceId, context);
+                }
+                else
+                {
+                    RecordLog(instanceId, context, e.Data);
+                }
+            };
 
             RecordLog(instanceId, context, "[MSLX-Daemon] 正在启动服务端实例...");
 
@@ -460,58 +517,86 @@ public class MCServerService: IMCServerService
                 {
                     try
                     {
-                        if (context.Process != null && !context.Process.HasExited)
+                        if (context.Process != null)
                         {
+                            bool isSchrodingerState = false;
+                            bool isCompletelyDead = false;
+
+                            lock (context.StateLock)
+                            {
+                                // 子进程还在
+                                isSchrodingerState = context.IsProcessExited &&
+                                                     (!context.IsStdoutClosed || !context.IsStderrClosed);
+                                // 全关掉了
+                                isCompletelyDead = context.IsProcessExited && context.IsStdoutClosed &&
+                                                   context.IsStderrClosed;
+                            }
+
+                            if (isCompletelyDead)
+                            {
+                                // 全关掉了
+                                return;
+                            }
+
                             var server = IConfigBase.ServerList.GetServer(instanceId);
                             int waitTimeMs = (server?.ForceExitDelay ?? 10) * 1000;
 
                             try
                             {
-                                bool isMcServer = server != null && server.Java != "none";
-
-                                if (isMcServer)
+                                if (isSchrodingerState)
                                 {
-                                    // MC服务器：发送 stop / 自定义 命令
-                                    if (string.IsNullOrEmpty(server?.StopCommand ?? ""))
-                                    {
-                                        context.Process.StandardInput.WriteLine("stop");
-                                    }
-                                    else
-                                    {
-                                        context.Process.StandardInput.WriteLine(server?.StopCommand ?? "stop");
-                                    }
-
-                                    context.Process.StandardInput.Flush();
-                                }
-                                else
-                                {
-                                    // 其他类型
-                                    if (string.IsNullOrEmpty(server?.StopCommand ?? "") ||
-                                        (server?.StopCommand ?? "") == "^c")
-                                    {
-                                        ProcessHelper.SendCtrlC(context.Process);
-                                    }
-                                    else
-                                    {
-                                        context.Process.StandardInput.WriteLine(server?.StopCommand ?? "stop");
-                                    }
-
-                                    // 关闭输入流
-                                    context.Process.StandardInput.Close();
-                                }
-
-                                // 等待进程退出
-                                if (!context.Process.WaitForExit(waitTimeMs))
-                                {
-                                    // 超时未退出 -> 强制树形结束
+                                    // 没有StdIn 只能kill了
+                                    RecordLog(instanceId, context,
+                                        ">>> [MSLX-Daemon] 服务端处于特殊接管状态，无法发送安全停止命令，正在强制结束进程...");
                                     context.Process.Kill(true);
-                                    RecordLog(instanceId, context, "[MSLX] 服务器超时，已强制结束进程树");
-                                    _logger.LogWarning($"服务器实例 {instanceId} 关闭超时，已强制结束进程树");
                                 }
                                 else
                                 {
-                                    RecordLog(instanceId, context, "[MSLX] 服务器已正常关闭");
-                                    _logger.LogInformation($"服务器实例 {instanceId} 已正常关闭");
+                                    bool isMcServer = server != null && server.Java != "none";
+
+                                    if (isMcServer)
+                                    {
+                                        // MC服务器：发送 stop / 自定义 命令
+                                        if (string.IsNullOrEmpty(server?.StopCommand ?? ""))
+                                        {
+                                            context.Process.StandardInput.WriteLine("stop");
+                                        }
+                                        else
+                                        {
+                                            context.Process.StandardInput.WriteLine(server?.StopCommand ?? "stop");
+                                        }
+
+                                        context.Process.StandardInput.Flush();
+                                    }
+                                    else
+                                    {
+                                        // 其他类型
+                                        if (string.IsNullOrEmpty(server?.StopCommand ?? "") ||
+                                            (server?.StopCommand ?? "") == "^c")
+                                        {
+                                            ProcessHelper.SendCtrlC(context.Process);
+                                        }
+                                        else
+                                        {
+                                            context.Process.StandardInput.WriteLine(server?.StopCommand ?? "stop");
+                                        }
+
+                                        // 关闭输入流
+                                        context.Process.StandardInput.Close();
+                                    }
+
+                                    // 等待进程退出
+                                    if (!context.Process.WaitForExit(waitTimeMs))
+                                    {
+                                        // 超时未退出 -> 强制树形结束
+                                        context.Process.Kill(true);
+                                        RecordLog(instanceId, context, "[MSLX] 服务器超时，已强制结束进程树");
+                                        _logger.LogWarning($"服务器实例 {instanceId} 关闭超时，已强制结束进程树");
+                                    }
+                                    else
+                                    {
+                                        RecordLog(instanceId, context, "[MSLX] 已发送关闭指令，正在等待流关闭...");
+                                    }
                                 }
                             }
                             catch (Exception ex)
@@ -667,6 +752,17 @@ public class MCServerService: IMCServerService
         {
             try
             {
+                lock (context.StateLock)
+                {
+                    // 子进程溜出来情况的处理
+                    if (context.IsProcessExited && (!context.IsStdoutClosed || !context.IsStderrClosed))
+                    {
+                        RecordLog(instanceId, context, ">>> [MSLX-Daemon] 当前服务端处于特殊的进程状态，已脱离MSLX的进程监控。");
+                        RecordLog(instanceId, context, ">>> [MSLX-Daemon] 因此目前无法向服务端发送指令，您可以重启后再尝试或在游戏内进行指令输入。");
+                        return false;
+                    }
+                }
+
                 if (context.Process != null && !context.Process.HasExited)
                 {
                     context.Process.StandardInput.WriteLine(command);
@@ -884,6 +980,29 @@ public class MCServerService: IMCServerService
     }
 
     /// <summary>
+    /// 检查并处理真正的进程退出（标准流彻底不输出了喵！）
+    /// </summary>
+    private void CheckAndHandleTrueExit(uint instanceId, ServerContext context)
+    {
+        lock (context.StateLock)
+        {
+            // 来过了就别来了哇
+            if (context.HasTriggeredExit) return;
+
+            // 主进程关了 标准流都EOF了
+            if (context.IsProcessExited && context.IsStdoutClosed && context.IsStderrClosed)
+            {
+                context.HasTriggeredExit = true;
+
+                if (_activeServers.ContainsKey(instanceId))
+                {
+                    HandleServerExit(instanceId, context.FinalExitCode);
+                }
+            }
+        }
+    }
+
+    /// <summary>
     /// 获取服务器已运行的时间
     /// </summary>
     public TimeSpan GetServerUptime(uint instanceId)
@@ -1093,6 +1212,7 @@ public class MCServerService: IMCServerService
             RecordLog(instanceId, context, "[MSLX-Backup] 正在备份中，请勿重复操作。");
             return;
         }
+
         bool isBedrock = false;
         try
         {
@@ -1122,6 +1242,7 @@ public class MCServerService: IMCServerService
                         SendCommand(instanceId,
                             "tellraw @a {\"rawtext\":[{\"text\":\"§e[§aMSLX§e] §b正在进行服务器存档备份，请勿关闭服务器哦，否则可能造成回档！备份期间不会影响正常游戏~\"}]}");
                     }
+
                     RecordLog(instanceId, context, "[MSLX-Backup] 正在备份基岩版服务器存档...");
                     await Task.Delay(server.BackupDelay * 1000);
                 }
@@ -1287,7 +1408,7 @@ public class MCServerService: IMCServerService
                     {
                         formattedSize = $"{fileSizeInBytes} Bytes";
                     }
-                    
+
                     string tellrawMessage;
 
                     if (isBedrock)
@@ -1312,7 +1433,7 @@ public class MCServerService: IMCServerService
 
                         SendCommand(instanceId, "save-on");
                     }
-                    
+
                     if (PlatFormServices.GetOs() == "Windows" && isBedrock)
                     {
                         SendCommand(instanceId,
@@ -1339,7 +1460,8 @@ public class MCServerService: IMCServerService
                         }
                         else
                         {
-                            SendCommand(instanceId, "tellraw @a {\"rawtext\":[{\"text\":\"§e[§aMSLX§e] §b服务器存档备份完成！\"}]}");
+                            SendCommand(instanceId,
+                                "tellraw @a {\"rawtext\":[{\"text\":\"§e[§aMSLX§e] §b服务器存档备份完成！\"}]}");
                         }
                     }
                     else
@@ -1372,7 +1494,6 @@ public class MCServerService: IMCServerService
                 {
                     SendCommand(instanceId, "save-on");
                 }
-                
             }
         }
     }
