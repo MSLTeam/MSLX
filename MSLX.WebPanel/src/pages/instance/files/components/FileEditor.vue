@@ -15,10 +15,10 @@ import { toml } from '@codemirror/legacy-modes/mode/toml';
 import prettier from 'prettier/standalone';
 import parserYaml from 'prettier/plugins/yaml';
 import parserBabel from 'prettier/plugins/babel'; //  JS/JSON
-import parserEstree from 'prettier/plugins/estree'; // Babel 的依赖
+import parserEstree from 'prettier/plugins/estree';
 import parserHtml from 'prettier/plugins/html';
 import parserPostcss from 'prettier/plugins/postcss';
-import { MessagePlugin } from 'tdesign-vue-next'; // 用于 CSS
+import { MessagePlugin } from 'tdesign-vue-next';
 
 const props = defineProps({
   visible: Boolean,
@@ -91,7 +91,7 @@ const handleFormat = async () => {
 };
 
 const code = ref('');
-const isDarkMode = ref(false); // 用于存储当前是否为暗黑模式
+const isDarkMode = ref(false); // 存储当前是否为暗黑模式
 
 // 主题变化监听
 let observer: MutationObserver | null = null;
@@ -194,8 +194,8 @@ const handleClose = () => {
   emit('update:visible', false);
 };
 
-const handleConfirm = () => {
-  emit('save', code.value);
+const handleConfirm = (closeDialog: boolean = true) => {
+  emit('save', code.value, closeDialog);
 };
 </script>
 
@@ -210,7 +210,9 @@ const handleConfirm = () => {
     @close="handleClose"
   >
     <div class="flex flex-col gap-2">
-      <div class="border border-zinc-200/60 dark:border-zinc-700/60 rounded-xl overflow-hidden shadow-inner bg-white dark:bg-zinc-900/30">
+      <div
+        class="border border-zinc-200/60 dark:border-zinc-700/60 rounded-xl overflow-hidden shadow-inner bg-white dark:bg-zinc-900/30"
+      >
         <codemirror
           v-model="code"
           placeholder="文件内容为空..."
@@ -222,7 +224,9 @@ const handleConfirm = () => {
         />
       </div>
 
-      <div class="flex justify-end items-center gap-4 px-1 text-[11.5px] font-mono text-[var(--td-text-color-secondary)] tracking-wider">
+      <div
+        class="flex justify-end items-center gap-4 px-1 text-[11.5px] font-mono text-[var(--td-text-color-secondary)] tracking-wider"
+      >
         <span>行数: {{ code.split('\n').length }}</span>
         <span>长度: {{ code.length }}</span>
         <span class="text-[var(--color-primary)] font-medium bg-[var(--color-primary)]/10 px-1.5 py-0.5 rounded">
@@ -232,19 +236,32 @@ const handleConfirm = () => {
     </div>
 
     <template #footer>
-      <div class="flex justify-between items-center w-full mt-2">
-        <div class="flex">
-          <t-button variant="outline" theme="default" class="!rounded-lg hover:!bg-zinc-100 dark:hover:!bg-zinc-800" @click="handleFormat">
+      <div class="flex items-center w-full mt-2">
+        <div class="flex mr-auto">
+          <t-button
+            variant="outline"
+            theme="default"
+            class="!rounded-lg hover:!bg-zinc-100 dark:hover:!bg-zinc-800"
+            @click="handleFormat"
+          >
             自动格式化
           </t-button>
         </div>
 
         <div class="flex items-center gap-2">
-          <t-button variant="outline" class="!rounded-lg hover:!bg-zinc-100 dark:hover:!bg-zinc-800" @click="handleClose">
-            取消
-          </t-button>
-          <t-button theme="primary" class="!rounded-lg shadow-sm" :loading="props.loading" @click="handleConfirm">
+          <t-popconfirm content="确认取消吗？未保存的内容将丢失" theme="warning" @confirm="handleClose">
+            <t-button variant="outline" class="!rounded-lg hover:!bg-zinc-100 dark:hover:!bg-zinc-800"> 取消 </t-button>
+          </t-popconfirm>
+          <t-button
+            theme="default"
+            class="!rounded-lg shadow-sm"
+            :loading="props.loading"
+            @click="handleConfirm(false)"
+          >
             保存
+          </t-button>
+          <t-button theme="primary" class="!rounded-lg shadow-sm" :loading="props.loading" @click="handleConfirm(true)">
+            保存并关闭
           </t-button>
         </div>
       </div>
@@ -260,7 +277,8 @@ const handleConfirm = () => {
 }
 
 :deep(.cm-editor) {
-  font-family: 'Maple Mono', 'Maple Mono CN', 'Cascadia Code', Consolas, Menlo, 'PingFang SC', 'Microsoft YaHei', monospace !important;
+  font-family:
+    'Maple Mono', 'Maple Mono CN', 'Cascadia Code', Consolas, Menlo, 'PingFang SC', 'Microsoft YaHei', monospace !important;
   font-variant-ligatures: common-ligatures;
 
   &.cm-focused {

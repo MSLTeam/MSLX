@@ -262,13 +262,13 @@ const handleConfirmCreate = () => {
   showCreateDialog.value = false;
   openEditor(newFileName.value, true);
 };
-const handleSaveFile = async (newContent: string) => {
+const handleSaveFile = async (newContent: string, closeDialog: boolean = true) => {
   isSaving.value = true;
   try {
     const fullPath = currentPath.value ? `${currentPath.value}/${editorFileName.value}` : editorFileName.value;
     await saveFileContent(instanceId.value, fullPath, newContent);
     MessagePlugin.success('保存成功');
-    showEditor.value = false;
+    if (closeDialog) showEditor.value = false;
     handleRefresh();
   } catch {
     MessagePlugin.error('保存失败');
