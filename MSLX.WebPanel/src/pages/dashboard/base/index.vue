@@ -40,8 +40,6 @@ onMounted(() => {
 
   if (!isHttps && !isLocalOrLAN) {
     isNotSecure.value = true;
-  } else {
-    isNotSecure.value = true;
   }
 });
 
