@@ -14,6 +14,7 @@ const userStore = useUserStore();
 // 核心状态
 const isOldBrowser = ref(false);
 const isOldWindows = ref(false);
+const isNotSecure = ref(false);
 
 onMounted(() => {
   // 检测高级css支持情况
@@ -27,6 +28,20 @@ onMounted(() => {
   const ua = navigator.userAgent;
   if (/(Windows NT 6\.1|Windows NT 6\.2|Windows NT 6\.3)/i.test(ua)) {
     isOldWindows.value = true;
+  }
+
+  // 检测是否为非 HTTPS 且非本地/局域网环境
+  const isHttps = window.location.protocol === 'https:';
+  const hostname = window.location.hostname;
+
+  // 正则匹配：localhost, 127.0.0.1, 10.x.x.x, 172.16-31.x.x, 192.168.x.x
+  const isLocalOrLAN =
+    /^(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+|192\.168\.\d+\.\d+)$/i.test(hostname);
+
+  if (!isHttps && !isLocalOrLAN) {
+    isNotSecure.value = true;
+  } else {
+    isNotSecure.value = true;
   }
 });
 
@@ -65,6 +80,7 @@ const getDelay = (baseIndex: number) => {
   let offset = 0;
   if (browserWarning.value) offset += 1;
   if (isDefaultUser.value) offset += 1;
+  if (isNotSecure.value) offset += 1;
   return `${(baseIndex + offset) * 0.05}s`;
 };
 </script>
@@ -103,6 +119,24 @@ const getDelay = (baseIndex: number) => {
           @click="changeUrl('/settings/profile')"
         >
           去修改 <i class="fa-solid fa-arrow-right text-sm"></i>
+        </span>
+      </template>
+    </t-alert>
+
+    <t-alert
+      v-if="isNotSecure"
+      theme="error"
+      title="连接未加密 (存在安全风险)"
+      message="检测到当前正通过明文 HTTP 协议在公网环境下访问面板。为了防止你的密码和数据在传输中被窃听，强烈建议配置本地 SSL，或者自行通过反向代理启用 HTTPS！"
+      class="list-item-anim w-full shadow-sm"
+      :style="{ animationDelay: browserWarning ? '0.05s' : '0s' }"
+    >
+      <template #operation>
+        <span
+          class="cursor-pointer font-bold flex items-center gap-1 hover:opacity-80 transition-opacity"
+          @click="changeUrl('/settings/daemon')"
+        >
+          配置 SSL <i class="fa-solid fa-arrow-right text-sm"></i>
         </span>
       </template>
     </t-alert>
