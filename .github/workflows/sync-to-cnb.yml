@@ -28,20 +28,11 @@ jobs:
           
           CURRENT_BRANCH="${{ github.ref_name }}"
           echo "🚀 当前触发分支为: ${CURRENT_BRANCH}"
+
+          CNB_GIT_URL="https://cnb:${CNB_TOKEN}@cnb.cool/${CNB_REPO_SLUG}"
           
-          CNB_GIT_ROUTE="${CNB_REPO_SLUG/\//\/\-\/}"
-          
-          AUTH_TOKEN=$(echo -n "cnb:${CNB_TOKEN}" | base64 | tr -d '\n')
-          
-          git config --global "http.https://cnb.cool/.extraheader" "Authorization: Basic ${AUTH_TOKEN}"
-          
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-          
-          CNB_GIT_URL="https://cnb.cool/${CNB_GIT_ROUTE}.git"
-          
-          echo "⚡ 开始通过 Git 将 [${CURRENT_BRANCH}] 分支推至 CNB..."
+          echo "⚡ 开始通过 HTTPS 将 [${CURRENT_BRANCH}] 分支推至 CNB..."
           
           git push --force "$CNB_GIT_URL" "HEAD:refs/heads/${CURRENT_BRANCH}"
           
-          echo "🎉 分支 [${CURRENT_BRANCH}] 同步至 CNB 主仓！"
+          echo "🎉 分支 [${CURRENT_BRANCH}] 已成功同步至 CNB 主仓！"
