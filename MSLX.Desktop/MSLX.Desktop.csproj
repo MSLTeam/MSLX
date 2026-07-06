@@ -34,6 +34,7 @@
 		<PackageReference Include="Material.Icons.Avalonia" Version="2.4.1" />
 		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.2" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+		<PackageReference Include="Tmds.DBus.Protocol" Version="0.94.2" />
 	</ItemGroup>
 
 	<ItemGroup>
