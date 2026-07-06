@@ -1,4 +1,6 @@
-﻿namespace MSLX.SDK
+﻿using Microsoft.AspNetCore.Routing;
+
+namespace MSLX.SDK
 {
     public interface IPlugin
     {
