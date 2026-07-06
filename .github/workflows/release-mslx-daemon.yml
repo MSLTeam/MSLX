@@ -128,34 +128,43 @@ jobs:
           FILE_NAME=$(basename "${{ env.ASSET_PATH }}")
           FILE_SIZE=$(stat -c%s "${{ env.ASSET_PATH }}")
 
-          # 1. 创建 Release 页面壳子
+          # 0. 🚀【核心修改】动态获取 CNB 仓库中存在的最新主分支名称
+          curl -s \
+            -H "Authorization: token $CNB_TOKEN" \
+            -H "Accept: application/json" \
+            "https://api.cnb.cool/${CNB_REPO_SLUG}/-/git/branches?page_size=1" > branches_res.json
+          
+          CNB_TARGET_BRANCH=$(jq -r 'if type == "array" then .[0].name else .data[0].name? // .items[0].name? // "main" end' branches_res.json)
+          
+          if [ -z "$CNB_TARGET_BRANCH" ] || [ "$CNB_TARGET_BRANCH" = "null" ]; then
+            CNB_TARGET_BRANCH="main"
+          fi
+          echo "CNB 目标可用分支锁定为: $CNB_TARGET_BRANCH"
+
+          # 1. 创建 Release 页面壳子（target_commitish 传入 CNB 真实存在的分支名）
           curl -s -X POST \
             -H "Authorization: token $CNB_TOKEN" \
             -H "Content-Type: application/json" \
             -H "Accept: application/json" \
-            -d "{\"tag_name\": \"${TAG_NAME}\", \"name\": \"Release ${TAG_NAME}\", \"body\": \"Synchronized from GitHub\"}" \
+            -d "{\"tag_name\": \"${TAG_NAME}\", \"target_commitish\": \"${CNB_TARGET_BRANCH}\", \"name\": \"Release ${TAG_NAME}\", \"body\": \"Synchronized from GitHub\"}" \
             "https://api.cnb.cool/${CNB_REPO_SLUG}/-/releases" > create_res.json
 
           RELEASE_ID=$(jq -r '.id // empty' create_res.json)
 
-          # 2. 如果壳子已经存在，进行列表反查
+          # 2. 如果已被其他并发矩阵节点创建，则直接反查列表
           if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
-            echo "Release 壳子可能已存在，正在反查标识符..."
-            # 【核心修复】：带上标准的 Accept 头部，避免触发 406 错误
+            echo "正在反查已存在的 Release 标识符..."
             curl -s \
               -H "Authorization: token $CNB_TOKEN" \
               -H "Accept: application/json" \
               "https://api.cnb.cool/${CNB_REPO_SLUG}/-/releases" > list_res.json
           
-            # 【核心修复】：根据文档返回的 array 类型进行提取，自适应处理外层包裹
             RELEASE_ID=$(jq -r --arg tag "$TAG_NAME" 'if type == "array" then .[] else .data[]? // .items[]? // .[]? end | select(.tag_name==$tag) | .id' list_res.json | head -n 1)
           fi
 
           if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
             echo "❌ 错误：未能获取到 CNB 的 Release ID。返回内容："
             cat create_res.json
-            echo "列表内容："
-            cat list_res.json
             exit 1
           fi
 
