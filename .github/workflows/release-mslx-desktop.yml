@@ -114,30 +114,36 @@ jobs:
         run: |
           echo "正在准备同步当前平台的产物到国内 CNB 节点..."
           
-          curl -s -X POST \
-            -H "Authorization: Bearer $CNB_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "{\"tag_name\": \"${TAG_NAME}\", \"title\": \"Release ${TAG_NAME}\", \"note\": \"Synchronized from GitHub\"}" \
-            "https://api.cnb.cool/api/v1/repos/${CNB_REPO_SLUG}/releases" || true
+          if [[ "$TAG_NAME" == "beta" ]]; then
+            echo "当前为手动测试构建，跳过 CNB 同步。"
+            exit 0
+          fi
 
           if [ ! -f "${{ env.ASSET_PATH }}" ]; then
             echo "❌ 错误：未找到生成的压缩包文件！"
             exit 1
           fi
 
-          echo "正在上传: ${{ env.ASSET_PATH }} 到 CNB..."
+          curl -s -X POST \
+            -H "Authorization: token $CNB_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"tag_name\": \"${TAG_NAME}\", \"title\": \"Release ${TAG_NAME}\", \"body\": \"Synchronized from GitHub\"}" \
+            "https://api.cnb.cool/api/v1/repos/${CNB_REPO_SLUG}/releases" || true
+
+          echo "正在上传: ${{ env.ASSET_PATH }} 到 CNB Release 页面..."
           
           HTTP_CODE=$(curl -s -o response.json -w "%{http_code}" -X POST \
-            -H "Authorization: Bearer $CNB_TOKEN" \
+            -H "Authorization: token $CNB_TOKEN" \
             -F "file=@${{ env.ASSET_PATH }}" \
-            "https://api.cnb.cool/api/v1/repos/${CNB_REPO_SLUG}/releases/${TAG_NAME}/assets")
+            "https://api.cnb.cool/api/v1/repos/${CNB_REPO_SLUG}/releases/tags/${TAG_NAME}/assets")
 
+          echo "CNB 网关响应内容："
           cat response.json
           echo ""
 
-          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
-            echo "🎉 当前平台产物已成功同步至 CNB！"
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ] || [ "$HTTP_CODE" -eq 202 ]; then
+            echo "🎉 当前平台产物已成功同步至 CNB 同一个 Release 页面！"
           else
-            echo "❌ 错误：CNB 接口返回状态码 $HTTP_CODE，同步失败。"
+            echo "❌ 错误：CNB 接口同步失败，HTTP 状态码: $HTTP_CODE"
             exit 1
           fi
