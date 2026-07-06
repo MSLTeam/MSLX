@@ -1,6 +1,6 @@
 {
-  "version": "1.4.7",
-  "buildTime": "2026-06-21 16:09:25",
+  "version": "1.4.8",
+  "buildTime": "2026-07-06 11:00:03",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -77,10 +77,58 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "47e2b7c7a72172c366baed925f678d9752b5fcdb",
-  "commitMsg": "feat(daemon & webpanel): 初始化/重置默认账户时，会生成一个包含默认账户密码信息的文本文件在数据目录",
+  "commitId": "3f3af1cbca64b6fde6a91ded5f858ca28f8a86b0",
+  "commitMsg": "plugin-dev(webpanel): 新增插件插槽instance-setting-more",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "3f3af1cbca64b6fde6a91ded5f858ca28f8a86b0",
+      "commitTime": "2026-07-06 10:54:27 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "plugin-dev(webpanel): 新增插件插槽instance-setting-more"
+    },
+    {
+      "commitId": "ddfd600047da93c874f2878d5cce4f4b9f963063",
+      "commitTime": "2026-07-06 10:44:49 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(webpanel): 补充Server.properties描述"
+    },
+    {
+      "commitId": "999a96a2254e38918d218d6164832c60bfb0c19a",
+      "commitTime": "2026-07-06 10:37:38 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 优化用户管理页面在移动端的表现"
+    },
+    {
+      "commitId": "53dbeeada84fa764e0a09ceb01bff0625c1d1885",
+      "commitTime": "2026-07-04 23:21:24 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 测试数据忘删了"
+    },
+    {
+      "commitId": "6514e7b291eb5aa9a2bee1103d71e4eb1f60b81d",
+      "commitTime": "2026-07-04 23:20:07 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 在非本地/局域网环境下新增HTTP协议访问的安全警告"
+    },
+    {
+      "commitId": "b758227c428b151b4b66489c5b9b38e089f81912",
+      "commitTime": "2026-06-28 17:34:15 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 文件编辑器新增保存不关闭的功能 #147"
+    },
+    {
+      "commitId": "b90cbf8cd900e363d002847e8f1baf24c24f6b9c",
+      "commitTime": "2026-06-21 16:10:21 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #143 from MSLTeam/dev"
+    },
+    {
+      "commitId": "961b8bb19e5fa2b913a82d4730e6f66d269af36b",
+      "commitTime": "2026-06-21 16:09:42 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新到1.4.7-release版本"
+    },
     {
       "commitId": "47e2b7c7a72172c366baed925f678d9752b5fcdb",
       "commitTime": "2026-06-21 16:08:03 +0800",
@@ -332,54 +380,6 @@
       "commitTime": "2026-05-19 21:26:01 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "feat(webpanel): 在隧道服务商处新增插件插槽以支持使用插件扩展Frp服务商"
-    },
-    {
-      "commitId": "e028e1fd41e00d2887f92431412e391b14ea9fee",
-      "commitTime": "2026-05-19 21:25:07 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(sdk): v1.4.4-dev"
-    },
-    {
-      "commitId": "92c8c4239ce4e7a342ef41277ced3af2324a1040",
-      "commitTime": "2026-05-19 21:02:23 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(webpanel & daemon): 可设置强制最大退出时间又120s增加到300s"
-    },
-    {
-      "commitId": "8743b722ce3f45a2eb7ffc5c6ca3b7a0399fb1b3",
-      "commitTime": "2026-05-19 16:33:22 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
-    },
-    {
-      "commitId": "9ba81ffaad6944ecb625b1c2f56c0368ee5dd529",
-      "commitTime": "2026-05-19 16:33:07 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "perf(desktop): 优化frp日志显示功能的连接体验，减少多余资源占用"
-    },
-    {
-      "commitId": "8a0b6e8f558fd9b987425a28d1c57d385ba4dcf0",
-      "commitTime": "2026-05-18 19:06:32 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复部分压缩包在添加时jar包检测错误的问题"
-    },
-    {
-      "commitId": "24e515f95d94464618215f6bf18258c861cb009b",
-      "commitTime": "2026-05-18 18:30:43 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "fix(desktop): 修复desktop连接到已在运行的daemon，且有frp正在运行时，无法获取到历史日志的的bug fix(desktop): frp日志可能会重复显示的bug fix(desktop): frp日志过多时无法滚动查看的问题"
-    },
-    {
-      "commitId": "0a07ba60702f42ecd1f59c2dbe76737e8b89e6bd",
-      "commitTime": "2026-05-17 17:59:03 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "perf(desktop): MSLFrp功能基本完善，现已可用。 style(desktop): 代码优化"
-    },
-    {
-      "commitId": "2dc61c27005d00ee61b726d6ade1e4453089633e",
-      "commitTime": "2026-05-16 23:41:35 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
     }
   ]
 }

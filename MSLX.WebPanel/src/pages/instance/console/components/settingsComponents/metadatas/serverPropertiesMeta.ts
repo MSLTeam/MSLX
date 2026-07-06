@@ -54,6 +54,12 @@ export const SERVER_PROPERTIES_SCHEMA: PropertySchema[] = [
     desc: '服务器读取的世界存档文件夹名称（默认为 world）。',
     type: 'string',
   },
+  {
+    key: 'server-name',
+    label: '服务器名称',
+    desc: '服务器的内部命名标识，某些老版本服务端或特定插件、管理面板会读取此项。',
+    type: 'string',
+  },
 
   // ==========================================
   // 游戏规则 (Gameplay)
@@ -98,6 +104,42 @@ export const SERVER_PROPERTIES_SCHEMA: PropertySchema[] = [
     key: 'allow-flight',
     label: '允许飞行',
     desc: '允许生存模式下的玩家飞行（防止被服务端反作弊踢出）。',
+    type: 'boolean',
+  },
+  {
+    key: 'allow-nether',
+    label: '允许下界 (地狱)',
+    desc: '是否允许玩家进入下界。如果关闭，所有下界传送门都将无法工作。',
+    type: 'boolean',
+  },
+  {
+    key: 'enable-command-block',
+    label: '启用命令方块',
+    desc: '是否允许在服务器中使用和运行命令方块。',
+    type: 'boolean',
+  },
+  {
+    key: 'pvp',
+    label: '玩家间伤害 (PVP)',
+    desc: '开启后玩家之间可以互相攻击。关闭后玩家攻击将不会对彼此造成伤害。',
+    type: 'boolean',
+  },
+  {
+    key: 'spawn-animals',
+    label: '生成动物',
+    desc: '是否在世界中自然生成猪、牛、鸡等被动型生物。',
+    type: 'boolean',
+  },
+  {
+    key: 'spawn-monsters',
+    label: '生成怪物',
+    desc: '是否在夜间或阴暗处自然生成僵尸、骷髅、苦力怕等敌对型生物。',
+    type: 'boolean',
+  },
+  {
+    key: 'spawn-npcs',
+    label: '生成 NPC (村民)',
+    desc: '是否在村庄中自然生成村民。',
     type: 'boolean',
   },
   {
@@ -311,6 +353,12 @@ export const SERVER_PROPERTIES_SCHEMA: PropertySchema[] = [
     key: 'resource-pack-sha1',
     label: '资源包 SHA1',
     desc: '资源包文件的 SHA-1 校验码，用于验证完整性和缓存。',
+    type: 'string',
+  },
+  {
+    key: 'resource-pack-id',
+    label: '资源包唯一标识 (UUID)',
+    desc: '服务器资源包的通用唯一识别码（UUID）。用于现代版本客户端区分和清理缓存。',
     type: 'string',
   },
   {
