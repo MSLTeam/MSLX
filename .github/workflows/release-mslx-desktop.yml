@@ -7,7 +7,7 @@ on:
   workflow_dispatch: # 允许手动触发
 
 permissions:
-  contents: write 
+  contents: write
 
 jobs:
   release:
@@ -77,16 +77,16 @@ jobs:
           if [[ "${{ matrix.os }}" == "windows" ]]; then
             # --- Windows: 打包成 ZIP ---
             ARCHIVE_NAME="$BASE_NAME.zip"
-            
+          
             # 进入目录打包
             # -j 参数：不包含目录路径 (Junk paths)，解压直接看到 exe
             cd "$PUBLISH_DIR"
             zip -j "../$DIST_DIR/$ARCHIVE_NAME" "${{ matrix.bin }}"
-            
+          
           else
             # --- Linux/macOS: 打包成 TAR.GZ ---
             ARCHIVE_NAME="$BASE_NAME.tar.gz"
-            
+          
             cd "$PUBLISH_DIR"
             chmod +x "${{ matrix.bin }}"
             # 打包
@@ -97,7 +97,7 @@ jobs:
           # 将生成的包路径保存到环境变量
           echo "ASSET_PATH=./dist/$ARCHIVE_NAME" >> $GITHUB_ENV
 
-      - name: 上传到 Release
+      - name: 上传到 GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           # 指定上传的文件
@@ -105,3 +105,31 @@ jobs:
           tag_name: ${{ env.VERSION_NAME }}
           # 如果是 beta 版本，标记为预发布
           prerelease: ${{ env.VERSION_NAME == 'beta' }}
+
+      - name: 同步上传到 CNB Release
+        env:
+          CNB_REPO_SLUG: "mslmc/mslx-releases"
+          CNB_TOKEN: ${{ secrets.CNB_ACCESS_TOKEN }}
+          TAG_NAME: ${{ env.VERSION_NAME }}
+        run: |
+          echo "正在准备同步当前平台的产物到国内 CNB 节点..."
+          
+          curl -X POST \
+            -H "Authorization: Bearer $CNB_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"tag_name\": \"${TAG_NAME}\", \"title\": \"Release ${TAG_NAME}\"}" \
+            "https://api.cnb.cool/api/v1/repos/${CNB_REPO_SLUG}/releases" || echo "CNB Release 页面已存在或正在创建中，继续..."
+          
+          if [ -f "${{ env.ASSET_PATH }}" ]; then
+            echo "正在上传: ${{ env.ASSET_PATH }} 到 CNB..."
+          
+            curl -X POST \
+              -H "Authorization: Bearer $CNB_TOKEN" \
+              -F "file=@${{ env.ASSET_PATH }}" \
+              "https://api.cnb.cool/api/v1/repos/${CNB_REPO_SLUG}/releases/${TAG_NAME}/assets"
+          
+            echo "🎉 当前平台产物已成功同步至 CNB！"
+          else
+            echo "❌ 错误：未找到生成的压缩包文件！"
+            exit 1
+          fi
