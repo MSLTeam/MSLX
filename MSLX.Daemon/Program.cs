@@ -369,6 +369,20 @@ app.MapHub<SystemMonitorHub>("/api/hubs/system");
 app.MapHub<DaemonUpdateHub>("/api/hubs/daemonUpdate");
 app.MapControllers();
 
+foreach (var plugin in loadedPlugins)
+{
+    try
+    {
+        plugin.Metadata.OnRegisterEndpoints(app);
+        logger.LogInformation($"[MSLX Plugin] 插件高级路由端点注册成功: {plugin.Metadata.Name}");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError($"[MSLX Plugin] 插件 {plugin.Metadata.Name} 注册扩展路由时抛出致命异常: {ex.Message}");
+    }
+}
+
+
 // SPA
 app.MapFallbackToFile("index.html", new StaticFileOptions
 {
