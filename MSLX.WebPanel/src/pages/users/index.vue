@@ -5,7 +5,7 @@ import { AddIcon, SearchIcon, RefreshIcon } from 'tdesign-icons-vue-next';
 
 import { getUserList, createUser, updateUser, deleteUser } from '@/api/user';
 import type { AdminUserDto } from '@/api/model/user';
-import { useUserStore,useTunnelsStore,useInstanceListStore } from '@/store';
+import { useUserStore, useTunnelsStore, useInstanceListStore } from '@/store';
 
 // --- 状态定义 ---
 const loading = ref(false);
@@ -168,6 +168,13 @@ const handleDelete = (row: AdminUserDto) => {
   });
 };
 
+const paginationConfig = computed(() => ({
+  defaultPageSize: 20,
+  total: displayData.value.length,
+  layout: window.innerWidth < 768 ? 'total, prev, pager, next' : 'total, size, prev, pager, next, jumper',
+  maxPageBtnNum: window.innerWidth < 768 ? 3 : 5,
+}));
+
 onMounted(() => {
   fetchData();
   tunnelsStore.getTunnels();
@@ -176,14 +183,15 @@ onMounted(() => {
 </script>
 <template>
   <div class="mx-auto flex flex-col gap-6 text-[var(--td-text-color-primary)] pb-5">
-
     <div
       class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
     >
       <div class="flex items-center gap-3">
         <div class="flex flex-col">
           <h2 class="text-lg font-bold text-[var(--td-text-color-primary)] m-0 leading-none">用户管理</h2>
-          <span class="text-xs text-[var(--td-text-color-secondary)] mt-1.5 font-medium">管理系统内的账户权限与实例资源分配</span>
+          <span class="text-xs text-[var(--td-text-color-secondary)] mt-1.5 font-medium"
+            >管理系统内的账户权限与实例资源分配</span
+          >
         </div>
       </div>
 
@@ -200,9 +208,13 @@ onMounted(() => {
     </div>
 
     <div class="relative min-h-[400px]">
-      <div class="design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm p-5 sm:p-6" style="animation-delay: 0.05s;">
-
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60">
+      <div
+        class="design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm p-5 sm:p-6"
+        style="animation-delay: 0.05s"
+      >
+        <div
+          class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60"
+        >
           <div class="text-base font-bold text-[var(--td-text-color-primary)]">用户列表</div>
           <div class="w-full sm:w-72">
             <t-input v-model="filterText" placeholder="搜索用户名或昵称" clearable>
@@ -211,69 +223,160 @@ onMounted(() => {
           </div>
         </div>
 
-        <t-table
-          row-key="id"
-          :data="displayData"
-          :columns="columns"
-          :loading="loading"
-          :hover="true"
-          :pagination="{
-            defaultPageSize: 20,
-            total: displayData.length,
-            showJumper: true,
-          }"
-          class="!bg-transparent"
-          table-layout="auto"
-        >
-          <template #info-slot="{ row }">
-            <div class="flex items-center gap-3 py-1">
-              <t-avatar :image="row.avatar" size="44px" shape="circle" class="shrink-0 ring-2 ring-zinc-100 dark:ring-zinc-700/50 shadow-sm !bg-[var(--color-primary)]/10 !text-[var(--color-primary)]" :hide-on-load-failed="false">
-                <span class="font-bold text-lg">{{ row.name ? row.name[0].toUpperCase() : 'U' }}</span>
-              </t-avatar>
-              <div class="flex flex-col min-w-0">
-                <div class="font-bold text-sm text-[var(--td-text-color-primary)] truncate">{{ row.name || '未设置昵称' }}</div>
-                <div class="text-xs font-mono text-[var(--td-text-color-secondary)] mt-0.5 truncate">@{{ row.username }}</div>
+        <div class="hidden sm:block">
+          <t-table
+            row-key="id"
+            :data="displayData"
+            :columns="columns"
+            :loading="loading"
+            :hover="true"
+            :pagination="paginationConfig"
+            class="!bg-transparent"
+            table-layout="auto"
+          >
+            <template #info-slot="{ row }">
+              <div class="flex items-center gap-3 py-1">
+                <t-avatar
+                  :image="row.avatar"
+                  size="44px"
+                  shape="circle"
+                  class="shrink-0 ring-2 ring-zinc-100 dark:ring-zinc-700/50 shadow-sm !bg-[var(--color-primary)]/10 !text-[var(--color-primary)]"
+                  :hide-on-load-failed="false"
+                >
+                  <span class="font-bold text-lg">{{ row.name ? row.name[0].toUpperCase() : 'U' }}</span>
+                </t-avatar>
+                <div class="flex flex-col min-w-0">
+                  <div class="font-bold text-sm text-[var(--td-text-color-primary)] truncate">
+                    {{ row.name || '未设置昵称' }}
+                  </div>
+                  <div class="text-xs font-mono text-[var(--td-text-color-secondary)] mt-0.5 truncate">
+                    @{{ row.username }}
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <template #role-slot="{ row }">
+              <span
+                v-if="row.role === 'admin'"
+                class="inline-flex items-center px-2.5 py-1 rounded-md bg-[var(--color-success)]/10 text-[var(--color-success)] font-extrabold text-[11px] tracking-wider uppercase border border-[var(--color-success)]/20 shadow-sm"
+              >
+                管理员
+              </span>
+              <span
+                v-else
+                class="inline-flex items-center px-2.5 py-1 rounded-md bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-extrabold text-[11px] tracking-wider uppercase border border-[var(--color-primary)]/20 shadow-sm"
+              >
+                普通用户
+              </span>
+            </template>
+
+            <template #time-slot="{ row }">
+              <div class="flex items-center gap-1.5">
+                <time-icon v-if="row.lastLoginTime" class="text-[var(--color-primary)] opacity-70" size="14px" />
+                <span
+                  v-if="row.lastLoginTime"
+                  class="text-xs font-mono font-medium text-[var(--td-text-color-secondary)]"
+                  >{{ new Date(row.lastLoginTime).toLocaleString() }}</span
+                >
+                <span
+                  v-else
+                  class="text-xs font-medium px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-[var(--td-text-color-secondary)]"
+                  >从未登录</span
+                >
+              </div>
+            </template>
+
+            <template #op-slot="{ row }">
+              <div class="flex items-center gap-1">
+                <t-button
+                  variant="text"
+                  theme="primary"
+                  size="small"
+                  class="hover:!bg-[var(--color-primary)]/10"
+                  @click="handleEdit(row)"
+                >
+                  编辑
+                </t-button>
+                <div class="w-[1px] h-3 bg-zinc-200 dark:bg-zinc-700 mx-1"></div>
+                <t-button
+                  variant="text"
+                  theme="danger"
+                  size="small"
+                  class="hover:!bg-red-500/10"
+                  :disabled="row.id === userStore.userInfo.id || row.username === 'admin'"
+                  @click="handleDelete(row)"
+                >
+                  删除
+                </t-button>
+              </div>
+            </template>
+          </t-table>
+        </div>
+
+        <div v-loading="loading" class="sm:hidden flex flex-col gap-4">
+          <div v-if="displayData.length === 0" class="text-center py-8 text-zinc-400 text-sm">暂无数据</div>
+          <div
+            v-for="row in displayData"
+            :key="row.id"
+            class="p-4 design-card rounded-xl border border-[var(--td-component-border)] bg-[var(--td-bg-color-container)] flex flex-col gap-3 text-left"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <t-avatar
+                  :image="row.avatar"
+                  size="40px"
+                  shape="circle"
+                  class="!bg-[var(--color-primary)]/10 !text-[var(--color-primary)]"
+                >
+                  <span class="font-bold text-base">{{ row.name ? row.name[0].toUpperCase() : 'U' }}</span>
+                </t-avatar>
+                <div class="flex flex-col min-w-0">
+                  <div class="font-bold text-sm text-[var(--td-text-color-primary)] truncate">
+                    {{ row.name || '未设置昵称' }}
+                  </div>
+                  <div class="text-xs font-mono text-[var(--td-text-color-secondary)] truncate">
+                    @{{ row.username }}
+                  </div>
+                </div>
+              </div>
+              <div>
+                <span
+                  v-if="row.role === 'admin'"
+                  class="inline-flex items-center px-2 py-0.5 rounded bg-[var(--color-success)]/10 text-[var(--color-success)] font-extrabold text-[10px] uppercase border border-[var(--color-success)]/20"
+                  >管理员</span
+                >
+                <span
+                  v-else
+                  class="inline-flex items-center px-2 py-0.5 rounded bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-extrabold text-[10px] uppercase border border-[var(--color-primary)]/20"
+                  >普通用户</span
+                >
               </div>
             </div>
-          </template>
 
-          <template #role-slot="{ row }">
-            <span v-if="row.role === 'admin'" class="inline-flex items-center px-2.5 py-1 rounded-md bg-[var(--color-success)]/10 text-[var(--color-success)] font-extrabold text-[11px] tracking-wider uppercase border border-[var(--color-success)]/20 shadow-sm">
-              管理员
-            </span>
-            <span v-else class="inline-flex items-center px-2.5 py-1 rounded-md bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-extrabold text-[11px] tracking-wider uppercase border border-[var(--color-primary)]/20 shadow-sm">
-              普通用户
-            </span>
-          </template>
-
-          <template #time-slot="{ row }">
-            <div class="flex items-center gap-1.5">
-              <time-icon v-if="row.lastLoginTime" class="text-[var(--color-primary)] opacity-70" size="14px" />
-              <span v-if="row.lastLoginTime" class="text-xs font-mono font-medium text-[var(--td-text-color-secondary)]">{{ new Date(row.lastLoginTime).toLocaleString() }}</span>
-              <span v-else class="text-xs font-medium px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-[var(--td-text-color-secondary)]">从未登录</span>
+            <div class="flex items-center justify-between pt-2 border-t border-zinc-100 dark:border-zinc-800/80">
+              <div class="text-[11px] text-[var(--td-text-color-secondary)]">
+                <span v-if="row.lastLoginTime">{{ new Date(row.lastLoginTime).toLocaleString() }}</span>
+                <span v-else>从未登录</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <t-button variant="text" theme="primary" size="small" @click="handleEdit(row)">编辑</t-button>
+                <t-button
+                  variant="text"
+                  theme="danger"
+                  size="small"
+                  :disabled="row.id === userStore.userInfo.id || row.username === 'admin'"
+                  @click="handleDelete(row)"
+                  >删除</t-button
+                >
+              </div>
             </div>
-          </template>
+          </div>
+        </div>
 
-          <template #op-slot="{ row }">
-            <div class="flex items-center gap-1">
-              <t-button variant="text" theme="primary" size="small" class="hover:!bg-[var(--color-primary)]/10" @click="handleEdit(row)">
-                编辑
-              </t-button>
-              <div class="w-[1px] h-3 bg-zinc-200 dark:bg-zinc-700 mx-1"></div>
-              <t-button
-                variant="text"
-                theme="danger"
-                size="small"
-                class="hover:!bg-red-500/10"
-                :disabled="row.id === userStore.userInfo.id || row.username === 'admin'"
-                @click="handleDelete(row)"
-              >
-                删除
-              </t-button>
-            </div>
-          </template>
-        </t-table>
-
+        <div class="sm:hidden mt-4 flex justify-center overflow-x-auto">
+          <t-pagination v-bind="paginationConfig" size="small" />
+        </div>
       </div>
     </div>
 
@@ -286,7 +389,6 @@ onMounted(() => {
       placement="center"
     >
       <t-form ref="formRef" :data="formData" :rules="rules" label-align="top" @submit="onSubmit" class="mt-4">
-
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
           <t-form-item label="登录账号" name="username">
             <t-input v-model="formData.username" placeholder="请输入英文/数字账号" :disabled="dialogMode === 'edit'" />
@@ -305,17 +407,18 @@ onMounted(() => {
         </t-form-item>
 
         <template v-if="formData.role === 'user'">
-            <t-form-item v-if="formData.role === 'user'" label-width="0">
-              <t-alert theme="warning" variant="light" title="资源权限限制说明">
-                <template #message>资源分配仅实现基础权限隔离，实例文件系统并非物理隔离。用户可能通过程序路径穿越访问敏感数据，请仅在信任伙伴间使用，<strong style="color: var(--td-error-color);">严禁用于商业化用途</strong>。
-                </template>
-              </t-alert>
-            </t-form-item>
+          <t-form-item v-if="formData.role === 'user'" label-width="0">
+            <t-alert theme="warning" variant="light" title="资源权限限制说明">
+              <template #message
+                >资源分配仅实现基础权限隔离，实例文件系统并非物理隔离。用户可能通过程序路径穿越访问敏感数据，请仅在信任伙伴间使用，<strong
+                  style="color: var(--td-error-color)"
+                  >严禁用于商业化用途</strong
+                >。
+              </template>
+            </t-alert>
+          </t-form-item>
 
-          <t-form-item
-            label="分配资源"
-            name="resources"
-          >
+          <t-form-item label="分配资源" name="resources">
             <t-select
               v-model="formData.resources"
               multiple
@@ -325,7 +428,9 @@ onMounted(() => {
               placeholder="搜索或选择要分配的实例与隧道"
             />
             <template #help>
-              <span class="text-[11px] text-[var(--td-text-color-secondary)] mt-1 inline-block">该用户将获得以上选定实例和隧道的完整控制权</span>
+              <span class="text-[11px] text-[var(--td-text-color-secondary)] mt-1 inline-block"
+                >该用户将获得以上选定实例和隧道的完整控制权</span
+              >
             </template>
           </t-form-item>
         </template>
@@ -333,16 +438,21 @@ onMounted(() => {
         <t-form-item label="密码设置" name="password">
           <t-input v-model="formData.password" type="password" placeholder="设置新密码" autocomplete="new-password" />
           <template #help>
-            <span v-if="dialogMode === 'edit'" class="text-[11px] text-[var(--td-text-color-secondary)] mt-1 inline-block">留空则保持原密码不变</span>
+            <span
+              v-if="dialogMode === 'edit'"
+              class="text-[11px] text-[var(--td-text-color-secondary)] mt-1 inline-block"
+              >留空则保持原密码不变</span
+            >
           </template>
         </t-form-item>
 
         <t-form-item v-if="dialogMode === 'edit'" label="开发者选项">
-          <div class="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-[var(--td-component-border)] w-full mt-1">
+          <div
+            class="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-[var(--td-component-border)] w-full mt-1"
+          >
             <t-checkbox v-model="formData.resetApiKey">强制重置该用户的 API Key</t-checkbox>
           </div>
         </t-form-item>
-
       </t-form>
     </t-dialog>
   </div>
@@ -387,5 +497,4 @@ onMounted(() => {
   background-color: rgba(161, 161, 170, 0.3);
   border-radius: 4px;
 }
-
 </style>
