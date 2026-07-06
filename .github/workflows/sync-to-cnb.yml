@@ -29,7 +29,7 @@ jobs:
           CURRENT_BRANCH="${{ github.ref_name }}"
           echo "🚀 当前触发分支为: ${CURRENT_BRANCH}"
           
-          CNB_GIT_URL="https://token:${CNB_TOKEN}@cnb.cool/${CNB_REPO_SLUG}.git"
+          CNB_GIT_URL="https://token:${CNB_TOKEN}@cnb.cool/${CNB_REPO_SLUG}"
           
           echo "⚡ 开始通过 Git 将 [${CURRENT_BRANCH}] 分支推至 CNB..."
           
