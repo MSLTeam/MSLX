@@ -31,7 +31,7 @@ jobs:
           
           CNB_GIT_ROUTE="${CNB_REPO_SLUG/\//\/\-\/}"
           
-          CNB_GIT_URL="https://token:${CNB_TOKEN}@cnb.cool/${CNB_GIT_ROUTE}.git"
+          CNB_GIT_URL="https://cnb:${CNB_TOKEN}@cnb.cool/${CNB_GIT_ROUTE}.git"
           
           echo "⚡ 开始通过 Git 将 [${CURRENT_BRANCH}] 分支推至 CNB..."
           
