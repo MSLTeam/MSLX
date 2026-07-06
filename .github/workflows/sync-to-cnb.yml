@@ -19,7 +19,7 @@ jobs:
           fetch-depth: 0 
           submodules: recursive
 
-      - name: 强推当前分支到 CNB 对应分支
+      - name: 推送当前分支到 CNB 对应分支
         env:
           CNB_REPO_SLUG: "mslmc/mslx"
           CNB_TOKEN: ${{ secrets.CNB_MAIN_REPO_TOKEN }}
@@ -31,7 +31,7 @@ jobs:
           
           CNB_GIT_URL="https://token:${CNB_TOKEN}@cnb.cool/${CNB_REPO_SLUG}.git"
           
-          echo "⚡ 开始通过高速 Git 隧道将 [${CURRENT_BRANCH}] 分支强推至 CNB..."
+          echo "⚡ 开始通过 Git 将 [${CURRENT_BRANCH}] 分支推至 CNB..."
           
           git push --force "$CNB_GIT_URL" "HEAD:refs/heads/${CURRENT_BRANCH}"
           
