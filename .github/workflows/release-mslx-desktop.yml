@@ -107,29 +107,10 @@ jobs:
           prerelease: ${{ env.VERSION_NAME == 'beta' }}
 
       - name: 同步上传到 CNB Release
+        uses: docker://cnbcool/cnb-release:latest
         env:
-          CNB_REPO_SLUG: "mslmc/mslx-releases"
-          CNB_TOKEN: ${{ secrets.CNB_ACCESS_TOKEN }}
-          TAG_NAME: ${{ env.VERSION_NAME }}
-        run: |
-          echo "正在准备同步当前平台的产物到国内 CNB 节点..."
-          
-          curl -X POST \
-            -H "Authorization: Bearer $CNB_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "{\"tag_name\": \"${TAG_NAME}\", \"title\": \"Release ${TAG_NAME}\"}" \
-            "https://api.cnb.cool/api/v1/repos/${CNB_REPO_SLUG}/releases" || echo "CNB Release 页面已存在或正在创建中，继续..."
-          
-          if [ -f "${{ env.ASSET_PATH }}" ]; then
-            echo "正在上传: ${{ env.ASSET_PATH }} 到 CNB..."
-          
-            curl -X POST \
-              -H "Authorization: Bearer $CNB_TOKEN" \
-              -F "file=@${{ env.ASSET_PATH }}" \
-              "https://api.cnb.cool/api/v1/repos/${CNB_REPO_SLUG}/releases/${TAG_NAME}/assets"
-          
-            echo "🎉 当前平台产物已成功同步至 CNB！"
-          else
-            echo "❌ 错误：未找到生成的压缩包文件！"
-            exit 1
-          fi
+          PLUGIN_TOKEN: ${{ secrets.CNB_ACCESS_TOKEN }}
+          PLUGIN_SLUG: "mslmc/mslx-releases"
+          PLUGIN_FILES: ${{ env.ASSET_PATH }}
+          PLUGIN_TAG: ${{ env.VERSION_NAME }}
+          PLUGIN_TITLE: "Release ${{ env.VERSION_NAME }}"
