@@ -128,34 +128,44 @@ jobs:
           FILE_NAME=$(basename "${{ env.ASSET_PATH }}")
           FILE_SIZE=$(stat -c%s "${{ env.ASSET_PATH }}")
 
-          # 1. 创建/获取 Release 页面。依照文档规范：POST /{repo}/-/releases
+          # 1. 创建 Release 页面壳子
           curl -s -X POST \
             -H "Authorization: token $CNB_TOKEN" \
             -H "Content-Type: application/json" \
+            -H "Accept: application/json" \
             -d "{\"tag_name\": \"${TAG_NAME}\", \"name\": \"Release ${TAG_NAME}\", \"body\": \"Synchronized from GitHub\"}" \
             "https://api.cnb.cool/${CNB_REPO_SLUG}/-/releases" > create_res.json
 
           RELEASE_ID=$(jq -r '.id // empty' create_res.json)
 
+          # 2. 如果壳子已经存在，进行列表反查
           if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
             echo "Release 壳子可能已存在，正在反查标识符..."
-            curl -s -H "Authorization: token $CNB_TOKEN" \
+            # 【核心修复】：带上标准的 Accept 头部，避免触发 406 错误
+            curl -s \
+              -H "Authorization: token $CNB_TOKEN" \
+              -H "Accept: application/json" \
               "https://api.cnb.cool/${CNB_REPO_SLUG}/-/releases" > list_res.json
-            RELEASE_ID=$(jq -r --arg tag "$TAG_NAME" '.[] | select(.tag_name==$tag) | .id' list_res.json | head -n 1)
+          
+            # 【核心修复】：根据文档返回的 array 类型进行提取，自适应处理外层包裹
+            RELEASE_ID=$(jq -r --arg tag "$TAG_NAME" 'if type == "array" then .[] else .data[]? // .items[]? // .[]? end | select(.tag_name==$tag) | .id' list_res.json | head -n 1)
           fi
 
           if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
             echo "❌ 错误：未能获取到 CNB 的 Release ID。返回内容："
             cat create_res.json
+            echo "列表内容："
+            cat list_res.json
             exit 1
           fi
 
           echo "✅ 成功对接 Release，ID 为: $RELEASE_ID"
 
-          # 2. 获取附件上传地址。依照文档规范：POST /{repo}/-/releases/{release_id}/asset-upload-url
+          # 3. 获取附件上传地址
           curl -s -X POST \
             -H "Authorization: token $CNB_TOKEN" \
             -H "Content-Type: application/json" \
+            -H "Accept: application/json" \
             -d "{\"asset_name\": \"${FILE_NAME}\", \"size\": ${FILE_SIZE}, \"overwrite\": true}" \
             "https://api.cnb.cool/${CNB_REPO_SLUG}/-/releases/${RELEASE_ID}/asset-upload-url" > url_res.json
 
@@ -168,14 +178,15 @@ jobs:
             exit 1
           fi
 
-          # 3. 将文件 PUT 到上传地址
+          # 4. 将文件 PUT 到通道中
           echo "正在把文件 $FILE_NAME 推送到预签名高速通道..."
           curl -s -X PUT -T "${{ env.ASSET_PATH }}" "$UPLOAD_URL"
 
-          # 4. 确认附件上传状态
+          # 5. 确认附件上传状态
           echo "正在确认附件上传状态..."
           CONFIRM_CODE=$(curl -s -o confirm_res.json -w "%{http_code}" -X POST \
             -H "Authorization: token $CNB_TOKEN" \
+            -H "Accept: application/json" \
             "${VERIFY_URL}?ttl=0")
 
           if [ "$CONFIRM_CODE" -eq 200 ] || [ "$CONFIRM_CODE" -eq 201 ]; then
