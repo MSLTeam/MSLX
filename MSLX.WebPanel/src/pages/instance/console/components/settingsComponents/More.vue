@@ -7,6 +7,7 @@ import { downloadFileStream, finishUpload, initUpload, saveUploadedFile, uploadC
 import BedrockAutoUpdater from './MoreComponents/BedrockAutoUpdater.vue';
 import { getInstanceInfo } from '@/api/instance';
 import { InstanceInfoModel } from '@/api/model/instance';
+import PluginSlot from '@/components/PluginSlot.vue';
 
 const route = useRoute();
 const instanceId = computed(() => parseInt(route.params.serverId as string));
@@ -371,6 +372,8 @@ watch(
         @success="fetchInstanceInfo"
       />
     </div>
+
+    <plugin-slot name="instance-setting-more" :server-id="instanceId" />
 
     <t-dialog
       v-model:visible="showCropDialog"
