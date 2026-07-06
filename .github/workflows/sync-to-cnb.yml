@@ -44,4 +44,4 @@ jobs:
           
           git push --force "$CNB_GIT_URL" "HEAD:refs/heads/${CURRENT_BRANCH}"
           
-          echo "🎉 分支 [${CURRENT_BRANCH}] 美同步至 CNB 主仓！"
+          echo "🎉 分支 [${CURRENT_BRANCH}] 同步至 CNB 主仓！"
