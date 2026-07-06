@@ -124,27 +124,64 @@ jobs:
             echo "❌ 错误：未找到生成的压缩包文件！"
             exit 1
           fi
-          
+
+          FILE_NAME=$(basename "${{ env.ASSET_PATH }}")
+          FILE_SIZE=$(stat -c%s "${{ env.ASSET_PATH }}")
+
+          # 1. 创建/获取 Release 页面。依照文档规范：POST /{repo}/-/releases
           curl -s -X POST \
             -H "Authorization: token $CNB_TOKEN" \
             -H "Content-Type: application/json" \
-            -d "{\"tag_name\": \"${TAG_NAME}\", \"title\": \"Release ${TAG_NAME}\", \"body\": \"Synchronized from GitHub\"}" \
-            "https://api.cnb.cool/api/v1/repos/${CNB_REPO_SLUG}/releases" || true
+            -d "{\"tag_name\": \"${TAG_NAME}\", \"name\": \"Release ${TAG_NAME}\", \"body\": \"Synchronized from GitHub\"}" \
+            "https://api.cnb.cool/${CNB_REPO_SLUG}/-/releases" > create_res.json
 
-          echo "正在上传: ${{ env.ASSET_PATH }} 到 CNB Release 页面..."
-          
-          HTTP_CODE=$(curl -s -o response.json -w "%{http_code}" -X POST \
+          RELEASE_ID=$(jq -r '.id // empty' create_res.json)
+
+          if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
+            echo "Release 壳子可能已存在，正在反查标识符..."
+            curl -s -H "Authorization: token $CNB_TOKEN" \
+              "https://api.cnb.cool/${CNB_REPO_SLUG}/-/releases" > list_res.json
+            RELEASE_ID=$(jq -r --arg tag "$TAG_NAME" '.[] | select(.tag_name==$tag) | .id' list_res.json | head -n 1)
+          fi
+
+          if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
+            echo "❌ 错误：未能获取到 CNB 的 Release ID。返回内容："
+            cat create_res.json
+            exit 1
+          fi
+
+          echo "✅ 成功对接 Release，ID 为: $RELEASE_ID"
+
+          # 2. 获取附件上传地址。依照文档规范：POST /{repo}/-/releases/{release_id}/asset-upload-url
+          curl -s -X POST \
             -H "Authorization: token $CNB_TOKEN" \
-            -F "file=@${{ env.ASSET_PATH }}" \
-            "https://api.cnb.cool/api/v1/repos/${CNB_REPO_SLUG}/releases/tags/${TAG_NAME}/assets")
+            -H "Content-Type: application/json" \
+            -d "{\"asset_name\": \"${FILE_NAME}\", \"size\": ${FILE_SIZE}, \"overwrite\": true}" \
+            "https://api.cnb.cool/${CNB_REPO_SLUG}/-/releases/${RELEASE_ID}/asset-upload-url" > url_res.json
 
-          echo "CNB 网关响应内容项："
-          cat response.json
-          echo ""
+          UPLOAD_URL=$(jq -r '.upload_url // empty' url_res.json)
+          VERIFY_URL=$(jq -r '.verify_url // empty' url_res.json)
 
-          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ] || [ "$HTTP_CODE" -eq 202 ]; then
-            echo "🎉 当前平台产物已成功同步至 CNB 同一个 Release 页面！"
+          if [ -z "$UPLOAD_URL" ] || [ "$UPLOAD_URL" = "null" ]; then
+            echo "❌ 错误：无法获取上传地址。返回内容："
+            cat url_res.json
+            exit 1
+          fi
+
+          # 3. 将文件 PUT 到上传地址
+          echo "正在把文件 $FILE_NAME 推送到预签名高速通道..."
+          curl -s -X PUT -T "${{ env.ASSET_PATH }}" "$UPLOAD_URL"
+
+          # 4. 确认附件上传状态
+          echo "正在确认附件上传状态..."
+          CONFIRM_CODE=$(curl -s -o confirm_res.json -w "%{http_code}" -X POST \
+            -H "Authorization: token $CNB_TOKEN" \
+            "${VERIFY_URL}?ttl=0")
+
+          if [ "$CONFIRM_CODE" -eq 200 ] || [ "$CONFIRM_CODE" -eq 201 ]; then
+            echo "🎉 [${{ matrix.rid }}] 平台产物已稳妥关联到 CNB Release 页面！"
           else
-            echo "❌ 错误：CNB 接口同步失败，HTTP 状态码: $HTTP_CODE"
+            echo "❌ 错误：确认附件失败。状态码: $CONFIRM_CODE，返回内容："
+            cat confirm_res.json
             exit 1
           fi
