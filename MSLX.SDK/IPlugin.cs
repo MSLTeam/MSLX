@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MSLX.SDK
 {
@@ -34,6 +35,19 @@ namespace MSLX.SDK
         // 初始化 & 结束加载方法
         void OnLoad() { }
         void OnUnload() { }
+
+        /// <summary>
+        /// 注册依赖注入服务
+        /// 允许插件在此处向全局 IoC 容器注册 Singleton、Scoped 或 Transient 服务
+        /// </summary>
+        /// <param name="services">依赖注入服务集合</param>
+        void OnRegisterServices(IServiceCollection services) { }
+
+        /// <summary>
+        /// 环境初始化
+        /// </summary>
+        /// <param name="serviceProvider">全局依赖注入服务容器</param>
+        void OnPluginInitialize(IServiceProvider serviceProvider) { }
 
         /// <summary>
         /// 注册 ASP.NET Core 路由端点
