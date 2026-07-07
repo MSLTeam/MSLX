@@ -28,6 +28,7 @@ const categoryData = ref<Partial<ServerCoreClassifyModel>>({});
 const currentCategoryKey = ref('plugins');
 const selectedCore = ref('');
 const versionList = ref<string[]>([]);
+const versionDescription = ref('');
 const searchText = ref('');
 
 // --- 构建版本状态数据 ---
@@ -132,6 +133,7 @@ const handleCategoryChange = (key: string) => {
   currentCategoryKey.value = key;
   selectedCore.value = '';
   versionList.value = [];
+  versionDescription.value = '';
   searchText.value = '';
 };
 
@@ -145,9 +147,11 @@ const handleCoreSelect = (core: string) => {
 const fetchVersions = async (coreName: string) => {
   loadingVersions.value = true;
   versionList.value = [];
+  versionDescription.value = '';
   try {
     const res = await getServerCoreGameVersion(coreName);
     versionList.value = res.versions || [];
+    versionDescription.value = res.description || '';
   } catch (error) {
     MessagePlugin.error(`获取 ${coreName} 版本列表失败`);
     console.error(error);
@@ -408,12 +412,23 @@ watch(
               class="absolute inset-0 m-auto"
             />
 
-            <template v-else>
-              <div v-if="!selectedCore" class="h-full flex items-center justify-center">
+            <div
+              v-if="versionDescription && !loadingVersions"
+              class="mb-4 p-3 rounded-xl bg-[var(--color-primary)]/5 dark:bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/10 dark:border-[var(--color-primary)]/20 flex items-start gap-2.5 transition-all"
+            >
+              <t-icon name="info-circle" class="text-[var(--color-primary)] mt-0.5 shrink-0" size="16px" />
+              <div class="text-xs font-medium text-zinc-600 dark:text-zinc-300 leading-normal">
+                {{ versionDescription }}
+              </div>
+            </div>
+
+            <template v-if="!loadingVersions">
+              <div v-if="!selectedCore" class="h-full flex items-center justify-center py-10">
                 <span
                   class="text-sm font-medium text-[var(--td-text-color-secondary)] bg-white dark:bg-zinc-800 px-4 py-2 rounded-full shadow-sm border border-[var(--td-component-border)]"
-                  >请先在上方选择一个核心</span
                 >
+                  请先在上方选择一个核心
+                </span>
               </div>
 
               <div
@@ -430,7 +445,7 @@ watch(
                 </div>
               </div>
 
-              <div v-else class="h-full flex items-center justify-center opacity-60">
+              <div v-else class="h-full flex items-center justify-center opacity-60 py-10">
                 <span class="text-sm text-zinc-500 font-medium">未找到该核心的版本信息</span>
               </div>
             </template>
