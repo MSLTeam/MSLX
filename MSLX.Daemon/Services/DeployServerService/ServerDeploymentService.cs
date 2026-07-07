@@ -1,6 +1,9 @@
 ﻿using Downloader;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.Daemon.Utils.McdrConfig;
+using MSLX.SDK.Models;
+using MSLX.SDK.Models.Instance;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Formats.Tar;
@@ -393,6 +396,227 @@ public class ServerDeploymentService
         {
             await report($"Forge 安装失败: {ex.Message}", -1, true, ex);
             throw;
+        }
+    }
+
+    /// <summary>
+    /// 部署 MCDReforged 实例：创建 server/ 布局、(可选)安装 MCDR、部署真实核心到 server/、生成 config.yml。
+    /// </summary>
+    public async Task DeployMcdrAsync(string serverId, McServerInfo.ServerInfo server, CreateServerRequest request,
+        ReportProgress report)
+    {
+        await report("正在部署 MCDReforged 实例...", 5);
+
+        string baseDir = server.Base;
+        string serverDir = Path.Combine(baseDir, "server");
+        Directory.CreateDirectory(serverDir);
+        Directory.CreateDirectory(Path.Combine(baseDir, "plugins")); // MCDR 插件目录(与 server/plugins 不同)
+
+        // 验证python环境
+        string python = string.IsNullOrWhiteSpace(request.mcdrPython) ? "python" : request.mcdrPython.Trim();
+        var (pyOk, pyVer) = await TryGetPythonVersionAsync(python);
+        if (pyOk)
+        {
+            await report($"检测到 Python: {pyVer}", 10);
+        }
+        else
+        {
+            await report(
+                $"⚠ 未能运行 Python ({python})，请确认已安装 Python 3.8+ 且可通过该命令调用。实例仍会创建，你可稍后修复后再启动。",
+                10);
+        }
+
+        // 安装/更新mcdr
+        if (request.mcdrInstall && pyOk)
+        {
+            await report("正在通过 pip 安装/更新 MCDReforged(耗时较长，请耐心等待)...", 15);
+            string pipArgs = "-m pip install -U mcdreforged";
+            if (!string.IsNullOrWhiteSpace(request.mcdrPipMirror))
+            {
+                pipArgs += $" -i {request.mcdrPipMirror.Trim()}";
+            }
+
+            var (pipOk, _) = await RunCommandAsync(python, pipArgs, baseDir, report, "pip", 600000);
+            await report(pipOk ? "MCDReforged 安装完成。" : "⚠ MCDReforged 自动安装失败，请稍后手动执行 pip install mcdreforged。", 30);
+        }
+
+        // java
+        await EnsureJavaAsync(serverId, request.java ?? "", report);
+
+        // 服务器核心
+        if (!string.IsNullOrEmpty(request.packageUrl))
+        {
+            string tmpKey = await DownloadPackageAsync(serverId, request.packageUrl, request.packageSha256, report);
+            await DeployPackageAsync(serverId, tmpKey, null, serverDir, report);
+            await ChmodBedrockServerAsync(serverId, serverDir, report);
+        }
+
+        if (!string.IsNullOrEmpty(request.packageFileKey) || !string.IsNullOrEmpty(request.packageLocalPath))
+        {
+            await DeployPackageAsync(serverId, request.packageFileKey, request.packageLocalPath, serverDir, report);
+        }
+
+        if (!string.IsNullOrEmpty(request.core) && request.core != "none")
+        {
+            await DeployCoreAsync(serverId, serverDir, request.core, request.coreFileKey, request.coreUrl,
+                request.coreSha256, report);
+        }
+
+        // 启动指令
+        string coreForCommand = (string.IsNullOrWhiteSpace(request.core) || request.core == "none")
+            ? "server.jar"
+            : request.core;
+
+        // Forge/NeoForge 安装(在 server/ 内)
+        string? forgeArgs = await InstallForgeIfNeededAsync(serverId, serverDir, request.core ?? "", request.java ?? "",
+            report);
+        if (!string.IsNullOrEmpty(forgeArgs))
+        {
+            coreForCommand = forgeArgs;
+        }
+
+        // mcdr config
+        string javaToken = ResolveJavaExecPath(request.java);
+        string handler = string.IsNullOrWhiteSpace(request.mcdrHandler)
+            ? McdrConfigGenerator.InferHandler(request.core)
+            : request.mcdrHandler.Trim();
+        string startCommand =
+            McdrConfigGenerator.BuildStartCommand(javaToken, request.minM, request.maxM, request.args, coreForCommand);
+
+        var configOptions = new McdrConfigOptions
+        {
+            WorkingDirectory = "server",
+            StartCommand = startCommand,
+            Handler = handler,
+            Encoding = "utf8",
+            Decoding = "utf8",
+            AdvancedConsole = false, // MSLX 重定向了 stdio，必须关闭
+            PluginPipInstallExtraArgs = string.IsNullOrWhiteSpace(request.mcdrPipMirror)
+                ? null
+                : $"-i {request.mcdrPipMirror.Trim()}"
+        };
+
+        await File.WriteAllTextAsync(Path.Combine(baseDir, "config.yml"), McdrConfigGenerator.Generate(configOptions));
+
+        string permPath = Path.Combine(baseDir, "permission.yml");
+        if (!File.Exists(permPath))
+        {
+            await File.WriteAllTextAsync(permPath, McdrConfigGenerator.GenerateDefaultPermission());
+        }
+
+        await report($"MCDR 配置已生成 (handler: {handler})。", 95);
+    }
+
+    /// <summary>
+    /// 将 MSLX 的 Java 配置解析为可执行文件路径。
+    /// </summary>
+    private string ResolveJavaExecPath(string? javaConfig)
+    {
+        if (string.IsNullOrWhiteSpace(javaConfig) || javaConfig is "java" or "none")
+            return "java";
+
+        if (javaConfig.StartsWith("MSLX://Java/"))
+        {
+            string version = javaConfig.Replace("MSLX://Java/", "");
+            return Path.Combine(IConfigBase.GetAppDataPath(), "Tools", "Java", version, "bin",
+                PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java");
+        }
+
+        return javaConfig;
+    }
+
+    /// <summary>
+    /// 运行 {python} --version 检测 Python 是否可用。
+    /// </summary>
+    private async Task<(bool ok, string version)> TryGetPythonVersionAsync(string python)
+    {
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = python,
+                Arguments = "--version",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            using var p = System.Diagnostics.Process.Start(psi);
+            if (p == null) return (false, string.Empty);
+
+            string so = await p.StandardOutput.ReadToEndAsync();
+            string se = await p.StandardError.ReadToEndAsync();
+            await p.WaitForExitAsync();
+
+            return (p.ExitCode == 0, (so + se).Trim());
+        }
+        catch
+        {
+            return (false, string.Empty);
+        }
+    }
+
+    /// <summary>
+    /// 运行外部命令并将输出到进度回调。
+    /// </summary>
+    private async Task<(bool ok, string output)> RunCommandAsync(string fileName, string arguments, string? workingDir,
+        ReportProgress report, string label, int timeoutMs = 600000)
+    {
+        var sb = new System.Text.StringBuilder();
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WorkingDirectory = workingDir ?? string.Empty,
+                StandardOutputEncoding = System.Text.Encoding.UTF8,
+                StandardErrorEncoding = System.Text.Encoding.UTF8
+            };
+            psi.EnvironmentVariables["PYTHONIOENCODING"] = "utf-8";
+            psi.EnvironmentVariables["PYTHONUTF8"] = "1";
+
+            using var proc = new System.Diagnostics.Process { StartInfo = psi };
+            DateTime last = DateTime.MinValue;
+
+            void OnData(string? line)
+            {
+                if (line == null) return;
+                lock (sb) sb.AppendLine(line);
+                if ((DateTime.UtcNow - last).TotalMilliseconds > 400)
+                {
+                    last = DateTime.UtcNow;
+                    _ = report($"[{label}] {line}", null);
+                }
+            }
+
+            proc.OutputDataReceived += (_, e) => OnData(e.Data);
+            proc.ErrorDataReceived += (_, e) => OnData(e.Data);
+
+            proc.Start();
+            proc.BeginOutputReadLine();
+            proc.BeginErrorReadLine();
+
+            using var cts = new CancellationTokenSource(timeoutMs);
+            try
+            {
+                await proc.WaitForExitAsync(cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                try { proc.Kill(true); } catch { }
+                return (false, sb.ToString());
+            }
+
+            return (proc.ExitCode == 0, sb.ToString());
+        }
+        catch (Exception ex)
+        {
+            return (false, sb.ToString() + "\n" + ex.Message);
         }
     }
 

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
@@ -123,6 +123,22 @@ public class InstanceSettingsController : ControllerBase
             server.InputEncoding = request.InputEncoding;
             server.OutputEncoding = request.OutputEncoding;
             server.FileEncoding = request.FileEncoding;
+            try
+            {
+                server.ServerPropertiesPath = ServerPropertiesPathUtils.NormalizeRelativePath(request.ServerPropertiesPath);
+                server.PluginsPath = ServerPropertiesPathUtils.NormalizeRelativePath(request.PluginsPath, "plugins", "插件目录路径必须是实例目录内的相对路径");
+                server.ModsPath = ServerPropertiesPathUtils.NormalizeRelativePath(request.ModsPath, "mods", "模组目录路径必须是实例目录内的相对路径");
+                server.WorldPath = ServerPropertiesPathUtils.NormalizeRelativePath(request.WorldPath, "world", "地图目录路径必须是实例目录内的相对路径");
+                server.RegionPath = ServerPropertiesPathUtils.NormalizeRelativePath(request.RegionPath, "region", "Region 目录路径必须是地图目录内的相对路径");
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new ApiResponse<object>
+                {
+                    Code = 400,
+                    Message = ex.Message,
+                });
+            }
 
             // 保存到磁盘
             IConfigBase.ServerList.UpdateServer(server);

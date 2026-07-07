@@ -149,6 +149,7 @@ builder.Services.AddHostedService<SystemMonitorWorker>();
 
 // 瞬时服务注册
 builder.Services.AddScoped<IJavaScannerService,JavaScannerService>();
+builder.Services.AddScoped<IPythonScannerService,PythonScannerService>();
 builder.Services.AddTransient<NeoForgeInstallerService>();
 builder.Services.AddTransient<ServerDeploymentService>();
 

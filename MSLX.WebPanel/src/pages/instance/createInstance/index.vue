@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import QuickMode from './components/QuickMode.vue';
 import CustomMode from './components/CustomMode.vue';
 import PackageMode from './components/PackageMode.vue';
+import McdrMode from './components/McdrMode.vue';
 import BedrockMode from '@/pages/instance/createInstance/components/BedrockMode.vue';
 
 const value = ref(1);
@@ -29,6 +30,7 @@ const value = ref(1);
           <t-radio-button :value="1">快速模式</t-radio-button>
           <t-radio-button :value="2">上传整合包</t-radio-button>
           <t-radio-button :value="3">基岩版</t-radio-button>
+          <t-radio-button :value="4">MCDR</t-radio-button>
           <t-radio-button :value="10">自定义模式</t-radio-button>
         </t-radio-group>
       </div>
@@ -45,6 +47,10 @@ const value = ref(1);
 
       <div v-show="value === 3" class="list-item-anim" style="animation-delay: 0.1s">
         <bedrock-mode />
+      </div>
+
+      <div v-show="value === 4" class="list-item-anim" style="animation-delay: 0.1s">
+        <mcdr-mode />
       </div>
 
       <div v-show="value === 10" class="list-item-anim" style="animation-delay: 0.1s">
