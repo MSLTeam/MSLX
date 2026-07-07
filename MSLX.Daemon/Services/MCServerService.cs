@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
@@ -600,10 +600,14 @@ public class MCServerService : IMCServerService
                                         else
                                         {
                                             context.Process.StandardInput.WriteLine(server?.StopCommand ?? "stop");
+                                            context.Process.StandardInput.Flush();
                                         }
 
                                         // 关闭输入流
-                                        context.Process.StandardInput.Close();
+                                        if(!server?.Args?.ToLower().Contains("mcdreforged") ?? true)
+                                        {
+                                            context.Process.StandardInput.Close();
+                                        }
                                     }
 
                                     // 等待进程退出
