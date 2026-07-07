@@ -21,20 +21,29 @@ public class CreateServerRequest : IValidatableObject
     public bool ignoreEula { get; set; } = false;
     public string? path { get; set; }
     
+    // ======== MCDR 参数区 ========
+    
     // mcdr参数 
     public bool mcdr { get; set; } = false;
 
     // 运行 MCDR 的 Python 可执行文件(默认 python)
+    // 允许：python, python3, 或者带有绝对/相对路径的可执行文件名，但不允许包含非法字符
+    [RegularExpression(@"^[^<>\*""\|\?\:]+$", ErrorMessage = "Python 执行路径 (mcdrPython) 包含非法字符")]
     public string? mcdrPython { get; set; }
 
     // MCDR handler，留空则按核心文件名自动推断
+    // Handler 名字通常是纯字母或下划线组成的标识符（例如: mcs_handler, custom）
+    [RegularExpression(@"^[a-zA-Z0-9_]+$", ErrorMessage = "MCDR Handler 格式不正确，只能包含字母、数字或下划线")]
     public string? mcdrHandler { get; set; }
 
     // 是否在部署时自动执行 pip install mcdreforged
     public bool mcdrInstall { get; set; } = true;
 
-    // pip 安装镜像源(如 https://pypi.tuna.tsinghua.edu.cn/simple),留空使用默认源
+    // pip 安装镜像源，留空使用默认源。如果填写必须是合法的 http/https 地址
+    [RegularExpression(@"^https?://.+", ErrorMessage = "Pip 镜像源地址 (mcdrPipMirror) 必须以 http:// 或 https:// 开头")]
     public string? mcdrPipMirror { get; set; }
+    
+    // ============================
 
     // 远程下载服务端
     [RegularExpression(@"^https?://.+", ErrorMessage = "核心下载地址 (coreUrl) 必须以 http:// 或 https:// 开头")]
