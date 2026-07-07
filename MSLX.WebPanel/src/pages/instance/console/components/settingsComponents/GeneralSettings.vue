@@ -1168,12 +1168,12 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div>
+        <div class="border-b border-dashed border-zinc-200/60 dark:border-zinc-700/60 ">
           <div class="flex items-center gap-2">
             <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
             <h2 class="text-base font-bold text-[var(--td-text-color-primary)] m-0">路径设置</h2>
           </div>
-          <div class="text-xs text-[var(--td-text-color-secondary)] font-mono mt-1 pl-3">
+          <div class="text-xs text-[var(--td-text-color-secondary)] font-mono mt-1 pl-3 pt-1 pb-1">
             这里一般不需要改动，除非服务端路径不是根目录（如MCDR）。
           </div>
         </div>
