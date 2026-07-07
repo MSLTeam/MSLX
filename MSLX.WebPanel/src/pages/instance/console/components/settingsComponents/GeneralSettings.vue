@@ -50,6 +50,58 @@ const fileEncodingOptions = [
   { label: 'GBK', value: 'gbk' },
 ];
 
+const normalizeRelativeInstancePath = (value: string | undefined, defaultPath: string) => {
+  const normalized = (value || defaultPath).trim().replace(/\\/g, '/');
+  if (!normalized) return defaultPath;
+  return normalized.replace(/\/+/g, '/').replace(/^\.\//, '');
+};
+
+const isSafeRelativeInstancePath = (value: string | undefined, defaultPath: string) => {
+  const normalized = normalizeRelativeInstancePath(value, defaultPath);
+  if (/^[a-zA-Z]:\//.test(normalized) || normalized.startsWith('/')) return false;
+  return normalized.split('/').every((segment) => segment && segment !== '.' && segment !== '..');
+};
+
+const serverPropertiesPathRules: FormRules[string] = [
+  {
+    validator: (val: string) => isSafeRelativeInstancePath(val, 'server.properties'),
+    message: 'server.properties 路径必须是实例目录内的相对路径',
+    trigger: 'blur',
+  },
+];
+
+const pluginsPathRules: FormRules[string] = [
+  {
+    validator: (val: string) => isSafeRelativeInstancePath(val, 'plugins'),
+    message: '插件目录路径必须是实例目录内的相对路径',
+    trigger: 'blur',
+  },
+];
+
+const modsPathRules: FormRules[string] = [
+  {
+    validator: (val: string) => isSafeRelativeInstancePath(val, 'mods'),
+    message: '模组目录路径必须是实例目录内的相对路径',
+    trigger: 'blur',
+  },
+];
+
+const worldPathRules: FormRules[string] = [
+  {
+    validator: (val: string) => isSafeRelativeInstancePath(val, 'world'),
+    message: '地图目录路径必须是实例目录内的相对路径',
+    trigger: 'blur',
+  },
+];
+
+const regionPathRules: FormRules[string] = [
+  {
+    validator: (val: string) => isSafeRelativeInstancePath(val, 'region'),
+    message: 'Region 目录路径必须是地图目录内的相对路径',
+    trigger: 'blur',
+  },
+];
+
 // 数据模型
 const formData = ref<UpdateInstanceModel>({
   id: instanceId.value,
@@ -72,6 +124,11 @@ const formData = ref<UpdateInstanceModel>({
   inputEncoding: 'utf-8',
   outputEncoding: 'utf-8',
   fileEncoding: 'utf-8',
+  serverPropertiesPath: 'server.properties',
+  pluginsPath: 'plugins',
+  modsPath: 'mods',
+  worldPath: 'world',
+  regionPath: 'region',
   coreUrl: '',
   coreSha256: '',
   coreFileKey: '',
@@ -121,6 +178,34 @@ const localJavaVersions = ref<{ label: string; value: string }[]>([]);
 const selectedJavaVersion = ref('');
 const customJavaPath = ref('');
 
+// --- MCDReforged 逻辑 ---
+// MCDR 本质上是 java='none' 的自定义启动通道，但用 mcdreforged 命令拉起真实服务端
+const mcdrPython = ref('python');
+const initialized = ref(false); // 首次加载完成前不套用 MCDR 预设，避免覆盖已加载配置
+const isMcdr = computed(() => javaType.value === 'mcdr');
+// MCDR 与"自定义命令(无Java)"一样，后端都记为 java='none'
+const isCustomLike = computed(() => javaType.value === 'none' || javaType.value === 'mcdr');
+// 仅 Java 模式才显示的区块(核心/内存/外置登录/强制UTF8)
+const showJavaOnly = computed(() => !isCustomLike.value);
+const mcdrLaunchCommand = computed(() => {
+  const py = (mcdrPython.value || 'python').trim();
+  const quoted = py.includes(' ') && !py.startsWith('"') ? `"${py}"` : py;
+  return `${quoted} -m mcdreforged start`;
+});
+
+// 切换到 MCDR 时套用推荐布局(仅在字段仍为默认值时，避免覆盖用户自定义)
+const applyMcdrDefaults = () => {
+  formData.value.stopCommand = 'stop';
+  formData.value.monitorPlayers = true;
+  formData.value.inputEncoding = 'utf-8';
+  formData.value.outputEncoding = 'utf-8';
+  if (formData.value.serverPropertiesPath === 'server.properties')
+    formData.value.serverPropertiesPath = 'server/server.properties';
+  if (formData.value.pluginsPath === 'plugins') formData.value.pluginsPath = 'server/plugins';
+  if (formData.value.modsPath === 'mods') formData.value.modsPath = 'server/mods';
+  if (formData.value.worldPath === 'world') formData.value.worldPath = 'server/world';
+};
+
 const fetchJavaVersions = async (force = false) => {
   try {
     if (force) MessagePlugin.info('正在扫描 Java 环境...');
@@ -144,10 +229,24 @@ const fetchJavaVersions = async (force = false) => {
 
 // 监听 Java 类型变化
 watch([javaType, selectedJavaVersion, customJavaPath], ([type, ver, path]) => {
-  if (type === 'none') formData.value.java = 'none';
+  if (type === 'none' || type === 'mcdr') formData.value.java = 'none';
   else if (type === 'env') formData.value.java = 'java';
   else if (type === 'custom' || type === 'local') formData.value.java = path;
   else if (type === 'online') formData.value.java = ver ? `MSLX://Java/${ver}` : '';
+});
+
+// MCDR: 由 Python 命令组合出实际启动命令写入 args
+watch([javaType, mcdrPython], ([type]) => {
+  if (type === 'mcdr') {
+    formData.value.args = mcdrLaunchCommand.value;
+  }
+});
+
+// 用户主动切换到 MCDR 时套用推荐布局(加载阶段不触发)
+watch(javaType, (nv, ov) => {
+  if (initialized.value && nv === 'mcdr' && ov !== 'mcdr') {
+    applyMcdrDefaults();
+  }
 });
 
 // --- 备份路径逻辑 ---
@@ -264,12 +363,17 @@ const hubConnection = ref<HubConnection | null>(null);
 
 // 动态计算校验规则
 const rules = computed<FormRules>(() => {
-  // 如果是自定义模式，跳过核心和内存的校验
-  if (javaType.value === 'none') {
+  // 自定义命令 / MCDR 模式，跳过核心和内存的校验
+  if (isCustomLike.value) {
     return {
       name: [{ required: true, message: '服务器名称不能为空', trigger: 'blur' }],
       base: [{ required: true, message: '基础路径不能为空', trigger: 'blur' }],
       args: [{ required: true, message: '自定义模式必须填写启动命令', trigger: 'blur' }],
+      serverPropertiesPath: serverPropertiesPathRules,
+      pluginsPath: pluginsPathRules,
+      modsPath: modsPathRules,
+      worldPath: worldPathRules,
+      regionPath: regionPathRules,
     };
   }
 
@@ -280,6 +384,11 @@ const rules = computed<FormRules>(() => {
     core: [{ required: true, message: '核心文件名不能为空', trigger: 'change' }],
     minM: [{ required: true, message: '必填', trigger: 'blur' }],
     maxM: [{ required: true, message: '必填', trigger: 'blur' }],
+    serverPropertiesPath: serverPropertiesPathRules,
+    pluginsPath: pluginsPathRules,
+    modsPath: modsPathRules,
+    worldPath: worldPathRules,
+    regionPath: regionPathRules,
   };
 });
 
@@ -288,6 +397,7 @@ const initData = async () => {
     return;
   }
   loading.value = true;
+  initialized.value = false;
   try {
     await fetchJavaVersions();
     formData.value.id = instanceId.value;
@@ -298,6 +408,11 @@ const initData = async () => {
       coreUrl: '',
       coreFileKey: '',
       coreSha256: '',
+      serverPropertiesPath: normalizeRelativeInstancePath(res.serverPropertiesPath, 'server.properties'),
+      pluginsPath: normalizeRelativeInstancePath(res.pluginsPath, 'plugins'),
+      modsPath: normalizeRelativeInstancePath(res.modsPath, 'mods'),
+      worldPath: normalizeRelativeInstancePath(res.worldPath, 'world'),
+      regionPath: normalizeRelativeInstancePath(res.regionPath, 'region'),
     };
 
     // 判断内存单位
@@ -308,7 +423,14 @@ const initData = async () => {
 
     // 解析 Java 类型
     if (res.java === 'none') {
-      javaType.value = 'none';
+      // MCDR 与普通自定义命令都记为 none，用启动命令是否含 mcdreforged 区分
+      if ((res.args ?? '').includes('mcdreforged')) {
+        javaType.value = 'mcdr';
+        const m = (res.args ?? '').match(/^\s*"?([^"]+?)"?\s+-m\s+mcdreforged/);
+        mcdrPython.value = m ? m[1].trim() : 'python';
+      } else {
+        javaType.value = 'none';
+      }
     } else if (res.java === 'java') {
       javaType.value = 'env';
     } else if (res.java.startsWith('MSLX://Java/')) {
@@ -345,6 +467,7 @@ const initData = async () => {
     MessagePlugin.error('获取配置失败: ' + e.message);
   } finally {
     loading.value = false;
+    initialized.value = true;
   }
 };
 
@@ -366,8 +489,14 @@ const onSubmit = async () => {
   const result = await formRef.value?.validate();
   if (result !== true) return;
 
-  // 自定义模式下，不需要检查核心变更
-  if (javaType.value !== 'none') {
+  formData.value.serverPropertiesPath = normalizeRelativeInstancePath(formData.value.serverPropertiesPath, 'server.properties');
+  formData.value.pluginsPath = normalizeRelativeInstancePath(formData.value.pluginsPath, 'plugins');
+  formData.value.modsPath = normalizeRelativeInstancePath(formData.value.modsPath, 'mods');
+  formData.value.worldPath = normalizeRelativeInstancePath(formData.value.worldPath, 'world');
+  formData.value.regionPath = normalizeRelativeInstancePath(formData.value.regionPath, 'region');
+
+  // 自定义 / MCDR 模式下，不需要检查核心变更
+  if (!isCustomLike.value) {
     const isChangingCore = !!formData.value.coreUrl || !!formData.value.coreFileKey;
     if (isChangingCore) {
       const confirm = await new Promise((resolve) => {
@@ -389,8 +518,8 @@ const onSubmit = async () => {
     }
   }
 
-  // 处理自定义模式的写死参数
-  if (javaType.value === 'none') {
+  // 处理自定义 / MCDR 模式的写死参数
+  if (isCustomLike.value) {
     formData.value.core = 'none';
     formData.value.minM = 1027; // 按要求写死
     formData.value.maxM = 1102; // 按要求写死
@@ -399,6 +528,10 @@ const onSubmit = async () => {
     formData.value.coreUrl = '';
     formData.value.coreFileKey = '';
     formData.value.coreSha256 = '';
+    // MCDR：确保启动命令与所选 Python 一致
+    if (isMcdr.value) {
+      formData.value.args = mcdrLaunchCommand.value;
+    }
   }
 
   submitting.value = true;
@@ -560,10 +693,11 @@ onUnmounted(() => {
                 { label: '使用本地版本 (Java)', value: 'local' },
                 { label: '自定义路径 (Java)', value: 'custom' },
                 { label: '环境变量 (Java)', value: 'env' },
+                { label: 'MCDReforged (MCDR)', value: 'mcdr' },
                 { label: '自定义命令 (无Java)', value: 'none' },
               ]"
             />
-            <div v-if="javaType !== 'none'" class="w-full">
+            <div v-if="showJavaOnly" class="w-full">
               <t-select
                 v-if="javaType === 'online'"
                 v-model="selectedJavaVersion"
@@ -586,7 +720,31 @@ onUnmounted(() => {
           </div>
         </div>
 
+        <!-- MCDR：Python 命令 -->
         <div
+          v-if="isMcdr"
+          class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+        >
+          <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+            <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">MCDR 启动 (Python)</div>
+            <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+              运行 MCDReforged 的 Python 命令或路径。真实服务端的 Java / 内存 / 核心请在
+              <code class="font-mono bg-zinc-100 dark:bg-zinc-800 px-1 rounded">config.yml</code> 中配置。
+              <br />请确保下方路径指向
+              <code class="font-mono bg-zinc-100 dark:bg-zinc-800 px-1 rounded">server/</code> 子目录。
+            </div>
+          </div>
+          <div class="w-full md:w-[340px] shrink-0 flex flex-col gap-2">
+            <t-input v-model="mcdrPython" placeholder="例如: python3 或 C:\Python312\python.exe" class="w-full !font-mono" />
+            <div class="text-[11px] text-zinc-400 break-all">
+              实际启动命令: <span class="font-mono text-[var(--color-primary)]">{{ mcdrLaunchCommand }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 启动命令 / JVM 参数 (非 MCDR) -->
+        <div
+          v-if="!isMcdr"
           class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
         >
           <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
@@ -611,7 +769,7 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <template v-if="javaType !== 'none'">
+        <template v-if="showJavaOnly">
           <div
             class="flex items-center gap-2 mt-8 mb-4 pb-2 border-b border-dashed border-zinc-200/60 dark:border-zinc-700/60"
           >
@@ -682,7 +840,7 @@ onUnmounted(() => {
           </div>
         </template>
 
-        <template v-if="javaType !== 'none'">
+        <template v-if="showJavaOnly">
           <div
             class="flex items-center gap-2 mt-8 mb-4 pb-2 border-b border-dashed border-zinc-200/60 dark:border-zinc-700/60"
           >
@@ -804,7 +962,7 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <template v-if="javaType !== 'none'">
+        <template v-if="showJavaOnly">
           <div
             class="flex items-center gap-2 mt-8 mb-4 pb-2 border-b border-dashed border-zinc-200/60 dark:border-zinc-700/60"
           >
@@ -954,7 +1112,7 @@ onUnmounted(() => {
         </div>
 
         <div
-          v-if="javaType !== 'none'"
+          v-if="showJavaOnly"
           class="flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
         >
           <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
@@ -1001,6 +1159,80 @@ onUnmounted(() => {
           </div>
           <div class="w-full md:w-[340px] shrink-0 flex">
             <t-select v-model="formData.fileEncoding" :options="fileEncodingOptions" class="w-full" />
+          </div>
+        </div>
+
+        <div
+          class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+        >
+          <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+            <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">Server.properties 路径</div>
+            <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+              相对实例路径，用于读取端口、难度、游戏模式等服务端配置
+            </div>
+          </div>
+          <div class="w-full md:w-[340px] shrink-0 flex">
+            <t-input
+              v-model="formData.serverPropertiesPath"
+              placeholder="server.properties 或 config/server.properties"
+              class="w-full"
+            />
+          </div>
+        </div>
+
+        <div
+          class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+        >
+          <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+            <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">插件目录路径</div>
+            <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+              相对实例路径，用于读取和管理服务端插件文件
+            </div>
+          </div>
+          <div class="w-full md:w-[340px] shrink-0 flex">
+            <t-input v-model="formData.pluginsPath" placeholder="plugins 或 custom/plugins" class="w-full" />
+          </div>
+        </div>
+
+        <div
+          class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+        >
+          <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+            <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">模组目录路径</div>
+            <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+              相对实例路径，用于读取和管理服务端模组文件
+            </div>
+          </div>
+          <div class="w-full md:w-[340px] shrink-0 flex">
+            <t-input v-model="formData.modsPath" placeholder="mods 或 custom/mods" class="w-full" />
+          </div>
+        </div>
+
+        <div
+          class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+        >
+          <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+            <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">地图目录路径</div>
+            <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+              相对实例路径，用于世界渲染图读取 level.dat 和 region 地图文件
+            </div>
+          </div>
+          <div class="w-full md:w-[340px] shrink-0 flex">
+            <t-input v-model="formData.worldPath" placeholder="world 或 saves/world" class="w-full" />
+          </div>
+        </div>
+
+        <div
+          class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+        >
+          <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+            <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">Region 目录路径</div>
+            <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+              相对地图目录路径，用于世界渲染图读取 r.x.z.mca 文件。默认 region；下界可填 DIM-1/region，末地可填 DIM1/region
+            </div>
+          </div>
+          <div class="w-full md:w-[340px] shrink-0 flex">
+            <t-input v-model="formData.regionPath" placeholder="region 或 DIM-1/region" class="w-full" />
           </div>
         </div>
 

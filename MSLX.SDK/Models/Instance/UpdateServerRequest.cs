@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace MSLX.SDK.Models.Instance;
 
@@ -61,6 +61,12 @@ public class UpdateServerRequest : IValidatableObject
     
     [RegularExpression(@"^(?i)(utf-8|utf-8-bom|gbk)$", ErrorMessage = "文件编码 (FileEncoding) 仅支持 'utf-8', 'utf-8-bom' 或 'gbk'")]
     public string FileEncoding { get; set; } = "utf-8";
+
+    public string ServerPropertiesPath { get; set; } = "server.properties";
+    public string PluginsPath { get; set; } = "plugins";
+    public string ModsPath { get; set; } = "mods";
+    public string WorldPath { get; set; } = "world";
+    public string RegionPath { get; set; } = "region";
     
     // 更新的可选参数
 
@@ -97,6 +103,37 @@ public class UpdateServerRequest : IValidatableObject
                 $"逻辑错误：最大内存 ({MaxM}) 不能小于 最小内存 ({MinM})。",
                 new[] { nameof(MaxM), nameof(MinM) }
             );
+        }
+
+        foreach (var result in ValidateRelativeInstancePath(ServerPropertiesPath, "server.properties", "server.properties 路径必须是实例目录内的相对路径", nameof(ServerPropertiesPath)))
+            yield return result;
+        foreach (var result in ValidateRelativeInstancePath(PluginsPath, "plugins", "插件目录路径必须是实例目录内的相对路径", nameof(PluginsPath)))
+            yield return result;
+        foreach (var result in ValidateRelativeInstancePath(ModsPath, "mods", "模组目录路径必须是实例目录内的相对路径", nameof(ModsPath)))
+            yield return result;
+        foreach (var result in ValidateRelativeInstancePath(WorldPath, "world", "地图目录路径必须是实例目录内的相对路径", nameof(WorldPath)))
+            yield return result;
+        foreach (var result in ValidateRelativeInstancePath(RegionPath, "region", "Region 目录路径必须是地图目录内的相对路径", nameof(RegionPath)))
+            yield return result;
+    }
+
+    private static IEnumerable<ValidationResult> ValidateRelativeInstancePath(string? path, string defaultPath, string message, string memberName)
+    {
+        var normalizedPath = string.IsNullOrWhiteSpace(path)
+            ? defaultPath
+            : path.Trim().Replace('\\', '/');
+        var isWindowsAbsolutePath = normalizedPath.Length >= 3 &&
+                                    char.IsLetter(normalizedPath[0]) &&
+                                    normalizedPath[1] == ':' &&
+                                    normalizedPath[2] == '/';
+        var invalidFileNameChars = Path.GetInvalidFileNameChars();
+        var hasInvalidSegment = normalizedPath
+            .Split('/', StringSplitOptions.RemoveEmptyEntries)
+            .Any(segment => segment is "." or ".." || segment.IndexOfAny(invalidFileNameChars) >= 0);
+
+        if (Path.IsPathRooted(normalizedPath) || isWindowsAbsolutePath || hasInvalidSegment)
+        {
+            yield return new ValidationResult(message, new[] { memberName });
         }
     }
 }

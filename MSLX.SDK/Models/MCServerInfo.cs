@@ -30,5 +30,10 @@ namespace MSLX.SDK.Models;
             public string InputEncoding { get; set; } = "utf-8";
             public string OutputEncoding { get; set; } = "utf-8";
             public string FileEncoding { get; set; } = "utf-8";
+            public string ServerPropertiesPath { get; set; } = "server.properties";
+            public string PluginsPath { get; set; } = "plugins";
+            public string ModsPath { get; set; } = "mods";
+            public string WorldPath { get; set; } = "world";
+            public string RegionPath { get; set; } = "region";
         }
     }

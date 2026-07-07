@@ -42,12 +42,19 @@ public class FileUtils
 
         try
         {
-            string rootPath = Path.GetFullPath(rootBase);
-            string reqPath = relativePath ?? "";
-            string targetPath = Path.GetFullPath(Path.Combine(rootPath, reqPath));
+            var rootPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootBase));
+            var reqPath = relativePath ?? string.Empty;
+            var targetPath = Path.GetFullPath(Path.Combine(rootPath, reqPath));
+            var rootPrefix = rootPath.EndsWith(Path.DirectorySeparatorChar) ||
+                             rootPath.EndsWith(Path.AltDirectorySeparatorChar)
+                ? rootPath
+                : rootPath + Path.DirectorySeparatorChar;
+            var comparison = OperatingSystem.IsWindows()
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
 
-            // 目标路径必须以根路径开头
-            if (!targetPath.StartsWith(rootPath, StringComparison.OrdinalIgnoreCase))
+            if (!targetPath.Equals(rootPath, comparison) &&
+                !targetPath.StartsWith(rootPrefix, comparison))
             {
                 return (false, string.Empty, "禁止访问实例目录以外的资源");
             }

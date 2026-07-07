@@ -31,13 +31,13 @@ public class PluginsAndModsController : ControllerBase
                 });
             }
 
-            string targetPath = mode == "plugins" ? Path.Combine(server.Base, "plugins") : Path.Combine(server.Base, "mods");
+            string targetPath = GetPluginOrModPath(server, mode);
             if (!Directory.Exists(targetPath))
             {
                 return NotFound(new ApiResponse<object>
                 {
                     Code = 404,
-                    Message = $"未检测到{(mode == "plugins" ? "插件" : "模组")}目录,请检查当前服务端是否支持使用{(mode == "plugins" ? "插件" : "模组")}，或者尝试启动一次服务器。",
+                    Message = $"未检测到配置的{(mode == "plugins" ? "插件" : "模组")}目录,请检查当前服务端是否支持使用{(mode == "plugins" ? "插件" : "模组")}，或者尝试启动一次服务器。",
                 });
             }
 
@@ -93,6 +93,19 @@ public class PluginsAndModsController : ControllerBase
                 Message = "服务器内部错误" + e.Message,
             });
         }
+    }
+
+
+    private static string GetPluginOrModPath(McServerInfo.ServerInfo server, string? mode)
+    {
+        var isMods = string.Equals(mode, "mods", StringComparison.OrdinalIgnoreCase);
+        var relativePath = isMods
+            ? ServerPropertiesPathUtils.NormalizeRelativePath(server.ModsPath, "mods", "模组目录路径必须是实例目录内的相对路径")
+            : ServerPropertiesPathUtils.NormalizeRelativePath(server.PluginsPath, "plugins", "插件目录路径必须是实例目录内的相对路径");
+
+        var check = FileUtils.GetSafePath(server.Base, relativePath);
+        if (!check.IsSafe) throw new ArgumentException(check.Message);
+        return check.FullPath;
     }
 
     /// <summary>
@@ -191,9 +204,9 @@ public class PluginsAndModsController : ControllerBase
         if (server == null)
             return NotFound(new ApiResponse<object> { Code = 404, Message = "服务器不存在" });
 
-        string targetPath = request.Mode == "plugins" ? Path.Combine(server.Base, "plugins") : Path.Combine(server.Base, "mods");
+        string targetPath = GetPluginOrModPath(server, request.Mode);
         if (!Directory.Exists(targetPath))
-            return NotFound(new ApiResponse<object> { Code = 404, Message = "目录不存在" });
+            return NotFound(new ApiResponse<object> { Code = 404, Message = "配置的目录不存在" });
 
         if (request.Targets == null || request.Targets.Count == 0)
             return BadRequest(new ApiResponse<object> { Code = 400, Message = "请选择至少一个文件" });
