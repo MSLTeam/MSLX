@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
@@ -13,8 +13,8 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
 public class InstanceInfoController : ControllerBase
 {
     private readonly IMCServerService _mcServerService;
-    private readonly ILogger _logger;
-    public InstanceInfoController(IMCServerService mcServerService, ILogger logger)
+    ILogger<InstanceInfoController> _logger;
+    public InstanceInfoController(IMCServerService mcServerService, ILogger<InstanceInfoController> logger)
     {
         _mcServerService = mcServerService;
         _logger = logger;
