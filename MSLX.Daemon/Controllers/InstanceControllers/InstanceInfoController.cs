@@ -13,9 +13,11 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
 public class InstanceInfoController : ControllerBase
 {
     private readonly IMCServerService _mcServerService;
-    public InstanceInfoController(IMCServerService mcServerService)
+    private readonly ILogger _logger;
+    public InstanceInfoController(IMCServerService mcServerService,ILogger logger)
     {
         _mcServerService = mcServerService;
+        _logger = logger;
     }
     
 [HttpGet("list")]
@@ -217,7 +219,7 @@ public class InstanceInfoController : ControllerBase
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"读取 server.properties 失败: {serverPropertiesPath}, {ex.Message}");
+            _logger.LogError($"读取 server.properties 失败: {ex.Message}");
             return BuildUnknownMcConfig(serverPropertiesRelativePath, true);
         }
     }

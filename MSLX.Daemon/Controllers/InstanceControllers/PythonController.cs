@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.SDK.IServices;
 using MSLX.SDK.Models;
@@ -6,6 +7,7 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
 
 [Route("api/python")]
 [ApiController]
+[Authorize(Roles = "admin")]
 public class PythonController : ControllerBase
 {
     private readonly IPythonScannerService _pythonScanner;
@@ -42,6 +44,16 @@ public class PythonController : ControllerBase
             {
                 Code = 400,
                 Message = "python 参数不能为空",
+            });
+        }
+
+        // 拒绝绝对路径与目录穿越，防止命令注入
+        if (System.IO.Path.IsPathRooted(python) || python.Contains(".."))
+        {
+            return BadRequest(new ApiResponse<object>
+            {
+                Code = 400,
+                Message = "python 参数必须是可执行文件名或相对路径，不允许绝对路径或目录穿越",
             });
         }
 

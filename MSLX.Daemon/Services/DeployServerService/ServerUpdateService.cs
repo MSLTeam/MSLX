@@ -112,11 +112,19 @@ public class ServerUpdateService : BackgroundService
             server.InputEncoding = req.InputEncoding;
             server.OutputEncoding = req.OutputEncoding;
             server.FileEncoding = req.FileEncoding;
-            server.ServerPropertiesPath = ServerPropertiesPathUtils.NormalizeRelativePath(req.ServerPropertiesPath);
-            server.PluginsPath = ServerPropertiesPathUtils.NormalizeRelativePath(req.PluginsPath, "plugins", "插件目录路径必须是实例目录内的相对路径");
-            server.ModsPath = ServerPropertiesPathUtils.NormalizeRelativePath(req.ModsPath, "mods", "模组目录路径必须是实例目录内的相对路径");
-            server.WorldPath = ServerPropertiesPathUtils.NormalizeRelativePath(req.WorldPath, "world", "地图目录路径必须是实例目录内的相对路径");
-            server.RegionPath = ServerPropertiesPathUtils.NormalizeRelativePath(req.RegionPath, "region", "Region 目录路径必须是地图目录内的相对路径");
+            try
+            {
+                server.ServerPropertiesPath = ServerPropertiesPathUtils.NormalizeRelativePath(req.ServerPropertiesPath);
+                server.PluginsPath = ServerPropertiesPathUtils.NormalizeRelativePath(req.PluginsPath, "plugins", "插件目录路径必须是实例目录内的相对路径");
+                server.ModsPath = ServerPropertiesPathUtils.NormalizeRelativePath(req.ModsPath, "mods", "模组目录路径必须是实例目录内的相对路径");
+                server.WorldPath = ServerPropertiesPathUtils.NormalizeRelativePath(req.WorldPath, "world", "地图目录路径必须是实例目录内的相对路径");
+                server.RegionPath = ServerPropertiesPathUtils.NormalizeRelativePath(req.RegionPath, "region", "Region 目录路径必须是地图目录内的相对路径");
+            }
+            catch (ArgumentException ex)
+            {
+                await report($"路径配置无效: {ex.Message}", -1, true);
+                return;
+            }
             IConfigBase.ServerList.UpdateServer(server);
 
             // 检查 Java

@@ -99,12 +99,13 @@ public class PluginsAndModsController : ControllerBase
     private static string GetPluginOrModPath(McServerInfo.ServerInfo server, string? mode)
     {
         var isMods = string.Equals(mode, "mods", StringComparison.OrdinalIgnoreCase);
+        var label = isMods ? "模组" : "插件";
         var relativePath = isMods
             ? ServerPropertiesPathUtils.NormalizeRelativePath(server.ModsPath, "mods", "模组目录路径必须是实例目录内的相对路径")
             : ServerPropertiesPathUtils.NormalizeRelativePath(server.PluginsPath, "plugins", "插件目录路径必须是实例目录内的相对路径");
 
         var check = FileUtils.GetSafePath(server.Base, relativePath);
-        if (!check.IsSafe) throw new ArgumentException(check.Message);
+        if (!check.IsSafe) throw new ArgumentException($"{label}目录不安全: {check.Message}");
         return check.FullPath;
     }
 
