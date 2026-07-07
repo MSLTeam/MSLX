@@ -125,6 +125,7 @@ public class ServerUpdateService : BackgroundService
                 await report($"路径配置无效: {ex.Message}", -1, true);
                 return;
             }
+
             IConfigBase.ServerList.UpdateServer(server);
 
             // 检查 Java

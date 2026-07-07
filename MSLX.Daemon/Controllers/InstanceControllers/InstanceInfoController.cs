@@ -14,7 +14,7 @@ public class InstanceInfoController : ControllerBase
 {
     private readonly IMCServerService _mcServerService;
     private readonly ILogger _logger;
-    public InstanceInfoController(IMCServerService mcServerService,ILogger logger)
+    public InstanceInfoController(IMCServerService mcServerService, ILogger logger)
     {
         _mcServerService = mcServerService;
         _logger = logger;
@@ -219,7 +219,7 @@ public class InstanceInfoController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError($"读取 server.properties 失败: {ex.Message}");
+            _logger.LogError(ex, "读取 server.properties 失败");
             return BuildUnknownMcConfig(serverPropertiesRelativePath, true);
         }
     }

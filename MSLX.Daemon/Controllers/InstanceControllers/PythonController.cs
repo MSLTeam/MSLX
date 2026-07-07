@@ -47,16 +47,6 @@ public class PythonController : ControllerBase
             });
         }
 
-        // 拒绝绝对路径与目录穿越，防止命令注入
-        if (System.IO.Path.IsPathRooted(python) || python.Contains(".."))
-        {
-            return BadRequest(new ApiResponse<object>
-            {
-                Code = 400,
-                Message = "python 参数必须是可执行文件名或相对路径，不允许绝对路径或目录穿越",
-            });
-        }
-
         var info = await _pythonScanner.InspectPythonAsync(python);
         if (info == null)
         {
