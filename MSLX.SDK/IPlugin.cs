@@ -1,4 +1,6 @@
-﻿namespace MSLX.SDK
+﻿using Microsoft.AspNetCore.Routing;
+
+namespace MSLX.SDK
 {
     public interface IPlugin
     {
@@ -32,5 +34,12 @@
         // 初始化 & 结束加载方法
         void OnLoad() { }
         void OnUnload() { }
+
+        /// <summary>
+        /// 注册 ASP.NET Core 路由端点
+        /// 允许插件在此处挂载自己的 SignalR Hub、Minimal APIs 等
+        /// </summary>
+        /// <param name="endpoints">端点路由构建器</param>
+        void OnRegisterEndpoints(IEndpointRouteBuilder endpoints) { }
     }
 }

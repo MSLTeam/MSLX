@@ -25,8 +25,8 @@ jobs:
         shell: bash
         run: |
           BASE_VERSION=$(grep -oP '(?<=<Version>)[^<]+' MSLX.SDK/MSLX.SDK.csproj)
-          TIMESTAMP=$(TZ=Asia/Hong_Kong date +'%Y%m%d.%H%M')
-          FINAL_VERSION="${BASE_VERSION}-dev.${TIMESTAMP}"
+          TIMESTAMP=$(TZ=Asia/Hong_Kong date +'%Y%m%d%H%M')
+          FINAL_VERSION="${BASE_VERSION}-dev-${TIMESTAMP}"
           
           echo "PACKAGE_VERSION=$FINAL_VERSION" >> $GITHUB_ENV
           echo "准备发布预览版: $FINAL_VERSION"

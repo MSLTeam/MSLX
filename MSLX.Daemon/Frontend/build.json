@@ -1,6 +1,6 @@
 {
-  "version": "1.4.8",
-  "buildTime": "2026-07-06 11:00:03",
+  "version": "1.4.9",
+  "buildTime": "2026-07-07 16:30:10",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -20,11 +20,11 @@
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "ansi-colors": "^4.1.3",
-    "axios": "^1.13.5",
+    "axios": "^1.16.0",
     "cron-parser": "^5.4.0",
     "dayjs": "^1.11.11",
     "echarts": "^6.0.0",
-    "lodash": "4.17.23",
+    "lodash": "4.18.1",
     "md-editor-v3": "^6.1.0",
     "nprogress": "^0.2.0",
     "pinia": "^2.1.7",
@@ -77,10 +77,220 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "3f3af1cbca64b6fde6a91ded5f858ca28f8a86b0",
-  "commitMsg": "plugin-dev(webpanel): 新增插件插槽instance-setting-more",
+  "commitId": "45dfd4300c81e9e7566c67eac333fdc0805d2a41",
+  "commitMsg": "fix(webpanel): 修复插件操作可能存在的问题",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "45dfd4300c81e9e7566c67eac333fdc0805d2a41",
+      "commitTime": "2026-07-07 16:29:07 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复插件操作可能存在的问题"
+    },
+    {
+      "commitId": "f3229457794a75490af5d7dc606957a7e2fd1f2a",
+      "commitTime": "2026-07-07 16:19:48 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 公告API更新到V4"
+    },
+    {
+      "commitId": "f2e228eb8ba093f7765e327c4d22503536910a4c",
+      "commitTime": "2026-07-07 16:05:51 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 新增CNB仓库地址"
+    },
+    {
+      "commitId": "6cac429626df8b89b563475757fe52c7fb4df802",
+      "commitTime": "2026-07-07 16:00:25 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 服务端选择组件新增服务端简短描述介绍"
+    },
+    {
+      "commitId": "b6ba10d8a82d16476605ab6ff87214fbe0f6ccfc",
+      "commitTime": "2026-07-07 15:50:30 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 优化下拉框样式"
+    },
+    {
+      "commitId": "54a0914331ebe6c1666e38fe176bcb4afb0fffe2",
+      "commitTime": "2026-07-07 09:40:01 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(daemon): 移除加载等待的500ms"
+    },
+    {
+      "commitId": "87a5fda61b02343e464d98c4d6fc4b88f711b1cf",
+      "commitTime": "2026-07-07 00:41:57 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(sdk): 修复dev版本SDK构建逻辑"
+    },
+    {
+      "commitId": "3390c2bf661aa37bd3f8591823f77d99dfd7e6a0",
+      "commitTime": "2026-07-07 00:38:40 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(sdk): 修复配置错误"
+    },
+    {
+      "commitId": "ac82b3211123c758dcb55be99547e18317a9578c",
+      "commitTime": "2026-07-07 00:32:32 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
+    },
+    {
+      "commitId": "a8230d8226d7c23a77e88ebd036997f48b12a2af",
+      "commitTime": "2026-07-07 00:31:12 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(sdk): 新增OnRegisterEndpoints方法"
+    },
+    {
+      "commitId": "3843b2ee7bf11cdc8e8c284b90b0b4f8d13e91ce",
+      "commitTime": "2026-07-06 19:57:17 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #158 from MSLTeam/dependabot/npm_and_yarn/MSLX.WebPanel/lodash-4.18.1"
+    },
+    {
+      "commitId": "c0d676b404dea91d97b747a9f57462a550493f06",
+      "commitTime": "2026-07-06 11:56:24 +0000",
+      "commitAuthor": "dependabot[bot]",
+      "commitMsg": "build(deps): bump lodash from 4.17.23 to 4.18.1 in /MSLX.WebPanel"
+    },
+    {
+      "commitId": "f908e9518e085e72669911f1d6eabe0405a3f611",
+      "commitTime": "2026-07-06 19:54:06 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #157 from MSLTeam/dependabot/npm_and_yarn/MSLX.WebPanel/axios-1.16.0"
+    },
+    {
+      "commitId": "5671af5220644fb7e1667092a46c4850e307192f",
+      "commitTime": "2026-07-06 11:53:02 +0000",
+      "commitAuthor": "dependabot[bot]",
+      "commitMsg": "build(deps): bump axios from 1.13.5 to 1.16.0 in /MSLX.WebPanel"
+    },
+    {
+      "commitId": "eb06277896ff77a45fc0fd7fba7a6b6b0dba76cd",
+      "commitTime": "2026-07-06 17:04:59 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(git): 修复同步工作流"
+    },
+    {
+      "commitId": "666006b1b52bb0b96381e907362c0fa2e6cd16e5",
+      "commitTime": "2026-07-06 17:01:20 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(git): 修复同步工作流"
+    },
+    {
+      "commitId": "168d40a16e721a5dfa7c503c0e3894e938495856",
+      "commitTime": "2026-07-06 17:01:00 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(git): 修复同步工作流"
+    },
+    {
+      "commitId": "46c0fe359a7144f119e34ff2f42be73e54f9c2d9",
+      "commitTime": "2026-07-06 16:56:32 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(git): 修复同步工作流"
+    },
+    {
+      "commitId": "91546804a8df5df016e225f6b8f3842bb2fb4596",
+      "commitTime": "2026-07-06 16:54:20 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(git): 修复同步工作流"
+    },
+    {
+      "commitId": "89f10bdb27b4229e548e1feb519b5f420856351a",
+      "commitTime": "2026-07-06 16:51:48 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(git): 修复同步工作流"
+    },
+    {
+      "commitId": "2ee68d2ed2e1622869825c63e78f3ceb9329d304",
+      "commitTime": "2026-07-06 16:50:56 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(git): 优化同步流程"
+    },
+    {
+      "commitId": "ef637731a8176965d263dc7c8ac4487209dabf33",
+      "commitTime": "2026-07-06 16:48:08 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(git): 新增同步代码到CNB"
+    },
+    {
+      "commitId": "c5afb0e5017fa05cfde52a878c1da5cebe4f32f0",
+      "commitTime": "2026-07-06 16:40:58 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(docker): 更新出发构建的流程"
+    },
+    {
+      "commitId": "4ab16c7a7dd7daca089e82254189260953684ddf",
+      "commitTime": "2026-07-06 16:38:04 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "deps(desktop & daemon): 更新nuget软件包"
+    },
+    {
+      "commitId": "11d5e541b829ca2c7117ea6d8aa8791f20162605",
+      "commitTime": "2026-07-06 14:11:09 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(builds): 优化cnb同步流程"
+    },
+    {
+      "commitId": "c4de6a3680cf9052c6e25995f3d2172de46c0c66",
+      "commitTime": "2026-07-06 13:54:44 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(builds): 继续修复CNB构建"
+    },
+    {
+      "commitId": "469d5dab49693636139f4d982038029959a5b642",
+      "commitTime": "2026-07-06 13:49:12 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(builds): 继续修复CNB构建"
+    },
+    {
+      "commitId": "819da3807c5b5026516b5add52e42250f5285f67",
+      "commitTime": "2026-07-06 13:44:44 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(builds): 继续修复CNB构建"
+    },
+    {
+      "commitId": "3998b45cb0472c414bff5c36858bd2548d529476",
+      "commitTime": "2026-07-06 13:37:23 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(builds): 继续修复CNB构建"
+    },
+    {
+      "commitId": "bea10a86c5510ed75e73fa6e2c9c9b780a5b64c8",
+      "commitTime": "2026-07-06 13:28:59 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(builds): 继续修复CNB构建"
+    },
+    {
+      "commitId": "3a3e9acfb6b7f6d717d5c50df79c53b442367bfd",
+      "commitTime": "2026-07-06 13:18:50 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #150 from MSLTeam/dev"
+    },
+    {
+      "commitId": "eb93ababbbaaa24058f502080c46e314420b2470",
+      "commitTime": "2026-07-06 13:17:49 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(builds): 尝试修复CNB同步工作流"
+    },
+    {
+      "commitId": "78c87ee59306bd6463ac2b6978cf494bc02ce033",
+      "commitTime": "2026-07-06 13:11:24 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #148 from MSLTeam/dev"
+    },
+    {
+      "commitId": "8232c84369a891294efc32c7f8cce338dd789234",
+      "commitTime": "2026-07-06 13:10:25 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(github): 尝试新增工作流同步到CNB仓库"
+    },
+    {
+      "commitId": "498b928fe66fbaf58aa19772bb248e069e31f4a3",
+      "commitTime": "2026-07-06 11:01:11 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.4.8版本"
+    },
     {
       "commitId": "3f3af1cbca64b6fde6a91ded5f858ca28f8a86b0",
       "commitTime": "2026-07-06 10:54:27 +0800",
@@ -170,216 +380,6 @@
       "commitTime": "2026-06-10 20:54:00 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "fix(webpanel): 丢了个参数"
-    },
-    {
-      "commitId": "475f17ce3e7301b3796f53d99b2ee521e35e5a59",
-      "commitTime": "2026-06-10 20:52:11 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 优化弱网状态下的上传文件成功率 & 修复上传失败进度条回退0的问题"
-    },
-    {
-      "commitId": "9fbde3d0055e2fcfc79d73a12399d17914e84701",
-      "commitTime": "2026-06-10 18:11:53 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 尝试修复Linux自动更新失败"
-    },
-    {
-      "commitId": "ee977a7f6c660033a7a7f50d74ef85e49ccb91b1",
-      "commitTime": "2026-06-10 17:52:42 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 新增宿主机文件选择组件 & 上传整合包支持可视化选择文件"
-    },
-    {
-      "commitId": "66ca2ee314b45d81c3ace957dba602d09b83ab46",
-      "commitTime": "2026-06-10 14:56:50 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 整合包创建实例模式新增选择本机压缩包功能"
-    },
-    {
-      "commitId": "8e65418dfe33b4b5fce6dfa0bdb31d9bc6e61d6f",
-      "commitTime": "2026-06-10 13:52:42 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
-    },
-    {
-      "commitId": "0454a76accddd70fcd5fe43db7db57badf33afa2",
-      "commitTime": "2026-06-10 13:51:46 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "deps(webpanel): 更新Vite版本"
-    },
-    {
-      "commitId": "b485d9bec972ea23f621d17e2efd0c6e984f80fd",
-      "commitTime": "2026-05-31 20:58:46 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 本地自签名证书签入本地回环地址"
-    },
-    {
-      "commitId": "fd2d0389ee09759ef8d84ac55564cda687e4f751",
-      "commitTime": "2026-05-31 20:50:20 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复SSL证书保存失败的问题 #96"
-    },
-    {
-      "commitId": "f0c12bf9c2f75d3ba77a1ac4470068d33d843eff",
-      "commitTime": "2026-05-29 18:46:03 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #137 from MSLTeam/dev"
-    },
-    {
-      "commitId": "fc03eff9f12b1e029ce9d538718b09af7a2c6349",
-      "commitTime": "2026-05-29 18:45:11 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.4.5版本"
-    },
-    {
-      "commitId": "2bc61c1323607305d5d0b64e411b30480bec650c",
-      "commitTime": "2026-05-29 17:52:53 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel & daemon): 优化修改证书的界面设计"
-    },
-    {
-      "commitId": "e73eda2335d1cfe3b23ba877653fe527cb0c7b38",
-      "commitTime": "2026-05-29 16:39:07 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复移动端下插件管理页面内容溢出的问题"
-    },
-    {
-      "commitId": "e24f6ad8fdf40123ae74c9aef3176fd9eeb1778f",
-      "commitTime": "2026-05-29 16:32:42 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 拆分系统设置为单独的菜单路由"
-    },
-    {
-      "commitId": "a33173327c0c54661215fe20e85577ebb1e60c32",
-      "commitTime": "2026-05-29 12:27:33 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 优化SSL设置模块UI"
-    },
-    {
-      "commitId": "f755d3faf5cd9c1de040d77415d0f5055dcb8d9c",
-      "commitTime": "2026-05-29 12:20:29 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "dev(webpanel): 开发环境下自动切换http/https"
-    },
-    {
-      "commitId": "e28d6973470e4ceb9fc3033e429a54737bc9b08a",
-      "commitTime": "2026-05-29 12:20:08 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 本地丢失SSL证书或SSL证书无效时自动生成一份临时自签名证书"
-    },
-    {
-      "commitId": "924008d77828a9f0cd4647853a36e4b8118567c7",
-      "commitTime": "2026-05-29 09:33:11 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(daemon & webpanel): 优化SSL证书的加载逻辑"
-    },
-    {
-      "commitId": "a88d0d89d5aaf364c690b499fd59d7e67b264714",
-      "commitTime": "2026-05-28 22:52:23 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 新增SSL配置功能(支持本地自签证书 & 上传自定义证书) #96"
-    },
-    {
-      "commitId": "f654ae8b9566fc61f67d730b319f51661f7346b0",
-      "commitTime": "2026-05-28 21:47:05 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复桌面环境打开浏览器时出现的奇怪错误 #124"
-    },
-    {
-      "commitId": "8983509c012fe91a0c06100587fb548f023a2028",
-      "commitTime": "2026-05-28 21:36:28 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复网页控制台登录页面在黑暗模式下背景图不正常缩放的问题"
-    },
-    {
-      "commitId": "89f09cf85ec6d56b05653f2792d38061b368555e",
-      "commitTime": "2026-05-28 21:22:53 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 游戏玩家列表新增中文匹配支持 & 优化下载外置登录库时的状态刷新 #133"
-    },
-    {
-      "commitId": "1f2894298c3ff0d7d8b7850961d46558c39a6315",
-      "commitTime": "2026-05-25 23:01:09 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel & daemon): 修复chmlfrp无法创建隧道的问题 #135"
-    },
-    {
-      "commitId": "ac3879e0201c5b785de922022bc3dc9fa6c0b8ac",
-      "commitTime": "2026-05-25 17:26:15 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(daemon): 优化代码"
-    },
-    {
-      "commitId": "559a90bce3e8592e1fdfca745b5221002ff23135",
-      "commitTime": "2026-05-25 16:59:13 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复部分插件图标无法正常获取的问题"
-    },
-    {
-      "commitId": "5bc46cd0e84567ce720110f44ccb035407e44c57",
-      "commitTime": "2026-05-25 16:28:15 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复插件安装路由权限问题"
-    },
-    {
-      "commitId": "2e0bacb9e0f1022dd738e4840f6f61b64934f567",
-      "commitTime": "2026-05-24 22:02:50 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #134 from MSLTeam/dev"
-    },
-    {
-      "commitId": "aa0c8415b2b5f4b36f7ee2e19dc5312a1126c15b",
-      "commitTime": "2026-05-24 22:01:37 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(webpanel & daemon): 更新到v1.4.4版本"
-    },
-    {
-      "commitId": "4e096f4af183588647731d2170195b433c9d1e87",
-      "commitTime": "2026-05-24 21:57:34 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 更新贡献者列表"
-    },
-    {
-      "commitId": "26788219cfea4fdf21a648487d49c8b164bd7935",
-      "commitTime": "2026-05-24 21:29:04 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 加载插件时如遇到MinSdk版本不足，会提示警告"
-    },
-    {
-      "commitId": "800088b4deeceabf9627ac14241f9110ae8cedf3",
-      "commitTime": "2026-05-24 21:21:50 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 插件市场安装插件新增最低版本提醒和安装警告"
-    },
-    {
-      "commitId": "fc5f52c0019429709b618757fbd4b81c59007492",
-      "commitTime": "2026-05-19 23:27:01 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & sdk): 新增GET/POST的方法映射到SDK"
-    },
-    {
-      "commitId": "7ac0382426fe66d1d5d201e9dc98d613efabd5af",
-      "commitTime": "2026-05-19 22:57:48 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 新增插件一键更新功能"
-    },
-    {
-      "commitId": "96d244c47da1d9dca20f852a1ffb807565c4eb0b",
-      "commitTime": "2026-05-19 22:14:33 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 插件市场新增官方插件tag显示"
-    },
-    {
-      "commitId": "a196133e23d2340b0a7ef317cd7fddb5d97297be",
-      "commitTime": "2026-05-19 21:40:03 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(sdk & daemon): 提供下载器方法到SDK以允许插件调用"
-    },
-    {
-      "commitId": "40ad865d349f6c1b077e4324aa0f1e5a3fb38455",
-      "commitTime": "2026-05-19 21:26:01 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 在隧道服务商处新增插件插槽以支持使用插件扩展Frp服务商"
     }
   ]
 }

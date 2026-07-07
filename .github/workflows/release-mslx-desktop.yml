@@ -127,13 +127,11 @@ jobs:
           FILE_NAME=$(basename "${{ env.ASSET_PATH }}")
           FILE_SIZE=$(stat -c%s "${{ env.ASSET_PATH }}")
 
-          # 0. 🚀【核心修改】动态获取 CNB 仓库中存在的最新主分支名称
           curl -s \
             -H "Authorization: token $CNB_TOKEN" \
             -H "Accept: application/json" \
             "https://api.cnb.cool/${CNB_REPO_SLUG}/-/git/branches?page_size=1" > branches_res.json
           
-          # 提取返回列表中的第一个分支名（通常是 main 或 master）
           CNB_TARGET_BRANCH=$(jq -r 'if type == "array" then .[0].name else .data[0].name? // .items[0].name? // "main" end' branches_res.json)
           
           if [ -z "$CNB_TARGET_BRANCH" ] || [ "$CNB_TARGET_BRANCH" = "null" ]; then
@@ -141,17 +139,15 @@ jobs:
           fi
           echo "CNB 目标可用分支锁定为: $CNB_TARGET_BRANCH"
 
-          # 1. 创建 Release 页面壳子（target_commitish 传入 CNB 真实存在的分支名）
           curl -s -X POST \
             -H "Authorization: token $CNB_TOKEN" \
             -H "Content-Type: application/json" \
             -H "Accept: application/json" \
-            -d "{\"tag_name\": \"${TAG_NAME}\", \"target_commitish\": \"${CNB_TARGET_BRANCH}\", \"name\": \"Release ${TAG_NAME}\", \"body\": \"Synchronized from GitHub\"}" \
+            -d "{\"tag_name\": \"${TAG_NAME}\", \"target_commitish\": \"${CNB_TARGET_BRANCH}\", \"name\": \"Release ${TAG_NAME}\", \"body\": \"Synchronized from GitHub Release ${TAG_NAME}\"}" \
             "https://api.cnb.cool/${CNB_REPO_SLUG}/-/releases" > create_res.json
 
           RELEASE_ID=$(jq -r '.id // empty' create_res.json)
 
-          # 2. 如果已被其他并发矩阵节点创建，则直接反查列表
           if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
             echo "正在反查已存在的 Release 标识符..."
             curl -s \
@@ -170,7 +166,6 @@ jobs:
 
           echo "✅ 成功对接 Release，ID 为: $RELEASE_ID"
 
-          # 3. 获取附件上传地址
           curl -s -X POST \
             -H "Authorization: token $CNB_TOKEN" \
             -H "Content-Type: application/json" \
@@ -187,11 +182,9 @@ jobs:
             exit 1
           fi
 
-          # 4. 将文件 PUT 到通道中
           echo "正在把文件 $FILE_NAME 推送到预签名高速通道..."
           curl -s -X PUT -T "${{ env.ASSET_PATH }}" "$UPLOAD_URL"
 
-          # 5. 确认附件上传状态
           echo "正在确认附件上传状态..."
           CONFIRM_CODE=$(curl -s -o confirm_res.json -w "%{http_code}" -X POST \
             -H "Authorization: token $CNB_TOKEN" \

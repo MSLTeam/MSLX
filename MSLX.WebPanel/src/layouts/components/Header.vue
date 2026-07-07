@@ -97,6 +97,10 @@ const navToGitHub = () => {
   window.open('https://github.com/MSLTeam/MSLX');
 };
 
+const navToCNB = () => {
+  window.open('https://cnb.cool/mslmc/mslx');
+};
+
 const navToHelper = () => {
   window.open('https://mslx.mslmc.cn');
 };
@@ -176,11 +180,23 @@ const handleAvatarClick = () => {
       <template #operations>
         <div class="flex items-center gap-1 sm:gap-2">
           <div class="hidden lg:flex items-center gap-1 sm:gap-2">
-            <t-tooltip placement="bottom" content="代码仓库">
-              <t-button theme="default" shape="square" variant="text" class="header-btn" @click="navToGitHub">
+            <t-dropdown trigger="click" :min-column-width="120">
+              <template #dropdown>
+                <t-dropdown-menu>
+                  <t-dropdown-item class="flex items-center" @click="navToGitHub">
+                    <t-icon name="logo-github" class="text-lg mr-2" />
+                    <span>GitHub</span>
+                  </t-dropdown-item>
+                  <t-dropdown-item class="flex items-center mt-1" @click="navToCNB">
+                    <t-icon name="git-branch" class="text-lg mr-2" />
+                    <span>CNB 仓库</span>
+                  </t-dropdown-item>
+                </t-dropdown-menu>
+              </template>
+              <t-button theme="default" shape="square" variant="text" class="header-btn">
                 <t-icon name="logo-github" class="text-[20px]" />
               </t-button>
-            </t-tooltip>
+            </t-dropdown>
 
             <t-tooltip placement="bottom" content="帮助文档">
               <t-button theme="default" shape="square" variant="text" class="header-btn" @click="navToHelper">
@@ -281,7 +297,11 @@ const handleAvatarClick = () => {
                 <t-dropdown-menu>
                   <t-dropdown-item class="operations-dropdown-item" @click="navToGitHub">
                     <t-icon name="logo-github" class="text-lg mr-2"></t-icon>
-                    <span>代码仓库</span>
+                    <span>GitHub 仓库</span>
+                  </t-dropdown-item>
+                  <t-dropdown-item class="operations-dropdown-item mt-1" @click="navToCNB">
+                    <t-icon name="git-branch" class="text-lg mr-2"></t-icon>
+                    <span>CNB 仓库</span>
                   </t-dropdown-item>
                   <t-dropdown-item class="operations-dropdown-item mt-1" @click="navToHelper">
                     <t-icon name="help-circle" class="text-lg mr-2"></t-icon>

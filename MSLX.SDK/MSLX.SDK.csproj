@@ -7,7 +7,7 @@
 
         <IsPackable>true</IsPackable>
         <PackageId>MSLX.SDK</PackageId>
-        <Version>1.4.8</Version> 
+        <Version>1.4.9</Version> 
         <Authors>luluxiaoyu;MSLTeam</Authors>
         <Company>MSLTeam</Company>
         <Description>MSLX Daemon 插件开发 SDK。</Description>
@@ -21,5 +21,9 @@
       <PackageReference Include="Cronos" Version="0.13.0" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     </ItemGroup>
+
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
 
 </Project>
