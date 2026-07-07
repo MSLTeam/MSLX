@@ -1168,6 +1168,16 @@ onUnmounted(() => {
           </div>
         </div>
 
+        <div>
+          <div class="flex items-center gap-2">
+            <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
+            <h2 class="text-base font-bold text-[var(--td-text-color-primary)] m-0">路径设置</h2>
+          </div>
+          <div class="text-xs text-[var(--td-text-color-secondary)] font-mono mt-1 pl-3">
+            这里一般不需要改动，除非服务端路径不是根目录（如MCDR）。
+          </div>
+        </div>
+
         <div
           class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
         >
