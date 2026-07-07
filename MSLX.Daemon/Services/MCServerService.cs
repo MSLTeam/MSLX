@@ -201,7 +201,7 @@ public class MCServerService : IMCServerService
             string eulaPath = ServerPropertiesPathUtils.ResolveEulaPath(serverInfo);
             try
             {
-                // 确保 eula.txt 所在目录存在(MCDR 布局下位于 server/ 子目录)
+                // 获取eula的位置
                 var eulaDir = Path.GetDirectoryName(eulaPath);
                 if (!string.IsNullOrEmpty(eulaDir))
                 {
@@ -422,9 +422,8 @@ public class MCServerService : IMCServerService
                 }
             }
 
-            // 自定义模式(如 MCDR 等 Python 包装器)注入 UTF-8 环境变量，
-            // 避免 Windows 下 Python 默认使用系统代码页(GBK)导致控制台中文乱码
-            if (serverInfo.Java == "none")
+            // 自定义模式且为python软件时，注入UTF-8
+            if (serverInfo.Java == "none" && (serverInfo.Args?.ToLower().Contains("python") ?? false))
             {
                 if (!startInfo.EnvironmentVariables.ContainsKey("PYTHONIOENCODING"))
                 {

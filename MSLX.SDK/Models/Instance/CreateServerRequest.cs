@@ -20,11 +20,8 @@ public class CreateServerRequest : IValidatableObject
     public string? args { get; set; }
     public bool ignoreEula { get; set; } = false;
     public string? path { get; set; }
-
-    // ============ MCDReforged (MCDR) 模式 ============
-    // 开启后：以 MCDR 包装器托管实例。上方的 core/coreUrl/coreFileKey/package* 描述
-    // 被 MCDR 托管的真实 MC 服务端(部署进 server/ 子目录)，java/minM/maxM/args 用于
-    // 生成 MCDR config.yml 中的 start_command。
+    
+    // mcdr参数 
     public bool mcdr { get; set; } = false;
 
     // 运行 MCDR 的 Python 可执行文件(默认 python)

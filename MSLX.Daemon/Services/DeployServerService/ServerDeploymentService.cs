@@ -412,7 +412,7 @@ public class ServerDeploymentService
         Directory.CreateDirectory(serverDir);
         Directory.CreateDirectory(Path.Combine(baseDir, "plugins")); // MCDR 插件目录(与 server/plugins 不同)
 
-        // 1. 解析并校验 Python
+        // 验证python环境
         string python = string.IsNullOrWhiteSpace(request.mcdrPython) ? "python" : request.mcdrPython.Trim();
         var (pyOk, pyVer) = await TryGetPythonVersionAsync(python);
         if (pyOk)
@@ -426,7 +426,7 @@ public class ServerDeploymentService
                 10);
         }
 
-        // 2. 安装 / 更新 MCDReforged
+        // 安装/更新mcdr
         if (request.mcdrInstall && pyOk)
         {
             await report("正在通过 pip 安装/更新 MCDReforged(耗时较长，请耐心等待)...", 15);
@@ -440,10 +440,10 @@ public class ServerDeploymentService
             await report(pipOk ? "MCDReforged 安装完成。" : "⚠ MCDReforged 自动安装失败，请稍后手动执行 pip install mcdreforged。", 30);
         }
 
-        // 3. 部署内部 Java(若为 MSLX 托管)
+        // java
         await EnsureJavaAsync(serverId, request.java ?? "", report);
 
-        // 4. 部署真实服务端核心到 server/ 子目录
+        // 服务器核心
         if (!string.IsNullOrEmpty(request.packageUrl))
         {
             string tmpKey = await DownloadPackageAsync(serverId, request.packageUrl, request.packageSha256, report);
@@ -462,12 +462,12 @@ public class ServerDeploymentService
                 request.coreSha256, report);
         }
 
-        // 5. 解析真实服务端启动命令
+        // 启动指令
         string coreForCommand = (string.IsNullOrWhiteSpace(request.core) || request.core == "none")
             ? "server.jar"
             : request.core;
 
-        // 6. Forge/NeoForge 安装(在 server/ 内),成功则替换启动参数
+        // Forge/NeoForge 安装(在 server/ 内)
         string? forgeArgs = await InstallForgeIfNeededAsync(serverId, serverDir, request.core ?? "", request.java ?? "",
             report);
         if (!string.IsNullOrEmpty(forgeArgs))
@@ -475,7 +475,7 @@ public class ServerDeploymentService
             coreForCommand = forgeArgs;
         }
 
-        // 7. 生成 config.yml
+        // mcdr config
         string javaToken = ResolveJavaExecPath(request.java);
         string handler = string.IsNullOrWhiteSpace(request.mcdrHandler)
             ? McdrConfigGenerator.InferHandler(request.core)
@@ -491,7 +491,6 @@ public class ServerDeploymentService
             Encoding = "utf8",
             Decoding = "utf8",
             AdvancedConsole = false, // MSLX 重定向了 stdio，必须关闭
-            // MCDR 插件安装也走同一镜像源(需完整 pip 参数形式)
             PluginPipInstallExtraArgs = string.IsNullOrWhiteSpace(request.mcdrPipMirror)
                 ? null
                 : $"-i {request.mcdrPipMirror.Trim()}"
@@ -509,7 +508,7 @@ public class ServerDeploymentService
     }
 
     /// <summary>
-    /// 将 MSLX 的 Java 配置解析为可执行文件路径(用于写入 start_command)。
+    /// 将 MSLX 的 Java 配置解析为可执行文件路径。
     /// </summary>
     private string ResolveJavaExecPath(string? javaConfig)
     {
@@ -558,7 +557,7 @@ public class ServerDeploymentService
     }
 
     /// <summary>
-    /// 运行外部命令并将输出(节流)转发到进度回调。
+    /// 运行外部命令并将输出到进度回调。
     /// </summary>
     private async Task<(bool ok, string output)> RunCommandAsync(string fileName, string arguments, string? workingDir,
         ReportProgress report, string label, int timeoutMs = 600000)

@@ -179,11 +179,10 @@ const selectedJavaVersion = ref('');
 const customJavaPath = ref('');
 
 // --- MCDReforged 逻辑 ---
-// MCDR 本质上是 java='none' 的自定义启动通道，但用 mcdreforged 命令拉起真实服务端
+// MCDR 使用java=“none” 即自定义模式
 const mcdrPython = ref('python');
 const initialized = ref(false); // 首次加载完成前不套用 MCDR 预设，避免覆盖已加载配置
 const isMcdr = computed(() => javaType.value === 'mcdr');
-// MCDR 与"自定义命令(无Java)"一样，后端都记为 java='none'
 const isCustomLike = computed(() => javaType.value === 'none' || javaType.value === 'mcdr');
 // 仅 Java 模式才显示的区块(核心/内存/外置登录/强制UTF8)
 const showJavaOnly = computed(() => !isCustomLike.value);
@@ -193,7 +192,7 @@ const mcdrLaunchCommand = computed(() => {
   return `${quoted} -m mcdreforged start`;
 });
 
-// 切换到 MCDR 时套用推荐布局(仅在字段仍为默认值时，避免覆盖用户自定义)
+// 切换到 MCDR 模式时自动修改一些参数以适配
 const applyMcdrDefaults = () => {
   formData.value.stopCommand = 'stop';
   formData.value.monitorPlayers = true;
@@ -235,14 +234,14 @@ watch([javaType, selectedJavaVersion, customJavaPath], ([type, ver, path]) => {
   else if (type === 'online') formData.value.java = ver ? `MSLX://Java/${ver}` : '';
 });
 
-// MCDR: 由 Python 命令组合出实际启动命令写入 args
+// MCDR 输出完整启动指令到args
 watch([javaType, mcdrPython], ([type]) => {
   if (type === 'mcdr') {
     formData.value.args = mcdrLaunchCommand.value;
   }
 });
 
-// 用户主动切换到 MCDR 时套用推荐布局(加载阶段不触发)
+// 切换到MCDR时配置参数
 watch(javaType, (nv, ov) => {
   if (initialized.value && nv === 'mcdr' && ov !== 'mcdr') {
     applyMcdrDefaults();
@@ -489,7 +488,10 @@ const onSubmit = async () => {
   const result = await formRef.value?.validate();
   if (result !== true) return;
 
-  formData.value.serverPropertiesPath = normalizeRelativeInstancePath(formData.value.serverPropertiesPath, 'server.properties');
+  formData.value.serverPropertiesPath = normalizeRelativeInstancePath(
+    formData.value.serverPropertiesPath,
+    'server.properties',
+  );
   formData.value.pluginsPath = normalizeRelativeInstancePath(formData.value.pluginsPath, 'plugins');
   formData.value.modsPath = normalizeRelativeInstancePath(formData.value.modsPath, 'mods');
   formData.value.worldPath = normalizeRelativeInstancePath(formData.value.worldPath, 'world');
@@ -518,17 +520,17 @@ const onSubmit = async () => {
     }
   }
 
-  // 处理自定义 / MCDR 模式的写死参数
+  // 处理自定义 / MCDR 模式的magic number
   if (isCustomLike.value) {
     formData.value.core = 'none';
-    formData.value.minM = 1027; // 按要求写死
-    formData.value.maxM = 1102; // 按要求写死
+    formData.value.minM = 1027; // magic number
+    formData.value.maxM = 1102; // magic number
     formData.value.java = 'none';
-    // 清空下载参数以防冲突
+    // 清空下载参数
     formData.value.coreUrl = '';
     formData.value.coreFileKey = '';
     formData.value.coreSha256 = '';
-    // MCDR：确保启动命令与所选 Python 一致
+    // MCDR确定启动指令
     if (isMcdr.value) {
       formData.value.args = mcdrLaunchCommand.value;
     }
@@ -735,7 +737,11 @@ onUnmounted(() => {
             </div>
           </div>
           <div class="w-full md:w-[340px] shrink-0 flex flex-col gap-2">
-            <t-input v-model="mcdrPython" placeholder="例如: python3 或 C:\Python312\python.exe" class="w-full !font-mono" />
+            <t-input
+              v-model="mcdrPython"
+              placeholder="例如: python3 或 C:\Python312\python.exe"
+              class="w-full !font-mono"
+            />
             <div class="text-[11px] text-zinc-400 break-all">
               实际启动命令: <span class="font-mono text-[var(--color-primary)]">{{ mcdrLaunchCommand }}</span>
             </div>
@@ -1166,7 +1172,9 @@ onUnmounted(() => {
           class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
         >
           <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
-            <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">Server.properties 路径</div>
+            <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">
+              Server.properties 路径
+            </div>
             <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
               相对实例路径，用于读取端口、难度、游戏模式等服务端配置
             </div>
@@ -1228,7 +1236,8 @@ onUnmounted(() => {
           <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
             <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">Region 目录路径</div>
             <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
-              相对地图目录路径，用于世界渲染图读取 r.x.z.mca 文件。默认 region；下界可填 DIM-1/region，末地可填 DIM1/region
+              相对地图目录路径，用于世界渲染图读取 r.x.z.mca 文件。默认 region；下界可填 DIM-1/region，末地可填
+              DIM1/region
             </div>
           </div>
           <div class="w-full md:w-[340px] shrink-0 flex">
