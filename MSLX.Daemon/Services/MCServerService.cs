@@ -861,7 +861,7 @@ public class MCServerService : IMCServerService
             try
             {
                 // 等0.5s 确保服务全部初始化了
-                await Task.Delay(500);
+                // await Task.Delay(500);
 
                 _logger.LogInformation("[AutoStart] 正在检查自启动实例...");
                 var config = IConfigBase.ServerList.GetServerList();

@@ -68,10 +68,10 @@ jobs:
           sbom: false
           outputs: type=registry,oci-mediatypes=true
 
-      - name: 🔔 触发 CNB 容器镜像同步
+      - name: 触发 CNB 容器镜像同步
         env:
-          CNB_REPO_SLUG: "mslmc/mslx-releases"
-          CNB_TOKEN: ${{ secrets.CNB_ACCESS_TOKEN }}
+          CNB_REPO_SLUG: "mslmc/mslx-docker-push"
+          CNB_TOKEN: ${{ secrets.CNB_DOCKER_REPO_TOKEN }}
         run: |
           echo "香港 TCR 镜像仓库已成功接收最新推送，正在向 CNB 下达全量同步指令..."
           

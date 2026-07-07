@@ -16,15 +16,14 @@ public class PluginListController : ControllerBase
         _pluginManager = pluginManager;
     }
 
-    [HttpGet("list")]
+[HttpGet("list")]
     public IActionResult GetPluginList()
     {
         var resultList = new List<object>();
         var pluginsPath = Path.Combine(IConfigBase.GetAppDataPath(), "Plugins"); 
         
         var processedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        // 已加载
+        
         foreach (var p in _pluginManager.Plugins)
         {
             var dllPath = p.Assembly.Location;
@@ -34,6 +33,7 @@ public class PluginListController : ControllerBase
             if (System.IO.File.Exists(dllPath + ".delete")) status = "下次重启删除";
             else if (System.IO.File.Exists(dllPath + ".new")) status = "下次重启更新";
             else if (System.IO.File.Exists(dllPath + ".disabled")) status = "下次重启禁用";
+            
             var iconPath = p.Metadata.Icon switch
             {
                 null or "" => "https://www.mslmc.cn/logo.png",
@@ -43,7 +43,7 @@ public class PluginListController : ControllerBase
 
             resultList.Add(new
             {
-                id = p.Metadata.Id,
+                id = p.Metadata.Id, 
                 name = p.Metadata.Name,
                 description = p.Metadata.Description,
                 icon = iconPath,
@@ -58,36 +58,44 @@ public class PluginListController : ControllerBase
             });
         }
 
-        // 未加载
+        // 未加载的插件
         if (Directory.Exists(pluginsPath))
         {
-            // 查找已禁用插件 (*.dll.disabled)
+            foreach (var dllFile in Directory.GetFiles(pluginsPath, "*.dll"))
+            {
+                if (processedPaths.Contains(dllFile)) continue;
+
+                // 标记
+                bool hasDeleteMarker = System.IO.File.Exists(dllFile + ".delete");
+                bool hasDisabledMarker = System.IO.File.Exists(dllFile + ".disabled");
+                bool hasNewMarker = System.IO.File.Exists(dllFile + ".new");
+                
+                string status = "未加载";
+                if (hasDeleteMarker) status = "下次重启删除(未加载)";
+                else if (hasDisabledMarker) status = "已禁用";
+                else if (hasNewMarker) status = "下次重启安装";
+
+                processedPaths.Add(dllFile);
+                resultList.Add(CreateUnloadedPluginObj(dllFile, status, "未知"));
+            }
+            
+            // 处理 只有标记的情况
             foreach (var disabledFile in Directory.GetFiles(pluginsPath, "*.dll.disabled"))
             {
                 var baseDllPath = disabledFile.Substring(0, disabledFile.Length - 9); 
-                if (processedPaths.Add(baseDllPath))
+                if (!processedPaths.Contains(baseDllPath))
                 {
-                    resultList.Add(CreateUnloadedPluginObj(baseDllPath, "已禁用", "未知"));
+                    processedPaths.Add(baseDllPath);
+                    resultList.Add(CreateUnloadedPluginObj(baseDllPath, "已禁用(缺失核心)", "未知"));
                 }
             }
-
-            // 查找纯新插件 (*.dll.new)
             foreach (var newFile in Directory.GetFiles(pluginsPath, "*.dll.new"))
             {
                 var baseDllPath = newFile.Substring(0, newFile.Length - 4);
-                if (processedPaths.Add(baseDllPath))
+                if (!processedPaths.Contains(baseDllPath))
                 {
+                    processedPaths.Add(baseDllPath);
                     resultList.Add(CreateUnloadedPluginObj(baseDllPath, "下次重启安装", "待读取"));
-                }
-            }
-
-            // 查找存在 dll 但没被加载的插件
-            foreach (var dllFile in Directory.GetFiles(pluginsPath, "*.dll"))
-            {
-                if (processedPaths.Add(dllFile))
-                {
-                    var status = System.IO.File.Exists(dllFile + ".delete") ? "下次重启删除(未加载)" : "未加载";
-                    resultList.Add(CreateUnloadedPluginObj(dllFile, status, "未知"));
                 }
             }
         }

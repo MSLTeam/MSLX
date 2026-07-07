@@ -1,6 +1,6 @@
 {
-  "version": "1.4.8",
-  "buildTime": "2026-07-07 12:36:49",
+  "version": "1.4.9",
+  "buildTime": "2026-07-07 16:30:10",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -77,10 +77,70 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "3843b2ee7bf11cdc8e8c284b90b0b4f8d13e91ce",
-  "commitMsg": "Merge pull request #158 from MSLTeam/dependabot/npm_and_yarn/MSLX.WebPanel/lodash-4.18.1",
-  "commitAuthor": "小宇",
+  "commitId": "45dfd4300c81e9e7566c67eac333fdc0805d2a41",
+  "commitMsg": "fix(webpanel): 修复插件操作可能存在的问题",
+  "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "45dfd4300c81e9e7566c67eac333fdc0805d2a41",
+      "commitTime": "2026-07-07 16:29:07 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复插件操作可能存在的问题"
+    },
+    {
+      "commitId": "f3229457794a75490af5d7dc606957a7e2fd1f2a",
+      "commitTime": "2026-07-07 16:19:48 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 公告API更新到V4"
+    },
+    {
+      "commitId": "f2e228eb8ba093f7765e327c4d22503536910a4c",
+      "commitTime": "2026-07-07 16:05:51 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 新增CNB仓库地址"
+    },
+    {
+      "commitId": "6cac429626df8b89b563475757fe52c7fb4df802",
+      "commitTime": "2026-07-07 16:00:25 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 服务端选择组件新增服务端简短描述介绍"
+    },
+    {
+      "commitId": "b6ba10d8a82d16476605ab6ff87214fbe0f6ccfc",
+      "commitTime": "2026-07-07 15:50:30 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 优化下拉框样式"
+    },
+    {
+      "commitId": "54a0914331ebe6c1666e38fe176bcb4afb0fffe2",
+      "commitTime": "2026-07-07 09:40:01 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(daemon): 移除加载等待的500ms"
+    },
+    {
+      "commitId": "87a5fda61b02343e464d98c4d6fc4b88f711b1cf",
+      "commitTime": "2026-07-07 00:41:57 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(sdk): 修复dev版本SDK构建逻辑"
+    },
+    {
+      "commitId": "3390c2bf661aa37bd3f8591823f77d99dfd7e6a0",
+      "commitTime": "2026-07-07 00:38:40 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(sdk): 修复配置错误"
+    },
+    {
+      "commitId": "ac82b3211123c758dcb55be99547e18317a9578c",
+      "commitTime": "2026-07-07 00:32:32 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
+    },
+    {
+      "commitId": "a8230d8226d7c23a77e88ebd036997f48b12a2af",
+      "commitTime": "2026-07-07 00:31:12 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(sdk): 新增OnRegisterEndpoints方法"
+    },
     {
       "commitId": "3843b2ee7bf11cdc8e8c284b90b0b4f8d13e91ce",
       "commitTime": "2026-07-06 19:57:17 +0800",
@@ -320,66 +380,6 @@
       "commitTime": "2026-06-10 20:54:00 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "fix(webpanel): 丢了个参数"
-    },
-    {
-      "commitId": "475f17ce3e7301b3796f53d99b2ee521e35e5a59",
-      "commitTime": "2026-06-10 20:52:11 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 优化弱网状态下的上传文件成功率 & 修复上传失败进度条回退0的问题"
-    },
-    {
-      "commitId": "9fbde3d0055e2fcfc79d73a12399d17914e84701",
-      "commitTime": "2026-06-10 18:11:53 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 尝试修复Linux自动更新失败"
-    },
-    {
-      "commitId": "ee977a7f6c660033a7a7f50d74ef85e49ccb91b1",
-      "commitTime": "2026-06-10 17:52:42 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 新增宿主机文件选择组件 & 上传整合包支持可视化选择文件"
-    },
-    {
-      "commitId": "66ca2ee314b45d81c3ace957dba602d09b83ab46",
-      "commitTime": "2026-06-10 14:56:50 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 整合包创建实例模式新增选择本机压缩包功能"
-    },
-    {
-      "commitId": "8e65418dfe33b4b5fce6dfa0bdb31d9bc6e61d6f",
-      "commitTime": "2026-06-10 13:52:42 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
-    },
-    {
-      "commitId": "0454a76accddd70fcd5fe43db7db57badf33afa2",
-      "commitTime": "2026-06-10 13:51:46 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "deps(webpanel): 更新Vite版本"
-    },
-    {
-      "commitId": "b485d9bec972ea23f621d17e2efd0c6e984f80fd",
-      "commitTime": "2026-05-31 20:58:46 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 本地自签名证书签入本地回环地址"
-    },
-    {
-      "commitId": "fd2d0389ee09759ef8d84ac55564cda687e4f751",
-      "commitTime": "2026-05-31 20:50:20 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复SSL证书保存失败的问题 #96"
-    },
-    {
-      "commitId": "f0c12bf9c2f75d3ba77a1ac4470068d33d843eff",
-      "commitTime": "2026-05-29 18:46:03 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #137 from MSLTeam/dev"
-    },
-    {
-      "commitId": "fc03eff9f12b1e029ce9d538718b09af7a2c6349",
-      "commitTime": "2026-05-29 18:45:11 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.4.5版本"
     }
   ]
 }

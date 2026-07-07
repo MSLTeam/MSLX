@@ -11,6 +11,7 @@ export interface ServerCoreClassifyModel {
 
 export interface ServerCoreGameVersionModel{
   versions: string[];
+  description:string;
 }
 
 

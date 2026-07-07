@@ -22,11 +22,11 @@ async function fetchAnnouncement() {
 
   try {
     const res = await request.get({
-      url: 'https://api.mslmc.cn/v3/query/notice?query=mslxNoticeMd',
+      url: 'https://api.mslmc.cn/v4/software/notice?query=mslxNoticeMd',
     });
 
-    if (res && res.mslxNoticeMd) {
-      notice.value = res.mslxNoticeMd;
+    if (res) {
+      notice.value = res;
     } else {
       notice.value = fallbackMarkdown;
     }
