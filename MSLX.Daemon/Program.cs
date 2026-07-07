@@ -290,13 +290,39 @@ else
     }
 }
 
+// 注册插件服务
+foreach (var plugin in loadedPlugins)
+{
+    try
+    {
+        plugin.Metadata.OnRegisterServices(builder.Services);
+    }
+    catch (Exception ex)
+    {
+        pluginLogger.LogError($"[MSLX Plugin] 插件 {plugin.Metadata.Name} 注册底层依赖服务时崩溃: {ex.Message}");
+    }
+}
+
 builder.Services.AddMemoryCache();
 
 var app = builder.Build();
 
 // 重新初始化日志
 var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
-var logger = loggerFactory.CreateLogger("Program"); 
+var logger = loggerFactory.CreateLogger("Program");
+
+// 插件初始化方法
+foreach (var plugin in loadedPlugins)
+{
+    try
+    {
+        plugin.Metadata.OnPluginInitialize(app.Services);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError($"[MSLX Plugin] 插件 {plugin.Metadata.Name} 执行生命周期初始化失败: {ex.Message}");
+    }
+}
 
 IConfigBase.Initialize(loggerFactory);
 
