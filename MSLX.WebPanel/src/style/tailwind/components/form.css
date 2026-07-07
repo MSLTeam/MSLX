@@ -88,4 +88,54 @@ html[theme-mode='dark'] .t-textarea__inner,
   box-shadow: inset 0 0 0 2px var(--color-primary) !important;
 }
 
+/* ================= 下拉菜单弹窗及选项统一风格 ================= */
 
+.t-select__dropdown {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.t-select__dropdown .t-popup__content {
+  @apply !rounded-xl !bg-white/60 !backdrop-blur-md !border-none !p-1;
+
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08),
+  0 2px 4px -1px rgba(0, 0, 0, 0.04),
+  0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+}
+
+html[theme-mode='dark'] .t-select__dropdown .t-popup__content,
+.dark .t-select__dropdown .t-popup__content {
+  @apply !bg-zinc-900/60 !backdrop-blur-md;
+
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3),
+  0 4px 6px -4px rgba(0, 0, 0, 0.3),
+  0 0 0 1px rgba(63, 63, 70, 0.4) !important;
+}
+
+.t-select__dropdown-inner {
+  background: transparent !important;
+  border: none !important;
+}
+
+.t-select__list {
+  @apply !p-0 !m-0;
+}
+
+.t-select-option {
+  @apply !rounded-lg !my-0.5 !px-3 !py-2 !text-zinc-700 dark:!text-zinc-300 !text-sm !transition-all !duration-150 !cursor-pointer;
+  background: transparent;
+}
+
+.t-select-option:hover,
+.t-select-option.t-is-hover {
+  @apply !bg-zinc-100 dark:!bg-zinc-800/60 !text-zinc-900 dark:!text-zinc-100;
+}
+
+.t-select-option.t-is-selected {
+  @apply !bg-zinc-100 dark:!bg-zinc-800 !text-[var(--color-primary)] !font-medium;
+}
+
+.t-select-option.t-is-disabled {
+  @apply !opacity-50 !cursor-not-allowed !bg-transparent;
+}

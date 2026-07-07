@@ -47,18 +47,18 @@ public class PluginActionController : ControllerBase
     private IActionResult DisablePlugin(string dllPath)
     {
         var disabledMarker = dllPath + ".disabled";
-        if (!System.IO.File.Exists(disabledMarker))
+        try
         {
-            System.IO.File.WriteAllText(disabledMarker, "");
+            if (!System.IO.File.Exists(disabledMarker))
+            {
+                System.IO.File.WriteAllText(disabledMarker, "");
+            }
+            return Success("插件已成功禁用，重启后将彻底停止加载");
         }
-
-        // 软禁用
-        var runningPlugin = _pluginManager.Plugins.FirstOrDefault(p => p.Assembly.Location.Equals(dllPath, StringComparison.OrdinalIgnoreCase));
-        if (runningPlugin != null)
+        catch (Exception ex)
         {
+            return Error($"禁用操作失败: {ex.Message}");
         }
-
-        return Success("插件已禁用，立即拦截请求，深度集成项需重启生效");
     }
 
     private IActionResult EnablePlugin(string dllPath)
@@ -81,12 +81,32 @@ public class PluginActionController : ControllerBase
     private IActionResult DeletePlugin(string dllPath)
     {
         var deleteMarker = dllPath + ".delete";
-        if (!System.IO.File.Exists(deleteMarker))
+        try
         {
-            System.IO.File.WriteAllText(deleteMarker, "");
-        }
+            // 如果存在禁用标记，顺便清理掉，以删除标记为最高优先级
+            var disabledMarker = dllPath + ".disabled";
+            if (System.IO.File.Exists(disabledMarker)) System.IO.File.Delete(disabledMarker);
 
-        return Success("插件已标记为删除，将在下次重启时物理清理");
+            if (!System.IO.File.Exists(deleteMarker))
+            {
+                System.IO.File.WriteAllText(deleteMarker, "");
+            }
+            
+            if (System.IO.File.Exists(dllPath))
+            {
+                try { 
+                    System.IO.File.Delete(dllPath); 
+                    System.IO.File.Delete(deleteMarker);
+                    return Success("插件已成功删除！");
+                } catch { /* 锁定了 重启再说 */ }
+            }
+
+            return Success("插件已标记为删除，守护进程将在下次重启时删除");
+        }
+        catch (Exception ex)
+        {
+            return Error($"标记删除失败: {ex.Message}");
+        }
     }
 
     private IActionResult CancelPendingAction(string id, string dllPath)
@@ -96,11 +116,18 @@ public class PluginActionController : ControllerBase
             dllPath = Path.Combine(_pluginsPath, id + ".dll");
         }
 
-        if (System.IO.File.Exists(dllPath + ".delete")) System.IO.File.Delete(dllPath + ".delete");
-        if (System.IO.File.Exists(dllPath + ".new")) System.IO.File.Delete(dllPath + ".new"); 
-        if (System.IO.File.Exists(dllPath + ".disabled")) System.IO.File.Delete(dllPath + ".disabled");
+        try
+        {
+            if (System.IO.File.Exists(dllPath + ".delete")) System.IO.File.Delete(dllPath + ".delete");
+            if (System.IO.File.Exists(dllPath + ".new")) System.IO.File.Delete(dllPath + ".new"); 
+            if (System.IO.File.Exists(dllPath + ".disabled")) System.IO.File.Delete(dllPath + ".disabled");
 
-        return Success("已撤销待处理的操作");
+            return Success("已成功撤销所有待处理的变更操作");
+        }
+        catch (Exception ex)
+        {
+            return Error($"撤销操作失败: {ex.Message}");
+        }
     }
     
 
