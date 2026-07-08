@@ -41,7 +41,7 @@ jobs:
           username: ${{ secrets.TENCENT_DOCKER_USERNAME }}
           password: ${{ secrets.TENCENT_DOCKER_PASSWORD }}
 
-      - name: 获取元数据 (严格锁定为 dev 标签)
+      - name: 获取元数据
         id: meta
         uses: docker/metadata-action@v5
         with:
