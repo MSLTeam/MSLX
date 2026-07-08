@@ -1,6 +1,6 @@
 {
-  "version": "1.4.9",
-  "buildTime": "2026-07-07 16:30:10",
+  "version": "1.4.10",
+  "buildTime": "2026-07-08 12:09:47",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -77,10 +77,22 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "45dfd4300c81e9e7566c67eac333fdc0805d2a41",
-  "commitMsg": "fix(webpanel): 修复插件操作可能存在的问题",
-  "commitAuthor": "luluxiaoyu",
+  "commitId": "a62ec0de5d4c766fe3063a75480b0d81b8f9c551",
+  "commitMsg": "Merge pull request #160 from MSLTeam/dev",
+  "commitAuthor": "小宇",
   "history": [
+    {
+      "commitId": "a62ec0de5d4c766fe3063a75480b0d81b8f9c551",
+      "commitTime": "2026-07-07 16:31:38 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #160 from MSLTeam/dev"
+    },
+    {
+      "commitId": "ba9d6d81aca07a2d498541679652766011d83712",
+      "commitTime": "2026-07-07 16:30:39 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.4.9-release版本"
+    },
     {
       "commitId": "45dfd4300c81e9e7566c67eac333fdc0805d2a41",
       "commitTime": "2026-07-07 16:29:07 +0800",
@@ -368,18 +380,6 @@
       "commitTime": "2026-06-10 20:55:33 +0800",
       "commitAuthor": "小宇",
       "commitMsg": "Merge pull request #139 from MSLTeam/dev"
-    },
-    {
-      "commitId": "1d76c92445193908043629eaafa5ff98143a6b19",
-      "commitTime": "2026-06-10 20:54:40 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新到 v1.4.6 版本"
-    },
-    {
-      "commitId": "4b78d41b003c136c0db5c127e4a29e2ebf231c2c",
-      "commitTime": "2026-06-10 20:54:00 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 丢了个参数"
     }
   ]
 }
