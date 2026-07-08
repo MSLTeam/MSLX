@@ -106,13 +106,13 @@ jobs:
           # 如果是 beta 版本，标记为预发布
           prerelease: ${{ env.VERSION_NAME == 'beta' }}
 
-      - name: 同步上传到 CNB Release
+      - name: 同步上传到 CNB Release（直接进主仓库）
         env:
-          CNB_REPO_SLUG: "mslmc/mslx-releases"
-          CNB_TOKEN: ${{ secrets.CNB_ACCESS_TOKEN }}
+          CNB_REPO_SLUG: "mslmc/mslx"
+          CNB_TOKEN: ${{ secrets.CNB_MAIN_REPO_TOKEN }}
           TAG_NAME: ${{ env.VERSION_NAME }}
         run: |
-          echo "正在准备同步当前平台的产物到国内 CNB 节点..."
+          echo "正在准备同步当前平台的产物到国内 CNB 主节点..."
           
           if [[ "$TAG_NAME" == "beta" ]]; then
             echo "当前为手动测试构建，跳过 CNB 同步。"
@@ -127,23 +127,11 @@ jobs:
           FILE_NAME=$(basename "${{ env.ASSET_PATH }}")
           FILE_SIZE=$(stat -c%s "${{ env.ASSET_PATH }}")
 
-          curl -s \
-            -H "Authorization: token $CNB_TOKEN" \
-            -H "Accept: application/json" \
-            "https://api.cnb.cool/${CNB_REPO_SLUG}/-/git/branches?page_size=1" > branches_res.json
-          
-          CNB_TARGET_BRANCH=$(jq -r 'if type == "array" then .[0].name else .data[0].name? // .items[0].name? // "main" end' branches_res.json)
-          
-          if [ -z "$CNB_TARGET_BRANCH" ] || [ "$CNB_TARGET_BRANCH" = "null" ]; then
-            CNB_TARGET_BRANCH="main" # 兜底机制
-          fi
-          echo "CNB 目标可用分支锁定为: $CNB_TARGET_BRANCH"
-
           curl -s -X POST \
             -H "Authorization: token $CNB_TOKEN" \
             -H "Content-Type: application/json" \
             -H "Accept: application/json" \
-            -d "{\"tag_name\": \"${TAG_NAME}\", \"target_commitish\": \"${CNB_TARGET_BRANCH}\", \"name\": \"Release ${TAG_NAME}\", \"body\": \"Synchronized from GitHub Release ${TAG_NAME}\"}" \
+            -d "{\"tag_name\": \"${TAG_NAME}\", \"target_commitish\": \"${TAG_NAME}\", \"name\": \"Release ${TAG_NAME}\", \"body\": \"Synchronized from GitHub Main Repo\"}" \
             "https://api.cnb.cool/${CNB_REPO_SLUG}/-/releases" > create_res.json
 
           RELEASE_ID=$(jq -r '.id // empty' create_res.json)
@@ -154,7 +142,7 @@ jobs:
               -H "Authorization: token $CNB_TOKEN" \
               -H "Accept: application/json" \
               "https://api.cnb.cool/${CNB_REPO_SLUG}/-/releases" > list_res.json
-          
+            
             RELEASE_ID=$(jq -r --arg tag "$TAG_NAME" 'if type == "array" then .[] else .data[]? // .items[]? // .[]? end | select(.tag_name==$tag) | .id' list_res.json | head -n 1)
           fi
 
@@ -164,8 +152,9 @@ jobs:
             exit 1
           fi
 
-          echo "✅ 成功对接 Release，ID 为: $RELEASE_ID"
+          echo "✅ 成功对接主仓 Release，ID 为: $RELEASE_ID"
 
+          # 获取附件上传地址
           curl -s -X POST \
             -H "Authorization: token $CNB_TOKEN" \
             -H "Content-Type: application/json" \
@@ -192,7 +181,7 @@ jobs:
             "${VERIFY_URL}?ttl=0")
 
           if [ "$CONFIRM_CODE" -eq 200 ] || [ "$CONFIRM_CODE" -eq 201 ]; then
-            echo "🎉 [${{ matrix.rid }}] 平台产物已稳妥关联到 CNB Release 页面！"
+            echo "🎉 [${{ matrix.rid }}] 平台产物已稳妥关联到 CNB 主仓 Release 页面！"
           else
             echo "❌ 错误：确认附件失败。状态码: $CONFIRM_CODE，返回内容："
             cat confirm_res.json
