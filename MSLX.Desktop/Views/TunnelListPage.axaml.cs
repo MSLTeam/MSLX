@@ -31,6 +31,9 @@ public partial class TunnelListPage : UserControl
         this.Initialized += async (s, e) =>
         {
             await _signalR.ConnectAsync(); // 建立唯一连接
+        };
+        this.Loaded += async (s, e) =>
+        {
             await LoadTunnelList();
         };
     }
@@ -81,7 +84,7 @@ public partial class TunnelListPage : UserControl
             SideMenuHelper.Current.NavigateTo<CreateMSLFrpTunnel>();
             return;
         }
-        SideMenuHelper.Current?.NavigateTo(PageStore.CreateMSLFrpTunnelMenuItem, true, 3);
+        SideMenuHelper.Current?.NavigateTo(PageStore.CreateMSLFrpTunnelMenuItem, true, SideMenuHelper.Current.SideMenu.Items.Count - 3);
     }
 
     private async void RunTunnel_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)

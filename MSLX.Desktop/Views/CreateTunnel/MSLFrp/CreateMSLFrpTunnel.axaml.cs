@@ -1,7 +1,6 @@
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
-using Avalonia.Markup.Xaml;
+using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils;
 using MSLX.Desktop.Utils.API;
 using Newtonsoft.Json.Linq;
@@ -44,12 +43,12 @@ public partial class CreateMSLFrpTunnel : UserControl
     // 页面切换
     public void ShowLoginPage()
     {
-        this.Content = _loginControl;
+        MainContent.Content = _loginControl;
     }
 
     public void ShowMainPage()
     {
-        this.Content = _mainPage;
+        MainContent.Content = _mainPage;
     }
 
     // 获取信息
@@ -101,7 +100,7 @@ public partial class CreateMSLFrpTunnel : UserControl
                 .WithContent("成功登录到MSL Frp服务")
                 .Dismiss().After(TimeSpan.FromSeconds(3))
                 .Queue();
-                _mainPage = new MainPage(this,new MainPage.UserInfo
+                _mainPage = new MainPage(this, new MainPage.UserInfo
                 {
                     Username = Username,
                     UserGroup = UserGroup,
@@ -133,6 +132,16 @@ public partial class CreateMSLFrpTunnel : UserControl
                 .Dismiss().After(TimeSpan.FromSeconds(3))
                 .Queue();
             ShowLoginPage();
+        }
+    }
+
+    private void CloseBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (SideMenuHelper.Current.SideMenu.Items.Contains(PageStore.CreateMSLFrpTunnelMenuItem))
+        {
+            SideMenuHelper.Current.NavigateTo<TunnelListPage>();
+            SideMenuHelper.Current.NavigateRemove(this);
+            return;
         }
     }
 }
