@@ -12,6 +12,20 @@ export interface CreateInstanceQucikModeModel {
   maxM: number;
   args: string;
   ignoreEula?: boolean;
+
+  // MCDReforged 模式
+  mcdr?: boolean;
+  mcdrPython?: string;
+  mcdrHandler?: string;
+  mcdrInstall?: boolean;
+  mcdrPipMirror?: string;
+}
+
+export interface PythonInfoModel {
+  path: string;
+  version: string;
+  hasMcdr: boolean;
+  mcdrVersion?: string;
 }
 
 export interface InstanceListModel {
@@ -45,6 +59,8 @@ export interface InstanceInfoModel {
     gamemode: string;
     serverPort: string;
     onlineMode: string;
+    serverPropertiesPath?: string;
+    serverPropertiesExists?: boolean;
   };
 }
 
@@ -73,7 +89,12 @@ export interface UpdateInstanceModel {
   runOnStartup?: boolean;
   inputEncoding?: 'utf-8' | 'gbk';
   outputEncoding?: 'utf-8' | 'gbk';
-  fileEncoding?: 'utf-8' | 'gbk';
+  fileEncoding?: 'utf-8' | 'utf-8-bom' | 'gbk';
+  serverPropertiesPath?: string;
+  pluginsPath?: string;
+  modsPath?: string;
+  worldPath?: string;
+  regionPath?: string;
 
   // 可选
   coreFileKey?: string;
@@ -103,6 +124,12 @@ export interface InstanceSettingsModel {
   runOnStartup?: boolean;
   inputEncoding?: 'utf-8' | 'gbk';
   outputEncoding?: 'utf-8' | 'gbk';
+  fileEncoding?: 'utf-8' | 'utf-8-bom' | 'gbk';
+  serverPropertiesPath?: string;
+  pluginsPath?: string;
+  modsPath?: string;
+  worldPath?: string;
+  regionPath?: string;
 }
 
 export interface UpdateInstanceResponseModel {

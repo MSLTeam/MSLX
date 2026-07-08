@@ -5,6 +5,7 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import { SaveIcon, RefreshIcon } from 'tdesign-icons-vue-next';
 
 import { getFileContent, saveFileContent } from '@/api/files';
+import { getInstanceSettings } from '@/api/instance';
 import { SERVER_PROPERTIES_SCHEMA, type PropertySchema } from './metadatas/serverPropertiesMeta';
 
 const route = useRoute();
@@ -15,6 +16,14 @@ const loading = ref(false);
 const saving = ref(false);
 const propertiesMap = ref<Record<string, string>>({});
 const rawFileContent = ref('');
+const serverPropertiesPath = ref('server.properties');
+const fileMissing = ref(false);
+
+const normalizeServerPropertiesPath = (value?: string) => {
+  const normalized = (value || 'server.properties').trim().replace(/\\/g, '/');
+  if (!normalized) return 'server.properties';
+  return normalized.replace(/\/+/g, '/').replace(/^\.\//, '');
+};
 
 // --- 文件解析 ---
 const parseProperties = (content: string) => {
@@ -62,11 +71,18 @@ const stringifyProperties = (map: Record<string, string>) => {
 
 // --- 数据获取与保存 ---
 
+const loadServerPropertiesPath = async () => {
+  const settings = await getInstanceSettings(instanceId.value);
+  serverPropertiesPath.value = normalizeServerPropertiesPath(settings.serverPropertiesPath);
+};
+
 const loadData = async () => {
   if (!instanceId.value) return;
   loading.value = true;
+  fileMissing.value = false;
   try {
-    const res = await getFileContent(instanceId.value, 'server.properties');
+    await loadServerPropertiesPath();
+    const res = await getFileContent(instanceId.value, serverPropertiesPath.value);
     if (res) {
       rawFileContent.value = res;
       propertiesMap.value = parseProperties(res);
@@ -74,6 +90,9 @@ const loadData = async () => {
     }
   } catch (e: any) {
     console.error(`读取配置文件失败: ${e.message}`);
+    rawFileContent.value = '';
+    propertiesMap.value = {};
+    fileMissing.value = true;
     //MessagePlugin.error(`读取配置文件失败: ${e.message}`);
   } finally {
     loading.value = false;
@@ -84,7 +103,7 @@ const handleSave = async () => {
   saving.value = true;
   try {
     const content = stringifyProperties(propertiesMap.value);
-    await saveFileContent(instanceId.value, 'server.properties', content);
+    await saveFileContent(instanceId.value, serverPropertiesPath.value, content);
     MessagePlugin.success('配置文件已保存');
     // 重新加载
     loadData();
@@ -180,9 +199,14 @@ watch(
     <div
       class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-5 mb-6 pb-2 border-b border-dashed border-zinc-200/60 dark:border-zinc-700/60"
     >
-      <div class="flex items-center gap-2">
-        <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
-        <h2 class="text-base font-bold text-[var(--td-text-color-primary)] m-0">Server.properties 配置编辑器</h2>
+      <div>
+        <div class="flex items-center gap-2">
+          <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
+          <h2 class="text-base font-bold text-[var(--td-text-color-primary)] m-0">Server.properties 配置编辑器</h2>
+        </div>
+        <div class="text-xs text-[var(--td-text-color-secondary)] font-mono mt-1 pl-3">
+          {{ serverPropertiesPath }}
+        </div>
       </div>
 
       <t-space size="small" class="w-full sm:w-auto justify-end">
@@ -201,6 +225,12 @@ watch(
     </div>
 
     <t-loading :loading="loading" text="正在读取配置文件...">
+      <t-alert
+        v-if="fileMissing"
+        theme="warning"
+        class="!mb-4 !rounded-lg"
+        message="未找到当前配置的 server.properties 文件，保存后会在该路径创建文件。"
+      />
       <div
         class="bg-white/80 dark:bg-zinc-900/40 border border-zinc-200/60 dark:border-zinc-800 rounded-xl shadow-sm backdrop-blur-md overflow-hidden"
       >

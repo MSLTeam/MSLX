@@ -120,10 +120,34 @@ public class MapRenderController : ControllerBase
         { "minecraft:iron_block", new Rgba32(200, 200, 200) }
     };
 
-    private string GetServerBasePath(uint id)
+    private McServerInfo.ServerInfo GetServer(uint id)
     {
-        var server = IConfigBase.ServerList.GetServer(id) ?? throw new Exception("实例不存在");
-        return server.Base;
+        return IConfigBase.ServerList.GetServer(id) ?? throw new Exception("实例不存在");
+    }
+
+    private string GetWorldPath(McServerInfo.ServerInfo server)
+    {
+        var relativePath = ServerPropertiesPathUtils.NormalizeRelativePath(
+            server.WorldPath,
+            "world",
+            "地图目录路径必须是实例目录内的相对路径"
+        );
+        var check = FileUtils.GetSafePath(server.Base, relativePath);
+        if (!check.IsSafe) throw new ArgumentException(check.Message);
+        return check.FullPath;
+    }
+
+    private string GetRegionDirectoryPath(McServerInfo.ServerInfo server)
+    {
+        var worldPath = GetWorldPath(server);
+        var relativePath = ServerPropertiesPathUtils.NormalizeRelativePath(
+            server.RegionPath,
+            "region",
+            "Region 目录路径必须是地图目录内的相对路径"
+        );
+        var check = FileUtils.GetSafePath(worldPath, relativePath);
+        if (!check.IsSafe) throw new ArgumentException(check.Message);
+        return check.FullPath;
     }
 
     [HttpGet("spawn/{id}")]
@@ -133,8 +157,9 @@ public class MapRenderController : ControllerBase
             return NotFound(ApiResponseService.NotFound());
         try
         {
-            var basePath = GetServerBasePath(id);
-            var levelDatPath = Path.Combine(basePath, "world", "level.dat");
+            var server = GetServer(id);
+            var worldPath = GetWorldPath(server);
+            var levelDatPath = Path.Combine(worldPath, "level.dat");
 
             if (!System.IO.File.Exists(levelDatPath))
                 return Ok(new ApiResponse<object> { Code = 200, Data = new { x = 0, z = 0 } });
@@ -162,8 +187,9 @@ public class MapRenderController : ControllerBase
             return NotFound(ApiResponseService.NotFound());
         try
         {
-            var basePath = GetServerBasePath(id);
-            var mcaFilePath = Path.Combine(basePath, "world", "region", $"r.{regionX}.{regionZ}.mca");
+            var server = GetServer(id);
+            var regionDirectoryPath = GetRegionDirectoryPath(server);
+            var mcaFilePath = Path.Combine(regionDirectoryPath, $"r.{regionX}.{regionZ}.mca");
 
             using var image = new Image<Rgba32>(512, 512);
             if (!System.IO.File.Exists(mcaFilePath)) return OutputImage(image);

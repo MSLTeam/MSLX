@@ -13,9 +13,11 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
 public class InstanceInfoController : ControllerBase
 {
     private readonly IMCServerService _mcServerService;
-    public InstanceInfoController(IMCServerService mcServerService)
+    ILogger<InstanceInfoController> _logger;
+    public InstanceInfoController(IMCServerService mcServerService, ILogger<InstanceInfoController> logger)
     {
         _mcServerService = mcServerService;
+        _logger = logger;
     }
     
 [HttpGet("list")]
@@ -118,77 +120,8 @@ public class InstanceInfoController : ControllerBase
             McServerInfo.ServerInfo server =
                 IConfigBase.ServerList.GetServer(id) ?? throw new Exception("找不到指定的服务器");
             var (serverStatus, serverStatusText) = _mcServerService.GetServerStatus(id);
-            if (System.IO.File.Exists(Path.Combine(server.Base, "server.properties")))
-            {
-                dynamic config = ServerPropertiesLoader.Load(Path.Combine(server.Base, "server.properties"),FileUtils.GetFileEncodingByString(server.FileEncoding));
-                string difficulty = "未知";
-                switch (config.difficulty)
-                {
-                    case "easy":
-                        difficulty = "简单";
-                        break;
-                    case "normal":
-                        difficulty = "普通";
-                        break;
-                    case "hard":
-                        difficulty = "困难";
-                        break;
-                    case "peaceful":
-                        difficulty = "和平";
-                        break;
-                    default:
-                        difficulty = "未知";
-                        break;
-                }
-                string gamemode = "未知";
-                switch (config.gamemode)
-                {
-                    case "survival":
-                        gamemode = "生存";
-                        break;
-                    case "creative":
-                        gamemode = "创造";
-                        break;
-                    case "adventure":
-                        gamemode = "冒险";
-                        break;
-                    case "spectator":
-                        gamemode = "旁观";
-                        break;
-                    default:
-                        gamemode = "未知";
-                        break;
-                }
-                return Ok(new ApiResponse<object>
-                {
-                    Code = 200,
-                    Message = "获取成功",
-                    Data = new
-                    {
-                        id = server.ID,
-                        name = server.Name,
-                        basePath = server.Base,
-                        java = server.Java,
-                        args = server.Args,
-                        minM = server.MinM,
-                        maxM = server.MaxM,
-                        core = server.Core,
-                        status = serverStatus,
-                        statusText = serverStatusText,
-                        uptime = _mcServerService.GetServerUptime(id),
-                        monitorPlayers = server.MonitorPlayers,
-                        onlinePlayers = _mcServerService.GetOnlinePlayers(id).Count,
-                        mcConfig = new
-                        {
-                            difficulty,
-                            gamemode,
-                            levelName = config.level_name,
-                            serverPort = config.server_port,
-                            onlineMode = config.online_mode,
-                        }
-                    }
-                });
-            }
+            var mcConfig = BuildMcConfig(server);
+
             return Ok(new ApiResponse<object>
             {
                 Code = 200,
@@ -199,6 +132,7 @@ public class InstanceInfoController : ControllerBase
                     name = server.Name,
                     basePath = server.Base,
                     java = server.Java,
+                    args = server.Args,
                     minM = server.MinM,
                     maxM = server.MaxM,
                     core = server.Core,
@@ -206,14 +140,8 @@ public class InstanceInfoController : ControllerBase
                     statusText = serverStatusText,
                     uptime = _mcServerService.GetServerUptime(id),
                     monitorPlayers = server.MonitorPlayers,
-                    mcConfig = new
-                    {
-                        difficulty = "未知",
-                        gamemode = "未知",
-                        levelName = "未知",
-                        serverPort = "未知",
-                        onlineMode = "未知",
-                    }
+                    onlinePlayers = _mcServerService.GetOnlinePlayers(id).Count,
+                    mcConfig
                 }
             });
         }catch (Exception e)
@@ -224,6 +152,90 @@ public class InstanceInfoController : ControllerBase
                 Message = e.Message
             });
         }
+    }
+
+    private object BuildMcConfig(McServerInfo.ServerInfo server)
+    {
+        var serverPropertiesRelativePath = ServerPropertiesPathUtils.NormalizeRelativePath(server.ServerPropertiesPath);
+        var serverPropertiesPath = ServerPropertiesPathUtils.ResolveFullPath(server);
+
+        if (!System.IO.File.Exists(serverPropertiesPath))
+        {
+            return BuildUnknownMcConfig(serverPropertiesRelativePath, false);
+        }
+
+        try
+        {
+            dynamic config = ServerPropertiesLoader.Load(serverPropertiesPath, FileUtils.GetFileEncodingByString(server.FileEncoding));
+            string difficulty = "未知";
+            switch (config.difficulty)
+            {
+                case "easy":
+                    difficulty = "简单";
+                    break;
+                case "normal":
+                    difficulty = "普通";
+                    break;
+                case "hard":
+                    difficulty = "困难";
+                    break;
+                case "peaceful":
+                    difficulty = "和平";
+                    break;
+                default:
+                    difficulty = "未知";
+                    break;
+            }
+            string gamemode = "未知";
+            switch (config.gamemode)
+            {
+                case "survival":
+                    gamemode = "生存";
+                    break;
+                case "creative":
+                    gamemode = "创造";
+                    break;
+                case "adventure":
+                    gamemode = "冒险";
+                    break;
+                case "spectator":
+                    gamemode = "旁观";
+                    break;
+                default:
+                    gamemode = "未知";
+                    break;
+            }
+
+            return new
+            {
+                difficulty,
+                gamemode,
+                levelName = config.level_name,
+                serverPort = config.server_port,
+                onlineMode = config.online_mode,
+                serverPropertiesPath = serverPropertiesRelativePath,
+                serverPropertiesExists = true,
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "读取 server.properties 失败");
+            return BuildUnknownMcConfig(serverPropertiesRelativePath, true);
+        }
+    }
+
+    private object BuildUnknownMcConfig(string serverPropertiesPath, bool exists)
+    {
+        return new
+        {
+            difficulty = "未知",
+            gamemode = "未知",
+            levelName = "未知",
+            serverPort = "未知",
+            onlineMode = "未知",
+            serverPropertiesPath,
+            serverPropertiesExists = exists,
+        };
     }
     
     [HttpGet("icon/{id}.png")]

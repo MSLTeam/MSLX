@@ -101,12 +101,39 @@ public class ServerCreationService : BackgroundService
             FileEncoding = PlatFormServices.GetOs() == "Windows"? "gbk" : "utf-8",
         };
 
+        // MCDReforged 模式：真实服务端托管在 server/ 子目录，实例以 MCDR(Python)包装器方式运行
+        if (request.mcdr)
+        {
+            server.Java = "none";                    // 走自定义模式的启动通道
+            server.Core = "none";
+            server.Args = BuildMcdrLaunchCommand(request.mcdrPython);
+            server.StopCommand = "stop";             // MCDR 会把 stop 转发给服务端，服务端退出后 MCDR 自身退出
+            server.MonitorPlayers = true;            // 本质仍是 MC 服务器，开启玩家监控
+            server.IgnoreEula = false;               // 交给 MSLX 的 EULA 逻辑处理(eula.txt 位于 server/)
+            server.InputEncoding = "utf-8";
+            server.OutputEncoding = "utf-8";         // 配合注入的 PYTHONIOENCODING=utf-8
+            server.FileEncoding = "utf-8";
+            server.ServerPropertiesPath = "server/server.properties";
+            server.PluginsPath = "server/plugins";
+            server.ModsPath = "server/mods";
+            server.WorldPath = "server/world";
+            server.RegionPath = "region";
+        }
+
         IConfigBase.ServerList.CreateServer(server);
-        Directory.CreateDirectory(server.Base); 
+        Directory.CreateDirectory(server.Base);
         _logger.LogInformation("服务器 {ServerId} 基础目录已配置。", serverId);
 
         try
         {
+            // MCDR 模式走独立部署流程
+            if (request.mcdr)
+            {
+                await _deploymentService.DeployMcdrAsync(serverIdStr, server, request, progressReporter);
+                await progressReporter("服务器创建成功！", 100);
+                return;
+            }
+
             // 远程下载整合包
             if (!string.IsNullOrEmpty(request.packageUrl))
             {
@@ -158,6 +185,20 @@ public class ServerCreationService : BackgroundService
         {
             return; 
         }
+    }
+
+    /// <summary>
+    /// 构建 MCDR 启动命令(交给自定义模式的 cmd/bash 包装执行)。
+    /// </summary>
+    private static string BuildMcdrLaunchCommand(string? python)
+    {
+        string py = string.IsNullOrWhiteSpace(python) ? "python" : python.Trim();
+        if (py.Contains(' ') && !py.StartsWith('"'))
+        {
+            py = $"\"{py}\"";
+        }
+
+        return $"{py} -m mcdreforged start";
     }
 
     /// <summary>

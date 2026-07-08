@@ -1,9 +1,9 @@
-name: 构建 & 推送 Docker 镜像
+name: 构建 & 推送 Dev 镜像
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - dev
   workflow_dispatch:
 
 env:
@@ -13,8 +13,8 @@ env:
   TENCENT_REGISTRY: hkccr.ccs.tencentyun.com
 
 jobs:
-  build-and-push:
-    name: 构建 & 推送 Docker 镜像
+  build-and-push-dev:
+    name: 构建 & 推送 Dev 镜像
     runs-on: ubuntu-latest
     steps:
       - name: 拉取代码
@@ -25,6 +25,22 @@ jobs:
 
       - name: 设置 Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: 安装 pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+
+      - name: 设置 Node.js 环境
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: 编译网页控制台Dev
+        run: |
+          pnpm --filter ./MSLX.WebPanel install --no-frozen-lockfile
+          pnpm --filter ./MSLX.WebPanel build
 
       # --- Docker Hub ---
       - name: 登录 Docker Hub
@@ -45,23 +61,19 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          # 只保留 Docker Hub 和 腾讯云香港
           images: |
             ${{ env.IMAGE_NAME }}
             ${{ env.TENCENT_REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest
-            type=ref,event=tag
-            type=raw,value=dev,enable=${{ github.event_name == 'workflow_dispatch' }}
+            type=raw,value=dev
 
-      - name: 构建并推送
+      - name: 多平台构建并推送
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./MSLX.Daemon/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
-          # tags 会自动包含 Docker Hub 和 香港 两个目标
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           provenance: false
@@ -73,7 +85,7 @@ jobs:
           CNB_REPO_SLUG: "mslmc/mslx-docker-push"
           CNB_TOKEN: ${{ secrets.CNB_DOCKER_REPO_TOKEN }}
         run: |
-          echo "香港 TCR 镜像仓库已成功接收最新推送，正在向 CNB 下达全量同步指令..."
+          echo "测试版 dev 镜像已成功推送到各大仓库，正在激活 CNB 镜像站进行增量中转同步..."
           
           curl -s -X POST \
             -H "Authorization: token $CNB_TOKEN" \
@@ -85,4 +97,4 @@ jobs:
             }" \
             "https://api.cnb.cool/${CNB_REPO_SLUG}/-/build/start"
             
-          echo "🎉 已经成功唤醒CNB同步中转站！"
+          echo "🎉 CNB 同步工作流拉起成功！"

@@ -33,6 +33,12 @@ const developers = [
 
 const contributors = [
   {
+    name: 'alright-qwq',
+    role: 'Contributors',
+    avatar: 'https://avatars.githubusercontent.com/u/151932943?s=48&v=4',
+    desc: '帮忙在MSLX中完成对MCDR的适配',
+  },
+  {
     name: 'LegendarySHT',
     role: 'Contributors',
     avatar: 'https://avatars.githubusercontent.com/u/198100090?s=80&v=4',

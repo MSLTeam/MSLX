@@ -198,9 +198,16 @@ public class MCServerService : IMCServerService
             return (false);
         if (agree)
         {
-            string eulaPath = Path.Combine(serverInfo.Base, "eula.txt");
+            string eulaPath = ServerPropertiesPathUtils.ResolveEulaPath(serverInfo);
             try
             {
+                // 获取eula的位置
+                var eulaDir = Path.GetDirectoryName(eulaPath);
+                if (!string.IsNullOrEmpty(eulaDir))
+                {
+                    Directory.CreateDirectory(eulaDir);
+                }
+
                 // 写入同意后的文件内容
                 string eulaFileContent =
                     $"#By changing the setting below to TRUE you are indicating your agreement to our EULA (https://aka.ms/MinecraftEULA).\n#{DateTime.Now}\neula=true";
@@ -258,7 +265,7 @@ public class MCServerService : IMCServerService
             //if (serverInfo.Java != "none" && !serverInfo.IgnoreEula && !skipEulaCheck)
             if (!serverInfo.IgnoreEula && !skipEulaCheck)
             {
-                string eulaPath = Path.Combine(serverInfo.Base, "eula.txt");
+                string eulaPath = ServerPropertiesPathUtils.ResolveEulaPath(serverInfo);
                 bool needAgree = false;
 
                 // 检测文件是否存在或未同意
@@ -412,6 +419,20 @@ public class MCServerService : IMCServerService
                 if (!startInfo.EnvironmentVariables.ContainsKey("FORCE_COLOR"))
                 {
                     startInfo.EnvironmentVariables.Add("FORCE_COLOR", "1");
+                }
+            }
+
+            // 自定义模式且为python软件时，注入UTF-8
+            if (serverInfo.Java == "none" && (serverInfo.Args?.ToLower().Contains("python") ?? false))
+            {
+                if (!startInfo.EnvironmentVariables.ContainsKey("PYTHONIOENCODING"))
+                {
+                    startInfo.EnvironmentVariables.Add("PYTHONIOENCODING", "utf-8");
+                }
+
+                if (!startInfo.EnvironmentVariables.ContainsKey("PYTHONUTF8"))
+                {
+                    startInfo.EnvironmentVariables.Add("PYTHONUTF8", "1");
                 }
             }
 
@@ -579,10 +600,14 @@ public class MCServerService : IMCServerService
                                         else
                                         {
                                             context.Process.StandardInput.WriteLine(server?.StopCommand ?? "stop");
+                                            context.Process.StandardInput.Flush();
                                         }
 
                                         // 关闭输入流
-                                        context.Process.StandardInput.Close();
+                                        if(!server?.Args?.ToLower().Contains("mcdreforged") ?? true)
+                                        {
+                                            context.Process.StandardInput.Close();
+                                        }
                                     }
 
                                     // 等待进程退出
@@ -1261,11 +1286,22 @@ public class MCServerService : IMCServerService
 
             // 获取需要备份的内容
             string worldPath = isBedrock ? "worlds" : "world";
-            if (File.Exists(Path.Combine(server.Base, "server.properties")) && !isBedrock)
+            if (!isBedrock)
             {
-                dynamic config = ServerPropertiesLoader.Load(Path.Combine(server.Base, "server.properties"),
-                    FileUtils.GetFileEncodingByString(server.FileEncoding));
-                worldPath = config.level_name == "未知" ? "world" : config.level_name;
+                var serverPropertiesPath = ServerPropertiesPathUtils.ResolveFullPath(server);
+                if (File.Exists(serverPropertiesPath))
+                {
+                    try
+                    {
+                        dynamic config = ServerPropertiesLoader.Load(serverPropertiesPath,
+                            FileUtils.GetFileEncodingByString(server.FileEncoding));
+                        worldPath = config.level_name == "未知" ? "world" : config.level_name;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "读取 server.properties 的 level-name 失败，备份将使用默认 world 路径: {Path}", serverPropertiesPath);
+                    }
+                }
             }
 
             // 兼容插件端的文件夹分离模式
@@ -1585,8 +1621,9 @@ public class MCServerService : IMCServerService
                     {
                         bool needFindChild = false;
 
-                        // cmd外壳
-                        if (name == "cmd" || name == "powershell" || name == "conhost" || name == "wt")
+                        // cmd外壳 / Python 包装器(MCDR 等)
+                        if (name == "cmd" || name == "powershell" || name == "pwsh" || name == "conhost" ||
+                            name == "wt" || name == "python" || name == "python3" || name == "py")
                         {
                             needFindChild = true;
                         }
@@ -1622,8 +1659,9 @@ public class MCServerService : IMCServerService
                     }
                     else if (OperatingSystem.IsLinux())
                     {
-                        // 常见 Linux Shell 壳
-                        if (name == "bash" || name == "sh" || name == "dash")
+                        // 常见 Linux Shell 壳 / Python 包装器(MCDR 等)
+                        if (name == "bash" || name == "sh" || name == "dash" ||
+                            name.StartsWith("python") || name == "py")
                         {
                             var child = GetChildProcessLinux(context.MonitorProcess.Id);
                             if (child != null && child.Id != context.MonitorProcess.Id)
@@ -1694,11 +1732,13 @@ public class MCServerService : IMCServerService
     }
 
     /// <summary>
-    /// [Linux专用] 通过 pgrep 查找指定父进程启动的子进程
+    /// [Linux专用] 通过 pgrep 递归查找指定父进程启动的服务端子进程
+    /// 可穿透 shell / Python(MCDR) 等中间包装进程
     /// </summary>
-    private Process? GetChildProcessLinux(int parentPid)
+    private Process? GetChildProcessLinux(int parentPid, int depth = 0)
     {
         if (!OperatingSystem.IsLinux()) return null;
+        if (depth > 8) return null; // 防御性深度限制，避免异常情况下无限递归
 
         try
         {
@@ -1734,10 +1774,11 @@ public class MCServerService : IMCServerService
                             return childProcess;
                         }
 
-                        // 如果子进程依然是个 shell ，递归往下挖
-                        if (name == "bash" || name == "sh" || name == "dash")
+                        // 如果子进程依然是 shell / Python 包装器，递归往下挖
+                        if (name == "bash" || name == "sh" || name == "dash" ||
+                            name.StartsWith("python") || name == "py")
                         {
-                            var grandChild = GetChildProcessLinux(childPid);
+                            var grandChild = GetChildProcessLinux(childPid, depth + 1);
                             if (grandChild != null) return grandChild;
                         }
                     }
@@ -1757,15 +1798,17 @@ public class MCServerService : IMCServerService
     }
 
     /// <summary>
-    /// [Windows专用] 通过 WMI 查找指定父进程启动的子进程 (Java/Bedrock)
+    /// [Windows专用] 通过 WMI 递归查找指定父进程启动的服务端子进程 (Java/Bedrock)
+    /// 可穿透 cmd / Python(MCDR) / PowerShell 等中间包装进程
     /// </summary>
-    private Process? GetChildJavaProcess(int parentPid)
+    private Process? GetChildJavaProcess(int parentPid, int depth = 0)
     {
         if (!OperatingSystem.IsWindows()) return null;
+        if (depth > 8) return null; // 防御性深度限制，避免异常情况下无限递归
 
         try
         {
-            // 使用 WMI 查询：查找所有 ParentProcessId 等于当前 CMD PID 的进程
+            // 使用 WMI 查询：查找所有 ParentProcessId 等于当前 PID 的进程
             using var searcher = new ManagementObjectSearcher(
                 $"Select ProcessId, Name, CommandLine From Win32_Process Where ParentProcessId={parentPid}");
 
@@ -1776,7 +1819,7 @@ public class MCServerService : IMCServerService
                 var childPid = Convert.ToInt32(obj["ProcessId"]);
                 var name = obj["Name"]?.ToString()?.ToLower() ?? "";
 
-                //  Java 或 Bedrock 进程
+                //  Java 或 Bedrock 进程 —— 找到目标
                 if (name.Contains("java") || name.Contains("bedrock") || name.Contains("server"))
                 {
                     try
@@ -1787,6 +1830,14 @@ public class MCServerService : IMCServerService
                     {
                         // 进程可能刚查到就退出了，忽略
                     }
+                }
+
+                // 中间包装进程(cmd / Python(MCDR) / PowerShell 等)，继续向下递归
+                if (name.Contains("python") || name == "py.exe" || name == "cmd.exe" ||
+                    name.Contains("powershell") || name == "pwsh.exe" || name == "conhost.exe")
+                {
+                    var grandChild = GetChildJavaProcess(childPid, depth + 1);
+                    if (grandChild != null) return grandChild;
                 }
             }
         }
