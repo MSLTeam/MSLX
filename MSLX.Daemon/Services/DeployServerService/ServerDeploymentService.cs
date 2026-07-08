@@ -435,6 +435,10 @@ public class ServerDeploymentService
             {
                 pipArgs += $" -i {request.mcdrPipMirror.Trim()}";
             }
+            if (!OperatingSystem.IsWindows())
+            {
+                pipArgs += " --break-system-packages";
+            }
 
             var (pipOk, _) = await RunCommandAsync(python, pipArgs, baseDir, report, "pip", 600000);
             await report(pipOk ? "MCDReforged 安装完成。" : "⚠ MCDReforged 自动安装失败，请稍后手动执行 pip install mcdreforged。", 30);

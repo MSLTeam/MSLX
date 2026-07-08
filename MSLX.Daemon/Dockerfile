@@ -22,7 +22,7 @@ RUN \
         sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list; \
     fi
 
-# 安装一些库和设置时区
+# 安装一些库和设置时区，同时内置 Python 3 和全局 MCDR
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     libcurl4 \
@@ -33,7 +33,13 @@ RUN apt-get update && \
     acl \
     tzdata \
     openjdk-17-jre-headless \
-    openjdk-21-jre-headless && \
+    openjdk-21-jre-headless \
+    # python + pip + 换源 + mcdr
+    python3 \
+    python3-pip \
+    && \
+    pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple && \
+    pip3 install mcdreforged --break-system-packages && \
     # 设置时区
     ln -fs /usr/share/zoneinfo/Asia/Shanghai /etc/localtime && \
     dpkg-reconfigure -f noninteractive tzdata && \
