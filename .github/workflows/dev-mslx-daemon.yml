@@ -8,14 +8,45 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-frontend:
+    name: 编译网页控制台
+    runs-on: ubuntu-latest
+    steps:
+      - name: 签出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: 设置 Node.js 环境
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          cache-dependency-path: './MSLX.Webpanel/pnpm-lock.yaml'
+
+      - name: 编译网页控制台Dev
+        run: |
+          cd ./MSLX.Webpanel
+          pnpm install --no-frozen-lockfile
+          pnpm build 
+
+      - name: 暂存前端产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: ./MSLX.Daemon/Frontend/ 
+          retention-days: 1 
+
+  build-backend:
+    needs: build-frontend
     runs-on: ubuntu-latest
     name: 构建发布
-    
     strategy:
       matrix:
         include:
-          # 定义输出的程序文件名
           - { os: linux,   arch: x64,   rid: linux-x64,   bin: 'MSLX-Daemon' }
           - { os: linux,   arch: arm64, rid: linux-arm64, bin: 'MSLX-Daemon' }
           - { os: linux,   arch: musl-x64,   rid: linux-musl-x64,   bin: 'MSLX-Daemon' }
@@ -30,6 +61,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          
+      - name: 下载前端产物
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: ./MSLX.Daemon/Frontend/ 
+          merge-multiple: true
 
       - name: 设置 .NET 10 环境
         uses: actions/setup-dotnet@v4
@@ -48,13 +86,11 @@ jobs:
 
       - name: 发布并提取单文件
         run: |
-          # 定义路径
           BASE_NAME="MSLX-Daemon_${{ env.VERSION_NAME }}_${{ matrix.rid }}"
           PUBLISH_DIR="./publish_temp"
           DIST_DIR="./dist"
           mkdir -p $DIST_DIR
           
-          # 执行发布
           dotnet publish ./MSLX.Daemon/MSLX.Daemon.csproj \
             -c Release \
             -r ${{ matrix.rid }} \
@@ -64,28 +100,16 @@ jobs:
             -p:DebugSymbols=false \
             -o "$PUBLISH_DIR"
 
-          # 只提取可执行文件
           echo "正在处理纯净文件..."
           
           if [[ "${{ matrix.os }}" == "windows" ]]; then
-            # --- Windows ---
-            # 直接把 .exe 复制到 dist 目录
-            # 上传后 GitHub 会自动包一层 zip，解压即用
             cp "$PUBLISH_DIR/${{ matrix.bin }}" "$DIST_DIR/${{ matrix.bin }}"
-            
-            # 设置上传路径为具体的文件
             echo "UPLOAD_PATH=$DIST_DIR/${{ matrix.bin }}" >> $GITHUB_ENV
-            
           else
-            # --- Linux / macOS ---
-            # 打包成 tar.gz 以保留 chmod +x 权限
-            # 但我们只打包那一个文件
-            
             cd "$PUBLISH_DIR"
             chmod +x "${{ matrix.bin }}"
             tar -czvf "../$DIST_DIR/$BASE_NAME.tar.gz" "${{ matrix.bin }}"
             cd ..
-            
             echo "UPLOAD_PATH=$DIST_DIR/$BASE_NAME.tar.gz" >> $GITHUB_ENV
           fi
 
