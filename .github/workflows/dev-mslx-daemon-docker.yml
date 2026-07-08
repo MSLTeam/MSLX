@@ -39,9 +39,8 @@ jobs:
 
       - name: 编译网页控制台Dev
         run: |
-          cd ./MSLX.WebPanel
-          pnpm install --no-frozen-lockfile
-          pnpm build 
+          pnpm --filter ./MSLX.WebPanel install --no-frozen-lockfile
+          pnpm --filter ./MSLX.WebPanel build
 
       # --- Docker Hub ---
       - name: 登录 Docker Hub
