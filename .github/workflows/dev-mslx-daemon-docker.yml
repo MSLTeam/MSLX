@@ -93,7 +93,10 @@ jobs:
             -H "Authorization: token $CNB_TOKEN" \
             -H "Content-Type: application/json" \
             -H "Accept: application/json" \
-            -d "{\"event_type\": \"api_trigger_docker_sync\", \"ref\": \"refs/heads/main\"}" \
-            "https://api.cnb.cool/${CNB_REPO_SLUG}/-/builds"
+            -d "{
+              \"branch\": \"main\",
+              \"event\": \"api_trigger_docker_sync\"
+            }" \
+            "https://api.cnb.cool/${CNB_REPO_SLUG}/-/build/start"
             
           echo "🎉 CNB 同步工作流拉起成功！"
