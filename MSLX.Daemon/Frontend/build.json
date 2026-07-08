@@ -1,6 +1,6 @@
 {
-  "version": "1.4.10",
-  "buildTime": "2026-07-08 12:09:47",
+  "version": "1.4.10.1",
+  "buildTime": "2026-07-08 12:37:55",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -77,10 +77,178 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "a62ec0de5d4c766fe3063a75480b0d81b8f9c551",
-  "commitMsg": "Merge pull request #160 from MSLTeam/dev",
-  "commitAuthor": "小宇",
+  "commitId": "9a48282344823b917ce803e0f6bde012e07abdc4",
+  "commitMsg": "build(daemon & desltop): 更新CNB同步仓库",
+  "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "9a48282344823b917ce803e0f6bde012e07abdc4",
+      "commitTime": "2026-07-08 12:19:05 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(daemon & desltop): 更新CNB同步仓库"
+    },
+    {
+      "commitId": "e61c5dfa43c0d9d6f3c458cab4b26afd07bd8339",
+      "commitTime": "2026-07-08 12:11:25 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #164 from MSLTeam/dev"
+    },
+    {
+      "commitId": "ed7243a8ab0b1a07af81c7b62189e19c00216480",
+      "commitTime": "2026-07-08 12:10:23 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.4.10版本"
+    },
+    {
+      "commitId": "e77c2631e885ac772de2a48597f0e3b1c395968d",
+      "commitTime": "2026-07-08 12:01:53 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(daemon & desltop): 更新CNB同步仓库"
+    },
+    {
+      "commitId": "179af0024d49f5a37597a708406ec483047ff039",
+      "commitTime": "2026-07-08 11:52:20 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(build): 修复前端构建失败..."
+    },
+    {
+      "commitId": "515b062cb9e8ee416e951b6dd5812bfe5affc928",
+      "commitTime": "2026-07-08 11:46:17 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(build): 修复前端构建失败"
+    },
+    {
+      "commitId": "ab8e1ae55fa28d66fdb12885c9cfa07281347a40",
+      "commitTime": "2026-07-08 11:44:27 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(build): 修复前端构建失败"
+    },
+    {
+      "commitId": "e3ad89e01922edd9726e1fbb19ef960dcc6d1d87",
+      "commitTime": "2026-07-08 11:41:44 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(build): 修复cnb docker同步工作流"
+    },
+    {
+      "commitId": "9fee35831fc8c67ff8ceedb134e8dc3d9538061e",
+      "commitTime": "2026-07-08 11:13:14 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(webpanel): dev版本daemon和docker镜像自动构建"
+    },
+    {
+      "commitId": "c09d7f2e76f43296986635af68a7239f0ab3cd96",
+      "commitTime": "2026-07-08 10:45:58 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(docker): 新增dev镜像构建工作流"
+    },
+    {
+      "commitId": "72b917f77fbbcaa765d9e8a5ac8dca4528ccff57",
+      "commitTime": "2026-07-08 10:45:10 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "build(docker): 新增dev镜像构建工作流"
+    },
+    {
+      "commitId": "684cbe4c80800bd813ad738fd17afe7b9e2ab5fa",
+      "commitTime": "2026-07-08 10:38:15 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): docker镜像新增mcdr预置 & Linux/macos下安装mcdr新增强制安装参数"
+    },
+    {
+      "commitId": "7287ef7ccac0c405de2710db813eb54cf6cd97ad",
+      "commitTime": "2026-07-08 00:01:45 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复mcdr模式下停止/重启服务端时无法正常结束的问题"
+    },
+    {
+      "commitId": "4e64b50c52a063d2d4797190235fbfca734939b4",
+      "commitTime": "2026-07-07 23:42:14 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
+    },
+    {
+      "commitId": "01c3e3f56ebf97ce80efdc3f52b85741204ce4f4",
+      "commitTime": "2026-07-07 23:40:59 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "refactor(webpanel): 重构MCDR创建服务端的页面样式，完成风格统一"
+    },
+    {
+      "commitId": "24bf4c75c06fb8bb6fcb14eddf4a7dd8ef035b95",
+      "commitTime": "2026-07-07 23:22:23 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 拆分路径设置分类"
+    },
+    {
+      "commitId": "cec873c0c91a3c8b1fe745364aebf638e411c64d",
+      "commitTime": "2026-07-07 23:19:22 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): ILogger泛型注入写错了"
+    },
+    {
+      "commitId": "9ecad985deb8d8d92c016404525008d34a991d85",
+      "commitTime": "2026-07-07 23:05:15 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #162 from alright-qwq/dev"
+    },
+    {
+      "commitId": "7792cbe8732a9eb1057825847086bcbd93bff86d",
+      "commitTime": "2026-07-07 23:04:21 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "remove(docs): 移除文档"
+    },
+    {
+      "commitId": "5c0308ddd3fdb7904d720f5f44e6b82c6426f9e9",
+      "commitTime": "2026-07-07 22:59:18 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): mcdr创建服务端模式新增参数验证"
+    },
+    {
+      "commitId": "41115800cdbd125f9f65c592b685cf2d846766f4",
+      "commitTime": "2026-07-07 22:54:52 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(webpanel & daemon): 优化一些代码 & 新增贡献者"
+    },
+    {
+      "commitId": "1e27b7208f8d132d598e008853d4e3b8dd3b814b",
+      "commitTime": "2026-07-07 22:20:02 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "remove(daemon): 移除无意义验证"
+    },
+    {
+      "commitId": "8c433b77d7e88ea6abc906cb1e56a9b7d59da2e7",
+      "commitTime": "2026-07-07 22:07:54 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复可能存在的路径穿越问题 & 接口鉴权漏洞"
+    },
+    {
+      "commitId": "b89d51e152327bfe4c885dcf621b2f5cc8eedbbe",
+      "commitTime": "2026-07-07 20:29:44 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
+    },
+    {
+      "commitId": "15b9330529fd188c8663eeef68a15f504822106e",
+      "commitTime": "2026-07-07 20:29:01 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(sdk): 新增OnRegisterServices和OnPluginInitialize方法"
+    },
+    {
+      "commitId": "0a9e5b3a5fab1b7a7b21481c36823092532033dc",
+      "commitTime": "2026-07-07 18:21:11 +0800",
+      "commitAuthor": "ztrnb666",
+      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
+    },
+    {
+      "commitId": "50b4db9e17416f5f7255839b36db62cc0463f581",
+      "commitTime": "2026-07-07 18:09:24 +0800",
+      "commitAuthor": "ztrnb666",
+      "commitMsg": "wip: 自定义路径 + MCDR 支持(合并前暂存)"
+    },
+    {
+      "commitId": "c10c7004ac4ca9d65939431242f4bb5722b7c7b8",
+      "commitTime": "2026-07-07 16:38:41 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(build): 修正docker同步工作流"
+    },
     {
       "commitId": "a62ec0de5d4c766fe3063a75480b0d81b8f9c551",
       "commitTime": "2026-07-07 16:31:38 +0800",
@@ -212,174 +380,6 @@
       "commitTime": "2026-07-06 16:51:48 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "fix(git): 修复同步工作流"
-    },
-    {
-      "commitId": "2ee68d2ed2e1622869825c63e78f3ceb9329d304",
-      "commitTime": "2026-07-06 16:50:56 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(git): 优化同步流程"
-    },
-    {
-      "commitId": "ef637731a8176965d263dc7c8ac4487209dabf33",
-      "commitTime": "2026-07-06 16:48:08 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(git): 新增同步代码到CNB"
-    },
-    {
-      "commitId": "c5afb0e5017fa05cfde52a878c1da5cebe4f32f0",
-      "commitTime": "2026-07-06 16:40:58 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(docker): 更新出发构建的流程"
-    },
-    {
-      "commitId": "4ab16c7a7dd7daca089e82254189260953684ddf",
-      "commitTime": "2026-07-06 16:38:04 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "deps(desktop & daemon): 更新nuget软件包"
-    },
-    {
-      "commitId": "11d5e541b829ca2c7117ea6d8aa8791f20162605",
-      "commitTime": "2026-07-06 14:11:09 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(builds): 优化cnb同步流程"
-    },
-    {
-      "commitId": "c4de6a3680cf9052c6e25995f3d2172de46c0c66",
-      "commitTime": "2026-07-06 13:54:44 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(builds): 继续修复CNB构建"
-    },
-    {
-      "commitId": "469d5dab49693636139f4d982038029959a5b642",
-      "commitTime": "2026-07-06 13:49:12 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(builds): 继续修复CNB构建"
-    },
-    {
-      "commitId": "819da3807c5b5026516b5add52e42250f5285f67",
-      "commitTime": "2026-07-06 13:44:44 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(builds): 继续修复CNB构建"
-    },
-    {
-      "commitId": "3998b45cb0472c414bff5c36858bd2548d529476",
-      "commitTime": "2026-07-06 13:37:23 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(builds): 继续修复CNB构建"
-    },
-    {
-      "commitId": "bea10a86c5510ed75e73fa6e2c9c9b780a5b64c8",
-      "commitTime": "2026-07-06 13:28:59 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(builds): 继续修复CNB构建"
-    },
-    {
-      "commitId": "3a3e9acfb6b7f6d717d5c50df79c53b442367bfd",
-      "commitTime": "2026-07-06 13:18:50 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #150 from MSLTeam/dev"
-    },
-    {
-      "commitId": "eb93ababbbaaa24058f502080c46e314420b2470",
-      "commitTime": "2026-07-06 13:17:49 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(builds): 尝试修复CNB同步工作流"
-    },
-    {
-      "commitId": "78c87ee59306bd6463ac2b6978cf494bc02ce033",
-      "commitTime": "2026-07-06 13:11:24 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #148 from MSLTeam/dev"
-    },
-    {
-      "commitId": "8232c84369a891294efc32c7f8cce338dd789234",
-      "commitTime": "2026-07-06 13:10:25 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(github): 尝试新增工作流同步到CNB仓库"
-    },
-    {
-      "commitId": "498b928fe66fbaf58aa19772bb248e069e31f4a3",
-      "commitTime": "2026-07-06 11:01:11 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.4.8版本"
-    },
-    {
-      "commitId": "3f3af1cbca64b6fde6a91ded5f858ca28f8a86b0",
-      "commitTime": "2026-07-06 10:54:27 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "plugin-dev(webpanel): 新增插件插槽instance-setting-more"
-    },
-    {
-      "commitId": "ddfd600047da93c874f2878d5cce4f4b9f963063",
-      "commitTime": "2026-07-06 10:44:49 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(webpanel): 补充Server.properties描述"
-    },
-    {
-      "commitId": "999a96a2254e38918d218d6164832c60bfb0c19a",
-      "commitTime": "2026-07-06 10:37:38 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 优化用户管理页面在移动端的表现"
-    },
-    {
-      "commitId": "53dbeeada84fa764e0a09ceb01bff0625c1d1885",
-      "commitTime": "2026-07-04 23:21:24 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 测试数据忘删了"
-    },
-    {
-      "commitId": "6514e7b291eb5aa9a2bee1103d71e4eb1f60b81d",
-      "commitTime": "2026-07-04 23:20:07 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 在非本地/局域网环境下新增HTTP协议访问的安全警告"
-    },
-    {
-      "commitId": "b758227c428b151b4b66489c5b9b38e089f81912",
-      "commitTime": "2026-06-28 17:34:15 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 文件编辑器新增保存不关闭的功能 #147"
-    },
-    {
-      "commitId": "b90cbf8cd900e363d002847e8f1baf24c24f6b9c",
-      "commitTime": "2026-06-21 16:10:21 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #143 from MSLTeam/dev"
-    },
-    {
-      "commitId": "961b8bb19e5fa2b913a82d4730e6f66d269af36b",
-      "commitTime": "2026-06-21 16:09:42 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新到1.4.7-release版本"
-    },
-    {
-      "commitId": "47e2b7c7a72172c366baed925f678d9752b5fcdb",
-      "commitTime": "2026-06-21 16:08:03 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 初始化/重置默认账户时，会生成一个包含默认账户密码信息的文本文件在数据目录"
-    },
-    {
-      "commitId": "b8f667da000e85ff7d9e87b4a8048325ca88aafa",
-      "commitTime": "2026-06-21 15:54:06 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复针对部分特定服务端(如Youer端的首次启动)会产生子进程运行的情况导致状态判断错误的问题(此类情况只能监听日志输出,没办法输入命令了)"
-    },
-    {
-      "commitId": "9afff6329679f8cf29fa5f30c2ebe37307222dbc",
-      "commitTime": "2026-06-21 15:04:03 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复创建实例上传文件的进度条进度由于小数导致的宽度乱跳问题 #141"
-    },
-    {
-      "commitId": "e4504c65309e58ed2ffbc23d2c3089668a940bc3",
-      "commitTime": "2026-06-21 14:59:13 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 优化终端的滚动效果 #142"
-    },
-    {
-      "commitId": "fd3dacbd784edd620d7c53f4552bf594be497c07",
-      "commitTime": "2026-06-10 20:55:33 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #139 from MSLTeam/dev"
     }
   ]
 }
