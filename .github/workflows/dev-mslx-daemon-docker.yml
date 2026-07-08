@@ -30,13 +30,12 @@ jobs:
         uses: pnpm/action-setup@v4
         with:
           version: 9
+          run_install: false
 
       - name: 设置 Node.js 环境
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'pnpm'
-          cache-dependency-path: './MSLX.Webpanel/pnpm-lock.yaml'
+          node-version: '24'
 
       - name: 编译网页控制台Dev
         run: |
