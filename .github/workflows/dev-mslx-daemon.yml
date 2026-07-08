@@ -28,7 +28,7 @@ jobs:
 
       - name: 编译网页控制台Dev
         run: |
-          cd ./MSLX.Webpanel
+          cd ./MSLX.WebPanel
           pnpm install --no-frozen-lockfile
           pnpm build 
 
