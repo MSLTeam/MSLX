@@ -136,7 +136,7 @@ public partial class ServerCoreSelectorView : UserControl
         ItemsCores.ItemsSource = list;
 
         ItemsVersions.ItemsSource = null;
-        TxtSelectedCoreTitle.Text = "请选择一个核心";
+        TxtSelectedCoreTitle.Text = "可用版本";
         TxtVersionTip.IsVisible = true;
         _currentSelectedCore = "";
     }

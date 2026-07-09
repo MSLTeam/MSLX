@@ -1,4 +1,3 @@
-using Avalonia.Controls;
 using Material.Icons;
 using Material.Icons.Avalonia;
 using MSLX.Desktop.Views;
@@ -53,7 +52,7 @@ namespace MSLX.Desktop.Models
                 {
                     Kind = MaterialIconKind.SwapHorizontalBold,
                 },
-                // PageContent = new TextBlock{Text="Hello World!"},
+                PageContent = new PlayerConnectionPage(),
             },
             new() {
                 Header = "设置",
