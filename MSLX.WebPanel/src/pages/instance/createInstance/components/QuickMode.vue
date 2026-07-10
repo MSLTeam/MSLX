@@ -544,7 +544,7 @@ const goToHome = () => {
                 name="path"
                 :help="
                   userStore.userInfo.systemInfo.docker
-                    ? '您正在使用Docker容器部署，为保数据安全，仅支持使用默认数据路径'
+                    ? '您的MSLX正在运行于Docker环境内，为保数据安全，仅支持使用默认数据路径'
                     : '选填，留空将使用默认路径'
                 "
               >
@@ -629,6 +629,9 @@ const goToHome = () => {
                     <t-radio-button value="custom">自定义路径</t-radio-button>
                     <t-radio-button value="docker">Docker 容器环境 🐳</t-radio-button>
                   </t-radio-group>
+                  <t-alert v-if="javaType === 'docker'" class="!mb-5" theme="info"
+                    >使用容器环境前请确保您的宿主机已经安装了 <b>Docker</b> ，否则会导致无法启动。如果您不知道这是什么，请不要选择此项！</t-alert
+                  >
 
                   <div
                     v-if="javaType === 'docker'"
@@ -1045,9 +1048,7 @@ const goToHome = () => {
                     </div>
                     <div class="text-[11px] text-zinc-500 mt-1 truncate max-w-[250px] sm:max-w-[350px]">
                       <span v-if="javaType === 'online'">将自动从镜像源下载并解压 JDK</span>
-                      <span v-else-if="javaType === 'docker'"
-                        >目标环境: 沙盒隔离镜像 ({{ formData.dockerImage }})</span
-                      >
+                      <span v-else-if="javaType === 'docker'">目标环境: 沙盒隔离镜像 ({{ formData.dockerImage }})</span>
                       <span v-else>目标环境: {{ formData.java }}</span>
                     </div>
                   </div>

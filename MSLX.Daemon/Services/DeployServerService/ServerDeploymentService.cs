@@ -231,7 +231,7 @@ public class ServerDeploymentService
     {
         if (string.IsNullOrWhiteSpace(realImageName)) return;
 
-        await report($"正在检测本地是否存在镜像 [{realImageName}]...", 0);
+        await report($"正在检测本地是否存在镜像 [{realImageName.Replace("docker.mslmc.cn/xiaoyululu/", "")}]...", 0);
 
         bool imageExists = false;
         try
@@ -251,7 +251,7 @@ public class ServerDeploymentService
 
         if (imageExists)
         {
-            await report($"Docker 镜像 [{realImageName.Replace("docker.mslmc.cn/xiaoyululu/","")}] 本地已存在，跳过拉取流。", 100);
+            await report($"Docker 镜像 [{realImageName.Replace("docker.mslmc.cn/xiaoyululu/","")}] 本地已存在，跳过拉取流。", 0);
             return;
         }
 
@@ -280,7 +280,7 @@ public class ServerDeploymentService
                     }
                     else if (output.Contains("Download complete"))
                     {
-                        await report($"镜像分层数据同步下载完成...", 85);
+                        await report($"镜像分层数据下载完成...", 85);
                     }
                     else if (output.Contains("Status: Downloaded newer image") || output.Contains("Image is up to date"))
                     {
@@ -301,7 +301,7 @@ public class ServerDeploymentService
                 }
             }
 
-            await report($"Docker 镜像 [{realImageName.Replace("docker.mslmc.cn/xiaoyululu/", "")}] 全量环境部署成功！", 99);
+            await report($"Docker 镜像 [{realImageName.Replace("docker.mslmc.cn/xiaoyululu/", "")}] 部署成功！", 99);
         }
         catch (Exception ex)
         {

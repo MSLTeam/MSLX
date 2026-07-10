@@ -142,7 +142,7 @@ public class ServerCreationService : BackgroundService
                     realImageName = $"docker.mslmc.cn/xiaoyululu/mslx-runtime:java{tag}"; 
                 }
 
-                await progressReporter($"正在检测并下载沙盒隔离镜像 [{realImageName}]，请耐心等待...", 10);
+                await progressReporter($"正在检测并下载镜像 [{realImageName.Replace("docker.mslmc.cn/xiaoyululu/", "")}]，请耐心等待...", 10);
 
                 // 拉取镜像
                 await _deploymentService.PullImageIfNeededAsync(serverIdStr, realImageName, progressReporter);
