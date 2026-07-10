@@ -271,7 +271,7 @@ public class MCServerService : IMCServerService
                 if (match.Success && match.Groups.Count > 1)
                 {
                     containerId = match.Groups[1].Value;
-                    _logger.LogInformation($"[Docker-Inspector] 从 mountinfo 成功捕获 64 位纯血容器 ID: {containerId}");
+                    _logger.LogInformation($"[Docker-Inspector] 从 mountinfo 成功捕获 64 位容器 ID: {containerId}");
                 }
             }
 
@@ -420,7 +420,7 @@ public class MCServerService : IMCServerService
 
                 if (File.Exists("/proc/self/cgroup"))
                 {
-                    RecordLog(instanceId, context, "[Docker-Detector] 检测到当前 MSLX-Daemon 处于容器内，正在逆向反查宿主机物理骨架...");
+                    RecordLog(instanceId, context, "[Docker-Detector] 检测到当前 MSLX-Daemon 处于容器内，正在查询物理主机挂载路径...");
                     string? hostDataRoot = await GetHostPhysicalDataPathAsync(instanceId, context);
 
                     if (!string.IsNullOrWhiteSpace(hostDataRoot))

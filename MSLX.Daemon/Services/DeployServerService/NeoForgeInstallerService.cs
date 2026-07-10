@@ -695,7 +695,6 @@ public class NeoForgeInstallerService
                 if (isDockerBuildMode)
                 {
                     string cleanedCmdLine = cmdLine.Replace(InstallBasePath, "/mslx-data").Replace("\\", "/");
-
                     cleanedCmdLine = cleanedCmdLine.Replace(";", ":");
 
                     string realImageName = dockerImagePath;
@@ -705,11 +704,28 @@ public class NeoForgeInstallerService
                         realImageName = $"docker.mslmc.cn/xiaoyululu/mslx-runtime:java{tag}";
                     }
 
+                    string finalHostInstallPath = InstallBasePath; // 默认使用原生物理路径
+
+                    if (File.Exists("/proc/self/cgroup"))
+                    {
+                        ReportLog("[Docker 容器沙盒构建] 检测到当前 MSLX-Daemon 处于容器内，正在为 NeoForge 逆向反查宿主机物理挂载源...\n");
+                        string? hostDataRoot = await GetHostPhysicalDataPathAsync();
+
+                        if (!string.IsNullOrWhiteSpace(hostDataRoot))
+                        {
+                            finalHostInstallPath = InstallBasePath.Replace("/app/DaemonData", hostDataRoot);
+                            _logger.LogInformation($"[Docker 容器沙盒构建] 物理路径重定向成功: {InstallBasePath} -> {finalHostInstallPath}");
+                        }
+                        else
+                        {
+                            ReportLog("[Docker 容器沙盒构建] ⚠️ 逆向物理路径失败，构建可能会由于宿主机路径丢失而中止。\n");
+                        }
+                    }
+
                     ReportLog($"[Docker 容器沙盒构建] 执行任务: java {cleanedCmdLine}\n");
 
                     process.StartInfo.FileName = "docker";
-
-                    process.StartInfo.Arguments = $"run --rm -v \"{InstallBasePath}:/mslx-data\" -w /mslx-data {realImageName} java {cleanedCmdLine}";
+                    process.StartInfo.Arguments = $"run -i --rm -v \"{finalHostInstallPath}:/mslx-data\" -w /mslx-data {realImageName} java {cleanedCmdLine}";
                 }
                 else
                 {
@@ -787,6 +803,56 @@ public class NeoForgeInstallerService
                 logTemp += e.Data + "\n";
                 counter++;
             }
+        }
+    }
+
+    /// <summary>
+    /// 逆向反查当前 Daemon 容器在宿主机上的真实物理数据根路径
+    /// </summary>
+    private async Task<string?> GetHostPhysicalDataPathAsync()
+    {
+        try
+        {
+            string containerId = Environment.MachineName.Trim();
+            const string mountinfoPath = "/proc/self/mountinfo";
+            if (File.Exists(mountinfoPath))
+            {
+                string mountinfo = await File.ReadAllTextAsync(mountinfoPath);
+                var match = System.Text.RegularExpressions.Regex.Match(mountinfo, @"/docker/containers/([a-f0-9]{64})/");
+                if (match.Success && match.Groups.Count > 1)
+                {
+                    containerId = match.Groups[1].Value;
+                    _logger.LogInformation($"[Docker-Installer-Inspector] 从 mountinfo 成功捕获 64 位容器 ID: {containerId}");
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(containerId)) return null;
+
+            var process = new Process();
+            process.StartInfo.FileName = "docker";
+            process.StartInfo.Arguments = $"inspect --format \"{{{{range .Mounts}}}}{{{{if eq .Destination \\\"/app/DaemonData\\\"}}}}{{{{.Source}}}}{{{{end}}}}{{{{end}}}}\" {containerId}";
+            process.StartInfo.CreateNoWindow = true;
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+
+            process.Start();
+            string output = await process.StandardOutput.ReadToEndAsync();
+            string error = await process.StandardError.ReadToEndAsync();
+            await Task.Run(process.WaitForExit);
+
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                _logger.LogWarning($"[Docker-Installer-Inspector] docker inspect 吐出标准错误: {error.Trim()}");
+            }
+
+            string hostPath = output.Trim().Replace("\"", "");
+            return string.IsNullOrWhiteSpace(hostPath) ? null : hostPath;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "[Docker-Installer-Inspector] 逆向反查宿主机物理路径时发生致命异常。");
+            return null;
         }
     }
 
