@@ -1,4 +1,7 @@
-﻿using Downloader;
+﻿using CliWrap;
+using CliWrap.Buffered;
+using CliWrap.EventStream;
+using Downloader;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.Daemon.Utils.McdrConfig;
@@ -219,6 +222,101 @@ public class ServerDeploymentService
             await report($"Java 解压失败: {ex.Message}", -1, true, ex);
             throw;
         }
+    }
+
+    /// <summary>
+    /// 处理 Docker 运行镜像的检测与拉取
+    /// </summary>
+    public async Task PullImageIfNeededAsync(string serverId, string realImageName, ReportProgress report)
+    {
+        if (string.IsNullOrWhiteSpace(realImageName)) return;
+
+        await report($"正在检测本地是否存在镜像 [{realImageName}]...", 0);
+
+        bool imageExists = false;
+        try
+        {
+            var checkResult = await Cli.Wrap("docker")
+                .WithArguments(new[] { "inspect", "--type=image", realImageName })
+                .WithValidation(CliWrap.CommandResultValidation.None)
+                .ExecuteAsync();
+
+            imageExists = checkResult.ExitCode == 0;
+        }
+        catch (Exception)
+        {
+            await report("未检测到本地 Docker 守护进程，请确保宿主机已正确安装并拉起 Docker 服务！", -1, true);
+            throw new Exception("Docker daemon not running");
+        }
+
+        if (imageExists)
+        {
+            await report($"Docker 镜像 [{realImageName.Replace("docker.mslmc.cn/xiaoyululu/","")}] 本地已存在，跳过拉取流。", 100);
+            return;
+        }
+
+        await report($"本地未发现镜像，开始从 Registry 仓库拉取 [{realImageName.Replace("docker.mslmc.cn/xiaoyululu/", "")}]...", 5);
+
+        try
+        {
+            var cmd = CliWrap.Cli.Wrap("docker")
+                .WithArguments(new[] { "pull", realImageName })
+                .WithValidation(CliWrap.CommandResultValidation.None);
+
+            await foreach (var cmdEvent in cmd.ListenAsync())
+            {
+                if (cmdEvent is CliWrap.EventStream.StandardOutputCommandEvent outEvent)
+                {
+                    var output = outEvent.Text?.Trim();
+                    if (string.IsNullOrWhiteSpace(output)) continue;
+
+                    if (output.Contains("Pulling from"))
+                    {
+                        await report($"正在初始化镜像层级下载链...", 15);
+                    }
+                    else if (output.Contains("Extracting"))
+                    {
+                        await report($"正在解压并校验镜像层... {FormatDockerLine(output)}", 70);
+                    }
+                    else if (output.Contains("Download complete"))
+                    {
+                        await report($"镜像分层数据同步下载完成...", 85);
+                    }
+                    else if (output.Contains("Status: Downloaded newer image") || output.Contains("Image is up to date"))
+                    {
+                        await report($"全量镜像下载成功！", 95);
+                    }
+                    else
+                    {
+                        string clipLog = output.Length > 35 ? output.Substring(0, 35) + "..." : output;
+                        await report($"[Docker] {clipLog}", 40);
+                    }
+                }
+                else if (cmdEvent is CliWrap.EventStream.StandardErrorCommandEvent errEvent)
+                {
+                    if (!string.IsNullOrWhiteSpace(errEvent.Text))
+                    {
+                        _logger.LogWarning("[Docker-Pull-Error] {Err}", errEvent.Text);
+                    }
+                }
+            }
+
+            await report($"Docker 镜像 [{realImageName.Replace("docker.mslmc.cn/xiaoyululu/", "")}] 全量环境部署成功！", 99);
+        }
+        catch (Exception ex)
+        {
+            await report($"Docker 镜像拉取失败：{ex.Message}。请检查代理网络或 Registry 仓库配置。", -1, true, ex);
+            throw;
+        }
+    }
+
+    private static string FormatDockerLine(string line)
+    {
+        try
+        {
+            return line.Length > 20 ? line.Substring(0, 20) : line;
+        }
+        catch { return "处理中..."; }
     }
 
     /// <summary>

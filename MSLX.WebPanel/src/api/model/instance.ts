@@ -13,6 +13,9 @@ export interface CreateInstanceQucikModeModel {
   args: string;
   ignoreEula?: boolean;
 
+  dockerImage?: string;
+  dockerPorts?: string;
+
   // MCDReforged 模式
   mcdr?: boolean;
   mcdrPython?: string;

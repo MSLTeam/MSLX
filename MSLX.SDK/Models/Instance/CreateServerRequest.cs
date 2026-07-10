@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace MSLX.SDK.Models.Instance;
 
@@ -20,9 +20,14 @@ public class CreateServerRequest : IValidatableObject
     public string? args { get; set; }
     public bool ignoreEula { get; set; } = false;
     public string? path { get; set; }
-    
+
+    public string DockerImage { get; set; } = "MSLX://DockerImage/Java/25";
+
+    [RegularExpression(@"^(0|^([0-9]+:[0-9]+)(,[0-9]+:[0-9]+)*)$", ErrorMessage = "开放端口 (DockerPorts) 格式不正确，应为 '0' 或 '宿主机端口:容器端口'")]
+    public string? DockerPorts { get; set; }
+
     // ======== MCDR 参数区 ========
-    
+
     // mcdr参数 
     public bool mcdr { get; set; } = false;
 
@@ -101,6 +106,21 @@ public class CreateServerRequest : IValidatableObject
                 yield return new ValidationResult(
                     "冲突：'本机绝对路径 (packageLocalPath)' 不能与 '压缩包上传' 或 '远程下载' 同时使用。",
                     new[] { nameof(packageLocalPath) }
+                );
+            }
+        }
+
+        bool isDockerMode = "docker-java".Equals(java, StringComparison.OrdinalIgnoreCase) ||
+                            "docker-custom".Equals(java, StringComparison.OrdinalIgnoreCase);
+
+        if (!isDockerMode)
+        {
+            if (!string.IsNullOrWhiteSpace(DockerPorts) ||
+                (!string.IsNullOrWhiteSpace(DockerImage) && !DockerImage.StartsWith("MSLX://")))
+            {
+                yield return new ValidationResult(
+                    "提示：当前服务器选择的不是 Docker 运行模式，无需配置 Docker 专属镜像与端口放行参数。",
+                    new[] { nameof(java) }
                 );
             }
         }

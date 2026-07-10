@@ -26,6 +26,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
+		<PackageReference Include="CliWrap" Version="3.10.2" />
 		<PackageReference Include="Cronos" Version="0.13.0" />
 		<PackageReference Include="Downloader" Version="4.1.0" />
 		<PackageReference Include="fNbt" Version="1.0.0" />

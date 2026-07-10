@@ -202,7 +202,7 @@ public class UpdateServerRequest : IValidatableObject
                 {
                     yield return new ValidationResult(
                         $"逻辑错误：Docker 容器的交换内存限制 ({DockerMaxSwapMb}MB) 作为总内存上限，不能小于 最大物理内存限制 ({DockerMaxMemoryMb}MB)。" +
-                        $"如果您想彻底禁用 Swap，请将交换内存的值设置为与物理内存完全一致（即填入 {DockerMaxMemoryMb}）。",
+                        $"如果您想彻底禁用 Swap，请将交换内存的值设置为与物理内存完全一致（即填入 {DockerMaxMemoryMb} 或者 0）。",
                         new[] { nameof(DockerMaxSwapMb), nameof(DockerMaxMemoryMb) }
                     );
                 }

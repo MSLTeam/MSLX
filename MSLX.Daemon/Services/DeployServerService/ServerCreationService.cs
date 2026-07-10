@@ -97,8 +97,11 @@ public class ServerCreationService : BackgroundService
             InputEncoding = "utf-8",
             StopCommand = request.java == "none" ? ((request.args ?? "").Contains("bedrock_server") ? "stop" : "^c") : "stop",
             MonitorPlayers = request.java != "none", // 自定义模式下默认不开启玩家监控
-            OutputEncoding = PlatFormServices.GetOs() == "Windows"? "gbk" : "utf-8",
-            FileEncoding = PlatFormServices.GetOs() == "Windows"? "gbk" : "utf-8",
+            OutputEncoding = (PlatFormServices.GetOs() == "Windows" && (!request.java?.Contains("docker") ?? false)) ? "gbk" : "utf-8",
+            FileEncoding = (PlatFormServices.GetOs() == "Windows" && (!request.java?.Contains("docker") ?? false)) ? "gbk" : "utf-8",
+            DockerImage = request.DockerImage ?? "MSLX://DockerImage/Java/25",
+            DockerPorts = request.DockerPorts,
+            DockerNetworkMode = request.DockerPorts == "0" ? "host" : "bridge"
         };
 
         // MCDReforged 模式：真实服务端托管在 server/ 子目录，实例以 MCDR(Python)包装器方式运行
@@ -126,6 +129,27 @@ public class ServerCreationService : BackgroundService
 
         try
         {
+            // 处理docker镜像
+            bool isDockerMode = "docker-java".Equals(server.Java, StringComparison.OrdinalIgnoreCase) ||
+                                "docker-custom".Equals(server.Java, StringComparison.OrdinalIgnoreCase);
+
+            if (isDockerMode && !string.IsNullOrWhiteSpace(server.DockerImage))
+            {
+                string realImageName = server.DockerImage;
+                if (server.DockerImage.StartsWith("MSLX://DockerImage/Java/", StringComparison.OrdinalIgnoreCase))
+                {
+                    var tag = server.DockerImage.Replace("MSLX://DockerImage/Java/", "").Trim();
+                    realImageName = $"docker.mslmc.cn/xiaoyululu/mslx-runtime:java{tag}"; 
+                }
+
+                await progressReporter($"正在检测并下载沙盒隔离镜像 [{realImageName}]，请耐心等待...", 10);
+
+                // 拉取镜像
+                await _deploymentService.PullImageIfNeededAsync(serverIdStr, realImageName, progressReporter);
+
+                _logger.LogInformation("服务器 {ServerId} 底层 Docker 运行镜像已成功拉取就绪。", serverId);
+            }
+
             // MCDR 模式走独立部署流程
             if (request.mcdr)
             {
