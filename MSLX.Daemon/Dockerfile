@@ -37,6 +37,7 @@ RUN apt-get update && \
     # python + pip + 换源 + mcdr
     python3 \
     python3-pip \
+    docker.io \
     && \
     pip3 config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple && \
     pip3 install mcdreforged --break-system-packages && \
