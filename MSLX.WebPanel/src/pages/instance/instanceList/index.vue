@@ -322,6 +322,9 @@ const handleConfirmDelete = async () => {
                     <h4 class="flex-1 text-base font-bold text-[var(--td-text-color-primary)] truncate tracking-tight">
                       {{ item.name }}
                     </h4>
+                    <t-tag v-if="item.java === 'docker-java' || item.java === 'docker-custom'" theme="primary"
+                      >Docker</t-tag
+                    >
                     <span class="text-xs font-mono text-[var(--td-text-color-secondary)] ml-2 opacity-70 shrink-0"
                       >#{{ item.id }}</span
                     >
