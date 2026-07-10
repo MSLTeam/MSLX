@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace MSLX.SDK.Models.Instance;
 
@@ -20,9 +20,14 @@ public class CreateServerRequest : IValidatableObject
     public string? args { get; set; }
     public bool ignoreEula { get; set; } = false;
     public string? path { get; set; }
-    
+
+    public string? DockerImage { get; set; } = "MSLX://DockerImage/Java/25";
+
+    [RegularExpression(@"^(0|^([0-9]+:[0-9]+)(,[0-9]+:[0-9]+)*)$", ErrorMessage = "开放端口 (DockerPorts) 格式不正确，应为 '0' 或 '宿主机端口:容器端口'")]
+    public string? DockerPorts { get; set; } = "25565:25565";
+
     // ======== MCDR 参数区 ========
-    
+
     // mcdr参数 
     public bool mcdr { get; set; } = false;
 
@@ -104,6 +109,22 @@ public class CreateServerRequest : IValidatableObject
                 );
             }
         }
+
+        /*
+        bool isDockerMode = "docker-java".Equals(java, StringComparison.OrdinalIgnoreCase) ||
+                            "docker-custom".Equals(java, StringComparison.OrdinalIgnoreCase);
+
+        if (!isDockerMode)
+        {
+            if (!string.IsNullOrWhiteSpace(DockerPorts) ||
+                (!string.IsNullOrWhiteSpace(DockerImage) && !DockerImage.StartsWith("MSLX://")))
+            {
+                yield return new ValidationResult(
+                    "提示：当前服务器选择的不是 Docker 运行模式，无需配置 Docker 专属镜像与端口放行参数。",
+                    new[] { nameof(java) }
+                );
+            }
+        } */
 
         /*
         // 啥都不给？捣乱都不敢这么捣法吧！

@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using Avalonia.Interactivity;
+using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils;
 using MSLX.Desktop.Utils.API;
 using MSLX.Desktop.ViewModels.CreateTunnel.MSLFrp;
@@ -310,6 +311,12 @@ public partial class MainPage : UserControl
                 .WithContent("隧道配置已发送到守护进程！")
                 .Dismiss().After(TimeSpan.FromSeconds(3))
                 .Queue();
+            if (SideMenuHelper.Current.SideMenu.Items.Contains(PageStore.CreateMSLFrpTunnelMenuItem))
+            {
+                SideMenuHelper.Current.NavigateTo<TunnelListPage>();
+                SideMenuHelper.Current.NavigateRemove(this);
+                return;
+            }
         }
         catch (Exception ex)
         {

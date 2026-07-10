@@ -53,5 +53,36 @@ namespace MSLX.Desktop.ViewModels.CreateTunnel.MSLFrp
         }
         private int _selectedNodeIndex = -1;
 
+
+        public MainPageViewModel()
+        {
+            // 设置默认值，防止报错绑定NULL
+            SelectedTunnel = new Tunnel
+            {
+                Id = 0,
+                Name = string.Empty,
+                Remarks = string.Empty,
+                Status = string.Empty,
+                LocalPort = 0,
+                RemotePort = 0,
+                Node = string.Empty
+            };
+            SelectedNode=new Node
+            {
+                Id = 0,
+                Name = string.Empty,
+                Remarks = string.Empty,
+                Status = string.Empty,
+                UdpSupport = false,
+                KcpSupport = false,
+                HttpSupport = false,
+                AllowUserGroup=0,
+                Bandwidth = 0,
+                Type = string.Empty,
+                MaxOpenPort = 0,
+                MinOpenPort = 0,
+                NeedRealName = false
+            };
+        }
     }
 }

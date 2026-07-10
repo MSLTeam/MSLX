@@ -2,8 +2,17 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:icons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="MSLX.Desktop.Views.CreateTunnel.MSLFrp.CreateMSLFrpTunnel"
              Initialized="OnInitialized">
-  CreateMSLFrpTunnel
+  <Grid>
+      <ContentControl x:Name="MainContent"/>
+      <Button VerticalAlignment="Bottom" HorizontalAlignment="Right"
+              Classes="Flat" Background="Red"
+              CornerRadius="36" Height="48" Width="48" Padding="0" Margin="10"
+              Click="CloseBtn_Click">
+          <icons:MaterialIcon Kind="Close"/>
+      </Button>
+  </Grid>
 </UserControl>

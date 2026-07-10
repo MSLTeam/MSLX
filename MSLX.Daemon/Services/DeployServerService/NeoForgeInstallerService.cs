@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.IO.Compression;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -31,7 +31,7 @@ public class NeoForgeInstallerService
         _logger = logger;
     }
 
-    public async Task<(bool IsSuccess, string? McVersion)> InstallNeoForge(string basePath, string installerPath, string javaEnvPath)
+    public async Task<(bool IsSuccess, string? McVersion)> InstallNeoForge(string basePath, string installerPath, string javaEnvPath, string dockerImagePath = "")
     {
         // 编译输出日志的缓存变量
         string logTemp = "";
@@ -682,27 +682,64 @@ public class NeoForgeInstallerService
             }
 
             // 开始执行编译构建
+            bool isDockerBuildMode = (javaEnvPath == "docker-java" || javaEnvPath == "docker-custom");
+
             foreach (string cmdLine in cmdLines)
             {
-                ReportLog($"执行任务: {cmdLine}\n");
                 Process process = new Process();
-                process.StartInfo.WorkingDirectory = InstallBasePath;
-                process.StartInfo.FileName = javaEnvPath;
-                process.StartInfo.Arguments = cmdLine;
                 process.StartInfo.CreateNoWindow = true;
                 process.StartInfo.UseShellExecute = false;
                 process.StartInfo.RedirectStandardOutput = true;
                 process.StartInfo.RedirectStandardError = true;
+
+                if (isDockerBuildMode)
+                {
+                    string cleanedCmdLine = cmdLine.Replace(InstallBasePath, "/mslx-data").Replace("\\", "/");
+
+                    cleanedCmdLine = cleanedCmdLine.Replace(";", ":");
+
+                    string realImageName = dockerImagePath;
+                    if (dockerImagePath.StartsWith("MSLX://DockerImage/Java/", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var tag = dockerImagePath.Replace("MSLX://DockerImage/Java/", "").Trim();
+                        realImageName = $"docker.mslmc.cn/xiaoyululu/mslx-runtime:java{tag}";
+                    }
+
+                    ReportLog($"[Docker 容器沙盒构建] 执行任务: java {cleanedCmdLine}\n");
+
+                    process.StartInfo.FileName = "docker";
+
+                    process.StartInfo.Arguments = $"run --rm -v \"{InstallBasePath}:/mslx-data\" -w /mslx-data {realImageName} java {cleanedCmdLine}";
+                }
+                else
+                {
+                    ReportLog($"[宿主机构建] 执行任务: {cmdLine}\n");
+
+                    process.StartInfo.WorkingDirectory = InstallBasePath;
+                    process.StartInfo.FileName = javaEnvPath;
+                    process.StartInfo.Arguments = cmdLine;
+                }
+
+                // 统一监听管道
                 process.ErrorDataReceived += ProcessOutputDataReceived;
                 process.OutputDataReceived += ProcessOutputDataReceived;
+
                 process.Start();
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
+
                 await Task.Run(process.WaitForExit);
+
                 process.CancelOutputRead();
                 process.CancelErrorRead();
                 process.ErrorDataReceived -= ProcessOutputDataReceived;
                 process.OutputDataReceived -= ProcessOutputDataReceived;
+
+                if (process.ExitCode != 0)
+                {
+                    ReportLog($"[构建异常] 当前子任务编译失败，退出码: {process.ExitCode}！", -1);
+                    return (false, InstallMcVersion);
+                }
             }
 
             // 编译完成 安装结束

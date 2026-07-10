@@ -105,6 +105,8 @@ const formData = ref(<CreateInstanceQucikModeModel>{
   minM: 2048,
   maxM: 6144,
   args: '',
+  dockerImage: 'MSLX://DockerImage/Java/25',
+  dockerPorts: '25565:25565',
 });
 
 // 处理内存单位
@@ -135,11 +137,14 @@ const maxMComputed = computed({
 
 // 监听选择java的状态变量 修改表单数据
 watch(
-  [javaType, selectedJavaVersion, customJavaPath],
-  ([type, ver, path]) => {
+  [javaType, selectedJavaVersion, customJavaPath, () => formData.value.dockerImage],
+  ([type, ver, path, dockerImg]) => {
     if (type === 'env') formData.value.java = 'java';
     else if (type === 'custom' || type === 'local') formData.value.java = path;
     else if (type === 'online') formData.value.java = ver ? `MSLX://Java/${ver}` : '';
+    else if (type === 'docker') {
+      formData.value.java = dockerImg.startsWith('MSLX://') ? 'docker-java' : 'docker-custom';
+    }
 
     if (formData.value.java) {
       formRef.value?.validate({ fields: ['java'] });
@@ -152,6 +157,45 @@ watch(
 const onHostFileSelected = async (absolutePath: string) => {
   formData.value.packageLocalPath = absolutePath;
   await analyzePackage('', absolutePath);
+};
+
+// docker
+const dockerImageType = ref('preset');
+const dockerImagePresetVersion = ref('25');
+
+watch([dockerImageType, dockerImagePresetVersion], ([type, ver]) => {
+  if (javaType.value === 'docker') {
+    if (type === 'preset') {
+      formData.value.dockerImage = `MSLX://DockerImage/Java/${ver}`;
+    }
+  }
+});
+
+const isDockerMode = computed(() => javaType.value === 'docker');
+
+// 动态多端口放行管理器
+const localPortList = ref<{ host: number; container: number }[]>([{ host: 25565, container: 25565 }]);
+
+watch(
+  localPortList,
+  (list) => {
+    if (list.length === 0) {
+      formData.value.dockerPorts = '0';
+    } else {
+      formData.value.dockerPorts = list
+        .filter((p) => p.host > 0 && p.container > 0)
+        .map((p) => `${p.host}:${p.container}`)
+        .join(',');
+    }
+  },
+  { deep: true },
+);
+
+const addPortMapping = () => {
+  localPortList.value.push({ host: 25565, container: 25565 });
+};
+const removePortMapping = (index: number) => {
+  localPortList.value.splice(index, 1);
 };
 
 // 表单和步骤校验
@@ -195,6 +239,19 @@ const FORM_RULES = computed<FormRules>(() => {
     java: [{ required: true, message: '请配置 Java 环境', trigger: 'change' }],
     minM: [{ required: true, min: 1, message: '必须大于0', trigger: 'blur' }],
     maxM: [{ required: true, min: 1, message: '必须大于0', trigger: 'blur' }],
+    dockerPorts: [
+      {
+        validator: (val) => {
+          if (javaType.value === 'docker' && val && val !== '0') {
+            if (!/^(0|^([0-9]+:[0-9]+)(,[0-9]+:[0-9]+)*)$/.test(val)) {
+              return { result: false, message: "端口格式错误，例 '25565:25565' 或用逗号隔开", type: 'error' };
+            }
+          }
+          return true;
+        },
+        trigger: 'change',
+      },
+    ],
   };
 });
 
@@ -360,6 +417,10 @@ const onSubmit = async () => {
   if (validateResult !== true) {
     MessagePlugin.warning('请检查表单所有内容');
     return;
+  }
+
+  if (javaType.value === 'docker') {
+    formData.value.java = formData.value.dockerImage.startsWith('MSLX://') ? 'docker-java' : 'docker-custom';
   }
 
   isSubmitting.value = true;
@@ -533,7 +594,7 @@ const goToHome = () => {
                 name="path"
                 :help="
                   userStore.userInfo.systemInfo.docker
-                    ? '您正在使用Docker容器部署，为保数据安全，仅支持使用默认数据路径'
+                    ? '您的MSLX正在运行于Docker环境内，为保数据安全，仅支持使用默认数据路径'
                     : '选填，留空将使用默认路径'
                 "
               >
@@ -822,7 +883,46 @@ const goToHome = () => {
                     <t-radio-button value="local">本机 Java</t-radio-button>
                     <t-radio-button value="env">环境变量</t-radio-button>
                     <t-radio-button value="custom">自定义路径</t-radio-button>
+                    <t-radio-button value="docker">Docker 容器环境 🐳</t-radio-button>
                   </t-radio-group>
+
+                  <div v-if="javaType === 'docker'" class="w-full sm:w-[32rem] min-h-[70px] mt-2">
+                    <div
+                      class="list-item-anim border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 bg-zinc-50/30 dark:bg-zinc-900/10 w-full"
+                    >
+                      <div class="mb-4">
+                        <t-radio-group v-model="dockerImageType" size="small" variant="outline">
+                          <t-radio-button value="preset">MSLX 官方运行时镜像</t-radio-button>
+                          <t-radio-button value="custom">自定义公网镜像</t-radio-button>
+                        </t-radio-group>
+                      </div>
+
+                      <div v-if="dockerImageType === 'preset'">
+                        <div class="flex items-center gap-3">
+                          <span class="text-xs font-bold text-zinc-500 shrink-0">运行环境:</span>
+                          <t-select v-model="dockerImagePresetVersion" class="!w-48" :clearable="false">
+                            <t-option label="Java 25" value="25" />
+                            <t-option label="Java 21" value="21" />
+                            <t-option label="Java 17" value="17" />
+                            <t-option label="Java 11" value="17" />
+                            <t-option label="Java 8" value="8" />
+                          </t-select>
+                        </div>
+                      </div>
+
+                      <div v-if="dockerImageType === 'custom'">
+                        <t-input
+                          v-model="formData.dockerImage"
+                          placeholder="例如: eclipse-temurin:21-jre-jammy"
+                          class="!font-mono"
+                        />
+                        <div class="text-[11px] text-amber-500 mt-2">
+                          ⚠️ 提示：使用自定义公共镜像创建时，系统将通过终端执行标准 docker
+                          pull，请确保网络通畅（如有需要请添加镜像源前缀）。
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
                   <div class="w-full sm:w-[32rem] min-h-[70px] mt-2">
                     <div v-if="javaType === 'online'">
@@ -890,6 +990,73 @@ const goToHome = () => {
                     </div>
                     <t-select v-model="maxUnit" :options="unitOptions" :clearable="false" class="!w-20 shrink-0" />
                   </div>
+                </t-form-item>
+              </div>
+
+              <div
+                v-if="isDockerMode"
+                class="col-span-1 sm:col-span-2 mt-4 pt-4 border-t border-dashed border-zinc-200 dark:border-zinc-800 w-full sm:w-[40rem] list-item-anim"
+              >
+                <div class="flex items-center justify-between mb-3">
+                  <div class="flex flex-col">
+                    <span class="text-sm font-bold text-[var(--td-text-color-primary)]">容器网络映射端口</span>
+                    <span class="text-[11px] text-zinc-400 mt-0.5">绑定宿主机端口，供玩家外部连接</span>
+                  </div>
+                  <t-button variant="outline" theme="primary" size="small" @click="addPortMapping">
+                    <template #icon><t-icon name="add" /></template>增加端口映射
+                  </t-button>
+                </div>
+
+                <div
+                  v-if="localPortList.length === 0"
+                  class="p-4 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-700 text-center text-xs text-zinc-400"
+                >
+                  当前处于 Host 模式或未公开任何网络端口
+                </div>
+
+                <div class="flex flex-col gap-3">
+                  <div
+                    v-for="(port, index) in localPortList"
+                    :key="index"
+                    class="flex items-center gap-3 list-item-anim"
+                  >
+                    <div class="flex-1 flex items-center gap-2 overflow-visible p-[2px] -m-[2px]">
+                      <t-input-number
+                        v-model="port.host"
+                        :min="1"
+                        :max="65535"
+                        placeholder="宿主机映射端口"
+                        theme="column"
+                        class="flex-1 min-w-0"
+                        suffix="宿主机"
+                      />
+                      <span class="text-zinc-400 shrink-0 font-bold">:</span>
+                      <t-input-number
+                        v-model="port.container"
+                        :min="1"
+                        :max="65535"
+                        placeholder="容器内核端口"
+                        theme="column"
+                        class="flex-1 min-w-0"
+                        suffix="容器内"
+                      />
+                    </div>
+
+                    <t-button
+                      shape="circle"
+                      variant="text"
+                      theme="danger"
+                      size="small"
+                      class="shrink-0 hover:!bg-red-500/10"
+                      @click="removePortMapping(index)"
+                    >
+                      <t-icon name="delete" />
+                    </t-button>
+                  </div>
+                </div>
+
+                <t-form-item name="DockerPorts" class="!mb-0 !mt-2" v-show="false">
+                  <t-input v-model="formData.dockerPorts" />
                 </t-form-item>
               </div>
 
@@ -983,7 +1150,7 @@ const goToHome = () => {
                   class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80"
                 >
                   <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-1.5 sm:mb-0 shrink-0"
-                    >Java 运行时</span
+                    >运行时生态</span
                   >
                   <div class="flex flex-col sm:items-end text-left sm:text-right">
                     <div class="flex items-center gap-2">
@@ -991,13 +1158,32 @@ const goToHome = () => {
                         >Java {{ selectedJavaVersion }}</span
                       >
                       <span
+                        v-else-if="javaType === 'docker' && dockerImageType === 'preset'"
+                        class="text-sm font-bold text-[var(--td-text-color-primary)]"
+                        >MSLX 容器运行时</span
+                      >
+                      <span
+                        v-else-if="javaType === 'docker' && dockerImageType === 'custom'"
+                        class="text-sm font-bold text-[var(--td-text-color-primary)]"
+                        >自建隔离镜像生态</span
+                      >
+                      <span
                         v-else
                         class="text-sm font-bold text-[var(--td-text-color-primary)] truncate max-w-[200px] sm:max-w-[300px]"
                         :title="formData.java"
                         >{{ formData.java }}</span
                       >
+
                       <t-tag v-if="javaType === 'online'" theme="success" variant="light" size="small" class="!rounded"
                         >自动安装</t-tag
+                      >
+                      <t-tag
+                        v-else-if="javaType === 'docker'"
+                        theme="warning"
+                        variant="light"
+                        size="small"
+                        class="!rounded"
+                        >沙盒隔离</t-tag
                       >
                       <t-tag
                         v-else-if="javaType === 'local'"
@@ -1009,8 +1195,13 @@ const goToHome = () => {
                       >
                       <t-tag v-else theme="default" variant="light" size="small" class="!rounded">自定义</t-tag>
                     </div>
-                    <div v-if="javaType === 'online'" class="text-[11px] text-zinc-500 mt-1 truncate">
-                      将自动从镜像源下载并解压 JDK
+                    <div class="text-[11px] text-zinc-500 mt-1 truncate max-w-[250px] sm:max-w-[350px]">
+                      <span v-if="javaType === 'online'">将自动从镜像源下载并解压 JDK</span>
+                      <span v-else-if="javaType === 'docker'"
+                        >目标环境: {{ formData.dockerImage }} | 端口透传:
+                        {{ formData.dockerPorts === '0' ? 'Host网络' : formData.dockerPorts }}</span
+                      >
+                      <span v-else>目标环境: {{ formData.java }}</span>
                     </div>
                   </div>
                 </div>
@@ -1029,6 +1220,31 @@ const goToHome = () => {
                     <span class="text-sm font-bold text-red-500 dark:text-red-400"
                       >最大 (Xmx): {{ maxMComputed }} {{ maxUnit }}</span
                     >
+                  </div>
+                </div>
+
+                <div
+                  v-if="javaType === 'docker'"
+                  class="flex flex-col sm:flex-row sm:items-start justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80"
+                >
+                  <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-1.5 sm:mb-0 shrink-0 mt-0.5"
+                    >Docker 运行环境</span
+                  >
+                  <div class="flex flex-col sm:items-end text-left sm:text-right w-full sm:max-w-md">
+                    <div class="flex flex-wrap items-center sm:justify-end gap-2">
+                      <span
+                        class="text-xs font-mono font-bold bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded text-zinc-700 dark:text-zinc-300 break-all"
+                      >
+                        {{ formData.dockerImage }}
+                      </span>
+                      <t-tag theme="warning" variant="light" size="small" class="!rounded">沙盒隔离</t-tag>
+                    </div>
+                    <div class="text-[11px] text-zinc-500 mt-2 font-mono">
+                      端口放行透传:
+                      <span class="text-[var(--color-primary)] font-bold">{{
+                        formData.dockerPorts === '0' ? 'Host网络透传' : formData.dockerPorts
+                      }}</span>
+                    </div>
                   </div>
                 </div>
 

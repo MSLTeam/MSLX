@@ -42,7 +42,7 @@
                   <ColumnDefinition Width="*"/>
                   <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Button Grid.Column="0" Content="刷新" Classes="Flat" Click="RefreshTunnels_Click"/>
+                <Button Grid.Column="0" Content="刷新" Click="RefreshTunnels_Click"/>
                 <Button Grid.Column="1" Margin="5,0,5,0" Content="删除隧道"
                         Classes="Flat Accent" Background="Red" Click="DeleteTunnel_Click"/>
               </Grid>
@@ -78,8 +78,8 @@
                     </StackPanel>
                     <Grid VerticalAlignment="Top" HorizontalAlignment="Right">
                       <StackPanel Spacing="5">
-                        <Button Classes="Flat" Content="打开官网" Click="OpenWebsite_Click"/>
-                        <Button Classes="Flat Accent" Background="Red" Content="退出登录" Click="ExitLogin_Click"/>
+                        <Button Content="打开官网" Click="OpenWebsite_Click"/>
+                        <Button Classes="Flat Accent" Content="退出登录" Click="ExitLogin_Click"/>
                       </StackPanel>
                     </Grid>
                   </Grid>
@@ -145,7 +145,7 @@
                       </DataTemplate>
                         </ListBox.ItemTemplate>
                 </ListBox>
-                <Button Grid.Row="2" Content="刷新" Classes="Flat" Click="RefreshNodes_Click"/>
+                <Button Grid.Row="2" Content="刷新" Click="RefreshNodes_Click"/>
               </Grid>
             </suki:GlassCard>
           </Grid>

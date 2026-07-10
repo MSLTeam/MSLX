@@ -80,6 +80,8 @@ public class MCServerService : IMCServerService
         Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
     }
 
+    #region 基础守护进程
+
     /// <summary>
     /// 检查服务器是否正在运行
     /// </summary>
@@ -305,26 +307,29 @@ public class MCServerService : IMCServerService
                 }
             }
 
-            // 检查 Java 是否存在
-            if (!File.Exists(serverInfo.Java) && serverInfo.Java != "java" && serverInfo.Java != "none" &&
-                !serverInfo.Java.StartsWith("MSLX://Java/"))
+            // 检查 Java 是否存在 (非Docker模式下进行路径拦截)
+            if (serverInfo.Java != "docker-java" && serverInfo.Java != "docker-custom")
             {
-                RecordLog(instanceId, context, $">>> [MSLX-MCServer] Java 路径无效: {serverInfo.Java}");
-                _activeServers.TryRemove(instanceId, out _);
-                return;
-            }
-
-            if (serverInfo.Java.StartsWith("MSLX://Java/"))
-            {
-                string javaVersion = serverInfo.Java.Replace("MSLX://Java/", "");
-                string javaBaseDir = Path.Combine(IConfigBase.GetAppDataPath(), "Tools", "Java");
-                string javaPath = Path.Combine(javaBaseDir, javaVersion, "bin",
-                    PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java");
-                if (!File.Exists(javaPath))
+                if (!File.Exists(serverInfo.Java) && serverInfo.Java != "java" && serverInfo.Java != "none" &&
+                    !serverInfo.Java.StartsWith("MSLX://Java/"))
                 {
-                    RecordLog(instanceId, context, $">>> [MSLX-MCServer] Java 无效！请尝试重新设置 Java 环境！");
+                    RecordLog(instanceId, context, $">>> [MSLX-MCServer] Java 路径无效: {serverInfo.Java}");
                     _activeServers.TryRemove(instanceId, out _);
                     return;
+                }
+
+                if (serverInfo.Java.StartsWith("MSLX://Java/"))
+                {
+                    string javaVersion = serverInfo.Java.Replace("MSLX://Java/", "");
+                    string javaBaseDir = Path.Combine(IConfigBase.GetAppDataPath(), "Tools", "Java");
+                    string javaPath = Path.Combine(javaBaseDir, javaVersion, "bin",
+                        PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java");
+                    if (!File.Exists(javaPath))
+                    {
+                        RecordLog(instanceId, context, $">>> [MSLX-MCServer] Java 无效！请尝试重新设置 Java 环境！");
+                        _activeServers.TryRemove(instanceId, out _);
+                        return;
+                    }
                 }
             }
 
@@ -346,38 +351,181 @@ public class MCServerService : IMCServerService
             ExecutePermission.GrantExecutePermission(serverInfo.Base);
             await Task.Delay(100);
 
-            string args =
-                $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{(serverInfo.ForceJvmUTF8 ? " -Dfile.encoding=UTF-8" : "")}{(serverInfo.AllowOriginASCIIColors ? " -Dterminal.jline=false -Dterminal.ansi=true" : "")} -jar {serverInfo.Core} nogui";
-            string exec = serverInfo.Java;
+            string args = "";
+            string exec = "";
 
-            // 处理自定义模式参数
-            if (serverInfo.Java == "none")
+            // 是否docker模式
+            if (serverInfo.Java == "docker-java" || serverInfo.Java == "docker-custom")
             {
-                if (PlatFormServices.GetOs() == "Windows")
+                exec = "docker";
+                var sb = new StringBuilder();
+
+                // 基础运行参数
+                sb.Append("run --rm -i ");
+                sb.Append($"--name mslx-container-{instanceId} ");
+
+                // 工作工作目录与基础挂载
+                string workDir = string.IsNullOrWhiteSpace(serverInfo.DockerWorkingDir) ? "/mslx-data" : serverInfo.DockerWorkingDir;
+                sb.Append($"-v \"{serverInfo.Base}:{workDir}\" ");
+                sb.Append($"-w \"{workDir}\" ");
+
+                // 挂载额外目录卷
+                if (!string.IsNullOrWhiteSpace(serverInfo.DockerVolumes))
                 {
-                    args = $"/c {serverInfo.Args}";
-                    exec = "cmd.exe";
+                    var volumes = serverInfo.DockerVolumes.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var vol in volumes)
+                    {
+                        sb.Append($"-v \"{vol.Trim()}\" ");
+                    }
                 }
-                else
+
+                // 网络模式模式与别名、端口映射
+                string netMode = string.IsNullOrWhiteSpace(serverInfo.DockerNetworkMode) ? "bridge" : serverInfo.DockerNetworkMode.ToLower();
+                if (serverInfo.DockerPorts?.Trim() == "0")
                 {
-                    args = $"-c \"{serverInfo.Args?.Replace("\"", "\\\"")}\"";
-                    exec = "/bin/bash";
+                    netMode = "host";
                 }
-            }
+                sb.Append($"--net={netMode} ");
 
-            if (serverInfo.Java.StartsWith("MSLX://Java/"))
-            {
-                string javaVersion = serverInfo.Java.Replace("MSLX://Java/", "");
-                string javaBaseDir = Path.Combine(IConfigBase.GetAppDataPath(), "Tools", "Java");
-                exec = Path.Combine(javaBaseDir, javaVersion, "bin",
-                    PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java");
-            }
+                if (netMode == "bridge" && !string.IsNullOrWhiteSpace(serverInfo.DockerPorts) && serverInfo.DockerPorts.Trim() != "0")
+                {
+                    var ports = serverInfo.DockerPorts.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var port in ports)
+                    {
+                        sb.Append($"-p {port.Trim()} ");
+                    }
+                }
 
-            // 处理NeoForge类型参数
-            if (serverInfo.Core.Contains("@libraries"))
+                if (!string.IsNullOrWhiteSpace(serverInfo.DockerNetworkAlias))
+                {
+                    sb.Append($"--network-alias=\"{serverInfo.DockerNetworkAlias.Trim()}\" ");
+                }
+
+                // 环境变量加载
+                if (!string.IsNullOrWhiteSpace(serverInfo.DockerEnvVars))
+                {
+                    var envs = serverInfo.DockerEnvVars.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var env in envs)
+                    {
+                        sb.Append($"-e {env.Trim()} ");
+                    }
+                }
+
+                // 额外hosts
+                if (!string.IsNullOrWhiteSpace(serverInfo.DockerExtraHosts))
+                {
+                    var hosts = serverInfo.DockerExtraHosts.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var host in hosts)
+                    {
+                        sb.Append($"--add-host=\"{host.Trim()}\" ");
+                    }
+                }
+
+                // Cgroups 隔离与硬核网络IO限制
+                if (!string.IsNullOrWhiteSpace(serverInfo.DockerCpuCores))
+                {
+                    sb.Append($"--cpuset-cpus=\"{serverInfo.DockerCpuCores.Trim()}\" ");
+                }
+                if (serverInfo.DockerCpuPercentage is > 0 and <= 100)
+                {
+                    double coresCount = Environment.ProcessorCount * (serverInfo.DockerCpuPercentage.Value / 100.0);
+                    sb.Append($"--cpus=\"{coresCount:F2}\" ");
+                }
+                if (serverInfo.DockerMaxMemoryMb is > 0)
+                {
+                    sb.Append($"-m {serverInfo.DockerMaxMemoryMb.Value}m ");
+                }
+                if (serverInfo.DockerMaxSwapMb is > 0)
+                {
+                    sb.Append($"--memory-swap {serverInfo.DockerMaxSwapMb.Value}m ");
+                }
+                if (PlatFormServices.GetOs() == "Linux" && !string.IsNullOrWhiteSpace(serverInfo.DockerMaxStorage))
+                {
+                    sb.Append($"--storage-opt size={serverInfo.DockerMaxStorage.Trim()} ");
+                }
+
+                // 额外原生参数透传
+                if (!string.IsNullOrWhiteSpace(serverInfo.DockerExtraArgs))
+                {
+                    sb.Append($"{serverInfo.DockerExtraArgs.Trim()} ");
+                }
+
+                // 镜像填充
+                string finalImage = serverInfo.DockerImage ?? "MSLX://DockerImage/Java/21";
+
+                if (finalImage.StartsWith("MSLX://DockerImage/Java/", StringComparison.OrdinalIgnoreCase))
+                {
+                    string javaVer = finalImage.Replace("MSLX://DockerImage/Java/", "", StringComparison.OrdinalIgnoreCase).Trim();
+                    finalImage = $"docker.mslmc.cn/xiaoyululu/mslx-runtime:java{javaVer}";
+
+                    _logger.LogInformation($"[Docker-Parser] 实例 {instanceId} 命中内置运行时伪协议，解析镜像: {serverInfo.DockerImage} -> {finalImage}");
+                }
+
+                sb.Append($"{finalImage} ");
+
+                // 组装一些内置参数
+                if (serverInfo.Java == "docker-java")
+                {
+                    string javaArgs = $"{authJvm} ";
+                    if (serverInfo.MinM.HasValue) javaArgs += $"-Xms{serverInfo.MinM.Value}M ";
+                    if (serverInfo.MaxM.HasValue) javaArgs += $"-Xmx{serverInfo.MaxM.Value}M ";
+
+                    javaArgs += $"{serverInfo.Args}{(serverInfo.ForceJvmUTF8 ? " -Dfile.encoding=UTF-8" : "")} ";
+
+                    if (serverInfo.Core.Contains("@libraries"))
+                    {
+                        javaArgs += $"{serverInfo.Core} nogui";
+                    }
+                    else
+                    {
+                        javaArgs += $"-jar {serverInfo.Core} nogui";
+                    }
+
+                    sb.Append($"java {javaArgs}");
+                }
+                else // docker-custom 完全自定义模式
+                {
+                    sb.Append($"{serverInfo.Args}");
+                }
+
+                args = sb.ToString();
+            }
+            else
             {
+                // 主机直接启动
                 args =
-                    $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{(serverInfo.ForceJvmUTF8 ? " -Dfile.encoding=UTF-8" : "")}{(serverInfo.AllowOriginASCIIColors ? " -Dterminal.jline=false -Dterminal.ansi=true" : "")} {serverInfo.Core} nogui";
+                    $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{(serverInfo.ForceJvmUTF8 ? " -Dfile.encoding=UTF-8" : "")}{(serverInfo.AllowOriginASCIIColors ? " -Dterminal.jline=false -Dterminal.ansi=true" : "")} -jar {serverInfo.Core} nogui";
+                exec = serverInfo.Java;
+
+                // 处理自定义模式参数
+                if (serverInfo.Java == "none")
+                {
+                    if (PlatFormServices.GetOs() == "Windows")
+                    {
+                        args = $"/c {serverInfo.Args}";
+                        exec = "cmd.exe";
+                    }
+                    else
+                    {
+                        args = $"-c \"{serverInfo.Args?.Replace("\"", "\\\"")}\"";
+                        exec = "/bin/bash";
+                    }
+                }
+
+                if (serverInfo.Java.StartsWith("MSLX://Java/"))
+                {
+                    string javaVersion = serverInfo.Java.Replace("MSLX://Java/", "");
+                    string javaBaseDir = Path.Combine(IConfigBase.GetAppDataPath(), "Tools", "Java");
+                    exec = Path.Combine(javaBaseDir, javaVersion, "bin",
+                        PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java");
+                }
+
+                // 处理NeoForge类型参数
+                if (serverInfo.Core.Contains("@libraries"))
+                {
+                    args =
+                        $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{(serverInfo.ForceJvmUTF8 ? " -Dfile.encoding=UTF-8" : "")}{(serverInfo.AllowOriginASCIIColors ? " -Dterminal.jline=false -Dterminal.ansi=true" : "")} {serverInfo.Core} nogui";
+                }
             }
 
             // 处理编码
@@ -525,6 +673,9 @@ public class MCServerService : IMCServerService
     /// <summary>
     /// 停止服务器
     /// </summary>
+    /// <summary>
+    /// 停止服务器
+    /// </summary>
     public bool StopServer(uint instanceId)
     {
         if (_activeServers.TryGetValue(instanceId, out var context))
@@ -562,6 +713,8 @@ public class MCServerService : IMCServerService
                             var server = IConfigBase.ServerList.GetServer(instanceId);
                             int waitTimeMs = (server?.ForceExitDelay ?? 10) * 1000;
 
+                            bool isDockerMode = server != null && (server.Java == "docker-java" || server.Java == "docker-custom");
+
                             try
                             {
                                 if (isSchrodingerState)
@@ -569,11 +722,24 @@ public class MCServerService : IMCServerService
                                     // 没有StdIn 只能kill了
                                     RecordLog(instanceId, context,
                                         ">>> [MSLX-Daemon] 服务端处于特殊接管状态，无法发送安全停止命令，正在强制结束进程...");
+
+                                    if (isDockerMode)
+                                    {
+                                        Process.Start(new ProcessStartInfo
+                                        {
+                                            FileName = "docker",
+                                            Arguments = $"rm -f mslx-container-{instanceId}",
+                                            CreateNoWindow = true,
+                                            UseShellExecute = false
+                                        })?.WaitForExit(3000);
+                                    }
+
                                     context.Process.Kill(true);
                                 }
                                 else
                                 {
-                                    bool isMcServer = server != null && server.Java != "none";
+                                    // 判定是否是传统MC服务器或者是开启了docker-java包装的MC服务器
+                                    bool isMcServer = server != null && server.Java != "none" && server.Java != "docker-custom";
 
                                     if (isMcServer)
                                     {
@@ -604,7 +770,7 @@ public class MCServerService : IMCServerService
                                         }
 
                                         // 关闭输入流
-                                        if(!server?.Args?.ToLower().Contains("mcdreforged") ?? true)
+                                        if (!server?.Args?.ToLower().Contains("mcdreforged") ?? true)
                                         {
                                             context.Process.StandardInput.Close();
                                         }
@@ -614,6 +780,18 @@ public class MCServerService : IMCServerService
                                     if (!context.Process.WaitForExit(waitTimeMs))
                                     {
                                         // 超时未退出 -> 强制树形结束
+                                        if (isDockerMode)
+                                        {
+                                            _logger.LogInformation($"[Docker-Guard] 实例 {instanceId} 关闭超时，正在强行清理容器...");
+                                            Process.Start(new ProcessStartInfo
+                                            {
+                                                FileName = "docker",
+                                                Arguments = $"rm -f mslx-container-{instanceId}",
+                                                CreateNoWindow = true,
+                                                UseShellExecute = false
+                                            })?.WaitForExit(3000);
+                                        }
+
                                         context.Process.Kill(true);
                                         RecordLog(instanceId, context, "[MSLX] 服务器超时，已强制结束进程树");
                                         _logger.LogWarning($"服务器实例 {instanceId} 关闭超时，已强制结束进程树");
@@ -629,6 +807,17 @@ public class MCServerService : IMCServerService
                                 // 发生任何异常直接强杀
                                 try
                                 {
+                                    if (isDockerMode)
+                                    {
+                                        Process.Start(new ProcessStartInfo
+                                        {
+                                            FileName = "docker",
+                                            Arguments = $"rm -f mslx-container-{instanceId}",
+                                            CreateNoWindow = true,
+                                            UseShellExecute = false
+                                        })?.WaitForExit(3000);
+                                    }
+
                                     context.Process.Kill(true);
                                 }
                                 catch
@@ -673,13 +862,23 @@ public class MCServerService : IMCServerService
             {
                 context.IsStopping = true;
 
+                var serverInfo = IConfigBase.ServerList.GetServer(instanceId);
+                if (serverInfo != null && (serverInfo.Java == "docker-java" || serverInfo.Java == "docker-custom"))
+                {
+                    _logger.LogInformation($"[Docker-Guard] 正在强行终结容器: mslx-container-{instanceId}");
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "docker",
+                        Arguments = $"rm -f mslx-container-{instanceId}",
+                        CreateNoWindow = true,
+                        UseShellExecute = false
+                    })?.WaitForExit(3000);
+                }
+
                 if (context.Process != null && !context.Process.HasExited)
                 {
-                    // 强制结束进程树
                     context.Process.Kill(true);
                     RecordLog(instanceId, context, "[MSLX] 已强制结束进程及其子进程");
-
-                    // 喝一杯一秒钟的茶
                     context.Process.WaitForExit(1000);
                 }
 
@@ -689,10 +888,8 @@ public class MCServerService : IMCServerService
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"强制终止服务器 [{instanceId}] 时出错");
-                RecordLog(instanceId, context, $">>> [MSLX] 强制终止失败: {ex.Message}");
             }
         }
-
         return false;
     }
 
@@ -1214,6 +1411,8 @@ public class MCServerService : IMCServerService
 
         return true;
     }
+
+    #endregion
 
     #region 备份实例
 
