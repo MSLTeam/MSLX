@@ -411,6 +411,16 @@ public class MCServerService : IMCServerService
                     }
                 }
 
+                // 额外hosts
+                if (!string.IsNullOrWhiteSpace(serverInfo.DockerExtraHosts))
+                {
+                    var hosts = serverInfo.DockerExtraHosts.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var host in hosts)
+                    {
+                        sb.Append($"--add-host=\"{host.Trim()}\" ");
+                    }
+                }
+
                 // Cgroups 隔离与硬核网络IO限制
                 if (!string.IsNullOrWhiteSpace(serverInfo.DockerCpuCores))
                 {

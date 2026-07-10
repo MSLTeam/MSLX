@@ -38,13 +38,14 @@ public class McServerInfo
         public string RegionPath { get; set; } = "region";
 
         // ====== Docker 字段 ======
-        public string DockerImage { get; set; } = "openjdk:17-slim";
+        public string DockerImage { get; set; } = "MSLX://DockerImage/Java/25";
         public string DockerWorkingDir { get; set; } = "/mslx-data";
         public string? DockerVolumes { get; set; } // 格式: "/data:/data,/etc/timezone:/etc/timezone"
         public string? DockerEnvVars { get; set; } // 格式: "EULA=true,TZ=Asia/Shanghai"
         public string? DockerNetworkMode { get; set; } // "bridge", "host", "none" 等
         public string? DockerNetworkAlias { get; set; } // 网络别名
         public string? DockerPorts { get; set; } // 格式: "25565:25565,8080:80"
+        public string? DockerExtraHosts { get; set; } // 格式: "host.mslx.internal:host-gateway,db.local:192.168.1.100"
 
         // 资源限制（Cgroups 映射）
         public int? DockerCpuPercentage { get; set; } // CPU使用率限制 (1-100)
