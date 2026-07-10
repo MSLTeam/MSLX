@@ -412,7 +412,7 @@ onMounted(() => {
               <template #message
                 >资源分配仅实现基础权限隔离，实例文件系统并非物理隔离。用户可能通过程序路径穿越访问敏感数据，请仅在信任伙伴间使用，<strong
                   style="color: var(--td-error-color)"
-                  >严禁用于商业化用途</strong
+                  >如需要进行分发/商业化用途，请务必使用Docker！</strong
                 >。
               </template>
             </t-alert>
