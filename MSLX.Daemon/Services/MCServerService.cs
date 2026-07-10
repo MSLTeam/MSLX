@@ -255,6 +255,47 @@ public class MCServerService : IMCServerService
     }
 
     /// <summary>
+    /// 逆向反查当前 Daemon 容器在宿主机上的真实物理数据根路径
+    /// </summary>
+    private async Task<string?> GetHostPhysicalDataPathAsync(uint instanceId, ServerContext context)
+    {
+        try
+        {
+            const string cgroupPath = "/proc/self/cgroup";
+            if (!File.Exists(cgroupPath)) return null;
+
+            string cgroupContent = await File.ReadAllTextAsync(cgroupPath);
+            string? containerId = cgroupContent.Split('\n')
+                .FirstOrDefault(line => !string.IsNullOrWhiteSpace(line))?
+                .Split('/')
+                .LastOrDefault()?
+                .Trim();
+
+            if (string.IsNullOrWhiteSpace(containerId) || containerId.Length < 12) return null;
+
+            var process = new Process();
+            process.StartInfo.FileName = "docker";
+            process.StartInfo.Arguments = $"inspect --format \"{{{{range .Mounts}}}}{{{{if eq .Destination \\\"/app/DaemonData\\\"}}}}{{{{.Source}}}}{{{{end}}}}{{{{end}}}}\" {containerId}";
+            process.StartInfo.CreateNoWindow = true;
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+
+            process.Start();
+            string output = await process.StandardOutput.ReadToEndAsync();
+            await Task.Run(process.WaitForExit);
+
+            string hostPath = output.Trim().Replace("\"", "");
+            return string.IsNullOrWhiteSpace(hostPath) ? null : hostPath;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, $"[Docker-Inspector] 实例 {instanceId} 逆向反查宿主机物理路径时发生异常。");
+            return null;
+        }
+    }
+
+    /// <summary>
     /// 异步启动服务器
     /// </summary>
     private async Task InternalStartServerAsync(uint instanceId, ServerContext context,
@@ -364,9 +405,27 @@ public class MCServerService : IMCServerService
                 sb.Append("run --rm -i ");
                 sb.Append($"--name mslx-container-{instanceId} ");
 
-                // 工作工作目录与基础挂载
+                string finalHostBaseDir = serverInfo.Base; // 默认使用宿主机物理路径
+
+                if (File.Exists("/proc/self/cgroup"))
+                {
+                    RecordLog(instanceId, context, "[Docker-Detector] 检测到当前 MSLX-Daemon 处于容器内，正在逆向反查宿主机物理骨架...");
+                    string? hostDataRoot = await GetHostPhysicalDataPathAsync(instanceId, context);
+
+                    if (!string.IsNullOrWhiteSpace(hostDataRoot))
+                    {
+                        finalHostBaseDir = serverInfo.Base.Replace("/app/DaemonData", hostDataRoot);
+                        _logger.LogInformation($"[Docker-Translator] 路径转换完成: {serverInfo.Base} -> {finalHostBaseDir}");
+                    }
+                    else
+                    {
+                        RecordLog(instanceId, context, "[Docker-Warning] 逆向反查物理路径失败，将尝试使用内置路径盲切。");
+                    }
+                }
+
+                // 工作目录与基础挂载
                 string workDir = string.IsNullOrWhiteSpace(serverInfo.DockerWorkingDir) ? "/mslx-data" : serverInfo.DockerWorkingDir;
-                sb.Append($"-v \"{serverInfo.Base}:{workDir}\" ");
+                sb.Append($"-v \"{finalHostBaseDir}:{workDir}\" ");
                 sb.Append($"-w \"{workDir}\" ");
 
                 // 挂载额外目录卷
@@ -379,7 +438,7 @@ public class MCServerService : IMCServerService
                     }
                 }
 
-                // 网络模式模式与别名、端口映射
+                // 网络模式与别名、端口映射
                 string netMode = string.IsNullOrWhiteSpace(serverInfo.DockerNetworkMode) ? "bridge" : serverInfo.DockerNetworkMode.ToLower();
                 if (serverInfo.DockerPorts?.Trim() == "0")
                 {
