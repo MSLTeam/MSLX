@@ -192,7 +192,8 @@ public class ServerCreationService : BackgroundService
                 server.Base, 
                 server.Core, 
                 server.Java, 
-                progressReporter
+                progressReporter,
+                server.DockerImage
             );
 
             // 更新启动参数

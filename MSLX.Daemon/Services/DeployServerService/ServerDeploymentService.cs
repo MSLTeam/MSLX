@@ -428,7 +428,7 @@ public class ServerDeploymentService
     /// 返回值: 如果安装成功并需要修改启动命令，返回新的启动参数(args)；否则返回 null
     /// </summary>
     public async Task<string?> InstallForgeIfNeededAsync(string serverId, string baseDir, string coreName,
-        string javaConfig, ReportProgress report)
+        string javaConfig, ReportProgress report, string dockerImagePath = "MSLX://DockerImage/Java/25")
     {
         // 简单判断逻辑
         if (!coreName.Contains("forge") || !coreName.EndsWith(".jar") || coreName.Contains("arclight"))
@@ -460,7 +460,7 @@ public class ServerDeploymentService
                     PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java");
             }
 
-            (bool success, string? mcVersion) = await installer.InstallNeoForge(baseDir, coreName, javaPath);
+            (bool success, string? mcVersion) = await installer.InstallNeoForge(baseDir, coreName, javaPath, dockerImagePath);
             installer.OnLog -= logHandler;
 
             if (success)
@@ -468,7 +468,8 @@ public class ServerDeploymentService
                 await report("NeoForge/Forge 安装程序执行完毕！", 100);
 
                 // 新版本Neoforge/Forge启动参数
-                string runScript = Path.Combine(baseDir, PlatFormServices.GetOs() == "Windows" ? "run.bat" : "run.sh");
+                bool isDocker = (javaPath == "docker-java" || javaPath == "docker-custom");
+                string runScript = Path.Combine(baseDir, (PlatFormServices.GetOs() == "Windows" && !isDocker) ? "run.bat" : "run.sh");
                 string launchArgs = ExtractNeoForgeArgsPath(runScript) ?? string.Empty;
                 if (!string.IsNullOrEmpty(launchArgs))
                 {

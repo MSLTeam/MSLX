@@ -163,7 +163,7 @@ public class ServerUpdateService : BackgroundService
             // NeoForge 安装
             if ((server.Core.Contains("forge") || server.Core.Contains("neoforge")) && server.Core.Contains(".jar") && !server.Core.Contains("arclight"))
             {
-               string? newArgs = await _deployer.InstallForgeIfNeededAsync(sid, server.Base, server.Core, server.Java, report);
+               string? newArgs = await _deployer.InstallForgeIfNeededAsync(sid, server.Base, server.Core, server.Java, report, server.DockerImage);
                if(newArgs != null) server.Core = newArgs;
             }
 
