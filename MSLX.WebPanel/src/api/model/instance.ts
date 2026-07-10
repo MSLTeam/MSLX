@@ -96,6 +96,29 @@ export interface UpdateInstanceModel {
   worldPath?: string;
   regionPath?: string;
 
+  // ====== Docker 配置字段 ======
+  dockerImage: string;
+  dockerWorkingDir: string;
+  dockerVolumes?: string; // 格式: "/宿主机路径:/容器内路径"
+  dockerEnvVars?: string; // 格式: "KEY=VALUE"
+  dockerNetworkMode?: string; // "bridge" | "host" | "none" 等
+  dockerNetworkAlias?: string; // 仅在自定义网桥下使用
+  dockerPorts?: string; // 格式: "0" 或 "宿主机端口:容器端口"
+
+  // 资源与硬件隔离 (Cgroups)
+  dockerCpuPercentage?: number; // 范围: 1 - 100
+  dockerCpuCores?: string; // 格式: "0" | "0,1" | "0-3"
+  dockerMaxMemoryMb?: number; // 最大内存限制
+  dockerMaxSwapMb?: number; // 最大交换内存限制
+  dockerMaxStorage?: string; // 仅Linux，格式: "10g" | "500m"
+
+  // 网络吞吐速率限制
+  dockerUploadRate?: string; // 格式: "1mb" | "500kb"
+  dockerDownloadRate?: string; // 格式: "1mb"
+
+  dockerExtraArgs?: string; // 额外透传的 docker run 原生参数
+  dockerExtraHosts?: string; // 额外 Hosts 映射，格式: "host.mslx.internal:host-gateway"
+
   // 可选
   coreFileKey?: string;
   coreUrl?: string;
@@ -130,6 +153,28 @@ export interface InstanceSettingsModel {
   modsPath?: string;
   worldPath?: string;
   regionPath?: string;
+  // ====== Docker 配置字段 ======
+  dockerImage: string;
+  dockerWorkingDir: string;
+  dockerVolumes?: string; // 格式: "/宿主机路径:/容器内路径"
+  dockerEnvVars?: string; // 格式: "KEY=VALUE"
+  dockerNetworkMode?: string; // "bridge" | "host" | "none" 等
+  dockerNetworkAlias?: string; // 仅在自定义网桥下使用
+  dockerPorts?: string; // 格式: "0" 或 "宿主机端口:容器端口"
+
+  // 资源与硬件隔离 (Cgroups)
+  dockerCpuPercentage?: number; // 范围: 1 - 100
+  dockerCpuCores?: string; // 格式: "0" | "0,1" | "0-3"
+  dockerMaxMemoryMb?: number; // 最大内存限制
+  dockerMaxSwapMb?: number; // 最大交换内存限制
+  dockerMaxStorage?: string; // 仅Linux，格式: "10g" | "500m"
+
+  // 网络吞吐速率限制
+  dockerUploadRate?: string; // 格式: "1mb" | "500kb"
+  dockerDownloadRate?: string; // 格式: "1mb"
+
+  dockerExtraArgs?: string; // 额外透传的 docker run 原生参数
+  dockerExtraHosts?: string; // 额外 Hosts 映射，格式: "host.mslx.internal:host-gateway"
 }
 
 export interface UpdateInstanceResponseModel {

@@ -1,4 +1,4 @@
-using Downloader;
+﻿using Downloader;
 using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Services.DeployServerService;
@@ -112,6 +112,23 @@ public class ServerUpdateService : BackgroundService
             server.InputEncoding = req.InputEncoding;
             server.OutputEncoding = req.OutputEncoding;
             server.FileEncoding = req.FileEncoding;
+            // docker的一堆配置
+            server.DockerImage = req.DockerImage;
+            server.DockerWorkingDir = req.DockerWorkingDir;
+            server.DockerVolumes = req.DockerVolumes;
+            server.DockerEnvVars = req.DockerEnvVars;
+            server.DockerNetworkMode = req.DockerNetworkMode;
+            server.DockerNetworkAlias = req.DockerNetworkAlias;
+            server.DockerPorts = req.DockerPorts;
+            server.DockerCpuPercentage = req.DockerCpuPercentage;
+            server.DockerCpuCores = req.DockerCpuCores;
+            server.DockerMaxMemoryMb = req.DockerMaxMemoryMb;
+            server.DockerMaxSwapMb = req.DockerMaxSwapMb;
+            server.DockerMaxStorage = req.DockerMaxStorage;
+            server.DockerUploadRate = req.DockerUploadRate;
+            server.DockerDownloadRate = req.DockerDownloadRate;
+            server.DockerExtraArgs = req.DockerExtraArgs;
+            server.DockerExtraHosts = req.DockerExtraHosts;
             try
             {
                 server.ServerPropertiesPath = ServerPropertiesPathUtils.NormalizeRelativePath(req.ServerPropertiesPath);

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
@@ -123,6 +123,23 @@ public class InstanceSettingsController : ControllerBase
             server.InputEncoding = request.InputEncoding;
             server.OutputEncoding = request.OutputEncoding;
             server.FileEncoding = request.FileEncoding;
+            // docker的一堆配置
+            server.DockerImage = request.DockerImage;
+            server.DockerWorkingDir = request.DockerWorkingDir;
+            server.DockerVolumes = request.DockerVolumes;
+            server.DockerEnvVars = request.DockerEnvVars;
+            server.DockerNetworkMode = request.DockerNetworkMode;
+            server.DockerNetworkAlias = request.DockerNetworkAlias;
+            server.DockerPorts = request.DockerPorts;
+            server.DockerCpuPercentage = request.DockerCpuPercentage;
+            server.DockerCpuCores = request.DockerCpuCores;
+            server.DockerMaxMemoryMb = request.DockerMaxMemoryMb;
+            server.DockerMaxSwapMb = request.DockerMaxSwapMb;
+            server.DockerMaxStorage = request.DockerMaxStorage;
+            server.DockerUploadRate = request.DockerUploadRate;
+            server.DockerDownloadRate = request.DockerDownloadRate;
+            server.DockerExtraArgs = request.DockerExtraArgs;
+            server.DockerExtraHosts = request.DockerExtraHosts;
             try
             {
                 server.ServerPropertiesPath = ServerPropertiesPathUtils.NormalizeRelativePath(request.ServerPropertiesPath);

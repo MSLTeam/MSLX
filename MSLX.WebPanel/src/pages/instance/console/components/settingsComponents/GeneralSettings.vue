@@ -132,6 +132,23 @@ const formData = ref<UpdateInstanceModel>({
   coreUrl: '',
   coreSha256: '',
   coreFileKey: '',
+  // ====== docker ======
+  dockerImage: 'MSLX://DockerImage/Java/25',
+  dockerWorkingDir: '/mslx-data',
+  dockerVolumes: '',
+  dockerEnvVars: '',
+  dockerNetworkMode: 'bridge',
+  dockerNetworkAlias: '',
+  dockerPorts: '',
+  dockerCpuPercentage: undefined,
+  dockerCpuCores: '',
+  dockerMaxMemoryMb: undefined,
+  dockerMaxSwapMb: undefined,
+  dockerMaxStorage: '',
+  dockerUploadRate: '',
+  dockerDownloadRate: '',
+  dockerExtraArgs: '',
+  dockerExtraHosts: '',
 });
 
 // --- 内存单位转换 ---
@@ -185,7 +202,9 @@ const initialized = ref(false); // 首次加载完成前不套用 MCDR 预设，
 const isMcdr = computed(() => javaType.value === 'mcdr');
 const isCustomLike = computed(() => javaType.value === 'none' || javaType.value === 'mcdr');
 // 仅 Java 模式才显示的区块(核心/内存/外置登录/强制UTF8)
-const showJavaOnly = computed(() => !isCustomLike.value);
+const showJavaOnly = computed(() => {
+  return !isCustomLike.value || formData.value.java === 'docker-java';
+});
 const mcdrLaunchCommand = computed(() => {
   const py = (mcdrPython.value || 'python').trim();
   const quoted = py.includes(' ') && !py.startsWith('"') ? `"${py}"` : py;
@@ -204,6 +223,178 @@ const applyMcdrDefaults = () => {
   if (formData.value.modsPath === 'mods') formData.value.modsPath = 'server/mods';
   if (formData.value.worldPath === 'world') formData.value.worldPath = 'server/world';
 };
+
+// ====== Docker相关配置参数 ======
+const expandedPanels = ref([]);
+const isDockerMode = computed(() => {
+  return formData.value.java === 'docker-java' || formData.value.java === 'docker-custom';
+});
+
+// 内置网络的 bridge, host, none 强制禁用网络别名
+const isNetworkAliasDisabled = computed(() => {
+  const mode = formData.value.dockerNetworkMode?.trim().toLowerCase() || 'bridge';
+  return ['bridge', 'host', 'none'].includes(mode);
+});
+
+// 提取当前内置运行时伪协议中的 Java 版本号
+const currentDockerJavaVersion = computed({
+  get: () => {
+    if (formData.value.dockerImage?.startsWith('MSLX://DockerImage/Java/')) {
+      return formData.value.dockerImage.replace('MSLX://DockerImage/Java/', '');
+    }
+    return '21'; // 默认回显 21
+  },
+  set: (version) => {
+    formData.value.dockerImage = `MSLX://DockerImage/Java/${version}`;
+  },
+});
+
+// 容器内工作目录选择（默认 /mslx-data）
+const isCustomWorkDir = ref(false);
+watch(
+  () => formData.value.dockerWorkingDir,
+  (nv) => {
+    isCustomWorkDir.value = nv !== '/mslx-data';
+  },
+);
+
+// 端口映射解析器 (25565:25565 -> [{host:'', container:''}])
+const portList = ref<{ host: string; container: string }[]>([]);
+watch(
+  () => formData.value.dockerPorts,
+  (nv) => {
+    if (!nv || nv === '0') {
+      portList.value = [];
+      return;
+    }
+    portList.value = nv.split(',').map((p) => {
+      const [h, c] = p.split(':');
+      return { host: h || '', container: c || '' };
+    });
+  },
+  { immediate: true },
+);
+
+const updatePortsString = () => {
+  formData.value.dockerPorts = portList.value
+    .filter((p) => p.host && p.container)
+    .map((p) => `${p.host}:${p.container}`)
+    .join(',');
+};
+const addPortRow = () => {
+  portList.value.push({ host: '', container: '' });
+};
+const removePortRow = (index: number) => {
+  portList.value.splice(index, 1);
+  updatePortsString();
+};
+
+// 目录挂载解析器 (/a:/b -> [{host:'', container:''}])
+const volumeList = ref<{ host: string; container: string }[]>([]);
+watch(
+  () => formData.value.dockerVolumes,
+  (nv) => {
+    if (!nv) {
+      volumeList.value = [];
+      return;
+    }
+    volumeList.value = nv.split(',').map((v) => {
+      const [h, c] = v.split(':');
+      return { host: h || '', container: c || '' };
+    });
+  },
+  { immediate: true },
+);
+
+const updateVolumesString = () => {
+  formData.value.dockerVolumes = volumeList.value
+    .filter((v) => v.host && v.container)
+    .map((v) => `${v.host}:${v.container}`)
+    .join(',');
+};
+const addVolumeRow = () => {
+  volumeList.value.push({ host: '', container: '' });
+};
+const removeVolumeRow = (index: number) => {
+  volumeList.value.splice(index, 1);
+  updateVolumesString();
+};
+
+// 环境变量列表解析器 (A=1 -> [{key:'', value:''}])
+const envList = ref<{ key: string; value: string }[]>([]);
+watch(
+  () => formData.value.dockerEnvVars,
+  (nv) => {
+    if (!nv) {
+      envList.value = [];
+      return;
+    }
+    envList.value = nv.split(',').map((e) => {
+      const [k, v] = e.split('=');
+      return { key: k || '', value: v || '' };
+    });
+  },
+  { immediate: true },
+);
+
+const updateEnvString = () => {
+  formData.value.dockerEnvVars = envList.value
+    .filter((e) => e.key)
+    .map((e) => `${e.key}=${e.value}`)
+    .join(',');
+};
+const addEnvRow = () => {
+  envList.value.push({ key: '', value: '' });
+};
+const removeEnvRow = (index: number) => {
+  envList.value.splice(index, 1);
+  updateEnvString();
+};
+
+// 额外 Hosts 列表解析器 (host.internal:127.0.0.1 -> [{domain:'', ip:''}])
+const hostList = ref<{ domain: string; ip: string }[]>([]);
+watch(
+  () => formData.value.dockerExtraHosts,
+  (nv) => {
+    if (!nv) {
+      hostList.value = [];
+      return;
+    }
+    hostList.value = nv.split(',').map((h) => {
+      const [d, i] = h.split(':');
+      return { domain: d || '', ip: i || '' };
+    });
+  },
+  { immediate: true },
+);
+
+const updateHostsString = () => {
+  formData.value.dockerExtraHosts = hostList.value
+    .filter((h) => h.domain && h.ip)
+    .map((h) => `${h.domain}:${h.ip}`)
+    .join(',');
+};
+const addHostRow = () => {
+  hostList.value.push({ domain: '', ip: '' });
+};
+const removeHostRow = (index: number) => {
+  hostList.value.splice(index, 1);
+  updateHostsString();
+};
+
+watch(
+  () => formData.value.dockerPorts,
+  (newPorts) => {
+    if (newPorts === '0') {
+      formData.value.dockerNetworkMode = 'host';
+      formData.value.dockerNetworkAlias = ''; // host 模式下强制清空别名
+    } else if (formData.value.dockerNetworkMode === 'host') {
+      formData.value.dockerNetworkMode = 'bridge';
+    }
+  },
+);
+
+// docker end~
 
 const fetchJavaVersions = async (force = false) => {
   try {
@@ -373,6 +564,33 @@ const rules = computed<FormRules>(() => {
       modsPath: modsPathRules,
       worldPath: worldPathRules,
       regionPath: regionPathRules,
+      dockerWorkingDir: [
+        { required: true, message: 'Docker 工作目录不能为空', trigger: 'blur' },
+        {
+          validator: (val: string) => val.startsWith('/'),
+          message: '必须是容器内部绝对路径，以 / 开头',
+          trigger: 'blur',
+        },
+      ],
+      dockerVolumes: [
+        {
+          pattern: /^([^:]+:[^:]+)(,[^:]+:[^:]+)*$/,
+          message: '格式不正确，应为 /宿主机路径:/容器内路径',
+          trigger: 'blur',
+        },
+      ],
+      dockerEnvVars: [
+        { pattern: /^([^=]+=[^,]*)(,[^=]+=[^,]*)*$/, message: '格式不正确，应为 KEY=VALUE，逗号隔开', trigger: 'blur' },
+      ],
+      dockerPorts: [
+        {
+          pattern: /^(0|^([0-9]+:[0-9]+)(,[0-9]+:[0-9]+)*)$/,
+          message: '格式应为 0 或 宿主机端口:容器端口',
+          trigger: 'blur',
+        },
+      ],
+      dockerCpuCores: [{ pattern: /^[0-9,-]+$/, message: '仅支持数字、逗号或连字符，如 0-3', trigger: 'blur' }],
+      dockerMaxStorage: [{ pattern: /^[0-9]+[gGmMkK]$/, message: '格式不正确，如 10g 或 500m', trigger: 'blur' }],
     };
   }
 
@@ -388,6 +606,33 @@ const rules = computed<FormRules>(() => {
     modsPath: modsPathRules,
     worldPath: worldPathRules,
     regionPath: regionPathRules,
+    dockerWorkingDir: [
+      { required: true, message: 'Docker 工作目录不能为空', trigger: 'blur' },
+      {
+        validator: (val: string) => val.startsWith('/'),
+        message: '必须是容器内部绝对路径，以 / 开头',
+        trigger: 'blur',
+      },
+    ],
+    dockerVolumes: [
+      {
+        pattern: /^([^:]+:[^:]+)(,[^:]+:[^:]+)*$/,
+        message: '格式不正确，应为 /宿主机路径:/容器内路径',
+        trigger: 'blur',
+      },
+    ],
+    dockerEnvVars: [
+      { pattern: /^([^=]+=[^,]*)(,[^=]+=[^,]*)*$/, message: '格式不正确，应为 KEY=VALUE，逗号隔开', trigger: 'blur' },
+    ],
+    dockerPorts: [
+      {
+        pattern: /^(0|^([0-9]+:[0-9]+)(,[0-9]+:[0-9]+)*)$/,
+        message: '格式应为 0 或 宿主机端口:容器端口',
+        trigger: 'blur',
+      },
+    ],
+    dockerCpuCores: [{ pattern: /^[0-9,-]+$/, message: '仅支持数字、逗号或连字符，如 0-3', trigger: 'blur' }],
+    dockerMaxStorage: [{ pattern: /^[0-9]+[gGmMkK]$/, message: '格式不正确，如 10g 或 500m', trigger: 'blur' }],
   };
 });
 
@@ -421,7 +666,9 @@ const initData = async () => {
     isPathEditable.value = false;
 
     // 解析 Java 类型
-    if (res.java === 'none') {
+    if (res.java === 'docker-java' || res.java === 'docker-custom') {
+      javaType.value = res.java; // 'docker-java' 或 'docker-custom'
+    } else if (res.java === 'none') {
       // MCDR 与普通自定义命令都记为 none，用启动命令是否含 mcdreforged 区分
       if ((res.args ?? '').includes('mcdreforged')) {
         javaType.value = 'mcdr';
@@ -535,7 +782,9 @@ const onSubmit = async () => {
       formData.value.args = mcdrLaunchCommand.value;
     }
   }
-
+  if (javaType.value === 'docker-java' || javaType.value === 'docker-custom') {
+    formData.value.java = javaType.value;
+  }
   submitting.value = true;
   try {
     const res = await postInstanceSettings(formData.value);
@@ -695,6 +944,8 @@ onUnmounted(() => {
                 { label: '使用本地版本 (Java)', value: 'local' },
                 { label: '自定义路径 (Java)', value: 'custom' },
                 { label: '环境变量 (Java)', value: 'env' },
+                { label: 'Docker 官方运行时 (推荐)', value: 'docker-java' },
+                { label: 'Docker 完全自定义容器', value: 'docker-custom' },
                 { label: 'MCDReforged (MCDR)', value: 'mcdr' },
                 { label: '自定义命令 (无Java)', value: 'none' },
               ]"
@@ -717,6 +968,19 @@ onUnmounted(() => {
                 v-if="javaType === 'custom'"
                 v-model="customJavaPath"
                 placeholder="输入 java 可执行文件完整路径"
+              />
+            </div>
+            <div v-if="javaType === 'docker-java'" class="w-full">
+              <t-select
+                v-model="currentDockerJavaVersion"
+                :options="[
+                  { label: 'MSLX Docker镜像 [Java 8]', value: '8' },
+                  { label: 'MSLX Docker镜像 [Java 11]', value: '11' },
+                  { label: 'MSLX Docker镜像 [Java 17]', value: '17' },
+                  { label: 'MSLX Docker镜像 [Java 21]', value: '21' },
+                  { label: 'MSLX Docker镜像 [Java 25]', value: '25' },
+                ]"
+                placeholder="请选择轻量容器内 Java 运行时版本"
               />
             </div>
           </div>
@@ -774,6 +1038,494 @@ onUnmounted(() => {
             />
           </div>
         </div>
+
+        <template v-if="isDockerMode">
+          <div
+            class="flex items-center gap-2 mt-8 mb-4 pb-2 border-b border-dashed border-zinc-200/60 dark:border-zinc-700/60"
+          >
+            <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
+            <h2 class="text-base font-bold text-[var(--td-text-color-primary)] m-0">Docker 容器设置</h2>
+          </div>
+
+          <div
+            class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+          >
+            <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+              <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">容器基础镜像</div>
+              <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+                当前运行实例所绑定的底层镜像生态。
+              </div>
+            </div>
+            <div class="w-full md:w-[340px] shrink-0">
+              <t-input
+                v-model="formData.dockerImage"
+                :disabled="javaType === 'docker-java'"
+                placeholder="如 eclipse-temurin:21-jre"
+                class="w-full !font-mono"
+              />
+            </div>
+          </div>
+
+          <div
+            class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+          >
+            <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+              <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">外部网络端口放行</div>
+              <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+                将服务端口暴露给外界。切换为 Host
+                将共用物理机网络生态。格式为宿主机端口-容器内端口。（不知道什么意思就写一样的得了）
+              </div>
+            </div>
+            <div class="w-full md:w-[340px] shrink-0 flex flex-col gap-2">
+              <t-radio-group v-model="formData.dockerPorts" variant="default-filled" class="w-full">
+                <t-radio-button value="25565:25565">端口映射</t-radio-button>
+                <t-radio-button value="0">Host网络模式</t-radio-button>
+              </t-radio-group>
+
+              <template v-if="formData.dockerPorts !== '0'">
+                <div
+                  v-for="(item, idx) in portList"
+                  :key="idx"
+                  class="flex items-center gap-1.5 mt-1 bg-zinc-50 dark:bg-zinc-800/40 p-1.5 rounded-lg border border-zinc-200/50 dark:border-zinc-700/50"
+                >
+                  <t-input
+                    v-model="item.host"
+                    size="small"
+                    placeholder="宿主机公开端口"
+                    class="!font-mono text-xs flex-1"
+                    @blur="updatePortsString"
+                  />
+                  <span class="text-zinc-400 font-bold">:</span>
+                  <t-input
+                    v-model="item.container"
+                    size="small"
+                    placeholder="容器端口"
+                    class="!font-mono text-xs flex-1"
+                    @blur="updatePortsString"
+                  />
+                  <t-button variant="text" theme="danger" shape="square" size="small" @click="removePortRow(idx)">
+                    <template #icon><t-icon name="delete" /></template>
+                  </t-button>
+                </div>
+                <t-button
+                  dash
+                  block
+                  variant="outline"
+                  size="small"
+                  class="!rounded-lg text-xs mt-1"
+                  @click="addPortRow"
+                >
+                  <template #icon><t-icon name="add" /></template>添加自定义映射端口
+                </t-button>
+              </template>
+            </div>
+          </div>
+
+          <div class="mt-4 px-1">
+            <t-collapse v-model="expandedPanels" borderless class="!bg-transparent">
+              <t-collapse-panel value="advanced-docker" header="Docker 容器高级参数选项 (网络、目录挂载与算力限额)">
+                <div class="flex flex-col mt-2">
+                  <t-alert theme="info">
+                    这里是Docker容器的高级配置，修改这里的配置时请您确保您知道您在做什么，否则不建议随意修改哦~
+                  </t-alert>
+                  <div
+                    class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+                  >
+                    <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+                      <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">
+                        容器工作目录
+                      </div>
+                      <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+                        容器内部的数据挂载绝对目录，默认为
+                        <code class="font-mono bg-zinc-100 dark:bg-zinc-800 px-1 rounded">/mslx-data</code>。
+                      </div>
+                    </div>
+                    <div class="w-full md:w-[340px] shrink-0 flex flex-col gap-2">
+                      <t-radio-group v-model="isCustomWorkDir" variant="default-filled" class="w-full">
+                        <t-radio-button :value="false">默认 (/mslx-data)</t-radio-button>
+                        <t-radio-button :value="true">自定义路径</t-radio-button>
+                      </t-radio-group>
+                      <t-input
+                        v-if="isCustomWorkDir"
+                        v-model="formData.dockerWorkingDir"
+                        placeholder="必须以 / 开头，例如 /my-server"
+                        class="w-full !font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+                  >
+                    <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+                      <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">
+                        Docker 网络拓扑模式
+                      </div>
+                      <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+                        容器加入的虚拟网桥群。bridge / host / 自定义网络。
+                      </div>
+                    </div>
+                    <div class="w-full md:w-[340px] shrink-0">
+                      <t-input
+                        v-model="formData.dockerNetworkMode"
+                        :disabled="formData.dockerPorts === '0'"
+                        placeholder="如 bridge 或 mslx-net"
+                        class="w-full"
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+                  >
+                    <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+                      <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">
+                        内网集群服务解析别名
+                      </div>
+                      <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+                        自定义隔离局域网内的通用容器代号，原生标准网桥下不可配置。
+                      </div>
+                    </div>
+                    <div class="w-full md:w-[340px] shrink-0">
+                      <t-input
+                        v-model="formData.dockerNetworkAlias"
+                        :disabled="isNetworkAliasDisabled"
+                        :placeholder="isNetworkAliasDisabled ? '当前公共网桥拓扑下无法开启' : '输入微服务局域网别名'"
+                        class="w-full"
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+                  >
+                    <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+                      <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">
+                        数据卷高级映射目录
+                      </div>
+                      <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+                        服务器数据已默认隔离挂载，此处用于添加额外的外部宿主机数据卷。
+                      </div>
+                    </div>
+                    <div class="w-full md:w-[340px] shrink-0 flex flex-col gap-2">
+                      <div
+                        v-for="(item, idx) in volumeList"
+                        :key="idx"
+                        class="flex items-center gap-1.5 bg-zinc-50 dark:bg-zinc-800/40 p-1.5 rounded-lg border border-zinc-200/50 dark:border-zinc-700/50"
+                      >
+                        <t-input
+                          v-model="item.host"
+                          size="small"
+                          placeholder="宿主机绝对路径"
+                          class="!font-mono text-xs flex-1"
+                          @blur="updateVolumesString"
+                        />
+                        <span class="text-zinc-400 font-bold">:</span>
+                        <t-input
+                          v-model="item.container"
+                          size="small"
+                          placeholder="容器内部绝对路径"
+                          class="!font-mono text-xs flex-1"
+                          @blur="updateVolumesString"
+                        />
+                        <t-button
+                          variant="text"
+                          theme="danger"
+                          shape="square"
+                          size="small"
+                          @click="removeVolumeRow(idx)"
+                        >
+                          <template #icon><t-icon name="delete" /></template>
+                        </t-button>
+                      </div>
+                      <t-button
+                        dash
+                        block
+                        variant="outline"
+                        size="small"
+                        class="!rounded-lg text-xs"
+                        @click="addVolumeRow"
+                      >
+                        <template #icon><t-icon name="add" /></template>追加新数据挂载卷
+                      </t-button>
+                    </div>
+                  </div>
+
+                  <div
+                    class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+                  >
+                    <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+                      <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">
+                        容器 CPU 算力分配上限
+                      </div>
+                      <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+                        限额本实例能调用的最高核心总比例。不设代表享用全额宿主机算力。
+                      </div>
+                    </div>
+                    <div class="w-full md:w-[340px] shrink-0">
+                      <t-input-number
+                        v-model="formData.dockerCpuPercentage"
+                        :min="1"
+                        :max="100"
+                        placeholder="未设置代表不限制"
+                        suffix="%"
+                        class="w-full"
+                        theme="column"
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+                  >
+                    <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+                      <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">
+                        核定绑定的物理 CPU 核心 (Cpuset)
+                      </div>
+                      <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+                        将容器绑定在特定的硬件线程上运行，例如指定 <code class="font-mono text-xs">0,1</code> 或范围
+                        <code class="font-mono text-xs">0-3</code>。
+                      </div>
+                    </div>
+                    <div class="w-full md:w-[340px] shrink-0">
+                      <t-input
+                        v-model="formData.dockerCpuCores"
+                        placeholder="不绑核请留空，例如 0-2"
+                        class="w-full !font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+                  >
+                    <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+                      <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">
+                        容器物理外部边界内存限制
+                      </div>
+                      <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+                        Cgroups 物理内存封顶值。需大于 JVM 最大 Xmx。
+                      </div>
+                    </div>
+                    <div class="w-full md:w-[340px] shrink-0">
+                      <t-input-number
+                        v-model="formData.dockerMaxMemoryMb"
+                        :min="4"
+                        placeholder="无限制"
+                        suffix="MB"
+                        class="w-full"
+                        theme="column"
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+                  >
+                    <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+                      <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">
+                        容器虚拟交换空间限制
+                      </div>
+                      <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+                        允许容器爆内存时向外部磁盘借用的虚拟内存最大空间。
+                      </div>
+                    </div>
+                    <div class="w-full md:w-[340px] shrink-0">
+                      <t-input-number
+                        v-model="formData.dockerMaxSwapMb"
+                        :min="0"
+                        placeholder="无限制"
+                        suffix="MB"
+                        class="w-full"
+                        theme="column"
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+                  >
+                    <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+                      <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">
+                        容器磁盘容量上限限制 <b>(仅Linux)</b>
+                      </div>
+                      <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+                        强行截断当前容器内部最大可膨胀的物理空间，如 <code class="font-mono text-xs">15g</code>。
+                      </div>
+                    </div>
+                    <div class="w-full md:w-[340px] shrink-0">
+                      <t-input
+                        v-model="formData.dockerMaxStorage"
+                        placeholder="未设置代表不限制空间，例如 20g"
+                        class="w-full !font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+                  >
+                    <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+                      <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">
+                        网络出口最高上传吞吐限速
+                      </div>
+                      <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+                        限制本实例的最高网络实时上传速率，格式如 <code class="font-mono text-xs">2mb</code>。
+                      </div>
+                    </div>
+                    <div class="w-full md:w-[340px] shrink-0">
+                      <t-input
+                        v-model="formData.dockerUploadRate"
+                        placeholder="留空不限制，例如 5mb"
+                        class="w-full !font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+                  >
+                    <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+                      <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">
+                        网络入口最高下载吞吐限速
+                      </div>
+                      <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+                        限制该实例下载资产时的实时网络带宽上限，格式同上。
+                      </div>
+                    </div>
+                    <div class="w-full md:w-[340px] shrink-0">
+                      <t-input
+                        v-model="formData.dockerDownloadRate"
+                        placeholder="留空不限制，例如 10mb"
+                        class="w-full !font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+                  >
+                    <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+                      <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">
+                        容器基础环境变量
+                      </div>
+                      <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+                        为开服沙盒内置的环境注入，如指定时区或注入自定义密钥。
+                      </div>
+                    </div>
+                    <div class="w-full md:w-[340px] shrink-0 flex flex-col gap-2">
+                      <div
+                        v-for="(item, idx) in envList"
+                        :key="idx"
+                        class="flex items-center gap-1.5 bg-zinc-50 dark:bg-zinc-800/40 p-1.5 rounded-lg border border-zinc-200/50 dark:border-zinc-700/50"
+                      >
+                        <t-input
+                          v-model="item.key"
+                          size="small"
+                          placeholder="KEY"
+                          class="!font-mono text-xs flex-1"
+                          @blur="updateEnvString"
+                        />
+                        <span class="text-zinc-400 font-bold">=</span>
+                        <t-input
+                          v-model="item.value"
+                          size="small"
+                          placeholder="VALUE"
+                          class="!font-mono text-xs flex-1"
+                          @blur="updateEnvString"
+                        />
+                        <t-button variant="text" theme="danger" shape="square" size="small" @click="removeEnvRow(idx)">
+                          <template #icon><t-icon name="delete" /></template>
+                        </t-button>
+                      </div>
+                      <t-button
+                        dash
+                        block
+                        variant="outline"
+                        size="small"
+                        class="!rounded-lg text-xs"
+                        @click="addEnvRow"
+                      >
+                        <template #icon><t-icon name="add" /></template>新增环境变量
+                      </t-button>
+                    </div>
+                  </div>
+
+                  <div
+                    class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+                  >
+                    <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+                      <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">
+                        宿主机高级 Hosts 静态映射
+                      </div>
+                      <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+                        让隔离容器连接宿主机底层接口，如配置
+                        <code class="font-mono text-xs">host.mslx.internal:host-gateway</code>。
+                      </div>
+                    </div>
+                    <div class="w-full md:w-[340px] shrink-0 flex flex-col gap-2">
+                      <div
+                        v-for="(item, idx) in hostList"
+                        :key="idx"
+                        class="flex items-center gap-1.5 bg-zinc-50 dark:bg-zinc-800/40 p-1.5 rounded-lg border border-zinc-200/50 dark:border-zinc-700/50"
+                      >
+                        <t-input
+                          v-model="item.domain"
+                          size="small"
+                          placeholder="域名 (如 db.local)"
+                          class="!font-mono text-xs flex-1"
+                          @blur="updateHostsString"
+                        />
+                        <span class="text-zinc-400 font-bold">-></span>
+                        <t-input
+                          v-model="item.ip"
+                          size="small"
+                          placeholder="IP"
+                          class="!font-mono text-xs flex-1"
+                          @blur="updateHostsString"
+                        />
+                        <t-button variant="text" theme="danger" shape="square" size="small" @click="removeHostRow(idx)">
+                          <template #icon><t-icon name="delete" /></template>
+                        </t-button>
+                      </div>
+                      <t-button
+                        dash
+                        block
+                        variant="outline"
+                        size="small"
+                        class="!rounded-lg text-xs"
+                        @click="addHostRow"
+                      >
+                        <template #icon><t-icon name="add" /></template>添加 Hosts 静态映射
+                      </t-button>
+                    </div>
+                  </div>
+
+                  <div
+                    class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+                  >
+                    <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+                      <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">
+                        Docker CLI 原生附加参数 (ExtraArgs)
+                      </div>
+                      <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+                        直接透传给系统底层的
+                        <code class="font-mono text-xs">docker run</code> 命令，非专业高级定制请留空。
+                      </div>
+                    </div>
+                    <div class="w-full md:w-[340px] shrink-0">
+                      <t-input
+                        v-model="formData.dockerExtraArgs"
+                        placeholder="例如 --privileged 或 --dns=8.8.8.8"
+                        class="w-full !font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </t-collapse-panel>
+            </t-collapse>
+          </div>
+        </template>
 
         <template v-if="showJavaOnly">
           <div
@@ -918,7 +1670,7 @@ onUnmounted(() => {
               </t-tooltip>
             </div>
           </div>
-          <div class="w-full md:w-[340px] shrink-0 flex items-center gap-3 overflow-hidden">
+          <div class="w-full md:w-[340px] shrink-0 flex items-center gap-3 p-[2px] -m-[2px]">
             <t-input-number
               v-model="formData.backupMaxCount"
               :min="1"
@@ -1143,7 +1895,7 @@ onUnmounted(() => {
               设置输入输出流的字符集，乱码时请尝试切换
             </div>
           </div>
-          <div class="w-full md:w-[340px] shrink-0 flex items-center gap-3 overflow-hidden">
+          <div class="w-full md:w-[340px] shrink-0 flex items-center gap-3 p-[2px] -m-[2px]">
             <t-select v-model="formData.inputEncoding" :options="encodingOptions" label="输入" class="flex-1 min-w-0" />
             <t-select
               v-model="formData.outputEncoding"
@@ -1168,7 +1920,7 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div class="border-b border-dashed border-zinc-200/60 dark:border-zinc-700/60 ">
+        <div class="border-b mt-8 border-dashed border-zinc-200/60 dark:border-zinc-700/60">
           <div class="flex items-center gap-2">
             <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
             <h2 class="text-base font-bold text-[var(--td-text-color-primary)] m-0">路径设置</h2>
@@ -1359,6 +2111,19 @@ onUnmounted(() => {
     :deep(.t-select__right-icon) {
       display: none !important;
     }
+  }
+}
+
+:deep(.t-input-number.w-full) {
+  width: 100% !important;
+
+  .t-input__wrap {
+    width: 100% !important;
+    flex: 1 1 auto !important;
+  }
+
+  .t-input {
+    width: 100% !important;
   }
 }
 </style>
