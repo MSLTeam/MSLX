@@ -261,20 +261,25 @@ public class MCServerService : IMCServerService
     {
         try
         {
-            const string cgroupPath = "/proc/self/cgroup";
-            if (!File.Exists(cgroupPath)) return null;
+            string containerId = Environment.MachineName.Trim();
 
-            string cgroupContent = await File.ReadAllTextAsync(cgroupPath);
-            string? containerId = cgroupContent.Split('\n')
-                .FirstOrDefault(line => !string.IsNullOrWhiteSpace(line))?
-                .Split('/')
-                .LastOrDefault()?
-                .Trim();
+            const string mountinfoPath = "/proc/self/mountinfo";
+            if (File.Exists(mountinfoPath))
+            {
+                string mountinfo = await File.ReadAllTextAsync(mountinfoPath);
+                var match = System.Text.RegularExpressions.Regex.Match(mountinfo, @"/docker/containers/([a-f0-9]{64})/");
+                if (match.Success && match.Groups.Count > 1)
+                {
+                    containerId = match.Groups[1].Value;
+                    _logger.LogInformation($"[Docker-Inspector] 从 mountinfo 成功捕获 64 位纯血容器 ID: {containerId}");
+                }
+            }
 
-            if (string.IsNullOrWhiteSpace(containerId) || containerId.Length < 12) return null;
+            if (string.IsNullOrWhiteSpace(containerId)) return null;
 
             var process = new Process();
             process.StartInfo.FileName = "docker";
+
             process.StartInfo.Arguments = $"inspect --format \"{{{{range .Mounts}}}}{{{{if eq .Destination \\\"/app/DaemonData\\\"}}}}{{{{.Source}}}}{{{{end}}}}{{{{end}}}}\" {containerId}";
             process.StartInfo.CreateNoWindow = true;
             process.StartInfo.UseShellExecute = false;
@@ -283,14 +288,20 @@ public class MCServerService : IMCServerService
 
             process.Start();
             string output = await process.StandardOutput.ReadToEndAsync();
+            string error = await process.StandardError.ReadToEndAsync();
             await Task.Run(process.WaitForExit);
+
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                _logger.LogWarning($"[Docker-Inspector] docker inspect 吐出标准错误: {error.Trim()}");
+            }
 
             string hostPath = output.Trim().Replace("\"", "");
             return string.IsNullOrWhiteSpace(hostPath) ? null : hostPath;
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, $"[Docker-Inspector] 实例 {instanceId} 逆向反查宿主机物理路径时发生异常。");
+            _logger.LogWarning(ex, $"[Docker-Inspector] 实例 {instanceId} 逆向反查宿主机物理路径时发生致命异常。");
             return null;
         }
     }
