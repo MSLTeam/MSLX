@@ -44,7 +44,7 @@ public class McServerInfo
         public string? DockerEnvVars { get; set; } // 格式: "EULA=true,TZ=Asia/Shanghai"
         public string? DockerNetworkMode { get; set; } // "bridge", "host", "none" 等
         public string? DockerNetworkAlias { get; set; } // 网络别名
-        public string? DockerPorts { get; set; } // 格式: "25565:25565,8080:80"
+        public string DockerPorts { get; set; } = "255665:25565"; // 格式: "25565:25565,8080:80"
         public string? DockerExtraHosts { get; set; } // 格式: "host.mslx.internal:host-gateway,db.local:192.168.1.100"
 
         // 资源限制（Cgroups 映射）

@@ -210,6 +210,7 @@ public class UpdateServerRequest : IValidatableObject
         }
         else
         {
+            /*
             // 如果 Java 选的是普通的本地路径，但用户却填了 Docker 专属的高级参数，予以友情拦截
             if (!string.IsNullOrWhiteSpace(DockerNetworkAlias) || !string.IsNullOrWhiteSpace(DockerPorts) || DockerMaxMemoryMb.HasValue)
             {
@@ -217,7 +218,7 @@ public class UpdateServerRequest : IValidatableObject
                     "提示：当前服务器未开启 Docker 运行运行模式 (Java 属性未选择 docker-java/docker-custom)，请勿配置 Docker 专属限制参数。",
                     new[] { nameof(Java) }
                 );
-            }
+            } */
         }
     }
 

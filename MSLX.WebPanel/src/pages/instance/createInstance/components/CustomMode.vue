@@ -51,11 +51,22 @@ watch([isDockerActive, dockerImageType, dockerImagePresetVersion], ([active, typ
 const onSubmit: FormProps['onSubmit'] = async ({ validateResult }) => {
   if (validateResult === true) {
     try {
-      const res = await postCreateInstanceQuickMode(formData);
+      const apiData = {
+        ...formData,
+        path: formData.path || null,
+        args: formData.args || null,
+      };
+
+      if (!isDockerActive.value) {
+        apiData.dockerImage = null;
+        apiData.dockerPorts = null;
+      }
+
+      const res = await postCreateInstanceQuickMode(apiData);
       createdServerId.value = res.serverId;
       MessagePlugin.success('创建成功');
       isSuccess.value = true;
-    } catch (e) {
+    } catch (e: any) {
       MessagePlugin.error('创建失败！' + e.message);
     }
   } else {

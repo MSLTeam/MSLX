@@ -203,7 +203,13 @@ const isMcdr = computed(() => javaType.value === 'mcdr');
 const isCustomLike = computed(() => javaType.value === 'none' || javaType.value === 'mcdr');
 // 仅 Java 模式才显示的区块(核心/内存/外置登录/强制UTF8)
 const showJavaOnly = computed(() => {
-  return !isCustomLike.value || formData.value.java === 'docker-java';
+  return (
+    javaType.value === 'online' ||
+    javaType.value === 'local' ||
+    javaType.value === 'custom' ||
+    javaType.value === 'env' ||
+    javaType.value === 'docker-java'
+  );
 });
 const mcdrLaunchCommand = computed(() => {
   const py = (mcdrPython.value || 'python').trim();
@@ -227,7 +233,7 @@ const applyMcdrDefaults = () => {
 // ====== Docker相关配置参数 ======
 const expandedPanels = ref([]);
 const isDockerMode = computed(() => {
-  return formData.value.java === 'docker-java' || formData.value.java === 'docker-custom';
+  return javaType.value === 'docker-java' || javaType.value === 'docker-custom';
 });
 
 // 内置网络的 bridge, host, none 强制禁用网络别名
@@ -421,6 +427,7 @@ const fetchJavaVersions = async (force = false) => {
 watch([javaType, selectedJavaVersion, customJavaPath], ([type, ver, path]) => {
   if (type === 'none' || type === 'mcdr') formData.value.java = 'none';
   else if (type === 'env') formData.value.java = 'java';
+  else if (type === 'docker-java' || type === 'docker-custom') formData.value.java = type;
   else if (type === 'custom' || type === 'local') formData.value.java = path;
   else if (type === 'online') formData.value.java = ver ? `MSLX://Java/${ver}` : '';
 });
@@ -667,9 +674,8 @@ const initData = async () => {
 
     // 解析 Java 类型
     if (res.java === 'docker-java' || res.java === 'docker-custom') {
-      javaType.value = res.java; // 'docker-java' 或 'docker-custom'
+      javaType.value = res.java;
     } else if (res.java === 'none') {
-      // MCDR 与普通自定义命令都记为 none，用启动命令是否含 mcdreforged 区分
       if ((res.args ?? '').includes('mcdreforged')) {
         javaType.value = 'mcdr';
         const m = (res.args ?? '').match(/^\s*"?([^"]+?)"?\s+-m\s+mcdreforged/);
@@ -932,7 +938,7 @@ onUnmounted(() => {
           <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
             <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">启动方式</div>
             <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
-              选择使用 Java 启动 Minecraft，或使用自定义命令启动其他程序 (如 Bedrock, Python 等)
+              选择使用 Java 启动 Minecraft，或使用自定义命令启动其他程序 (如 Bedrock, Python 等)，又或是使用Docker进行容器化。
             </div>
           </div>
           <div class="w-full md:w-[340px] shrink-0 flex flex-col gap-2">
@@ -944,8 +950,8 @@ onUnmounted(() => {
                 { label: '使用本地版本 (Java)', value: 'local' },
                 { label: '自定义路径 (Java)', value: 'custom' },
                 { label: '环境变量 (Java)', value: 'env' },
-                { label: 'Docker 官方运行时 (推荐)', value: 'docker-java' },
-                { label: 'Docker 完全自定义容器', value: 'docker-custom' },
+                { label: 'Docker MSLX 内置运行时 (使用容器推荐这个)', value: 'docker-java' },
+                { label: 'Docker 自定义容器', value: 'docker-custom' },
                 { label: 'MCDReforged (MCDR)', value: 'mcdr' },
                 { label: '自定义命令 (无Java)', value: 'none' },
               ]"
@@ -1019,11 +1025,11 @@ onUnmounted(() => {
         >
           <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
             <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">
-              {{ javaType === 'none' ? '启动命令 (Command)' : '启动参数 (JVM Args)' }}
+              {{ javaType === 'none' || javaType === 'docker-custom' ? '启动命令 (Command)' : '启动参数 (JVM Args)' }}
             </div>
             <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
               {{
-                javaType === 'none'
+                javaType === 'none' || javaType === 'docker-custom'
                   ? '完全自定义的启动命令。程序将直接执行此段内容，不依赖 Java 环境。'
                   : '传递给 Java 的启动参数，如 GC 策略 (例如 -XX:+UseG1GC)'
               }}
