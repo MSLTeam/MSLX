@@ -708,7 +708,7 @@ public class NeoForgeInstallerService
 
                     if (File.Exists("/proc/self/cgroup"))
                     {
-                        ReportLog("[Docker 容器沙盒构建] 检测到当前 MSLX-Daemon 处于容器内，正在为 NeoForge 逆向反查宿主机物理挂载源...\n");
+                        ReportLog("[Docker 容器沙盒构建] 检测到当前 MSLX-Daemon 处于容器内，正在查询宿主机物理挂载源...\n");
                         string? hostDataRoot = await GetHostPhysicalDataPathAsync();
 
                         if (!string.IsNullOrWhiteSpace(hostDataRoot))
@@ -718,7 +718,7 @@ public class NeoForgeInstallerService
                         }
                         else
                         {
-                            ReportLog("[Docker 容器沙盒构建] ⚠️ 逆向物理路径失败，构建可能会由于宿主机路径丢失而中止。\n");
+                            ReportLog("[Docker 容器沙盒构建] 未检测到非对称挂载前缀，正在尝试使用原对称路径直接构建...\n");
                         }
                     }
 

@@ -293,7 +293,7 @@ public class MCServerService : IMCServerService
 
             if (!string.IsNullOrWhiteSpace(error))
             {
-                _logger.LogWarning($"[Docker-Inspector] docker inspect 吐出标准错误: {error.Trim()}");
+                _logger.LogWarning($"[Docker-Inspector] docker inspect 错误: {error.Trim()}");
             }
 
             string hostPath = output.Trim().Replace("\"", "");
@@ -418,19 +418,20 @@ public class MCServerService : IMCServerService
 
                 string finalHostBaseDir = serverInfo.Base; // 默认使用宿主机物理路径
 
+                // 检查是否MSLX已经在Docker内，如果是，那么需要进行路径修正
                 if (File.Exists("/proc/self/cgroup"))
                 {
-                    RecordLog(instanceId, context, "[Docker-Detector] 检测到当前 MSLX-Daemon 处于容器内，正在查询物理主机挂载路径...");
+                    RecordLog(instanceId, context, "[MSLX-Docker] 检测到当前 MSLX-Daemon 处于容器内，正在查询物理主机挂载路径...");
                     string? hostDataRoot = await GetHostPhysicalDataPathAsync(instanceId, context);
 
                     if (!string.IsNullOrWhiteSpace(hostDataRoot))
                     {
                         finalHostBaseDir = serverInfo.Base.Replace("/app/DaemonData", hostDataRoot);
-                        _logger.LogInformation($"[Docker-Translator] 路径转换完成: {serverInfo.Base} -> {finalHostBaseDir}");
+                        _logger.LogInformation($"[MSLX-Docker] 路径转换完成: {serverInfo.Base} -> {finalHostBaseDir}");
                     }
                     else
                     {
-                        RecordLog(instanceId, context, "[Docker-Warning] 逆向反查物理路径失败，将尝试使用内置路径盲切。");
+                        RecordLog(instanceId, context, "[MSLX-Docker] 查询物理路径失败，将尝试使用原始路径。");
                     }
                 }
 
