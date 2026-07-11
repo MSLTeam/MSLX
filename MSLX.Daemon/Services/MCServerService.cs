@@ -429,8 +429,9 @@ public class MCServerService : IMCServerService
                         RecordLog(instanceId, context, $"\n[MSLX-Daemon] 💡 解决办法：请检查部署命令/Compose配置文件，确保挂载了以下路径：/var/run/docker.sock:/var/run/docker.sock");
                         RecordLog(instanceId, context, $"\n[MSLX-Daemon] Docker部署MSLX文档: https://mslx.mslmc.cn/docs/install/docker/ ");
                         RecordLog(instanceId, context, $"\n[MSLX-Daemon] MSLX运行Docker服务端文档: https://mslx.mslmc.cn/docs/server/docker/");
-                        RecordLog(instanceId, context, $"\n[MSLX-Daemon] (重点查看《MSLX已运行在Docker下，如何再部署Docker服务端实例？》)");
-                        _activeServers.TryRemove(instanceId, out _);
+                        RecordLog(instanceId, context, $"\n[MSLX-Daemon] (重点查看《MSLX已运行在Docker下，如何再部署Docker服务端实例？》)\n");
+                        _activeServers.TryRemove(instanceId, out _); 
+                        RecordLog(instanceId, context, $"[MSLX] 服务端启动已取消！");
                         return;
                     }
                     RecordLog(instanceId, context, "[MSLX-Daemon] 检测到当前 MSLX-Daemon 处于容器内，正在查询物理主机挂载路径...");
