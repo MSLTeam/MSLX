@@ -255,6 +255,58 @@ public class MCServerService : IMCServerService
     }
 
     /// <summary>
+    /// 逆向反查当前 Daemon 容器在宿主机上的真实物理数据根路径
+    /// </summary>
+    private async Task<string?> GetHostPhysicalDataPathAsync(uint instanceId, ServerContext context)
+    {
+        try
+        {
+            string containerId = Environment.MachineName.Trim();
+
+            const string mountinfoPath = "/proc/self/mountinfo";
+            if (File.Exists(mountinfoPath))
+            {
+                string mountinfo = await File.ReadAllTextAsync(mountinfoPath);
+                var match = System.Text.RegularExpressions.Regex.Match(mountinfo, @"/docker/containers/([a-f0-9]{64})/");
+                if (match.Success && match.Groups.Count > 1)
+                {
+                    containerId = match.Groups[1].Value;
+                    _logger.LogInformation($"[Docker-Inspector] 从 mountinfo 成功捕获 64 位容器 ID: {containerId}");
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(containerId)) return null;
+
+            var process = new Process();
+            process.StartInfo.FileName = "docker";
+
+            process.StartInfo.Arguments = $"inspect --format \"{{{{range .Mounts}}}}{{{{if eq .Destination \\\"/app/DaemonData\\\"}}}}{{{{.Source}}}}{{{{end}}}}{{{{end}}}}\" {containerId}";
+            process.StartInfo.CreateNoWindow = true;
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
+
+            process.Start();
+            string output = await process.StandardOutput.ReadToEndAsync();
+            string error = await process.StandardError.ReadToEndAsync();
+            await Task.Run(process.WaitForExit);
+
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                _logger.LogWarning($"[Docker-Inspector] docker inspect 错误: {error.Trim()}");
+            }
+
+            string hostPath = output.Trim().Replace("\"", "");
+            return string.IsNullOrWhiteSpace(hostPath) ? null : hostPath;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, $"[Docker-Inspector] 实例 {instanceId} 逆向反查宿主机物理路径时发生致命异常。");
+            return null;
+        }
+    }
+
+    /// <summary>
     /// 异步启动服务器
     /// </summary>
     private async Task InternalStartServerAsync(uint instanceId, ServerContext context,
@@ -364,9 +416,37 @@ public class MCServerService : IMCServerService
                 sb.Append("run --rm -i ");
                 sb.Append($"--name mslx-container-{instanceId} ");
 
-                // 工作工作目录与基础挂载
+                string finalHostBaseDir = serverInfo.Base; // 默认使用宿主机物理路径
+
+                // 检查是否MSLX已经在Docker内，如果是，那么需要进行路径修正
+                if (File.Exists("/proc/self/cgroup"))
+                {
+                    // 检查是否正确挂载
+                    if (!File.Exists("/var/run/docker.sock"))
+                    {
+                        _logger.LogError($"[MSLX-Docker] ❌ 容器化运行严重错误：未检测到 Docker 通信管道（/var/run/docker.sock）！");
+                        RecordLog(instanceId, context, $"\n[MSLX-Docker] ❌ 错误：MSLX-Daemon 处于 Docker 容器中运行，但未挂载宿主机的 sock 管道！");
+                        RecordLog(instanceId, context, $"\n[MSLX-Docker] 💡 解决办法：请检查部署命令，确保挂载了以下路径：/var/run/docker.sock:/var/run/docker.sock");
+                        RecordLog(instanceId, context, $"\n[MSLX-Docker] Docker部署MSLX文档: https://mslx.mslmc.cn/docs/install/docker/ | MSLX运行Docker服务端文档: https://mslx.mslmc.cn/docs/server/docker/");
+                        return;
+                    }
+                    RecordLog(instanceId, context, "[MSLX-Docker] 检测到当前 MSLX-Daemon 处于容器内，正在查询物理主机挂载路径...");
+                    string? hostDataRoot = await GetHostPhysicalDataPathAsync(instanceId, context);
+
+                    if (!string.IsNullOrWhiteSpace(hostDataRoot))
+                    {
+                        finalHostBaseDir = serverInfo.Base.Replace("/app/DaemonData", hostDataRoot);
+                        _logger.LogInformation($"[MSLX-Docker] 路径转换完成: {serverInfo.Base} -> {finalHostBaseDir}");
+                    }
+                    else
+                    {
+                        RecordLog(instanceId, context, "[MSLX-Docker] 查询物理路径失败，将尝试使用原始路径。");
+                    }
+                }
+
+                // 工作目录与基础挂载
                 string workDir = string.IsNullOrWhiteSpace(serverInfo.DockerWorkingDir) ? "/mslx-data" : serverInfo.DockerWorkingDir;
-                sb.Append($"-v \"{serverInfo.Base}:{workDir}\" ");
+                sb.Append($"-v \"{finalHostBaseDir}:{workDir}\" ");
                 sb.Append($"-w \"{workDir}\" ");
 
                 // 挂载额外目录卷
@@ -379,7 +459,7 @@ public class MCServerService : IMCServerService
                     }
                 }
 
-                // 网络模式模式与别名、端口映射
+                // 网络模式与别名、端口映射
                 string netMode = string.IsNullOrWhiteSpace(serverInfo.DockerNetworkMode) ? "bridge" : serverInfo.DockerNetworkMode.ToLower();
                 if (serverInfo.DockerPorts?.Trim() == "0")
                 {

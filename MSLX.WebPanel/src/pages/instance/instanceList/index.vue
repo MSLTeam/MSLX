@@ -288,8 +288,7 @@ const handleConfirmDelete = async () => {
             <div
               class="design-card relative h-full group flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm hover:shadow-md hover:border-[var(--color-primary)]/50 transition-all duration-300 p-5 gap-4 cursor-pointer"
               :class="{
-                '!border-[var(--color-primary)] !bg-[var(--color-primary)]/5 shadow-md':
-                  isBatchMode && selectedIds.includes(item.id),
+                '!border-[var(--color-primary)] shadow-md': isBatchMode && selectedIds.includes(item.id),
               }"
               @click="handleCardClick(item)"
             >

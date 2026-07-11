@@ -1,31 +1,47 @@
 ﻿using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
+using MSLX.Daemon.Adapters;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Middleware;
 using MSLX.Daemon.Services;
+using MSLX.Daemon.Services.DeployServerService;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.BackgroundTasks;
 using MSLX.Daemon.Utils.ConfigUtils;
-using System.Reflection;
-using MSLX.Daemon.Adapters;
-using MSLX.Daemon.Services.DeployServerService;
 using MSLX.SDK.IServices;
 using MSLX.SDK.Models;
+using Serilog;
+using Serilog.Sinks.SystemConsole.Themes;
+using System.Reflection;
 
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
 var builder = WebApplication.CreateBuilder(args);
 
 
-// 日志级别配置
-builder.Logging.SetMinimumLevel(LogLevel.Information);
-builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
-builder.Logging.AddFilter("System", LogLevel.Warning);
-builder.Logging.AddFilter("Microsoft.AspNetCore.Hosting.Diagnostics", LogLevel.Warning);
+// 日志配置
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
+    .MinimumLevel.Override("System", Serilog.Events.LogEventLevel.Warning)
+    .MinimumLevel.Override("Microsoft.AspNetCore.Hosting.Diagnostics", Serilog.Events.LogEventLevel.Warning)
+    .WriteTo.Console(
+        theme: AnsiConsoleTheme.Sixteen,
+        outputTemplate: "{Level:w4}: {SourceContext}[{EventId}]{NewLine}      {Message:lj}{NewLine}{Exception}"
+    )
+    .WriteTo.File(
+        path: Path.Combine(IConfigBase.GetAppDataPath(), "Logs", "mslx-daemon-log-.txt"),         // 存放在 Logs 文件夹下
+        rollingInterval: RollingInterval.Day, // 按天生成文件
+        retainedFileCountLimit: 5,            // 只保留最新 5 个文件
+        outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff local}] [{Level:w4}] {SourceContext}[{EventId}] {Message:lj}{NewLine}{Exception}"
+    )
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 // 创建临时 Logger
-using (var bootstrapLoggerFactory = LoggerFactory.Create(logging => logging.AddConsole()))
+using (var bootstrapLoggerFactory = LoggerFactory.Create(logging => logging.AddSerilog()))
 {
     IConfigBase.Initialize(bootstrapLoggerFactory);
 }
@@ -182,7 +198,7 @@ var mvcBuilder = builder.Services.AddControllers()
 // 插件加载
 var loadedPlugins = new List<LoadedPlugin>();
 var pluginsPath = Path.Combine(IConfigBase.GetAppDataPath(), "Plugins");
-using var pluginLoggerSource = LoggerFactory.Create(l => l.AddConsole());
+using var pluginLoggerSource = LoggerFactory.Create(l => l.AddSerilog());
 var pluginLogger = pluginLoggerSource.CreateLogger("PluginLoader");
 
 if (!Directory.Exists(pluginsPath))
@@ -514,5 +530,11 @@ MSLX.SDK.MSLX.Initialize(
     new DaemonHttpProvider()
 );
 
-app.Run();
-
+try
+{
+    app.Run();
+}
+finally
+{
+    Log.CloseAndFlush();
+}
