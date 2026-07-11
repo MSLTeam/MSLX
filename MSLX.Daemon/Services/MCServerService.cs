@@ -424,23 +424,26 @@ public class MCServerService : IMCServerService
                     // 检查是否正确挂载
                     if (!File.Exists("/var/run/docker.sock"))
                     {
-                        _logger.LogError($"[MSLX-Docker] ❌ 容器化运行严重错误：未检测到 Docker 通信管道（/var/run/docker.sock）！");
-                        RecordLog(instanceId, context, $"\n[MSLX-Docker] ❌ 错误：MSLX-Daemon 处于 Docker 容器中运行，但未挂载宿主机的 sock 管道！");
-                        RecordLog(instanceId, context, $"\n[MSLX-Docker] 💡 解决办法：请检查部署命令，确保挂载了以下路径：/var/run/docker.sock:/var/run/docker.sock");
-                        RecordLog(instanceId, context, $"\n[MSLX-Docker] Docker部署MSLX文档: https://mslx.mslmc.cn/docs/install/docker/ | MSLX运行Docker服务端文档: https://mslx.mslmc.cn/docs/server/docker/");
+                        _logger.LogError($"[MSLX-Daemonr] ❌ 容器化运行严重错误：未检测到 Docker 通信管道（/var/run/docker.sock）！");
+                        RecordLog(instanceId, context, $"\n[MSLX-Daemon] ❌ 错误：MSLX-Daemon 处于 Docker 容器中运行，但未挂载宿主机的 Sock 管道！");
+                        RecordLog(instanceId, context, $"\n[MSLX-Daemon] 💡 解决办法：请检查部署命令/Compose配置文件，确保挂载了以下路径：/var/run/docker.sock:/var/run/docker.sock");
+                        RecordLog(instanceId, context, $"\n[MSLX-Daemon] Docker部署MSLX文档: https://mslx.mslmc.cn/docs/install/docker/ ");
+                        RecordLog(instanceId, context, $"\n[MSLX-Daemon] MSLX运行Docker服务端文档: https://mslx.mslmc.cn/docs/server/docker/");
+                        RecordLog(instanceId, context, $"\n[MSLX-Daemon] (重点查看《MSLX已运行在Docker下，如何再部署Docker服务端实例？》)");
+                        _activeServers.TryRemove(instanceId, out _);
                         return;
                     }
-                    RecordLog(instanceId, context, "[MSLX-Docker] 检测到当前 MSLX-Daemon 处于容器内，正在查询物理主机挂载路径...");
+                    RecordLog(instanceId, context, "[MSLX-Daemon] 检测到当前 MSLX-Daemon 处于容器内，正在查询物理主机挂载路径...");
                     string? hostDataRoot = await GetHostPhysicalDataPathAsync(instanceId, context);
 
                     if (!string.IsNullOrWhiteSpace(hostDataRoot))
                     {
                         finalHostBaseDir = serverInfo.Base.Replace("/app/DaemonData", hostDataRoot);
-                        _logger.LogInformation($"[MSLX-Docker] 路径转换完成: {serverInfo.Base} -> {finalHostBaseDir}");
+                        _logger.LogInformation($"[MSLX-Daemon] 路径转换完成: {serverInfo.Base} -> {finalHostBaseDir}");
                     }
                     else
                     {
-                        RecordLog(instanceId, context, "[MSLX-Docker] 查询物理路径失败，将尝试使用原始路径。");
+                        RecordLog(instanceId, context, "[MSLX-Daemon] 查询物理路径失败，将尝试使用原始路径。");
                     }
                 }
 
