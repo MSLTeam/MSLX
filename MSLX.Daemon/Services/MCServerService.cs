@@ -421,6 +421,13 @@ public class MCServerService : IMCServerService
                 // 检查是否MSLX已经在Docker内，如果是，那么需要进行路径修正
                 if (File.Exists("/proc/self/cgroup"))
                 {
+                    // 检查是否正确挂载
+                    if (!File.Exists("/var/run/docker.sock"))
+                    {
+                        _logger.LogError($"[MSLX-Docker] ❌ 容器化运行严重错误：未检测到 Docker 通信管道（/var/run/docker.sock）！");
+                        RecordLog(instanceId, context, $"\n[MSLX-Docker] ❌ 错误：MSLX-Daemon 处于 Docker 容器中运行，但未挂载宿主机的 sock 管道！\n[MSLX-Docker] 💡 解决办法：请检查部署命令，确保挂载了以下路径：/var/run/docker.sock:/var/run/docker.sock\n\n");
+                        return;
+                    }
                     RecordLog(instanceId, context, "[MSLX-Docker] 检测到当前 MSLX-Daemon 处于容器内，正在查询物理主机挂载路径...");
                     string? hostDataRoot = await GetHostPhysicalDataPathAsync(instanceId, context);
 
