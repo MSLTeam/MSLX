@@ -712,7 +712,7 @@ public class NeoForgeInstallerService
                         if (!File.Exists("/var/run/docker.sock"))
                         {
                             _logger.LogError($"[MSLX-Docker] ❌ 容器化运行严重错误：未检测到 Docker 通信管道（/var/run/docker.sock）！");
-                            ReportLog( $"\n[MSLX-Docker] ❌ 错误：MSLX-Daemon 处于 Docker 容器中运行，但未挂载宿主机的 sock 管道！\n[MSLX-Docker] 💡 解决办法：请检查部署命令，确保挂载了以下路径：/var/run/docker.sock:/var/run/docker.sock\n\n",-1);
+                            ReportLog( $"\n[MSLX-Docker] ❌ 错误：MSLX-Daemon 处于 Docker 容器中运行，但未挂载宿主机的 sock 管道！\n[MSLX-Docker] 💡 解决办法：请检查启动指令/Docker Compose配置文件，确保挂载了以下路径：/var/run/docker.sock:/var/run/docker.sock\n[MSLX-Docker] 相关文档: https://mslx.mslmc.cn/docs/install/docker/\n\n",-1);
                             return (false, InstallMcVersion);
                         }
                         ReportLog("[Docker 容器沙盒构建] 检测到当前 MSLX-Daemon 处于容器内，正在查询宿主机物理挂载源...\n");
