@@ -1374,7 +1374,7 @@ onUnmounted(() => {
                   >
                     <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
                       <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">
-                        网络出口最高上传吞吐限速 (可能仅限Linux宿主机有效)
+                        网络出口最高上传吞吐限速
                       </div>
                       <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
                         限制本实例的最高网络实时上传速率，支持格式如 <code class="font-mono text-xs">500k</code>、<code
