@@ -169,6 +169,7 @@ builder.Services.AddScoped<IPythonScannerService,PythonScannerService>();
 builder.Services.AddTransient<NeoForgeInstallerService>();
 builder.Services.AddTransient<ServerDeploymentService>();
 
+
 // 配置真实IP回传协议
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
@@ -296,7 +297,8 @@ else
                 // 注册 API
                 mvcBuilder.PartManager.ApplicationParts.Add(new Microsoft.AspNetCore.Mvc.ApplicationParts.AssemblyPart(assembly));
                 loadedPlugins.Add(new LoadedPlugin { Assembly = assembly, Metadata = pluginInstance });
-                
+                pluginInstance.OnRegisterServices(builder.Services);
+
                 pluginLogger.LogInformation($"[MSLX Plugin] 正在加载插件: {pluginInstance.Name} v{pluginInstance.Version} by @{pluginInstance.Developer}");
             }
         }
@@ -304,19 +306,6 @@ else
         { 
             pluginLogger.LogError($"[MSLX Plugin] 插件加载失败 ({Path.GetFileName(dllPath)}): {ex.Message}"); 
         }
-    }
-}
-
-// 注册插件服务
-foreach (var plugin in loadedPlugins)
-{
-    try
-    {
-        plugin.Metadata.OnRegisterServices(builder.Services);
-    }
-    catch (Exception ex)
-    {
-        pluginLogger.LogError($"[MSLX Plugin] 插件 {plugin.Metadata.Name} 注册底层依赖服务时崩溃: {ex.Message}");
     }
 }
 
