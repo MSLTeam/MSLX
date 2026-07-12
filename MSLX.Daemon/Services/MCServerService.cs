@@ -1,7 +1,11 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using CliWrap;
+using CliWrap.Buffered;
+using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.IServices;
+using MSLX.SDK.Models;
 using Newtonsoft.Json.Linq;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -9,8 +13,6 @@ using System.IO.Compression;
 using System.Management;
 using System.Text;
 using System.Text.RegularExpressions;
-using MSLX.SDK.IServices;
-using MSLX.SDK.Models;
 
 namespace MSLX.Daemon.Services;
 
@@ -306,6 +308,7 @@ public class MCServerService : IMCServerService
         }
     }
 
+
     /// <summary>
     /// 异步启动服务器
     /// </summary>
@@ -480,7 +483,7 @@ public class MCServerService : IMCServerService
                     }
                 }
 
-                if (!string.IsNullOrWhiteSpace(serverInfo.DockerNetworkAlias))
+                if (netMode != "host" && netMode != "none" && netMode != "bridge" && !string.IsNullOrWhiteSpace(serverInfo.DockerNetworkAlias))
                 {
                     sb.Append($"--network-alias=\"{serverInfo.DockerNetworkAlias.Trim()}\" ");
                 }
@@ -513,13 +516,14 @@ public class MCServerService : IMCServerService
                 if (serverInfo.DockerCpuPercentage is > 0 and <= 100)
                 {
                     double coresCount = Environment.ProcessorCount * (serverInfo.DockerCpuPercentage.Value / 100.0);
-                    sb.Append($"--cpus=\"{coresCount:F2}\" ");
+                    sb.Append(string.Format(System.Globalization.CultureInfo.InvariantCulture, "--cpus=\"{0:F2}\" ", coresCount));
                 }
                 if (serverInfo.DockerMaxMemoryMb is > 0)
                 {
                     sb.Append($"-m {serverInfo.DockerMaxMemoryMb.Value}m ");
                 }
-                if (serverInfo.DockerMaxSwapMb is > 0)
+                // 0 代表禁用 Swap，条件是 >= 0，且必须有物理内存限制
+                if (serverInfo.DockerMaxSwapMb.HasValue && serverInfo.DockerMaxSwapMb.Value >= 0 && serverInfo.DockerMaxMemoryMb is > 0)
                 {
                     sb.Append($"--memory-swap {serverInfo.DockerMaxSwapMb.Value}m ");
                 }
@@ -550,26 +554,29 @@ public class MCServerService : IMCServerService
                 // 组装一些内置参数
                 if (serverInfo.Java == "docker-java")
                 {
-                    string javaArgs = $"{authJvm} ";
-                    if (serverInfo.MinM.HasValue) javaArgs += $"-Xms{serverInfo.MinM.Value}M ";
+                    string javaArgs = "";
+                    if (!string.IsNullOrWhiteSpace(authJvm)) javaArgs += $"{authJvm.Trim()} "; // 外置登录
+                    if (serverInfo.MinM.HasValue) javaArgs += $"-Xms{serverInfo.MinM.Value}M "; // JVM内存
                     if (serverInfo.MaxM.HasValue) javaArgs += $"-Xmx{serverInfo.MaxM.Value}M ";
 
-                    javaArgs += $"{serverInfo.Args}{(serverInfo.ForceJvmUTF8 ? " -Dfile.encoding=UTF-8" : "")} ";
+                    if (!string.IsNullOrWhiteSpace(serverInfo.Args)) javaArgs += $"{serverInfo.Args.Trim()} "; // 额外参数
+                    if (serverInfo.ForceJvmUTF8) javaArgs += "-Dfile.encoding=UTF-8 "; // 强制UTF8
 
+                    // 服务端核心
                     if (serverInfo.Core.Contains("@libraries"))
                     {
-                        javaArgs += $"{serverInfo.Core} nogui";
+                        javaArgs += $"{serverInfo.Core.Trim()} nogui";
                     }
                     else
                     {
-                        javaArgs += $"-jar {serverInfo.Core} nogui";
+                        javaArgs += $"-jar {serverInfo.Core.Trim()} nogui";
                     }
 
-                    sb.Append($"java {javaArgs}");
+                    sb.Append($"java {javaArgs.Trim()}");
                 }
                 else // docker-custom 完全自定义模式
                 {
-                    sb.Append($"{serverInfo.Args}");
+                    sb.Append(serverInfo.Args.Trim());
                 }
 
                 args = sb.ToString();
