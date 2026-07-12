@@ -191,14 +191,16 @@ const formatTime = (timeStr: string) => {
   return new Date(timeStr).toLocaleString();
 };
 
-const fetchData = async () => {
+const fetchData = async (targetPath = currentPath.value) => {
   loading.value = true;
   selectedRowKeys.value = [];
   try {
-    const res = await getInstanceFilesList(instanceId.value, currentPath.value);
+    const res = await getInstanceFilesList(instanceId.value, targetPath);
     fileList.value = res || [];
+    currentPath.value = targetPath;
   } catch (error) {
     console.error(error);
+    MessagePlugin.error('打开文件夹失败：' + error.message);
   } finally {
     loading.value = false;
   }
@@ -351,10 +353,11 @@ const handleDelete = (row?: any) => {
   });
 };
 
-const handleRowClick = (row: any) => {
+const handleRowClick = async (row: any) => {
   if (row.type === 'folder') {
     const separator = currentPath.value === '' ? '' : '/';
-    currentPath.value = `${currentPath.value}${separator}${row.name}`;
+    const targetPath = `${currentPath.value}${separator}${row.name}`;
+    await fetchData(targetPath);
   } else if (isImage(row.name)) {
     openPreview(row.name);
   } else {
