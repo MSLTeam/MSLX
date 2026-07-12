@@ -334,21 +334,33 @@ public class MCServerService : IMCServerService
                     : osType;
 
                 _logger.LogWarning($"[Network-Limit] 实例容器 {gameContainerName} 处于非原生 Linux 环境，流控可能失效。当前环境: {actualOs}");
-
             }
 
             // 处理单位转换
             string ConvertToTcRate(string rateStr)
             {
-                var lower = rateStr.ToLower();
+                var lower = rateStr.ToLower().Trim();
                 var match = System.Text.RegularExpressions.Regex.Match(lower, @"\d+(\.\d+)?");
-                if (!match.Success) return "100mbit"; // 降级兜底
+                if (!match.Success) return "100mbit";
 
                 double number = double.Parse(match.Value, System.Globalization.CultureInfo.InvariantCulture);
-                if (lower.Contains("mb") || lower.Contains("m"))
-                    return $"{Convert.ToInt32(number * 8)}mbit";
 
-                return $"{Convert.ToInt32(number * 8)}kbit";
+                if (lower.Contains("mbps") || lower.Contains("mbit"))
+                {
+                    return $"{Convert.ToInt32(number)}mbit";
+                }
+
+                if (lower.Contains("mb") || lower.Contains("m"))
+                {
+                    return $"{Convert.ToInt32(number * 8)}mbit";
+                }
+
+                if (lower.Contains("kbps") || lower.Contains("kbit"))
+                {
+                    return $"{Convert.ToInt32(number)}kbit";
+                }
+
+                return $"{Convert.ToInt32(number)}kbit";
             }
 
             // 调用工具容器
