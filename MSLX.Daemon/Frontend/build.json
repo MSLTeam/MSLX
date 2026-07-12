@@ -1,6 +1,6 @@
 {
-  "version": "1.5.1",
-  "buildTime": "2026-07-11 17:04:30",
+  "version": "1.5.2",
+  "buildTime": "2026-07-13 00:35:28",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -77,10 +77,124 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "0a2fdf09172d48107c1580c64ed6aa077e3e2371",
-  "commitMsg": "feat(daemon): 运行Docker缺少sock 管道管道时新增文档提醒",
+  "commitId": "d511fd7fff6d04f9ae2c95dc2e1ab0fa628c02d7",
+  "commitMsg": "feat(daemon & webpanel): 实例列表新增到期时间显示",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "d511fd7fff6d04f9ae2c95dc2e1ab0fa628c02d7",
+      "commitTime": "2026-07-13 00:33:59 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 实例列表新增到期时间显示"
+    },
+    {
+      "commitId": "42950c0407a20ec3fecab60f8d338b7802acae8f",
+      "commitTime": "2026-07-13 00:21:51 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 服务端实例新增到期时间参数"
+    },
+    {
+      "commitId": "cd7f4091ebcd7b22c77cc38d32b3b0ba07f272c1",
+      "commitTime": "2026-07-12 23:52:45 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 这限速非Linux也行啊~"
+    },
+    {
+      "commitId": "0a259c471360d35a83bedcbbc0a94be3e3e236ad",
+      "commitTime": "2026-07-12 23:30:49 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复自身运行在容器的误判问题"
+    },
+    {
+      "commitId": "919bb042301a882c9b6155d28634bfc210fa818c",
+      "commitTime": "2026-07-12 23:27:15 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复流量单位转换错误"
+    },
+    {
+      "commitId": "7df2978342934f69fddd398c8fa6243385eec2f8",
+      "commitTime": "2026-07-12 23:22:42 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): Docker网络出口最高上传吞吐限速配置项新增提醒"
+    },
+    {
+      "commitId": "09f5f63f90f196892d7acdc4180580600a93a1b6",
+      "commitTime": "2026-07-12 23:10:43 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复文件管理器加载错误路径时无限叠加路径的问题"
+    },
+    {
+      "commitId": "0f0d3ee31a08c3da7fabf62b30c1842e0bdfab82",
+      "commitTime": "2026-07-12 23:08:12 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复文件管理器加载错误路径时无限叠加路径的问题"
+    },
+    {
+      "commitId": "67a28d369eaca43a2cf8585fd1a11f3c4f5a4c52",
+      "commitTime": "2026-07-12 23:01:23 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复文件管理器加载错误路径时无限叠加路径的问题"
+    },
+    {
+      "commitId": "161bcfebe6db8abb60ddb469bc8f6952d85eff59",
+      "commitTime": "2026-07-12 23:01:00 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): Docker模式自动拉取网络工具小镜像"
+    },
+    {
+      "commitId": "9436cbb046a2d5ee84332a48eee26e004f2a9437",
+      "commitTime": "2026-07-12 22:58:14 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 实现Docker的网速控制功能"
+    },
+    {
+      "commitId": "48e3ef2071171eb388d0b82b99802d6de71ef976",
+      "commitTime": "2026-07-12 21:47:54 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(daemon): 优化Docker模式下的启动参数"
+    },
+    {
+      "commitId": "6871cfd06852bdda7f5b501319eab6bb62b0bf49",
+      "commitTime": "2026-07-12 21:14:38 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel & daemon): 修复Docker设置中上传下载速率限制无法正常保存的问题"
+    },
+    {
+      "commitId": "b8fffe393d22912940da8707756c892d8e7c1f06",
+      "commitTime": "2026-07-12 15:35:21 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 优化插件服务的加载逻辑 & 修复插件依赖注入服务异常的问题"
+    },
+    {
+      "commitId": "b35d4f82da9aa31d72e80a4fe21c98a6c71a143f",
+      "commitTime": "2026-07-12 14:55:39 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复注册插件服务的逻辑顺序问题"
+    },
+    {
+      "commitId": "9658f26cedf7864d7b1abfb1a456a732b76fa031",
+      "commitTime": "2026-07-12 01:07:26 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(daemon): 补上Docker启动失败提醒"
+    },
+    {
+      "commitId": "87e14b6a1fdea12addcc04eb7637a50d913517d9",
+      "commitTime": "2026-07-11 19:58:23 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复MSLX-Daemon 处于 Docker 容器中运行，但未挂载宿主机的 Sock 管道提示后未正常处理服务端实例状态的问题"
+    },
+    {
+      "commitId": "907a23dae55095ebd1f8db908a12a13c01861413",
+      "commitTime": "2026-07-11 17:06:07 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #173 from MSLTeam/dev"
+    },
+    {
+      "commitId": "155aedcaee61baa6b63a7cf55afc5aaaab8a6098",
+      "commitTime": "2026-07-11 17:04:53 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.5.1版本"
+    },
     {
       "commitId": "0a2fdf09172d48107c1580c64ed6aa077e3e2371",
       "commitTime": "2026-07-11 16:45:37 +0800",
@@ -266,120 +380,6 @@
       "commitTime": "2026-07-08 11:52:20 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "fix(build): 修复前端构建失败..."
-    },
-    {
-      "commitId": "515b062cb9e8ee416e951b6dd5812bfe5affc928",
-      "commitTime": "2026-07-08 11:46:17 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(build): 修复前端构建失败"
-    },
-    {
-      "commitId": "ab8e1ae55fa28d66fdb12885c9cfa07281347a40",
-      "commitTime": "2026-07-08 11:44:27 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(build): 修复前端构建失败"
-    },
-    {
-      "commitId": "e3ad89e01922edd9726e1fbb19ef960dcc6d1d87",
-      "commitTime": "2026-07-08 11:41:44 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(build): 修复cnb docker同步工作流"
-    },
-    {
-      "commitId": "9fee35831fc8c67ff8ceedb134e8dc3d9538061e",
-      "commitTime": "2026-07-08 11:13:14 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(webpanel): dev版本daemon和docker镜像自动构建"
-    },
-    {
-      "commitId": "c09d7f2e76f43296986635af68a7239f0ab3cd96",
-      "commitTime": "2026-07-08 10:45:58 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(docker): 新增dev镜像构建工作流"
-    },
-    {
-      "commitId": "72b917f77fbbcaa765d9e8a5ac8dca4528ccff57",
-      "commitTime": "2026-07-08 10:45:10 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(docker): 新增dev镜像构建工作流"
-    },
-    {
-      "commitId": "684cbe4c80800bd813ad738fd17afe7b9e2ab5fa",
-      "commitTime": "2026-07-08 10:38:15 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): docker镜像新增mcdr预置 & Linux/macos下安装mcdr新增强制安装参数"
-    },
-    {
-      "commitId": "7287ef7ccac0c405de2710db813eb54cf6cd97ad",
-      "commitTime": "2026-07-08 00:01:45 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复mcdr模式下停止/重启服务端时无法正常结束的问题"
-    },
-    {
-      "commitId": "4e64b50c52a063d2d4797190235fbfca734939b4",
-      "commitTime": "2026-07-07 23:42:14 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
-    },
-    {
-      "commitId": "01c3e3f56ebf97ce80efdc3f52b85741204ce4f4",
-      "commitTime": "2026-07-07 23:40:59 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(webpanel): 重构MCDR创建服务端的页面样式，完成风格统一"
-    },
-    {
-      "commitId": "24bf4c75c06fb8bb6fcb14eddf4a7dd8ef035b95",
-      "commitTime": "2026-07-07 23:22:23 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 拆分路径设置分类"
-    },
-    {
-      "commitId": "cec873c0c91a3c8b1fe745364aebf638e411c64d",
-      "commitTime": "2026-07-07 23:19:22 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): ILogger泛型注入写错了"
-    },
-    {
-      "commitId": "9ecad985deb8d8d92c016404525008d34a991d85",
-      "commitTime": "2026-07-07 23:05:15 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #162 from alright-qwq/dev"
-    },
-    {
-      "commitId": "7792cbe8732a9eb1057825847086bcbd93bff86d",
-      "commitTime": "2026-07-07 23:04:21 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "remove(docs): 移除文档"
-    },
-    {
-      "commitId": "5c0308ddd3fdb7904d720f5f44e6b82c6426f9e9",
-      "commitTime": "2026-07-07 22:59:18 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): mcdr创建服务端模式新增参数验证"
-    },
-    {
-      "commitId": "41115800cdbd125f9f65c592b685cf2d846766f4",
-      "commitTime": "2026-07-07 22:54:52 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(webpanel & daemon): 优化一些代码 & 新增贡献者"
-    },
-    {
-      "commitId": "1e27b7208f8d132d598e008853d4e3b8dd3b814b",
-      "commitTime": "2026-07-07 22:20:02 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "remove(daemon): 移除无意义验证"
-    },
-    {
-      "commitId": "8c433b77d7e88ea6abc906cb1e56a9b7d59da2e7",
-      "commitTime": "2026-07-07 22:07:54 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复可能存在的路径穿越问题 & 接口鉴权漏洞"
-    },
-    {
-      "commitId": "b89d51e152327bfe4c885dcf621b2f5cc8eedbbe",
-      "commitTime": "2026-07-07 20:29:44 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
     }
   ]
 }
