@@ -146,6 +146,7 @@ public class ServerCreationService : BackgroundService
 
                 // 拉取镜像
                 await _deploymentService.PullImageIfNeededAsync(serverIdStr, realImageName, progressReporter);
+                await _deploymentService.PullImageIfNeededAsync(serverIdStr, "docker.mslmc.cn/xiaoyululu/mslx-runtime:network-tool", progressReporter);
 
                 _logger.LogInformation("服务器 {ServerId} 底层 Docker 运行镜像已成功拉取就绪。", serverId);
             }
