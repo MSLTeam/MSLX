@@ -39,9 +39,10 @@ export interface InstanceListModel {
   core: string;
   icon: string;
   status: number;
+  expireTime?: string;
   extra: {
     onlinePlayers: number;
-  }
+  };
 }
 
 export interface InstanceInfoModel {
