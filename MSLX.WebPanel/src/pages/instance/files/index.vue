@@ -199,8 +199,8 @@ const fetchData = async (targetPath = currentPath.value) => {
     fileList.value = res || [];
     currentPath.value = targetPath;
   } catch (error) {
-    console.error(error);
-    MessagePlugin.error('打开文件夹失败：' + error.message);
+    console.error(`请求路径 [${targetPath}] 失败:`, error);
+    throw error;
   } finally {
     loading.value = false;
   }
@@ -353,19 +353,20 @@ const handleDelete = (row?: any) => {
   });
 };
 
-const handleRowClick = async (row: any) => {
+const handleRowClick = (row: any) => {
   if (row.type === 'folder') {
     const separator = currentPath.value === '' ? '' : '/';
     const targetPath = `${currentPath.value}${separator}${row.name}`;
-    await fetchData(targetPath);
+    router.push({ query: { ...route.query, path: targetPath || undefined } });
   } else if (isImage(row.name)) {
     openPreview(row.name);
   } else {
     openEditor(row.name);
   }
 };
+
 const navigateTo = (path: string) => {
-  currentPath.value = path;
+  router.push({ query: { ...route.query, path: path || undefined } });
 };
 const handleRefresh = () => fetchData();
 
@@ -579,10 +580,26 @@ const filteredFileList = computed(() => {
 
 // —————— 生命周期 ——————
 
-watch(currentPath, (newPath) => {
-  router.replace({ query: { ...route.query, path: newPath || undefined } });
-  fetchData();
-});
+watch(
+  () => route.query.path,
+  async (newPathQuery) => {
+    const targetPath = (newPathQuery as string) || '';
+
+    // 如果发现目标路径和内部 currentPath 一致，说明是正常同步，不用重复请求
+    if (targetPath === currentPath.value && fileList.value.length > 0) return;
+
+    try {
+      // 尝试加载新路径的数据
+      await fetchData(targetPath);
+    } catch (err) {
+      MessagePlugin.error('打开文件夹失败，请重试: ' + err.message);
+      router.replace({
+        query: { ...route.query, path: currentPath.value || undefined },
+      });
+    }
+  },
+  { immediate: true },
+);
 
 watch(instanceId, () => {
   if (route.name !== 'InstanceFiles') {
