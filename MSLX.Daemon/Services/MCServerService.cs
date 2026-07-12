@@ -257,6 +257,15 @@ public class MCServerService : IMCServerService
     }
 
     /// <summary>
+    /// 检测是否在 Docker 容器内
+    /// </summary>
+    private static bool IsRunningInContainer()
+    {
+        var inContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER");
+        return inContainer != null && inContainer.Equals("true", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
     /// 逆向反查当前 Daemon 容器在宿主机上的真实物理数据根路径
     /// </summary>
     private async Task<string?> GetHostPhysicalDataPathAsync(uint instanceId, ServerContext context)
@@ -530,17 +539,17 @@ public class MCServerService : IMCServerService
                 string finalHostBaseDir = serverInfo.Base; // 默认使用宿主机物理路径
 
                 // 检查是否MSLX已经在Docker内，如果是，那么需要进行路径修正
-                if (File.Exists("/proc/self/cgroup"))
+                if (IsRunningInContainer())
                 {
                     // 检查是否正确挂载
                     if (!File.Exists("/var/run/docker.sock"))
                     {
                         _logger.LogError($"[MSLX-Daemonr] ❌ 容器化运行严重错误：未检测到 Docker 通信管道（/var/run/docker.sock）！");
-                        RecordLog(instanceId, context, $"\n[MSLX-Daemon] ❌ 错误：MSLX-Daemon 处于 Docker 容器中运行，但未挂载宿主机的 Sock 管道！");
-                        RecordLog(instanceId, context, $"\n[MSLX-Daemon] 💡 解决办法：请检查部署命令/Compose配置文件，确保挂载了以下路径：/var/run/docker.sock:/var/run/docker.sock");
-                        RecordLog(instanceId, context, $"\n[MSLX-Daemon] Docker部署MSLX文档: https://mslx.mslmc.cn/docs/install/docker/ ");
-                        RecordLog(instanceId, context, $"\n[MSLX-Daemon] MSLX运行Docker服务端文档: https://mslx.mslmc.cn/docs/server/docker/");
-                        RecordLog(instanceId, context, $"\n[MSLX-Daemon] (重点查看《MSLX已运行在Docker下，如何再部署Docker服务端实例？》)\n");
+                        RecordLog(instanceId, context, $"[MSLX-Daemon] ❌ 错误：MSLX-Daemon 处于 Docker 容器中运行，但未挂载宿主机的 Sock 管道！");
+                        RecordLog(instanceId, context, $"[MSLX-Daemon] 💡 解决办法：请检查部署命令/Compose配置文件，确保挂载了以下路径：/var/run/docker.sock:/var/run/docker.sock");
+                        RecordLog(instanceId, context, $"[MSLX-Daemon] Docker部署MSLX文档: https://mslx.mslmc.cn/docs/install/docker/ ");
+                        RecordLog(instanceId, context, $"[MSLX-Daemon] MSLX运行Docker服务端文档: https://mslx.mslmc.cn/docs/server/docker/");
+                        RecordLog(instanceId, context, $"[MSLX-Daemon] (重点查看《MSLX已运行在Docker下，如何再部署Docker服务端实例？》)\n");
                         _activeServers.TryRemove(instanceId, out _); 
                         RecordLog(instanceId, context, $"[MSLX] 服务端启动已取消！");
                         return;
