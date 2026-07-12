@@ -308,6 +308,102 @@ public class MCServerService : IMCServerService
         }
     }
 
+    /// <summary>
+    /// 应用Docker限速逻辑
+    /// </summary>
+    public async Task ApplyDockerNetworkLimitAsync(string gameContainerName, string uploadRate, string downloadRate)
+    {
+        if (string.IsNullOrWhiteSpace(uploadRate) && string.IsNullOrWhiteSpace(downloadRate)) return;
+
+        try
+        {
+            // 宿主机不是Linux警告
+            bool isProcessWinOrMac = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows) ||
+                                     System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX);
+            var dockerInfo = await Cli.Wrap("docker")
+                .WithArguments(new[] { "info", "--format", "{{.OSType}}" })
+                .WithValidation(CommandResultValidation.None)
+                .ExecuteBufferedAsync();
+
+            string osType = dockerInfo.StandardOutput.Trim().ToLower();
+
+            if (isProcessWinOrMac || osType == "windows" || osType == "darwin")
+            {
+                string actualOs = isProcessWinOrMac
+                    ? System.Runtime.InteropServices.RuntimeInformation.OSDescription
+                    : osType;
+
+                _logger.LogWarning($"[Network-Limit] 实例容器 {gameContainerName} 处于非原生 Linux 环境，流控可能失效。当前环境: {actualOs}");
+
+            }
+
+            // 处理单位转换
+            string ConvertToTcRate(string rateStr)
+            {
+                var lower = rateStr.ToLower();
+                var match = System.Text.RegularExpressions.Regex.Match(lower, @"\d+(\.\d+)?");
+                if (!match.Success) return "100mbit"; // 降级兜底
+
+                double number = double.Parse(match.Value, System.Globalization.CultureInfo.InvariantCulture);
+                if (lower.Contains("mb") || lower.Contains("m"))
+                    return $"{Convert.ToInt32(number * 8)}mbit";
+
+                return $"{Convert.ToInt32(number * 8)}kbit";
+            }
+
+            // 调用工具容器
+            async Task<BufferedCommandResult> RunTcSidecarAsync(string tcCommand)
+            {
+                return await Cli.Wrap("docker")
+                    .WithArguments(new[]
+                    {
+                     "run", "--rm",
+                     "--cap-add=NET_ADMIN",                  // 工具容器赋予网络特权
+                     $"--net=container:{gameContainerName}",  // 潜入游戏容器的网络空间
+                     "docker.mslmc.cn/xiaoyululu/mslx-runtime:network-tool", // 轻量工具容器镜像
+                     "sh", "-c", tcCommand
+                    })
+                    .WithValidation(CommandResultValidation.None)
+                    .ExecuteBufferedAsync();
+            }
+
+            _logger.LogInformation($"[Network-Limit] 正在为游戏实例容器 {gameContainerName} 挂载安全外壳限速...");
+
+            // 清理可能存在的旧规则
+            await RunTcSidecarAsync("tc qdisc del dev eth0 root 2>/dev/null || true");
+            await RunTcSidecarAsync("tc qdisc del dev eth0 ingress 2>/dev/null || true");
+
+            // 上传限速 (容器发出的流 - Egress)
+            if (!string.IsNullOrWhiteSpace(uploadRate))
+            {
+                string tcUpload = ConvertToTcRate(uploadRate);
+                var result = await RunTcSidecarAsync($"tc qdisc add dev eth0 root tbf rate {tcUpload} burst 32kbit latency 400ms");
+
+                if (result.ExitCode == 0)
+                    _logger.LogInformation($"[Network-Limit] 成功限制容器 {gameContainerName} 的上传速率为: {tcUpload}");
+                else
+                    _logger.LogWarning($"[Network-Limit] 容器 {gameContainerName} 上传限速失败: {result.StandardError}");
+            }
+
+            // 下载限速 (流入容器的流 - Ingress)
+            if (!string.IsNullOrWhiteSpace(downloadRate))
+            {
+                string tcDownload = ConvertToTcRate(downloadRate);
+                await RunTcSidecarAsync("tc qdisc add dev eth0 handle ffff: ingress");
+                var result = await RunTcSidecarAsync($"tc filter add dev eth0 parent ffff: protocol ip prio 50 u32 match ip src 0.0.0.0/0 police rate {tcDownload} burst 32kbit drop flowid :1");
+
+                if (result.ExitCode == 0)
+                    _logger.LogInformation($"[Network-Limit] 成功限制容器 {gameContainerName} 的下载速率为: {tcDownload}");
+                else
+                    _logger.LogWarning($"[Network-Limit] 容器 {gameContainerName} 下载限速失败: {result.StandardError}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"[Network-Limit] 商业化安全限速挂载遭遇严重异常: {ex.Message}");
+        }
+    }
+
 
     /// <summary>
     /// 异步启动服务器
@@ -746,6 +842,28 @@ public class MCServerService : IMCServerService
 
                 _logger.LogInformation($"服务器 [{instanceId}] 启动成功，PID: {process.Id}");
                 RecordLog(instanceId, context, $"[MSLX] 服务器进程已启动，PID: {process.Id}");
+
+                if ((serverInfo.Java == "docker-java" || serverInfo.Java == "docker-custom") &&
+                (!string.IsNullOrWhiteSpace(serverInfo.DockerUploadRate) || !string.IsNullOrWhiteSpace(serverInfo.DockerDownloadRate)))
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await Task.Delay(2022 + 1102);
+
+                            await ApplyDockerNetworkLimitAsync(
+                                $"mslx-container-{instanceId}",
+                                serverInfo.DockerUploadRate,
+                                serverInfo.DockerDownloadRate
+                            );
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError($"[MSLX-Daemon] 实例 [{instanceId}] 异步挂载网络流控失败: {ex.Message}");
+                        }
+                    });
+                }
             }
             else
             {
@@ -761,9 +879,6 @@ public class MCServerService : IMCServerService
         }
     }
 
-    /// <summary>
-    /// 停止服务器
-    /// </summary>
     /// <summary>
     /// 停止服务器
     /// </summary>
