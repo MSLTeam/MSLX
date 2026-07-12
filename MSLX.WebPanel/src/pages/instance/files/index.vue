@@ -585,14 +585,12 @@ watch(
   async (newPathQuery) => {
     const targetPath = (newPathQuery as string) || '';
 
-    // 如果发现目标路径和内部 currentPath 一致，说明是正常同步，不用重复请求
     if (targetPath === currentPath.value && fileList.value.length > 0) return;
 
     try {
-      // 尝试加载新路径的数据
       await fetchData(targetPath);
-    } catch (err) {
-      MessagePlugin.error('打开文件夹失败，请重试: ' + err.message);
+    } catch (err: any) {
+      MessagePlugin.error('打开文件夹失败，请重试: ' + (err.message || ''));
       router.replace({
         query: { ...route.query, path: currentPath.value || undefined },
       });
@@ -601,20 +599,18 @@ watch(
   { immediate: true },
 );
 
-watch(instanceId, () => {
-  if (route.name !== 'InstanceFiles') {
-    return;
-  }
+watch(instanceId, async () => {
+  if (route.name !== 'InstanceFiles') return;
   currentPath.value = '';
   selectedRowKeys.value = [];
-  fetchData();
+  try {
+    await fetchData();
+  } catch {
+    MessagePlugin.error('加载实例根目录失败');
+  }
 });
-
 onMounted(() => {
-  const queryPath = route.query.path as string;
   window.addEventListener('resize', handleResize);
-  if (queryPath) currentPath.value = queryPath;
-  else fetchData();
 });
 
 onUnmounted(() => {
