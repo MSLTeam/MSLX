@@ -9,6 +9,7 @@ namespace MSLX.Daemon.Services
     {
         private readonly ILogger<TaskSchedulerService> _logger;
         private readonly IMCServerService _mcService;
+        private DateTime _lastCheckDateUtc = DateTime.MinValue.Date;
 
         public TaskSchedulerService(
             ILogger<TaskSchedulerService> logger,
@@ -65,6 +66,35 @@ namespace MSLX.Daemon.Services
                     _ = Task.Run(async () => await ExecuteTaskLogic(task));
                 }
             }
+
+            // MSLX定时任务（按天）
+            if (_lastCheckDateUtc != nowUtc.Date)
+            {
+                _lastCheckDateUtc = nowUtc.Date;
+                _ = Task.Run(() =>
+                {
+                    _logger.LogInformation("[MSLX-Scheduler] 正在执行每日实例过期性安全巡检...");
+
+                    var serverList = IConfigBase.ServerList.GetServerList();
+
+                    foreach (var server in serverList)
+                    {
+                        uint instanceId = (uint)server.ID;
+
+                        if (server.ExpireTime.HasValue && server.ExpireTime.Value <= nowUtc)
+                        {
+                            if (_mcService.IsServerRunning(instanceId))
+                            {
+                                _logger.LogWarning($"[MSLX-Guard] 检测到运行中的实例 [{server.Name} (ID: {instanceId})] 已过期，正在执行下线...");
+                                _mcService.SendCommand(instanceId, "say [MSLX] 该服务器租约已到期，系统即将关闭此实例。");
+                                _mcService.StopServer(instanceId);
+                            }
+                        }
+                    }
+                });
+            }
+
+
         }
 
         private bool ShouldRun(ScheduleTask task, DateTime nowUtc)

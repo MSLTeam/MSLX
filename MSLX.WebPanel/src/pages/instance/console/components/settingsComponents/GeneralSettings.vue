@@ -149,6 +149,7 @@ const formData = ref<UpdateInstanceModel>({
   dockerDownloadRate: '',
   dockerExtraArgs: '',
   dockerExtraHosts: '',
+  expireTime: undefined,
 });
 
 // --- 内存单位转换 ---
@@ -598,6 +599,7 @@ const rules = computed<FormRules>(() => {
       ],
       dockerCpuCores: [{ pattern: /^[0-9,-]+$/, message: '仅支持数字、逗号或连字符，如 0-3', trigger: 'blur' }],
       dockerMaxStorage: [{ pattern: /^[0-9]+[gGmMkK]$/, message: '格式不正确，如 10g 或 500m', trigger: 'blur' }],
+      expireTime: [{ date: true, message: '请输入正确的日期格式', trigger: 'change' }],
     };
   }
 
@@ -640,6 +642,7 @@ const rules = computed<FormRules>(() => {
     ],
     dockerCpuCores: [{ pattern: /^[0-9,-]+$/, message: '仅支持数字、逗号或连字符，如 0-3', trigger: 'blur' }],
     dockerMaxStorage: [{ pattern: /^[0-9]+[gGmMkK]$/, message: '格式不正确，如 10g 或 500m', trigger: 'blur' }],
+    expireTime: [{ date: true, message: '请输入正确的日期格式', trigger: 'change' }],
   };
 });
 
@@ -1876,6 +1879,28 @@ onUnmounted(() => {
           </div>
           <div class="w-full md:w-[340px] shrink-0 flex md:justify-end items-center">
             <t-switch v-model="formData.runOnStartup" size="large" />
+          </div>
+        </div>
+
+        <div
+          class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+        >
+          <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+            <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">实例到期时间</div>
+            <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+              设定该服务端实例的软件租约截止线。到期后，系统将自动关停该实例，且拒绝再次启动。留空代表永不过期。
+            </div>
+          </div>
+          <div class="w-full md:w-[340px] shrink-0 flex items-center">
+            <t-date-picker
+              v-model="formData.expireTime"
+              enable-time-picker
+              allow-input
+              clearable
+              placeholder="请选择到期时间（留空为无限期）"
+              value-type="YYYY-MM-DD HH:mm:ss"
+              class="w-full"
+            />
           </div>
         </div>
 

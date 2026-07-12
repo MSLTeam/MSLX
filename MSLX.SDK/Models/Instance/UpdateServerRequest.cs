@@ -116,6 +116,8 @@ public class UpdateServerRequest : IValidatableObject
 
     public string? DockerExtraHosts { get; set; } // 格式: host.mslx.internal:host-gateway
 
+    public DateTime? ExpireTime { get; set; }
+
     // 更新的可选参数
 
     // 本地上传服务端 Key

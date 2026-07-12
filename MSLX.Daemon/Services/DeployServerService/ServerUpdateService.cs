@@ -112,6 +112,7 @@ public class ServerUpdateService : BackgroundService
             server.InputEncoding = req.InputEncoding;
             server.OutputEncoding = req.OutputEncoding;
             server.FileEncoding = req.FileEncoding;
+            server.ExpireTime = req.ExpireTime;
             // docker的一堆配置
             server.DockerImage = req.DockerImage;
             server.DockerWorkingDir = req.DockerWorkingDir;

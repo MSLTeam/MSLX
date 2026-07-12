@@ -434,6 +434,14 @@ public class MCServerService : IMCServerService
     {
         try
         {
+            if (serverInfo.ExpireTime.HasValue && serverInfo.ExpireTime.Value <= DateTime.Now)
+            {
+                RecordLog(instanceId, context, $">>> [MSLX] ❌ 启动失败：当前服务端实例已于 {serverInfo.ExpireTime.Value:yyyy-MM-dd HH:mm:ss} 过期。");
+                _logger.LogWarning($"实例 [{instanceId}] 启动失败，原因：已过期。");
+                _activeServers.TryRemove(instanceId, out _);
+                return;
+            }
+
             RecordLog(instanceId, context, "[MSLX-Daemon] 正在初始化服务...");
             // 检查Eula
             //if (serverInfo.Java != "none" && !serverInfo.IgnoreEula && !skipEulaCheck)

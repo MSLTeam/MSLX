@@ -98,6 +98,7 @@ export interface UpdateInstanceModel {
   modsPath?: string;
   worldPath?: string;
   regionPath?: string;
+  expireTime?: string;
 
   // ====== Docker 配置字段 ======
   dockerImage: string;
