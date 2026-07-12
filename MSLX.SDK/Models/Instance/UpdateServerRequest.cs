@@ -106,10 +106,10 @@ public class UpdateServerRequest : IValidatableObject
     [RegularExpression(@"^[0-9]+[gGmMkK]$", ErrorMessage = "最大存储空间 (DockerMaxStorage) 格式不正确，应以 m 或 g 结尾，如 '10g'")]
     public string? DockerMaxStorage { get; set; }
 
-    [RegularExpression(@"^[0-9]+[bBmMkK](bps)?$", ErrorMessage = "上传速度限制格式不正确，如 '1mb' 或 '500kb'")]
+    [RegularExpression(@"^[0-9]+([bBmMkK][bB]?)?([bB][pP][sS])?$", ErrorMessage = "上传速度限制格式不正确，支持 '1m', '1mb', '500kb' 或 '1mbps'")]
     public string? DockerUploadRate { get; set; }
 
-    [RegularExpression(@"^[0-9]+[bBmMkK](bps)?$", ErrorMessage = "下载速度限制格式不正确，如 '1mb' 或 '500kb'")]
+    [RegularExpression(@"^[0-9]+([bBmMkK][bB]?)?([bB][pP][sS])?$", ErrorMessage = "下载速度限制格式不正确，支持 '1m', '1mb', '500kb' 或 '1mbps'")]
     public string? DockerDownloadRate { get; set; }
 
     public string? DockerExtraArgs { get; set; }

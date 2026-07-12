@@ -938,7 +938,8 @@ onUnmounted(() => {
           <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
             <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">启动方式</div>
             <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
-              选择使用 Java 启动 Minecraft，或使用自定义命令启动其他程序 (如 Bedrock, Python 等)，又或是使用Docker进行容器化。
+              选择使用 Java 启动 Minecraft，或使用自定义命令启动其他程序 (如 Bedrock, Python
+              等)，又或是使用Docker进行容器化。
             </div>
           </div>
           <div class="w-full md:w-[340px] shrink-0 flex flex-col gap-2">
@@ -1376,7 +1377,10 @@ onUnmounted(() => {
                         网络出口最高上传吞吐限速
                       </div>
                       <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
-                        限制本实例的最高网络实时上传速率，格式如 <code class="font-mono text-xs">2mb</code>。
+                        限制本实例的最高网络实时上传速率，支持格式如 <code class="font-mono text-xs">500k</code>、<code
+                          class="font-mono text-xs"
+                          >500kb</code
+                        >、<code class="font-mono text-xs">2mb</code> 或 <code class="font-mono text-xs">2mbps</code>。
                       </div>
                     </div>
                     <div class="w-full md:w-[340px] shrink-0">
