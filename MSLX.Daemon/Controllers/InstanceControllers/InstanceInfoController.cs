@@ -93,6 +93,7 @@ public class InstanceInfoController : ControllerBase
                     icon,
                     status = serverStatus,
                     statusText = serverStatusText,
+                    expireTime = item["ExpireTime"]?.Value<DateTime?>()?.ToString("yyyy-MM-dd HH:mm:ss"),
                     extra = new
                     {
                         onlinePlayers = _mcServerService.GetOnlinePlayers(id).Count,

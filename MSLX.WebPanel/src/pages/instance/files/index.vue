@@ -191,14 +191,16 @@ const formatTime = (timeStr: string) => {
   return new Date(timeStr).toLocaleString();
 };
 
-const fetchData = async () => {
+const fetchData = async (targetPath = currentPath.value) => {
   loading.value = true;
   selectedRowKeys.value = [];
   try {
-    const res = await getInstanceFilesList(instanceId.value, currentPath.value);
+    const res = await getInstanceFilesList(instanceId.value, targetPath);
     fileList.value = res || [];
+    currentPath.value = targetPath;
   } catch (error) {
-    console.error(error);
+    console.error(`请求路径 [${targetPath}] 失败:`, error);
+    throw error;
   } finally {
     loading.value = false;
   }
@@ -354,15 +356,17 @@ const handleDelete = (row?: any) => {
 const handleRowClick = (row: any) => {
   if (row.type === 'folder') {
     const separator = currentPath.value === '' ? '' : '/';
-    currentPath.value = `${currentPath.value}${separator}${row.name}`;
+    const targetPath = `${currentPath.value}${separator}${row.name}`;
+    router.push({ query: { ...route.query, path: targetPath || undefined } });
   } else if (isImage(row.name)) {
     openPreview(row.name);
   } else {
     openEditor(row.name);
   }
 };
+
 const navigateTo = (path: string) => {
-  currentPath.value = path;
+  router.push({ query: { ...route.query, path: path || undefined } });
 };
 const handleRefresh = () => fetchData();
 
@@ -576,25 +580,37 @@ const filteredFileList = computed(() => {
 
 // —————— 生命周期 ——————
 
-watch(currentPath, (newPath) => {
-  router.replace({ query: { ...route.query, path: newPath || undefined } });
-  fetchData();
-});
+watch(
+  () => route.query.path,
+  async (newPathQuery) => {
+    const targetPath = (newPathQuery as string) || '';
 
-watch(instanceId, () => {
-  if (route.name !== 'InstanceFiles') {
-    return;
-  }
+    if (targetPath === currentPath.value && fileList.value.length > 0) return;
+
+    try {
+      await fetchData(targetPath);
+    } catch (err: any) {
+      MessagePlugin.error('打开文件夹失败，请重试: ' + (err.message || ''));
+      router.replace({
+        query: { ...route.query, path: currentPath.value || undefined },
+      });
+    }
+  },
+  { immediate: true },
+);
+
+watch(instanceId, async () => {
+  if (route.name !== 'InstanceFiles') return;
   currentPath.value = '';
   selectedRowKeys.value = [];
-  fetchData();
+  try {
+    await fetchData();
+  } catch {
+    MessagePlugin.error('加载实例根目录失败');
+  }
 });
-
 onMounted(() => {
-  const queryPath = route.query.path as string;
   window.addEventListener('resize', handleResize);
-  if (queryPath) currentPath.value = queryPath;
-  else fetchData();
 });
 
 onUnmounted(() => {

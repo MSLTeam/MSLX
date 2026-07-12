@@ -112,6 +112,7 @@ public class ServerUpdateService : BackgroundService
             server.InputEncoding = req.InputEncoding;
             server.OutputEncoding = req.OutputEncoding;
             server.FileEncoding = req.FileEncoding;
+            server.ExpireTime = req.ExpireTime;
             // docker的一堆配置
             server.DockerImage = req.DockerImage;
             server.DockerWorkingDir = req.DockerWorkingDir;
@@ -155,7 +156,7 @@ public class ServerUpdateService : BackgroundService
             // 检查 Core
             if (!string.IsNullOrEmpty(req.CoreUrl) || !string.IsNullOrEmpty(req.CoreFileKey))
             {
-                string coreName = server.Core; // 简单的文件名处理逻辑，此处略，按需补充
+                string coreName = server.Core;
                 
                 await _deployer.DeployCoreAsync(sid, server.Base, coreName, req.CoreFileKey, req.CoreUrl, req.CoreSha256, report);
             }

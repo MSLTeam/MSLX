@@ -39,9 +39,10 @@ export interface InstanceListModel {
   core: string;
   icon: string;
   status: number;
+  expireTime?: string;
   extra: {
     onlinePlayers: number;
-  }
+  };
 }
 
 export interface InstanceInfoModel {
@@ -98,6 +99,7 @@ export interface UpdateInstanceModel {
   modsPath?: string;
   worldPath?: string;
   regionPath?: string;
+  expireTime?: string;
 
   // ====== Docker 配置字段 ======
   dockerImage: string;

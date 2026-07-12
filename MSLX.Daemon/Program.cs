@@ -41,10 +41,8 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // 创建临时 Logger
-using (var bootstrapLoggerFactory = LoggerFactory.Create(logging => logging.AddSerilog()))
-{
-    IConfigBase.Initialize(bootstrapLoggerFactory);
-}
+var bootstrapLoggerFactory = LoggerFactory.Create(logging => logging.AddSerilog());
+IConfigBase.Initialize(bootstrapLoggerFactory);
 
 // 检查启动参数
 var argHost = builder.Configuration["host"]; // 支持 --host 或 /host
@@ -127,7 +125,6 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
     }
 });
 
-builder.Services.AddControllers().AddNewtonsoftJson();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -169,6 +166,7 @@ builder.Services.AddScoped<IPythonScannerService,PythonScannerService>();
 builder.Services.AddTransient<NeoForgeInstallerService>();
 builder.Services.AddTransient<ServerDeploymentService>();
 
+
 // 配置真实IP回传协议
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
@@ -179,6 +177,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 
 // 错误中间件
 var mvcBuilder = builder.Services.AddControllers()
+    .AddNewtonsoftJson()
     .ConfigureApiBehaviorOptions(options =>
     {
         options.InvalidModelStateResponseFactory = context =>
@@ -198,8 +197,7 @@ var mvcBuilder = builder.Services.AddControllers()
 // 插件加载
 var loadedPlugins = new List<LoadedPlugin>();
 var pluginsPath = Path.Combine(IConfigBase.GetAppDataPath(), "Plugins");
-using var pluginLoggerSource = LoggerFactory.Create(l => l.AddSerilog());
-var pluginLogger = pluginLoggerSource.CreateLogger("PluginLoader");
+var pluginLogger = bootstrapLoggerFactory.CreateLogger("PluginLoader");
 
 if (!Directory.Exists(pluginsPath))
 {
@@ -258,7 +256,7 @@ else
             }
             
             var assembly = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyPath(dllPath);
-            
+
             var pluginType = assembly.GetTypes().FirstOrDefault(t => 
                 typeof(MSLX.SDK.IPlugin).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
 
@@ -294,9 +292,11 @@ else
                 });
                 
                 // 注册 API
+                pluginInstance.OnRegisterServices(builder.Services);
                 mvcBuilder.PartManager.ApplicationParts.Add(new Microsoft.AspNetCore.Mvc.ApplicationParts.AssemblyPart(assembly));
+                mvcBuilder.AddControllersAsServices();
                 loadedPlugins.Add(new LoadedPlugin { Assembly = assembly, Metadata = pluginInstance });
-                
+
                 pluginLogger.LogInformation($"[MSLX Plugin] 正在加载插件: {pluginInstance.Name} v{pluginInstance.Version} by @{pluginInstance.Developer}");
             }
         }
@@ -307,19 +307,6 @@ else
     }
 }
 
-// 注册插件服务
-foreach (var plugin in loadedPlugins)
-{
-    try
-    {
-        plugin.Metadata.OnRegisterServices(builder.Services);
-    }
-    catch (Exception ex)
-    {
-        pluginLogger.LogError($"[MSLX Plugin] 插件 {plugin.Metadata.Name} 注册底层依赖服务时崩溃: {ex.Message}");
-    }
-}
-
 builder.Services.AddMemoryCache();
 
 var app = builder.Build();
@@ -327,6 +314,14 @@ var app = builder.Build();
 // 重新初始化日志
 var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
 var logger = loggerFactory.CreateLogger("Program");
+
+// 注册代理方法给SDK
+MSLX.SDK.MSLX.Initialize(
+    new DaemonConfigProvider(),
+    new DaemonLoggerProvider(loggerFactory),
+    new DaemonDownloadProvider(),
+    new DaemonHttpProvider()
+);
 
 // 插件初始化方法
 foreach (var plugin in loadedPlugins)
@@ -521,14 +516,6 @@ catch (Exception ex)
     logger.LogError($"API 检测阶段发生未捕获的异常: {ex.Message}。进程将继续运行。");
 }
 
-
-// 注册代理方法给SDK
-MSLX.SDK.MSLX.Initialize(
-    new DaemonConfigProvider(),
-    new DaemonLoggerProvider(loggerFactory),
-    new DaemonDownloadProvider(),
-    new DaemonHttpProvider()
-);
 
 try
 {

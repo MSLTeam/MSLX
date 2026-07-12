@@ -357,6 +357,29 @@ const handleConfirmDelete = async () => {
                 </div>
               </div>
 
+              <div v-if="item.expireTime" class="mt-2 w-full flex">
+                <t-tag
+                  size="small"
+                  variant="light"
+                  class="!w-auto max-w-full !rounded-md"
+                  :theme="
+                    Date.parse(item.expireTime.replace(' ', 'T') + 'Z') <= Date.now()
+                      ? 'danger'
+                      : Date.parse(item.expireTime.replace(' ', 'T') + 'Z') - Date.now() < 3 * 24 * 60 * 60 * 1000
+                        ? 'warning'
+                        : 'default'
+                  "
+                >
+                  <template #icon>
+                    <t-icon name="time" size="14px" class="mr-1 opacity-80 shrink-0" />
+                  </template>
+                  <span class="truncate font-mono text-[11px]">
+                    {{ Date.parse(item.expireTime.replace(' ', 'T') + 'Z') <= Date.now() ? '已到期' : '到期' }}:
+                    {{ item.expireTime }}
+                  </span>
+                </t-tag>
+              </div>
+
               <div
                 class="flex items-center justify-between pt-3 mt-auto border-t border-dashed border-zinc-200 dark:border-zinc-700/60"
               >

@@ -1,7 +1,11 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using CliWrap;
+using CliWrap.Buffered;
+using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.IServices;
+using MSLX.SDK.Models;
 using Newtonsoft.Json.Linq;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -9,8 +13,6 @@ using System.IO.Compression;
 using System.Management;
 using System.Text;
 using System.Text.RegularExpressions;
-using MSLX.SDK.IServices;
-using MSLX.SDK.Models;
 
 namespace MSLX.Daemon.Services;
 
@@ -255,6 +257,15 @@ public class MCServerService : IMCServerService
     }
 
     /// <summary>
+    /// 检测是否在 Docker 容器内
+    /// </summary>
+    private static bool IsRunningInContainer()
+    {
+        var inContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER");
+        return inContainer != null && inContainer.Equals("true", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
     /// 逆向反查当前 Daemon 容器在宿主机上的真实物理数据根路径
     /// </summary>
     private async Task<string?> GetHostPhysicalDataPathAsync(uint instanceId, ServerContext context)
@@ -307,6 +318,115 @@ public class MCServerService : IMCServerService
     }
 
     /// <summary>
+    /// 应用Docker限速逻辑
+    /// </summary>
+    public async Task ApplyDockerNetworkLimitAsync(string gameContainerName, string uploadRate, string downloadRate)
+    {
+        if (string.IsNullOrWhiteSpace(uploadRate) && string.IsNullOrWhiteSpace(downloadRate)) return;
+
+        try
+        {
+            // 宿主机不是Linux警告
+            bool isProcessWinOrMac = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows) ||
+                                     System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.OSX);
+            var dockerInfo = await Cli.Wrap("docker")
+                .WithArguments(new[] { "info", "--format", "{{.OSType}}" })
+                .WithValidation(CommandResultValidation.None)
+                .ExecuteBufferedAsync();
+
+            string osType = dockerInfo.StandardOutput.Trim().ToLower();
+
+            if (isProcessWinOrMac || osType == "windows" || osType == "darwin")
+            {
+                string actualOs = isProcessWinOrMac
+                    ? System.Runtime.InteropServices.RuntimeInformation.OSDescription
+                    : osType;
+
+                _logger.LogWarning($"[Network-Limit] 实例容器 {gameContainerName} 处于非原生 Linux 环境，流控可能失效。当前环境: {actualOs}");
+            }
+
+            // 处理单位转换
+            string ConvertToTcRate(string rateStr)
+            {
+                var lower = rateStr.ToLower().Trim();
+                var match = System.Text.RegularExpressions.Regex.Match(lower, @"\d+(\.\d+)?");
+                if (!match.Success) return "100mbit";
+
+                double number = double.Parse(match.Value, System.Globalization.CultureInfo.InvariantCulture);
+
+                if (lower.Contains("mbps") || lower.Contains("mbit"))
+                {
+                    return $"{Convert.ToInt32(number)}mbit";
+                }
+
+                if (lower.Contains("mb") || lower.Contains("m"))
+                {
+                    return $"{Convert.ToInt32(number * 8)}mbit";
+                }
+
+                if (lower.Contains("kbps") || lower.Contains("kbit"))
+                {
+                    return $"{Convert.ToInt32(number)}kbit";
+                }
+
+                return $"{Convert.ToInt32(number)}kbit";
+            }
+
+            // 调用工具容器
+            async Task<BufferedCommandResult> RunTcSidecarAsync(string tcCommand)
+            {
+                return await Cli.Wrap("docker")
+                    .WithArguments(new[]
+                    {
+                     "run", "--rm",
+                     "--cap-add=NET_ADMIN",                  // 工具容器赋予网络特权
+                     $"--net=container:{gameContainerName}",  // 潜入游戏容器的网络空间
+                     "docker.mslmc.cn/xiaoyululu/mslx-runtime:network-tool", // 轻量工具容器镜像
+                     "sh", "-c", tcCommand
+                    })
+                    .WithValidation(CommandResultValidation.None)
+                    .ExecuteBufferedAsync();
+            }
+
+            _logger.LogInformation($"[Network-Limit] 正在为游戏实例容器 {gameContainerName} 挂载安全外壳限速...");
+
+            // 清理可能存在的旧规则
+            await RunTcSidecarAsync("tc qdisc del dev eth0 root 2>/dev/null || true");
+            await RunTcSidecarAsync("tc qdisc del dev eth0 ingress 2>/dev/null || true");
+
+            // 上传限速 (容器发出的流 - Egress)
+            if (!string.IsNullOrWhiteSpace(uploadRate))
+            {
+                string tcUpload = ConvertToTcRate(uploadRate);
+                var result = await RunTcSidecarAsync($"tc qdisc add dev eth0 root tbf rate {tcUpload} burst 32kbit latency 400ms");
+
+                if (result.ExitCode == 0)
+                    _logger.LogInformation($"[Network-Limit] 成功限制容器 {gameContainerName} 的上传速率为: {tcUpload}");
+                else
+                    _logger.LogWarning($"[Network-Limit] 容器 {gameContainerName} 上传限速失败: {result.StandardError}");
+            }
+
+            // 下载限速 (流入容器的流 - Ingress)
+            if (!string.IsNullOrWhiteSpace(downloadRate))
+            {
+                string tcDownload = ConvertToTcRate(downloadRate);
+                await RunTcSidecarAsync("tc qdisc add dev eth0 handle ffff: ingress");
+                var result = await RunTcSidecarAsync($"tc filter add dev eth0 parent ffff: protocol ip prio 50 u32 match ip src 0.0.0.0/0 police rate {tcDownload} burst 32kbit drop flowid :1");
+
+                if (result.ExitCode == 0)
+                    _logger.LogInformation($"[Network-Limit] 成功限制容器 {gameContainerName} 的下载速率为: {tcDownload}");
+                else
+                    _logger.LogWarning($"[Network-Limit] 容器 {gameContainerName} 下载限速失败: {result.StandardError}");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"[Network-Limit] 商业化安全限速挂载遭遇严重异常: {ex.Message}");
+        }
+    }
+
+
+    /// <summary>
     /// 异步启动服务器
     /// </summary>
     private async Task InternalStartServerAsync(uint instanceId, ServerContext context,
@@ -314,6 +434,14 @@ public class MCServerService : IMCServerService
     {
         try
         {
+            if (serverInfo.ExpireTime.HasValue && serverInfo.ExpireTime.Value <= DateTime.Now)
+            {
+                RecordLog(instanceId, context, $">>> [MSLX] ❌ 启动失败：当前服务端实例已于 {serverInfo.ExpireTime.Value:yyyy-MM-dd HH:mm:ss} 过期。");
+                _logger.LogWarning($"实例 [{instanceId}] 启动失败，原因：已过期。");
+                _activeServers.TryRemove(instanceId, out _);
+                return;
+            }
+
             RecordLog(instanceId, context, "[MSLX-Daemon] 正在初始化服务...");
             // 检查Eula
             //if (serverInfo.Java != "none" && !serverInfo.IgnoreEula && !skipEulaCheck)
@@ -419,28 +547,32 @@ public class MCServerService : IMCServerService
                 string finalHostBaseDir = serverInfo.Base; // 默认使用宿主机物理路径
 
                 // 检查是否MSLX已经在Docker内，如果是，那么需要进行路径修正
-                if (File.Exists("/proc/self/cgroup"))
+                if (IsRunningInContainer())
                 {
                     // 检查是否正确挂载
                     if (!File.Exists("/var/run/docker.sock"))
                     {
-                        _logger.LogError($"[MSLX-Docker] ❌ 容器化运行严重错误：未检测到 Docker 通信管道（/var/run/docker.sock）！");
-                        RecordLog(instanceId, context, $"\n[MSLX-Docker] ❌ 错误：MSLX-Daemon 处于 Docker 容器中运行，但未挂载宿主机的 sock 管道！");
-                        RecordLog(instanceId, context, $"\n[MSLX-Docker] 💡 解决办法：请检查部署命令，确保挂载了以下路径：/var/run/docker.sock:/var/run/docker.sock");
-                        RecordLog(instanceId, context, $"\n[MSLX-Docker] Docker部署MSLX文档: https://mslx.mslmc.cn/docs/install/docker/ | MSLX运行Docker服务端文档: https://mslx.mslmc.cn/docs/server/docker/");
+                        _logger.LogError($"[MSLX-Daemonr] ❌ 容器化运行严重错误：未检测到 Docker 通信管道（/var/run/docker.sock）！");
+                        RecordLog(instanceId, context, $"[MSLX-Daemon] ❌ 错误：MSLX-Daemon 处于 Docker 容器中运行，但未挂载宿主机的 Sock 管道！");
+                        RecordLog(instanceId, context, $"[MSLX-Daemon] 💡 解决办法：请检查部署命令/Compose配置文件，确保挂载了以下路径：/var/run/docker.sock:/var/run/docker.sock");
+                        RecordLog(instanceId, context, $"[MSLX-Daemon] Docker部署MSLX文档: https://mslx.mslmc.cn/docs/install/docker/ ");
+                        RecordLog(instanceId, context, $"[MSLX-Daemon] MSLX运行Docker服务端文档: https://mslx.mslmc.cn/docs/server/docker/");
+                        RecordLog(instanceId, context, $"[MSLX-Daemon] (重点查看《MSLX已运行在Docker下，如何再部署Docker服务端实例？》)\n");
+                        _activeServers.TryRemove(instanceId, out _); 
+                        RecordLog(instanceId, context, $"[MSLX] 服务端启动已取消！");
                         return;
                     }
-                    RecordLog(instanceId, context, "[MSLX-Docker] 检测到当前 MSLX-Daemon 处于容器内，正在查询物理主机挂载路径...");
+                    RecordLog(instanceId, context, "[MSLX-Daemon] 检测到当前 MSLX-Daemon 处于容器内，正在查询物理主机挂载路径...");
                     string? hostDataRoot = await GetHostPhysicalDataPathAsync(instanceId, context);
 
                     if (!string.IsNullOrWhiteSpace(hostDataRoot))
                     {
                         finalHostBaseDir = serverInfo.Base.Replace("/app/DaemonData", hostDataRoot);
-                        _logger.LogInformation($"[MSLX-Docker] 路径转换完成: {serverInfo.Base} -> {finalHostBaseDir}");
+                        _logger.LogInformation($"[MSLX-Daemon] 路径转换完成: {serverInfo.Base} -> {finalHostBaseDir}");
                     }
                     else
                     {
-                        RecordLog(instanceId, context, "[MSLX-Docker] 查询物理路径失败，将尝试使用原始路径。");
+                        RecordLog(instanceId, context, "[MSLX-Daemon] 查询物理路径失败，将尝试使用原始路径。");
                     }
                 }
 
@@ -476,7 +608,7 @@ public class MCServerService : IMCServerService
                     }
                 }
 
-                if (!string.IsNullOrWhiteSpace(serverInfo.DockerNetworkAlias))
+                if (netMode != "host" && netMode != "none" && netMode != "bridge" && !string.IsNullOrWhiteSpace(serverInfo.DockerNetworkAlias))
                 {
                     sb.Append($"--network-alias=\"{serverInfo.DockerNetworkAlias.Trim()}\" ");
                 }
@@ -509,13 +641,14 @@ public class MCServerService : IMCServerService
                 if (serverInfo.DockerCpuPercentage is > 0 and <= 100)
                 {
                     double coresCount = Environment.ProcessorCount * (serverInfo.DockerCpuPercentage.Value / 100.0);
-                    sb.Append($"--cpus=\"{coresCount:F2}\" ");
+                    sb.Append(string.Format(System.Globalization.CultureInfo.InvariantCulture, "--cpus=\"{0:F2}\" ", coresCount));
                 }
                 if (serverInfo.DockerMaxMemoryMb is > 0)
                 {
                     sb.Append($"-m {serverInfo.DockerMaxMemoryMb.Value}m ");
                 }
-                if (serverInfo.DockerMaxSwapMb is > 0)
+                // 0 代表禁用 Swap，条件是 >= 0，且必须有物理内存限制
+                if (serverInfo.DockerMaxSwapMb.HasValue && serverInfo.DockerMaxSwapMb.Value >= 0 && serverInfo.DockerMaxMemoryMb is > 0)
                 {
                     sb.Append($"--memory-swap {serverInfo.DockerMaxSwapMb.Value}m ");
                 }
@@ -546,26 +679,29 @@ public class MCServerService : IMCServerService
                 // 组装一些内置参数
                 if (serverInfo.Java == "docker-java")
                 {
-                    string javaArgs = $"{authJvm} ";
-                    if (serverInfo.MinM.HasValue) javaArgs += $"-Xms{serverInfo.MinM.Value}M ";
+                    string javaArgs = "";
+                    if (!string.IsNullOrWhiteSpace(authJvm)) javaArgs += $"{authJvm.Trim()} "; // 外置登录
+                    if (serverInfo.MinM.HasValue) javaArgs += $"-Xms{serverInfo.MinM.Value}M "; // JVM内存
                     if (serverInfo.MaxM.HasValue) javaArgs += $"-Xmx{serverInfo.MaxM.Value}M ";
 
-                    javaArgs += $"{serverInfo.Args}{(serverInfo.ForceJvmUTF8 ? " -Dfile.encoding=UTF-8" : "")} ";
+                    if (!string.IsNullOrWhiteSpace(serverInfo.Args)) javaArgs += $"{serverInfo.Args.Trim()} "; // 额外参数
+                    if (serverInfo.ForceJvmUTF8) javaArgs += "-Dfile.encoding=UTF-8 "; // 强制UTF8
 
+                    // 服务端核心
                     if (serverInfo.Core.Contains("@libraries"))
                     {
-                        javaArgs += $"{serverInfo.Core} nogui";
+                        javaArgs += $"{serverInfo.Core.Trim()} nogui";
                     }
                     else
                     {
-                        javaArgs += $"-jar {serverInfo.Core} nogui";
+                        javaArgs += $"-jar {serverInfo.Core.Trim()} nogui";
                     }
 
-                    sb.Append($"java {javaArgs}");
+                    sb.Append($"java {javaArgs.Trim()}");
                 }
                 else // docker-custom 完全自定义模式
                 {
-                    sb.Append($"{serverInfo.Args}");
+                    sb.Append(serverInfo.Args.Trim());
                 }
 
                 args = sb.ToString();
@@ -735,6 +871,28 @@ public class MCServerService : IMCServerService
 
                 _logger.LogInformation($"服务器 [{instanceId}] 启动成功，PID: {process.Id}");
                 RecordLog(instanceId, context, $"[MSLX] 服务器进程已启动，PID: {process.Id}");
+
+                if ((serverInfo.Java == "docker-java" || serverInfo.Java == "docker-custom") &&
+                (!string.IsNullOrWhiteSpace(serverInfo.DockerUploadRate) || !string.IsNullOrWhiteSpace(serverInfo.DockerDownloadRate)))
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await Task.Delay(2022 + 1102);
+
+                            await ApplyDockerNetworkLimitAsync(
+                                $"mslx-container-{instanceId}",
+                                serverInfo.DockerUploadRate,
+                                serverInfo.DockerDownloadRate
+                            );
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError($"[MSLX-Daemon] 实例 [{instanceId}] 异步挂载网络流控失败: {ex.Message}");
+                        }
+                    });
+                }
             }
             else
             {
@@ -750,9 +908,6 @@ public class MCServerService : IMCServerService
         }
     }
 
-    /// <summary>
-    /// 停止服务器
-    /// </summary>
     /// <summary>
     /// 停止服务器
     /// </summary>
