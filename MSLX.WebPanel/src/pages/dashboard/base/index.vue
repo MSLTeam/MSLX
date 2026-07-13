@@ -141,7 +141,7 @@ const getDelay = (baseIndex: number) => {
 
     <banner class="list-item-anim" :style="{ animationDelay: getDelay(0) }" />
     <info-card class="list-item-anim" :style="{ animationDelay: getDelay(1) }" />
-    <system-status class="list-item-anim" :style="{ animationDelay: getDelay(2) }" />
+    <system-status v-if="userStore.isAdmin" class="list-item-anim" :style="{ animationDelay: getDelay(2) }" />
     <!--插件扩展区域 dashboard-index-after-system-status -->
     <plugin-slot class="list-item-anim" name="dashboard-index-after-system-status" />
     <announcement class="list-item-anim" :style="{ animationDelay: getDelay(3) }" />
