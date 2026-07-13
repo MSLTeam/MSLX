@@ -23,6 +23,7 @@ public class SettingsController : ControllerBase
                 Message = "获取成功",
                 Data = new
                 {
+                    AllowNormalUserChangeUserName = IConfigBase.Config.ReadConfig()["allowNormalUserChangeUserName"] ?? true,
                     FireWallBanLocalAddr = IConfigBase.Config.ReadConfig()["fireWallBanLocalAddr"] ?? false,
                     OpenWebConsoleOnLaunch = IConfigBase.Config.ReadConfig()["openWebConsoleOnLaunch"] ?? true,
                     NeoForgeInstallerMirrors =
@@ -40,6 +41,7 @@ public class SettingsController : ControllerBase
     [Authorize(Roles = "admin")]
     public IActionResult UpdateSettings([FromBody] UpdateSettingsRequest request)
     {
+        IConfigBase.Config.WriteConfigKey("allowNormalUserChangeUserName", request.AllowNormalUserChangeUserName);
         IConfigBase.Config.WriteConfigKey("fireWallBanLocalAddr", request.FireWallBanLocalAddr);
         IConfigBase.Config.WriteConfigKey("openWebConsoleOnLaunch", request.OpenWebConsoleOnLaunch);
         IConfigBase.Config.WriteConfigKey("neoForgeInstallerMirrors", request.NeoForgeInstallerMirrors);

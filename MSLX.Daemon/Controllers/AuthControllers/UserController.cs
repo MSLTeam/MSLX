@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.Models;
@@ -52,6 +52,19 @@ public class UserController : ControllerBase
         // 基本信息
         if (request.Name != null) user.Name = request.Name;
         if (request.Avatar != null) user.Avatar = request.Avatar;
+        if (!string.IsNullOrWhiteSpace(request.Username) && request.Username != user.Username)
+        {
+            if (user.Role != "admin" && !((bool?)IConfigBase.Config.ReadConfig()["allowNormalUserChangeUserName"] ?? true))
+            {
+                return BadRequest(new ApiResponse<object>
+                {
+                    Code = 400,
+                    Message = "管理员已禁止普通用户修改用户名"
+                });
+            }
+        }
+
+        // 查重逻辑
         if (!string.IsNullOrWhiteSpace(request.Username) && request.Username != user.Username)
         {
             var existingUser = IConfigBase.UserList.GetUserByUsername(request.Username);
