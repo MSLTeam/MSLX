@@ -9,7 +9,7 @@ import {
   NotifyPlugin,
 } from 'tdesign-vue-next';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
-import { useUserStore } from '@/store';
+import { useUserStore, useTunnelsStore } from '@/store';
 import { LockOnIcon, LockOffIcon } from 'tdesign-icons-vue-next';
 
 // API
@@ -24,6 +24,7 @@ import ServerCoreSelector from '@/pages/instance/createInstance/components/Serve
 
 const route = useRoute();
 const userStore = useUserStore();
+const tunnelsStore = useTunnelsStore();
 
 const instanceId = computed(() => {
   const idStr = route.params.serverId as string;
@@ -150,6 +151,7 @@ const formData = ref<UpdateInstanceModel>({
   dockerExtraArgs: '',
   dockerExtraHosts: '',
   expireTime: undefined,
+  bindFrpId: '',
 });
 
 // --- 内存单位转换 ---
@@ -403,6 +405,42 @@ watch(
 
 // docker end~
 
+// frp 绑定
+const frpInputType = ref<'select' | 'manual'>('select');
+
+const frpOptions = computed(() => {
+  return tunnelsStore.frpList.map((item) => ({
+    label: `[ID: ${item.id}] ${item.name} (${item.configType})`,
+    value: item.id.toString(),
+  }));
+});
+
+const bindFrpIdArray = computed({
+  get: () => {
+    if (!formData.value.bindFrpId) return [];
+    return formData.value.bindFrpId
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  },
+  set: (val: string[]) => {
+    formData.value.bindFrpId = val.join(',');
+  },
+});
+
+// 前端规则拦截定义
+const bindFrpIdRules: FormRules[string] = [
+  {
+    validator: (val: string) => {
+      if (!val) return true; // 允许留空不绑定
+      const ids = val.split(',');
+      return ids.every((id) => /^[0-9]{8}$/.test(id.trim()));
+    },
+    message: '绑定的 FRP ID 必须是 8 位数字，多个请用英文逗号隔开',
+    trigger: 'blur',
+  },
+];
+
 const fetchJavaVersions = async (force = false) => {
   try {
     if (force) MessagePlugin.info('正在扫描 Java 环境...');
@@ -568,6 +606,7 @@ const rules = computed<FormRules>(() => {
       base: [{ required: true, message: '基础路径不能为空', trigger: 'blur' }],
       args: [{ required: true, message: '自定义模式必须填写启动命令', trigger: 'blur' }],
       serverPropertiesPath: serverPropertiesPathRules,
+      bindFrpId: bindFrpIdRules,
       pluginsPath: pluginsPathRules,
       modsPath: modsPathRules,
       worldPath: worldPathRules,
@@ -611,6 +650,7 @@ const rules = computed<FormRules>(() => {
     minM: [{ required: true, message: '必填', trigger: 'blur' }],
     maxM: [{ required: true, message: '必填', trigger: 'blur' }],
     serverPropertiesPath: serverPropertiesPathRules,
+    bindFrpId: bindFrpIdRules,
     pluginsPath: pluginsPathRules,
     modsPath: modsPathRules,
     worldPath: worldPathRules,
@@ -654,11 +694,13 @@ const initData = async () => {
   initialized.value = false;
   try {
     await fetchJavaVersions();
+    await tunnelsStore.getTunnels();
     formData.value.id = instanceId.value;
     const res = await getInstanceSettings(instanceId.value);
     formData.value = {
       ...formData.value,
       ...res,
+      bindFrpId: res.bindFrpId || '',
       coreUrl: '',
       coreFileKey: '',
       coreSha256: '',
@@ -1901,6 +1943,46 @@ onUnmounted(() => {
               value-type="YYYY-MM-DD HH:mm:ss"
               class="w-full"
             />
+          </div>
+        </div>
+
+        <div
+          class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+        >
+          <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+            <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">联动 FRP 隧道自启闭</div>
+            <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+              开启绑定后，当前 MC 服务器在<b>启动成功时</b>会自动唤醒对应的 Frpc
+              隧道，在<b>服务器关闭/意外崩溃时</b>会自动切断该隧道。
+            </div>
+          </div>
+          <div class="w-full md:w-[340px] shrink-0 flex flex-col gap-2">
+            <t-radio-group v-model="frpInputType" variant="default-filled" size="small" class="w-full mb-1">
+              <t-radio-button value="select">从隧道列表多选</t-radio-button>
+              <t-radio-button value="manual">手动输入(8位ID)</t-radio-button>
+            </t-radio-group>
+
+            <!-- 列表多选 -->
+            <t-select
+              v-if="frpInputType === 'select'"
+              v-model="bindFrpIdArray"
+              multiple
+              clearable
+              placeholder="请多选需要联动挂载的 FRP 隧道"
+              :options="frpOptions"
+              class="w-full"
+            />
+
+            <!-- 手动输入 -->
+            <t-input
+              v-else
+              v-model="formData.bindFrpId"
+              placeholder="格式如: 10000001,10000002"
+              class="w-full !font-mono"
+            />
+            <div class="text-[11px] text-zinc-400">
+              当前绑定值: <span class="font-mono text-[var(--color-primary)]">{{ formData.bindFrpId || '无' }}</span>
+            </div>
           </div>
         </div>
 

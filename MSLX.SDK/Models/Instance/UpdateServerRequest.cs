@@ -68,6 +68,9 @@ public class UpdateServerRequest : IValidatableObject
     public string WorldPath { get; set; } = "world";
     public string RegionPath { get; set; } = "region";
 
+    [RegularExpression(@"^([0-9]{8})(,[0-9]{8})*$", ErrorMessage = "绑定的 FRP ID 格式不正确，必须为 8 位数字，多个 ID 请用逗号分隔")]
+    public string? BindFrpId { get; set; }
+
     // ====== Docker 相关配置参数 ======
     public string DockerImage { get; set; } = "MSLX://DockerImage/Java/25";
 

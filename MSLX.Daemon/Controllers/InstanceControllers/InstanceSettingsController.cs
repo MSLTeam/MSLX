@@ -124,6 +124,7 @@ public class InstanceSettingsController : ControllerBase
             server.OutputEncoding = request.OutputEncoding;
             server.FileEncoding = request.FileEncoding;
             server.ExpireTime = request.ExpireTime;
+            server.BindFrpId = request.BindFrpId;
             // docker的一堆配置
             server.DockerImage = request.DockerImage;
             server.DockerWorkingDir = request.DockerWorkingDir;

@@ -21,6 +21,7 @@ public class MCServerService : IMCServerService
     private readonly ILogger<IMCServerService> _logger;
     private readonly IHubContext<InstanceConsoleHub> _hubContext;
     private readonly IHostApplicationLifetime _appLifetime;
+    private readonly IFrpProcessService _frpService;
 
     // 短时间内崩溃重启限制
     private readonly ConcurrentDictionary<uint, List<DateTime>> _crashHistory = new();
@@ -69,11 +70,13 @@ public class MCServerService : IMCServerService
     public MCServerService(
         ILogger<IMCServerService> logger,
         IHubContext<InstanceConsoleHub> hubContext,
-        IHostApplicationLifetime appLifetime)
+        IHostApplicationLifetime appLifetime,
+        IFrpProcessService frpService)
     {
         _logger = logger;
         _hubContext = hubContext;
         _appLifetime = appLifetime;
+        _frpService = frpService;
 
         _appLifetime.ApplicationStopping.Register(StopAllServers);
         _appLifetime.ApplicationStarted.Register(OnAppStarted);
@@ -872,6 +875,25 @@ public class MCServerService : IMCServerService
                 _logger.LogInformation($"服务器 [{instanceId}] 启动成功，PID: {process.Id}");
                 RecordLog(instanceId, context, $"[MSLX] 服务器进程已启动，PID: {process.Id}");
 
+                // 联动启动隧道
+                if (!string.IsNullOrWhiteSpace(serverInfo.BindFrpId))
+                {
+                    var frpIds = serverInfo.BindFrpId.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var idStr in frpIds)
+                    {
+                        if (int.TryParse(idStr.Trim(), out int frpId))
+                        {
+                            RecordLog(instanceId, context, $"[MSLX-Daemon] 检测到联动绑定，正在后台启动隧道 [{frpId}]...");
+                            var (frpSuccess, frpMsg) = _frpService.StartFrp(frpId);
+                            if (!frpSuccess)
+                            {
+                                RecordLog(instanceId, context, $">>> [MSLX-Daemon] ⚠️ 联动隧道 [{frpId}] 启动失败: {frpMsg}");
+                            }
+                        }
+                    }
+                }
+
+                // 启动docker流控
                 if ((serverInfo.Java == "docker-java" || serverInfo.Java == "docker-custom") &&
                 (!string.IsNullOrWhiteSpace(serverInfo.DockerUploadRate) || !string.IsNullOrWhiteSpace(serverInfo.DockerDownloadRate)))
                 {
@@ -1350,6 +1372,27 @@ public class MCServerService : IMCServerService
     private void HandleServerExit(uint instanceId, int exitCode)
     {
         if (!_activeServers.TryGetValue(instanceId, out var context)) return;
+
+        try
+        {
+            var serverInfo = IConfigBase.ServerList.GetServer(instanceId);
+            if (serverInfo != null && !string.IsNullOrWhiteSpace(serverInfo.BindFrpId))
+            {
+                var frpIds = serverInfo.BindFrpId.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                foreach (var idStr in frpIds)
+                {
+                    if (int.TryParse(idStr.Trim(), out int frpId))
+                    {
+                        RecordLog(instanceId, context, $"[MSLX-Daemon] 服务端实例已退出，正在联动同步关闭隧道 [{frpId}]...");
+                        _frpService.StopFrp(frpId);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"[MSLX-Daemon] 实例 [{instanceId}] 联动关闭隧道时发生异常");
+        }
 
         // 清空在线玩家
         context.OnlinePlayers.Clear();

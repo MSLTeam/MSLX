@@ -100,6 +100,7 @@ export interface UpdateInstanceModel {
   worldPath?: string;
   regionPath?: string;
   expireTime?: string;
+  bindFrpId?: string;
 
   // ====== Docker 配置字段 ======
   dockerImage: string;
@@ -158,6 +159,8 @@ export interface InstanceSettingsModel {
   modsPath?: string;
   worldPath?: string;
   regionPath?: string;
+  expireTime?: string;
+  bindFrpId?: string;
   // ====== Docker 配置字段 ======
   dockerImage: string;
   dockerWorkingDir: string;
