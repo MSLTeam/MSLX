@@ -293,6 +293,18 @@ export const SERVER_PROPERTIES_SCHEMA: PropertySchema[] = [
     desc: '服务器内无玩家多少秒后暂停游戏循环（省资源）。-1 为不暂停。',
     type: 'number',
   },
+  {
+    key: 'chat-spam-threshold-seconds',
+    label: '聊天刷屏触发时间',
+    desc: '玩家发送聊天信息过快而被视为刷屏并踢出服务器的阈值时间（秒）。设为 0 可禁用。',
+    type: 'number',
+  },
+  {
+    key: 'command-spam-threshold-seconds',
+    label: '指令刷屏触发时间',
+    desc: '玩家连续输入指令过快而被视为刷屏并踢出服务器的阈值时间（秒）。设为 0 可禁用。',
+    type: 'number',
+  },
 
   // ==========================================
   // 安全与权限 (Security)
@@ -438,7 +450,7 @@ export const SERVER_PROPERTIES_SCHEMA: PropertySchema[] = [
   {
     key: 'management-server-enabled',
     label: '启用管理后台',
-    desc: '是否启用 Minecraft 官方定义的管理服务器接口。',
+    desc: '是否启用 Minecraft 官方定义的管理服务器接口。(不知道这是什么请千万不要开启)',
     type: 'boolean',
   },
   {
@@ -457,6 +469,30 @@ export const SERVER_PROPERTIES_SCHEMA: PropertySchema[] = [
     key: 'management-server-allowed-origins',
     label: '管理后台允许源',
     desc: '允许访问管理接口的 Origin 列表。',
+    type: 'string',
+  },
+  {
+    key: 'management-server-secret',
+    label: '管理后台密钥',
+    desc: '访问官方管理服务器接口时所需的身份验证令牌（Secret）。请设置复杂的字符串以保障安全。',
+    type: 'string',
+  },
+  {
+    key: 'management-server-tls-enabled',
+    label: '启用管理后台 TLS 加密',
+    desc: '是否为管理后台接口启用 HTTPS/TLS 传输加密。',
+    type: 'boolean',
+  },
+  {
+    key: 'management-server-tls-keystore',
+    label: '管理后台密钥库路径',
+    desc: '管理后台 TLS 所使用的 Java 密钥库文件（.jks）的存放路径。',
+    type: 'string',
+  },
+  {
+    key: 'management-server-tls-keystore-password',
+    label: '管理后台密钥库密码',
+    desc: '读取 TLS 密钥库文件（Keystore）所需的密码。',
     type: 'string',
   },
 
@@ -486,5 +522,11 @@ export const SERVER_PROPERTIES_SCHEMA: PropertySchema[] = [
     label: '状态心跳间隔',
     desc: '服务器向客户端发送状态心跳的间隔（0 为默认）。',
     type: 'number',
+  },
+  {
+    key: 'text-filtering-version',
+    label: '文本过滤服务版本',
+    desc: '配置服务器所连接的文本过滤系统的协议或API版本号。',
+    type: 'string',
   },
 ];
