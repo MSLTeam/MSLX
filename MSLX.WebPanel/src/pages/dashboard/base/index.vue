@@ -122,7 +122,7 @@ const getDelay = (baseIndex: number) => {
     </t-alert>
 
     <t-alert
-      v-if="isNotSecure"
+      v-if="isNotSecure && userStore.isAdmin"
       theme="error"
       title="连接未加密 (存在安全风险)"
       message="检测到当前正通过明文 HTTP 协议在公网环境下访问面板。为了防止你的密码和数据在传输中被窃听，强烈建议配置本地 SSL，或者自行通过反向代理启用 HTTPS！"
