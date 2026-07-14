@@ -15,6 +15,7 @@ import { CreateInstanceQucikModeModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
 import { useInstanceListStore } from '@/store/modules/instance';
 import { useFileUpload } from '@/hooks/useFileUpload';
+import { parseMcVersion, getRecommendedJava } from './javaRecommendation';
 
 const { isUploading, uploadProgress, uploadedFileName, uploadedFileSize, startUpload, removeUploadData } =
   useFileUpload();
@@ -62,52 +63,6 @@ const selectedJavaVersion = ref('');
 const customJavaPath = ref('');
 const onlineGameVersion = ref('');
 
-// 版本号解析与推荐
-const parseMcVersion = (filename: string): string | null => {
-  if (!filename) return null;
-  const mc1xRegex = /\b(1\.\d+(?:\.\d+)*)\b/;
-  const match1x = filename.match(mc1xRegex);
-  if (match1x) {
-    return match1x[1];
-  }
-  const generalRegex = /\b(\d+\.\d+(?:\.\d+)*)\b/;
-  const matchGeneral = filename.match(generalRegex);
-  if (matchGeneral) {
-    return matchGeneral[1];
-  }
-  return null;
-};
-
-const compareVersions = (v1: string, v2: string): number => {
-  const parts1 = v1.split('.').map(Number);
-  const parts2 = v2.split('.').map(Number);
-  const maxLen = Math.max(parts1.length, parts2.length);
-  for (let i = 0; i < maxLen; i++) {
-    const p1 = parts1[i] || 0;
-    const p2 = parts2[i] || 0;
-    if (p1 !== p2) {
-      return p1 - p2;
-    }
-  }
-  return 0;
-};
-
-const getRecommendedJava = (version: string): number | null => {
-  if (!version) return null;
-  if (compareVersions(version, '26.1') >= 0) {
-    return 25;
-  }
-  if (compareVersions(version, '1.20.5') >= 0) {
-    return 21;
-  }
-  if (compareVersions(version, '1.18') >= 0) {
-    return 17;
-  }
-  if (compareVersions(version, '1.17') >= 0) {
-    return 16;
-  }
-  return 8;
-};
 
 const detectedGameVersion = computed(() => {
   if (detectedJars.value.length === 0 && downloadType.value === 'online') {

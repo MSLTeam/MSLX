@@ -14,6 +14,7 @@ import { CreateInstanceQucikModeModel, PythonInfoModel } from '@/api/model/insta
 import { changeUrl } from '@/router';
 import { useInstanceListStore } from '@/store/modules/instance';
 import { useFileUpload } from '@/hooks/useFileUpload';
+import { parseMcVersion, getRecommendedJava } from './javaRecommendation';
 
 const { isUploading, uploadProgress, uploadedFileName, uploadedFileSize, startUpload, removeUploadData } =
   useFileUpload();
@@ -90,30 +91,6 @@ const onlineGameVersion = ref('');
 const recommendedJavaVersion = ref('');
 const detectedGameVersion = ref('');
 
-// 尝试解析版本号
-const parseMcVersion = (input: string): number[] | null => {
-  const m = input.match(/(\d+)\.(\d+)(?:\.(\d+))?/);
-  if (!m) return null;
-  return [parseInt(m[1]), parseInt(m[2]), parseInt(m[3] ?? '0')];
-};
-
-// 判断Java推荐
-const getRecommendedJavaFromParsed = (ver: number[]): string => {
-  const [major, minor, patch] = ver;
-  // MC 26+
-  if (major >= 26) return '25';
-  if (major === 1) {
-    // 1.20.5 - 1.21.x => Java 21
-    if ((minor === 20 && patch >= 5) || (minor >= 21)) return '21';
-    // 1.18 - 1.20.4 => Java 17
-    if (minor >= 18) return '17';
-    // 1.17.x => Java 16
-    if (minor === 17) return '16';
-    // 1.13 及以下 => Java 8
-    return '8';
-  }
-  return '25';
-};
 
 const javaVersionsWithOptions = computed(() =>
   javaVersions.value.map((opt) => ({
@@ -592,42 +569,38 @@ const goToHome = () => {
 const dockerImagePresetVersion = ref('25');
 
 const updateJavaSelectionByRecommendation = () => {
-  let gameVerStr = '';
-  let parsed: number[] | null = null;
+  // 优先使用在线选择器提供的精确版本号，其次尝试从文件名解析
+  const rawInput = onlineGameVersion.value || formData.value.core || '';
+  const version = parseMcVersion(rawInput);
 
-  // 优先使用在线选择器提供的精确版本号
-  if (onlineGameVersion.value) {
-    gameVerStr = onlineGameVersion.value;
-    parsed = parseMcVersion(gameVerStr);
-  } else if (formData.value.core) {
-    // 尝试从文件名解析
-    gameVerStr = formData.value.core;
-    parsed = parseMcVersion(gameVerStr);
-  }
-
-  if (!parsed) {
-    // 无法识别
+  if (!version) {
+    // 无法识别，清空推荐，不改变已选值
     recommendedJavaVersion.value = '';
     detectedGameVersion.value = '';
     return;
   }
 
-  const rec = getRecommendedJavaFromParsed(parsed);
-  recommendedJavaVersion.value = rec;
-  detectedGameVersion.value = parsed[2] > 0
-    ? `${parsed[0]}.${parsed[1]}.${parsed[2]}`
-    : `${parsed[0]}.${parsed[1]}`;
+  const rec = getRecommendedJava(version);
+  if (rec === null) {
+    recommendedJavaVersion.value = '';
+    detectedGameVersion.value = '';
+    return;
+  }
+
+  const recStr = String(rec);
+  recommendedJavaVersion.value = recStr;
+  detectedGameVersion.value = version;
 
   // 自动切换在线 Java 选项
-  const matchOnline = javaVersions.value.find((v) => v.value === rec);
-  if (matchOnline) selectedJavaVersion.value = rec;
+  const matchOnline = javaVersions.value.find((v) => v.value === recStr);
+  if (matchOnline) selectedJavaVersion.value = recStr;
 
   // 自动切换 Docker preset
   const dockerChoices = ['25', '21', '17', '11', '8'];
-  if (dockerChoices.includes(rec)) dockerImagePresetVersion.value = rec;
+  if (dockerChoices.includes(recStr)) dockerImagePresetVersion.value = recStr;
 
   // 自动切换本机 Java
-  const matchLocal = localJavaVersionsRaw.value.find((v) => v.javaVer === rec);
+  const matchLocal = localJavaVersionsRaw.value.find((v) => v.javaVer === recStr);
   if (matchLocal) customJavaPath.value = matchLocal.value;
 };
 
