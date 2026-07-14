@@ -111,6 +111,7 @@ watch(
   transition: background-color 0.3s ease;
 }
 
+body .global-layout-bg.custom-theme-enabled,
 .global-layout-bg.custom-theme-enabled {
   color: var(--td-text-color-primary);
   --current-comp-op: var(--comp-op-light);
