@@ -57,8 +57,100 @@ const uploadInputRef = ref<HTMLInputElement | null>(null);
 const javaType = ref('online');
 const javaVersions = ref<{ label: string; value: string }[]>([]);
 const localJavaVersions = ref<{ label: string; value: string }[]>([]);
+const localJavaVersionsRaw = ref<any[]>([]);
 const selectedJavaVersion = ref('');
 const customJavaPath = ref('');
+const onlineGameVersion = ref('');
+
+// 版本号解析与推荐
+const parseMcVersion = (filename: string): string | null => {
+  if (!filename) return null;
+  const mc1xRegex = /\b(1\.\d+(?:\.\d+)*)\b/;
+  const match1x = filename.match(mc1xRegex);
+  if (match1x) {
+    return match1x[1];
+  }
+  const generalRegex = /\b(\d+\.\d+(?:\.\d+)*)\b/;
+  const matchGeneral = filename.match(generalRegex);
+  if (matchGeneral) {
+    return matchGeneral[1];
+  }
+  return null;
+};
+
+const compareVersions = (v1: string, v2: string): number => {
+  const parts1 = v1.split('.').map(Number);
+  const parts2 = v2.split('.').map(Number);
+  const maxLen = Math.max(parts1.length, parts2.length);
+  for (let i = 0; i < maxLen; i++) {
+    const p1 = parts1[i] || 0;
+    const p2 = parts2[i] || 0;
+    if (p1 !== p2) {
+      return p1 - p2;
+    }
+  }
+  return 0;
+};
+
+const getRecommendedJava = (version: string): number | null => {
+  if (!version) return null;
+  if (compareVersions(version, '26.1') >= 0) {
+    return 25;
+  }
+  if (compareVersions(version, '1.20.5') >= 0) {
+    return 21;
+  }
+  if (compareVersions(version, '1.18') >= 0) {
+    return 17;
+  }
+  if (compareVersions(version, '1.17') >= 0) {
+    return 16;
+  }
+  return 8;
+};
+
+const detectedGameVersion = computed(() => {
+  if (detectedJars.value.length === 0 && downloadType.value === 'online') {
+    return onlineGameVersion.value;
+  }
+  return parseMcVersion(formData.value.core);
+});
+
+const recommendedJavaVersion = computed(() => {
+  const version = detectedGameVersion.value;
+  if (!version) return null;
+  const rec = getRecommendedJava(version);
+  return rec ? String(rec) : null;
+});
+
+const javaVersionsWithOptions = computed(() => {
+  return javaVersions.value.map((v) => {
+    const isRec = recommendedJavaVersion.value && v.value === recommendedJavaVersion.value;
+    return {
+      ...v,
+      label: isRec ? `${v.label} (推荐)` : v.label
+    };
+  });
+});
+
+const localJavaVersionsWithOptions = computed(() => {
+  return localJavaVersions.value.map((v) => {
+    if (recommendedJavaVersion.value) {
+      const raw = localJavaVersionsRaw.value.find(item => item.path === v.value);
+      if (raw) {
+        const vStr = String(raw.version);
+        const isRec = vStr === recommendedJavaVersion.value || vStr.startsWith(recommendedJavaVersion.value + '.');
+        if (isRec) {
+          return {
+            ...v,
+            label: `${v.label} (推荐)`
+          };
+        }
+      }
+    }
+    return v;
+  });
+});
 
 // 本地和在线java
 const fetchJavaVersions = async (force: boolean = false) => {
@@ -70,17 +162,13 @@ const fetchJavaVersions = async (force: boolean = false) => {
     );
     if (res && Array.isArray(res)) {
       javaVersions.value = res.map((v) => ({ label: `Java ${v}`, value: v }));
-      if (javaVersions.value.length > 0 && !selectedJavaVersion.value) {
-        selectedJavaVersion.value = javaVersions.value[1].value;
-      }
     }
-    localJavaVersions.value = (await getLocalJavaList(force)).map((v) => ({
+    const rawLocal = await getLocalJavaList(force);
+    localJavaVersionsRaw.value = rawLocal;
+    localJavaVersions.value = rawLocal.map((v) => ({
       label: `Java ${v.version}${v.is64Bit ? '' : ' (32位)'} (${v.vendor} | ${v.path})`,
       value: v.path,
     }));
-    if (localJavaVersions.value.length > 0) {
-      customJavaPath.value = localJavaVersions.value[0].value;
-    }
     if (force) MessagePlugin.success('已刷新Java版本列表');
   } catch (e: any) {
     MessagePlugin.warning('获取在线Java版本失败: ' + e.message);
@@ -209,6 +297,42 @@ const addPortMapping = () => {
 const removePortMapping = (index: number) => {
   localPortList.value.splice(index, 1);
 };
+
+const updateJavaSelectionByRecommendation = () => {
+  const targetVer = recommendedJavaVersion.value || '25';
+
+  // 在线版本
+  if (javaVersions.value.length > 0) {
+    const hasOnline = javaVersions.value.some((v) => v.value === targetVer);
+    if (hasOnline) {
+      selectedJavaVersion.value = targetVer;
+    } else {
+      selectedJavaVersion.value = javaVersions.value[0].value;
+    }
+  } else {
+    selectedJavaVersion.value = targetVer;
+  }
+
+  // Docker
+  dockerImagePresetVersion.value = targetVer;
+
+  // 本地 Java
+  if (localJavaVersionsRaw.value && localJavaVersionsRaw.value.length > 0) {
+    const found = localJavaVersionsRaw.value.find(v => {
+      const vStr = String(v.version);
+      return vStr === targetVer || vStr.startsWith(targetVer + '.');
+    });
+    if (found) {
+      customJavaPath.value = found.path;
+    } else {
+      customJavaPath.value = localJavaVersionsRaw.value[0].path;
+    }
+  }
+};
+
+watch([recommendedJavaVersion, javaVersions, localJavaVersionsRaw], () => {
+  updateJavaSelectionByRecommendation();
+}, { deep: true, immediate: true });
 
 // 表单和步骤校验
 const FORM_RULES = computed<FormRules>(() => {
@@ -421,6 +545,7 @@ const onCoreSelected = (data: { core: string; version: string; url: string; sha2
   formData.value.coreUrl = data.url;
   formData.value.coreSha256 = data.sha256;
   formData.value.coreFileKey = '';
+  onlineGameVersion.value = data.version;
   MessagePlugin.success(`已选择: ${data.core} (${data.version})`);
 };
 
@@ -556,6 +681,7 @@ const goToHome = () => {
   detectedJars.value = [];
   downloadType.value = 'online';
   javaType.value = 'online';
+  onlineGameVersion.value = '';
 
   removeUploadData();
 };
@@ -826,7 +952,13 @@ const goToHome = () => {
             </div>
 
             <div v-show="currentStep === 3" class="list-item-anim flex-1 pt-1">
-              <t-alert theme="info" title="Java 版本选择指南" class="!mb-6 !rounded-xl">
+              <t-alert v-if="recommendedJavaVersion" theme="success" :title="`推荐 Java 版本: Java ${recommendedJavaVersion}`" class="!mb-6 !rounded-xl">
+                <template #message>
+                  检测到您的游戏版本为 <span class="font-bold text-[var(--color-success)]">{{ detectedGameVersion }}</span>，已为您自动选择推荐的 Java {{ recommendedJavaVersion }}。
+                </template>
+              </t-alert>
+
+              <t-alert v-else theme="info" title="Java 版本选择指南" class="!mb-6 !rounded-xl">
                 <template #message>
                   <div class="flex flex-col gap-2.5 mt-2">
                     <div class="flex items-center gap-3">
@@ -913,11 +1045,11 @@ const goToHome = () => {
                         <div class="flex items-center gap-3">
                           <span class="text-xs font-bold text-zinc-500 shrink-0">运行环境:</span>
                           <t-select v-model="dockerImagePresetVersion" class="!w-48" :clearable="false">
-                            <t-option label="Java 25" value="25" />
-                            <t-option label="Java 21" value="21" />
-                            <t-option label="Java 17" value="17" />
-                            <t-option label="Java 11" value="17" />
-                            <t-option label="Java 8" value="8" />
+                            <t-option :label="recommendedJavaVersion === '25' ? 'Java 25 (推荐)' : 'Java 25'" value="25" />
+                            <t-option :label="recommendedJavaVersion === '21' ? 'Java 21 (推荐)' : 'Java 21'" value="21" />
+                            <t-option :label="recommendedJavaVersion === '17' ? 'Java 17 (推荐)' : 'Java 17'" value="17" />
+                            <t-option :label="recommendedJavaVersion === '11' ? 'Java 11 (推荐)' : 'Java 11'" value="11" />
+                            <t-option :label="recommendedJavaVersion === '8' ? 'Java 8 (推荐)' : 'Java 8'" value="8" />
                           </t-select>
                         </div>
                       </div>
@@ -940,7 +1072,7 @@ const goToHome = () => {
                     <div v-if="javaType === 'online'">
                       <t-select
                         v-model="selectedJavaVersion"
-                        :options="javaVersions"
+                        :options="javaVersionsWithOptions"
                         placeholder="请选择 Java 版本"
                         class="!w-full sm:!w-64"
                       />
@@ -948,11 +1080,11 @@ const goToHome = () => {
                     <div v-if="javaType === 'local'" class="flex items-center gap-3">
                       <t-select
                         v-model="customJavaPath"
-                        :options="localJavaVersions"
+                        :options="localJavaVersionsWithOptions"
                         placeholder="请选择 Java"
                         class="!flex-1"
                       />
-                      <t-button variant="text" @click="fetchJavaVersions(true)">刷新</t-button>
+                      <t-button variant="base" theme="default" @click="fetchJavaVersions(true)">刷新</t-button>
                     </div>
                     <div v-if="javaType === 'env'">
                       <t-input
