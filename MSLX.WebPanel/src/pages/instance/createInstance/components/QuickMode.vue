@@ -138,25 +138,36 @@ watch([dockerImageType, dockerImagePresetVersion], ([type, ver]) => {
   }
 });
 
-const localPortList = ref<{ host: number; container: number }[]>([{ host: 25565, container: 25565 }]);
+const localPortList = ref<{ host: number; container: number; protocol: 'tcp' | 'udp' }[]>([
+  { host: 25565, container: 25565, protocol: 'tcp' },
+]);
+
+const networkMode = ref<'mapped' | 'host'>('mapped');
 
 watch(
-  localPortList,
-  (list) => {
-    if (list.length === 0) {
+  [localPortList, networkMode],
+  ([list, mode]) => {
+    if (mode === 'host') {
       formData.value.dockerPorts = '0';
     } else {
-      formData.value.dockerPorts = list
-        .filter((p) => p.host > 0 && p.container > 0)
-        .map((p) => `${p.host}:${p.container}`)
-        .join(',');
+      if (list.length === 0) {
+        formData.value.dockerPorts = '';
+      } else {
+        formData.value.dockerPorts = list
+          .filter((p) => p.host > 0 && p.container > 0)
+          .map((p) => `${p.host}:${p.container}/${p.protocol}`)
+          .join(',');
+      }
     }
   },
-  { deep: true },
+  { deep: true, immediate: true },
 );
 
 const addPortMapping = () => {
-  localPortList.value.push({ host: 25565, container: 25565 });
+  if (networkMode.value === 'host') {
+    networkMode.value = 'mapped';
+  }
+  localPortList.value.push({ host: 25565, container: 25565, protocol: 'tcp' });
 };
 
 const removePortMapping = (index: number) => {
@@ -630,7 +641,8 @@ const goToHome = () => {
                     <t-radio-button value="docker">Docker 容器环境 🐳</t-radio-button>
                   </t-radio-group>
                   <t-alert v-if="javaType === 'docker'" class="!mb-5" theme="info"
-                    >使用容器环境前请确保您的宿主机已经安装了 <b>Docker</b> ，否则会导致无法启动。如果您不知道这是什么，请不要选择此项！</t-alert
+                    >使用容器环境前请确保您的宿主机已经安装了
+                    <b>Docker</b> ，否则会导致无法启动。如果您不知道这是什么，请不要选择此项！</t-alert
                   >
 
                   <div
@@ -892,66 +904,91 @@ const goToHome = () => {
                 v-if="javaType === 'docker'"
                 class="col-span-1 sm:col-span-2 mt-4 pt-4 border-t border-dashed border-zinc-200 dark:border-zinc-800 w-full sm:w-[40rem] list-item-anim"
               >
-                <div class="flex items-center justify-between mb-3">
-                  <div class="flex flex-col">
-                    <span class="text-sm font-bold text-[var(--td-text-color-primary)]">容器网络映射端口</span>
-                    <span class="text-[11px] text-zinc-400 mt-0.5">绑定宿主机端口，供玩家外部连接</span>
-                  </div>
-                  <t-button variant="outline" theme="primary" size="small" @click="addPortMapping">
-                    <template #icon><t-icon name="add" /></template>
-                    增加端口映射
-                  </t-button>
+                <div class="mb-4">
+                  <span class="text-sm font-bold text-[var(--td-text-color-primary)] block mb-2">Docker 网络模式</span>
+                  <t-radio-group v-model="networkMode" variant="default-filled" class="w-full">
+                    <t-radio-button value="mapped">端口映射</t-radio-button>
+                    <t-radio-button value="host">Host 网络模式 (共用宿主机网络)</t-radio-button>
+                  </t-radio-group>
                 </div>
 
-                <div
-                  v-if="localPortList.length === 0"
-                  class="p-4 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-700 text-center text-xs text-zinc-400"
-                >
-                  当前处于 Host 模式或未公开任何网络端口
-                </div>
-
-                <div class="flex flex-col gap-3">
-                  <div
-                    v-for="(port, index) in localPortList"
-                    :key="index"
-                    class="flex items-center gap-3 list-item-anim"
-                  >
-                    <div class="flex-1 flex items-center gap-2 overflow-visible p-[2px] -m-[2px]">
-                      <t-input-number
-                        v-model="port.host"
-                        :min="1"
-                        :max="65535"
-                        placeholder="宿主机端口"
-                        theme="column"
-                        class="flex-1 min-w-0"
-                        suffix="宿主机"
-                      />
-                      <span class="text-zinc-400 shrink-0 font-bold">:</span>
-                      <t-input-number
-                        v-model="port.container"
-                        :min="1"
-                        :max="65535"
-                        placeholder="容器内部端口"
-                        theme="column"
-                        class="flex-1 min-w-0"
-                        suffix="容器内"
-                      />
+                <template v-if="networkMode === 'mapped'">
+                  <div class="flex items-center justify-between mb-3 mt-4">
+                    <div class="flex flex-col">
+                      <span class="text-sm font-bold text-[var(--td-text-color-primary)]">容器网络映射端口</span>
+                      <span class="text-[11px] text-zinc-400 mt-0.5">绑定宿主机端口与协议，供玩家外部连接</span>
                     </div>
-
-                    <t-button
-                      shape="circle"
-                      variant="text"
-                      theme="danger"
-                      size="small"
-                      class="shrink-0 hover:!bg-red-500/10"
-                      @click="removePortMapping(index)"
-                    >
-                      <t-icon name="delete" />
+                    <t-button variant="outline" theme="primary" size="small" @click="addPortMapping">
+                      <template #icon><t-icon name="add" /></template>
+                      增加端口映射
                     </t-button>
                   </div>
+
+                  <div
+                    v-if="localPortList.length === 0"
+                    class="p-4 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-700 text-center text-xs text-zinc-400"
+                  >
+                    未公开任何网络端口，请点击右上角增加端口映射
+                  </div>
+
+                  <div class="flex flex-col gap-3">
+                    <div
+                      v-for="(port, index) in localPortList"
+                      :key="index"
+                      class="flex items-center gap-3 list-item-anim"
+                    >
+                      <div class="flex-1 flex items-center gap-2 overflow-visible p-[2px] -m-[2px]">
+                        <!-- 宿主机端口 -->
+                        <t-input-number
+                          v-model="port.host"
+                          :min="1"
+                          :max="65535"
+                          placeholder="宿主机"
+                          theme="column"
+                          class="flex-1 min-w-0"
+                        />
+                        <span class="text-zinc-400 shrink-0 font-bold">:</span>
+                        <!-- 容器内端口 -->
+                        <t-input-number
+                          v-model="port.container"
+                          :min="1"
+                          :max="65535"
+                          placeholder="容器内"
+                          theme="column"
+                          class="flex-1 min-w-0"
+                        />
+
+                        <!-- 协议选择下拉框 -->
+                        <t-select v-model="port.protocol" size="medium" class="!w-[80px] shrink-0" :clearable="false">
+                          <t-option label="TCP" value="tcp" />
+                          <t-option label="UDP" value="udp" />
+                        </t-select>
+                      </div>
+
+                      <!-- 删除按钮 -->
+                      <t-button
+                        shape="circle"
+                        variant="text"
+                        theme="danger"
+                        size="small"
+                        class="shrink-0 hover:!bg-red-500/10"
+                        @click="removePortMapping(index)"
+                      >
+                        <t-icon name="delete" />
+                      </t-button>
+                    </div>
+                  </div>
+                </template>
+
+                <div
+                  v-else
+                  class="p-4 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-700 text-center text-xs text-zinc-400 mt-4"
+                >
+                  当前处于 Host 网络模式下，容器将共享宿主机的端口，无需额外配置端口映射
                 </div>
 
-                <t-form-item name="DockerPorts" class="!mb-0 !mt-2" v-show="false">
+                <!-- 隐藏的表单项 -->
+                <t-form-item name="DockerPorts" v-show="false" class="!mb-0 !mt-2">
                   <t-input v-model="formData.dockerPorts" />
                 </t-form-item>
               </div>
