@@ -40,3 +40,13 @@
 .t-radio-button:hover::after {
   display: none !important;
 }
+
+/* 针对 outline 变体（无背景滑块 block 元素）下的选中按钮，显式补充底色 */
+.t-radio-group__outline .t-radio-button.t-is-checked {
+  background-color: #ffffff !important;
+  @apply !shadow-sm;
+}
+html[theme-mode='dark'] .t-radio-group__outline .t-radio-button.t-is-checked,
+.dark .t-radio-group__outline .t-radio-button.t-is-checked {
+  background-color: #3f3f46 !important;
+}
