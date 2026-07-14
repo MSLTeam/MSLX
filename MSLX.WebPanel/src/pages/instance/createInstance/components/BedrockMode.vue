@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onUnmounted, ref, onMounted, computed, nextTick } from 'vue';
+import { onUnmounted, ref, onMounted, computed, nextTick, watch } from 'vue';
 import { type FormRules, MessagePlugin } from 'tdesign-vue-next';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { useUserStore } from '@/store';
@@ -15,6 +15,15 @@ interface BedrockCreateModel extends CreateInstanceQucikModeModel {
   packageUrl?: string;
   packageSha256?: string;
   ignoreEula?: boolean;
+  deployMode: 'native' | 'docker';
+  imageType: 'builtIn' | 'custom';
+}
+
+// 端口映射项接口
+interface PortMapping {
+  containerPort: string;
+  hostPort: string;
+  protocol: 'udp' | 'tcp';
 }
 
 // 状态管理
@@ -41,6 +50,9 @@ const availableVersions = ref<{ label: string; value: string }[]>([]);
 const selectedVersion = ref('');
 const isFetchingVersions = ref(false);
 
+// 动态端口映射状态列表
+const portMappings = ref<PortMapping[]>([{ containerPort: '19132', hostPort: '19132', protocol: 'udp' }]);
+
 const formData = ref<BedrockCreateModel>({
   name: '新建基岩版服务器',
   path: '',
@@ -53,31 +65,52 @@ const formData = ref<BedrockCreateModel>({
   packageLocalPath: '',
   packageUrl: '',
   packageSha256: '',
-  minM: 1027, // Magic number
-  maxM: 1027, // Magic number
+  minM: 1027,
+  maxM: 1027,
   args: '',
   ignoreEula: true,
+  deployMode: 'native', // native 或 docker
+  imageType: 'builtIn', // builtIn 或 custom
+  dockerImage: 'MSLX://DockerImage/Java/25',
+  dockerPorts: '',
 });
 
-const fetchVersions = async () => {
-  if (isMac.value) return; //only apple can do～
+// 添加动态端口方法
+const addPortMapping = () => {
+  portMappings.value.push({ containerPort: '', hostPort: '', protocol: 'udp' });
+};
 
+// 删除动态端口方法
+const removePortMapping = (index: number) => {
+  portMappings.value.splice(index, 1);
+};
+
+// 获取版本列表
+const fetchVersions = async () => {
   isFetchingVersions.value = true;
   try {
     const res = await getServerCoreGameVersion('bedrock-server');
     const allVersions = res.versions || [];
 
-    // 过滤版本
     let filteredVersions = [];
-    if (isWin.value) {
+    // docker / mac
+    if (formData.value.deployMode === 'docker' || isMac.value) {
+      filteredVersions = allVersions.filter((v) => v.includes('linux-'));
+    } else if (isWin.value) {
       filteredVersions = allVersions.filter((v) => v.includes('win-'));
     } else {
       filteredVersions = allVersions.filter((v) => v.includes('linux-'));
     }
 
     availableVersions.value = filteredVersions.map((v) => ({ label: v, value: v }));
+
+    // 如果当前选中的版本不在新列表里，默认选第一个
     if (availableVersions.value.length > 0) {
-      selectedVersion.value = availableVersions.value[0].value;
+      if (!availableVersions.value.some((v) => v.value === selectedVersion.value)) {
+        selectedVersion.value = availableVersions.value[0].value;
+      }
+    } else {
+      selectedVersion.value = '';
     }
   } catch (e: any) {
     MessagePlugin.warning('获取基岩版版本列表失败: ' + e.message);
@@ -86,20 +119,55 @@ const fetchVersions = async () => {
   }
 };
 
+// 监听部署模式变化
+watch(
+  () => formData.value.deployMode,
+  (newMode) => {
+    if (newMode === 'docker') {
+      formData.value.args = './bedrock_server';
+    } else {
+      formData.value.args = isWin.value ? 'bedrock_server.exe' : './bedrock_server';
+    }
+    fetchVersions();
+  },
+);
+
+// 监听镜像选项变化
+watch(
+  () => formData.value.imageType,
+  (newType) => {
+    if (newType === 'builtIn') {
+      formData.value.dockerImage = 'MSLX://DockerImage/Java/25';
+    } else {
+      formData.value.dockerImage = '';
+    }
+  },
+);
+
 onMounted(() => {
-  formData.value.args = isWin.value ? 'bedrock_server.exe' : './bedrock_server';
+  // 如果是 Mac，强制锁定为 Docker 部署
+  if (isMac.value) {
+    formData.value.deployMode = 'docker';
+    formData.value.args = './bedrock_server';
+  } else {
+    formData.value.args = isWin.value ? 'bedrock_server.exe' : './bedrock_server';
+  }
   fetchVersions();
 });
 
 // 表单校验规则
 const FORM_RULES = computed<FormRules>(() => {
-  return {
+  const rules: FormRules = {
     name: [{ required: true, message: '实例名称不能为空', trigger: 'blur' }],
     args: [{ required: true, message: '请输入启动指令', trigger: 'blur' }],
   };
+  if (formData.value.deployMode === 'docker') {
+    rules.dockerImage = [{ required: true, message: '镜像地址不能为空', trigger: 'blur' }];
+  }
+  return rules;
 });
 
-const stepValidationFields = [['name', 'path'], [], ['args'], []];
+const stepValidationFields = [['name', 'path'], ['dockerImage'], ['args'], []];
 
 // 步骤导航
 const prevStep = () => {
@@ -109,7 +177,7 @@ const prevStep = () => {
 };
 
 const nextStep = async () => {
-  // 选择版本
+  // 第二步：选择版本与部署模式
   if (currentStep.value === 1) {
     if (!selectedVersion.value) {
       MessagePlugin.warning('请选择一个基岩版服务端版本');
@@ -158,12 +226,28 @@ const onSubmit = async () => {
     return;
   }
 
+  // 处理端口映射数据结构转换
+  if (formData.value.deployMode === 'docker') {
+    const validPorts = portMappings.value
+      .filter((p) => p.containerPort.trim() && p.hostPort.trim())
+      .map((p) => `${p.hostPort.trim()}:${p.containerPort.trim()}/${p.protocol}`);
+
+    formData.value.dockerPorts = validPorts.join(',');
+  } else {
+    formData.value.dockerPorts = '';
+    formData.value.dockerImage = '';
+  }
+
   isSubmitting.value = true;
   statusMessages.value = [];
 
+  // 组装最终提交给后端的 API 数据
   const apiData = {
     ...formData.value,
     path: formData.value.path || null,
+    java: formData.value.deployMode === 'docker' ? 'docker-custom' : formData.value.java,
+    dockerImage: formData.value.deployMode === 'docker' ? formData.value.dockerImage : undefined,
+    dockerPorts: formData.value.deployMode === 'docker' ? formData.value.dockerPorts : undefined,
   };
 
   try {
@@ -179,7 +263,7 @@ const onSubmit = async () => {
 
     await startSignalRConnection(createdServerId.value);
   } catch (error: any) {
-    const errorMessage = error.message || '创建请求失败，请检查网络或后端服务';
+    const errorMessage = error.message || '创建请求失败，请检查网络或后端 service';
     MessagePlugin.error(errorMessage);
     isSubmitting.value = false;
   }
@@ -262,11 +346,23 @@ onUnmounted(() => {
 const goToHome = () => {
   isSuccess.value = false;
   currentStep.value = 0;
+  portMappings.value = [
+    { containerPort: '19132', hostPort: '19132' ,protocol:'udp' },
+  ];
   formData.value = {
     ...formData.value,
     name: '新建基岩版服务器',
     path: '',
-    args: isWin.value ? 'bedrock_server.exe' : './bedrock_server',
+    deployMode: isMac.value ? 'docker' : 'native',
+    java: isMac.value ? 'docker-custom' : 'none',
+    imageType: 'builtIn',
+    dockerImage: 'MSLX://DockerImage/Java/25',
+    args:
+      isMac.value || formData.value.deployMode === 'docker'
+        ? './bedrock_server'
+        : isWin.value
+          ? 'bedrock_server.exe'
+          : './bedrock_server',
     packageUrl: '',
     packageSha256: '',
   };
@@ -276,38 +372,6 @@ const goToHome = () => {
 <template>
   <div class="mx-auto pb-6 text-[var(--td-text-color-primary)]">
     <div
-      v-if="isMac"
-      class="design-card bg-[var(--td-bg-color-container)]/80 rounded-3xl border border-[var(--td-component-border)] shadow-sm p-6 sm:p-12 transition-all duration-300 flex flex-col items-center justify-center min-h-[500px] list-item-anim"
-    >
-      <t-icon name="error-circle" size="64px" class="text-[var(--color-warning)] mb-6" />
-      <div class="text-2xl font-bold text-[var(--td-text-color-primary)] mb-4">暂不支持 macOS 原生运行基岩版服务端</div>
-      <div class="text-sm text-[var(--td-text-color-secondary)] max-w-lg text-center leading-relaxed mb-8">
-        抱歉，由于基岩版官方服务端仅提供 Windows 和 Linux 平台的支持，您当前的 macOS 系统无法直接原生运行。
-      </div>
-      <div
-        class="p-6 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-200 dark:border-zinc-800 w-full max-w-lg"
-      >
-        <div class="font-bold text-[var(--td-text-color-primary)] mb-2 flex items-center gap-2">
-          <t-icon name="lightbulb" class="text-[var(--color-primary)]" /> 备用方案推荐
-        </div>
-        <div class="text-sm text-[var(--td-text-color-secondary)] mb-4">
-          如果您使用的是 macOS，我们强烈建议您通过 Docker 运行 MSLX，借助 Docker 的 Linux 虚拟化环境来部署基岩版服务端。
-        </div>
-        <t-button
-          tag="a"
-          href="https://mslx.mslmc.cn/docs/install/docker/"
-          target="_blank"
-          theme="primary"
-          variant="outline"
-          class="!w-full"
-        >
-          查看 Docker 部署文档
-        </t-button>
-      </div>
-    </div>
-
-    <div
-      v-else
       class="design-card bg-[var(--td-bg-color-container)]/80 rounded-3xl border border-[var(--td-component-border)] shadow-sm p-6 sm:p-8 transition-all duration-300 flex flex-col md:flex-row gap-8 lg:gap-12 min-h-[600px]"
     >
       <div
@@ -349,7 +413,7 @@ const goToHome = () => {
                 name="path"
                 :help="
                   userStore.userInfo.systemInfo.docker
-                    ? '您正在使用Docker容器部署，为保数据安全，仅支持使用默认数据路径'
+                    ? '您的MSLX正在运行于Docker环境内，为保数据安全，仅支持使用默认数据路径'
                     : '选填，留空将使用默认路径'
                 "
               >
@@ -386,6 +450,34 @@ const goToHome = () => {
                 </template>
               </t-alert>
 
+              <t-form-item label="部署模式" name="deployMode">
+                <t-radio-group v-model="formData.deployMode" variant="default-filled">
+                  <t-radio-button value="native" :disabled="isMac">本机原生部署</t-radio-button>
+                  <t-radio-button value="docker">Docker 容器部署</t-radio-button>
+                </t-radio-group>
+                <div v-if="isMac" class="text-xs text-[var(--color-warning)] mt-1">
+                  提示：当前为 macOS 环境，由于基岩版本身不提供 Mac 核心，系统已自动为您锁定为 Docker 虚拟化部署模式。
+                </div>
+              </t-form-item>
+
+              <template v-if="formData.deployMode === 'docker'">
+                <t-form-item label="Docker 镜像选项" name="imageType">
+                  <t-radio-group v-model="formData.imageType" variant="default-filled">
+                    <t-radio-button value="builtIn">内置推荐镜像</t-radio-button>
+                    <t-radio-button value="custom">自定义外部镜像</t-radio-button>
+                  </t-radio-group>
+                </t-form-item>
+
+                <t-form-item label="Docker 镜像地址" name="dockerImage">
+                  <t-input
+                    v-model="formData.dockerImage"
+                    :disabled="formData.imageType === 'builtIn'"
+                    placeholder="请输入 Docker 镜像名，如 ubuntu:latest"
+                    class="!w-full sm:!w-[28rem]"
+                  />
+                </t-form-item>
+              </template>
+
               <t-form-item label="选择服务端版本" name="selectedVersion">
                 <div class="w-full sm:w-[28rem]">
                   <t-select
@@ -414,6 +506,44 @@ const goToHome = () => {
                   class="code-font-textarea !bg-zinc-50/50 dark:!bg-zinc-900/30 !rounded-xl !font-mono"
                 />
               </t-form-item>
+
+              <template v-if="formData.deployMode === 'docker'">
+                <t-form-item label="Docker 端口映射配置">
+                  <div
+                    class="w-full sm:w-[40rem] bg-zinc-50/50 dark:bg-zinc-900/20 p-4 rounded-2xl border border-zinc-200/60 dark:border-zinc-800"
+                  >
+                    <div class="text-xs text-zinc-400 mb-3">
+                      为容器内的服务端映射宿主机访问端口。基岩版默认端口通常为 19132
+                    </div>
+
+                    <div
+                      v-for="(item, index) in portMappings"
+                      :key="index"
+                      class="flex items-center gap-3 mb-3 list-item-anim"
+                    >
+                      <t-input v-model="item.hostPort" placeholder="宿主机端口" class="flex-1" />
+                      <span class="text-zinc-400 font-bold">:</span>
+                      <t-input v-model="item.containerPort" placeholder="容器端口" class="flex-1" />
+
+                      <t-select v-model="item.protocol" style="width: 90px">
+                        <t-option label="UDP" value="udp" />
+                        <t-option label="TCP" value="tcp" />
+                      </t-select>
+
+                      <t-button theme="danger" variant="text" shape="circle" @click="removePortMapping(index)">
+                        <t-icon name="delete" />
+                      </t-button>
+                    </div>
+
+                    <t-button theme="primary" variant="dashed" class="w-full !mt-2" @click="addPortMapping">
+                      <template #icon>
+                        <t-icon name="add" />
+                      </template>
+                      添加端口映射规则
+                    </t-button>
+                  </div>
+                </t-form-item>
+              </template>
             </div>
 
             <div v-show="currentStep === 3" class="list-item-anim flex-1 pt-1">
@@ -442,6 +572,36 @@ const goToHome = () => {
                       >
                       <t-tag theme="primary" variant="light" size="small" class="!rounded">在线下载</t-tag>
                     </div>
+                  </div>
+                </div>
+
+                <div
+                  v-if="formData.deployMode === 'docker'"
+                  class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80"
+                >
+                  <span class="text-sm text-[var(--td-text-color-secondary)] font-bold shrink-0">Docker 镜像</span>
+                  <span class="text-sm font-mono text-[var(--td-text-color-primary)] truncate max-w-[300px]">{{
+                    formData.dockerImage
+                  }}</span>
+                </div>
+
+                <div
+                  v-if="formData.deployMode === 'docker'"
+                  class="flex flex-col sm:flex-row sm:items-start justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80"
+                >
+                  <span class="text-sm text-[var(--td-text-color-secondary)] font-bold shrink-0 mt-0.5"
+                    >运行端口映射</span
+                  >
+                  <div class="flex flex-wrap gap-1.5 justify-end max-w-md">
+                    <t-tag
+                      v-for="(p, idx) in portMappings.filter((x) => x.hostPort)"
+                      :key="idx"
+                      size="small"
+                      variant="outline"
+                      theme="warning"
+                    >
+                      {{ p.hostPort }} ➜ {{ p.containerPort }} ({{p.protocol.toUpperCase()}})
+                    </t-tag>
                   </div>
                 </div>
 

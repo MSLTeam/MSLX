@@ -1950,10 +1950,10 @@ onUnmounted(() => {
           class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
         >
           <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
-            <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">联动 FRP 隧道自启闭</div>
+            <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">联动 FRP 隧道自启停</div>
             <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
               开启绑定后，当前 MC 服务器在<b>启动成功时</b>会自动唤醒对应的 Frpc
-              隧道，在<b>服务器关闭/意外崩溃时</b>会自动切断该隧道。
+              隧道，在<b>服务器关闭/意外崩溃时</b>会自动停止该隧道。
             </div>
           </div>
           <div class="w-full md:w-[340px] shrink-0 flex flex-col gap-2">
