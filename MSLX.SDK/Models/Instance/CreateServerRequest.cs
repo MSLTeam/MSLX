@@ -23,7 +23,7 @@ public class CreateServerRequest : IValidatableObject
 
     public string? DockerImage { get; set; } = "MSLX://DockerImage/Java/25";
 
-    [RegularExpression(@"^(0|^([0-9]+:[0-9]+)(,[0-9]+:[0-9]+)*)$", ErrorMessage = "开放端口 (DockerPorts) 格式不正确，应为 '0' 或 '宿主机端口:容器端口'")]
+    [RegularExpression(@"^(0|(([0-9]+:[0-9]+(\/(tcp|udp))?)(,[0-9]+:[0-9]+(\/(tcp|udp))?)*))$", ErrorMessage = "开放端口 (DockerPorts) 格式不正确，应为 '0' 或 '宿主机端口:容器端口'，可配合 '/tcp' 或 '/udp' 后缀")]
     public string? DockerPorts { get; set; } = "25565:25565";
 
     // ======== MCDR 参数区 ========

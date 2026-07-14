@@ -89,7 +89,7 @@ public class UpdateServerRequest : IValidatableObject
     public string? DockerNetworkAlias { get; set; }
 
     // 允许为空，或为单一的 "0"（代表host），或者匹配 宿主机端口:容器端口
-    [RegularExpression(@"^(0|^([0-9]+:[0-9]+)(,[0-9]+:[0-9]+)*)$", ErrorMessage = "开放端口 (DockerPorts) 格式不正确，应为 '0' 或 '宿主机端口:容器端口'，多个用逗号隔开")]
+    [RegularExpression(@"^(0|(([0-9]+:[0-9]+(\/(tcp|udp))?)(,[0-9]+:[0-9]+(\/(tcp|udp))?)*))$", ErrorMessage = "开放端口 (DockerPorts) 格式不正确，应为 '0' 或 '宿主机端口:容器端口'，可配合 '/tcp' 或 '/udp' 后缀")]
     public string? DockerPorts { get; set; }
 
     [Range(1, 100, ErrorMessage = "CPU 使用率限制 (DockerCpuPercentage) 必须在 1 到 100 之间")]

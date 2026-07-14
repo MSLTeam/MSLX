@@ -267,8 +267,8 @@ watch(
   },
 );
 
-// 端口映射解析器 (25565:25565 -> [{host:'', container:''}])
-const portList = ref<{ host: string; container: string }[]>([]);
+// 端口映射解析器 (25565:25565/tcp -> [{host:'', container:'', protocol:'tcp'}])
+const portList = ref<{ host: string; container: string; protocol: 'tcp' | 'udp' }[]>([]);
 watch(
   () => formData.value.dockerPorts,
   (nv) => {
@@ -277,22 +277,47 @@ watch(
       return;
     }
     portList.value = nv.split(',').map((p) => {
-      const [h, c] = p.split(':');
-      return { host: h || '', container: c || '' };
+      const [h, rest] = p.split(':');
+      const [c, proto] = (rest || '').split('/');
+      return {
+        host: h || '',
+        container: c || '',
+        protocol: proto === 'udp' || proto === 'tcp' ? proto : 'tcp',
+      };
     });
   },
   { immediate: true },
 );
 
+const networkMode = ref<'mapped' | 'host'>('mapped');
+watch(
+  () => formData.value.dockerPorts,
+  (val) => {
+    networkMode.value = val === '0' ? 'host' : 'mapped';
+  },
+  { immediate: true },
+);
+watch(networkMode, (val) => {
+  if (val === 'host') {
+    formData.value.dockerPorts = '0';
+  } else {
+    if (formData.value.dockerPorts === '0') {
+      formData.value.dockerPorts = '25565:25565/tcp';
+    }
+  }
+});
+
 const updatePortsString = () => {
   formData.value.dockerPorts = portList.value
     .filter((p) => p.host && p.container)
-    .map((p) => `${p.host}:${p.container}`)
+    .map((p) => `${p.host.trim()}:${p.container.trim()}/${p.protocol}`)
     .join(',');
 };
+
 const addPortRow = () => {
-  portList.value.push({ host: '', container: '' });
+  portList.value.push({ host: '', container: '', protocol: 'tcp' });
 };
+
 const removePortRow = (index: number) => {
   portList.value.splice(index, 1);
   updatePortsString();
@@ -1124,41 +1149,65 @@ onUnmounted(() => {
             <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
               <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">外部网络端口放行</div>
               <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
-                将服务端口暴露给外界。切换为 Host
-                将共用物理机网络生态。格式为宿主机端口-容器内端口。（不知道什么意思就写一样的得了）
+                将服务端口暴露给外界。切换为 Host 将共用物理机网络生态。格式为主机端口-容器端口。
               </div>
             </div>
             <div class="w-full md:w-[340px] shrink-0 flex flex-col gap-2">
-              <t-radio-group v-model="formData.dockerPorts" variant="default-filled" class="w-full">
-                <t-radio-button value="25565:25565">端口映射</t-radio-button>
-                <t-radio-button value="0">Host网络模式</t-radio-button>
+              <t-radio-group v-model="networkMode" variant="default-filled" class="w-full">
+                <t-radio-button value="mapped">端口映射</t-radio-button>
+                <t-radio-button value="host">Host网络模式</t-radio-button>
               </t-radio-group>
 
-              <template v-if="formData.dockerPorts !== '0'">
+              <template v-if="networkMode === 'mapped'">
                 <div
                   v-for="(item, idx) in portList"
                   :key="idx"
                   class="flex items-center gap-1.5 mt-1 bg-zinc-50 dark:bg-zinc-800/40 p-1.5 rounded-lg border border-zinc-200/50 dark:border-zinc-700/50"
                 >
+                  <!-- 宿主机端口 -->
                   <t-input
                     v-model="item.host"
                     size="small"
-                    placeholder="宿主机公开端口"
-                    class="!font-mono text-xs flex-1"
+                    placeholder="宿主机端口"
+                    class="!font-mono text-xs flex-1 min-w-0"
                     @blur="updatePortsString"
                   />
-                  <span class="text-zinc-400 font-bold">:</span>
+                  <span class="text-zinc-400 font-bold shrink-0">:</span>
+                  <!-- 容器端口 -->
                   <t-input
                     v-model="item.container"
                     size="small"
                     placeholder="容器端口"
-                    class="!font-mono text-xs flex-1"
+                    class="!font-mono text-xs flex-1 min-w-0"
                     @blur="updatePortsString"
                   />
-                  <t-button variant="text" theme="danger" shape="square" size="small" @click="removePortRow(idx)">
+
+                  <!-- 协议选择下拉框 -->
+                  <t-select
+                    v-model="item.protocol"
+                    size="small"
+                    class="!w-[72px] shrink-0"
+                    :popup-props="{ overlayClassName: 'tdesign-demo-select__datepicker' }"
+                    :clearable="false"
+                    @change="updatePortsString"
+                  >
+                    <t-option label="UDP" value="udp" />
+                    <t-option label="TCP" value="tcp" />
+                  </t-select>
+
+                  <!-- 删除按钮 -->
+                  <t-button
+                    variant="text"
+                    theme="danger"
+                    shape="square"
+                    size="small"
+                    class="shrink-0"
+                    @click="removePortRow(idx)"
+                  >
                     <template #icon><t-icon name="delete" /></template>
                   </t-button>
                 </div>
+
                 <t-button
                   dash
                   block
