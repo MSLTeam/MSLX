@@ -11,12 +11,18 @@
 }
 
 .t-dialog__header-content {
-  @apply flex items-center gap-2;
+  @apply flex items-start gap-2;
 }
 
 /* 针对 Danger 类型的图标颜色 */
+.t-dialog__header-content .t-icon-error-circle-filled,
+.t-dialog__header-content .t-icon-info-circle-filled,
+.t-dialog__header-content svg {
+  @apply !text-xl shrink-0 mt-[2px];
+}
+
 .t-dialog__header-content .t-icon-error-circle-filled {
-  @apply !text-red-500 !text-xl;
+  @apply !text-red-500;
 }
 
 /* 内容区 */
