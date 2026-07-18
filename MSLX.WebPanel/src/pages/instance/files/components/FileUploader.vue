@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from 'vue';
+import { computed, onUnmounted, ref, watch } from 'vue';
 import {
   CheckCircleFilledIcon,
   ClearIcon,
@@ -14,7 +14,7 @@ import {
   PlayCircleIcon,
   ServiceIcon,
 } from 'tdesign-icons-vue-next';
-import { MessagePlugin } from 'tdesign-vue-next';
+import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { finishUpload, initUpload, saveUploadedFile, uploadChunk } from '@/api/files';
 
 const props = withDefaults(
@@ -22,6 +22,8 @@ const props = withDefaults(
     visible: boolean;
     instanceId: number;
     currentPath: string;
+    initialItems?: Array<{ file: File; path: string }>;
+    existingTopLevelNames?: string[];
     allowFolder?: boolean;
   }>(),
   {
@@ -121,6 +123,10 @@ const totalProgress = computed(() => {
 });
 
 const hasPending = computed(() => tasks.value.some((t) => t.status === 'pending' || t.status === 'error'));
+const conflictTopLevelNames = computed(() => {
+  const existingNames = new Set(props.existingTopLevelNames || []);
+  return [...new Set(tasks.value.map((task) => task.path.split('/')[0]).filter((name) => existingNames.has(name)))];
+});
 
 const handleSelectFiles = () => fileInputRef.value?.click();
 const handleSelectFolder = () => folderInputRef.value?.click();
@@ -185,7 +191,8 @@ const readAllDirectoryEntries = async (dirReader: any) => {
   return entries;
 };
 
-const addTasksToQueue = (items: { file: File; path: string }[]) => {
+const addTasksToQueue = (items: { file: File; path: string }[], replace = false) => {
+  if (replace) tasks.value = [];
   items.forEach(({ file, path }) => {
     if (tasks.value.some((t) => t.path === path && t.file.size === file.size && t.status !== 'error')) return;
     tasks.value.push({
@@ -197,6 +204,34 @@ const addTasksToQueue = (items: { file: File; path: string }[]) => {
       committedBytes: 0,
       speed: '',
     });
+  });
+};
+
+watch(
+  () => [props.visible, props.initialItems] as const,
+  ([visible, initialItems]) => {
+    if (visible && initialItems?.length) addTasksToQueue(initialItems, true);
+  },
+);
+
+const handleStartUpload = () => {
+  if (isUploading.value || !hasPending.value) return;
+  if (conflictTopLevelNames.value.length === 0) {
+    processQueue();
+    return;
+  }
+
+  const conflicts = conflictTopLevelNames.value;
+  const displayNames = conflicts.slice(0, 10).join('、');
+  const moreText = conflicts.length > 10 ? ` 等 ${conflicts.length} 项` : '';
+  const confirmDialog = DialogPlugin.confirm({
+    header: '确认覆盖上传',
+    body: `检测到 ${conflicts.length} 个同名顶层目标：${displayNames}${moreText}。继续上传将按服务端现有规则覆盖，是否继续？`,
+    theme: 'warning',
+    onConfirm: () => {
+      confirmDialog.hide();
+      processQueue();
+    },
   });
 };
 
@@ -458,7 +493,7 @@ onUnmounted(() => tasks.value.forEach((t) => t.abortController?.abort()));
             size="small"
             class="!rounded-md shadow-sm"
             :disabled="!hasPending || isUploading"
-            @click="processQueue"
+            @click="handleStartUpload"
           >
             <template #icon><play-circle-icon /></template> {{ isUploading ? '上传中...' : '开始上传' }}
           </t-button>

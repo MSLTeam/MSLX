@@ -62,6 +62,9 @@ const loading = ref(false);
 const fileList = ref<FilesListModel[]>([]);
 const currentPath = ref('');
 const selectedRowKeys = ref<string[]>([]);
+const isFileDragOver = ref(false);
+const fileDragCounter = ref(0);
+const droppedUploadItems = ref<Array<{ file: File; path: string }>>([]);
 
 // 屏幕响应式状态
 const screenWidth = ref(window.innerWidth);
@@ -465,6 +468,88 @@ const handlePermissionSuccess = () => {
 };
 
 const handleUploadSuccess = () => handleRefresh();
+const handleUploaderVisibleChange = (visible: boolean) => {
+  showBatchUploader.value = visible;
+  if (!visible) droppedUploadItems.value = [];
+};
+
+const isFileDragEvent = (event: DragEvent) => Array.from(event.dataTransfer?.types || []).includes('Files');
+
+const handleFileDragEnter = (event: DragEvent) => {
+  if (!isFileDragEvent(event)) return;
+  fileDragCounter.value += 1;
+  isFileDragOver.value = true;
+};
+
+const handleFileDragLeave = (event: DragEvent) => {
+  if (!isFileDragEvent(event)) return;
+  fileDragCounter.value = Math.max(0, fileDragCounter.value - 1);
+  isFileDragOver.value = fileDragCounter.value > 0;
+};
+
+const resetFileDragState = () => {
+  fileDragCounter.value = 0;
+  isFileDragOver.value = false;
+};
+
+const readAllDirectoryEntries = async (dirReader: FileSystemDirectoryReader) => {
+  const entries: FileSystemEntry[] = [];
+  let batch: FileSystemEntry[];
+  do {
+    batch = await new Promise<FileSystemEntry[]>((resolve, reject) => dirReader.readEntries(resolve, reject));
+    entries.push(...batch);
+  } while (batch.length > 0);
+  return entries;
+};
+
+const traverseDroppedEntry = async (entry: FileSystemEntry, queue: Array<{ file: File; path: string }>): Promise<number> => {
+  if (entry.isFile) {
+    const file = await new Promise<File>((resolve, reject) => (entry as FileSystemFileEntry).file(resolve, reject));
+    queue.push({ file, path: entry.fullPath.replace(/^\//, '') });
+    return 0;
+  }
+
+  const entries = await readAllDirectoryEntries((entry as FileSystemDirectoryEntry).createReader());
+  if (entries.length === 0) return 1;
+
+  let emptyDirectoryCount = 0;
+  for (const subEntry of entries) {
+    emptyDirectoryCount += await traverseDroppedEntry(subEntry, queue);
+  }
+  return emptyDirectoryCount;
+};
+
+const handleFileDrop = async (event: DragEvent) => {
+  resetFileDragState();
+  const items = event.dataTransfer?.items;
+  if (!items) return;
+
+  const entries = Array.from(items)
+    .map((item) => item.webkitGetAsEntry())
+    .filter((entry): entry is FileSystemEntry => entry !== null);
+  const queue: Array<{ file: File; path: string }> = [];
+  let emptyDirectoryCount = 0;
+
+  try {
+    for (const entry of entries) {
+      emptyDirectoryCount += await traverseDroppedEntry(entry, queue);
+    }
+  } catch {
+    MessagePlugin.error('读取拖入文件失败');
+    return;
+  }
+
+  if (queue.length === 0) {
+    MessagePlugin.warning('未发现可上传文件，空文件夹暂不支持上传');
+    return;
+  }
+  if (emptyDirectoryCount > 0) {
+    MessagePlugin.warning(`检测到 ${emptyDirectoryCount} 个空文件夹，当前上传不支持创建空目录`);
+  }
+
+  droppedUploadItems.value = queue;
+  showBatchUploader.value = true;
+};
 
 // ———— 剪贴板 ——————
 const clipboard = ref<string[]>([]); // 存储被复制/剪切的文件名(相对路径)
@@ -702,7 +787,11 @@ onUnmounted(() => {
       </div>
 
       <div
-        class="flex-1 w-full bg-transparent overflow-hidden [&_.t-table]:!border-t-0 [&_.t-table\_\_header]:!border-t-0 [&_.t-table\_\_header>tr>th]:!border-t-0"
+        class="relative flex-1 w-full bg-transparent overflow-hidden [&_.t-table]:!border-t-0 [&_.t-table\_\_header]:!border-t-0 [&_.t-table\_\_header>tr>th]:!border-t-0"
+        @dragenter.prevent="handleFileDragEnter"
+        @dragover.prevent
+        @dragleave.prevent="handleFileDragLeave"
+        @drop.prevent="handleFileDrop"
       >
         <t-table
           v-model:selected-row-keys="selectedRowKeys"
@@ -810,6 +899,13 @@ onUnmounted(() => {
             </div>
           </template>
         </t-table>
+        <div
+          v-if="isFileDragOver"
+          class="absolute inset-0 z-20 flex flex-col items-center justify-center border-2 border-dashed border-[var(--color-primary)] bg-[var(--color-primary)]/10 pointer-events-none"
+        >
+          <cloud-upload-icon size="48px" class="text-[var(--color-primary)]" />
+          <span class="mt-3 text-sm font-medium text-[var(--td-text-color-primary)]">释放以上传文件或文件夹</span>
+        </div>
       </div>
     </div>
 
@@ -940,9 +1036,12 @@ onUnmounted(() => {
       <t-input v-model="renameNewName" placeholder="输入新名称" :autofocus="true" @enter="handleConfirmRename" />
     </t-dialog>
     <file-uploader
-      v-model:visible="showBatchUploader"
+      :visible="showBatchUploader"
       :instance-id="instanceId"
       :current-path="currentPath"
+      :initial-items="droppedUploadItems"
+      :existing-top-level-names="fileList.map((item) => item.name)"
+      @update:visible="handleUploaderVisibleChange"
       @success="handleUploadSuccess"
     />
     <image-preview v-model:visible="showImagePreview" :file-name="previewFileName" :image-blob-url="previewUrl" />
