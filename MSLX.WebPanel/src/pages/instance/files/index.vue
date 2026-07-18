@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 import {
   AppIcon,
   CloudUploadIcon,
@@ -668,6 +668,8 @@ const filteredFileList = computed(() => {
 watch(
   () => route.query.path,
   async (newPathQuery) => {
+    if (route.name !== 'InstanceFiles') return;
+
     const targetPath = (newPathQuery as string) || '';
 
     if (targetPath === currentPath.value && fileList.value.length > 0) return;
@@ -683,6 +685,16 @@ watch(
   },
   { immediate: true },
 );
+
+onBeforeRouteLeave((to, _from, next) => {
+  if (to.name === 'InstanceFiles' || !to.query.path) {
+    next();
+    return;
+  }
+
+  const { path: _path, ...query } = to.query;
+  next({ path: to.path, query, hash: to.hash, replace: true });
+});
 
 watch(instanceId, async () => {
   if (route.name !== 'InstanceFiles') return;
