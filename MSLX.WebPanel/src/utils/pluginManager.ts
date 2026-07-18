@@ -87,7 +87,9 @@ export async function loadPlugin(pluginUrl: string) {
 
             parentMenu.children = parentMenu.children ? [...parentMenu.children] : [];
             parentMenu.children.push(route);
-            hasChanges = true;
+            if (permissionStore.routers) {
+              hasChanges = true;
+            }
           } else {
             console.error(`[MSLX Plugin] 找不到父菜单 [${parentName}]！`);
           }
@@ -100,7 +102,7 @@ export async function loadPlugin(pluginUrl: string) {
       });
 
       if (hasChanges && permissionStore.routers) {
-        permissionStore.routers = [...reactiveRouters];
+        permissionStore.routers = JSON.parse(JSON.stringify(reactiveRouters));
       }
     }
 

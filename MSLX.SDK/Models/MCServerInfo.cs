@@ -37,6 +37,7 @@ public class McServerInfo
         public string ModsPath { get; set; } = "mods";
         public string WorldPath { get; set; } = "world";
         public string RegionPath { get; set; } = "region";
+        public string? BindFrpId { get; set; }
 
         // ====== Docker 字段 ======
         public string DockerImage { get; set; } = "MSLX://DockerImage/Java/25";

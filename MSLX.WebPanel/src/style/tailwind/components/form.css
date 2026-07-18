@@ -3,6 +3,7 @@
 .global-layout-bg.custom-theme-enabled .t-input,
 .global-layout-bg.custom-theme-enabled .t-input.t-is-readonly,
 .t-input,
+.t-input-number,
 .t-textarea__inner,
 .t-select__wrap .t-input {
   border: none !important;
@@ -13,6 +14,13 @@
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
 
   transition: all 0.2s cubic-bezier(0.38, 0, 0.24, 1);
+}
+
+.t-input-number .t-input {
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
 }
 
 .t-input .t-input__inner {

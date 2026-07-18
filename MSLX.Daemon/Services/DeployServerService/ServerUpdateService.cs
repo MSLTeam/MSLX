@@ -113,6 +113,7 @@ public class ServerUpdateService : BackgroundService
             server.OutputEncoding = req.OutputEncoding;
             server.FileEncoding = req.FileEncoding;
             server.ExpireTime = req.ExpireTime;
+            server.BindFrpId = req.BindFrpId;
             // docker的一堆配置
             server.DockerImage = req.DockerImage;
             server.DockerWorkingDir = req.DockerWorkingDir;

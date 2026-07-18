@@ -111,6 +111,7 @@ watch(
   transition: background-color 0.3s ease;
 }
 
+body .global-layout-bg.custom-theme-enabled,
 .global-layout-bg.custom-theme-enabled {
   color: var(--td-text-color-primary);
   --current-comp-op: var(--comp-op-light);
@@ -179,12 +180,24 @@ watch(
     --td-bg-color-container: transparent !important;
   }
 
+  // 恢复单选框组件背景变量，防止滑块变透明
+  :deep(.t-radio-group) {
+    --td-bg-color-container: #ffffff !important;
+  }
+  &.dark,
+  :global(html[theme-mode='dark']) & {
+    :deep(.t-radio-group) {
+      --td-bg-color-container: #3f3f46 !important;
+    }
+  }
+
   // 白天组件样式
   :deep(.t-card),
   :deep(.design-card),
   :deep(.t-textarea__inner),
   :deep(.t-input-number),
-  :deep(.t-input) {
+  :deep(.t-input),
+  :deep(.t-select__wrap .t-input) {
     background-color: rgba(255, 255, 255, var(--comp-op-light)) !important;
     border-color: rgba(255, 255, 255, 0.3) !important;
 
@@ -218,7 +231,8 @@ watch(
 
     :deep(.t-input),
     :deep(.t-textarea__inner),
-    :deep(.t-input-number) {
+    :deep(.t-input-number),
+    :deep(.t-select__wrap .t-input) {
       background-color: transparent !important;
       border-color: var(--td-component-border) !important;
     }

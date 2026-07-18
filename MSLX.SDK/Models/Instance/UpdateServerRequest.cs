@@ -68,6 +68,9 @@ public class UpdateServerRequest : IValidatableObject
     public string WorldPath { get; set; } = "world";
     public string RegionPath { get; set; } = "region";
 
+    [RegularExpression(@"^([0-9]{8})(,[0-9]{8})*$", ErrorMessage = "绑定的 FRP ID 格式不正确，必须为 8 位数字，多个 ID 请用逗号分隔")]
+    public string? BindFrpId { get; set; }
+
     // ====== Docker 相关配置参数 ======
     public string DockerImage { get; set; } = "MSLX://DockerImage/Java/25";
 
@@ -86,7 +89,7 @@ public class UpdateServerRequest : IValidatableObject
     public string? DockerNetworkAlias { get; set; }
 
     // 允许为空，或为单一的 "0"（代表host），或者匹配 宿主机端口:容器端口
-    [RegularExpression(@"^(0|^([0-9]+:[0-9]+)(,[0-9]+:[0-9]+)*)$", ErrorMessage = "开放端口 (DockerPorts) 格式不正确，应为 '0' 或 '宿主机端口:容器端口'，多个用逗号隔开")]
+    [RegularExpression(@"^(0|(([0-9]+:[0-9]+(\/(tcp|udp))?)(,[0-9]+:[0-9]+(\/(tcp|udp))?)*))$", ErrorMessage = "开放端口 (DockerPorts) 格式不正确，应为 '0' 或 '宿主机端口:容器端口'，可配合 '/tcp' 或 '/udp' 后缀")]
     public string? DockerPorts { get; set; }
 
     [Range(1, 100, ErrorMessage = "CPU 使用率限制 (DockerCpuPercentage) 必须在 1 到 100 之间")]

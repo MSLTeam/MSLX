@@ -1,9 +1,12 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace MSLX.SDK.Models.Settings;
 
 public class UpdateSettingsRequest
 {
+    [Required(ErrorMessage = "系统设置-是否允许普通用户修改用户名 (allowNormalUserChangeUserName) 不能为空")]
+    public Boolean AllowNormalUserChangeUserName { get; set; }
+
     [Required(ErrorMessage = "防火墙配置-是否允许本地回环地址访问 (fireWallBanLocalAddr) 不能为空")]
     public Boolean FireWallBanLocalAddr { get; set; }
 

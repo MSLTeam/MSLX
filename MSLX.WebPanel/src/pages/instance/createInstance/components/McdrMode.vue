@@ -14,6 +14,7 @@ import { CreateInstanceQucikModeModel, PythonInfoModel } from '@/api/model/insta
 import { changeUrl } from '@/router';
 import { useInstanceListStore } from '@/store/modules/instance';
 import { useFileUpload } from '@/hooks/useFileUpload';
+import { parseMcVersion, getRecommendedJava } from './javaRecommendation';
 
 const { isUploading, uploadProgress, uploadedFileName, uploadedFileSize, startUpload, removeUploadData } =
   useFileUpload();
@@ -78,12 +79,37 @@ const fetchPython = async (force: boolean = false) => {
   }
 };
 
-// Java 选择相关状态(内部服务端使用)
+// Java 选择相关状态
 const javaType = ref('online');
 const javaVersions = ref<{ label: string; value: string }[]>([]);
 const localJavaVersions = ref<{ label: string; value: string }[]>([]);
 const selectedJavaVersion = ref('');
 const customJavaPath = ref('');
+
+// Java 版本推荐相关状态
+const onlineGameVersion = ref('');
+const recommendedJavaVersion = ref('');
+const detectedGameVersion = ref('');
+
+
+const javaVersionsWithOptions = computed(() =>
+  javaVersions.value.map((opt) => ({
+    ...opt,
+    label: recommendedJavaVersion.value && opt.value === recommendedJavaVersion.value
+      ? `${opt.label} (推荐)`
+      : opt.label,
+  }))
+);
+
+const localJavaVersionsRaw = ref<{ label: string; value: string; javaVer: string }[]>([]);
+const localJavaVersionsWithOptions = computed(() =>
+  localJavaVersionsRaw.value.map((opt) => ({
+    ...opt,
+    label: recommendedJavaVersion.value && opt.javaVer === recommendedJavaVersion.value
+      ? `${opt.label} (推荐)`
+      : opt.label,
+  }))
+);
 
 const fetchJavaVersions = async (force: boolean = false) => {
   try {
@@ -96,14 +122,17 @@ const fetchJavaVersions = async (force: boolean = false) => {
     );
     if (res && Array.isArray(res)) {
       javaVersions.value = res.map((v) => ({ label: `Java ${v}`, value: v }));
-      if (javaVersions.value.length > 1 && !selectedJavaVersion.value) {
-        selectedJavaVersion.value = javaVersions.value[1].value; // 默认java21
+      if (javaVersions.value.length > 0 && !selectedJavaVersion.value) {
+        selectedJavaVersion.value = javaVersions.value[0].value; // 默认第一项
       }
     }
-    localJavaVersions.value = (await getLocalJavaList(force)).map((v) => ({
+    const rawLocal = await getLocalJavaList(force);
+    localJavaVersionsRaw.value = rawLocal.map((v) => ({
       label: `Java ${v.version}${v.is64Bit ? '' : ' (32位)'} (${v.vendor} | ${v.path})`,
       value: v.path,
+      javaVer: String(v.version).split('.')[0],
     }));
+    localJavaVersions.value = localJavaVersionsRaw.value.map(({ label, value }) => ({ label, value }));
     if (localJavaVersions.value.length > 0) {
       customJavaPath.value = localJavaVersions.value[0].value;
     }
@@ -322,6 +351,7 @@ const onCoreSelected = (data: { core: string; version: string; url: string; sha2
   formData.value.coreUrl = data.url;
   formData.value.coreSha256 = data.sha256;
   formData.value.coreFileKey = '';
+  onlineGameVersion.value = data.version || '';
   MessagePlugin.success(`已选择: ${data.core} (${data.version})`);
 
   formRef.value.validate({ fields: ['core', 'coreUrl'] });
@@ -525,12 +555,60 @@ const goToHome = () => {
   downloadType.value = 'online';
   javaType.value = 'online';
   customJavaPath.value = '';
+  onlineGameVersion.value = '';
+  recommendedJavaVersion.value = '';
+  detectedGameVersion.value = '';
   pythonType.value = pythonList.value.length > 0 ? 'detected' : 'custom';
   handlerType.value = 'auto';
 
   // 视图重置时同步清理 hook 历史状态
   removeUploadData();
 };
+
+// Docker 镜像预设版本
+const dockerImagePresetVersion = ref('25');
+
+const updateJavaSelectionByRecommendation = () => {
+  // 优先使用在线选择器提供的精确版本号，其次尝试从文件名解析
+  const rawInput = onlineGameVersion.value || formData.value.core || '';
+  const version = parseMcVersion(rawInput);
+
+  if (!version) {
+    // 无法识别，清空推荐，不改变已选值
+    recommendedJavaVersion.value = '';
+    detectedGameVersion.value = '';
+    return;
+  }
+
+  const rec = getRecommendedJava(version);
+  if (rec === null) {
+    recommendedJavaVersion.value = '';
+    detectedGameVersion.value = '';
+    return;
+  }
+
+  const recStr = String(rec);
+  recommendedJavaVersion.value = recStr;
+  detectedGameVersion.value = version;
+
+  // 自动切换在线 Java 选项
+  const matchOnline = javaVersions.value.find((v) => v.value === recStr);
+  if (matchOnline) selectedJavaVersion.value = recStr;
+
+  // 自动切换 Docker preset
+  const dockerChoices = ['25', '21', '17', '11', '8'];
+  if (dockerChoices.includes(recStr)) dockerImagePresetVersion.value = recStr;
+
+  // 自动切换本机 Java
+  const matchLocal = localJavaVersionsRaw.value.find((v) => v.javaVer === recStr);
+  if (matchLocal) customJavaPath.value = matchLocal.value;
+};
+
+watch(
+  [onlineGameVersion, () => formData.value.core],
+  () => updateJavaSelectionByRecommendation(),
+  { deep: true },
+);
 </script>
 
 <template>
@@ -801,7 +879,13 @@ const goToHome = () => {
             </div>
 
             <div v-show="currentStep === 3" class="list-item-anim flex-1 pt-1">
-              <t-alert theme="info" title="Java 版本选择指南" class="!mb-6 !rounded-xl">
+              <t-alert v-if="recommendedJavaVersion" theme="success" :title="`推荐 Java 版本: Java ${recommendedJavaVersion}`" class="!mb-6 !rounded-xl">
+                <template #message>
+                  检测到您的游戏版本为 <span class="font-bold text-[var(--color-success)]">{{ detectedGameVersion }}</span>，已为您自动选择推荐的 Java {{ recommendedJavaVersion }}。此 Java 用于运行 MCDR 内部的真实服务端核心。
+                </template>
+              </t-alert>
+
+              <t-alert v-else theme="info" title="Java 版本选择指南" class="!mb-6 !rounded-xl">
                 <template #message>
                   <div class="flex flex-col gap-2.5 mt-2">
                     <div class="flex items-center gap-3">
@@ -876,7 +960,7 @@ const goToHome = () => {
                     <div v-if="javaType === 'online'">
                       <t-select
                         v-model="selectedJavaVersion"
-                        :options="javaVersions"
+                        :options="javaVersionsWithOptions"
                         placeholder="请选择 Java 版本"
                         class="!w-full sm:!w-64"
                       />
@@ -892,7 +976,7 @@ const goToHome = () => {
                     <div v-if="javaType === 'local'" class="flex items-center gap-3">
                       <t-select
                         v-model="customJavaPath"
-                        :options="localJavaVersions"
+                        :options="localJavaVersionsWithOptions"
                         placeholder="请选择 Java 版本"
                         class="!flex-1"
                       />

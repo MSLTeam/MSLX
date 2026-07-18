@@ -1,5 +1,4 @@
 ﻿using CliWrap;
-using CliWrap.Buffered;
 using CliWrap.EventStream;
 using Downloader;
 using MSLX.Daemon.Utils;
@@ -22,6 +21,7 @@ public class ServerDeploymentService
 {
     private readonly ILogger<ServerDeploymentService> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly ParallelDownloader _parallelDownloader = new ParallelDownloader(parallelCount: 8, maxSimultaneousFiles: 3);
 
     // 定义进度回调委托
     public delegate Task ReportProgress(string message, double? progress, bool isError = false, Exception? ex = null);
@@ -251,7 +251,7 @@ public class ServerDeploymentService
 
         if (imageExists)
         {
-            await report($"Docker 镜像 [{realImageName.Replace("docker.mslmc.cn/xiaoyululu/","")}] 本地已存在，跳过拉取流。", 0);
+            await report($"Docker 镜像 [{realImageName.Replace("docker.mslmc.cn/xiaoyululu/", "")}] 本地已存在，跳过拉取流。", 0);
             return;
         }
 
@@ -724,13 +724,21 @@ public class ServerDeploymentService
     }
 
     // 辅助方法
-
     public async Task<bool> DownloadAndValidateAsync(string? url, string savePath, string itemName, string? sha256,
         ReportProgress report)
     {
         if (string.IsNullOrEmpty(url)) return false;
 
-        var downloadOpt = new DownloadConfiguration() { ChunkCount = 8, ParallelDownload = true };
+        var downloadOpt = new DownloadConfiguration()
+        {
+            ChunkCount = 8,
+            ParallelDownload = true,
+            MaxTryAgainOnFailure = 5,
+            RequestConfiguration =
+                {
+                    UserAgent = $"MSLX/{PlatFormServices.GetFormattedVersion()} Downloader/{ParallelDownloader.GetDownloaderVersion()} (.NET/{Environment.Version})"
+                }
+        };
         var downloader = new DownloadService(downloadOpt);
 
         var tcs = new TaskCompletionSource<bool>();

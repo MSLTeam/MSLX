@@ -13,6 +13,7 @@ import { CreateInstanceQucikModeModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
 import { useInstanceListStore } from '@/store/modules/instance';
 import { useFileUpload } from '@/hooks/useFileUpload';
+import { parseMcVersion, getRecommendedJava } from './javaRecommendation';
 
 const { isUploading, uploadProgress, uploadedFileName, uploadedFileSize, startUpload, removeUploadData } =
   useFileUpload();
@@ -45,8 +46,56 @@ const uploadInputRef = ref<HTMLInputElement | null>(null);
 const javaType = ref('online');
 const javaVersions = ref<{ label: string; value: string }[]>([]);
 const localJavaVersions = ref<{ label: string; value: string }[]>([]);
+const localJavaVersionsRaw = ref<any[]>([]);
 const selectedJavaVersion = ref('');
 const customJavaPath = ref('');
+const onlineGameVersion = ref('');
+
+
+const detectedGameVersion = computed(() => {
+  if (downloadType.value === 'online') {
+    return onlineGameVersion.value;
+  }
+  return parseMcVersion(formData.value.core);
+});
+
+const recommendedJavaVersion = computed(() => {
+  const version = detectedGameVersion.value;
+  if (!version) return null;
+  const rec = getRecommendedJava(version);
+  return rec ? String(rec) : null;
+});
+
+const javaVersionsWithOptions = computed(() => {
+  return javaVersions.value.map((v) => {
+    const isRec = recommendedJavaVersion.value && v.value === recommendedJavaVersion.value;
+    return {
+      ...v,
+      label: isRec ? `${v.label} (推荐)` : v.label
+    };
+  });
+});
+
+const localJavaVersionsWithOptions = computed(() => {
+  return localJavaVersions.value.map((v) => {
+    if (recommendedJavaVersion.value) {
+      const raw = localJavaVersionsRaw.value.find(item => item.path === v.value);
+      if (raw) {
+        const vStr = String(raw.version);
+        const isRec = vStr === recommendedJavaVersion.value || vStr.startsWith(recommendedJavaVersion.value + '.');
+        if (isRec) {
+          return {
+            ...v,
+            label: `${v.label} (推荐)`
+          };
+        }
+      }
+    }
+    return v;
+  });
+});
+
+
 
 const fetchJavaVersions = async (force: boolean = false) => {
   try {
@@ -59,17 +108,13 @@ const fetchJavaVersions = async (force: boolean = false) => {
     );
     if (res && Array.isArray(res)) {
       javaVersions.value = res.map((v) => ({ label: `Java ${v}`, value: v }));
-      if (javaVersions.value.length > 0 && !selectedJavaVersion.value) {
-        selectedJavaVersion.value = javaVersions.value[1].value; // 默认java21
-      }
     }
-    localJavaVersions.value = (await getLocalJavaList(force)).map((v) => ({
+    const rawLocal = await getLocalJavaList(force);
+    localJavaVersionsRaw.value = rawLocal;
+    localJavaVersions.value = rawLocal.map((v) => ({
       label: `Java ${v.version}${v.is64Bit ? '' : ' (32位)'} (${v.vendor} | ${v.path})`,
       value: v.path,
     }));
-    if (localJavaVersions.value.length > 0) {
-      customJavaPath.value = localJavaVersions.value[0].value;
-    }
     if (force) {
       MessagePlugin.success('已刷新Java版本列表');
     }
@@ -138,30 +183,77 @@ watch([dockerImageType, dockerImagePresetVersion], ([type, ver]) => {
   }
 });
 
-const localPortList = ref<{ host: number; container: number }[]>([{ host: 25565, container: 25565 }]);
+const localPortList = ref<{ host: number; container: number; protocol: 'tcp' | 'udp' }[]>([
+  { host: 25565, container: 25565, protocol: 'tcp' },
+]);
+
+const networkMode = ref<'mapped' | 'host'>('mapped');
 
 watch(
-  localPortList,
-  (list) => {
-    if (list.length === 0) {
+  [localPortList, networkMode],
+  ([list, mode]) => {
+    if (mode === 'host') {
       formData.value.dockerPorts = '0';
     } else {
-      formData.value.dockerPorts = list
-        .filter((p) => p.host > 0 && p.container > 0)
-        .map((p) => `${p.host}:${p.container}`)
-        .join(',');
+      if (list.length === 0) {
+        formData.value.dockerPorts = '';
+      } else {
+        formData.value.dockerPorts = list
+          .filter((p) => p.host > 0 && p.container > 0)
+          .map((p) => `${p.host}:${p.container}/${p.protocol}`)
+          .join(',');
+      }
     }
   },
-  { deep: true },
+  { deep: true, immediate: true },
 );
 
 const addPortMapping = () => {
-  localPortList.value.push({ host: 25565, container: 25565 });
+  if (networkMode.value === 'host') {
+    networkMode.value = 'mapped';
+  }
+  localPortList.value.push({ host: 25565, container: 25565, protocol: 'tcp' });
 };
 
 const removePortMapping = (index: number) => {
   localPortList.value.splice(index, 1);
 };
+
+const updateJavaSelectionByRecommendation = () => {
+  const targetVer = recommendedJavaVersion.value || '25';
+
+  // 在线Java
+  if (javaVersions.value.length > 0) {
+    const hasOnline = javaVersions.value.some((v) => v.value === targetVer);
+    if (hasOnline) {
+      selectedJavaVersion.value = targetVer;
+    } else {
+      selectedJavaVersion.value = javaVersions.value[0].value;
+    }
+  } else {
+    selectedJavaVersion.value = targetVer;
+  }
+
+  // Docker
+  dockerImagePresetVersion.value = targetVer;
+
+  // 本地Java
+  if (localJavaVersionsRaw.value && localJavaVersionsRaw.value.length > 0) {
+    const found = localJavaVersionsRaw.value.find(v => {
+      const vStr = String(v.version);
+      return vStr === targetVer || vStr.startsWith(targetVer + '.');
+    });
+    if (found) {
+      customJavaPath.value = found.path;
+    } else {
+      customJavaPath.value = localJavaVersionsRaw.value[0].path;
+    }
+  }
+};
+
+watch([recommendedJavaVersion, javaVersions, localJavaVersionsRaw], () => {
+  updateJavaSelectionByRecommendation();
+}, { deep: true, immediate: true });
 
 // 监听选择java的状态变量 修改表单数据
 watch(
@@ -236,8 +328,8 @@ const FORM_RULES = computed<FormRules>(() => {
 
 const stepValidationFields = [
   ['name', 'path'],
-  ['java'],
   ['core', 'coreUrl', 'coreSha256', 'coreFileKey'],
+  ['java'],
   ['minM', 'maxM', 'args'],
   [],
 ];
@@ -250,7 +342,7 @@ const prevStep = () => {
 };
 
 const nextStep = async () => {
-  if (currentStep.value === 2) {
+  if (currentStep.value === 1) {
     if (downloadType.value === 'online') {
       if (!formData.value.coreUrl || !formData.value.core) {
         MessagePlugin.warning('请点击按钮选择一个服务端核心');
@@ -292,6 +384,7 @@ const onCoreSelected = (data: { core: string; version: string; url: string; sha2
   formData.value.coreUrl = data.url;
   formData.value.coreSha256 = data.sha256;
   formData.value.coreFileKey = '';
+  onlineGameVersion.value = data.version;
   MessagePlugin.success(`已选择: ${data.core} (${data.version})`);
 
   formRef.value.validate({ fields: ['core', 'coreUrl'] });
@@ -493,6 +586,7 @@ const goToHome = () => {
   downloadType.value = 'online';
   javaType.value = 'online';
   customJavaPath.value = '';
+  onlineGameVersion.value = '';
 
   // 视图重置时同步清理 hook 历史状态
   removeUploadData();
@@ -515,8 +609,8 @@ const goToHome = () => {
           class="custom-steps !bg-transparent !mt-2"
         >
           <t-step-item title="基本信息" content="填写实例名称和路径" />
-          <t-step-item title="Java 环境" content="配置 Java 运行时" />
           <t-step-item title="核心文件" content="指定核心文件及下载" />
+          <t-step-item title="Java 环境" content="配置 Java 运行时" />
           <t-step-item title="资源配置" content="设置内存与 JVM 参数" />
           <t-step-item title="确认信息" content="核对并提交" />
           <t-step-item title="创建实例" content="提交并等待创建" />
@@ -557,169 +651,8 @@ const goToHome = () => {
               </t-form-item>
             </div>
 
+            <!-- 核心文件 -->
             <div v-show="currentStep === 1" class="list-item-anim flex-1 pt-1">
-              <t-alert theme="info" title="Java 版本选择指南" class="!mb-6 !rounded-xl">
-                <template #message>
-                  <div class="flex flex-col gap-2.5 mt-2">
-                    <div class="flex items-center gap-3">
-                      <span
-                        class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-[var(--color-primary)] text-white font-bold text-xs tracking-wide shadow-sm"
-                        >MC 26.1 - 最新版本</span
-                      >
-                      <span
-                        class="font-extrabold text-xs text-[var(--color-success)] bg-[var(--color-success)]/10 px-2.5 py-1 rounded-md border border-[var(--color-success)]/20"
-                        >Java 25</span
-                      >
-                    </div>
-                    <div class="flex items-center gap-3">
-                      <span
-                        class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-[var(--color-primary)] text-white font-bold text-xs tracking-wide shadow-sm"
-                        >MC 1.20.5 - 1.21.11</span
-                      >
-                      <span
-                        class="font-extrabold text-xs text-[var(--color-success)] bg-[var(--color-success)]/10 px-2.5 py-1 rounded-md border border-[var(--color-success)]/20"
-                        >Java 21</span
-                      >
-                    </div>
-                    <div class="flex items-center gap-3">
-                      <span
-                        class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-[var(--color-primary)] text-white font-bold text-xs tracking-wide shadow-sm"
-                        >MC 1.18 - 1.20.4</span
-                      >
-                      <span
-                        class="font-extrabold text-xs text-[var(--color-success)] bg-[var(--color-success)]/10 px-2.5 py-1 rounded-md border border-[var(--color-success)]/20"
-                        >Java 17</span
-                      >
-                    </div>
-                    <div class="flex items-center gap-3">
-                      <span
-                        class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-[var(--color-primary)] text-white font-bold text-xs tracking-wide shadow-sm"
-                        >MC 1.17 / 1.17.1</span
-                      >
-                      <span
-                        class="font-extrabold text-xs text-[var(--color-success)] bg-[var(--color-success)]/10 px-2.5 py-1 rounded-md border border-[var(--color-success)]/20"
-                        >Java 16</span
-                      >
-                    </div>
-                    <div class="flex items-center gap-3">
-                      <span
-                        class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 font-bold text-xs tracking-wide shadow-sm"
-                        >MC 1.13 - 更低版本</span
-                      >
-                      <span
-                        class="font-extrabold text-xs text-[var(--td-text-color-secondary)] bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md border border-zinc-200 dark:border-zinc-700"
-                        >Java 8</span
-                      >
-                    </div>
-                    <div
-                      class="text-[11px] text-[var(--td-text-color-secondary)] mt-1 flex items-center gap-1 font-medium"
-                    >
-                      <t-icon name="info-circle" size="14px" /> 建议直接使用推荐版本，避免兼容性问题。
-                    </div>
-                  </div>
-                </template>
-              </t-alert>
-
-              <t-form-item label="Java 来源" name="java" class="!mb-0">
-                <div class="w-full">
-                  <t-radio-group v-model="javaType" variant="default-filled" class="!mb-4">
-                    <t-radio-button value="online">在线下载</t-radio-button>
-                    <t-radio-button value="local">选择电脑上的 Java</t-radio-button>
-                    <t-radio-button value="env">环境变量</t-radio-button>
-                    <t-radio-button value="custom">自定义路径</t-radio-button>
-                    <t-radio-button value="docker">Docker 容器环境 🐳</t-radio-button>
-                  </t-radio-group>
-                  <t-alert v-if="javaType === 'docker'" class="!mb-5" theme="info"
-                    >使用容器环境前请确保您的宿主机已经安装了 <b>Docker</b> ，否则会导致无法启动。如果您不知道这是什么，请不要选择此项！</t-alert
-                  >
-
-                  <div
-                    v-if="javaType === 'docker'"
-                    class="list-item-anim border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 bg-zinc-50/30 dark:bg-zinc-900/10 w-full sm:w-[32rem]"
-                  >
-                    <div class="mb-4">
-                      <t-radio-group v-model="dockerImageType" size="small" variant="outline">
-                        <t-radio-button value="preset">MSLX 官方运行时镜像</t-radio-button>
-                        <t-radio-button value="custom">自定义公网镜像</t-radio-button>
-                      </t-radio-group>
-                    </div>
-
-                    <div v-if="dockerImageType === 'preset'">
-                      <div class="flex items-center gap-3">
-                        <span class="text-xs font-bold text-zinc-500 shrink-0">运行环境:</span>
-                        <t-select v-model="dockerImagePresetVersion" class="!w-48" :clearable="false">
-                          <t-option label="Java 25" value="25" />
-                          <t-option label="Java 21" value="21" />
-                          <t-option label="Java 17" value="17" />
-                          <t-option label="Java 11" value="17" />
-                          <t-option label="Java 8" value="8" />
-                        </t-select>
-                      </div>
-                    </div>
-
-                    <div v-if="dockerImageType === 'custom'">
-                      <t-input
-                        v-model="formData.dockerImage"
-                        placeholder="例如: library/openjdk:17-slim 或 mcr.microsoft.com/openjdk/jdk:21-mariner"
-                        class="!font-mono"
-                      />
-                      <div class="text-[11px] text-amber-500 mt-2">
-                        ⚠️ 提示：使用自定义公共镜像创建时，系统将通过终端执行标准 docker
-                        pull，请确保网络通畅（如有需要请添加镜像源前缀）。
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="w-full sm:w-[32rem] min-h-[70px] mt-2">
-                    <div v-if="javaType === 'online'">
-                      <t-select
-                        v-model="selectedJavaVersion"
-                        :options="javaVersions"
-                        placeholder="请选择 Java 版本"
-                        class="!w-full sm:!w-64"
-                      />
-                      <div class="text-[11px] text-[var(--td-text-color-secondary)] mt-2 font-medium">
-                        将下载并使用 Java {{ selectedJavaVersion || '?' }}
-                        <span class="font-mono bg-zinc-100 dark:bg-zinc-800 px-1 rounded ml-1"
-                          >{{ userStore.userInfo.systemInfo.osType.toLowerCase().replace('os', '') }} /
-                          {{ userStore.userInfo.systemInfo.osArchitecture.toLowerCase() }}</span
-                        >
-                      </div>
-                    </div>
-
-                    <div v-if="javaType === 'local'" class="flex items-center gap-3">
-                      <t-select
-                        v-model="customJavaPath"
-                        :options="localJavaVersions"
-                        placeholder="请选择 Java 版本"
-                        class="!flex-1"
-                      />
-                      <t-button variant="outline" theme="primary" @click="fetchJavaVersions(true)">重新扫描</t-button>
-                    </div>
-
-                    <div v-if="javaType === 'env'">
-                      <t-input
-                        model-value="java"
-                        readonly
-                        disabled
-                        class="!font-mono !bg-zinc-100 dark:!bg-zinc-800/50"
-                      />
-                      <div class="text-[11px] text-zinc-500 mt-2 font-medium">将使用系统环境变量中的 java 命令</div>
-                    </div>
-
-                    <div v-if="javaType === 'custom'">
-                      <t-input
-                        v-model="customJavaPath"
-                        placeholder="例如: C:\Program Files\Java\jdk-17\bin\java.exe"
-                        class="!font-mono"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </t-form-item>
-            </div>
-
-            <div v-show="currentStep === 2" class="list-item-anim flex-1 pt-1">
               <t-form-item label="选择您的Minecraft开服使用的服务端核心" class="!mb-5">
                 <t-radio-group v-model="downloadType" variant="default-filled">
                   <t-radio-button value="online">在线下载 (推荐)</t-radio-button>
@@ -763,6 +696,7 @@ const goToHome = () => {
                           @click="
                             formData.core = '';
                             formData.coreUrl = '';
+                            onlineGameVersion = '';
                           "
                         >
                           <t-icon name="close" />
@@ -854,6 +788,176 @@ const goToHome = () => {
               </div>
             </div>
 
+            <!-- Java 环境 -->
+            <div v-show="currentStep === 2" class="list-item-anim flex-1 pt-1">
+              <t-alert v-if="recommendedJavaVersion" theme="success" :title="`推荐 Java 版本: Java ${recommendedJavaVersion}`" class="!mb-6 !rounded-xl">
+                <template #message>
+                  检测到您的游戏版本为 <span class="font-bold text-[var(--color-success)]">{{ detectedGameVersion }}</span>，已为您自动选择推荐的 Java {{ recommendedJavaVersion }}。
+                </template>
+              </t-alert>
+
+              <t-alert v-else theme="info" title="Java 版本选择指南" class="!mb-6 !rounded-xl">
+                <template #message>
+                  <div class="flex flex-col gap-2.5 mt-2">
+                    <div class="flex items-center gap-3">
+                      <span
+                        class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-[var(--color-primary)] text-white font-bold text-xs tracking-wide shadow-sm"
+                        >MC 26.1 - 最新版本</span
+                      >
+                      <span
+                        class="font-extrabold text-xs text-[var(--color-success)] bg-[var(--color-success)]/10 px-2.5 py-1 rounded-md border border-[var(--color-success)]/20"
+                        >Java 25</span
+                      >
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <span
+                        class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-[var(--color-primary)] text-white font-bold text-xs tracking-wide shadow-sm"
+                        >MC 1.20.5 - 1.21.11</span
+                      >
+                      <span
+                        class="font-extrabold text-xs text-[var(--color-success)] bg-[var(--color-success)]/10 px-2.5 py-1 rounded-md border border-[var(--color-success)]/20"
+                        >Java 21</span
+                      >
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <span
+                        class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-[var(--color-primary)] text-white font-bold text-xs tracking-wide shadow-sm"
+                        >MC 1.18 - 1.20.4</span
+                      >
+                      <span
+                        class="font-extrabold text-xs text-[var(--color-success)] bg-[var(--color-success)]/10 px-2.5 py-1 rounded-md border border-[var(--color-success)]/20"
+                        >Java 17</span
+                      >
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <span
+                        class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-[var(--color-primary)] text-white font-bold text-xs tracking-wide shadow-sm"
+                        >MC 1.17 / 1.17.1</span
+                      >
+                      <span
+                        class="font-extrabold text-xs text-[var(--color-success)] bg-[var(--color-success)]/10 px-2.5 py-1 rounded-md border border-[var(--color-success)]/20"
+                        >Java 16</span
+                      >
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <span
+                        class="inline-flex items-center justify-center w-[140px] px-2 py-1 rounded bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 font-bold text-xs tracking-wide shadow-sm"
+                        >MC 1.13 - 更低版本</span
+                      >
+                      <span
+                        class="font-extrabold text-xs text-[var(--td-text-color-secondary)] bg-zinc-100 dark:bg-zinc-800 px-2.5 py-1 rounded-md border border-zinc-200 dark:border-zinc-700"
+                        >Java 8</span
+                      >
+                    </div>
+                    <div
+                      class="text-[11px] text-[var(--td-text-color-secondary)] mt-1 flex items-center gap-1 font-medium"
+                    >
+                      <t-icon name="info-circle" size="14px" /> 建议直接使用推荐版本，避免兼容性问题。
+                    </div>
+                  </div>
+                </template>
+              </t-alert>
+
+              <t-form-item label="Java 来源" name="java" class="!mb-0">
+                <div class="w-full">
+                  <t-radio-group v-model="javaType" variant="default-filled" class="!mb-4">
+                    <t-radio-button value="online">在线下载</t-radio-button>
+                    <t-radio-button value="local">选择电脑上的 Java</t-radio-button>
+                    <t-radio-button value="env">环境变量</t-radio-button>
+                    <t-radio-button value="custom">自定义路径</t-radio-button>
+                    <t-radio-button value="docker">Docker 容器环境 🐳</t-radio-button>
+                  </t-radio-group>
+                  <t-alert v-if="javaType === 'docker'" class="!mb-5" theme="info"
+                    >使用容器环境前请确保您的宿主机已经安装了
+                    <b>Docker</b> ，否则会导致无法启动。如果您不知道这是什么，请不要选择此项！</t-alert
+                  >
+
+                  <div
+                    v-if="javaType === 'docker'"
+                    class="list-item-anim border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 bg-zinc-50/30 dark:bg-zinc-900/10 w-full sm:w-[32rem]"
+                  >
+                    <div class="mb-4">
+                      <t-radio-group v-model="dockerImageType" size="small" variant="outline">
+                        <t-radio-button value="preset">MSLX 官方运行时镜像</t-radio-button>
+                        <t-radio-button value="custom">自定义公网镜像</t-radio-button>
+                      </t-radio-group>
+                    </div>
+
+                    <div v-if="dockerImageType === 'preset'">
+                      <div class="flex items-center gap-3">
+                        <span class="text-xs font-bold text-zinc-500 shrink-0">运行环境:</span>
+                        <t-select v-model="dockerImagePresetVersion" class="!w-48" :clearable="false">
+                          <t-option :label="recommendedJavaVersion === '25' ? 'Java 25 (推荐)' : 'Java 25'" value="25" />
+                          <t-option :label="recommendedJavaVersion === '21' ? 'Java 21 (推荐)' : 'Java 21'" value="21" />
+                          <t-option :label="recommendedJavaVersion === '17' ? 'Java 17 (推荐)' : 'Java 17'" value="17" />
+                          <t-option :label="recommendedJavaVersion === '11' ? 'Java 11 (推荐)' : 'Java 11'" value="11" />
+                          <t-option :label="recommendedJavaVersion === '8' ? 'Java 8 (推荐)' : 'Java 8'" value="8" />
+                        </t-select>
+                      </div>
+                    </div>
+
+                    <div v-if="dockerImageType === 'custom'">
+                      <t-input
+                        v-model="formData.dockerImage"
+                        placeholder="例如: library/openjdk:17-slim 或 mcr.microsoft.com/openjdk/jdk:21-mariner"
+                        class="!font-mono"
+                      />
+                      <div class="text-[11px] text-amber-500 mt-2">
+                        ⚠️ 提示：使用自定义公共镜像创建时，系统将通过终端执行标准 docker
+                        pull，请确保网络通畅（如有需要请添加镜像源前缀）。
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="w-full sm:w-[32rem] min-h-[70px] mt-2">
+                    <div v-if="javaType === 'online'">
+                      <t-select
+                        v-model="selectedJavaVersion"
+                        :options="javaVersionsWithOptions"
+                        placeholder="请选择 Java 版本"
+                        class="!w-full sm:!w-64"
+                      />
+                      <div class="text-[11px] text-[var(--td-text-color-secondary)] mt-2 font-medium">
+                        将下载并使用 Java {{ selectedJavaVersion || '?' }}
+                        <span class="font-mono bg-zinc-100 dark:bg-zinc-800 px-1 rounded ml-1"
+                          >{{ userStore.userInfo.systemInfo.osType.toLowerCase().replace('os', '') }} /
+                          {{ userStore.userInfo.systemInfo.osArchitecture.toLowerCase() }}</span
+                        >
+                      </div>
+                    </div>
+
+                    <div v-if="javaType === 'local'" class="flex items-center gap-3">
+                      <t-select
+                        v-model="customJavaPath"
+                        :options="localJavaVersionsWithOptions"
+                        placeholder="请选择 Java 版本"
+                        class="!flex-1"
+                      />
+                      <t-button variant="outline" theme="primary" @click="fetchJavaVersions(true)">重新扫描</t-button>
+                    </div>
+
+                    <div v-if="javaType === 'env'">
+                      <t-input
+                        model-value="java"
+                        readonly
+                        disabled
+                        class="!font-mono !bg-zinc-100 dark:!bg-zinc-800/50"
+                      />
+                      <div class="text-[11px] text-zinc-500 mt-2 font-medium">将使用系统环境变量中的 java 命令</div>
+                    </div>
+
+                    <div v-if="javaType === 'custom'">
+                      <t-input
+                        v-model="customJavaPath"
+                        placeholder="例如: C:\Program Files\Java\jdk-17\bin\java.exe"
+                        class="!font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </t-form-item>
+            </div>
+
             <div v-show="currentStep === 3" class="list-item-anim flex-1 pt-1">
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-6 w-full sm:w-[40rem]">
                 <t-form-item label="最小内存" name="minM" class="!mb-0">
@@ -892,66 +996,91 @@ const goToHome = () => {
                 v-if="javaType === 'docker'"
                 class="col-span-1 sm:col-span-2 mt-4 pt-4 border-t border-dashed border-zinc-200 dark:border-zinc-800 w-full sm:w-[40rem] list-item-anim"
               >
-                <div class="flex items-center justify-between mb-3">
-                  <div class="flex flex-col">
-                    <span class="text-sm font-bold text-[var(--td-text-color-primary)]">容器网络映射端口</span>
-                    <span class="text-[11px] text-zinc-400 mt-0.5">绑定宿主机端口，供玩家外部连接</span>
-                  </div>
-                  <t-button variant="outline" theme="primary" size="small" @click="addPortMapping">
-                    <template #icon><t-icon name="add" /></template>
-                    增加端口映射
-                  </t-button>
+                <div class="mb-4">
+                  <span class="text-sm font-bold text-[var(--td-text-color-primary)] block mb-2">Docker 网络模式</span>
+                  <t-radio-group v-model="networkMode" variant="default-filled" class="w-full">
+                    <t-radio-button value="mapped">端口映射</t-radio-button>
+                    <t-radio-button value="host">Host 网络模式 (共用宿主机网络)</t-radio-button>
+                  </t-radio-group>
                 </div>
 
-                <div
-                  v-if="localPortList.length === 0"
-                  class="p-4 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-700 text-center text-xs text-zinc-400"
-                >
-                  当前处于 Host 模式或未公开任何网络端口
-                </div>
-
-                <div class="flex flex-col gap-3">
-                  <div
-                    v-for="(port, index) in localPortList"
-                    :key="index"
-                    class="flex items-center gap-3 list-item-anim"
-                  >
-                    <div class="flex-1 flex items-center gap-2 overflow-visible p-[2px] -m-[2px]">
-                      <t-input-number
-                        v-model="port.host"
-                        :min="1"
-                        :max="65535"
-                        placeholder="宿主机端口"
-                        theme="column"
-                        class="flex-1 min-w-0"
-                        suffix="宿主机"
-                      />
-                      <span class="text-zinc-400 shrink-0 font-bold">:</span>
-                      <t-input-number
-                        v-model="port.container"
-                        :min="1"
-                        :max="65535"
-                        placeholder="容器内部端口"
-                        theme="column"
-                        class="flex-1 min-w-0"
-                        suffix="容器内"
-                      />
+                <template v-if="networkMode === 'mapped'">
+                  <div class="flex items-center justify-between mb-3 mt-4">
+                    <div class="flex flex-col">
+                      <span class="text-sm font-bold text-[var(--td-text-color-primary)]">容器网络映射端口</span>
+                      <span class="text-[11px] text-zinc-400 mt-0.5">绑定宿主机端口与协议，供玩家外部连接</span>
                     </div>
-
-                    <t-button
-                      shape="circle"
-                      variant="text"
-                      theme="danger"
-                      size="small"
-                      class="shrink-0 hover:!bg-red-500/10"
-                      @click="removePortMapping(index)"
-                    >
-                      <t-icon name="delete" />
+                    <t-button variant="outline" theme="primary" size="small" @click="addPortMapping">
+                      <template #icon><t-icon name="add" /></template>
+                      增加端口映射
                     </t-button>
                   </div>
+
+                  <div
+                    v-if="localPortList.length === 0"
+                    class="p-4 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-700 text-center text-xs text-zinc-400"
+                  >
+                    未公开任何网络端口，请点击右上角增加端口映射
+                  </div>
+
+                  <div class="flex flex-col gap-3">
+                    <div
+                      v-for="(port, index) in localPortList"
+                      :key="index"
+                      class="flex items-center gap-3 list-item-anim"
+                    >
+                      <div class="flex-1 flex items-center gap-2 overflow-visible p-[2px] -m-[2px]">
+                        <!-- 宿主机端口 -->
+                        <t-input-number
+                          v-model="port.host"
+                          :min="1"
+                          :max="65535"
+                          placeholder="宿主机"
+                          theme="column"
+                          class="flex-1 min-w-0"
+                        />
+                        <span class="text-zinc-400 shrink-0 font-bold">:</span>
+                        <!-- 容器内端口 -->
+                        <t-input-number
+                          v-model="port.container"
+                          :min="1"
+                          :max="65535"
+                          placeholder="容器内"
+                          theme="column"
+                          class="flex-1 min-w-0"
+                        />
+
+                        <!-- 协议选择下拉框 -->
+                        <t-select v-model="port.protocol" size="medium" class="!w-[80px] shrink-0" :clearable="false">
+                          <t-option label="TCP" value="tcp" />
+                          <t-option label="UDP" value="udp" />
+                        </t-select>
+                      </div>
+
+                      <!-- 删除按钮 -->
+                      <t-button
+                        shape="circle"
+                        variant="text"
+                        theme="danger"
+                        size="small"
+                        class="shrink-0 hover:!bg-red-500/10"
+                        @click="removePortMapping(index)"
+                      >
+                        <t-icon name="delete" />
+                      </t-button>
+                    </div>
+                  </div>
+                </template>
+
+                <div
+                  v-else
+                  class="p-4 rounded-xl border border-dashed border-zinc-200 dark:border-zinc-700 text-center text-xs text-zinc-400 mt-4"
+                >
+                  当前处于 Host 网络模式下，容器将共享宿主机的端口，无需额外配置端口映射
                 </div>
 
-                <t-form-item name="DockerPorts" class="!mb-0 !mt-2" v-show="false">
+                <!-- 隐藏的表单项 -->
+                <t-form-item name="DockerPorts" v-show="false" class="!mb-0 !mt-2">
                   <t-input v-model="formData.dockerPorts" />
                 </t-form-item>
               </div>

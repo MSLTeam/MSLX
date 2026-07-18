@@ -9,7 +9,7 @@ import {
   NotifyPlugin,
 } from 'tdesign-vue-next';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
-import { useUserStore } from '@/store';
+import { useUserStore, useTunnelsStore } from '@/store';
 import { LockOnIcon, LockOffIcon } from 'tdesign-icons-vue-next';
 
 // API
@@ -24,6 +24,7 @@ import ServerCoreSelector from '@/pages/instance/createInstance/components/Serve
 
 const route = useRoute();
 const userStore = useUserStore();
+const tunnelsStore = useTunnelsStore();
 
 const instanceId = computed(() => {
   const idStr = route.params.serverId as string;
@@ -150,6 +151,7 @@ const formData = ref<UpdateInstanceModel>({
   dockerExtraArgs: '',
   dockerExtraHosts: '',
   expireTime: undefined,
+  bindFrpId: '',
 });
 
 // --- 内存单位转换 ---
@@ -265,8 +267,8 @@ watch(
   },
 );
 
-// 端口映射解析器 (25565:25565 -> [{host:'', container:''}])
-const portList = ref<{ host: string; container: string }[]>([]);
+// 端口映射解析器 (25565:25565/tcp -> [{host:'', container:'', protocol:'tcp'}])
+const portList = ref<{ host: string; container: string; protocol: 'tcp' | 'udp' }[]>([]);
 watch(
   () => formData.value.dockerPorts,
   (nv) => {
@@ -275,22 +277,47 @@ watch(
       return;
     }
     portList.value = nv.split(',').map((p) => {
-      const [h, c] = p.split(':');
-      return { host: h || '', container: c || '' };
+      const [h, rest] = p.split(':');
+      const [c, proto] = (rest || '').split('/');
+      return {
+        host: h || '',
+        container: c || '',
+        protocol: proto === 'udp' || proto === 'tcp' ? proto : 'tcp',
+      };
     });
   },
   { immediate: true },
 );
 
+const networkMode = ref<'mapped' | 'host'>('mapped');
+watch(
+  () => formData.value.dockerPorts,
+  (val) => {
+    networkMode.value = val === '0' ? 'host' : 'mapped';
+  },
+  { immediate: true },
+);
+watch(networkMode, (val) => {
+  if (val === 'host') {
+    formData.value.dockerPorts = '0';
+  } else {
+    if (formData.value.dockerPorts === '0') {
+      formData.value.dockerPorts = '25565:25565/tcp';
+    }
+  }
+});
+
 const updatePortsString = () => {
   formData.value.dockerPorts = portList.value
     .filter((p) => p.host && p.container)
-    .map((p) => `${p.host}:${p.container}`)
+    .map((p) => `${p.host.trim()}:${p.container.trim()}/${p.protocol}`)
     .join(',');
 };
+
 const addPortRow = () => {
-  portList.value.push({ host: '', container: '' });
+  portList.value.push({ host: '', container: '', protocol: 'tcp' });
 };
+
 const removePortRow = (index: number) => {
   portList.value.splice(index, 1);
   updatePortsString();
@@ -402,6 +429,42 @@ watch(
 );
 
 // docker end~
+
+// frp 绑定
+const frpInputType = ref<'select' | 'manual'>('select');
+
+const frpOptions = computed(() => {
+  return tunnelsStore.frpList.map((item) => ({
+    label: `[ID: ${item.id}] ${item.name} (${item.configType})`,
+    value: item.id.toString(),
+  }));
+});
+
+const bindFrpIdArray = computed({
+  get: () => {
+    if (!formData.value.bindFrpId) return [];
+    return formData.value.bindFrpId
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  },
+  set: (val: string[]) => {
+    formData.value.bindFrpId = val.join(',');
+  },
+});
+
+// 前端规则拦截定义
+const bindFrpIdRules: FormRules[string] = [
+  {
+    validator: (val: string) => {
+      if (!val) return true; // 允许留空不绑定
+      const ids = val.split(',');
+      return ids.every((id) => /^[0-9]{8}$/.test(id.trim()));
+    },
+    message: '绑定的 FRP ID 必须是 8 位数字，多个请用英文逗号隔开',
+    trigger: 'blur',
+  },
+];
 
 const fetchJavaVersions = async (force = false) => {
   try {
@@ -568,6 +631,7 @@ const rules = computed<FormRules>(() => {
       base: [{ required: true, message: '基础路径不能为空', trigger: 'blur' }],
       args: [{ required: true, message: '自定义模式必须填写启动命令', trigger: 'blur' }],
       serverPropertiesPath: serverPropertiesPathRules,
+      bindFrpId: bindFrpIdRules,
       pluginsPath: pluginsPathRules,
       modsPath: modsPathRules,
       worldPath: worldPathRules,
@@ -611,6 +675,7 @@ const rules = computed<FormRules>(() => {
     minM: [{ required: true, message: '必填', trigger: 'blur' }],
     maxM: [{ required: true, message: '必填', trigger: 'blur' }],
     serverPropertiesPath: serverPropertiesPathRules,
+    bindFrpId: bindFrpIdRules,
     pluginsPath: pluginsPathRules,
     modsPath: modsPathRules,
     worldPath: worldPathRules,
@@ -654,11 +719,13 @@ const initData = async () => {
   initialized.value = false;
   try {
     await fetchJavaVersions();
+    await tunnelsStore.getTunnels();
     formData.value.id = instanceId.value;
     const res = await getInstanceSettings(instanceId.value);
     formData.value = {
       ...formData.value,
       ...res,
+      bindFrpId: res.bindFrpId || '',
       coreUrl: '',
       coreFileKey: '',
       coreSha256: '',
@@ -1082,41 +1149,65 @@ onUnmounted(() => {
             <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
               <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">外部网络端口放行</div>
               <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
-                将服务端口暴露给外界。切换为 Host
-                将共用物理机网络生态。格式为宿主机端口-容器内端口。（不知道什么意思就写一样的得了）
+                将服务端口暴露给外界。切换为 Host 将共用物理机网络生态。格式为主机端口-容器端口。
               </div>
             </div>
             <div class="w-full md:w-[340px] shrink-0 flex flex-col gap-2">
-              <t-radio-group v-model="formData.dockerPorts" variant="default-filled" class="w-full">
-                <t-radio-button value="25565:25565">端口映射</t-radio-button>
-                <t-radio-button value="0">Host网络模式</t-radio-button>
+              <t-radio-group v-model="networkMode" variant="default-filled" class="w-full">
+                <t-radio-button value="mapped">端口映射</t-radio-button>
+                <t-radio-button value="host">Host网络模式</t-radio-button>
               </t-radio-group>
 
-              <template v-if="formData.dockerPorts !== '0'">
+              <template v-if="networkMode === 'mapped'">
                 <div
                   v-for="(item, idx) in portList"
                   :key="idx"
                   class="flex items-center gap-1.5 mt-1 bg-zinc-50 dark:bg-zinc-800/40 p-1.5 rounded-lg border border-zinc-200/50 dark:border-zinc-700/50"
                 >
+                  <!-- 宿主机端口 -->
                   <t-input
                     v-model="item.host"
                     size="small"
-                    placeholder="宿主机公开端口"
-                    class="!font-mono text-xs flex-1"
+                    placeholder="宿主机端口"
+                    class="!font-mono text-xs flex-1 min-w-0"
                     @blur="updatePortsString"
                   />
-                  <span class="text-zinc-400 font-bold">:</span>
+                  <span class="text-zinc-400 font-bold shrink-0">:</span>
+                  <!-- 容器端口 -->
                   <t-input
                     v-model="item.container"
                     size="small"
                     placeholder="容器端口"
-                    class="!font-mono text-xs flex-1"
+                    class="!font-mono text-xs flex-1 min-w-0"
                     @blur="updatePortsString"
                   />
-                  <t-button variant="text" theme="danger" shape="square" size="small" @click="removePortRow(idx)">
+
+                  <!-- 协议选择下拉框 -->
+                  <t-select
+                    v-model="item.protocol"
+                    size="small"
+                    class="!w-[72px] shrink-0"
+                    :popup-props="{ overlayClassName: 'tdesign-demo-select__datepicker' }"
+                    :clearable="false"
+                    @change="updatePortsString"
+                  >
+                    <t-option label="UDP" value="udp" />
+                    <t-option label="TCP" value="tcp" />
+                  </t-select>
+
+                  <!-- 删除按钮 -->
+                  <t-button
+                    variant="text"
+                    theme="danger"
+                    shape="square"
+                    size="small"
+                    class="shrink-0"
+                    @click="removePortRow(idx)"
+                  >
                     <template #icon><t-icon name="delete" /></template>
                   </t-button>
                 </div>
+
                 <t-button
                   dash
                   block
@@ -1901,6 +1992,46 @@ onUnmounted(() => {
               value-type="YYYY-MM-DD HH:mm:ss"
               class="w-full"
             />
+          </div>
+        </div>
+
+        <div
+          class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+        >
+          <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+            <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">联动 FRP 隧道自启停</div>
+            <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+              开启绑定后，当前 MC 服务器在<b>启动成功时</b>会自动唤醒对应的 Frpc
+              隧道，在<b>服务器关闭/意外崩溃时</b>会自动停止该隧道。
+            </div>
+          </div>
+          <div class="w-full md:w-[340px] shrink-0 flex flex-col gap-2">
+            <t-radio-group v-model="frpInputType" variant="default-filled" size="small" class="w-full mb-1">
+              <t-radio-button value="select">从隧道列表多选</t-radio-button>
+              <t-radio-button value="manual">手动输入(8位ID)</t-radio-button>
+            </t-radio-group>
+
+            <!-- 列表多选 -->
+            <t-select
+              v-if="frpInputType === 'select'"
+              v-model="bindFrpIdArray"
+              multiple
+              clearable
+              placeholder="请多选需要联动挂载的 FRP 隧道"
+              :options="frpOptions"
+              class="w-full"
+            />
+
+            <!-- 手动输入 -->
+            <t-input
+              v-else
+              v-model="formData.bindFrpId"
+              placeholder="格式如: 10000001,10000002"
+              class="w-full !font-mono"
+            />
+            <div class="text-[11px] text-zinc-400">
+              当前绑定值: <span class="font-mono text-[var(--color-primary)]">{{ formData.bindFrpId || '无' }}</span>
+            </div>
           </div>
         </div>
 
