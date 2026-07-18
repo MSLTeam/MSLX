@@ -113,6 +113,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   observer?.disconnect();
+  window.removeEventListener('keydown', handleKeydown);
 });
 
 // --- 初始化内容 ---
@@ -197,6 +198,27 @@ const handleClose = () => {
 const handleConfirm = (closeDialog: boolean = true) => {
   emit('save', code.value, closeDialog);
 };
+
+const handleKeydown = (event: KeyboardEvent) => {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+    event.preventDefault();
+    if (!props.loading) {
+      handleConfirm(false);
+    }
+  }
+};
+
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      window.addEventListener('keydown', handleKeydown);
+    } else {
+      window.removeEventListener('keydown', handleKeydown);
+    }
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
