@@ -87,6 +87,8 @@ const newFolderName = ref('');
 const editorFileName = ref('');
 const editorContent = ref('');
 const isSaving = ref(false);
+const editorSaveSuccess = ref(0);
+const editorDirty = ref(false);
 const previewFileName = ref('');
 const previewUrl = ref('');
 const newFileName = ref('');
@@ -272,6 +274,7 @@ const handleSaveFile = async (newContent: string, closeDialog: boolean = true) =
   try {
     const fullPath = currentPath.value ? `${currentPath.value}/${editorFileName.value}` : editorFileName.value;
     await saveFileContent(instanceId.value, fullPath, newContent);
+    editorSaveSuccess.value += 1;
     MessagePlugin.success('保存成功');
     if (closeDialog) showEditor.value = false;
     handleRefresh();
@@ -687,13 +690,40 @@ watch(
 );
 
 onBeforeRouteLeave((to, _from, next) => {
-  if (to.name === 'InstanceFiles' || !to.query.path) {
+  if (to.name === 'InstanceFiles') {
     next();
     return;
   }
 
-  const { path: _path, ...query } = to.query;
-  next({ path: to.path, query, hash: to.hash, replace: true });
+  const continueLeave = () => {
+    if (!to.query.path) {
+      next();
+      return;
+    }
+
+    const { path: _path, ...query } = to.query;
+    next({ path: to.path, query, hash: to.hash, replace: true });
+  };
+
+  if (!editorDirty.value) {
+    continueLeave();
+    return;
+  }
+
+  const confirmDialog = DialogPlugin.confirm({
+    header: '存在未保存的修改',
+    body: '离开文件管理将放弃编辑器中的未保存修改，是否继续？',
+    theme: 'default',
+    cancelBtn: '取消',
+    confirmBtn: '放弃修改',
+    onCancel: () => next(false),
+    onConfirm: () => {
+      confirmDialog.hide();
+      showEditor.value = false;
+      editorDirty.value = false;
+      continueLeave();
+    },
+  });
 });
 
 watch(instanceId, async () => {
@@ -1039,6 +1069,8 @@ onUnmounted(() => {
       :file-name="editorFileName"
       :content="editorContent"
       :loading="isSaving"
+      :save-success="editorSaveSuccess"
+      @dirty-change="editorDirty = $event"
       @save="handleSaveFile"
     />
     <t-dialog v-model:visible="showCreateDialog" header="新建文件" :on-confirm="handleConfirmCreate">

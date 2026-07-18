@@ -225,14 +225,14 @@ const handleStartUpload = () => {
   const displayNames = conflicts.slice(0, 10).join('、');
   const moreText = conflicts.length > 10 ? ` 等 ${conflicts.length} 项` : '';
   const confirmDialog = DialogPlugin.confirm({
-    header: '确认覆盖上传',
-    body: `检测到 ${conflicts.length} 个同名顶层目标：${displayNames}${moreText}。继续上传将按服务端现有规则覆盖，是否继续？`,
-    theme: 'warning',
-    onConfirm: () => {
-      confirmDialog.hide();
-      processQueue();
-    },
-  });
+      header: '确认覆盖上传',
+      body: `检测到 ${conflicts.length} 个同名顶层目标：${displayNames}${moreText}。继续上传将覆盖原文件，是否继续？`,
+      theme: 'warning',
+      onConfirm: () => {
+        confirmDialog.hide();
+        processQueue();
+      },
+    });
 };
 
 const processQueue = async () => {
