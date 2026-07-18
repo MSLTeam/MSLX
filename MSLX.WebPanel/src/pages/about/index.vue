@@ -54,7 +54,7 @@ const contributors = [
     name: 'chaoji233',
     role: 'Contributors',
     avatar: 'https://avatars.githubusercontent.com/u/126066634?s=80&v=4',
-    desc: '重构了Chmlfrp部分功能',
+    desc: '帮忙优化了一些功能，重构了Chmlfrp部分',
   },
 ];
 
