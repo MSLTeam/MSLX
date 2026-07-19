@@ -641,9 +641,13 @@ public class MCServerService : IMCServerService
                 {
                     sb.Append($"--cpuset-cpus=\"{serverInfo.DockerCpuCores.Trim()}\" ");
                 }
-                if (serverInfo.DockerCpuPercentage is > 0 and <= 100)
+                if (serverInfo.DockerCpuPercentage is > 0)
                 {
-                    double coresCount = Environment.ProcessorCount * (serverInfo.DockerCpuPercentage.Value / 100.0);
+                    double coresCount = serverInfo.DockerCpuPercentage.Value / 100.0;
+                    if (coresCount > Environment.ProcessorCount)
+                    {
+                        coresCount = Environment.ProcessorCount;
+                    }
                     sb.Append(string.Format(System.Globalization.CultureInfo.InvariantCulture, "--cpus=\"{0:F2}\" ", coresCount));
                 }
                 if (serverInfo.DockerMaxMemoryMb is > 0)
