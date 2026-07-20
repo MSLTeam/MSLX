@@ -2240,6 +2240,12 @@ onUnmounted(() => {
     flex: 1;
     min-width: 0;
 
+    &.t-input-number {
+      border-top-right-radius: 0 !important;
+      border-bottom-right-radius: 0 !important;
+      border-right: none !important;
+    }
+
     :deep(.t-input) {
       border-top-right-radius: 0 !important;
       border-bottom-right-radius: 0 !important;

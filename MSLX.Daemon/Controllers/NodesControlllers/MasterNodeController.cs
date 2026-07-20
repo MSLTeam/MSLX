@@ -142,13 +142,13 @@ namespace MSLX.Daemon.Controllers.NodesControlllers
 
             string masterUrl = !string.IsNullOrEmpty(request.MasterUrl) ? request.MasterUrl : $"{Request.Scheme}://{Request.Host}";
             
-            // 始终向子节点同步，不仅更新 MasterUrl，顺便下发 NodeId 修复老版本因子节点缺少 NodeId 导致的鉴权失败
+            // 向子节点同步信息
             try
             {
                 var payload = new { 
                     MasterUrl = masterUrl, 
                     CommsKey = existingNode.CommsKey,
-                    NodeId = existingNode.NodeId // 带着 NodeId 一起过去，子节点可以顺便自愈
+                    NodeId = existingNode.NodeId
                 };
                 var res = await GeneralApi.PostAsync(
                     $"{request.NodeUrl.TrimEnd('/')}/api/node/update-link",
@@ -184,7 +184,7 @@ namespace MSLX.Daemon.Controllers.NodesControlllers
         [HttpPost("verify-token")]
         public IActionResult VerifyToken([FromBody] VerifyTokenRequest request, [FromHeader(Name = "x-api-key")] string commsKey)
         {
-            // 这是给子节点调用的，子节点会传 commsKey，我们需要校验这个 commsKey 是否存在于任何已链接的子节点配置中
+            // 子节点用户鉴权接口，需要 commsKey （独立的通讯key，专门用于子节点找主节点通讯）
             var node = IConfigBase.NodeList.GetAllNodes().FirstOrDefault(n => n.CommsKey == commsKey);
             if (node == null)
             {
