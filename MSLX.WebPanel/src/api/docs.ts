@@ -7,4 +7,6 @@ export const DOC_URLS = {
   remote_access: `${main}/docs/config/remote-access/`,
   msl_oauth: `${main}/docs/config/msl-oauth`,
   plugin_dev: `${main}/plugin-dev/init/start/`,
+  multi_nodes_doc: `${main}/docs/config/multi-nodes/`,
+  github_issues: `https://github.com/MSLTeam/MSLX/issues`
 };

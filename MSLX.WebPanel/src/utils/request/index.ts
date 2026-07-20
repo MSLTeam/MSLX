@@ -112,17 +112,39 @@ const transform: AxiosTransform = {
   requestInterceptors: (config, _options) => {
     const token = localStorage.getItem(TOKEN_NAME);
     const baseUrl = localStorage.getItem(BASE_URL_NAME);
+    const activeNodeId = localStorage.getItem('ACTIVE_NODE_ID');
+    const activeNodeUrl = localStorage.getItem('ACTIVE_NODE_URL');
+    const reqOptions = (config as Recordable)?.requestOptions || {};
+    const requestToSlaveNode = reqOptions.requestToSlaveNode;
+
+    // 判断是否是子节点支持处理的接口 （这些接口会导向到子节点）
+    let isSlaveRoute = /^(?:\/api)?\/(?:instance|files|frp|java|python)\//.test(config.url || '') || config.url === '/api/static/images/upload';
+
+    if (requestToSlaveNode === true) {
+      isSlaveRoute = true;
+    } else if (requestToSlaveNode === false) {
+      isSlaveRoute = false;
+    }
 
     // 动态设置 baseURL
-    if (baseUrl && !/^(https?:)?\/\//.test(config.url || '') && !config.baseURL) {
+    if (activeNodeUrl && activeNodeId !== 'local' && isSlaveRoute) {
+      if (!/^(https?:)?\/\//.test(config.url || '') && !config.baseURL) {
+        config.baseURL = activeNodeUrl;
+      }
+    } else if (baseUrl && !/^(https?:)?\/\//.test(config.url || '') && !config.baseURL) {
       config.baseURL = baseUrl;
     }
 
-    // 动态设置 x-user-token
+    // 动态设置 x-user-token 和 x-node-id
     if (token && (config as Recordable)?.requestOptions?.withToken !== false) {
-      // 如果包含了headers 大概率不是请求到守护进程端的 就不传递apikey了
+      // 如果包含了headers 大概率不是请求到守护进程端的 就不传递鉴权相关参数
       if (!config.headers.hasAuthorization()) {
         (config as Recordable).headers['x-user-token'] = token;
+        if (activeNodeId && activeNodeId !== 'local' && isSlaveRoute) {
+          if (!(config as Recordable).headers['x-node-id']) {
+            (config as Recordable).headers['x-node-id'] = activeNodeId;
+          }
+        }
       }
     }
     return config;

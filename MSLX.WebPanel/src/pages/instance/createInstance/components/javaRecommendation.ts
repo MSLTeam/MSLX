@@ -47,10 +47,12 @@ export const parseMcVersion = (input: string): string | null => {
  */
 export const getRecommendedJava = (version: string): number | null => {
   if (!version) return null;
-  if (compareVersions(version, '26.1') >= 0) return 25;
-  if (compareVersions(version, '1.20.5') >= 0) return 21;
-  if (compareVersions(version, '1.18') >= 0) return 17;
-  if (compareVersions(version, '1.17') >= 0) return 16;
+  // 提取干净的版本号（例如 "26.3-snapshot-4" 转换为 "26.3"），防止 split 后出现 NaN 破坏比较
+  const cleanVersion = parseMcVersion(version) || version;
+  if (compareVersions(cleanVersion, '26.1') >= 0) return 25;
+  if (compareVersions(cleanVersion, '1.20.5') >= 0) return 21;
+  if (compareVersions(cleanVersion, '1.18') >= 0) return 17;
+  if (compareVersions(cleanVersion, '1.17') >= 0) return 16;
   return 8;
 };
 

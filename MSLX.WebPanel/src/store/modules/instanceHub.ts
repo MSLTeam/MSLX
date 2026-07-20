@@ -1,11 +1,9 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
-import { useUserStore } from '@/store';
+import { getHubUrl } from '@/utils/hub';
 
 export const useInstanceHubStore = defineStore('instanceHub', () => {
-  const userStore = useUserStore();
-
   const connection = ref<HubConnection | null>(null);
   const isConnected = ref(false);
   const currentServerId = ref<number | null>(null);
@@ -53,12 +51,10 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
       currentServerId.value = serverId;
       currentMaxMemory.value = 0;
 
-      const { baseUrl, token } = userStore;
-      const hubUrl = new URL('/api/hubs/instanceControlHub', baseUrl || window.location.origin);
-      if (token) hubUrl.searchParams.append('x-user-token', token);
+      const hubUrlStr = getHubUrl('/api/hubs/instanceControlHub');
 
       const newConnection = new HubConnectionBuilder()
-        .withUrl(hubUrl.toString(),{ withCredentials: false })
+        .withUrl(hubUrlStr,{ withCredentials: false })
         .configureLogging(LogLevel.Warning)
         .withAutomaticReconnect([0, 2000, 5000, 10000])
         .build();

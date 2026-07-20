@@ -9,6 +9,7 @@ import {
   NotifyPlugin,
 } from 'tdesign-vue-next';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
+import { getHubUrl } from '@/utils/hub';
 import { useUserStore, useTunnelsStore } from '@/store';
 import { LockOnIcon, LockOffIcon } from 'tdesign-icons-vue-next';
 
@@ -884,12 +885,10 @@ const startSignalRListening = async () => {
   progressPercent.value = 0;
   progressLogs.value = [];
 
-  const { baseUrl, token } = userStore;
-  const hubUrl = new URL('/api/hubs/updateProgressHub', baseUrl || window.location.origin);
-  hubUrl.searchParams.append('x-user-token', token);
+  const hubUrlStr = getHubUrl('/api/hubs/updateProgressHub');
 
   hubConnection.value = new HubConnectionBuilder()
-    .withUrl(hubUrl.toString(), { withCredentials: false })
+    .withUrl(hubUrlStr, { withCredentials: false })
     .configureLogging(LogLevel.None)
     .build();
 
@@ -1360,7 +1359,7 @@ onUnmounted(() => {
                         容器 CPU 算力分配上限
                       </div>
                       <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
-                        限额本实例能调用的最高核心总比例。不设代表享用全额宿主机算力。
+                        限额本实例能调用的最高核心总比例。不设代表享用全额宿主机算力。允许使用1个核心为100%，2个核心为200%，以此类推。
                       </div>
                     </div>
                     <div class="w-full md:w-[340px] shrink-0">
@@ -2240,6 +2239,12 @@ onUnmounted(() => {
   .input-left {
     flex: 1;
     min-width: 0;
+
+    &.t-input-number {
+      border-top-right-radius: 0 !important;
+      border-bottom-right-radius: 0 !important;
+      border-right: none !important;
+    }
 
     :deep(.t-input) {
       border-top-right-radius: 0 !important;

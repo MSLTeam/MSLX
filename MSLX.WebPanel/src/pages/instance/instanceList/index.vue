@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onMounted, reactive, ref } from 'vue';
+import { onMounted, reactive, ref, watch } from 'vue';
 import {
   AddIcon,
   CheckCircleFilledIcon,
@@ -24,10 +24,21 @@ import forgeImg from '@/assets/serverLogos/150px-Anvil.png';
 import customImg from '@/assets/serverLogos/150px-MinecartWithCommandBlock.png';
 import defaultImg from '@/assets/serverLogos/150px-Allium.png';
 import { BASE_URL_NAME, TOKEN_NAME } from '@/config/global';
-import { useUserStore } from '@/store';
+import { useUserStore, useNodeStore } from '@/store';
 
 const store = useInstanceListStore();
 const userStore = useUserStore();
+const nodeStore = useNodeStore();
+
+import NodeSwitcher from '@/components/node-switcher/index.vue';
+
+const handleNodeChange = (_val: string) => {
+  store.refreshInstanceList();
+};
+
+watch(() => nodeStore.activeNodeId, () => {
+  store.refreshInstanceList();
+});
 
 onMounted(() => {
   store.refreshInstanceList();
@@ -216,6 +227,7 @@ const handleConfirmDelete = async () => {
 
       <div class="flex flex-col sm:flex-row flex-wrap items-center sm:justify-end gap-3">
         <template v-if="!isBatchMode">
+          <node-switcher @change="handleNodeChange" />
           <t-button variant="outline" :disabled="!store.instanceList?.length" @click="toggleBatchMode">
             <template #icon><filter-icon /></template>
             批量操作

@@ -1,4 +1,4 @@
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -11,6 +11,8 @@ public static class IConfigBase
     public static FrpListConfig FrpList { get; set; } = null!;
     public static TaskListConfig TaskList { get; set; } = null!;
     public static UserListConfig UserList { get; set; } = null!;
+    public static NodeListConfig NodeList { get; set; } = null!;
+    public static MasterNodesConfig MasterNodes { get; set; } = null!;
     public static string JwtSecret { get; private set; } = string.Empty;
 
     private static readonly ConcurrentDictionary<string, PluginConfigService> _pluginConfigs = new();
@@ -62,7 +64,27 @@ public static class IConfigBase
     public static T LoadJson<T>(string path) where T : JToken
     {
         var content = File.ReadAllText(path);
-        return JToken.Parse(content) as T ?? throw new InvalidDataException("Invalid JSON format");
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            content = typeof(T) == typeof(JArray) ? "[]" : "{}";
+        }
+        try 
+        {
+            var token = JToken.Parse(content) as T;
+            if (token != null) return token;
+            throw new InvalidDataException("Invalid JSON format");
+        }
+        catch (Exception ex) when (ex is JsonReaderException || ex is InvalidDataException)
+        {
+            // 文件格式错误 备份一份然后新建
+            if (File.Exists(path))
+            {
+                File.Move(path, $"{path}.backup_{DateTime.Now:yyyyMMddHHmmss}");
+            }
+            content = typeof(T) == typeof(JArray) ? "[]" : "{}";
+            File.WriteAllText(path, content);
+            return JToken.Parse(content) as T ?? throw new InvalidDataException("Invalid JSON format");
+        }
     }
 
     public static void SaveJson<T>(string path, T data) where T : JToken

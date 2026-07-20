@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useUserStore } from '@/store';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
+import { getHubUrl } from '@/utils/hub';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import c from 'ansi-colors';
@@ -15,7 +15,6 @@ const emit = defineEmits<{
   update: [];
 }>();
 
-const userStore = useUserStore();
 const terminalWrapper = ref<HTMLElement | null>(null);
 const terminalBody = ref<HTMLElement | null>(null);
 
@@ -164,9 +163,10 @@ const startSignalR = async () => {
   await stopSignalR();
   if (!props.frpId) return;
 
-  const { baseUrl, token } = userStore;
-  const hubUrl = new URL('/api/hubs/frpLogsHub', baseUrl || window.location.origin);
-  if (token) hubUrl.searchParams.append('x-user-token', token);
+  const hubUrlStr = getHubUrl('/api/hubs/frpLogsHub');
+  const hubUrl = new URL(hubUrlStr);
+
+  hubUrl.searchParams.append('tunnelId', String(props.frpId));
 
   hubConnection = new HubConnectionBuilder()
     .withUrl(hubUrl.toString(), { withCredentials: false })

@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { type FormRules, MessagePlugin } from 'tdesign-vue-next';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { useUserStore } from '@/store';
+import { getHubUrl } from '@/utils/hub';
 
 import ServerCoreSelector from './ServerCoreSelector.vue';
 import { getJavaVersionList } from '@/api/mslapi/java';
@@ -465,14 +466,12 @@ const onSubmit = async () => {
 
 // SignalR 主要链接方法
 const startSignalRConnection = async (serverId: string) => {
-  const { baseUrl, token } = userStore;
   let isSuccessHandled = false;
 
-  const hubUrl = new URL('/api/hubs/creationProgressHub', baseUrl || window.location.origin);
-  hubUrl.searchParams.append('x-user-token', token);
+  const hubUrlStr = getHubUrl('/api/hubs/creationProgressHub');
 
   hubConnection.value = new HubConnectionBuilder()
-    .withUrl(hubUrl.toString(), { withCredentials: false })
+    .withUrl(hubUrlStr, { withCredentials: false })
     .configureLogging(LogLevel.Information)
     .build();
 
