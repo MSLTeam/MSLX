@@ -2,10 +2,12 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { linkSlaveNode, unlinkSlaveNode, postEditSlaveNode } from '@/api/node';
 import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next';
-import { AddIcon, RefreshIcon, EditIcon, InfoCircleIcon, DeleteIcon, ServerIcon } from 'tdesign-icons-vue-next';
+import { AddIcon, RefreshIcon, EditIcon, InfoCircleIcon, DeleteIcon, ServerIcon, HelpCircleIcon } from 'tdesign-icons-vue-next';
 import { useUserStore, useNodeStore } from '@/store';
 import * as signalR from '@microsoft/signalr';
 import { request } from '@/utils/request';
+import { changeUrl } from '@/router';
+import { DOC_URLS } from '@/api/docs';
 
 const userStore = useUserStore();
 const nodeStore = useNodeStore();
@@ -213,6 +215,10 @@ onUnmounted(async () => {
       </div>
 
       <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <t-button variant="outline" theme="default" class="!rounded-lg" @click="changeUrl(DOC_URLS.multi_nodes_doc)">
+          <template #icon><help-circle-icon /></template>
+          文档
+        </t-button>
         <t-button variant="dashed" @click="fetchNodes(true)">
           <template #icon><refresh-icon /></template>
           刷新
@@ -226,7 +232,7 @@ onUnmounted(async () => {
 
     <t-alert theme="warning" variant="light" title="子节点功能为测试功能">
       <template #message>
-        分布式子节点管理涉及较为复杂的远程通信与网络鉴权，目前<strong>仍处于开发及测试阶段</strong>。此功能仅供测试体验，请<strong>切勿将其直接部署于商业化或关键性生产业务环境</strong>，以规避可能出现的不稳定风险。
+        分布式子节点管理涉及较为复杂的远程通信与网络鉴权，目前<strong>仍处于开发及测试阶段</strong>。此功能仅供测试体验，请<strong>切勿将其直接部署于商业化或关键性生产业务环境</strong>，以规避可能出现的不稳定风险。如有疑问或遇到 Bug，欢迎前往 <a href="javascript:void(0)" class="text-blue-500 font-bold hover:underline" @click="changeUrl(DOC_URLS.github_issues)">GitHub Issues</a> 提交反馈。
       </template>
     </t-alert>
 
