@@ -25,9 +25,10 @@ const props = defineProps({
   fileName: String,
   content: String,
   loading: Boolean,
+  saveSuccess: Number,
 });
 
-const emit = defineEmits(['update:visible', 'save']);
+const emit = defineEmits(['update:visible', 'save', 'dirty-change']);
 
 // 处理代码格式化
 const handleFormat = async () => {
@@ -91,7 +92,23 @@ const handleFormat = async () => {
 };
 
 const code = ref('');
+const savedContent = ref('');
+const showCloseConfirm = ref(false);
+const dirty = computed(() => code.value !== savedContent.value);
 const isDarkMode = ref(false); // 存储当前是否为暗黑模式
+
+const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+  event.preventDefault();
+  event.returnValue = '';
+};
+
+const updateBeforeUnloadListener = () => {
+  const shouldWarn = props.visible && dirty.value;
+  window.removeEventListener('beforeunload', handleBeforeUnload);
+  if (shouldWarn) {
+    window.addEventListener('beforeunload', handleBeforeUnload);
+  }
+};
 
 // 主题变化监听
 let observer: MutationObserver | null = null;
@@ -113,13 +130,33 @@ onMounted(() => {
 
 onUnmounted(() => {
   observer?.disconnect();
+  window.removeEventListener('keydown', handleKeydown);
+  window.removeEventListener('beforeunload', handleBeforeUnload);
 });
 
 // --- 初始化内容 ---
 watch(
   () => props.content,
   (newVal) => {
-    code.value = newVal || '';
+    const content = newVal || '';
+    code.value = content;
+    savedContent.value = content;
+  },
+  { immediate: true },
+);
+
+watch(
+  () => props.saveSuccess,
+  () => {
+    savedContent.value = code.value;
+  },
+);
+
+watch(
+  [() => props.visible, dirty],
+  () => {
+    emit('dirty-change', props.visible && dirty.value);
+    updateBeforeUnloadListener();
   },
   { immediate: true },
 );
@@ -190,25 +227,72 @@ const extensions = computed(() => {
   return result;
 });
 
-const handleClose = () => {
+const closeEditor = () => {
   emit('update:visible', false);
+};
+
+const handleClose = () => {
+  if (!dirty.value) {
+    closeEditor();
+    return;
+  }
+
+  showCloseConfirm.value = true;
+};
+
+const handleDiscard = () => {
+  showCloseConfirm.value = false;
+  closeEditor();
 };
 
 const handleConfirm = (closeDialog: boolean = true) => {
   emit('save', code.value, closeDialog);
 };
+
+const handleSaveAndClose = () => {
+  if (props.loading) return;
+  showCloseConfirm.value = false;
+  handleConfirm(true);
+};
+
+const handleKeydown = (event: KeyboardEvent) => {
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+    event.preventDefault();
+    if (!props.loading) {
+      handleConfirm(false);
+    }
+  }
+};
+
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      window.addEventListener('keydown', handleKeydown);
+    } else {
+      window.removeEventListener('keydown', handleKeydown);
+    }
+  },
+  { immediate: true },
+);
 </script>
 
 <template>
   <t-dialog
     :visible="visible"
-    :header="`正在编辑: ${fileName}`"
     width="90%"
     attach="body"
     top="2vh"
     class="editor-dialog"
     @close="handleClose"
   >
+    <template #header>
+      <div class="flex items-center gap-2">
+        <span>正在编辑: {{ fileName }}</span>
+        <span v-if="dirty" class="w-2 h-2 rounded-full bg-[var(--td-warning-color)]" title="未保存修改"></span>
+      </div>
+    </template>
+
     <div class="flex flex-col gap-2">
       <div
         class="border border-zinc-200/60 dark:border-zinc-700/60 rounded-xl overflow-hidden shadow-inner bg-white dark:bg-zinc-900/30"
@@ -249,9 +333,14 @@ const handleConfirm = (closeDialog: boolean = true) => {
         </div>
 
         <div class="flex items-center gap-2">
-          <t-popconfirm content="确认取消吗？未保存的内容将丢失" theme="warning" @confirm="handleClose">
-            <t-button variant="outline" class="!rounded-lg hover:!bg-zinc-100 dark:hover:!bg-zinc-800"> 取消 </t-button>
-          </t-popconfirm>
+          <t-button
+            variant="outline"
+            theme="default"
+            class="!rounded-lg hover:!bg-zinc-100 dark:hover:!bg-zinc-800"
+            @click="handleClose"
+          >
+            取消
+          </t-button>
           <t-button
             theme="default"
             class="!rounded-lg shadow-sm"
@@ -264,6 +353,24 @@ const handleConfirm = (closeDialog: boolean = true) => {
             保存并关闭
           </t-button>
         </div>
+      </div>
+    </template>
+  </t-dialog>
+
+  <t-dialog
+    v-model:visible="showCloseConfirm"
+    header="存在未保存的修改"
+    width="420px"
+    attach="body"
+    :close-on-overlay-click="false"
+    :close-on-esc-keydown="false"
+  >
+    <div class="text-[var(--td-text-color-secondary)] py-2">关闭编辑器前，请选择如何处理未保存的修改。</div>
+    <template #footer>
+      <div class="flex justify-end gap-2">
+        <t-button variant="outline" theme="default" class="!rounded-lg" @click="showCloseConfirm = false">取消</t-button>
+        <t-button variant="outline" theme="default" class="!rounded-lg" @click="handleDiscard">放弃修改</t-button>
+        <t-button theme="primary" class="!rounded-lg shadow-sm" :loading="props.loading" @click="handleSaveAndClose">保存并关闭</t-button>
       </div>
     </template>
   </t-dialog>

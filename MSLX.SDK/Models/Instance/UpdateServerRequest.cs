@@ -92,7 +92,7 @@ public class UpdateServerRequest : IValidatableObject
     [RegularExpression(@"^(0|(([0-9]+:[0-9]+(\/(tcp|udp))?)(,[0-9]+:[0-9]+(\/(tcp|udp))?)*))$", ErrorMessage = "开放端口 (DockerPorts) 格式不正确，应为 '0' 或 '宿主机端口:容器端口'，可配合 '/tcp' 或 '/udp' 后缀")]
     public string? DockerPorts { get; set; }
 
-    [Range(1, 100, ErrorMessage = "CPU 使用率限制 (DockerCpuPercentage) 必须在 1 到 100 之间")]
+    [Range(1, int.MaxValue, ErrorMessage = "CPU 算力限制必须大于 1%（100% 代表分配 1 个核心的算力）")]
     public int? DockerCpuPercentage { get; set; }
 
     // 指定CPU核心，如 "0" 或 "0,1" 或 "0-3"

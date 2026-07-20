@@ -1,6 +1,6 @@
 {
-  "version": "1.5.2",
-  "buildTime": "2026-07-13 00:35:28",
+  "version": "1.5.3",
+  "buildTime": "2026-07-18 23:22:55",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -77,10 +77,136 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "d511fd7fff6d04f9ae2c95dc2e1ab0fa628c02d7",
-  "commitMsg": "feat(daemon & webpanel): 实例列表新增到期时间显示",
-  "commitAuthor": "luluxiaoyu",
+  "commitId": "79bc01e75f54185193c9a90918fd2b75a41b5e85",
+  "commitMsg": "Merge pull request #181 from chaoji233/fix/issue-180",
+  "commitAuthor": "小宇",
   "history": [
+    {
+      "commitId": "79bc01e75f54185193c9a90918fd2b75a41b5e85",
+      "commitTime": "2026-07-18 12:57:28 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #181 from chaoji233/fix/issue-180"
+    },
+    {
+      "commitId": "679054c7b9d18813afa9ceaee8c4e1e14883152a",
+      "commitTime": "2026-07-18 11:35:18 +0800",
+      "commitAuthor": "chaoji233",
+      "commitMsg": "feat(webpanel): 新增文件编辑器未保存更改提示，修复对话框和上传提示问题"
+    },
+    {
+      "commitId": "66460179f821096aa493aafcee0e0fd3ceff9ef7",
+      "commitTime": "2026-07-18 11:09:11 +0800",
+      "commitAuthor": "chaoji233",
+      "commitMsg": "feat(webpanel): 对文件编辑器添加Ctrl/Cmd+S快捷键保存文件的功能"
+    },
+    {
+      "commitId": "53be0761408275fc6286c0eef1ae6e8393dcb76f",
+      "commitTime": "2026-07-18 11:01:43 +0800",
+      "commitAuthor": "chaoji233",
+      "commitMsg": "fix(webpanel): 修复文件管理页跳转后携带 path 参数导致 NaN 的问题"
+    },
+    {
+      "commitId": "8bf0abc1b8c4a8d20abfe58bcef81c1bcaf9cadf",
+      "commitTime": "2026-07-18 10:51:47 +0800",
+      "commitAuthor": "chaoji233",
+      "commitMsg": "feat(webpanel): 添加拖拽上传与上传冲突校验提示"
+    },
+    {
+      "commitId": "1ba7413b76647b6cb0e06a135d4000655492d02c",
+      "commitTime": "2026-07-14 19:52:32 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 修复部分输入组件存在淡淡的方角问题呀"
+    },
+    {
+      "commitId": "102c92c0916ea87491a3b3807e9414b0f9c7531a",
+      "commitTime": "2026-07-14 19:49:25 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 统一下拉选择组件的样式"
+    },
+    {
+      "commitId": "25e0ede2716290c9bd5ac778aba10e626abb9bb5",
+      "commitTime": "2026-07-14 17:25:34 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "refactor(webpanel): 提取推荐Java的工具函数"
+    },
+    {
+      "commitId": "7d7ac711ea5e13b1f78d12f77c582dd606e7b3fd",
+      "commitTime": "2026-07-14 17:18:35 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 使用快速模式 & 整合包模式 & MCDR模式时会尝试自动推荐Java版本"
+    },
+    {
+      "commitId": "f7820376e71726132dfe0782c6646fbf83bccf06",
+      "commitTime": "2026-07-14 15:42:07 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 快速模式 & 整合包模式创建服务端的时候Docker模式端口映射新增TCP/UDP协议选择"
+    },
+    {
+      "commitId": "784b68c403c365573f00180b4123d04b5f7ac1bf",
+      "commitTime": "2026-07-14 15:20:31 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): Docker容器端口映射新增UDP协议支持"
+    },
+    {
+      "commitId": "ef78dc6089f8d1d502b1997d2028a004d2844411",
+      "commitTime": "2026-07-14 13:29:00 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 新增基岩版Docker容器化部署支持"
+    },
+    {
+      "commitId": "8609730612385375f5321eaf297d5a4aacaf1b17",
+      "commitTime": "2026-07-13 23:30:44 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(webpanel): 仅在管理员账户显示连接未加密的提示"
+    },
+    {
+      "commitId": "1e0cf47262e2da3a4ab567d512b4de61950ca116",
+      "commitTime": "2026-07-13 21:59:39 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复加载插件时，插入原有一级菜单的权限未识别的问题"
+    },
+    {
+      "commitId": "b98dfdb698c5989735ba0774c6e8cc1db826fe64",
+      "commitTime": "2026-07-13 21:34:13 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 新增不允许普通用户修改用户名的设置项"
+    },
+    {
+      "commitId": "17d14b9b6249c9d6ec9f19dde65f08ebadf68dd2",
+      "commitTime": "2026-07-13 21:16:16 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 新增服务端实例绑定隧道功能（自动启动和关闭）"
+    },
+    {
+      "commitId": "e62daf28a61f4f367cf49d585086206e53371454",
+      "commitTime": "2026-07-13 18:58:52 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 首页宿主机内存与CPU状态仅限管理员查看"
+    },
+    {
+      "commitId": "f1d993c4531d3038f09c958222b2a8f008dfae49",
+      "commitTime": "2026-07-13 14:52:12 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(daemom): 补充 SERVER_PROPERTIES 中文解释"
+    },
+    {
+      "commitId": "b336e85bbafd652574c270b343a1c014b3372e29",
+      "commitTime": "2026-07-13 13:08:24 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(daemom): 修正下载器UA"
+    },
+    {
+      "commitId": "d2984ab1cec967e3cd766bbfe330bf3131d4d395",
+      "commitTime": "2026-07-13 00:37:20 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #175 from MSLTeam/dev"
+    },
+    {
+      "commitId": "3767ab0a604294bd9b4d60c30cb31803ef9d1a65",
+      "commitTime": "2026-07-13 00:35:48 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.5.2版本"
+    },
     {
       "commitId": "d511fd7fff6d04f9ae2c95dc2e1ab0fa628c02d7",
       "commitTime": "2026-07-13 00:33:59 +0800",
@@ -254,132 +380,6 @@
       "commitTime": "2026-07-10 16:48:46 +0800",
       "commitAuthor": "小宇",
       "commitMsg": "Merge pull request #169 from MSLTeam/dev"
-    },
-    {
-      "commitId": "e81a594ffb5f362fa28b48185e14d220d33e4ff9",
-      "commitTime": "2026-07-10 16:48:04 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.5.0版本"
-    },
-    {
-      "commitId": "cb30750caeee814787700e243f2bfd4d2f5135f2",
-      "commitTime": "2026-07-10 16:45:55 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 服务端列表对于Docker容器新增标签显示 #25"
-    },
-    {
-      "commitId": "91ef577f5bec7d174d65586cd7c5488f3ee632d6",
-      "commitTime": "2026-07-10 16:20:06 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(webpanel): 修改用户管理关于资源分配的提示 #25"
-    },
-    {
-      "commitId": "51bdd35feecb5753614fc04f550f873ad6937c2f",
-      "commitTime": "2026-07-10 16:18:29 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel & daemon): 修复实例设置中docker相关内容显示隐藏的问题 #25"
-    },
-    {
-      "commitId": "7d7983ca232db9cc62136b74dd5e362e27f568ba",
-      "commitTime": "2026-07-10 14:28:36 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 自定义模式创建服务端新增Docker环境支持 #25"
-    },
-    {
-      "commitId": "25dbbc9fa8d05b788492ed67e793f7016c84c65e",
-      "commitTime": "2026-07-10 14:26:56 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复NeoForge/Forge安装器在docker下安装的问题 #25"
-    },
-    {
-      "commitId": "f00763439c053b9cc17891a24bab2cb4e57c3b35",
-      "commitTime": "2026-07-10 14:06:09 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): NeoForge/Forge安装器支持使用Docker环境安装构建 #25"
-    },
-    {
-      "commitId": "f7c85fd2a2c8e37c1c65de4356da6244eebe13dd",
-      "commitTime": "2026-07-10 12:05:17 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 整合包模式创建服务端支持Docker容器环境 #25"
-    },
-    {
-      "commitId": "27e97be00bfefd568eac64ca66bf39ee979226e0",
-      "commitTime": "2026-07-10 11:44:35 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 快速模式创建服务端支持现在Docker容器环境 & 支持在创建服务端时自动拉取容器镜像 #25"
-    },
-    {
-      "commitId": "b36ad618a8d81036905252de8f3436ccae03887c",
-      "commitTime": "2026-07-10 10:56:41 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 支持在实例设置中启用Docker模式和修改容器参数 #25"
-    },
-    {
-      "commitId": "d6b66c8c000bbb94a0b479a04720e9606b4555ea",
-      "commitTime": "2026-07-10 09:09:45 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): docker新增额外hosts参数"
-    },
-    {
-      "commitId": "4e2a787bbed3c7764df5fc691d4c20f167fec954",
-      "commitTime": "2026-07-10 01:16:57 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 新增Docker方式的启动支持"
-    },
-    {
-      "commitId": "d6c588541d50deb7c7ab4e1eb8018d059aa3cb43",
-      "commitTime": "2026-07-09 19:32:03 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "perf(desktop): 优化服务端选择弹窗的使用体验"
-    },
-    {
-      "commitId": "a719986a623f5fd7c2136a021ab44c74e7c51fe6",
-      "commitTime": "2026-07-09 19:30:45 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "perf(desktop): 优化服务端选择弹窗的使用体验"
-    },
-    {
-      "commitId": "5788841585ce9ce4b52c401874c59c99fd7e52c6",
-      "commitTime": "2026-07-09 00:02:47 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "perf(desktop): 优化frp隧道创建使用体验 更新部分nuget库 接下来开始聚焦联机功能！"
-    },
-    {
-      "commitId": "6450436bdcea76acfe2c48443fc043cee8e9d62a",
-      "commitTime": "2026-07-08 12:38:07 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.4.10.1版本 & 修复前端资源错版问题"
-    },
-    {
-      "commitId": "9a48282344823b917ce803e0f6bde012e07abdc4",
-      "commitTime": "2026-07-08 12:19:05 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(daemon & desltop): 更新CNB同步仓库"
-    },
-    {
-      "commitId": "e61c5dfa43c0d9d6f3c458cab4b26afd07bd8339",
-      "commitTime": "2026-07-08 12:11:25 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #164 from MSLTeam/dev"
-    },
-    {
-      "commitId": "ed7243a8ab0b1a07af81c7b62189e19c00216480",
-      "commitTime": "2026-07-08 12:10:23 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.4.10版本"
-    },
-    {
-      "commitId": "e77c2631e885ac772de2a48597f0e3b1c395968d",
-      "commitTime": "2026-07-08 12:01:53 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "build(daemon & desltop): 更新CNB同步仓库"
-    },
-    {
-      "commitId": "179af0024d49f5a37597a708406ec483047ff039",
-      "commitTime": "2026-07-08 11:52:20 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(build): 修复前端构建失败..."
     }
   ]
 }

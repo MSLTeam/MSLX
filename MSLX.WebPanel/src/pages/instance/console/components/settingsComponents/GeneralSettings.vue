@@ -1359,7 +1359,7 @@ onUnmounted(() => {
                         容器 CPU 算力分配上限
                       </div>
                       <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
-                        限额本实例能调用的最高核心总比例。不设代表享用全额宿主机算力。
+                        限额本实例能调用的最高核心总比例。不设代表享用全额宿主机算力。允许使用1个核心为100%，2个核心为200%，以此类推。
                       </div>
                     </div>
                     <div class="w-full md:w-[340px] shrink-0">
