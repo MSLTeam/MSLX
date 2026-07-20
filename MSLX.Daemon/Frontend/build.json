@@ -1,6 +1,6 @@
 {
-  "version": "1.5.3",
-  "buildTime": "2026-07-18 23:22:55",
+  "version": "1.5.4",
+  "buildTime": "2026-07-20 23:45:30",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -77,10 +77,64 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "79bc01e75f54185193c9a90918fd2b75a41b5e85",
-  "commitMsg": "Merge pull request #181 from chaoji233/fix/issue-180",
-  "commitAuthor": "小宇",
+  "commitId": "7ad09ce9f286e12bb552dad3b2c34dd51b3a6e73",
+  "commitMsg": "feat(webpanel): 节点管理页面新增文档和issue跳转入口",
+  "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "7ad09ce9f286e12bb552dad3b2c34dd51b3a6e73",
+      "commitTime": "2026-07-20 23:44:37 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 节点管理页面新增文档和issue跳转入口"
+    },
+    {
+      "commitId": "3c00888407722f729f40fc463bf04de8f7da4ea1",
+      "commitTime": "2026-07-20 23:00:22 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复快照版本的自动推荐Java版本错误的问题"
+    },
+    {
+      "commitId": "40d3213bd883f1a484eb64d3554860591c1d36cc",
+      "commitTime": "2026-07-20 22:58:12 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复带前缀后缀的输入框样式没有正常圆角的问题"
+    },
+    {
+      "commitId": "a98418849cdfa91089d393811c8ba6cf883f7f03",
+      "commitTime": "2026-07-20 22:37:11 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
+    },
+    {
+      "commitId": "f282c9190f4f6791c7ae6b622b25c5c3fe8cbda1",
+      "commitTime": "2026-07-20 22:37:03 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 新增连接多个子节点的支持"
+    },
+    {
+      "commitId": "220e351ef913a9883eebe61550f10c890f2e5cb5",
+      "commitTime": "2026-07-19 22:50:17 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): Docker Cpu百分比限制参数修改为单核百分比"
+    },
+    {
+      "commitId": "f4e8f2bb80e2b7ddd6e5f07fd16eb68c509e1a7e",
+      "commitTime": "2026-07-18 23:24:39 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #183 from MSLTeam/dev"
+    },
+    {
+      "commitId": "f19004dc84c45a3026c160fa64cb299b0839bcbb",
+      "commitTime": "2026-07-18 23:23:36 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新到 v1.5.3 版本"
+    },
+    {
+      "commitId": "b31944c154b304c0bb5cec28301face9ec3fae2b",
+      "commitTime": "2026-07-18 23:23:16 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新到 v1.5.3 版本"
+    },
     {
       "commitId": "79bc01e75f54185193c9a90918fd2b75a41b5e85",
       "commitTime": "2026-07-18 12:57:28 +0800",
@@ -326,60 +380,6 @@
       "commitTime": "2026-07-11 16:45:37 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "feat(daemon): 运行Docker缺少sock 管道管道时新增文档提醒"
-    },
-    {
-      "commitId": "eede95e0ab43b697dd4df6ba617b2997f934f403",
-      "commitTime": "2026-07-11 15:53:25 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 对于MSLX运行在Docker的环境下，若需要启动Docker服务端实例，新增未挂载Sock通道的拦截"
-    },
-    {
-      "commitId": "84bf4db3ccb8c37999eed525578529766d13c9ac",
-      "commitTime": "2026-07-11 15:35:26 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 守护进程的日志自动输出到日志文件"
-    },
-    {
-      "commitId": "68076d24bc3c673a1fdffa02efde9e387835a971",
-      "commitTime": "2026-07-11 15:08:17 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 调整实例列表多选状态的卡片样式表现 #172"
-    },
-    {
-      "commitId": "a8a083b84b484e62d69e3fe8fe870ac2d5f63268",
-      "commitTime": "2026-07-11 15:04:09 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(daemon): 优化Docker路径查询日志表述"
-    },
-    {
-      "commitId": "691a6e38bd2968514a16ad556dc3f35e674fed0d",
-      "commitTime": "2026-07-11 00:01:34 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 支持Docker In Docker的NeoForge构建情况"
-    },
-    {
-      "commitId": "672fec234190406b0aacc66f53d7c82d913fee16",
-      "commitTime": "2026-07-10 23:29:20 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 尝试修复Docker反查逻辑"
-    },
-    {
-      "commitId": "143a298de917a29cf648dd235041a3d9b376a272",
-      "commitTime": "2026-07-10 23:12:52 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "docker(daemon): Docker进行新增docker cli"
-    },
-    {
-      "commitId": "95d14d81357d0d16f6c3189c715714d947b05cbd",
-      "commitTime": "2026-07-10 23:06:45 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 尝试适配Docker In Docker"
-    },
-    {
-      "commitId": "7dd01d38699c8a10fca298d064605db4546b0766",
-      "commitTime": "2026-07-10 16:48:46 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #169 from MSLTeam/dev"
     }
   ]
 }
