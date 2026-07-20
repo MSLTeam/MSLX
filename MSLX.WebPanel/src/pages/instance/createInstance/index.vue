@@ -5,8 +5,14 @@ import CustomMode from './components/CustomMode.vue';
 import PackageMode from './components/PackageMode.vue';
 import McdrMode from './components/McdrMode.vue';
 import BedrockMode from '@/pages/instance/createInstance/components/BedrockMode.vue';
+import NodeSwitcher from '@/components/node-switcher/index.vue';
+
+import { useNodeStore } from '@/store';
 
 const value = ref(1);
+const nodeStore = useNodeStore();
+
+const handleNodeChange = () => {};
 </script>
 <template>
   <div class="mx-auto flex flex-col gap-6 text-[var(--td-text-color-primary)] pb-5">
@@ -25,7 +31,8 @@ const value = ref(1);
         </div>
       </div>
 
-      <div class="flex items-center shrink-0">
+      <div class="flex items-center shrink-0 gap-3">
+        <node-switcher @change="handleNodeChange" />
         <t-radio-group v-model="value" variant="default-filled">
           <t-radio-button :value="1">快速模式</t-radio-button>
           <t-radio-button :value="2">上传整合包</t-radio-button>
@@ -36,7 +43,7 @@ const value = ref(1);
       </div>
     </div>
 
-    <div class="relative w-full">
+    <div :key="nodeStore.activeNodeId" class="relative w-full">
       <div v-show="value === 1" class="list-item-anim" style="animation-delay: 0.1s">
         <quick-mode />
       </div>

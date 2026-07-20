@@ -9,6 +9,7 @@ import {
   NotifyPlugin,
 } from 'tdesign-vue-next';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
+import { getHubUrl } from '@/utils/hub';
 import { useUserStore, useTunnelsStore } from '@/store';
 import { LockOnIcon, LockOffIcon } from 'tdesign-icons-vue-next';
 
@@ -884,12 +885,10 @@ const startSignalRListening = async () => {
   progressPercent.value = 0;
   progressLogs.value = [];
 
-  const { baseUrl, token } = userStore;
-  const hubUrl = new URL('/api/hubs/updateProgressHub', baseUrl || window.location.origin);
-  hubUrl.searchParams.append('x-user-token', token);
+  const hubUrlStr = getHubUrl('/api/hubs/updateProgressHub');
 
   hubConnection.value = new HubConnectionBuilder()
-    .withUrl(hubUrl.toString(), { withCredentials: false })
+    .withUrl(hubUrlStr, { withCredentials: false })
     .configureLogging(LogLevel.None)
     .build();
 

@@ -5,7 +5,8 @@ import { AddIcon, SearchIcon, RefreshIcon } from 'tdesign-icons-vue-next';
 
 import { getUserList, createUser, updateUser, deleteUser } from '@/api/user';
 import type { AdminUserDto } from '@/api/model/user';
-import { useUserStore, useTunnelsStore, useInstanceListStore } from '@/store';
+import { useUserStore, useNodeStore } from '@/store';
+import { request } from '@/utils/request';
 
 // --- 状态定义 ---
 const loading = ref(false);
@@ -13,12 +14,53 @@ const tableData = ref<AdminUserDto[]>([]);
 const filterText = ref('');
 
 const userStore = useUserStore();
-const tunnelsStore = useTunnelsStore();
-const instanceStore = useInstanceListStore();
+const nodeStore = useNodeStore();
 
 const dialogVisible = ref(false);
 const dialogMode = ref<'create' | 'edit'>('create');
 const submitLoading = ref(false);
+const resourceOptions = ref<any[]>([]);
+
+// 二级资源分配弹窗
+const resourceDialogVisible = ref(false);
+const activeNodeTab = ref('local');
+
+const invalidResources = computed(() => {
+  if (resourceOptions.value.length === 0) return [];
+  const validSet = new Set<string>();
+  for (const node of resourceOptions.value) {
+    if (node.children) {
+      for (const group of node.children) {
+        if (group.children) {
+          for (const item of group.children) {
+            validSet.add(item.value);
+          }
+        }
+      }
+    }
+  }
+  return formData.resources.filter(r => !validSet.has(r));
+});
+
+const cleanInvalidResources = () => {
+  if (resourceOptions.value.length === 0) return;
+  const validSet = new Set<string>();
+  for (const node of resourceOptions.value) {
+    if (node.children) {
+      for (const group of node.children) {
+        if (group.children) {
+          for (const item of group.children) {
+            validSet.add(item.value);
+          }
+        }
+      }
+    }
+  }
+  formData.resources = formData.resources.filter(r => validSet.has(r));
+  MessagePlugin.success('已清理无效关联资源');
+};
+
+// -----------------------
 
 const formData = reactive({
   id: '',
@@ -44,25 +86,64 @@ const rules: FormRules = {
   ],
 };
 
-// 资源分配选项
-const resourceOptions = computed(() => {
-  return [
-    {
-      label: '实例 (Server)',
-      children: instanceStore.instanceList.map((item: any) => ({
-        label: `[${item.id ?? item.ID}] ${item.name ?? item.Name}`,
-        value: `server:${item.id ?? item.ID}`,
-      })),
-    },
-    {
-      label: '隧道 (FRP)',
-      children: tunnelsStore.frpList.map((item: any) => ({
-        label: `[${item.id ?? item.ID}] ${item.name ?? item.Name}`,
-        value: `frp:${item.id ?? item.ID}`,
-      })),
-    },
-  ];
-});
+// 获取全节点资源选项
+const fetchNodeResources = async () => {
+  const nodes = [{ nodeId: 'local', nodeName: '主节点', nodeUrl: '' }, ...nodeStore.slaveNodes];
+  const options = [];
+
+  for (const node of nodes) {
+    try {
+      const _nodeId = node.nodeId || node.NodeId;
+      const _nodeUrl = node.nodeUrl || node.NodeUrl || '';
+      const _nodeName = node.nodeName || node.NodeName || '未知节点';
+
+      const isLocal = _nodeId === 'local';
+      const baseUrl = isLocal ? '' : _nodeUrl.replace(/\/$/, '');
+      const reqOpts = isLocal ? { requestToSlaveNode: false } : { requestToSlaveNode: true, withToken: true };
+
+      const [instancesRes, frpRes] = await Promise.all([
+        request.get({ url: '/api/instance/list', baseURL: baseUrl, headers: isLocal ? {} : { 'x-node-id': _nodeId } }, reqOpts).catch(() => []),
+        request.get({ url: '/api/frp/list', baseURL: baseUrl, headers: isLocal ? {} : { 'x-node-id': _nodeId } }, reqOpts).catch(() => []),
+      ]);
+
+      const children = [];
+
+      if (instancesRes && instancesRes.length) {
+        children.push({
+          label: '实例 (Server)',
+          value: `${_nodeId}_servers`,
+          children: instancesRes.map((item: any) => ({
+            label: `[${item.id ?? item.ID}] ${item.name ?? item.Name}`,
+            value: isLocal ? `server:${item.id ?? item.ID}` : `${_nodeId}_server:${item.id ?? item.ID}`,
+          })),
+        });
+      }
+
+      if (frpRes && frpRes.length) {
+        children.push({
+          label: '隧道 (FRP)',
+          value: `${_nodeId}_frps`,
+          children: frpRes.map((item: any) => ({
+            label: `[${item.id ?? item.ID}] ${item.name ?? item.Name}`,
+            value: isLocal ? `frp:${item.id ?? item.ID}` : `${_nodeId}_frp:${item.id ?? item.ID}`,
+          })),
+        });
+      }
+
+      if (children.length > 0) {
+        options.push({
+          label: _nodeName,
+          value: _nodeId,
+          children,
+        });
+      }
+    } catch (e) {
+      console.warn(`节点资源获取失败： ${node.nodeName || node.NodeName}`, e);
+    }
+  }
+
+  resourceOptions.value = options;
+};
 
 // 表格列定义
 const columns = computed((): PrimaryTableCol<TableRowData>[] => [
@@ -102,6 +183,11 @@ const handleAdd = () => {
   formData.role = 'user';
   formData.resetApiKey = false;
   formData.resources = [];
+
+  if (resourceOptions.value.length === 0) {
+    fetchNodeResources();
+  }
+
   dialogVisible.value = true;
 };
 
@@ -114,6 +200,11 @@ const handleEdit = (row: AdminUserDto) => {
   formData.role = row.role;
   formData.resetApiKey = false;
   formData.resources = row.resources ? [...row.resources] : [];
+
+  if (resourceOptions.value.length === 0) {
+    fetchNodeResources();
+  }
+
   dialogVisible.value = true;
 };
 
@@ -122,13 +213,15 @@ const onSubmit = async ({ validateResult }: any) => {
 
   submitLoading.value = true;
   try {
+    const finalResources = formData.role === 'admin' ? [] : [...formData.resources];
+
     if (dialogMode.value === 'create') {
       await createUser({
         username: formData.username,
         password: formData.password,
         name: formData.name,
         role: formData.role,
-        resources: formData.role === 'admin' ? [] : formData.resources, // 管理员不需要分配，清空传过去
+        resources: finalResources,
       });
       MessagePlugin.success('用户创建成功');
     } else {
@@ -137,7 +230,7 @@ const onSubmit = async ({ validateResult }: any) => {
         password: formData.password || undefined,
         role: formData.role,
         resetApiKey: formData.resetApiKey,
-        resources: formData.role === 'admin' ? [] : formData.resources, // 同上
+        resources: finalResources,
       });
       MessagePlugin.success('用户更新成功');
     }
@@ -175,10 +268,10 @@ const paginationConfig = computed(() => ({
   maxPageBtnNum: window.innerWidth < 768 ? 3 : 5,
 }));
 
-onMounted(() => {
+onMounted(async () => {
   fetchData();
-  tunnelsStore.getTunnels();
-  instanceStore.refreshInstanceList();
+  await nodeStore.fetchNodes();
+  fetchNodeResources();
 });
 </script>
 <template>
@@ -419,14 +512,19 @@ onMounted(() => {
           </t-form-item>
 
           <t-form-item label="分配资源" name="resources">
-            <t-select
-              v-model="formData.resources"
-              multiple
-              filterable
-              clearable
-              :options="resourceOptions"
-              placeholder="搜索或选择要分配的实例与隧道"
-            />
+            <div class="flex flex-col gap-2 w-full">
+              <t-button variant="dashed" block @click="resourceDialogVisible = true">
+                已分配 {{ formData.resources.length }} 个资源，点击配置
+              </t-button>
+              <t-alert v-if="invalidResources.length > 0" theme="error" class="mt-1 !text-xs !py-1.5 !px-3">
+                <template #message>
+                  检测到 {{ invalidResources.length }} 个失效或离线的废弃资源。
+                </template>
+                <template #operation>
+                  <span class="text-blue-500 cursor-pointer font-bold hover:underline" @click="cleanInvalidResources">清理</span>
+                </template>
+              </t-alert>
+            </div>
             <template #help>
               <span class="text-[11px] text-[var(--td-text-color-secondary)] mt-1 inline-block"
                 >该用户将获得以上选定实例和隧道的完整控制权</span
@@ -455,6 +553,48 @@ onMounted(() => {
         </t-form-item>
       </t-form>
     </t-dialog>
+    <!-- 资源配置二级弹窗 -->
+    <t-dialog
+      v-model:visible="resourceDialogVisible"
+      header="配置跨节点资源分配"
+      width="800px"
+      :footer="false"
+      destroy-on-close
+    >
+      <div class="flex flex-col gap-4">
+        <div class="text-sm text-[var(--td-text-color-secondary)] bg-[var(--td-bg-color-container)]/50 p-3 rounded-lg">
+          请在下方各节点选项卡中，勾选需要分配给当前用户的实例或隧道。
+        </div>
+        <t-tabs v-model="activeNodeTab">
+          <t-tab-panel v-for="node in resourceOptions" :key="node.value" :value="node.value" :label="node.label">
+            <div class="p-4 flex flex-col gap-6 max-h-[50vh] overflow-y-auto custom-scroll">
+              <template v-if="node.children && node.children.length > 0">
+                <div v-for="group in node.children" :key="group.value" class="bg-[var(--td-bg-color-container)] border border-[var(--td-component-border)] p-4 rounded-xl shadow-sm">
+                  <div class="text-sm font-bold text-[var(--td-text-color-primary)] mb-4 border-b border-dashed border-zinc-200 dark:border-zinc-700 pb-2">
+                    {{ group.label }}
+                  </div>
+                  <t-checkbox-group v-model="formData.resources" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <t-checkbox v-for="item in group.children" :key="item.value" :value="item.value" class="!w-full truncate hover:bg-zinc-100 dark:hover:bg-zinc-800 p-2 rounded-lg transition-colors">
+                      {{ item.label }}
+                    </t-checkbox>
+                  </t-checkbox-group>
+                  <div v-if="!group.children || group.children.length === 0" class="text-xs text-[var(--td-text-color-secondary)] py-2">
+                    暂无可用资源
+                  </div>
+                </div>
+              </template>
+              <div v-else class="text-center py-10 text-[var(--td-text-color-secondary)]">
+                该节点暂无任何实例或隧道资源
+              </div>
+            </div>
+          </t-tab-panel>
+        </t-tabs>
+        <div class="flex justify-end pt-4 mt-2 border-t border-dashed border-[var(--td-component-border)]">
+          <t-button theme="primary" @click="resourceDialogVisible = false">确认选择</t-button>
+        </div>
+      </div>
+    </t-dialog>
+
   </div>
 </template>
 
@@ -477,7 +617,6 @@ onMounted(() => {
   }
 }
 
-/* 兼容原有脚本中的隐藏类 */
 :deep(.hidden-xs) {
   @media (max-width: 768px) {
     display: none !important;

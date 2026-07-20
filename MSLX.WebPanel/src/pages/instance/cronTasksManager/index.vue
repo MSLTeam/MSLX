@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { MessagePlugin, DialogPlugin, type FormRules, type FormInstanceFunctions } from 'tdesign-vue-next';
 import {
   CloudIcon,
@@ -13,17 +13,27 @@ import {
   PlayCircleIcon,
   StopCircleIcon,
 } from 'tdesign-icons-vue-next';
-import { useInstanceListStore, useUserStore } from '@/store';
+import { useInstanceListStore, useUserStore, useNodeStore } from '@/store';
 import { getAllCronTasks, addCronTask, updateCronTask, deleteCronTask } from '@/api/cronTasks';
 import { CronTaskItemModel } from '@/api/model/cronTasks';
 
 import CronGenerator from '@/pages/instance/console/components/settingsComponents/CronGenerator.vue';
+import NodeSwitcher from '@/components/node-switcher/index.vue';
 
 const instanceStore = useInstanceListStore();
+const nodeStore = useNodeStore();
 
 // --- 状态管理 ---
 const loading = ref(false);
 const rawTasks = ref<CronTaskItemModel[]>([]);
+
+const handleNodeChange = () => {
+  fetchData();
+};
+
+watch(() => nodeStore.activeNodeId, () => {
+  fetchData();
+});
 const selectedRowKeys = ref<Record<number, string[]>>({}); // 存储每个实例选中的任务 ID 为 Key
 
 // 弹窗表单状态
@@ -280,6 +290,7 @@ onMounted(() => {
       </div>
 
       <div class="flex items-center gap-3">
+        <node-switcher @change="handleNodeChange" />
         <t-button variant="dashed" :loading="loading" @click="fetchData">
           <template #icon><refresh-icon /></template>
           刷新列表

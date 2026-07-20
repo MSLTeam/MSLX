@@ -1,4 +1,4 @@
-﻿using CliWrap;
+using CliWrap;
 using CliWrap.Buffered;
 using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;

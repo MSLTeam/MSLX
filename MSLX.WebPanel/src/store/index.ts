@@ -14,5 +14,6 @@ export * from './modules/instance';
 export * from './modules/frp';
 export * from './modules/user';
 export * from './modules/pluginUI';
+export * from './modules/node';
 
 export default store;

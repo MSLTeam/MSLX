@@ -1,4 +1,4 @@
-using MSLX.SDK.Models;
+﻿using MSLX.SDK.Models;
 using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Utils.ConfigUtils;
@@ -77,11 +77,19 @@ public class UserListConfig : IDisposable
     {
         try
         {
+            bool isSlaveMode = bool.Parse(IConfigBase.Config.ReadConfigKey("IsSlaveMode")?.ToString() ?? "false");
+            string slaveKeyStr = "";
+            if (isSlaveMode)
+            {
+                string linkKey = IConfigBase.Config.ReadConfigKey("SlaveLinkKey")?.ToString() ?? "";
+                slaveKeyStr = $"\n\n【子节点连接秘钥信息】\n节点秘钥: {linkKey}\n(主控节点在链接此子节点时，需输入该秘钥进行通讯校验)";
+            }
+
             var txtPath = Path.Combine(IConfigBase.GetAppDataPath(), "默认账户信息.txt");
             var content = $@"==================================================
 MSLX-Daemon 初始化成功 - 默认管理员凭据
 ==================================================
-生成时间: {{DateTime.Now:yyyy-MM-dd HH:mm:ss}}
+生成时间: {DateTime.Now:yyyy-MM-dd HH:mm:ss}
 
 【安全提示】
 请务必在首次登录控制台后，前往用户管理修改默认的用户名、密码！
@@ -89,7 +97,7 @@ MSLX-Daemon 初始化成功 - 默认管理员凭据
 
 【账户信息】
 登录账号: {username}
-默认密码: {password}
+默认密码: {password}{slaveKeyStr}
 
 【控制台地址】
 如果浏览器未自动打开，请手动访问配置的端口（默认 http://localhost:1027）
@@ -101,6 +109,41 @@ MSLX-Daemon 初始化成功 - 默认管理员凭据
         catch (Exception ex)
         {
             _logger.LogError($"导出默认账户密码文件失败: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 更新从主节点同步的影子用户信息（仅用于子节点鉴权）
+    /// </summary>
+    public void UpdateShadowUser(string userId, string role, JArray resources)
+    {
+        _userListLock.EnterWriteLock();
+        try
+        {
+            var userToken = _userListCache.FirstOrDefault(u => u["Id"]?.ToString() == userId);
+            if (userToken != null)
+            {
+                userToken["Role"] = role;
+                userToken["Resources"] = resources;
+            }
+            else
+            {
+                var shadowUser = new JObject
+                {
+                    ["Id"] = userId,
+                    ["Role"] = role,
+                    ["Resources"] = resources,
+                    ["Username"] = $"shadow_{userId}",
+                    ["Name"] = "Shadow User"
+                };
+                _userListCache.Add(shadowUser);
+            }
+            // 立即保存到磁盘，以便其他组件读取
+            IConfigBase.SaveJson(_userListPath, _userListCache);
+        }
+        finally
+        {
+            _userListLock.ExitWriteLock();
         }
     }
 

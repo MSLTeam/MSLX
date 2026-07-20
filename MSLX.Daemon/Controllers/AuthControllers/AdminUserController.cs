@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
@@ -180,13 +180,20 @@ public class AdminUserController : ControllerBase
         var validResources = new List<string>();
         foreach (var res in resources)
         {
+            // 包含 '_'，为子节点的资源（格式：NodeId_type:id）
+            if (res.Contains("_"))
+            {
+                validResources.Add(res);
+                continue;
+            }
+
             var parts = res.Split(':');
             if (parts.Length != 2) continue;
 
             string type = parts[0].ToLower();
             string idStr = parts[1];
 
-            // 校验 Server 实例是否存在
+            // 校验主节点的 Server 实例是否存在
             if (type == "server" && uint.TryParse(idStr, out uint sId))
             {
                 if (IConfigBase.ServerList.GetServer(sId) != null)
@@ -194,7 +201,7 @@ public class AdminUserController : ControllerBase
                     validResources.Add(res);
                 }
             }
-            // 校验 Frp 隧道是否存在
+            // 校验主节点的 Frp 隧道是否存在
             else if (type == "frp" && int.TryParse(idStr, out int fId))
             {
                 if (IConfigBase.FrpList.GetFrpConfig(fId) != null)

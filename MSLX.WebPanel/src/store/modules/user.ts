@@ -72,6 +72,8 @@ export const useUserStore = defineStore('user', {
       const requestBaseUrl = processedUrl || '';
 
       try {
+        localStorage.removeItem('ACTIVE_NODE_ID');
+        localStorage.removeItem('ACTIVE_NODE_URL');
         // 请求登录接口拿到 Token
         const res = await request.post({
           url: '/api/auth/login',
@@ -130,6 +132,8 @@ export const useUserStore = defineStore('user', {
       try {
         const resData = await request.get({
           url: '/api/status',
+        }, {
+          requestToSlaveNode: false
         });
 
         // 存储用户信息
@@ -158,6 +162,8 @@ export const useUserStore = defineStore('user', {
 
       localStorage.removeItem(TOKEN_NAME);
       localStorage.removeItem(BASE_URL_NAME);
+      localStorage.removeItem('ACTIVE_NODE_ID');
+      localStorage.removeItem('ACTIVE_NODE_URL');
       this.token = '';
       this.baseUrl = '';
       this.userInfo = { ...InitUserInfo };

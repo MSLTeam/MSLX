@@ -46,6 +46,12 @@ export default [
         component: () => import('@/pages/plugins/pluginsManager/index.vue'),
         meta: { title: '插件管理', icon: 'terminal', roleCode: ['admin'] },
       },
+      {
+        path: 'nodes',
+        name: 'nodes',
+        component: () => import('@/pages/settings/nodeManagement/index.vue'),
+        meta: { title: '节点管理', icon: 'server', roleCode: ['admin'] },
+      },
     ],
   },
   {

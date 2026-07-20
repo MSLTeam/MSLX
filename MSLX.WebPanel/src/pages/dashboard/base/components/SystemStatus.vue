@@ -14,6 +14,11 @@ interface SystemStats {
   memUsage: number;
 }
 
+interface SystemStatsBroadcast {
+  local: SystemStats;
+  slaves?: Record<string, SystemStats>;
+}
+
 // --- 状态数据 ---
 const userStore = useUserStore();
 const connection = ref<signalR.HubConnection | null>(null);
@@ -131,7 +136,8 @@ const initSignalR = async () => {
     .withAutomaticReconnect()
     .build();
 
-  connection.value.on('ReceiveSystemStats', (data: SystemStats) => {
+  connection.value.on('ReceiveSystemStats', (broadcast: SystemStatsBroadcast) => {
+    const data = broadcast.local;
     currentStats.cpu = data.cpu;
     currentStats.memUsage = data.memUsage;
     currentStats.memUsed = data.memUsed;

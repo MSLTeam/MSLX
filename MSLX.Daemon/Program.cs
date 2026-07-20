@@ -73,10 +73,45 @@ if (!string.IsNullOrWhiteSpace(argNoBrowser))
     }
 }
 
+// 子节点相关的参数 --slave / --linkkey
+var argSlave = builder.Configuration["slave"];
+var argLinkKey = builder.Configuration["linkkey"];
+
+bool hasSlaveSwitch = args.Any(a => a.Equals("--slave", StringComparison.OrdinalIgnoreCase) || a.Equals("/slave", StringComparison.OrdinalIgnoreCase));
+
+if (hasSlaveSwitch || !string.IsNullOrWhiteSpace(argSlave))
+{
+    bool isSlave = true;
+    if (!string.IsNullOrWhiteSpace(argSlave) && bool.TryParse(argSlave, out bool parsedSlave))
+    {
+        isSlave = parsedSlave;
+    }
+    
+    IConfigBase.Config.WriteConfigKey("IsSlaveMode", isSlave);
+    configUpdated = true;
+    
+    if (isSlave)
+    {
+        string currentKey = IConfigBase.Config.ReadConfigKey("SlaveLinkKey")?.ToString() ?? "";
+        if (string.IsNullOrWhiteSpace(argLinkKey) && string.IsNullOrWhiteSpace(currentKey))
+        {
+            argLinkKey = StringServices.GenerateRandomString(32);
+        }
+    }
+}
+
+if (!string.IsNullOrWhiteSpace(argLinkKey))
+{
+    IConfigBase.Config.WriteConfigKey("SlaveLinkKey", argLinkKey);
+    configUpdated = true;
+}
+
 if (configUpdated)
 {
     var loggerTemp = LoggerFactory.Create(l => l.AddConsole()).CreateLogger("Bootstrap");
-    loggerTemp.LogInformation($"检测到启动参数，配置已更新为 Host: {argHost}, Port: {argPort}");
+    var slaveModeVal = IConfigBase.Config.ReadConfigKey("IsSlaveMode")?.ToString() ?? "false";
+    var linkKeyVal = IConfigBase.Config.ReadConfigKey("SlaveLinkKey")?.ToString() ?? "未设置";
+    loggerTemp.LogInformation($"检测到启动参数，配置已更新为 Host: {argHost}, Port: {argPort}, IsSlaveMode: {slaveModeVal}, SlaveLinkKey: {linkKeyVal}");
 }
 
 // 读取最终配置
@@ -347,6 +382,18 @@ IConfigBase.ServerList = new ServerListConfig();
 IConfigBase.FrpList = new FrpListConfig();
 IConfigBase.TaskList = new TaskListConfig();
 IConfigBase.UserList = new UserListConfig();
+IConfigBase.NodeList = new NodeListConfig();
+IConfigBase.MasterNodes = new MasterNodesConfig();
+
+bool isSlaveStartup = bool.Parse(IConfigBase.Config.ReadConfigKey("IsSlaveMode")?.ToString() ?? "false");
+if (isSlaveStartup)
+{
+    logger.LogInformation("当前运行模式: 子节点模式");
+}
+else
+{
+    logger.LogInformation("当前运行模式: 主控模式");
+}
 
 app.UseForwardedHeaders();
 app.UseCors("AllowAll");

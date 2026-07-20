@@ -13,12 +13,17 @@ import {
 } from 'tdesign-icons-vue-next';
 import { getAllInstanceBackupFiles, postDeleteBackupFiles, getBackupDownloadUrl } from '@/api/instance';
 import { AllInstanceBackupFilesModel } from '@/api/model/instance';
+import NodeSwitcher from '@/components/node-switcher/index.vue';
 
 
 const loading = ref(false);
 const instanceList = ref<AllInstanceBackupFilesModel[]>([]);
 const expandedPaths = ref<Set<number>>(new Set()); // 控制路径折叠
 const selectedRowKeys = ref<Record<number, string[]>>({}); // 存储每个实例选中的文件名为 Key
+
+const handleNodeChange = () => {
+  fetchData();
+};
 
 // 表格列
 const columns = [
@@ -146,6 +151,7 @@ onMounted(() => {
       </div>
 
       <div class="flex items-center gap-3">
+        <node-switcher @change="handleNodeChange" />
         <t-button variant="dashed" :loading="loading" @click="fetchData">
           <template #icon><refresh-icon /></template>
           刷新列表

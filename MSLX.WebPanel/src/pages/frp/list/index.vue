@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
+import { onMounted, reactive, ref, watch } from 'vue';
 import { AddIcon, CloudIcon, DeleteIcon, RefreshIcon, RocketIcon } from 'tdesign-icons-vue-next';
 
 import Result from '@/components/result/index.vue';
@@ -9,13 +9,23 @@ import { changeUrl } from '@/router';
 import { useTunnelsStore } from '@/store/modules/frp';
 import { getFrpAutoStartList, postChangeFrpAutoStartList, postDeleteFrpTunnel } from '@/api/frp';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
-import { useUserStore } from '@/store';
+import { useUserStore, useNodeStore } from '@/store';
+import NodeSwitcher from '@/components/node-switcher/index.vue';
 
 const tunnelsStore = useTunnelsStore();
 const userStore = useUserStore();
+const nodeStore = useNodeStore();
 
 const loading = ref(true);
 const isError = ref(false);
+
+const handleNodeChange = () => {
+  getList();
+};
+
+watch(() => nodeStore.activeNodeId, () => {
+  getList();
+});
 
 // 自启动列表数据
 const autoStartState = reactive({
@@ -121,6 +131,7 @@ onMounted(() => {
       </div>
 
       <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <node-switcher @change="handleNodeChange" />
         <t-button variant="dashed" @click="getList">
           <template #icon><refresh-icon /></template>
           刷新

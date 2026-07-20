@@ -6,11 +6,15 @@ import MSLP2P from '@/pages/frp/createFrp/components/MSLP2P.vue';
 import MEFrp from '@/pages/frp/createFrp/components/MEFrp/index.vue';
 import SakuraFrp from '@/pages/frp/createFrp/components/SakuraFrp/index.vue';
 import ChmlFrp from '@/pages/frp/createFrp/components/ChmlFrp/index.vue';
-import { usePluginUIStore } from '@/store';
+import { usePluginUIStore, useNodeStore } from '@/store';
+import NodeSwitcher from '@/components/node-switcher/index.vue';
 
 const pluginUIStore = usePluginUIStore();
 
 const value = ref<number | string>(1);
+const nodeStore = useNodeStore();
+
+const handleNodeChange = () => {};
 </script>
 <template>
   <div class="mx-auto flex flex-col gap-6 text-[var(--td-text-color-primary)] pb-5">
@@ -29,7 +33,8 @@ const value = ref<number | string>(1);
         </div>
       </div>
 
-      <div class="flex items-center shrink-0">
+      <div class="flex items-center shrink-0 gap-3">
+        <node-switcher @change="handleNodeChange" />
         <t-radio-group v-model="value" variant="default-filled">
           <t-radio-button :value="1">MSLFrp</t-radio-button>
           <t-radio-button :value="2">MSL 联机</t-radio-button>
@@ -48,7 +53,7 @@ const value = ref<number | string>(1);
       </div>
     </div>
 
-    <div class="relative w-full">
+    <div class="relative w-full" :key="nodeStore.activeNodeId">
       <div v-show="value === 1" class="list-item-anim" style="animation-delay: 0.1s">
         <index />
       </div>
