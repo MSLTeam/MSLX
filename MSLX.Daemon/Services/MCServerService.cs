@@ -52,6 +52,10 @@ public class MCServerService : IMCServerService
         public volatile bool IsStderrClosed = false;
         public volatile int FinalExitCode = 0;
         public volatile bool HasTriggeredExit = false;
+        
+        // Docker监控相关
+        public bool IsDocker { get; set; }
+        public double CpuBaseLimitPercentage { get; set; } = 0;
     }
 
     private readonly ConcurrentDictionary<uint, ServerContext> _activeServers = new(); // 存储运行中实例的状态数据
@@ -865,6 +869,29 @@ public class MCServerService : IMCServerService
 
             // 处理玩家监听
             context.MonitorPlayers = serverInfo.MonitorPlayers;
+            
+            // Docker模式保存性能监视基准参数
+            context.IsDocker = serverInfo.Java == "docker-java" || serverInfo.Java == "docker-custom";
+
+            // 预计算CPU基准
+            if (context.IsDocker)
+            {
+                if (serverInfo.DockerCpuPercentage is > 0)
+                {
+                    context.CpuBaseLimitPercentage = serverInfo.DockerCpuPercentage.Value;
+                }
+                else if (!string.IsNullOrWhiteSpace(serverInfo.DockerCpuCores))
+                {
+                    int coreCount = serverInfo.DockerCpuCores.Split(',', StringSplitOptions.RemoveEmptyEntries).Length;
+                    if (coreCount > 0) context.CpuBaseLimitPercentage = coreCount * 100.0;
+                }
+
+                // 未配置，默认回退到宿主机总核心百分比
+                if (context.CpuBaseLimitPercentage <= 0)
+                {
+                    context.CpuBaseLimitPercentage = Environment.ProcessorCount * 100.0;
+                }
+            }
 
             // 启动进程
             if (process.Start())
@@ -2078,23 +2105,19 @@ public class MCServerService : IMCServerService
             if (_activeServers.IsEmpty) continue;
 
             // 批量查询Docker容器状态
-            var dockerContainers = new List<string>();
+            var dockerInstanceIds = new List<uint>();
             foreach (var kvp in _activeServers)
             {
-                var serverInfo = IConfigBase.ServerList.GetServer(kvp.Key);
-                if (serverInfo != null && (serverInfo.Java == "docker-java" || serverInfo.Java == "docker-custom"))
+                if (kvp.Value.IsDocker && !kvp.Value.IsInitializing)
                 {
-                    if (!kvp.Value.IsInitializing)
-                    {
-                        dockerContainers.Add($"mslx-container-{kvp.Key}");
-                    }
+                    dockerInstanceIds.Add(kvp.Key);
                 }
             }
             
             Dictionary<string, (double cpu, long memory)> dockerStatsMap = null!;
-            if (dockerContainers.Count > 0)
+            if (dockerInstanceIds.Count > 0)
             {
-                dockerStatsMap = await GetBatchDockerStatsAsync(dockerContainers);
+                dockerStatsMap = await GetBatchDockerStatsAsync(dockerInstanceIds);
             }
 
             // 遍历推送
@@ -2105,11 +2128,7 @@ public class MCServerService : IMCServerService
 
                 try
                 {
-                    var serverInfo = IConfigBase.ServerList.GetServer(instanceId);
-                    bool isDocker = serverInfo != null && (serverInfo.Java == "docker-java" || serverInfo.Java == "docker-custom");
-
-                    // docker容器
-                    if (isDocker)
+                    if (context.IsDocker)
                     {
                         if (context.IsInitializing) continue;
 
@@ -2234,15 +2253,16 @@ public class MCServerService : IMCServerService
     }
     
     /// <summary>
-    /// 批量获取所有活动 Docker 容器的 CPU 与内存指标
+    /// 批量获取所有活动 Docker 容器的 CPU 与内存指标 (按配置核心数折算，最高 100%)
     /// </summary>
-    private async Task<Dictionary<string, (double cpu, long memory)>> GetBatchDockerStatsAsync(List<string> containerNames)
+    private async Task<Dictionary<string, (double cpu, long memory)>> GetBatchDockerStatsAsync(List<uint> dockerInstanceIds)
     {
-        var statsMap = new Dictionary<string, (double cpu, long memory)>(StringComparer.OrdinalIgnoreCase);
-        if (containerNames == null || containerNames.Count == 0) return statsMap;
+        var statsMap = new Dictionary<string, (double cpu, long memory)>();
+        if (dockerInstanceIds == null || dockerInstanceIds.Count == 0) return statsMap;
 
         try
         {
+            var containerNames = dockerInstanceIds.Select(id => $"mslx-container-{id}").ToList();
             var args = new List<string> { "stats", "--no-stream", "--format", "{{.Name}}|{{.CPUPerc}}|{{.MemUsage}}" };
             args.AddRange(containerNames);
 
@@ -2257,16 +2277,38 @@ public class MCServerService : IMCServerService
             var lines = result.StandardOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
             foreach (var line in lines)
             {
-                // 输出格式: "mslx-container-1|12.35%|345.2MiB / 8GiB"
+                // 输出格式: "mslx-container-1|150.35%|345.2MiB / 8GiB"
                 string[] parts = line.Split('|');
                 if (parts.Length < 3) continue;
 
-                string name = parts[0].Trim();
+                string containerName = parts[0].Trim();
 
-                // 解析 CPU
-                double cpu = 0;
+                // 提取 instanceId
+                if (!uint.TryParse(containerName.Replace("mslx-container-", ""), out uint instanceId))
+                    continue;
+
+                // 解析原始占用
+                double rawCpu = 0;
                 string cpuStr = parts[1].Replace("%", "").Trim();
-                double.TryParse(cpuStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out cpu);
+                double.TryParse(cpuStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out rawCpu);
+
+                // 优先从内存 ServerContext 获取预计算好的 CPU 基准
+                double baseLimitPercentage = 0;
+                if (_activeServers.TryGetValue(instanceId, out var context))
+                {
+                    baseLimitPercentage = context.CpuBaseLimitPercentage;
+                }
+
+                // 回退宿主机核心数
+                if (baseLimitPercentage <= 0)
+                {
+                    baseLimitPercentage = Environment.ProcessorCount * 100.0;
+                }
+
+                // 计算相对占用，封顶 100%
+                double normalizedCpu = (rawCpu / baseLimitPercentage) * 100.0;
+                if (normalizedCpu > 100.0) normalizedCpu = 100.0;
+                if (normalizedCpu < 0.0) normalizedCpu = 0.0;
 
                 // 解析内存
                 long memoryBytes = 0;
@@ -2288,7 +2330,7 @@ public class MCServerService : IMCServerService
                     };
                 }
 
-                statsMap[name] = (cpu, memoryBytes);
+                statsMap[containerName] = (normalizedCpu, memoryBytes);
             }
         }
         catch (Exception ex)
