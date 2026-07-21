@@ -2,7 +2,15 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { linkSlaveNode, unlinkSlaveNode, postEditSlaveNode } from '@/api/node';
 import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next';
-import { AddIcon, RefreshIcon, EditIcon, InfoCircleIcon, DeleteIcon, ServerIcon, HelpCircleIcon } from 'tdesign-icons-vue-next';
+import {
+  AddIcon,
+  RefreshIcon,
+  EditIcon,
+  InfoCircleIcon,
+  DeleteIcon,
+  ServerIcon,
+  HelpCircleIcon,
+} from 'tdesign-icons-vue-next';
 import { useUserStore, useNodeStore } from '@/store';
 import * as signalR from '@microsoft/signalr';
 import { request } from '@/utils/request';
@@ -24,7 +32,7 @@ const linkForm = ref({
   nodeLogo: 'https://www.mslmc.cn/logo.png',
   masterUrl: '',
   linkKey: '',
-  nodeTags: ''
+  nodeTags: '',
 });
 
 const tagsArray = ref<string[]>([]);
@@ -40,7 +48,14 @@ const fetchNodes = async (force = false) => {
 
 const handleAddNode = () => {
   isEdit.value = false;
-  linkForm.value = { nodeName: '', nodeUrl: '', nodeLogo: 'https://www.mslmc.cn/logo.png', masterUrl: '', linkKey: '', nodeTags: '' };
+  linkForm.value = {
+    nodeName: '',
+    nodeUrl: '',
+    nodeLogo: 'https://www.mslmc.cn/logo.png',
+    masterUrl: '',
+    linkKey: '',
+    nodeTags: '',
+  };
   tagsArray.value = [];
   linkVisible.value = true;
 };
@@ -55,9 +70,14 @@ const handleEditNode = (node: any) => {
     nodeLogo: node.nodeLogo || 'https://www.mslmc.cn/logo.png',
     masterUrl: node.masterUrl || '',
     linkKey: node.linkKey,
-    nodeTags: rawTags
+    nodeTags: rawTags,
   };
-  tagsArray.value = rawTags ? rawTags.split(/[，,]/).map((t: string) => t.trim()).filter(Boolean) : [];
+  tagsArray.value = rawTags
+    ? rawTags
+        .split(/[，,]/)
+        .map((t: string) => t.trim())
+        .filter(Boolean)
+    : [];
   linkVisible.value = true;
 };
 
@@ -93,7 +113,7 @@ const handleLink = async () => {
           theme: 'warning',
           onConfirm: () => {
             alertObj.hide();
-          }
+          },
         });
       }
     } else {
@@ -122,7 +142,7 @@ const handleUnlink = (row: any) => {
         MessagePlugin.error(`解除链接失败: ${e.message}`);
       }
       dialog.hide();
-    }
+    },
   });
 };
 
@@ -138,15 +158,18 @@ const handleShowDetails = async (node: any) => {
   fetchingStatus.value = true;
 
   try {
-    const resData = await request.get({
-      url: '/api/status',
-      baseURL: node.nodeUrl,
-      headers: {
-        'x-node-id': node.nodeId
-      }
-    }, {
-      requestToSlaveNode: true
-    });
+    const resData = await request.get(
+      {
+        url: '/api/status',
+        baseURL: node.nodeUrl,
+        headers: {
+          'x-node-id': node.nodeId,
+        },
+      },
+      {
+        requestToSlaveNode: true,
+      },
+    );
     activeNodeStatus.value = resData;
   } catch (e) {
     console.error('Failed to fetch node status', e);
@@ -232,7 +255,15 @@ onUnmounted(async () => {
 
     <t-alert theme="warning" variant="light" title="子节点功能为测试功能">
       <template #message>
-        分布式子节点管理涉及较为复杂的远程通信与网络鉴权，目前<strong>仍处于开发及测试阶段</strong>。此功能仅供测试体验，请<strong>切勿将其直接部署于商业化或关键性生产业务环境</strong>，以规避可能出现的不稳定风险。如有疑问或遇到 Bug，欢迎前往 <a href="javascript:void(0)" class="text-blue-500 font-bold hover:underline" @click="changeUrl(DOC_URLS.github_issues)">GitHub Issues</a> 提交反馈。
+        分布式子节点管理涉及较为复杂的远程通信与网络鉴权，目前<strong>仍处于开发及测试阶段</strong>。此功能仅供测试体验，请<strong>切勿将其直接部署于商业化或关键性生产业务环境</strong>，以规避可能出现的不稳定风险。如有疑问或遇到
+        Bug，欢迎前往
+        <a
+          href="javascript:void(0)"
+          class="text-blue-500 font-bold hover:underline"
+          @click="changeUrl(DOC_URLS.github_issues)"
+          >GitHub Issues</a
+        >
+        提交反馈。
       </template>
     </t-alert>
 
@@ -241,32 +272,59 @@ onUnmounted(async () => {
         <t-loading size="medium" text="正在获取节点列表..." />
       </div>
 
-      <div v-else-if="nodes.length === 0" class="flex flex-col items-center justify-center py-24 text-[var(--td-text-color-secondary)]">
-        暂无任何子节点，请点击右上角添加。
+      <div
+        v-else-if="nodes.length === 0"
+        class="design-card list-item-anim flex flex-col items-center justify-center py-20 px-4 bg-white/40 dark:bg-zinc-800/40 rounded-2xl border-2 border-dashed border-[var(--td-component-border)] text-center transition-all duration-300"
+      >
+        <div
+          class="w-16 h-16 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-blue-500 flex items-center justify-center mb-4 ring-8 ring-blue-500/5"
+        >
+          <server-icon size="32px" />
+        </div>
+
+        <h3 class="text-base font-bold text-[var(--td-text-color-primary)] m-0 mb-1 tracking-tight">暂无分布式节点</h3>
+        <p class="text-xs text-[var(--td-text-color-secondary)] max-w-xs m-0 mb-6 leading-relaxed">
+          尚未链接任何子节点，立即添加以开启分布式跨服务器管理与监控
+        </p>
       </div>
 
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         <div
-          v-for="item in nodes"
+          v-for="(item, index) in nodes"
           :key="item.nodeId"
+          :style="{ animationDelay: `${index * 0.05}s` }"
           class="design-card flex flex-col p-5 bg-white dark:bg-zinc-800 rounded-2xl border border-[var(--td-component-border)] shadow-sm hover:shadow-md transition-all duration-300"
         >
           <div class="flex items-start gap-4 mb-4">
-            <div class="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-500 text-2xl overflow-hidden">
-              <img v-if="item.nodeLogo" :src="item.nodeLogo" class="w-full h-full object-cover"  alt="节点logo"/>
+            <div
+              class="w-12 h-12 flex-shrink-0 flex items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-500 text-2xl overflow-hidden"
+            >
+              <img v-if="item.nodeLogo" :src="item.nodeLogo" class="w-full h-full object-cover" alt="节点logo" />
               <server-icon v-else />
             </div>
             <div class="flex-1 min-w-0 flex flex-col justify-center">
-              <h3 class="text-base font-semibold text-[var(--td-text-color-primary)] truncate m-0 flex items-center gap-2" :title="item.nodeName">
+              <h3
+                class="text-base font-semibold text-[var(--td-text-color-primary)] truncate m-0 flex items-center gap-2"
+                :title="item.nodeName"
+              >
                 <span
                   class="w-2 h-2 rounded-full flex-shrink-0"
-                  :class="slavesStats[item.nodeId] ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]'"
+                  :class="
+                    slavesStats[item.nodeId]
+                      ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'
+                      : 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.5)]'
+                  "
                   :title="slavesStats[item.nodeId] ? '节点在线' : '节点离线或未就绪'"
                 ></span>
                 {{ item.nodeName }}
               </h3>
-              <p class="text-xs text-[var(--td-text-color-secondary)] m-0 mt-2 flex items-center gap-1.5 w-full" :title="item.nodeUrl">
-                <span class="truncate flex-1 min-w-0">{{ item.nodeUrl ? item.nodeUrl.replace(/^https?:\/\//i, '') : '' }}</span>
+              <p
+                class="text-xs text-[var(--td-text-color-secondary)] m-0 mt-2 flex items-center gap-1.5 w-full"
+                :title="item.nodeUrl"
+              >
+                <span class="truncate flex-1 min-w-0">{{
+                  item.nodeUrl ? item.nodeUrl.replace(/^https?:\/\//i, '') : ''
+                }}</span>
                 <span
                   v-if="item.nodeUrl && /^https:\/\//i.test(item.nodeUrl)"
                   class="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-200/50 dark:border-emerald-500/20 shrink-0"
@@ -284,7 +342,10 @@ onUnmounted(async () => {
               </p>
               <div v-if="item.nodeTags || item.NodeTags" class="flex flex-wrap gap-1.5 mt-2">
                 <t-tag
-                  v-for="(tag, idx) in (item.nodeTags || item.NodeTags).split(/[，,]/).map((t: string) => t.trim()).filter(Boolean)"
+                  v-for="(tag, idx) in (item.nodeTags || item.NodeTags)
+                    .split(/[，,]/)
+                    .map((t: string) => t.trim())
+                    .filter(Boolean)"
                   :key="tag"
                   size="small"
                   variant="light"
@@ -303,17 +364,28 @@ onUnmounted(async () => {
                   <span class="text-[var(--td-text-color-secondary)]">CPU 使用率</span>
                   <span class="font-mono">{{ slavesStats[item.nodeId].cpu }}%</span>
                 </div>
-                <t-progress :percentage="slavesStats[item.nodeId].cpu" :label="false" :color="slavesStats[item.nodeId].cpu > 80 ? 'var(--td-error-color)' : 'var(--td-brand-color)'" />
+                <t-progress
+                  :percentage="slavesStats[item.nodeId].cpu"
+                  :label="false"
+                  :color="slavesStats[item.nodeId].cpu > 80 ? 'var(--td-error-color)' : 'var(--td-brand-color)'"
+                />
               </div>
               <div>
                 <div class="flex justify-between text-xs mb-1">
                   <span class="text-[var(--td-text-color-secondary)]">内存使用率</span>
                   <span class="font-mono">{{ slavesStats[item.nodeId].memUsage }}%</span>
                 </div>
-                <t-progress :percentage="slavesStats[item.nodeId].memUsage" :label="false" :color="slavesStats[item.nodeId].memUsage > 80 ? 'var(--td-error-color)' : 'var(--td-success-color)'" />
+                <t-progress
+                  :percentage="slavesStats[item.nodeId].memUsage"
+                  :label="false"
+                  :color="slavesStats[item.nodeId].memUsage > 80 ? 'var(--td-error-color)' : 'var(--td-success-color)'"
+                />
               </div>
             </template>
-            <div v-else-if="!isSignalRConnected || !hasReceivedFirstPayload" class="flex items-center justify-center h-full text-sm text-[var(--td-text-color-secondary)] gap-2">
+            <div
+              v-else-if="!isSignalRConnected || !hasReceivedFirstPayload"
+              class="flex items-center justify-center h-full text-sm text-[var(--td-text-color-secondary)] gap-2"
+            >
               <t-loading size="small" />
               正在等待性能数据...
             </div>
@@ -357,7 +429,7 @@ onUnmounted(async () => {
         <t-form-item label="通讯密钥" name="linkKey">
           <t-input v-model="linkForm.linkKey" type="password" placeholder="请输入子节点的 LinkKey" />
         </t-form-item>
-         <t-form-item label="主节点地址" name="masterUrl" help="覆盖自动识别的主节点地址（留空则自动检测）">
+        <t-form-item label="主节点地址" name="masterUrl" help="覆盖自动识别的主节点地址（留空则自动检测）">
           <t-input v-model="linkForm.masterUrl" placeholder="如 http://192.168.1.50:1027" />
         </t-form-item>
         <t-form-item label="节点标签" name="nodeTags" help="输入标签后按回车(Enter)添加标签">
@@ -377,11 +449,17 @@ onUnmounted(async () => {
           <span class="text-[var(--td-text-color-secondary)]">节点名称</span>
           <span class="text-[var(--td-text-color-primary)]">{{ activeNodeDetails.nodeName }}</span>
         </div>
-        <div v-if="activeNodeDetails.nodeTags || activeNodeDetails.NodeTags" class="flex justify-between border-b border-[var(--td-component-border)] pb-2 items-center">
+        <div
+          v-if="activeNodeDetails.nodeTags || activeNodeDetails.NodeTags"
+          class="flex justify-between border-b border-[var(--td-component-border)] pb-2 items-center"
+        >
           <span class="text-[var(--td-text-color-secondary)]">节点标签</span>
           <div class="flex flex-wrap gap-1">
             <t-tag
-              v-for="(tag, idx) in (activeNodeDetails.nodeTags || activeNodeDetails.NodeTags).split(/[，,]/).map((t: string) => t.trim()).filter(Boolean)"
+              v-for="(tag, idx) in (activeNodeDetails.nodeTags || activeNodeDetails.NodeTags)
+                .split(/[，,]/)
+                .map((t: string) => t.trim())
+                .filter(Boolean)"
               :key="tag"
               size="small"
               variant="light"
@@ -394,7 +472,9 @@ onUnmounted(async () => {
         <div class="flex justify-between border-b border-[var(--td-component-border)] pb-2 items-center">
           <span class="text-[var(--td-text-color-secondary)]">节点地址</span>
           <span class="text-[var(--td-text-color-primary)] flex items-center gap-1.5 max-w-[70%]">
-            <span class="truncate flex-1 min-w-0">{{ activeNodeDetails.nodeUrl ? activeNodeDetails.nodeUrl.replace(/^https?:\/\//i, '') : '' }}</span>
+            <span class="truncate flex-1 min-w-0">{{
+              activeNodeDetails.nodeUrl ? activeNodeDetails.nodeUrl.replace(/^https?:\/\//i, '') : ''
+            }}</span>
             <span
               v-if="activeNodeDetails.nodeUrl && /^https:\/\//i.test(activeNodeDetails.nodeUrl)"
               class="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-1.5 py-0.5 rounded-md border border-emerald-200/50 dark:border-emerald-500/20 shrink-0"
@@ -417,7 +497,9 @@ onUnmounted(async () => {
         </div>
         <div class="flex justify-between border-b border-[var(--td-component-border)] pb-2">
           <span class="text-[var(--td-text-color-secondary)]">链接时间</span>
-          <span class="text-[var(--td-text-color-primary)]">{{ new Date(activeNodeDetails.linkedAt).toLocaleString() }}</span>
+          <span class="text-[var(--td-text-color-primary)]">{{
+            new Date(activeNodeDetails.linkedAt).toLocaleString()
+          }}</span>
         </div>
 
         <div class="mt-2">
@@ -425,21 +507,33 @@ onUnmounted(async () => {
           <div v-if="fetchingStatus" class="flex items-center justify-center py-4">
             <t-loading size="small" text="正在获取节点状态..." />
           </div>
-          <div v-else-if="!activeNodeStatus" class="flex items-center justify-center py-4 text-[var(--td-text-color-secondary)]">
+          <div
+            v-else-if="!activeNodeStatus"
+            class="flex items-center justify-center py-4 text-[var(--td-text-color-secondary)]"
+          >
             无法连接到节点，或节点离线
           </div>
-          <div v-else class="flex flex-col gap-3 p-3 bg-[var(--td-bg-color-container)] rounded-xl border border-[var(--td-component-border)]">
+          <div
+            v-else
+            class="flex flex-col gap-3 p-3 bg-[var(--td-bg-color-container)] rounded-xl border border-[var(--td-component-border)]"
+          >
             <div class="flex justify-between">
               <span class="text-[var(--td-text-color-secondary)]">主机名</span>
               <span class="text-[var(--td-text-color-primary)]">{{ activeNodeStatus.systemInfo?.hostname }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-[var(--td-text-color-secondary)]">操作系统</span>
-              <span class="text-[var(--td-text-color-primary)]">{{ activeNodeStatus.systemInfo?.osType }} ({{ activeNodeStatus.systemInfo?.osArchitecture }})</span>
+              <span class="text-[var(--td-text-color-primary)]"
+                >{{ activeNodeStatus.systemInfo?.osType }} ({{ activeNodeStatus.systemInfo?.osArchitecture }})</span
+              >
             </div>
             <div class="flex justify-between">
               <span class="text-[var(--td-text-color-secondary)]">系统版本</span>
-              <span class="text-[var(--td-text-color-primary)] truncate max-w-[200px]" :title="activeNodeStatus.systemInfo?.osVersion">{{ activeNodeStatus.systemInfo?.osVersion }}</span>
+              <span
+                class="text-[var(--td-text-color-primary)] truncate max-w-[200px]"
+                :title="activeNodeStatus.systemInfo?.osVersion"
+                >{{ activeNodeStatus.systemInfo?.osVersion }}</span
+              >
             </div>
             <div class="flex justify-between">
               <span class="text-[var(--td-text-color-secondary)]">运行时</span>
@@ -451,7 +545,11 @@ onUnmounted(async () => {
             </div>
             <div class="flex justify-between">
               <span class="text-[var(--td-text-color-secondary)]">运行于 Docker</span>
-              <t-tag :theme="activeNodeStatus.systemInfo?.docker ? 'success' : 'default'" size="small" variant="light-outline">
+              <t-tag
+                :theme="activeNodeStatus.systemInfo?.docker ? 'success' : 'default'"
+                size="small"
+                variant="light-outline"
+              >
                 {{ activeNodeStatus.systemInfo?.docker ? '是哦' : '不是哦' }}
               </t-tag>
             </div>
@@ -463,12 +561,25 @@ onUnmounted(async () => {
 </template>
 
 <style scoped>
-.design-card {
-  transition: all 0.3s ease;
+@reference "@/style/tailwind/index.css";
+
+/* 列表进场动画类 */
+.list-item-anim {
+  animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  will-change: transform, opacity;
 }
-.design-card:hover {
-  transform: translateY(-2px);
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
+/* ============================================================= */
 
 /* 修复 t-tag-input 标签垂直拉伸换行问题 */
 :deep(.t-tag-input) {
