@@ -505,7 +505,10 @@ const readAllDirectoryEntries = async (dirReader: FileSystemDirectoryReader) => 
   return entries;
 };
 
-const traverseDroppedEntry = async (entry: FileSystemEntry, queue: Array<{ file: File; path: string }>): Promise<number> => {
+const traverseDroppedEntry = async (
+  entry: FileSystemEntry,
+  queue: Array<{ file: File; path: string }>,
+): Promise<number> => {
   if (entry.isFile) {
     const file = await new Promise<File>((resolve, reject) => (entry as FileSystemFileEntry).file(resolve, reject));
     queue.push({ file, path: entry.fullPath.replace(/^\//, '') });
@@ -678,6 +681,7 @@ watch(
     if (targetPath === currentPath.value && fileList.value.length > 0) return;
 
     try {
+      searchKey.value = '';
       await fetchData(targetPath);
     } catch (err: any) {
       MessagePlugin.error('打开文件夹失败，请重试: ' + (err.message || ''));
