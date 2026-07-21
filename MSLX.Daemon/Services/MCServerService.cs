@@ -2077,6 +2077,27 @@ public class MCServerService : IMCServerService
         {
             if (_activeServers.IsEmpty) continue;
 
+            // 批量查询Docker容器状态
+            var dockerContainers = new List<string>();
+            foreach (var kvp in _activeServers)
+            {
+                var serverInfo = IConfigBase.ServerList.GetServer(kvp.Key);
+                if (serverInfo != null && (serverInfo.Java == "docker-java" || serverInfo.Java == "docker-custom"))
+                {
+                    if (!kvp.Value.IsInitializing)
+                    {
+                        dockerContainers.Add($"mslx-container-{kvp.Key}");
+                    }
+                }
+            }
+            
+            Dictionary<string, (double cpu, long memory)> dockerStatsMap = null!;
+            if (dockerContainers.Count > 0)
+            {
+                dockerStatsMap = await GetBatchDockerStatsAsync(dockerContainers);
+            }
+
+            // 遍历推送
             foreach (var kvp in _activeServers)
             {
                 var instanceId = kvp.Key;
@@ -2084,6 +2105,27 @@ public class MCServerService : IMCServerService
 
                 try
                 {
+                    var serverInfo = IConfigBase.ServerList.GetServer(instanceId);
+                    bool isDocker = serverInfo != null && (serverInfo.Java == "docker-java" || serverInfo.Java == "docker-custom");
+
+                    // docker容器
+                    if (isDocker)
+                    {
+                        if (context.IsInitializing) continue;
+
+                        string containerName = $"mslx-container-{instanceId}";
+                        if (dockerStatsMap != null && dockerStatsMap.TryGetValue(containerName, out var stats))
+                        {
+                            await _hubContext.Clients.Group(instanceId.ToString()).SendAsync("ReceiveStatus",
+                                instanceId,
+                                Math.Round(stats.cpu, 2),
+                                stats.memory
+                            );
+                        }
+                        continue;
+                    }
+
+                    // 原生宿主机实例
                     if (context.Process == null || context.Process.HasExited || context.IsInitializing)
                     {
                         context.MonitorProcess = null;
@@ -2102,53 +2144,43 @@ public class MCServerService : IMCServerService
                     {
                         bool needFindChild = false;
 
-                        // cmd外壳 / Python 包装器(MCDR 等)
                         if (name == "cmd" || name == "powershell" || name == "pwsh" || name == "conhost" ||
                             name == "wt" || name == "python" || name == "python3" || name == "py")
                         {
                             needFindChild = true;
                         }
-                        // javapath
                         else if (name == "java" || name == "javaw")
                         {
                             try
                             {
-                                // 获取进程的主模块路径
                                 string path = context.MonitorProcess.MainModule?.FileName?.ToLower() ?? "";
                                 if (path.Contains("javapath") || path.Contains("common files"))
                                 {
                                     needFindChild = true;
                                 }
                             }
-                            catch
-                            {
-                            }
+                            catch { }
                         }
 
-                        // 找子进程
                         if (needFindChild)
                         {
                             var child = GetChildJavaProcess(context.MonitorProcess.Id);
-                            // 只有当找到了有效的子进程，且子进程ID不同时才切换
                             if (child != null && child.Id != context.MonitorProcess.Id)
                             {
-                                _logger.LogInformation(
-                                    $"[Monitor] 识别到 Wrapper 进程，切换监控目标: {context.MonitorProcess.Id} -> {child.Id}");
+                                _logger.LogInformation($"[Monitor] 识别到 Wrapper 进程，切换监控目标: {context.MonitorProcess.Id} -> {child.Id}");
                                 context.MonitorProcess = child;
                             }
                         }
                     }
                     else if (OperatingSystem.IsLinux())
                     {
-                        // 常见 Linux Shell 壳 / Python 包装器(MCDR 等)
                         if (name == "bash" || name == "sh" || name == "dash" ||
                             name.StartsWith("python") || name == "py")
                         {
                             var child = GetChildProcessLinux(context.MonitorProcess.Id);
                             if (child != null && child.Id != context.MonitorProcess.Id)
                             {
-                                _logger.LogInformation(
-                                    $"[Monitor] Linux: 识别到 Shell Wrapper 进程，切换监控目标: {context.MonitorProcess.Id} -> {child.Id}");
+                                _logger.LogInformation($"[Monitor] Linux: 识别到 Shell Wrapper 进程，切换监控目标: {context.MonitorProcess.Id} -> {child.Id}");
                                 context.MonitorProcess = child;
                             }
                         }
@@ -2161,27 +2193,17 @@ public class MCServerService : IMCServerService
                     if (target.HasExited) continue;
 
                     // 获取内存
-                    long memoryUsage;
-                    if (OperatingSystem.IsWindows())
-                    {
-                        memoryUsage = target.PrivateMemorySize64;
-                    }
-                    else
-                    {
-                        memoryUsage = target.WorkingSet64;
-                    }
+                    long memoryUsage = OperatingSystem.IsWindows() ? target.PrivateMemorySize64 : target.WorkingSet64;
 
                     // 计算 CPU
                     double cpuUsage = 0;
                     var currentTime = DateTime.UtcNow;
                     var currentTotalProcessorTime = target.TotalProcessorTime;
 
-                    // 只有当 PID 没变时才计算差值，防止进程切换瞬间 CPU 暴涨
                     if (context.PreviousCpuCheckTime != DateTime.MinValue && context.LastMonitoredPid == target.Id)
                     {
                         double timePassedMs = (currentTime - context.PreviousCpuCheckTime).TotalMilliseconds;
-                        double cpuTimePassedMs = (currentTotalProcessorTime - context.PreviousTotalProcessorTime)
-                            .TotalMilliseconds;
+                        double cpuTimePassedMs = (currentTotalProcessorTime - context.PreviousTotalProcessorTime).TotalMilliseconds;
 
                         if (timePassedMs > 0)
                         {
@@ -2189,7 +2211,6 @@ public class MCServerService : IMCServerService
                         }
                     }
 
-                    // 更新上下文
                     context.PreviousCpuCheckTime = currentTime;
                     context.PreviousTotalProcessorTime = currentTotalProcessorTime;
                     context.LastMonitoredPid = target.Id;
@@ -2210,6 +2231,72 @@ public class MCServerService : IMCServerService
                 }
             }
         }
+    }
+    
+    /// <summary>
+    /// 批量获取所有活动 Docker 容器的 CPU 与内存指标
+    /// </summary>
+    private async Task<Dictionary<string, (double cpu, long memory)>> GetBatchDockerStatsAsync(List<string> containerNames)
+    {
+        var statsMap = new Dictionary<string, (double cpu, long memory)>(StringComparer.OrdinalIgnoreCase);
+        if (containerNames == null || containerNames.Count == 0) return statsMap;
+
+        try
+        {
+            var args = new List<string> { "stats", "--no-stream", "--format", "{{.Name}}|{{.CPUPerc}}|{{.MemUsage}}" };
+            args.AddRange(containerNames);
+
+            var result = await Cli.Wrap("docker")
+                .WithArguments(args)
+                .WithValidation(CommandResultValidation.None)
+                .ExecuteBufferedAsync();
+
+            if (result.ExitCode != 0 || string.IsNullOrWhiteSpace(result.StandardOutput))
+                return statsMap;
+
+            var lines = result.StandardOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var line in lines)
+            {
+                // 输出格式: "mslx-container-1|12.35%|345.2MiB / 8GiB"
+                string[] parts = line.Split('|');
+                if (parts.Length < 3) continue;
+
+                string name = parts[0].Trim();
+
+                // 解析 CPU
+                double cpu = 0;
+                string cpuStr = parts[1].Replace("%", "").Trim();
+                double.TryParse(cpuStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out cpu);
+
+                // 解析内存
+                long memoryBytes = 0;
+                string memUsagePart = parts[2].Split('/')[0].Trim();
+                var match = Regex.Match(memUsagePart, @"(?<value>[\d\.]+)\s*(?<unit>[a-zA-Z]+)?");
+
+                if (match.Success)
+                {
+                    double val = double.Parse(match.Groups["value"].Value, System.Globalization.CultureInfo.InvariantCulture);
+                    string unit = match.Groups["unit"].Value.ToUpper();
+
+                    memoryBytes = unit switch
+                    {
+                        "GIB" or "GB" => (long)(val * 1024 * 1024 * 1024),
+                        "MIB" or "MB" => (long)(val * 1024 * 1024),
+                        "KIB" or "KB" => (long)(val * 1024),
+                        "B" => (long)val,
+                        _ => (long)(val * 1024 * 1024)
+                    };
+                }
+
+                statsMap[name] = (cpu, memoryBytes);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning($"[Monitor] 批量提取 Docker 容器状态失败: {ex.Message}");
+        }
+
+        return statsMap;
     }
 
     /// <summary>
