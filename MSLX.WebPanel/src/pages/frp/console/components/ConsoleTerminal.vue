@@ -114,6 +114,16 @@ const initTerminal = () => {
     scrollback: 3000,
   });
 
+  // 监听 Ctrl+C (Windows/Linux) 或 Cmd+C (Mac) -> 复制文本
+  term.attachCustomKeyEventHandler((arg: KeyboardEvent) => {
+    if (arg.type === 'keydown' && (arg.ctrlKey || arg.metaKey) && arg.code === 'KeyC') {
+      if (term && term.hasSelection()) {
+        return false;
+      }
+    }
+    return true;
+  });
+
   fitAddon = new FitAddon();
   term.loadAddon(fitAddon);
   term.open(terminalBody.value);
