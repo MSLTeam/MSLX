@@ -1,11 +1,13 @@
 <template>
-  <component
-    :is="ext.component || ext"
-    v-for="(ext, index) in extensions"
-    :key="`${name}-ext-${index}`"
-    :ref="(el) => onRef(el, index)"
-    v-bind="$attrs"
-  />
+  <div class="flex flex-col gap-6 w-full">
+    <component
+      :is="ext.component || ext"
+      v-for="(ext, index) in extensions"
+      :key="`${name}-ext-${index}`"
+      :ref="(el) => onRef(el, index)"
+      v-bind="$attrs"
+    />
+  </div>
 </template>
 
 <script setup lang="ts">
