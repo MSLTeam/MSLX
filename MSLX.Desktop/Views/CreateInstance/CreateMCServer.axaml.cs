@@ -321,7 +321,7 @@ public partial class CreateMCServer : UserControl
                 _ => "x64"
             };
 
-            var result = await MSLAPIService.GetJsonDataAsync("/query/jdk", "data", new Dictionary<string, string>
+            var result = await MSLAPIService.GetJsonDataAsync("/jdk", "data", new Dictionary<string, string>
             {
                 { "os", os },
                 { "arch", arch }
@@ -445,20 +445,19 @@ public partial class CreateMCServer : UserControl
     }
 
     /// <summary>
-    /// 打开在线核心选择器
+    /// 打开在线核心选择器（内嵌到Border中）
     /// </summary>
-    private async void BtnSelectCoreOnline_Click(object? sender, RoutedEventArgs e)
+    private void BtnSelectCoreOnline_Click(object? sender, RoutedEventArgs e)
     {
-        var selectorView = new ServerCoreSelectorView();
-        var dialogBuilder = DialogService.DialogManager.CreateDialog()
-            .WithTitle("选择服务端核心")
-            .WithContent(selectorView);
-        dialogBuilder.Completion = new TaskCompletionSource<bool>();
+        var selectorView = new ServerCoreSelectorView
+        {
+            EnableAutoSize = false,
+            Height = 550,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Top
+        };
 
-        // 订阅事件
         selectorView.OnCoreSelected += (url, sha256, filename, coreName) =>
         {
-            // 回填数据
             TxtCoreUrl.Text = url;
             TxtCoreSha256.Text = sha256;
 
@@ -467,25 +466,59 @@ public partial class CreateMCServer : UserControl
                 TxtCoreName.Text = filename;
             }
 
-            // 提示
+            ShowSelectedCoreInBorder(coreName, filename);
+
             DialogService.ToastManager.CreateToast()
                 .OfType(Avalonia.Controls.Notifications.NotificationType.Success)
                 .WithTitle("已选择核心")
                 .WithContent($"已加载 {coreName} 的下载配置")
                 .Dismiss().After(TimeSpan.FromSeconds(3))
                 .Queue();
-
-            // 关闭弹窗
-            dialogBuilder.Completion.TrySetResult(true);
-            dialogBuilder.Dialog.Dismiss();
         };
 
-        dialogBuilder.WithActionButton("取消", _ =>
-        {
-            dialogBuilder.Completion.TrySetResult(false);
-        }, true);
+        CoreSelectorBorder.Child = selectorView;
+    }
 
-        await dialogBuilder.TryShowAsync();
+    /// <summary>
+    /// 在Border中显示已选择的核心信息
+    /// </summary>
+    private void ShowSelectedCoreInBorder(string coreName, string filename)
+    {
+        var sp = new StackPanel
+        {
+            Spacing = 8,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
+        };
+
+        var icon = new Material.Icons.Avalonia.MaterialIcon
+        {
+            Kind = Material.Icons.MaterialIconKind.CheckCircle,
+            Width = 36,
+            Height = 36,
+            Foreground = Avalonia.Media.Brushes.Green,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
+        };
+
+        var txt = new TextBlock
+        {
+            Text = $"已选择: {coreName}",
+            FontWeight = Avalonia.Media.FontWeight.SemiBold,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
+        };
+
+        var btnChange = new Button
+        {
+            Content = "重新选择",
+            Classes = { "Flat" },
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center
+        };
+        btnChange.Click += (s, e) => BtnSelectCoreOnline_Click(s, e);
+
+        sp.Children.Add(icon);
+        sp.Children.Add(txt);
+        sp.Children.Add(btnChange);
+
+        CoreSelectorBorder.Child = sp;
     }
 
     #endregion
@@ -918,6 +951,9 @@ public partial class CreateMCServer : UserControl
         await ShowErrorMessage("创建失败", message);
 
         await Task.Delay(2000);
+        StatusBorder.IsVisible = false;
+        BtnNext.IsEnabled = true;
+        BtnPrevious.IsEnabled = true;
         _currentStep = 0;
         UpdateStepVisibility();
     }

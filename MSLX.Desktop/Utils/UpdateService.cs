@@ -26,7 +26,7 @@ namespace MSLX.Desktop.Utils
 
         public static async Task<bool> UpdateDesktopApp()
         {
-            var (Success, Data, Msg) = await MSLAPIService.GetJsonDataAsync("/query/update?software=MSLX");
+            var (Success, Data, Msg) = await MSLAPIService.GetJsonDataAsync("/software/update?software=MSLX");
             if (!Success)
             {
                 DialogService.ToastManager.CreateToast()
