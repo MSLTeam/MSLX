@@ -6,10 +6,10 @@
              xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
              xmlns:local="using:MSLX.Desktop.Views.CreateInstance"
              mc:Ignorable="d" d:DesignWidth="960" d:DesignHeight="700"
-             VerticalAlignment="Center" HorizontalAlignment="Center"
+             VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
              x:Class="MSLX.Desktop.Views.CreateInstance.ServerCoreSelectorView">
 
-    <Grid RowDefinitions="Auto,*" Margin="0,55,0,55">
+    <Grid RowDefinitions="Auto,*" Margin="5">
         <Grid Grid.Row="0" RowDefinitions="Auto,*">
             <StackPanel Grid.Row="0" Margin="10,0,0,15">
                 <TextBlock Text="服务端分类" Classes="h4" FontWeight="SemiBold"/>
@@ -70,12 +70,12 @@
                         <ItemsControl x:Name="ItemsCores">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
-                                    <WrapPanel Orientation="Horizontal" />
+                                    <VirtualizingStackPanel />
                                 </ItemsPanelTemplate>
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Button Classes="Outlined" Margin="0,0,8,8" Width="150" Height="45" Click="BtnCore_Click">
+                                    <Button Classes="Outlined" Margin="0,0,8,8" Click="BtnCore_Click">
                                         <TextBlock Text="{Binding}" TextWrapping="Wrap" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Medium"/>
                                     </Button>
                                 </DataTemplate>

@@ -212,13 +212,11 @@ const handleAvatarClick = () => {
             attach="body"
           >
             <t-button class="user-profile-btn" theme="default" variant="text">
-              <template #icon>
-                <img
-                  :src="userStore.userInfo.avatar"
-                  class="w-8 h-8 rounded-full object-cover ring-2 ring-zinc-100 dark:ring-zinc-700/80 shadow-sm"
-                  alt="avatar"
-                />
-              </template>
+              <img
+                :src="userStore.userInfo.avatar"
+                class="w-8 h-8 rounded-full object-cover"
+                alt="avatar"
+              />
               <div
                 class="flex items-center text-sm font-bold text-zinc-700 dark:text-zinc-200 ml-1 truncate max-w-[100px]"
               >
@@ -387,7 +385,7 @@ const handleAvatarClick = () => {
 }
 
 :deep(.user-profile-btn) {
-  @apply !border-none !bg-transparent hover:!bg-zinc-100 dark:hover:!bg-zinc-700/50 !px-2 !py-1 !rounded-xl transition-colors !h-auto;
+  @apply !border-none !bg-transparent hover:!bg-zinc-100 dark:hover:!bg-zinc-700/50 !px-2 !py-1 !rounded-xl transition-colors !h-auto !shadow-none !ring-0 !outline-none;
 }
 
 /* 修复暗黑模式下菜单文字颜色 */

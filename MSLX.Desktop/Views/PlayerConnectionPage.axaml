@@ -2,7 +2,133 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="MSLX.Desktop.Views.PlayerConnectionPage">
-  Welcome to Avalonia!
+             xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             xmlns:icons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:vm="using:MSLX.Desktop.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+             x:Class="MSLX.Desktop.Views.PlayerConnectionPage"
+             x:DataType="vm:PlayerConnectionPageViewModel"
+             Loaded="Page_Loaded">
+  <UserControl.DataContext>
+    <vm:PlayerConnectionPageViewModel/>
+  </UserControl.DataContext>
+	<suki:GlassCard Margin="10">
+		<Grid>
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="*"/>
+			</Grid.RowDefinitions>
+			<StackPanel>
+				<StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="15">
+					<TextBlock Classes="h3" Text="点对点联机"/>
+					<Button x:Name="RefreshBtn" Click="RefreshBtn_Click" VerticalAlignment="Center">
+						<icons:MaterialIcon Kind="Refresh"/>
+					</Button>
+				</StackPanel>
+				<StackPanel Orientation="Horizontal" Spacing="8">
+					<TextBlock Text="P2P服务器状态：" VerticalAlignment="Center" Opacity="0.7"/>
+					<Border Background="{Binding StatusColor}" CornerRadius="4" Padding="8,3">
+						<TextBlock Text="{Binding StatusText}" Foreground="White" FontSize="12"/>
+					</Border>
+				</StackPanel>
+			</StackPanel>
+
+			<!-- 中间：创建房间 / 加入房间 -->
+			<ScrollViewer Grid.Row="1" Margin="10,5,10,5">
+				<StackPanel Spacing="10">
+
+					<!-- 创建房间（房主） -->
+					<Expander x:Name="hostExpander" HorizontalAlignment="Stretch"
+							  Expanded="HostExpander_Expanded" Collapsed="HostExpander_Collapsed">
+						<Expander.Header>
+							<StackPanel Orientation="Horizontal" Spacing="8">
+								<icons:MaterialIcon Kind="AccountStar" FontSize="20"/>
+								<TextBlock Text="创建房间（房主）" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+							</StackPanel>
+						</Expander.Header>
+						<StackPanel Margin="10" Spacing="10">
+							<StackPanel Orientation="Horizontal" Spacing="10">
+								<TextBlock Text="房间名称：" VerticalAlignment="Center" MinWidth="80"/>
+								<TextBox x:Name="hostRoomName" Width="200" Watermark="输入房间名称"/>
+							</StackPanel>
+							<StackPanel Orientation="Horizontal" Spacing="10">
+								<TextBlock Text="连接密码：" VerticalAlignment="Center" MinWidth="80"/>
+								<TextBox x:Name="hostSecretKey" Width="200" Watermark="输入连接密码"/>
+							</StackPanel>
+							<StackPanel Orientation="Horizontal" Spacing="10">
+								<TextBlock Text="本地端口：" VerticalAlignment="Center" MinWidth="80"/>
+								<NumericUpDown x:Name="hostLocalPort" Width="200" Value="25565" Minimum="1" Maximum="65535"/>
+							</StackPanel>
+							<StackPanel Orientation="Horizontal" Spacing="10" Margin="0,5,0,0">
+								<Button x:Name="hostStartBtn" Click="HostStartBtn_Click" MinWidth="120">
+									<StackPanel Orientation="Horizontal" Spacing="5">
+										<icons:MaterialIcon Kind="Play"/>
+										<TextBlock Text="启动房间"/>
+									</StackPanel>
+								</Button>
+								<Button x:Name="hostStopBtn" Click="HostStopBtn_Click" MinWidth="120" IsVisible="False">
+									<StackPanel Orientation="Horizontal" Spacing="5">
+										<icons:MaterialIcon Kind="Stop"/>
+										<TextBlock Text="停止房间"/>
+									</StackPanel>
+								</Button>
+							</StackPanel>
+						</StackPanel>
+					</Expander>
+
+					<!-- 加入房间（参与者） -->
+					<Expander x:Name="visitorExpander" HorizontalAlignment="Stretch"
+							  Expanded="VisitorExpander_Expanded" Collapsed="VisitorExpander_Collapsed">
+						<Expander.Header>
+							<StackPanel Orientation="Horizontal" Spacing="8">
+								<icons:MaterialIcon Kind="AccountGroup" FontSize="20"/>
+								<TextBlock Text="加入房间（玩家）" FontWeight="Bold" FontSize="14" VerticalAlignment="Center"/>
+							</StackPanel>
+						</Expander.Header>
+						<StackPanel Margin="10" Spacing="10">
+							<StackPanel Orientation="Horizontal" Spacing="10">
+								<TextBlock Text="房间名称：" VerticalAlignment="Center" MinWidth="80"/>
+								<TextBox x:Name="visitorRoomName" Width="200" Watermark="输入房主的房间名称"/>
+							</StackPanel>
+							<StackPanel Orientation="Horizontal" Spacing="10">
+								<TextBlock Text="连接密码：" VerticalAlignment="Center" MinWidth="80"/>
+								<TextBox x:Name="visitorSecretKey" Width="200" Watermark="输入房主的连接密码"/>
+							</StackPanel>
+							<StackPanel Orientation="Horizontal" Spacing="10">
+								<TextBlock Text="绑定端口：" VerticalAlignment="Center" MinWidth="80"/>
+								<NumericUpDown x:Name="visitorBindPort" Width="200" Value="25565" Minimum="1" Maximum="65535"/>
+							</StackPanel>
+							<StackPanel Orientation="Horizontal" Spacing="10" Margin="0,5,0,0">
+								<Button x:Name="visitorStartBtn" Click="VisitorStartBtn_Click" MinWidth="120">
+									<StackPanel Orientation="Horizontal" Spacing="5">
+										<icons:MaterialIcon Kind="Login"/>
+										<TextBlock Text="加入房间"/>
+									</StackPanel>
+								</Button>
+								<Button x:Name="visitorStopBtn" Click="VisitorStopBtn_Click" MinWidth="120" IsVisible="False">
+									<StackPanel Orientation="Horizontal" Spacing="5">
+										<icons:MaterialIcon Kind="Logout"/>
+										<TextBlock Text="退出房间"/>
+									</StackPanel>
+								</Button>
+							</StackPanel>
+						</StackPanel>
+					</Expander>
+
+				</StackPanel>
+			</ScrollViewer>
+
+			<!-- 日志区域 -->
+			<suki:GlassCard Grid.Row="2" Margin="10,5,10,5">
+				<Grid RowDefinitions="Auto,*">
+					<TextBlock Grid.Row="0" Text="运行日志" FontWeight="Bold" FontSize="14" Margin="5,5,5,10"/>
+					<TextBox Grid.Row="1" Text="{Binding Logs}" IsReadOnly="True"
+							 TextWrapping="Wrap" AcceptsReturn="True"
+							 x:Name="logTextBox"
+							 Background="Transparent" BorderThickness="0"/>
+				</Grid>
+			</suki:GlassCard>
+		</Grid>
+	</suki:GlassCard>
 </UserControl>

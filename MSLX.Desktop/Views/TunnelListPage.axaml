@@ -55,6 +55,10 @@
                                             Click="TunnelLogs_Click" Tag="{Binding ID}">
                                         <icons:MaterialIcon Kind="FileDocument"/>
                                     </Button>
+                                    <Button Foreground="Red"
+                                            Click="DeleteTunnel_Click" Tag="{Binding ID}">
+                                        <icons:MaterialIcon Kind="Delete"/>
+                                    </Button>
                                 </StackPanel>
                             </Grid>
                         </suki:GlassCard>

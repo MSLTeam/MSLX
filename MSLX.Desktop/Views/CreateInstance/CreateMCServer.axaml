@@ -238,8 +238,8 @@
 									<TextBox x:Name="TxtCoreSha256" Watermark="通过在线选择自动填充"/>
 								</StackPanel>
 
-								<Border CornerRadius="8" Padding="15" BorderBrush="{DynamicResource SukiBorderBrush}" BorderThickness="1" Background="{DynamicResource SukiBackground}">
-									<StackPanel Spacing="10" HorizontalAlignment="Center">
+								<Border x:Name="CoreSelectorBorder" CornerRadius="8" Padding="15" BorderBrush="{DynamicResource SukiBorderBrush}" BorderThickness="1" Background="{DynamicResource SukiBackground}">
+									<StackPanel x:Name="PanelCoreSelectPrompt" Spacing="10" HorizontalAlignment="Center">
 										<micon:MaterialIcon Kind="CloudDownloadOutline" Width="48" Height="48" Opacity="0.5"/>
 										<TextBlock Text="使用在线核心库" FontWeight="SemiBold" HorizontalAlignment="Center"/>
 										<TextBlock Text="从MSL镜像源里挑一个你喜欢的开服核心。" FontSize="12" Opacity="0.6" TextAlignment="Center"/>
