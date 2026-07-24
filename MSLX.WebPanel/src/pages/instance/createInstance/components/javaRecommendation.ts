@@ -32,10 +32,10 @@ export const compareVersions = (v1: string, v2: string): number => {
  */
 export const parseMcVersion = (input: string): string | null => {
   if (!input) return null;
-  // 优先匹配 1.x 格式（标准 MC 版本）
-  const mc1x = input.match(/\b(1\.\d+(?:\.\d+)*)\b/);
+  // 优先匹配 1.x 版本，且前面不能有数字加小数点（防止把 26.1.2 误识别为 1.2）
+  const mc1x = input.match(/(?<![\d.])\b(1\.\d+(?:\.\d+)*)\b/);
   if (mc1x) return mc1x[1];
-  // 匹配通用 x.x 格式（用于快照/新版如 26.1）
+  // 兜底匹配通用 x.x 格式（用于快照/新版如 26.1）
   const general = input.match(/\b(\d+\.\d+(?:\.\d+)*)\b/);
   if (general) return general[1];
   return null;
