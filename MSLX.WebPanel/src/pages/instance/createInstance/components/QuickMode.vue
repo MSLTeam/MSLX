@@ -176,8 +176,8 @@ const dockerImageType = ref('preset'); // 'preset' | 'custom'
 const dockerImagePresetVersion = ref('25'); // 默认 Java 25
 
 // 监听预设版本的变动
-watch([dockerImageType, dockerImagePresetVersion], ([type, ver]) => {
-  if (javaType.value === 'docker') {
+watch([javaType, dockerImageType, dockerImagePresetVersion], ([jType, type, ver]) => {
+  if (jType === 'docker') {
     if (type === 'preset') {
       formData.value.dockerImage = `MSLX://DockerImage/Java/${ver}`;
     }

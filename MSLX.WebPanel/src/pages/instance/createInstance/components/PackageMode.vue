@@ -207,8 +207,8 @@ const onHostFileSelected = async (absolutePath: string) => {
 const dockerImageType = ref('preset');
 const dockerImagePresetVersion = ref('25');
 
-watch([dockerImageType, dockerImagePresetVersion], ([type, ver]) => {
-  if (javaType.value === 'docker') {
+watch([javaType, dockerImageType, dockerImagePresetVersion], ([jType, type, ver]) => {
+  if (jType === 'docker') {
     if (type === 'preset') {
       formData.value.dockerImage = `MSLX://DockerImage/Java/${ver}`;
     }
