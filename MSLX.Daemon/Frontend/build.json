@@ -1,6 +1,6 @@
 {
-  "version": "1.5.4",
-  "buildTime": "2026-07-20 23:45:30",
+  "version": "1.5.5",
+  "buildTime": "2026-07-25 21:13:08",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -77,10 +77,88 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "7ad09ce9f286e12bb552dad3b2c34dd51b3a6e73",
-  "commitMsg": "feat(webpanel): 节点管理页面新增文档和issue跳转入口",
+  "commitId": "3da97e1ac51d087eaaafa37c87b2eedd34243553",
+  "commitMsg": "fix(webpanel): 修复`26.1.2`类型格式的MC版本号Java版本推荐错误的问题 fix #190",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "3da97e1ac51d087eaaafa37c87b2eedd34243553",
+      "commitTime": "2026-07-25 01:09:33 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复`26.1.2`类型格式的MC版本号Java版本推荐错误的问题 fix #190"
+    },
+    {
+      "commitId": "00bb59ad08961316d880321e39cce4512634f294",
+      "commitTime": "2026-07-22 23:04:21 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
+    },
+    {
+      "commitId": "8f2e362e8647a2dc994b6fcaae1357c93389933f",
+      "commitTime": "2026-07-22 23:04:10 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修正MEFrp流量单位错误 fix #189"
+    },
+    {
+      "commitId": "9380bf05f18ae1014905f93380f0fdf4a82f663f",
+      "commitTime": "2026-07-22 15:38:15 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
+    },
+    {
+      "commitId": "65701b3a8b5aab50ce474d59ad5020ef40310a4f",
+      "commitTime": "2026-07-22 15:37:29 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "perf(desktop): 点对点联机功能可用 perf(desktop): 优化选择服务端功能 perf(desktop): 优化部分UI布局，增强使用体验 fix(desktop): 修复若干已知的bug"
+    },
+    {
+      "commitId": "0b0c1c712b805ae1102f39e8600f6c97a3a94e64",
+      "commitTime": "2026-07-22 14:46:29 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修正插件插槽间距不正常的问题"
+    },
+    {
+      "commitId": "3b53b32cf2e2589334f8b0ee11dc3c88f6beadd2",
+      "commitTime": "2026-07-21 18:01:16 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复Docker监控数据CPU超过100%的问题"
+    },
+    {
+      "commitId": "d5ebd852d4fbbc40cdba89187d63ca349a9f68c2",
+      "commitTime": "2026-07-21 17:43:43 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 对单容器实例的资源监控进行支持"
+    },
+    {
+      "commitId": "3efd8dad533ae2dec4aede460d7fe3175fc78351",
+      "commitTime": "2026-07-21 17:25:16 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "style(webpanel): 优化节点管理页面的样式 & 动画效果"
+    },
+    {
+      "commitId": "d14ae152e08214cd1bbef4cfdd0b6ae5f3a407ce",
+      "commitTime": "2026-07-21 17:17:32 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 文件管理器切换目录时自动清空搜索框 #185"
+    },
+    {
+      "commitId": "831d41cd45a70c17349f22c28d559eca3ec0c6ee",
+      "commitTime": "2026-07-21 17:14:16 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 控制台支持Ctrl+C / Cmd+C 复制文本 #186"
+    },
+    {
+      "commitId": "0c6ea4ac26dbae8584bf16c14dc47a2e026b8d91",
+      "commitTime": "2026-07-20 23:46:56 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #187 from MSLTeam/dev"
+    },
+    {
+      "commitId": "4874897d9d9da7e224f72257cd2cd056b8138d9f",
+      "commitTime": "2026-07-20 23:45:57 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.5.4版本"
+    },
     {
       "commitId": "7ad09ce9f286e12bb552dad3b2c34dd51b3a6e73",
       "commitTime": "2026-07-20 23:44:37 +0800",
@@ -302,84 +380,6 @@
       "commitTime": "2026-07-12 23:10:43 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "fix(webpanel): 修复文件管理器加载错误路径时无限叠加路径的问题"
-    },
-    {
-      "commitId": "0f0d3ee31a08c3da7fabf62b30c1842e0bdfab82",
-      "commitTime": "2026-07-12 23:08:12 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复文件管理器加载错误路径时无限叠加路径的问题"
-    },
-    {
-      "commitId": "67a28d369eaca43a2cf8585fd1a11f3c4f5a4c52",
-      "commitTime": "2026-07-12 23:01:23 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复文件管理器加载错误路径时无限叠加路径的问题"
-    },
-    {
-      "commitId": "161bcfebe6db8abb60ddb469bc8f6952d85eff59",
-      "commitTime": "2026-07-12 23:01:00 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): Docker模式自动拉取网络工具小镜像"
-    },
-    {
-      "commitId": "9436cbb046a2d5ee84332a48eee26e004f2a9437",
-      "commitTime": "2026-07-12 22:58:14 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 实现Docker的网速控制功能"
-    },
-    {
-      "commitId": "48e3ef2071171eb388d0b82b99802d6de71ef976",
-      "commitTime": "2026-07-12 21:47:54 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(daemon): 优化Docker模式下的启动参数"
-    },
-    {
-      "commitId": "6871cfd06852bdda7f5b501319eab6bb62b0bf49",
-      "commitTime": "2026-07-12 21:14:38 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel & daemon): 修复Docker设置中上传下载速率限制无法正常保存的问题"
-    },
-    {
-      "commitId": "b8fffe393d22912940da8707756c892d8e7c1f06",
-      "commitTime": "2026-07-12 15:35:21 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 优化插件服务的加载逻辑 & 修复插件依赖注入服务异常的问题"
-    },
-    {
-      "commitId": "b35d4f82da9aa31d72e80a4fe21c98a6c71a143f",
-      "commitTime": "2026-07-12 14:55:39 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复注册插件服务的逻辑顺序问题"
-    },
-    {
-      "commitId": "9658f26cedf7864d7b1abfb1a456a732b76fa031",
-      "commitTime": "2026-07-12 01:07:26 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(daemon): 补上Docker启动失败提醒"
-    },
-    {
-      "commitId": "87e14b6a1fdea12addcc04eb7637a50d913517d9",
-      "commitTime": "2026-07-11 19:58:23 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复MSLX-Daemon 处于 Docker 容器中运行，但未挂载宿主机的 Sock 管道提示后未正常处理服务端实例状态的问题"
-    },
-    {
-      "commitId": "907a23dae55095ebd1f8db908a12a13c01861413",
-      "commitTime": "2026-07-11 17:06:07 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #173 from MSLTeam/dev"
-    },
-    {
-      "commitId": "155aedcaee61baa6b63a7cf55afc5aaaab8a6098",
-      "commitTime": "2026-07-11 17:04:53 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.5.1版本"
-    },
-    {
-      "commitId": "0a2fdf09172d48107c1580c64ed6aa077e3e2371",
-      "commitTime": "2026-07-11 16:45:37 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 运行Docker缺少sock 管道管道时新增文档提醒"
     }
   ]
 }
