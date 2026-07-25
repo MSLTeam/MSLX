@@ -1,7 +1,5 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Media.Imaging;
-using Avalonia.Platform;
-using Avalonia.Threading;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils.API;
 using Newtonsoft.Json.Linq;
@@ -57,7 +55,7 @@ public partial class AboutPage : UserControl
             LogEmptyText.IsVisible = false;
             LogItemsControl.ItemsSource = null;
 
-            var (success, data, msg) = await MSLAPIService.GetJsonDataAsync("/query/changelogs", "data", new Dictionary<string, string>
+            var (success, data, msg) = await MSLAPIService.GetJsonDataAsync("/software/changelogs", "data", new Dictionary<string, string>
             {
                 { "software", "MSLX-Desktop" }
             });

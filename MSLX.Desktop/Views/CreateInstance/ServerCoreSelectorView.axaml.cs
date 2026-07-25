@@ -25,6 +25,7 @@ public partial class ServerCoreSelectorView : UserControl
 
     private List<CoreCategory> _categories = new();
     private string _currentSelectedCore = "";
+    public bool EnableAutoSize { get; set; } = true;
 
     public ServerCoreSelectorView()
     {
@@ -35,13 +36,12 @@ public partial class ServerCoreSelectorView : UserControl
 
         this.AttachedToVisualTree += (s, e) =>
         {
+            if (!EnableAutoSize) return;
+
             var topLevel = TopLevel.GetTopLevel(this);
             if (topLevel != null)
             {
-                // 初始化
                 UpdateSize(topLevel);
-
-                // 监听主窗口大小变化
                 topLevel.SizeChanged += (sender, args) => UpdateSize(topLevel);
             }
         };
@@ -80,7 +80,7 @@ public partial class ServerCoreSelectorView : UserControl
     {
         try
         {
-            var result = await MSLAPIService.GetJsonDataAsync("/query/server_classify");
+            var result = await MSLAPIService.GetJsonDataAsync("/mirrors");
             if (result.Success && result.Data is JObject dataObj)
             {
                 foreach (var cat in _categories)
@@ -158,7 +158,7 @@ public partial class ServerCoreSelectorView : UserControl
         ProgressVersions.IsVisible = true;
         try
         {
-            var result = await MSLAPIService.GetJsonDataAsync($"/query/available_versions/{coreName}");
+            var result = await MSLAPIService.GetJsonDataAsync($"/mirrors/{coreName}");
             if (result.Success)
             {
                 JArray? arr = result.Data as JArray;
@@ -169,9 +169,9 @@ public partial class ServerCoreSelectorView : UserControl
                 else
                     dataObj = result.Data as JObject;
 
-                if (dataObj != null && dataObj.ContainsKey("versionList"))
+                if (dataObj != null && dataObj.ContainsKey("versions"))
                 {
-                    var vList = dataObj["versionList"]?.ToObject<List<string>>();
+                    var vList = dataObj["versions"]?.ToObject<List<string>>();
                     await Dispatcher.UIThread.InvokeAsync(() =>
                     {
                         ItemsVersions.ItemsSource = vList;

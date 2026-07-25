@@ -103,7 +103,7 @@ public class FrpController : ControllerBase
         
         return BadRequest(new ApiResponse<object> { Code = 400, Message = "未知操作" });
     }
-    
+
     
     [HttpGet("info")]
     public IActionResult GetFrpInfo([FromQuery] int id)
@@ -154,8 +154,8 @@ public class FrpController : ControllerBase
         {
             // 这里是解析toml的
             string tomlContent = System.IO.File.ReadAllText(configPath);
-            var model = Toml.ToModel(tomlContent);
-            
+            var model = TomlSerializer.Deserialize<TomlTable>(tomlContent)!;
+
             string serverAddr = "未知";
             if (model.TryGetValue("serverAddr", out var addrObj))
             {

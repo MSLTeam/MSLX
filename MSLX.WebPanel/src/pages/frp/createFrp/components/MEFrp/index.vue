@@ -145,12 +145,12 @@ async function handleTokenLogin(tokenToVerify?: string) {
 }
 
 // 格式化流量
-const formatTraffic = (kb: number) => {
-  if (!kb || kb === 0) return '0 B';
-  const bytes = kb * 1024;
+const formatTraffic = (mb: number) => {
+  if (!mb || mb <= 0) return '0 B';
+  const bytes = mb * 1024 * 1024;
   const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1);
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
@@ -293,57 +293,127 @@ async function handleDeleteTunnel() {
 </script>
 <template>
   <div class="mx-auto pb-6 text-[var(--td-text-color-primary)]">
-
     <div v-if="meUserToken === ''" class="flex items-center justify-center min-h-[70vh] list-item-anim">
-      <div class="design-card relative w-full max-w-md bg-[var(--td-bg-color-container)]/80 rounded-3xl border border-[var(--td-component-border)] shadow-xl p-10 text-center overflow-hidden">
-        <div class="absolute -top-20 -right-20 w-60 h-60 bg-[var(--color-primary)]/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-[var(--color-primary)]/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div
+        class="design-card relative w-full max-w-md bg-[var(--td-bg-color-container)]/80 rounded-3xl border border-[var(--td-component-border)] shadow-xl p-10 text-center overflow-hidden"
+      >
+        <div
+          class="absolute -top-20 -right-20 w-60 h-60 bg-[var(--color-primary)]/10 rounded-full blur-3xl pointer-events-none"
+        ></div>
+        <div
+          class="absolute -bottom-10 -left-10 w-40 h-40 bg-[var(--color-primary)]/10 rounded-full blur-3xl pointer-events-none"
+        ></div>
 
         <div class="relative z-10 flex flex-col items-center">
-          <div class="w-20 h-20 bg-[var(--color-primary)]/10 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-[var(--color-primary)]/20">
+          <div
+            class="w-20 h-20 bg-[var(--color-primary)]/10 rounded-2xl flex items-center justify-center mb-6 shadow-sm border border-[var(--color-primary)]/20"
+          >
             <img src="https://www.mefrp.com/favicon.svg" alt="logo" size="48px" class="text-[var(--color-primary)]" />
           </div>
           <h2 class="text-2xl font-extrabold text-[var(--td-text-color-primary)] !mb-2 tracking-tight">登录 ME Frp</h2>
-          <p class="text-sm text-[var(--td-text-color-secondary)] !mb-6 font-medium">选择您的登录方式以接入内网穿透服务</p>
+          <p class="text-sm text-[var(--td-text-color-secondary)] !mb-6 font-medium">
+            选择您的登录方式以接入内网穿透服务
+          </p>
 
           <t-radio-group v-model="loginType" variant="default-filled" class="!mb-6">
             <t-radio-button value="password">账号密码登录</t-radio-button>
             <t-radio-button value="token">Token 登录</t-radio-button>
           </t-radio-group>
 
-          <t-form v-if="loginType === 'password'" :data="loginForm" label-width="0" @submit="handlePasswordLogin" class="w-full text-left">
+          <t-form
+            v-if="loginType === 'password'"
+            :data="loginForm"
+            label-width="0"
+            @submit="handlePasswordLogin"
+            class="w-full text-left"
+          >
             <t-form-item name="username" class="!mb-4">
-              <t-input v-model="loginForm.username" size="large" placeholder="请输入 ME Frp 账号" clearable class="!rounded-xl">
+              <t-input
+                v-model="loginForm.username"
+                size="large"
+                placeholder="请输入 ME Frp 账号"
+                clearable
+                class="!rounded-xl"
+              >
                 <template #prefix-icon><user-circle-icon class="opacity-60" /></template>
               </t-input>
             </t-form-item>
             <t-form-item name="password" class="!mb-4">
-              <t-input v-model="loginForm.password" size="large" type="password" placeholder="请输入密码" clearable class="!rounded-xl">
+              <t-input
+                v-model="loginForm.password"
+                size="large"
+                type="password"
+                placeholder="请输入密码"
+                clearable
+                class="!rounded-xl"
+              >
                 <template #prefix-icon><lock-on-icon class="opacity-60" /></template>
               </t-input>
             </t-form-item>
             <t-form-item name="captchaCallback" class="!mb-6">
-              <t-input v-model="loginForm.captchaCallback" size="large" placeholder="请粘贴获取到的验证码" clearable class="!rounded-xl pr-1">
+              <t-input
+                v-model="loginForm.captchaCallback"
+                size="large"
+                placeholder="请粘贴获取到的验证码"
+                clearable
+                class="!rounded-xl pr-1"
+              >
                 <template #prefix-icon><secured-icon class="opacity-60" /></template>
                 <template #suffix>
-                  <t-button variant="text" size="small" theme="primary" class="!bg-[var(--color-primary)]/10 hover:!bg-[var(--color-primary)]/20 !rounded-lg" @click="openCaptchaPage">获取验证码</t-button>
+                  <t-button
+                    variant="text"
+                    size="small"
+                    theme="primary"
+                    class="!bg-[var(--color-primary)]/10 hover:!bg-[var(--color-primary)]/20 !rounded-lg"
+                    @click="openCaptchaPage"
+                    >获取验证码</t-button
+                  >
                 </template>
               </t-input>
             </t-form-item>
-            <t-button block theme="primary" type="submit" size="large" :loading="isLoggingIn" class="!rounded-xl !h-12 !font-bold shadow-md shadow-[var(--color-primary-light)]/30 hover:shadow-[var(--color-primary-light)]/50">立即登录</t-button>
+            <t-button
+              block
+              theme="primary"
+              type="submit"
+              size="large"
+              :loading="isLoggingIn"
+              class="!rounded-xl !h-12 !font-bold shadow-md shadow-[var(--color-primary-light)]/30 hover:shadow-[var(--color-primary-light)]/50"
+              >立即登录</t-button
+            >
           </t-form>
 
           <t-form v-else :data="loginForm" label-width="0" @submit="() => handleTokenLogin()" class="w-full text-left">
             <t-form-item name="token" class="!mb-6">
-              <t-input v-model="loginForm.token" size="large" type="password" placeholder="请输入 ME Frp 账户 Token" clearable class="!rounded-xl">
+              <t-input
+                v-model="loginForm.token"
+                size="large"
+                type="password"
+                placeholder="请输入 ME Frp 账户 Token"
+                clearable
+                class="!rounded-xl"
+              >
                 <template #prefix-icon><key-icon class="opacity-60" /></template>
               </t-input>
             </t-form-item>
-            <t-button block theme="primary" type="submit" size="large" :loading="isLoggingIn" class="!rounded-xl !h-12 !font-bold shadow-md shadow-[var(--color-primary-light)]/30 hover:shadow-[var(--color-primary-light)]/50">验证 Token</t-button>
+            <t-button
+              block
+              theme="primary"
+              type="submit"
+              size="large"
+              :loading="isLoggingIn"
+              class="!rounded-xl !h-12 !font-bold shadow-md shadow-[var(--color-primary-light)]/30 hover:shadow-[var(--color-primary-light)]/50"
+              >验证 Token</t-button
+            >
           </t-form>
 
           <div class="mt-6 pt-4 border-t border-dashed border-zinc-200 dark:border-zinc-700 w-full">
-            <t-button variant="text" size="small" class="text-zinc-500 hover:text-[var(--color-primary)]" @click="changeUrl('https://www.mefrp.com/auth/register')">还没有账户？注册 ME Frp</t-button>
+            <t-button
+              variant="text"
+              size="small"
+              class="text-zinc-500 hover:text-[var(--color-primary)]"
+              @click="changeUrl('https://www.mefrp.com/auth/register')"
+              >还没有账户？注册 ME Frp</t-button
+            >
           </div>
         </div>
       </div>
@@ -352,58 +422,125 @@ async function handleDeleteTunnel() {
     <div v-else id="app-space" class="relative flex flex-col gap-6">
       <t-loading attach="#app-space" :loading="loading" text="加载数据中..." />
 
-      <div v-if="userInfo" class="design-card list-item-anim bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm p-5 sm:p-6" style="animation-delay: 0s;">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60">
+      <div
+        v-if="userInfo"
+        class="design-card list-item-anim bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm p-5 sm:p-6"
+        style="animation-delay: 0s"
+      >
+        <div
+          class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60"
+        >
           <div class="flex flex-col">
             <h3 class="text-lg font-bold text-[var(--td-text-color-primary)] m-0 leading-none">ME Frp 用户信息</h3>
           </div>
           <div class="flex items-center gap-2">
-            <t-button variant="outline" theme="primary" size="small" :disabled="userInfo.todaySigned" class="!rounded-lg" :class="!userInfo.todaySigned ? 'hover:!bg-[var(--color-primary)]/10' : ''" @click="handleSign">
+            <t-button
+              variant="outline"
+              theme="primary"
+              size="small"
+              :disabled="userInfo.todaySigned"
+              class="!rounded-lg"
+              :class="!userInfo.todaySigned ? 'hover:!bg-[var(--color-primary)]/10' : ''"
+              @click="handleSign"
+            >
               {{ userInfo.todaySigned ? '今日已签到' : '每日签到' }}
             </t-button>
-            <t-tag theme="primary" variant="light-outline" class="!rounded-md !font-bold">{{ userInfo.friendlyGroup }}</t-tag>
+            <t-tag theme="primary" variant="light-outline" class="!rounded-md !font-bold">{{
+              userInfo.friendlyGroup
+            }}</t-tag>
             <div class="w-px h-4 bg-zinc-200 dark:bg-zinc-700 mx-1"></div>
             <t-popconfirm content="确认退出登录吗？" @confirm="handleLogout">
-              <t-button variant="text" theme="danger" size="small" class="!rounded-lg hover:!bg-red-500/10">退出登录</t-button>
+              <t-button variant="text" theme="danger" size="small" class="!rounded-lg hover:!bg-red-500/10"
+                >退出登录</t-button
+              >
             </t-popconfirm>
           </div>
         </div>
 
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800">
-            <div class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1">用户昵称</div>
+          <div
+            class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800"
+          >
+            <div
+              class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1"
+            >
+              用户昵称
+            </div>
             <div class="flex items-center gap-2">
-              <span class="text-lg font-bold text-[var(--td-text-color-primary)] truncate">{{ userInfo.username }}</span>
-              <t-tag v-if="userInfo.friendlyGroup !== '未实名'" theme="success" variant="light" size="small" class="!rounded !font-bold !px-1.5 border border-[var(--color-success)]/20">已实名</t-tag>
+              <span class="text-lg font-bold text-[var(--td-text-color-primary)] truncate">{{
+                userInfo.username
+              }}</span>
+              <t-tag
+                v-if="userInfo.friendlyGroup !== '未实名'"
+                theme="success"
+                variant="light"
+                size="small"
+                class="!rounded !font-bold !px-1.5 border border-[var(--color-success)]/20"
+                >已实名</t-tag
+              >
             </div>
           </div>
 
-          <div class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800">
-            <div class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1">隧道使用情况</div>
+          <div
+            class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800"
+          >
+            <div
+              class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1"
+            >
+              隧道使用情况
+            </div>
             <div class="text-lg font-bold text-[var(--td-text-color-primary)] font-mono">
-              <span class="text-[var(--color-primary)]">{{ userInfo.usedProxies }}</span> / {{ userInfo.maxProxies }} <span class="text-sm font-medium text-zinc-500">条</span>
+              <span class="text-[var(--color-primary)]">{{ userInfo.usedProxies }}</span> / {{ userInfo.maxProxies }}
+              <span class="text-sm font-medium text-zinc-500">条</span>
             </div>
           </div>
 
-          <div class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800">
-            <div class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1">速率限制</div>
-            <div class="text-lg font-bold text-[var(--td-text-color-primary)] font-mono">{{ userInfo.outBound ? Math.floor(userInfo.outBound / 128) : 0 }} <span class="text-sm font-medium text-zinc-500">Mbps</span></div>
+          <div
+            class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800"
+          >
+            <div
+              class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1"
+            >
+              速率限制
+            </div>
+            <div class="text-lg font-bold text-[var(--td-text-color-primary)] font-mono">
+              {{ userInfo.outBound ? Math.floor(userInfo.outBound / 128) : 0 }}
+              <span class="text-sm font-medium text-zinc-500">Mbps</span>
+            </div>
           </div>
 
-          <div class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800">
-            <div class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1">剩余流量</div>
-            <div class="text-[15px] font-bold text-[var(--color-success)] font-mono mt-0.5">{{ formatTraffic(userInfo.traffic) }}</div>
+          <div
+            class="p-4 rounded-xl bg-zinc-50/80 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800 transition-colors hover:bg-white dark:hover:bg-zinc-800"
+          >
+            <div
+              class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1"
+            >
+              剩余流量
+            </div>
+            <div class="text-[15px] font-bold text-[var(--color-success)] font-mono mt-0.5">
+              {{ formatTraffic(userInfo.traffic) }}
+            </div>
           </div>
         </div>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-
-        <div class="lg:col-span-5 xl:col-span-4 design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm h-[580px]" style="animation-delay: 0.1s;">
-          <div class="flex items-center justify-between p-4 sm:p-5 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 shrink-0">
+        <div
+          class="lg:col-span-5 xl:col-span-4 design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm h-[580px]"
+          style="animation-delay: 0.1s"
+        >
+          <div
+            class="flex items-center justify-between p-4 sm:p-5 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 shrink-0"
+          >
             <h3 class="text-base font-bold text-[var(--td-text-color-primary)] m-0">我的隧道</h3>
             <div class="flex items-center gap-1">
-              <t-button size="small" variant="text" class="!px-2 hover:!bg-zinc-100 dark:hover:!bg-zinc-700/50" :loading="loading" @click="handleRefresh">
+              <t-button
+                size="small"
+                variant="text"
+                class="!px-2 hover:!bg-zinc-100 dark:hover:!bg-zinc-700/50"
+                :loading="loading"
+                @click="handleRefresh"
+              >
                 <template #icon><refresh-icon /></template>刷新
               </t-button>
               <t-button size="small" theme="primary" class="!px-3 !ml-1 !rounded-lg" @click="handleAddTunnel">
@@ -418,20 +555,55 @@ async function handleDeleteTunnel() {
                 v-for="tunnel in tunnels"
                 :key="tunnel.proxyId"
                 class="group flex items-center p-3 rounded-xl cursor-pointer transition-all duration-300 border"
-                :class="selectedTunnelId === tunnel.proxyId ? 'bg-[var(--color-primary)]/10 border-[var(--color-primary)]/30 shadow-sm' : 'bg-transparent border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-700/50 hover:border-zinc-200 dark:hover:border-zinc-600'"
+                :class="
+                  selectedTunnelId === tunnel.proxyId
+                    ? 'bg-[var(--color-primary)]/10 border-[var(--color-primary)]/30 shadow-sm'
+                    : 'bg-transparent border-transparent hover:bg-zinc-50 dark:hover:bg-zinc-700/50 hover:border-zinc-200 dark:hover:border-zinc-600'
+                "
                 @click="selectedTunnelId = tunnel.proxyId"
               >
-                <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 mr-3 transition-colors"
-                     :class="selectedTunnelId === tunnel.proxyId ? 'bg-[var(--color-primary)] text-white shadow-md shadow-[var(--color-primary)]/30' : 'bg-zinc-100 dark:bg-zinc-900 text-[var(--td-text-color-secondary)] group-hover:text-zinc-800 dark:group-hover:text-zinc-200'">
+                <div
+                  class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 mr-3 transition-colors"
+                  :class="
+                    selectedTunnelId === tunnel.proxyId
+                      ? 'bg-[var(--color-primary)] text-white shadow-md shadow-[var(--color-primary)]/30'
+                      : 'bg-zinc-100 dark:bg-zinc-900 text-[var(--td-text-color-secondary)] group-hover:text-zinc-800 dark:group-hover:text-zinc-200'
+                  "
+                >
                   <server-icon size="20px" />
                 </div>
                 <div class="flex-1 min-w-0 mr-3">
-                  <div class="font-bold text-sm truncate transition-colors" :class="selectedTunnelId === tunnel.proxyId ? 'text-[var(--color-primary)]' : 'text-[var(--td-text-color-primary)]'">{{ tunnel.proxyName }}</div>
-                  <div class="text-[11px] text-[var(--td-text-color-secondary)] truncate mt-0.5">{{ nodesMap[tunnel.nodeId] || `Node ${tunnel.nodeId}` }}</div>
+                  <div
+                    class="font-bold text-sm truncate transition-colors"
+                    :class="
+                      selectedTunnelId === tunnel.proxyId
+                        ? 'text-[var(--color-primary)]'
+                        : 'text-[var(--td-text-color-primary)]'
+                    "
+                  >
+                    {{ tunnel.proxyName }}
+                  </div>
+                  <div class="text-[11px] text-[var(--td-text-color-secondary)] truncate mt-0.5">
+                    {{ nodesMap[tunnel.nodeId] || `Node ${tunnel.nodeId}` }}
+                  </div>
                 </div>
                 <div class="shrink-0">
-                  <t-tag v-if="tunnel.isOnline" theme="success" variant="light" size="small" class="!rounded !font-bold !px-1.5">在线</t-tag>
-                  <t-tag v-else theme="default" variant="light" size="small" class="!rounded !font-bold !px-1.5 !text-zinc-500">离线</t-tag>
+                  <t-tag
+                    v-if="tunnel.isOnline"
+                    theme="success"
+                    variant="light"
+                    size="small"
+                    class="!rounded !font-bold !px-1.5"
+                    >在线</t-tag
+                  >
+                  <t-tag
+                    v-else
+                    theme="default"
+                    variant="light"
+                    size="small"
+                    class="!rounded !font-bold !px-1.5 !text-zinc-500"
+                    >离线</t-tag
+                  >
                 </div>
               </div>
             </div>
@@ -443,17 +615,36 @@ async function handleDeleteTunnel() {
           </div>
         </div>
 
-        <div class="lg:col-span-7 xl:col-span-8 design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm h-[580px]" style="animation-delay: 0.2s;">
-
+        <div
+          class="lg:col-span-7 xl:col-span-8 design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm h-[580px]"
+          style="animation-delay: 0.2s"
+        >
           <template v-if="currentTunnel">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 shrink-0">
+            <div
+              class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 shrink-0"
+            >
               <div class="flex flex-col min-w-0">
-                <h3 class="text-xl font-extrabold text-[var(--td-text-color-primary)] m-0 truncate">{{ currentTunnel.proxyName }}</h3>
-                <p class="text-xs text-[var(--td-text-color-secondary)] mt-1 truncate font-mono bg-zinc-100 dark:bg-zinc-800/50 w-max px-2 py-0.5 rounded">ID: {{ currentTunnel.proxyId }}</p>
+                <h3 class="text-xl font-extrabold text-[var(--td-text-color-primary)] m-0 truncate">
+                  {{ currentTunnel.proxyName }}
+                </h3>
+                <p
+                  class="text-xs text-[var(--td-text-color-secondary)] mt-1 truncate font-mono bg-zinc-100 dark:bg-zinc-800/50 w-max px-2 py-0.5 rounded"
+                >
+                  ID: {{ currentTunnel.proxyId }}
+                </p>
               </div>
               <div class="shrink-0">
-                <t-popconfirm content="确认删除此隧道吗？将无法恢复！" theme="danger" placement="bottom-right" @confirm="handleDeleteTunnel">
-                  <t-button theme="danger" class="!rounded-lg hover:!bg-red-500 hover:!text-white transition-colors" :loading="isDeleting">
+                <t-popconfirm
+                  content="确认删除此隧道吗？将无法恢复！"
+                  theme="danger"
+                  placement="bottom-right"
+                  @confirm="handleDeleteTunnel"
+                >
+                  <t-button
+                    theme="danger"
+                    class="!rounded-lg hover:!bg-red-500 hover:!text-white transition-colors"
+                    :loading="isDeleting"
+                  >
                     <template #icon><t-icon name="delete" /></template>
                     删除隧道
                   </t-button>
@@ -463,28 +654,70 @@ async function handleDeleteTunnel() {
 
             <div class="flex-1 overflow-y-auto custom-scrollbar p-5 sm:p-6">
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
-                <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-[var(--td-component-border)] flex flex-col justify-center">
-                  <span class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1.5">所在节点</span>
-                  <span class="text-sm font-bold text-[var(--td-text-color-primary)] truncate" :title="currentNodeName">{{ currentNodeName }}</span>
+                <div
+                  class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-[var(--td-component-border)] flex flex-col justify-center"
+                >
+                  <span
+                    class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1.5"
+                    >所在节点</span
+                  >
+                  <span
+                    class="text-sm font-bold text-[var(--td-text-color-primary)] truncate"
+                    :title="currentNodeName"
+                    >{{ currentNodeName }}</span
+                  >
                 </div>
 
-                <div class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-[var(--td-component-border)] flex flex-col justify-center">
-                  <span class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1.5">本地地址</span>
-                  <span class="text-sm font-mono font-bold text-[var(--td-text-color-primary)]">{{ currentTunnel.localIp }}:{{ currentTunnel.localPort }}</span>
+                <div
+                  class="p-4 bg-zinc-50/80 dark:bg-zinc-900/50 rounded-xl border border-[var(--td-component-border)] flex flex-col justify-center"
+                >
+                  <span
+                    class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1.5"
+                    >本地地址</span
+                  >
+                  <span class="text-sm font-mono font-bold text-[var(--td-text-color-primary)]"
+                    >{{ currentTunnel.localIp }}:{{ currentTunnel.localPort }}</span
+                  >
                 </div>
 
-                <div class="p-4 bg-emerald-50/50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/30 flex flex-col justify-center">
-                  <span class="text-[11px] font-extrabold text-emerald-600/80 dark:text-emerald-500/80 uppercase tracking-widest mb-1.5">远程公网端口</span>
-                  <span class="text-lg font-mono font-extrabold text-emerald-600 dark:text-emerald-400">{{ currentTunnel.remotePort }}</span>
+                <div
+                  class="p-4 bg-emerald-50/50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/30 flex flex-col justify-center"
+                >
+                  <span
+                    class="text-[11px] font-extrabold text-emerald-600/80 dark:text-emerald-500/80 uppercase tracking-widest mb-1.5"
+                    >远程公网端口</span
+                  >
+                  <span class="text-lg font-mono font-extrabold text-emerald-600 dark:text-emerald-400">{{
+                    currentTunnel.remotePort
+                  }}</span>
                 </div>
 
-                <div class="p-4 rounded-xl flex flex-col justify-center border transition-colors"
-                     :class="currentTunnel.isOnline ? 'bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-200/50 dark:border-emerald-800/30' : 'bg-zinc-50/80 dark:bg-zinc-900/50 border-[var(--td-component-border)]'">
-                  <span class="text-[11px] font-extrabold uppercase tracking-widest mb-1.5"
-                        :class="currentTunnel.isOnline ? 'text-emerald-600/80 dark:text-emerald-500/80' : 'text-[var(--td-text-color-secondary)]'">当前状态</span>
+                <div
+                  class="p-4 rounded-xl flex flex-col justify-center border transition-colors"
+                  :class="
+                    currentTunnel.isOnline
+                      ? 'bg-emerald-50/50 dark:bg-emerald-900/10 border-emerald-200/50 dark:border-emerald-800/30'
+                      : 'bg-zinc-50/80 dark:bg-zinc-900/50 border-[var(--td-component-border)]'
+                  "
+                >
+                  <span
+                    class="text-[11px] font-extrabold uppercase tracking-widest mb-1.5"
+                    :class="
+                      currentTunnel.isOnline
+                        ? 'text-emerald-600/80 dark:text-emerald-500/80'
+                        : 'text-[var(--td-text-color-secondary)]'
+                    "
+                    >当前状态</span
+                  >
                   <div class="flex items-center gap-2">
-                    <span v-if="currentTunnel.isOnline" class="w-2 h-2 rounded-full bg-[var(--color-success)] animate-pulse"></span>
-                    <span class="text-sm font-bold" :class="currentTunnel.isOnline ? 'text-[var(--color-success)]' : 'text-zinc-500'">
+                    <span
+                      v-if="currentTunnel.isOnline"
+                      class="w-2 h-2 rounded-full bg-[var(--color-success)] animate-pulse"
+                    ></span>
+                    <span
+                      class="text-sm font-bold"
+                      :class="currentTunnel.isOnline ? 'text-[var(--color-success)]' : 'text-zinc-500'"
+                    >
                       {{ currentTunnel.isOnline ? '节点在线' : '离线' }}
                     </span>
                   </div>
@@ -492,7 +725,14 @@ async function handleDeleteTunnel() {
               </div>
 
               <div class="mt-8">
-                <t-button theme="primary" size="large" :loading="isAddingTunnel" block class="!rounded-xl !h-12 !font-bold shadow-md shadow-[var(--color-primary-light)]/40 hover:shadow-[var(--color-primary-light)]/60 transition-shadow text-base" @click="handleUseTunnel">
+                <t-button
+                  theme="primary"
+                  size="large"
+                  :loading="isAddingTunnel"
+                  block
+                  class="!rounded-xl !h-12 !font-bold shadow-md shadow-[var(--color-primary-light)]/40 hover:shadow-[var(--color-primary-light)]/60 transition-shadow text-base"
+                  @click="handleUseTunnel"
+                >
                   <template #icon><play-circle-icon /></template>
                   启动此隧道映射
                 </t-button>
@@ -509,12 +749,16 @@ async function handleDeleteTunnel() {
               <p class="text-sm text-zinc-500">请在左侧列表中选择一个隧道以查看详细信息和连接参数</p>
             </div>
           </template>
-
         </div>
       </div>
     </div>
 
-    <create-tunnel-dialog v-if="showCreateDialog" v-model:visible="showCreateDialog" :token="meUserToken" @success="handleCreateSuccess" />
+    <create-tunnel-dialog
+      v-if="showCreateDialog"
+      v-model:visible="showCreateDialog"
+      :token="meUserToken"
+      @success="handleCreateSuccess"
+    />
   </div>
 </template>
 
@@ -555,7 +799,7 @@ async function handleDeleteTunnel() {
 }
 
 :deep(.t-loading__overlay) {
-@apply !rounded-2xl !bg-white/50 dark:!bg-zinc-900/50;
+  @apply !rounded-2xl !bg-white/50 dark:!bg-zinc-900/50;
   animation: smoothLoadingGlass 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards !important;
 }
 </style>

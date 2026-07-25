@@ -153,6 +153,77 @@ public partial class TunnelListPage : UserControl
         }
     }
 
+    private async void DeleteTunnel_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not int tunnelId) return;
+
+        var tunnel = _vm.Tunnels.FirstOrDefault(t => t.ID == tunnelId);
+        if (tunnel == null) return;
+
+        var confirmed = await DialogService.DialogManager.CreateDialog()
+            .WithTitle("确认删除")
+            .WithContent($"确定要删除隧道 \"{tunnel.Name}\" 吗？\n此操作将同时停止隧道（如果正在运行）并删除配置文件，且不可撤销。")
+            .WithYesNoResult("删除", "取消")
+            .TryShowAsync();
+
+        if (!confirmed) return;
+
+        try
+        {
+            // 如果隧道正在运行，先停止
+            if (tunnel.Status)
+            {
+                var stopResponse = await DaemonAPIService.PostApiAsync("/api/frp/action", null, HttpService.PostContentType.Json, new { id = tunnelId, action = "stop" });
+                if (!stopResponse.IsSuccess)
+                {
+                    DialogService.ToastManager.CreateToast()
+                        .OfType(Avalonia.Controls.Notifications.NotificationType.Error)
+                        .WithTitle("停止失败！")
+                        .WithContent($"删除前停止隧道失败: {stopResponse.Content}")
+                        .Dismiss().After(TimeSpan.FromSeconds(5))
+                        .WithActionButton("关闭", _ => { }, true)
+                        .Queue();
+                    return;
+                }
+            }
+
+            // 调用删除接口
+            var response = await DaemonAPIService.PostApiAsync("/api/frp/delete", null, HttpService.PostContentType.Json, new { id = tunnelId });
+            if (response.IsSuccess)
+            {
+                DialogService.ToastManager.CreateToast()
+                    .OfType(Avalonia.Controls.Notifications.NotificationType.Success)
+                    .WithTitle("删除成功！")
+                    .WithContent($"隧道 \"{tunnel.Name}\" 已成功删除。")
+                    .Dismiss().After(TimeSpan.FromSeconds(5))
+                    .WithActionButton("关闭", _ => { }, true)
+                    .Queue();
+                await LoadTunnelList();
+            }
+            else
+            {
+                DialogService.ToastManager.CreateToast()
+                    .OfType(Avalonia.Controls.Notifications.NotificationType.Error)
+                    .WithTitle("删除失败！")
+                    .WithContent($"删除隧道时发生错误: {response.Content}")
+                    .Dismiss().After(TimeSpan.FromSeconds(5))
+                    .WithActionButton("关闭", _ => { }, true)
+                    .Queue();
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"删除隧道失败: {ex.Message}");
+            DialogService.ToastManager.CreateToast()
+                .OfType(Avalonia.Controls.Notifications.NotificationType.Error)
+                .WithTitle("删除失败！")
+                .WithContent($"删除隧道时发生错误: {ex.Message}")
+                .Dismiss().After(TimeSpan.FromSeconds(5))
+                .WithActionButton("关闭", _ => { }, true)
+                .Queue();
+        }
+    }
+
     private async void TunnelLogs_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not int tunnelId) return;

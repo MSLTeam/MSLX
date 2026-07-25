@@ -26,7 +26,7 @@ public partial class HomePage : UserControl
 
     private async void HomePage_Initialized(object? sender, EventArgs e)
     {
-        var (Success, Data, Message) = await MSLAPIService.GetJsonDataAsync("/query/notice", queryParameters: new Dictionary<string, string> { { "query", "mslxNotice" } });
+        var (Success, Data, Message) = await MSLAPIService.GetJsonDataAsync("/software/notice", queryParameters: new Dictionary<string, string> { { "query", "mslxNotice" } });
         if (Data == null || Message == null)
         {
             MarkdownViewer.ChangeMarkdownContent("暂无公告");
@@ -34,7 +34,7 @@ public partial class HomePage : UserControl
         }
         if (Success)
         {
-            MarkdownViewer.ChangeMarkdownContent(((JObject)Data)["mslxNotice"]?.ToString() ?? "暂无公告");
+            MarkdownViewer.ChangeMarkdownContent(Data.ToString() ?? "暂无公告");
         }
         else
         {
