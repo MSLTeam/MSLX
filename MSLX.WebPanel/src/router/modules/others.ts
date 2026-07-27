@@ -52,6 +52,12 @@ export default [
         component: () => import('@/pages/settings/nodeManagement/index.vue'),
         meta: { title: '节点管理', icon: 'server', roleCode: ['admin'] },
       },
+      {
+        path: 'docker',
+        name: 'dockerImages',
+        component: () => import('@/pages/settings/docker/index.vue'),
+        meta: { title: 'Docker 镜像', icon: 'layers', roleCode: ['admin'] },
+      },
     ],
   },
   {

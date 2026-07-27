@@ -184,6 +184,7 @@ builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationM
 builder.Services.AddSingleton<IFrpProcessService, FrpProcessService>();
 builder.Services.AddSingleton(typeof(IBackgroundTaskQueue<>), typeof(BackgroundTaskQueue<>));
 builder.Services.AddSingleton<IMCServerService,MCServerService>();
+builder.Services.AddSingleton<IDockerService,DockerService>();
 builder.Services.AddSingleton<SystemMonitor>();
 var pluginManager = new PluginManager();
 builder.Services.AddSingleton(pluginManager);

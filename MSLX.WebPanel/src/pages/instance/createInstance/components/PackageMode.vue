@@ -17,6 +17,7 @@ import { changeUrl } from '@/router';
 import { useInstanceListStore } from '@/store/modules/instance';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { parseMcVersion, getRecommendedJava } from './javaRecommendation';
+import DockerImageSelector from '@/components/docker-image-selector/index.vue';
 
 const { isUploading, uploadProgress, uploadedFileName, uploadedFileSize, startUpload, removeUploadData } =
   useFileUpload();
@@ -1008,10 +1009,9 @@ const goToHome = () => {
                       </div>
 
                       <div v-if="dockerImageType === 'custom'">
-                        <t-input
+                        <docker-image-selector
                           v-model="formData.dockerImage"
-                          placeholder="例如: eclipse-temurin:21-jre-jammy"
-                          class="!font-mono"
+                          placeholder="输入或选择本地镜像，例如: eclipse-temurin:21-jre-jammy"
                         />
                         <div class="text-[11px] text-amber-500 mt-2">
                           ⚠️ 提示：使用自定义公共镜像创建时，系统将通过终端执行标准 docker
