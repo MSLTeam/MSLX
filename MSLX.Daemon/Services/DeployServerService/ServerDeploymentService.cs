@@ -36,7 +36,7 @@ public class ServerDeploymentService
     /// 远程下载压缩包
     /// </summary>
     public async Task<string> DownloadPackageAsync(string serverId, string packageFileUrl, string packageFileSha256,
-        ReportProgress report)
+        ReportProgress report, CancellationToken ct)
     {
         if (string.IsNullOrEmpty(packageFileUrl)) return string.Empty;
         try
@@ -44,7 +44,7 @@ public class ServerDeploymentService
             string packageFileKey = Guid.NewGuid().ToString("N");
             string savePath = Path.Combine(IConfigBase.GetAppDataPath(), "Temp", "Uploads", packageFileKey + ".tmp");
             bool success =
-                await DownloadAndValidateAsync(packageFileUrl, savePath, $"服务端压缩包文件", packageFileSha256, report);
+                await DownloadAndValidateAsync(packageFileUrl, savePath, $"服务端压缩包文件", packageFileSha256, report, ct);
             if (!success) throw new Exception("服务端压缩文件下载失败！");
             return packageFileKey;
         }
@@ -165,7 +165,7 @@ public class ServerDeploymentService
     /// <summary>
     /// 处理 Java 环境
     /// </summary>
-    public async Task EnsureJavaAsync(string serverId, string javaConfig, ReportProgress report)
+    public async Task EnsureJavaAsync(string serverId, string javaConfig, ReportProgress report, CancellationToken? ct)
     {
         if (string.IsNullOrEmpty(javaConfig) || !javaConfig.Contains("MSLX://Java/")) return;
 
@@ -207,7 +207,7 @@ public class ServerDeploymentService
         Directory.CreateDirectory(javaBaseDir);
 
         // 下载
-        bool success = await DownloadAndValidateAsync(url, savePath, $"Java {javaVersion}", sha256, report);
+        bool success = await DownloadAndValidateAsync(url, savePath, $"Java {javaVersion}", sha256, report, ct);
         if (!success) throw new Exception("Java download failed");
 
         // 解压
@@ -323,7 +323,7 @@ public class ServerDeploymentService
     /// 部署核心文件 (支持用户上传 或 远程下载)
     /// </summary>
     public async Task DeployCoreAsync(string serverId, string baseDir, string coreName, string? userUploadKey,
-        string? downloadUrl, string? sha256, ReportProgress report)
+        string? downloadUrl, string? sha256, ReportProgress report, CancellationToken? ct)
     {
         string destPath = Path.Combine(baseDir, coreName);
         Directory.CreateDirectory(baseDir);
@@ -356,7 +356,7 @@ public class ServerDeploymentService
         // 下载核心
         if (!string.IsNullOrEmpty(downloadUrl))
         {
-            bool success = await DownloadAndValidateAsync(downloadUrl, destPath, "服务端核心", sha256, report);
+            bool success = await DownloadAndValidateAsync(downloadUrl, destPath, "服务端核心", sha256, report, ct);
             if (!success) throw new Exception("Core download failed");
             await report("核心下载完成。", 99.9);
         }
@@ -381,7 +381,7 @@ public class ServerDeploymentService
                 {
                     case "vanilla":
                         await DownloadVanilla(Path.Combine(baseDir, ".fabric", "server"), $"{targetVersion}-server.jar",
-                            targetVersion, report);
+                            targetVersion, report, ct);
                         break;
                     case "paper":
                     case "leaves":
@@ -389,7 +389,7 @@ public class ServerDeploymentService
                     case "purpur":
                     case "leaf":
                         await DownloadVanilla(Path.Combine(baseDir, "cache"), $"mojang_{targetVersion}.jar",
-                            targetVersion, report);
+                            targetVersion, report, ct);
                         break;
                 }
             }
@@ -402,7 +402,7 @@ public class ServerDeploymentService
     }
 
     /// 处理原版服务端的安装方法
-    private async Task DownloadVanilla(string path, string filename, string version, ReportProgress report)
+    private async Task DownloadVanilla(string path, string filename, string version, ReportProgress report, CancellationToken? ct)
     {
         await report("正在下载原版服务端作为依赖···", 0);
         HttpService.HttpResponse downResponse = await MSLApi.GetAsync("/download/server/vanilla/" + version, null);
@@ -413,7 +413,7 @@ public class ServerDeploymentService
             string sha256Exp = downContext["data"]?["sha256"]?.ToString() ?? string.Empty;
 
             bool success = await DownloadAndValidateAsync(downUrl, Path.Combine(path, filename), $"{version} 原版服务端",
-                sha256Exp, report);
+                sha256Exp, report, ct);
             if (!success) throw new Exception("下载原版服务端依赖失败");
             await report("原版服务端依赖下载成功。", 99.9);
         }
@@ -502,7 +502,7 @@ public class ServerDeploymentService
     /// 部署 MCDReforged 实例：创建 server/ 布局、(可选)安装 MCDR、部署真实核心到 server/、生成 config.yml。
     /// </summary>
     public async Task DeployMcdrAsync(string serverId, McServerInfo.ServerInfo server, CreateServerRequest request,
-        ReportProgress report)
+        ReportProgress report, CancellationToken ct)
     {
         await report("正在部署 MCDReforged 实例...", 5);
 
@@ -544,12 +544,12 @@ public class ServerDeploymentService
         }
 
         // java
-        await EnsureJavaAsync(serverId, request.java ?? "", report);
+        await EnsureJavaAsync(serverId, request.java ?? "", report, ct);
 
         // 服务器核心
         if (!string.IsNullOrEmpty(request.packageUrl))
         {
-            string tmpKey = await DownloadPackageAsync(serverId, request.packageUrl, request.packageSha256, report);
+            string tmpKey = await DownloadPackageAsync(serverId, request.packageUrl, request.packageSha256, report, ct);
             await DeployPackageAsync(serverId, tmpKey, null, serverDir, report);
             await ChmodBedrockServerAsync(serverId, serverDir, report);
         }
@@ -562,7 +562,7 @@ public class ServerDeploymentService
         if (!string.IsNullOrEmpty(request.core) && request.core != "none")
         {
             await DeployCoreAsync(serverId, serverDir, request.core, request.coreFileKey, request.coreUrl,
-                request.coreSha256, report);
+                request.coreSha256, report, ct);
         }
 
         // 启动指令
@@ -725,7 +725,7 @@ public class ServerDeploymentService
 
     // 辅助方法
     public async Task<bool> DownloadAndValidateAsync(string? url, string savePath, string itemName, string? sha256,
-        ReportProgress report)
+        ReportProgress report, CancellationToken? ct)
     {
         if (string.IsNullOrEmpty(url)) return false;
 
@@ -744,6 +744,13 @@ public class ServerDeploymentService
         var tcs = new TaskCompletionSource<bool>();
         DateTime lastReport = DateTime.MinValue;
 
+        // 注册取消回调：当 CancellationToken 被触发时立即取消下载，无需等待进度事件
+        using var cancellationReg = ct?.Register(() =>
+        {
+            _ = downloader.CancelTaskAsync();
+            tcs.TrySetResult(false);
+        });
+
         downloader.DownloadProgressChanged += async (s, e) =>
         {
             if ((DateTime.UtcNow - lastReport).TotalMilliseconds > 1000)
@@ -759,7 +766,25 @@ public class ServerDeploymentService
         {
             if (e.Cancelled || e.Error != null)
             {
-                await report($"{itemName} 下载失败: {e.Error?.Message ?? "被取消"}", -1, true, e.Error);
+                string errorMsg;
+                switch(e.Error)
+                {
+                    case null:
+                        errorMsg = $"{itemName} 下载失败: 未知错误";
+                        break;
+                    case TaskCanceledException _:
+                    case OperationCanceledException _:
+                        errorMsg = $"{itemName} 下载失败: 网络连接中断或超时，请检查网络后重试";
+                        if(ct?.IsCancellationRequested == true)
+                        {
+                            errorMsg = $"{itemName} 下载已取消。";
+                        }
+                        break;
+                    default:
+                        errorMsg = $"{itemName} 下载失败: {e.Error.Message}";
+                        break;
+                }
+                await report(errorMsg, -1, true, e.Error);
                 tcs.TrySetResult(false);
             }
             else

@@ -95,7 +95,7 @@ public partial class InstanceListPage : UserControl
         var server = InstanceModel.Current.ServerList.FirstOrDefault(s => s.ID == serverId);
         if (server != null)
         {
-            await DaemonAPIService.PostApiAsync("/api/instance/delete", new { id = serverId }, HttpService.PostContentType.Json);
+            await DaemonAPIService.PostApiAsync("/api/instance/delete", null, HttpService.PostContentType.Json, new { id = serverId });
             await LoadServersList();
             DialogService.ToastManager.CreateToast()
                             .OfType(Avalonia.Controls.Notifications.NotificationType.Information)
@@ -166,6 +166,7 @@ public partial class InstanceListPage : UserControl
             SideMenuHelper.Current.NavigateTo<CreateMCServer>();
             return;
         }
+        PageStore.CreateMCServerMenuItem.PageContent = new CreateMCServer();
         SideMenuHelper.Current?.NavigateTo(PageStore.CreateMCServerMenuItem, true, 2);
     }
 }

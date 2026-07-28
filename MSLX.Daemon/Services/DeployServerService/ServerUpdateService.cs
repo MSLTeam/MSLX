@@ -150,7 +150,7 @@ public class ServerUpdateService : BackgroundService
             // 检查 Java
             if (!string.IsNullOrEmpty(req.Java))
             {
-                await _deployer.EnsureJavaAsync(sid, req.Java, report);
+                await _deployer.EnsureJavaAsync(sid, req.Java, report,null);
                 server.Java = req.Java; // 下载成功后再保存路径
             }
 
@@ -159,7 +159,7 @@ public class ServerUpdateService : BackgroundService
             {
                 string coreName = server.Core;
                 
-                await _deployer.DeployCoreAsync(sid, server.Base, coreName, req.CoreFileKey, req.CoreUrl, req.CoreSha256, report);
+                await _deployer.DeployCoreAsync(sid, server.Base, coreName, req.CoreFileKey, req.CoreUrl, req.CoreSha256, report,null);
             }
 
             // NeoForge 安装

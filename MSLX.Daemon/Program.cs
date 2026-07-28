@@ -186,6 +186,7 @@ builder.Services.AddSingleton(typeof(IBackgroundTaskQueue<>), typeof(BackgroundT
 builder.Services.AddSingleton<IMCServerService,MCServerService>();
 builder.Services.AddSingleton<IDockerService,DockerService>();
 builder.Services.AddSingleton<SystemMonitor>();
+builder.Services.AddSingleton<CreationTaskTracker>();
 var pluginManager = new PluginManager();
 builder.Services.AddSingleton(pluginManager);
 

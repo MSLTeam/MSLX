@@ -28,6 +28,7 @@ public partial class CreateMCServer : UserControl
     private HubConnection? _hubConnection; // 创建进度的日志Hub连接
     private string? _createdServerId;
     private ObservableCollection<CreationLog> _logCollection = new();
+    private bool _isCancelling = false;
 
 
     public class CreationLog // 创建实例进度日志格式
@@ -948,14 +949,48 @@ public partial class CreateMCServer : UserControl
         // 停止连接
         await DisposeSignalR();
 
-        await ShowErrorMessage("创建失败", message);
+        bool wasCancelling = _isCancelling || message.Contains("取消");
 
+        if (wasCancelling)
+        {
+            AddLog("部署任务已取消。");
+            await ShowSuccessMessage("已取消", "部署任务已成功取消。");
+        }
+        else
+        {
+            await ShowErrorMessage("创建失败", message);
+        }
+
+        _isCancelling = false;
         await Task.Delay(2000);
+        BtnCancelCreation.IsEnabled = true;
+        BtnCancelCreation.Content = "取消部署";
         StatusBorder.IsVisible = false;
         BtnNext.IsEnabled = true;
         BtnPrevious.IsEnabled = true;
         _currentStep = 0;
         UpdateStepVisibility();
+    }
+
+    // 取消部署
+    private async void BtnCancelCreation_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_isCancelling || string.IsNullOrEmpty(_createdServerId)) return;
+
+        _isCancelling = true;
+        BtnCancelCreation.IsEnabled = false;
+        BtnCancelCreation.Content = "正在取消...";
+        AddLog("正在发送取消请求...");
+
+        var result = await DaemonAPIService.CancelServerCreationAsync(_createdServerId);
+        if (!result.Success)
+        {
+            AddLog($"取消请求失败: {result.Message}");
+            _isCancelling = false;
+            BtnCancelCreation.IsEnabled = true;
+            BtnCancelCreation.Content = "取消部署";
+        }
+        // 成功时不重置状态，等待 SignalR 推送取消完成的消息（progress == -1）
     }
 
     private async Task DisposeSignalR()
@@ -976,7 +1011,6 @@ public partial class CreateMCServer : UserControl
         BtnPrevious.IsEnabled = true;
         BottomActionBorder.IsVisible = true;
 
-        ResetForm();
         SideMenuHelper.Current?.NavigateTo<InstanceListPage>();
         SideMenuHelper.Current?.NavigateRemove(this);
 
@@ -1006,44 +1040,8 @@ public partial class CreateMCServer : UserControl
             await DaemonAPIService.DeleteUploadAsync(_uploadId);
         }
 
-        ResetForm();
         SideMenuHelper.Current?.NavigateTo<InstanceListPage>();
         SideMenuHelper.Current?.NavigateRemove(this);
-    }
-
-    /// <summary>
-    /// 重置表单
-    /// </summary>
-    private async void ResetForm()
-    {
-        // 重置步骤
-        _currentStep = 0;
-        UpdateStepVisibility();
-
-        // 清空输入
-        TxtServerName.Text = string.Empty;
-        TxtStoragePath.Text = string.Empty;
-        TxtJavaPath.Text = string.Empty;
-        TxtCoreName.Text = string.Empty;
-        TxtCoreUrl.Text = string.Empty;
-        TxtCoreSha256.Text = string.Empty;
-        TxtExtraArgs.Text = string.Empty;
-        NumMinMemory.Value = 1024;
-        NumMaxMemory.Value = 4096;
-
-        // 重置上传状态
-        _uploadId = null;
-        _selectedFilePath = null;
-        TxtSelectedFile.Text = "未选择文件";
-        TxtFileSize.Text = string.Empty;
-        BtnUpload.IsEnabled = false;
-        PanelUploadProgress.IsVisible = false;
-        PanelUploadSuccess.IsVisible = false;
-
-        // 重置单选按钮
-        RbLocalUpload.IsChecked = true;
-
-        await DisposeSignalR();
     }
 
     #endregion
