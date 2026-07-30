@@ -1,0 +1,291 @@
+name: 推送 Homebrew 更新
+
+on:
+  workflow_run:
+    workflows: ["发布 MSLX-Daemon"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mslx-daemon-homebrew-bump
+  cancel-in-progress: false
+
+env:
+  TAP_REPOSITORY: MSLTeam/homebrew-tap
+  TAP_NAME: MSLTeam/tap
+  FORMULA_PATH: Formula/mslx-daemon.rb
+  FORMULA_NAME: mslx-daemon
+  ENABLE_AUTO_MERGE: ${{ vars.ENABLE_AUTO_MERGE || 'enable' }}
+
+jobs:
+  detect_version:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: macos-latest
+    outputs:
+      current: ${{ steps.livecheck.outputs.current }}
+      latest: ${{ steps.livecheck.outputs.latest }}
+      outdated: ${{ steps.livecheck.outputs.outdated }}
+    steps:
+      - uses: Homebrew/actions/setup-homebrew@main
+        with:
+          token: ${{ secrets.HOMEBREW_GITHUB_API_TOKEN }}
+      - name: Tap repository
+        run: brew tap "${TAP_NAME}"
+      - name: Detect latest version with livecheck
+        id: livecheck
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$(brew livecheck --json "${TAP_NAME}/${FORMULA_NAME}")"
+          printf '%s\n' "${output}"
+
+          values="$(jq -er --arg formula "${FORMULA_NAME}" '
+            [ .[] | select(.formula == $formula) ] as $matches
+            | if ($matches | length) != 1 then
+                error("Expected exactly one livecheck record for \($formula), found \($matches | length)")
+              elif ($matches[0].version.current | type) != "string" then
+                error("version.current must be a string")
+              elif ($matches[0].version.latest | type) != "string" then
+                error("version.latest must be a string")
+              elif ($matches[0].version.outdated | type) != "boolean" then
+                error("version.outdated must be a boolean")
+              else
+                [
+                  $matches[0].version.current,
+                  $matches[0].version.latest,
+                  $matches[0].version.outdated
+                ] | @tsv
+              end
+          ' <<< "${output}")"
+          IFS=$'\t' read -r current latest outdated <<< "${values}"
+
+          version_pattern='^[0-9]+([.][0-9]+)+$'
+          [[ "${current}" =~ ${version_pattern} ]] || {
+            echo "Invalid current version: ${current}" >&2
+            exit 1
+          }
+          [[ "${latest}" =~ ${version_pattern} ]] || {
+            echo "Invalid latest version: ${latest}" >&2
+            exit 1
+          }
+          [[ "${outdated}" == "true" || "${outdated}" == "false" ]] || {
+            echo "Invalid outdated value: ${outdated}" >&2
+            exit 1
+          }
+
+          {
+            printf 'current=%s\n' "${current}"
+            printf 'latest=%s\n' "${latest}"
+            printf 'outdated=%s\n' "${outdated}"
+          } >> "${GITHUB_OUTPUT}"
+      - name: Report no update
+        if: steps.livecheck.outputs.outdated == 'false'
+        run: echo "${FORMULA_NAME} is already at ${{ steps.livecheck.outputs.current }}."
+
+  check_existing_pr:
+    needs: detect_version
+    if: needs.detect_version.outputs.outdated == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      found: ${{ steps.existing.outputs.found }}
+      branch: ${{ steps.existing.outputs.branch }}
+      url: ${{ steps.existing.outputs.url }}
+    steps:
+      - name: Check for existing pull request
+        id: existing
+        uses: actions/github-script@v7
+        env:
+          VERSION: ${{ needs.detect_version.outputs.latest }}
+        with:
+          github-token: ${{ secrets.HOMEBREW_GITHUB_API_TOKEN }}
+          script: |
+            const [owner, repo] = process.env.TAP_REPOSITORY.split("/");
+            const title = `${process.env.FORMULA_NAME} ${process.env.VERSION}`;
+            const branch = `bump-${process.env.FORMULA_NAME}-${process.env.VERSION}`;
+            const { data: repository } = await github.rest.repos.get({ owner, repo });
+            const { data: pulls } = await github.rest.pulls.list({
+              owner, repo, state: "open", base: repository.default_branch, per_page: 100
+            });
+            const existing = pulls.find(pull => pull.title === title);
+            core.setOutput("found", Boolean(existing));
+            core.setOutput("branch", branch);
+            core.setOutput("url", existing?.html_url || "");
+            if (existing) core.notice(`Update PR already exists: ${existing.html_url}`);
+
+  prepare_formula:
+    needs: [detect_version, check_existing_pr]
+    if: >-
+      needs.detect_version.outputs.outdated == 'true' &&
+      needs.check_existing_pr.outputs.found == 'false'
+    runs-on: macos-latest
+    steps:
+      - name: Download assets and Formula
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_GITHUB_API_TOKEN }}
+          VERSION: ${{ needs.detect_version.outputs.latest }}
+        run: |
+          set -euo pipefail
+          mkdir -p prepared/Formula assets
+          arm_url="https://github.com/MSLTeam/MSLX/releases/download/v${VERSION}/MSLX-Daemon_v${VERSION}_osx-arm64.tar.gz"
+          intel_url="https://github.com/MSLTeam/MSLX/releases/download/v${VERSION}/MSLX-Daemon_v${VERSION}_osx-x64.tar.gz"
+          curl --fail --location --retry 12 --retry-delay 10 --retry-all-errors \
+            --output assets/arm64.tar.gz "${arm_url}"
+          curl --fail --location --retry 12 --retry-delay 10 --retry-all-errors \
+            --output assets/x64.tar.gz "${intel_url}"
+          tar -tzf assets/arm64.tar.gz > /dev/null
+          tar -tzf assets/x64.tar.gz > /dev/null
+          gh api -H "Accept: application/vnd.github.raw+json" \
+            "repos/${TAP_REPOSITORY}/contents/${FORMULA_PATH}" > "prepared/${FORMULA_PATH}"
+          echo "VERSION=${VERSION}" >> "${GITHUB_ENV}"
+          echo "ARM_URL=${arm_url}" >> "${GITHUB_ENV}"
+          echo "INTEL_URL=${intel_url}" >> "${GITHUB_ENV}"
+          echo "ARM_SHA=$(shasum -a 256 assets/arm64.tar.gz | awk '{print $1}')" >> "${GITHUB_ENV}"
+          echo "INTEL_SHA=$(shasum -a 256 assets/x64.tar.gz | awk '{print $1}')" >> "${GITHUB_ENV}"
+      - name: Update and validate Formula
+        run: |
+          set -euo pipefail
+          ruby <<'RUBY'
+          path = "prepared/#{ENV.fetch("FORMULA_PATH")}"
+          formula = File.read(path, encoding: "UTF-8")
+          replacements = {
+            /    url ".+_osx-arm64\.tar\.gz"\n    sha256 "[0-9a-f]{64}"/ =>
+              %(    url "#{ENV.fetch("ARM_URL")}"\n    sha256 "#{ENV.fetch("ARM_SHA")}"),
+            /    url ".+_osx-x64\.tar\.gz"\n    sha256 "[0-9a-f]{64}"/ =>
+              %(    url "#{ENV.fetch("INTEL_URL")}"\n    sha256 "#{ENV.fetch("INTEL_SHA")}"),
+            /  version "[^"]+"/ => %(  version "#{ENV.fetch("VERSION")}"),
+          }
+          replacements.each do |pattern, value|
+            matches = formula.scan(pattern)
+            abort "Expected exactly one Formula block" unless matches.length == 1
+            formula.sub!(pattern, value)
+          end
+          File.write(path, formula)
+          RUBY
+          ruby -c "prepared/${FORMULA_PATH}"
+          brew style "prepared/${FORMULA_PATH}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prepared-formula-${{ needs.detect_version.outputs.latest }}
+          path: prepared
+          if-no-files-found: error
+
+  create_commit:
+    needs: [detect_version, check_existing_pr, prepare_formula]
+    if: >-
+      needs.detect_version.outputs.outdated == 'true' &&
+      needs.check_existing_pr.outputs.found == 'false'
+    runs-on: ubuntu-latest
+    outputs:
+      created: ${{ steps.commit.outputs.created }}
+      existing_url: ${{ steps.commit.outputs.existing_url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: prepared-formula-${{ needs.detect_version.outputs.latest }}
+          path: prepared
+      - name: Recheck PR and create commit
+        id: commit
+        uses: actions/github-script@v7
+        env:
+          VERSION: ${{ needs.detect_version.outputs.latest }}
+          BRANCH: ${{ needs.check_existing_pr.outputs.branch }}
+        with:
+          github-token: ${{ secrets.HOMEBREW_GITHUB_API_TOKEN }}
+          script: |
+            const fs = require("fs");
+            const [owner, repo] = process.env.TAP_REPOSITORY.split("/");
+            const title = `${process.env.FORMULA_NAME} ${process.env.VERSION}`;
+            const { data: repository } = await github.rest.repos.get({ owner, repo });
+            const base = repository.default_branch;
+            const { data: pulls } = await github.rest.pulls.list({
+              owner, repo, state: "open", base, per_page: 100
+            });
+            const existing = pulls.find(pull => pull.title === title);
+            if (existing) {
+              core.notice(`Concurrent workflow created PR: ${existing.html_url}`);
+              core.setOutput("created", false);
+              core.setOutput("existing_url", existing.html_url);
+              return;
+            }
+            const { data: baseRef } = await github.rest.git.getRef({ owner, repo, ref: `heads/${base}` });
+            const { data: baseCommit } = await github.rest.git.getCommit({ owner, repo, commit_sha: baseRef.object.sha });
+            const content = fs.readFileSync(`prepared/${process.env.FORMULA_PATH}`, "utf8");
+            const { data: blob } = await github.rest.git.createBlob({ owner, repo, content, encoding: "utf-8" });
+            const { data: tree } = await github.rest.git.createTree({
+              owner, repo, base_tree: baseCommit.tree.sha,
+              tree: [{ path: process.env.FORMULA_PATH, mode: "100644", type: "blob", sha: blob.sha }]
+            });
+            const { data: commit } = await github.rest.git.createCommit({
+              owner, repo, message: title, tree: tree.sha, parents: [baseRef.object.sha]
+            });
+            try {
+              await github.rest.git.createRef({ owner, repo, ref: `refs/heads/${process.env.BRANCH}`, sha: commit.sha });
+            } catch (error) {
+              if (error.status !== 422) throw error;
+              await github.rest.git.updateRef({
+                owner, repo, ref: `heads/${process.env.BRANCH}`, sha: commit.sha, force: true
+              });
+            }
+            core.setOutput("created", true);
+            core.setOutput("existing_url", "");
+
+  create_pull_request:
+    needs: [detect_version, check_existing_pr, create_commit]
+    if: needs.create_commit.outputs.created == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      pr_url: ${{ steps.pull.outputs.pr_url }}
+    steps:
+      - name: Create pull request
+        id: pull
+        uses: actions/github-script@v7
+        env:
+          VERSION: ${{ needs.detect_version.outputs.latest }}
+          BRANCH: ${{ needs.check_existing_pr.outputs.branch }}
+        with:
+          github-token: ${{ secrets.HOMEBREW_GITHUB_API_TOKEN }}
+          script: |
+            const [owner, repo] = process.env.TAP_REPOSITORY.split("/");
+            const title = `${process.env.FORMULA_NAME} ${process.env.VERSION}`;
+            const { data: repository } = await github.rest.repos.get({ owner, repo });
+            const { data: pulls } = await github.rest.pulls.list({
+              owner, repo, state: "open", base: repository.default_branch, per_page: 100
+            });
+            const existing = pulls.find(pull => pull.title === title);
+            if (existing) {
+              core.notice(`Concurrent workflow created PR: ${existing.html_url}`);
+              core.setOutput("pr_url", existing.html_url);
+              return;
+            }
+            const { data: pull } = await github.rest.pulls.create({
+              owner, repo, base: repository.default_branch, head: process.env.BRANCH, title,
+              body: `Automated dual-architecture Formula update for ${context.repo.owner}/${context.repo.repo}.`
+            });
+            core.setOutput("pr_url", pull.html_url);
+            core.notice(`Created pull request: ${pull.html_url}`);
+
+  auto_merge:
+    needs: create_pull_request
+    if: needs.create_pull_request.outputs.pr_url != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate auto-merge setting
+        run: |
+          case "${ENABLE_AUTO_MERGE}" in
+            enable|disable) ;;
+            *) echo "ENABLE_AUTO_MERGE must be enable or disable" >&2; exit 1 ;;
+          esac
+      - name: Auto merge
+        if: env.ENABLE_AUTO_MERGE == 'enable'
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_GITHUB_API_TOKEN }}
+          PR_URL: ${{ needs.create_pull_request.outputs.pr_url }}
+        run: gh pr merge "${PR_URL}" --repo "${TAP_REPOSITORY}" --auto --squash
+      - name: Auto merge disabled
+        if: env.ENABLE_AUTO_MERGE == 'disable'
+        run: echo "Auto-merge is disabled by ENABLE_AUTO_MERGE."
