@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.Models;
 using MSLX.SDK.Models.Plugins;
+using MSLX.Daemon.Services;
+using MSLX.Daemon.Services.PluginsService;
 
 namespace MSLX.Daemon.Controllers.PluginsController;
 
@@ -14,12 +16,14 @@ public class PluginManagerController : ControllerBase
 {
     private readonly IMemoryCache _cache;
     private readonly ILogger<PluginManagerController> _logger;
+    private readonly PluginManager _pluginManager;
     private static readonly ParallelDownloader _downloader = new ParallelDownloader();
 
-    public PluginManagerController(IMemoryCache cache, ILogger<PluginManagerController> logger)
+    public PluginManagerController(IMemoryCache cache, ILogger<PluginManagerController> logger, PluginManager pluginManager)
     {
         _cache = cache;
         _logger = logger;
+        _pluginManager = pluginManager;
     }
 
     #region 插件安装(下载)
@@ -106,7 +110,58 @@ public class PluginManagerController : ControllerBase
             if (result.Success)
             {
                 _logger.LogInformation($"插件 {fileName} 下载成功");
-                UpdateStatus(cacheKey, "success", 100, "下载完成，将在守护进程下次重启时生效");
+                
+                try 
+                {
+                    bool isUpdate = targetFilePath.EndsWith(".new", StringComparison.OrdinalIgnoreCase);
+                    string realDllPath = isUpdate ? targetFilePath.Substring(0, targetFilePath.Length - 4) : targetFilePath;
+                    
+                    if (isUpdate)
+                    {
+                        _pluginManager.UnloadPlugin(realDllPath);
+                        
+                        // 小小的延迟确保文件句柄释放
+                        await Task.Delay(500);
+                        
+                        if (System.IO.File.Exists(realDllPath))
+                        {
+                            try {
+                                System.IO.File.Delete(realDllPath);
+                            } catch {
+                                // 强制重命名
+                                string backupName = realDllPath + ".old_" + Guid.NewGuid().ToString("N");
+                                System.IO.File.Move(realDllPath, backupName);
+                            }
+                        }
+                        
+                        // 预防插件存在PDB调试文件
+                        string pdbPath = Path.ChangeExtension(realDllPath, ".pdb");
+                        if (System.IO.File.Exists(pdbPath))
+                        {
+                            try { System.IO.File.Delete(pdbPath); } catch { }
+                        }
+                        
+                        System.IO.File.Move(targetFilePath, realDllPath);
+                    }
+                    else
+                    {
+                        _pluginManager.UnloadPlugin(realDllPath);
+                    }
+                    
+                    bool loadResult = _pluginManager.LoadPlugin(realDllPath);
+                    if (loadResult)
+                    {
+                        UpdateStatus(cacheKey, "success", 100, "下载完成，已自动热重载并生效！");
+                    }
+                    else
+                    {
+                        UpdateStatus(cacheKey, "error", 0, "下载完成，但热加载插件失败（请查看控制台日志）");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    UpdateStatus(cacheKey, "success", 100, $"下载完成，但在热加载时遇到问题: {ex.Message}，将在重启时生效");
+                }
             }
             else
             {

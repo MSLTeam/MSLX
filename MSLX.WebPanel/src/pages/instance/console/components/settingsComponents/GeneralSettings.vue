@@ -22,6 +22,7 @@ import { type UpdateInstanceModel } from '@/api/model/instance';
 
 // 组件
 import ServerCoreSelector from '@/pages/instance/createInstance/components/ServerCoreSelector.vue';
+import DockerImageSelector from '@/components/docker-image-selector/index.vue';
 
 const route = useRoute();
 const userStore = useUserStore();
@@ -1133,11 +1134,11 @@ onUnmounted(() => {
               </div>
             </div>
             <div class="w-full md:w-[340px] shrink-0">
-              <t-input
+              <docker-image-selector
                 v-model="formData.dockerImage"
                 :disabled="javaType === 'docker-java'"
-                placeholder="如 eclipse-temurin:21-jre"
-                class="w-full !font-mono"
+                placeholder="输入或选择本地镜像，如 eclipse-temurin:21-jre"
+                class="w-full"
               />
             </div>
           </div>

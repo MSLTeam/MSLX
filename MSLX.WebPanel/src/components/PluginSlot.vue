@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col gap-6 w-full">
+  <div v-if="extensions.length" class="flex flex-col gap-6 w-full">
     <component
       :is="ext.component || ext"
       v-for="(ext, index) in extensions"

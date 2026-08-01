@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Services;
+using MSLX.Daemon.Services.PluginsService;
 using MSLX.SDK.Models;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.Models.Plugins;
@@ -53,7 +54,10 @@ public class PluginActionController : ControllerBase
             {
                 System.IO.File.WriteAllText(disabledMarker, "");
             }
-            return Success("插件已成功禁用，重启后将彻底停止加载");
+            
+            _pluginManager.UnloadPlugin(dllPath);
+            
+            return Success("插件已成功禁用并卸载，立即生效");
         }
         catch (Exception ex)
         {
@@ -69,10 +73,14 @@ public class PluginActionController : ControllerBase
             System.IO.File.Delete(disabledMarker);
         }
 
-        var isRunning = _pluginManager.Plugins.Any(p => p.Assembly.Location.Equals(dllPath, StringComparison.OrdinalIgnoreCase));
+        var isRunning = _pluginManager.Plugins.Any(p => p.DllPath.Equals(dllPath, StringComparison.OrdinalIgnoreCase));
         if (!isRunning)
         {
-            return Success("插件已解除禁用，将在下次重启时加载生效");
+            var success = _pluginManager.LoadPlugin(dllPath);
+            if (success)
+                return Success("插件已成功启用并加载生效");
+            else
+                return Error("插件启用失败，请查看后台日志");
         }
 
         return Success("插件已恢复正常启用状态");
@@ -83,6 +91,9 @@ public class PluginActionController : ControllerBase
         var deleteMarker = dllPath + ".delete";
         try
         {
+            // 卸载插件，释放文件占用
+            _pluginManager.UnloadPlugin(dllPath);
+
             // 如果存在禁用标记，顺便清理掉，以删除标记为最高优先级
             var disabledMarker = dllPath + ".disabled";
             if (System.IO.File.Exists(disabledMarker)) System.IO.File.Delete(disabledMarker);
@@ -97,15 +108,18 @@ public class PluginActionController : ControllerBase
                 try { 
                     System.IO.File.Delete(dllPath); 
                     System.IO.File.Delete(deleteMarker);
-                    return Success("插件已成功删除！");
-                } catch { /* 锁定了 重启再说 */ }
+                    return Success("插件已成功删除并卸载！");
+                } 
+                catch 
+                { 
+                    return Success("插件已标记为删除，将在下次重启时彻底删除文件"); 
+                }
             }
-
-            return Success("插件已标记为删除，守护进程将在下次重启时删除");
+            return Success("插件已移除");
         }
         catch (Exception ex)
         {
-            return Error($"标记删除失败: {ex.Message}");
+            return Error($"删除操作失败: {ex.Message}");
         }
     }
 
@@ -136,7 +150,7 @@ public class PluginActionController : ControllerBase
         var loadedPlugin = _pluginManager.Plugins.FirstOrDefault(p => 
             p.Metadata.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
         
-        if (loadedPlugin != null) return loadedPlugin.Assembly.Location;
+        if (loadedPlugin != null) return loadedPlugin.DllPath;
         
         if (Directory.Exists(_pluginsPath))
         {

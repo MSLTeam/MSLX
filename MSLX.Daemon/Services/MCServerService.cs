@@ -1,4 +1,4 @@
-using CliWrap;
+﻿using CliWrap;
 using CliWrap.Buffered;
 using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
@@ -674,15 +674,15 @@ public class MCServerService : IMCServerService
                     sb.Append($"{serverInfo.DockerExtraArgs.Trim()} ");
                 }
 
-                // 镜像填充
-                string finalImage = serverInfo.DockerImage ?? "MSLX://DockerImage/Java/21";
+                // 获取完整镜像
+                string rawImage = string.IsNullOrWhiteSpace(serverInfo.DockerImage)
+                    ? $"{DockerImageResolver.PseudoPrefix}21"
+                    : serverInfo.DockerImage;
+                string finalImage = DockerImageResolver.Resolve(rawImage);
 
-                if (finalImage.StartsWith("MSLX://DockerImage/Java/", StringComparison.OrdinalIgnoreCase))
+                if (DockerImageResolver.IsPseudo(rawImage))
                 {
-                    string javaVer = finalImage.Replace("MSLX://DockerImage/Java/", "", StringComparison.OrdinalIgnoreCase).Trim();
-                    finalImage = $"docker.mslmc.cn/xiaoyululu/mslx-runtime:java{javaVer}";
-
-                    _logger.LogInformation($"[Docker-Parser] 实例 {instanceId} 命中内置运行时伪协议，解析镜像: {serverInfo.DockerImage} -> {finalImage}");
+                    _logger.LogInformation($"[Docker-Parser] 实例 {instanceId} 命中内置运行时伪协议，解析镜像: {rawImage} -> {finalImage}");
                 }
 
                 sb.Append($"{finalImage} ");

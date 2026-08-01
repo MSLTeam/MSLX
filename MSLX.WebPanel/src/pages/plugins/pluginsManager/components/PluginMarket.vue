@@ -155,9 +155,13 @@ const pollInstallStatus = (taskId: string) => {
         versionDialogVisible.value = false;
         NotificationPlugin.success({
           title: '插件安装成功',
-          content: '文件已就绪，将在下次重启时生效。',
+          content: '新插件已就绪！',
           duration: 5000,
         });
+        setTimeout(async () => {
+          const { pluginStateChanged } = await import('@/utils/pluginManager');
+          pluginStateChanged.value = true;
+        }, 1500);
       } else if (res.status === 'error') {
         clearInterval(installState.timer);
         installState.isInstalling = false;
@@ -301,8 +305,8 @@ onMounted(() => {
       <div v-if="totalPages > 1" class="flex items-center justify-center gap-1.5 md:gap-2 mb-4">
         <button
           class="h-9 px-3 flex items-center gap-1 rounded-xl border border-[var(--td-component-border)] text-sm font-medium text-[var(--td-text-color-secondary)] hover:bg-[var(--td-bg-color-secondarycontainer)] hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-white dark:bg-zinc-800/80 shadow-sm"
-          @click="changePage(pagination.current - 1)"
           :disabled="pagination.current === 1"
+          @click="changePage(pagination.current - 1)"
         >
           <chevron-left-icon size="16px" /> 上一页
         </button>
@@ -327,9 +331,9 @@ onMounted(() => {
         </div>
 
         <button
+          class="h-9 px-3 flex items-center gap-1 rounded-xl border border-[var(--td-component-border)] text-sm font-medium text-[var(--td-text-color-secondary)] hover:bg-[var(--td-bg-color-secondarycontainer)] hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-white dark:bg-zinc-800/80 shadow-sm"
           @click="changePage(pagination.current + 1)"
           :disabled="pagination.current === totalPages"
-          class="h-9 px-3 flex items-center gap-1 rounded-xl border border-[var(--td-component-border)] text-sm font-medium text-[var(--td-text-color-secondary)] hover:bg-[var(--td-bg-color-secondarycontainer)] hover:text-primary transition-colors disabled:opacity-40 disabled:cursor-not-allowed bg-white dark:bg-zinc-800/80 shadow-sm"
         >
           下一页 <chevron-right-icon size="16px" />
         </button>

@@ -16,20 +16,23 @@ public class ServerCreationService : BackgroundService
     private readonly IBackgroundTaskQueue<CreateServerTask> _taskQueue;
     private readonly IHubContext<CreationProgressHub> _hubContext;
     private readonly IMemoryCache _memoryCache;
-    private readonly ServerDeploymentService _deploymentService; // 注入服务端部署服务
+    private readonly ServerDeploymentService _deploymentService;
+    private readonly CreationTaskTracker _taskTracker;
 
     public ServerCreationService(
         ILogger<ServerCreationService> logger,
         IBackgroundTaskQueue<CreateServerTask> taskQueue,
         IHubContext<CreationProgressHub> hubContext,
         IMemoryCache memoryCache,
-        ServerDeploymentService deploymentService) 
+        ServerDeploymentService deploymentService,
+        CreationTaskTracker taskTracker)
     {
         _logger = logger;
         _taskQueue = taskQueue;
         _hubContext = hubContext;
         _memoryCache = memoryCache;
         _deploymentService = deploymentService;
+        _taskTracker = taskTracker;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -43,16 +46,24 @@ public class ServerCreationService : BackgroundService
                 // 获取任务
                 var task = await _taskQueue.DequeueTaskAsync(stoppingToken);
 
+                // 为该任务创建独立的 CancellationTokenSource
+                using var taskCts = _taskTracker.Register(task.ServerId);
+                var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken, taskCts.Token);
+
                 // 处理业务逻辑
                 try
                 {
-                    await ProcessCreation(task, stoppingToken);
+                    await ProcessCreation(task, linkedCts.Token);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "处理任务失败: {ServerId}", task?.ServerId);
-
                     await UpdateStatusAsync(task.ServerId, $"创建流程异常中断: {ex.Message}", -1, true, ex);
+                }
+                finally
+                {
+                    _taskTracker.Unregister(task.ServerId);
+                    linkedCts.Dispose();
                 }
             }
         }
@@ -66,7 +77,7 @@ public class ServerCreationService : BackgroundService
         }
     }
 
-    private async Task ProcessCreation(CreateServerTask task, CancellationToken stoppingToken)
+    private async Task ProcessCreation(CreateServerTask task, CancellationToken ct)
     {
         string serverIdStr = task.ServerId;
         int serverId = int.Parse(task.ServerId);
@@ -96,7 +107,7 @@ public class ServerCreationService : BackgroundService
             IgnoreEula = request.ignoreEula,
             InputEncoding = "utf-8",
             StopCommand = request.java == "none" ? ((request.args ?? "").Contains("bedrock_server") ? "stop" : "^c") : "stop",
-            MonitorPlayers = request.java != "none", // 自定义模式下默认不开启玩家监控
+            MonitorPlayers = request.java != "none",
             OutputEncoding = (PlatFormServices.GetOs() == "Windows" && (!request.java?.Contains("docker") ?? false)) ? "gbk" : "utf-8",
             FileEncoding = (PlatFormServices.GetOs() == "Windows" && (!request.java?.Contains("docker") ?? false)) ? "gbk" : "utf-8",
             DockerImage = request.DockerImage ?? "MSLX://DockerImage/Java/25",
@@ -104,17 +115,17 @@ public class ServerCreationService : BackgroundService
             DockerNetworkMode = request.DockerPorts == "0" ? "host" : "bridge"
         };
 
-        // MCDReforged 模式：真实服务端托管在 server/ 子目录，实例以 MCDR(Python)包装器方式运行
+        // MCDReforged 模式
         if (request.mcdr)
         {
-            server.Java = "none";                    // 走自定义模式的启动通道
+            server.Java = "none";
             server.Core = "none";
             server.Args = BuildMcdrLaunchCommand(request.mcdrPython);
-            server.StopCommand = "stop";             // MCDR 会把 stop 转发给服务端，服务端退出后 MCDR 自身退出
-            server.MonitorPlayers = true;            // 本质仍是 MC 服务器，开启玩家监控
-            server.IgnoreEula = false;               // 交给 MSLX 的 EULA 逻辑处理(eula.txt 位于 server/)
+            server.StopCommand = "stop";
+            server.MonitorPlayers = true;
+            server.IgnoreEula = false;
             server.InputEncoding = "utf-8";
-            server.OutputEncoding = "utf-8";         // 配合注入的 PYTHONIOENCODING=utf-8
+            server.OutputEncoding = "utf-8";
             server.FileEncoding = "utf-8";
             server.ServerPropertiesPath = "server/server.properties";
             server.PluginsPath = "server/plugins";
@@ -126,6 +137,35 @@ public class ServerCreationService : BackgroundService
         IConfigBase.ServerList.CreateServer(server);
         Directory.CreateDirectory(server.Base);
         _logger.LogInformation("服务器 {ServerId} 基础目录已配置。", serverId);
+
+        // 追踪是否使用了默认路径（用于清理）
+        bool usingDefaultPath = string.IsNullOrWhiteSpace(request.path);
+
+        // 清理已创建的服务器配置和目录
+        void CleanupFailedDeployment()
+        {
+            try
+            {
+                IConfigBase.ServerList.DeleteServer((uint)serverId, true);
+            }
+            catch (Exception cleanupEx)
+            {
+                _logger.LogWarning(cleanupEx, "清理时删除服务器配置失败: {ServerId}", serverId);
+            }
+
+            if (usingDefaultPath)
+            {
+                try
+                {
+                    if (Directory.Exists(server.Base))
+                        Directory.Delete(server.Base, true);
+                }
+                catch (Exception cleanupEx)
+                {
+                    _logger.LogWarning(cleanupEx, "清理时删除目录失败: {Path}", server.Base);
+                }
+            }
+        }
 
         try
         {
@@ -139,22 +179,24 @@ public class ServerCreationService : BackgroundService
                 if (server.DockerImage.StartsWith("MSLX://DockerImage/Java/", StringComparison.OrdinalIgnoreCase))
                 {
                     var tag = server.DockerImage.Replace("MSLX://DockerImage/Java/", "").Trim();
-                    realImageName = $"docker.mslmc.cn/xiaoyululu/mslx-runtime:java{tag}"; 
+                    realImageName = $"docker.mslmc.cn/xiaoyululu/mslx-runtime:java{tag}";
                 }
 
                 await progressReporter($"正在检测并下载镜像 [{realImageName.Replace("docker.mslmc.cn/xiaoyululu/", "")}]，请耐心等待...", 10);
 
-                // 拉取镜像
                 await _deploymentService.PullImageIfNeededAsync(serverIdStr, realImageName, progressReporter);
+                ct.ThrowIfCancellationRequested();
                 await _deploymentService.PullImageIfNeededAsync(serverIdStr, "docker.mslmc.cn/xiaoyululu/mslx-runtime:network-tool", progressReporter);
 
                 _logger.LogInformation("服务器 {ServerId} 底层 Docker 运行镜像已成功拉取就绪。", serverId);
             }
 
+            ct.ThrowIfCancellationRequested();
+
             // MCDR 模式走独立部署流程
             if (request.mcdr)
             {
-                await _deploymentService.DeployMcdrAsync(serverIdStr, server, request, progressReporter);
+                await _deploymentService.DeployMcdrAsync(serverIdStr, server, request, progressReporter, ct);
                 await progressReporter("服务器创建成功！", 100);
                 return;
             }
@@ -162,40 +204,52 @@ public class ServerCreationService : BackgroundService
             // 远程下载整合包
             if (!string.IsNullOrEmpty(request.packageUrl))
             {
-                string tempPackageFileKey = await _deploymentService.DownloadPackageAsync(serverIdStr, request.packageUrl, request.packageSha256, progressReporter);
+                string tempPackageFileKey = await _deploymentService.DownloadPackageAsync(serverIdStr, request.packageUrl, request.packageSha256, progressReporter, ct);
+                ct.ThrowIfCancellationRequested();
                 await _deploymentService.DeployPackageAsync(serverIdStr, tempPackageFileKey, null, server.Base, progressReporter);
-                await _deploymentService.ChmodBedrockServerAsync(serverIdStr,server.Base, progressReporter);
+                await _deploymentService.ChmodBedrockServerAsync(serverIdStr, server.Base, progressReporter);
             }
-            
-            // 部署整合包（由于参数拦截 远程下载的话不可能进入这一步 无需额外处理了）
+
+            ct.ThrowIfCancellationRequested();
+
+            // 部署整合包
             if (!string.IsNullOrEmpty(request.packageFileKey) || !string.IsNullOrEmpty(request.packageLocalPath))
             {
                 await _deploymentService.DeployPackageAsync(serverIdStr, request.packageFileKey, request.packageLocalPath, server.Base, progressReporter);
             }
 
-            // 部署 Java
-            await _deploymentService.EnsureJavaAsync(serverIdStr, request.java, progressReporter);
+            ct.ThrowIfCancellationRequested();
 
-            // 部署核心 用户上传/远程下载
+            // 部署 Java
+            await _deploymentService.EnsureJavaAsync(serverIdStr, request.java, progressReporter, ct);
+
+            ct.ThrowIfCancellationRequested();
+
+            // 部署核心
             await _deploymentService.DeployCoreAsync(
-                serverIdStr, 
-                server.Base, 
-                server.Core, 
-                request.coreFileKey, 
-                request.coreUrl, 
-                request.coreSha256, 
-                progressReporter
+                serverIdStr,
+                server.Base,
+                server.Core,
+                request.coreFileKey,
+                request.coreUrl,
+                request.coreSha256,
+                progressReporter,
+                ct
             );
 
-            // 安装 NeoForge 
+            ct.ThrowIfCancellationRequested();
+
+            // 安装 NeoForge
             string? newLaunchArgs = await _deploymentService.InstallForgeIfNeededAsync(
-                serverIdStr, 
-                server.Base, 
-                server.Core, 
-                server.Java, 
+                serverIdStr,
+                server.Base,
+                server.Core,
+                server.Java,
                 progressReporter,
                 server.DockerImage
             );
+
+            ct.ThrowIfCancellationRequested();
 
             // 更新启动参数
             if (!string.IsNullOrEmpty(newLaunchArgs))
@@ -207,9 +261,29 @@ public class ServerCreationService : BackgroundService
 
             await progressReporter("服务器创建成功！", 100);
         }
-        catch (Exception)
+        catch (TaskCanceledException ex)
         {
-            return; 
+            // TaskCanceledException 来自 Downloader 库的网络层（连接中断/超时），不是用户取消
+            _logger.LogWarning(ex, "下载过程中连接中断: ServerId {ServerId}", serverId);
+            CleanupFailedDeployment();
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // 仅当 ct 确实被触发时才是用户主动取消
+            _logger.LogInformation("任务已取消，正在清理: ServerId {ServerId}", serverId);
+            CleanupFailedDeployment();
+            await UpdateStatusAsync(serverIdStr, "部署任务已被用户取消。", -1, true);
+        }
+        catch (OperationCanceledException ex)
+        {
+            // ct 未被触发但出现了 OperationCanceledException → 网络层中断通过 report() 传播
+            _logger.LogWarning(ex, "下载过程中连接中断: ServerId {ServerId}", serverId);
+            CleanupFailedDeployment();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "部署失败，正在清理: ServerId {ServerId}", serverId);
+            CleanupFailedDeployment();
         }
     }
 

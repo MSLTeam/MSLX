@@ -1,6 +1,6 @@
 {
-  "version": "1.5.5.1",
-  "buildTime": "2026-07-25 23:25:38",
+  "version": "1.5.6",
+  "buildTime": "2026-08-01 17:49:10",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -77,10 +77,88 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "82a620c6add6974f6d2c2f9b7b5481dfaa86466a",
-  "commitMsg": "fix(webpanel): 修复推荐Java后Docker版本选择的与实际不符的问题",
+  "commitId": "57476a3dca46a3cf24a69224ee9f515d4d76b2a6",
+  "commitMsg": "feat(daemon): 优化Docker未启动的报错信息",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "57476a3dca46a3cf24a69224ee9f515d4d76b2a6",
+      "commitTime": "2026-08-01 17:44:50 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 优化Docker未启动的报错信息"
+    },
+    {
+      "commitId": "03e03060ea1582af7c535117ba83bb96acb3ac1b",
+      "commitTime": "2026-08-01 17:30:40 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 优化插件管理页面样式"
+    },
+    {
+      "commitId": "46c30fd2d6b9dd0534f606db34868c7094ccb3dc",
+      "commitTime": "2026-08-01 17:29:37 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复插件注册高级路由的问题"
+    },
+    {
+      "commitId": "2db8ed828464376d01ac0b1ae9a3b14a32c73fc1",
+      "commitTime": "2026-08-01 16:50:28 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复合并冲突时丢失的 CreationTaskTracker 服务注册"
+    },
+    {
+      "commitId": "c46e89509733e644cb610ae5970390d66efdf516",
+      "commitTime": "2026-08-01 16:47:54 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
+    },
+    {
+      "commitId": "5614c48f0ba8255a7914afc48b0a3137479e04b8",
+      "commitTime": "2026-08-01 16:47:10 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 插件实现热重载支持"
+    },
+    {
+      "commitId": "39b291b33ef744f689722f3404e1bfca8e3dde41",
+      "commitTime": "2026-07-30 22:04:15 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #197 from CoZooo/dev"
+    },
+    {
+      "commitId": "54baa1b96277b813ece831808dc2e35f47e1be01",
+      "commitTime": "2026-07-30 21:38:47 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "chore: 增加Homebrew自动更新工作流"
+    },
+    {
+      "commitId": "ff8781cfb53c89dfebe457687c9808e8a8972019",
+      "commitTime": "2026-07-28 16:36:33 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "perf: 新增取消实例部署功能 fix(desktop): 修复创建服务器界面重新载入时，部分布局没有恢复默认的bug fix: 修复其他若干有关服务器实例部署的问题"
+    },
+    {
+      "commitId": "e75197d2f98607923b6d00c0aa76f2093a42fa2e",
+      "commitTime": "2026-07-27 15:57:30 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复空插件插槽导致组件上下边距异常的问题"
+    },
+    {
+      "commitId": "e891dbc7a9b943a0d39ce3d5f6fe4b20b122afa0",
+      "commitTime": "2026-07-27 15:54:08 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 新增Docker镜像管理功能"
+    },
+    {
+      "commitId": "024e11e9faaed8834f192013453a7fa52fb3ca2b",
+      "commitTime": "2026-07-25 23:27:15 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #194 from MSLTeam/dev"
+    },
+    {
+      "commitId": "63f8c320a4ff36b39c92c3d9c8d3d058ccc5ad48",
+      "commitTime": "2026-07-25 23:25:52 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.5.5.1-hotfix版本"
+    },
     {
       "commitId": "82a620c6add6974f6d2c2f9b7b5481dfaa86466a",
       "commitTime": "2026-07-25 23:24:23 +0800",
@@ -302,84 +380,6 @@
       "commitTime": "2026-07-14 13:29:00 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "feat(webpanel): 新增基岩版Docker容器化部署支持"
-    },
-    {
-      "commitId": "8609730612385375f5321eaf297d5a4aacaf1b17",
-      "commitTime": "2026-07-13 23:30:44 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(webpanel): 仅在管理员账户显示连接未加密的提示"
-    },
-    {
-      "commitId": "1e0cf47262e2da3a4ab567d512b4de61950ca116",
-      "commitTime": "2026-07-13 21:59:39 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复加载插件时，插入原有一级菜单的权限未识别的问题"
-    },
-    {
-      "commitId": "b98dfdb698c5989735ba0774c6e8cc1db826fe64",
-      "commitTime": "2026-07-13 21:34:13 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 新增不允许普通用户修改用户名的设置项"
-    },
-    {
-      "commitId": "17d14b9b6249c9d6ec9f19dde65f08ebadf68dd2",
-      "commitTime": "2026-07-13 21:16:16 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 新增服务端实例绑定隧道功能（自动启动和关闭）"
-    },
-    {
-      "commitId": "e62daf28a61f4f367cf49d585086206e53371454",
-      "commitTime": "2026-07-13 18:58:52 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 首页宿主机内存与CPU状态仅限管理员查看"
-    },
-    {
-      "commitId": "f1d993c4531d3038f09c958222b2a8f008dfae49",
-      "commitTime": "2026-07-13 14:52:12 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(daemom): 补充 SERVER_PROPERTIES 中文解释"
-    },
-    {
-      "commitId": "b336e85bbafd652574c270b343a1c014b3372e29",
-      "commitTime": "2026-07-13 13:08:24 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(daemom): 修正下载器UA"
-    },
-    {
-      "commitId": "d2984ab1cec967e3cd766bbfe330bf3131d4d395",
-      "commitTime": "2026-07-13 00:37:20 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #175 from MSLTeam/dev"
-    },
-    {
-      "commitId": "3767ab0a604294bd9b4d60c30cb31803ef9d1a65",
-      "commitTime": "2026-07-13 00:35:48 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.5.2版本"
-    },
-    {
-      "commitId": "d511fd7fff6d04f9ae2c95dc2e1ab0fa628c02d7",
-      "commitTime": "2026-07-13 00:33:59 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 实例列表新增到期时间显示"
-    },
-    {
-      "commitId": "42950c0407a20ec3fecab60f8d338b7802acae8f",
-      "commitTime": "2026-07-13 00:21:51 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 服务端实例新增到期时间参数"
-    },
-    {
-      "commitId": "cd7f4091ebcd7b22c77cc38d32b3b0ba07f272c1",
-      "commitTime": "2026-07-12 23:52:45 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 这限速非Linux也行啊~"
-    },
-    {
-      "commitId": "0a259c471360d35a83bedcbbc0a94be3e3e236ad",
-      "commitTime": "2026-07-12 23:30:49 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复自身运行在容器的误判问题"
     }
   ]
 }

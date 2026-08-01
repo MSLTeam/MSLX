@@ -5,6 +5,7 @@ import { type FormProps, FormRules, MessagePlugin } from 'tdesign-vue-next';
 import { postCreateInstanceQuickMode } from '@/api/instance';
 import { changeUrl } from '@/router';
 import { useUserStore } from '@/store';
+import DockerImageSelector from '@/components/docker-image-selector/index.vue';
 const userStore = useUserStore();
 
 const isSuccess = ref(false);
@@ -175,10 +176,9 @@ const goToHome = () => {
           </div>
 
           <div v-if="dockerImageType === 'custom'">
-            <t-input
+            <docker-image-selector
               v-model="formData.dockerImage"
-              placeholder="例如: ubuntu:latest 或 python:3.10-slim"
-              class="!font-mono"
+              placeholder="输入或选择本地镜像，例如: ubuntu:latest"
             />
             <div class="text-[11px] text-amber-500 mt-2">
               ⚠️ 提示：使用自定义公共镜像创建时，系统将通过终端执行标准 docker

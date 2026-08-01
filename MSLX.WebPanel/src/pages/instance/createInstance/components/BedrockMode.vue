@@ -10,6 +10,7 @@ import { CreateInstanceQucikModeModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
 import { useInstanceListStore } from '@/store/modules/instance';
 import { getServerCoreDownloadInfo, getServerCoreGameVersion } from '@/api/mslapi/serverCore';
+import DockerImageSelector from '@/components/docker-image-selector/index.vue';
 
 // 模型扩展
 interface BedrockCreateModel extends CreateInstanceQucikModeModel {
@@ -467,10 +468,10 @@ const goToHome = () => {
                 </t-form-item>
 
                 <t-form-item label="Docker 镜像地址" name="dockerImage">
-                  <t-input
+                  <docker-image-selector
                     v-model="formData.dockerImage"
                     :disabled="formData.imageType === 'builtIn'"
-                    placeholder="请输入 Docker 镜像名，如 ubuntu:latest"
+                    placeholder="输入或选择本地镜像，如 ubuntu:latest"
                     class="!w-full sm:!w-[28rem]"
                   />
                 </t-form-item>

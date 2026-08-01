@@ -16,14 +16,15 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
 [Authorize(Roles = "admin")]
 public class CreateInstanceController : ControllerBase
 {
-    private readonly IBackgroundTaskQueue<CreateServerTask> _taskQueue; // 注入后台队列
+    private readonly IBackgroundTaskQueue<CreateServerTask> _taskQueue;
     private readonly IMCServerService _mcServerService;
+    private readonly CreationTaskTracker _taskTracker;
 
-    // 注入队列
-    public CreateInstanceController(IBackgroundTaskQueue<CreateServerTask> taskQueue,IMCServerService mcServerService)
+    public CreateInstanceController(IBackgroundTaskQueue<CreateServerTask> taskQueue, IMCServerService mcServerService, CreationTaskTracker taskTracker)
     {
         _taskQueue = taskQueue;
         _mcServerService = mcServerService;
+        _taskTracker = taskTracker;
     }
 
     [HttpPost("createServer")]
@@ -72,5 +73,19 @@ public class CreateInstanceController : ControllerBase
         };
 
         return suc ? Ok(response) : BadRequest(response);
+    }
+
+    [HttpPost("cancelCreation")]
+    public IActionResult CancelCreation([FromBody] CancelCreationRequest request)
+    {
+        bool cancelled = _taskTracker.TryCancel(request.ServerId);
+
+        var response = new ApiResponse<object>
+        {
+            Code = cancelled ? 200 : 404,
+            Message = cancelled ? "取消信号已发送" : $"未找到正在执行的创建任务 (ServerId: {request.ServerId})"
+        };
+
+        return cancelled ? Ok(response) : BadRequest(response);
     }
 }

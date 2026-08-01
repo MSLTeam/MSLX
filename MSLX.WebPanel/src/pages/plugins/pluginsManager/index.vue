@@ -6,6 +6,7 @@ import { DOC_URLS } from '@/api/docs';
 
 import InstalledPlugins from './components/InstalledPlugins.vue';
 import PluginMarket from './components/PluginMarket.vue';
+import { pluginStateChanged } from '@/utils/pluginManager';
 
 const activeTab = ref('installed');
 const searchKeyword = ref('');
@@ -20,10 +21,27 @@ const triggerRefresh = () => {
 const triggerSearch = () => {
   if (marketRef.value) marketRef.value.handleSearch(searchKeyword.value);
 };
+
+const handleRefreshPage = () => {
+  window.location.reload();
+};
 </script>
 
 <template>
   <div class="mx-auto flex flex-col gap-5 text-[var(--td-text-color-primary)] pb-5">
+    <transition name="fade">
+      <t-alert v-if="pluginStateChanged" theme="warning" class="!rounded-xl shadow-sm border border-yellow-500/20">
+        <template #message>
+          <div class="flex items-center gap-4 w-full">
+            <span class="flex-1 text-sm font-medium">插件状态已发生更改，请刷新页面以完整应用页面元素的变更。</span>
+            <t-button size="small" theme="primary" variant="base" @click="handleRefreshPage">
+              <template #icon><refresh-icon /></template>
+              立即刷新
+            </t-button>
+          </div>
+        </template>
+      </t-alert>
+    </transition>
     <div
       class="design-card flex flex-col xl:flex-row xl:items-center justify-between gap-5 p-5 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left transition-all"
     >

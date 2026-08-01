@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Services;
+using MSLX.Daemon.Services.PluginsService;
 using MSLX.SDK.Models;
 using MSLX.Daemon.Utils.ConfigUtils;
 
@@ -26,7 +27,7 @@ public class PluginListController : ControllerBase
         
         foreach (var p in _pluginManager.Plugins)
         {
-            var dllPath = p.Assembly.Location;
+            var dllPath = p.DllPath;
             processedPaths.Add(dllPath);
 
             var status = "已启用";
@@ -63,6 +64,7 @@ public class PluginListController : ControllerBase
         {
             foreach (var dllFile in Directory.GetFiles(pluginsPath, "*.dll"))
             {
+                if (!dllFile.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)) continue;
                 if (processedPaths.Contains(dllFile)) continue;
 
                 // 标记
@@ -111,6 +113,32 @@ public class PluginListController : ControllerBase
     private object CreateUnloadedPluginObj(string dllPath, string status, string placeholderText)
     {
         var fileName = Path.GetFileNameWithoutExtension(dllPath);
+        var metadata = _pluginManager.GetPluginMetadata(dllPath);
+        
+        if (metadata != null)
+        {
+            return new
+            {
+                id = metadata.Id,
+                name = metadata.Name,
+                description = metadata.Description,
+                icon = metadata.Icon switch
+                {
+                    null or "" => "https://www.mslmc.cn/logo.png",
+                    var icon when icon.StartsWith("http", StringComparison.OrdinalIgnoreCase) => icon,
+                    _ => "https://www.mslmc.cn/logo.png"
+                },
+                version = metadata.Version,
+                minSDKVersion = metadata.MinSDKVersion,
+                developer = metadata.Developer,
+                authorUrl = metadata.AuthorUrl ?? "",
+                pluginUrl = metadata.PluginUrl ?? "",
+                entryPath = $"/plugins/{metadata.Id.ToLower()}/{metadata.Version.ToLower()}/mslx-plugin-entry.js",
+                path = dllPath,
+                status = status
+            };
+        }
+
         return new
         {
             id = ConvertFileNameToId(fileName),
