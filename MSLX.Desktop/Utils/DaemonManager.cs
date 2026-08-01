@@ -25,6 +25,13 @@ namespace MSLX.Desktop.Utils
         private static Process? DaemonProcess { get; set; }
 
         /// <summary>
+        /// Daemon日志输出事件，每收到一行日志触发一次
+        /// </summary>
+        public static event Action<string>? DaemonLogReceived;
+
+        private const string DaemonReadyMarker = "MSLX 守护进程服务已就绪";
+
+        /// <summary>
         /// 验证DaemonApiKey
         /// </summary>
         /// <returns>Success：true代表成功，false代表失败或已取消</returns>
@@ -204,8 +211,11 @@ namespace MSLX.Desktop.Utils
 
                 if (string.IsNullOrEmpty(executablePath))
                 {
+                    Debug.WriteLine($"[DaemonManager] 未找到Daemon可执行文件: {executableName}, 搜索目录: {daemonPath}");
                     return (false, $"未找到Daemon可执行文件: {executableName}");
                 }
+
+                Debug.WriteLine($"[DaemonManager] 找到Daemon可执行文件: {executablePath}");
 
                 // 在Linux和macOS上设置执行权限
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
@@ -230,18 +240,85 @@ namespace MSLX.Desktop.Utils
 
                 if (DaemonProcess == null)
                 {
+                    Debug.WriteLine("[DaemonManager] Process.Start 返回 null");
                     return (false, "无法启动Daemon进程");
                 }
 
-                // 等待一小段时间确认进程正常启动
-                await Task.Delay(1000);
+                Debug.WriteLine($"[DaemonManager] Daemon进程已启动, PID: {DaemonProcess.Id}");
 
-                if (DaemonProcess.HasExited)
+                // 异步读取stdout和stderr，等待Daemon就绪信号
+                var readyTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                var processRef = DaemonProcess;
+
+                _ = Task.Run(async () =>
                 {
-                    return (false, $"Daemon进程启动后立即退出，退出代码: {DaemonProcess.ExitCode}");
+                    try
+                    {
+                        while (!processRef.HasExited)
+                        {
+                            string? line = await processRef.StandardOutput.ReadLineAsync();
+                            if (line == null) break;
+                            Debug.WriteLine($"[DaemonManager][stdout] {line}");
+                            DaemonLogReceived?.Invoke(line);
+                            if (line.Contains(DaemonReadyMarker))
+                            {
+                                readyTcs.TrySetResult(true);
+                            }
+                        }
+                        // 进程退出后继续读取剩余输出
+                        while (true)
+                        {
+                            string? line = await processRef.StandardOutput.ReadLineAsync();
+                            if (line == null) break;
+                            DaemonLogReceived?.Invoke(line);
+                            if (line.Contains(DaemonReadyMarker))
+                            {
+                                readyTcs.TrySetResult(true);
+                            }
+                        }
+                    }
+                    catch { }
+                });
+
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        while (!processRef.HasExited)
+                        {
+                            string? line = await processRef.StandardError.ReadLineAsync();
+                            if (line == null) break;
+                            Debug.WriteLine($"[DaemonManager][stderr] {line}");
+                            DaemonLogReceived?.Invoke(line);
+                        }
+                        while (true)
+                        {
+                            string? line = await processRef.StandardError.ReadLineAsync();
+                            if (line == null) break;
+                            DaemonLogReceived?.Invoke(line);
+                        }
+                    }
+                    catch { }
+                });
+
+                // 等待就绪信号或进程退出（超时30秒）
+                var exitTask = Task.Run(() => { processRef.WaitForExit(); return processRef.ExitCode; });
+                var completedTask = await Task.WhenAny(readyTcs.Task, exitTask, Task.Delay(30000));
+
+                if (completedTask == readyTcs.Task && readyTcs.Task.Result)
+                {
+                    Debug.WriteLine("[DaemonManager] 检测到Daemon就绪信号");
+                    return (true, "Daemon启动成功");
                 }
 
-                return (true, "Daemon启动成功");
+                if (processRef.HasExited)
+                {
+                    Debug.WriteLine($"[DaemonManager] Daemon进程已退出, ExitCode: {processRef.ExitCode}");
+                    return (false, $"Daemon进程启动后立即退出，退出代码: {processRef.ExitCode}");
+                }
+
+                Debug.WriteLine("[DaemonManager] Daemon启动超时，未检测到就绪信号");
+                return (false, "Daemon启动超时（30秒内未检测到就绪信号）");
             }
             catch (Exception ex)
             {

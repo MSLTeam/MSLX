@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Threading;
 using Material.Icons;
 using Material.Icons.Avalonia;
 using MSLX.Desktop.Models;
@@ -20,6 +21,17 @@ public partial class WelcomePage : UserControl
         this.Loaded += WelcomePage_Loaded;
         this.Retry.Click += Retry_Click;
         this.Next.Click += Next_Click;
+
+        DaemonManager.DaemonLogReceived += OnDaemonLogReceived;
+    }
+
+    private void OnDaemonLogReceived(string log)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            LogTextBox.Text += log + "\n";
+            LogTextBox.CaretIndex = LogTextBox.Text.Length;
+        });
     }
 
     // Method A: 载入Welcome界面后，读取MSLX.Desktop配置（若检测失败，进入Method B），检测是否存储Address和ApiKey，若有则进入验证方法，没有则进入Method B
@@ -56,7 +68,6 @@ public partial class WelcomePage : UserControl
                     var (Success, Msg) = await DaemonManager.StartDaemon(ConfigService.GetAppDataPath());
                     if (Success)
                     {
-                        await Task.Delay(500);
                         // 启动成功，尝试验证
                         var (isSuccess, _) = await DaemonManager.VerifyDaemonApiKey();
                         if (isSuccess)
@@ -81,9 +92,8 @@ public partial class WelcomePage : UserControl
                 }
                 else
                 {
-                    if (await DaemonManager.GetKeyAndLinkDaemon(false,false))
+                    if (await DaemonManager.GetKeyAndLinkDaemon(false, false))
                     {
-                        // 验证成功，跳转到主页面
                         SideMenuHelper.Current?.ShowMainPages();
                         SideMenuHelper.Current?.NavigateRemove(this);
                         SideMenuHelper.Current?.NavigateTo<HomePage>();
@@ -113,7 +123,6 @@ public partial class WelcomePage : UserControl
                     MethodE();
                 }
             }
-
         }
         else
         {
@@ -134,14 +143,6 @@ public partial class WelcomePage : UserControl
             var (Success, Msg) = await DaemonManager.StartDaemon(ConfigService.GetAppDataPath());
             if (Success)
             {
-                DialogService.DialogManager.DismissDialog();
-                DialogService.DialogManager.CreateDialog()
-                    .WithTitle("守护程序启动成功")
-                    .WithContent("已成功启动守护程序，正在尝试获取API Key进行验证。")
-                    .TryShow();
-                await Task.Delay(2500);
-                DialogService.DialogManager.DismissDialog();
-
                 bool isSuccess = await DaemonManager.GetKeyAndLinkDaemon();
                 if (isSuccess)
                 {
