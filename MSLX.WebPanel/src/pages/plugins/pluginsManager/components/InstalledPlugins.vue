@@ -459,28 +459,12 @@ onMounted(() => {
 
               <!-- 启用 / 禁用 (互斥显示，在无待处理任务时显示) -->
               <template v-else>
-                <t-button
-                  v-if="item.status === '已禁用'"
-                  size="small"
-                  theme="primary"
-                  variant="outline"
+                <t-switch
+                  :value="item.status === '已启用'"
                   :disabled="actionLoading"
-                  @click="handleAction(item.id, 'enable')"
-                >
-                  <template #icon><play-circle-icon /></template>
-                  启用
-                </t-button>
-                <t-button
-                  v-if="item.status === '已启用'"
-                  size="small"
-                  theme="warning"
-                  variant="outline"
-                  :disabled="actionLoading"
-                  @click="handleAction(item.id, 'disable')"
-                >
-                  <template #icon><stop-circle-icon /></template>
-                  禁用
-                </t-button>
+                  size="medium"
+                  @change="(val) => handleAction(item.id, val ? 'enable' : 'disable')"
+                />
               </template>
 
               <!-- 删除按钮 (安全气泡确认) -->
