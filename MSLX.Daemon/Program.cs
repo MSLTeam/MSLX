@@ -194,6 +194,7 @@ var pluginManager = new PluginManager();
 builder.Services.AddSingleton(pluginManager);
 builder.Services.AddSingleton<Microsoft.AspNetCore.Mvc.Infrastructure.IActionDescriptorChangeProvider>(HotReloadActionDescriptorChangeProvider.Instance);
 builder.Services.Replace(ServiceDescriptor.Transient<Microsoft.AspNetCore.Mvc.Controllers.IControllerActivator, PluginControllerActivator>());
+builder.Services.Replace(ServiceDescriptor.Transient(typeof(Microsoft.AspNetCore.SignalR.IHubActivator<>), typeof(MSLX.Daemon.Services.PluginsService.PluginHubActivator<>)));
 
 // 后台服务注册
 builder.Services.AddHostedService<ServerCreationService>();
@@ -237,7 +238,7 @@ var mvcBuilder = builder.Services.AddControllers()
     });
 
 // 插件删除 & 更新（旧版逻辑 暂时保留 大概率用不上的了）
-var loadedPlugins = new List<LoadedPlugin>();
+
 var pluginsPath = Path.Combine(IConfigBase.GetAppDataPath(), "Plugins");
 var pluginLogger = bootstrapLoggerFactory.CreateLogger("PluginLoader");
 
@@ -296,7 +297,11 @@ var logger = loggerFactory.CreateLogger("Program");
 
 // 初始化 PluginManager 服务
 var partManager = app.Services.GetRequiredService<Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPartManager>();
-pluginManager.Initialize(app.Services, partManager, loggerFactory.CreateLogger<PluginManager>(), builder.Services);
+pluginManager.Initialize(app.Services, partManager, loggerFactory.CreateLogger<PluginManager>(), builder.Services, app);
+
+// 注册全局动态高级路由源
+var dataSources = ((Microsoft.AspNetCore.Routing.IEndpointRouteBuilder)app).DataSources;
+dataSources.Add(pluginManager.DynamicEndpoints);
 
 
 // 注册代理方法给SDK
@@ -365,6 +370,8 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "/plugins"
 });
 
+app.UseRouting();
+
 // 自定义的中间件
 app.UseMiddleware<BlockLoopbackMiddleware>(); 
 app.UseMiddleware<AuthMiddleware>();
@@ -385,19 +392,6 @@ app.MapHub<InstanceConsoleHub>("/api/hubs/instanceControlHub");
 app.MapHub<SystemMonitorHub>("/api/hubs/system");
 app.MapHub<DaemonUpdateHub>("/api/hubs/daemonUpdate");
 app.MapControllers();
-
-foreach (var plugin in loadedPlugins)
-{
-    try
-    {
-        plugin.Metadata.OnRegisterEndpoints(app);
-        logger.LogInformation($"[MSLX Plugin] 插件高级路由端点注册成功: {plugin.Metadata.Name}");
-    }
-    catch (Exception ex)
-    {
-        logger.LogError($"[MSLX Plugin] 插件 {plugin.Metadata.Name} 注册扩展路由时抛出致命异常: {ex.Message}");
-    }
-}
 
 
 // SPA

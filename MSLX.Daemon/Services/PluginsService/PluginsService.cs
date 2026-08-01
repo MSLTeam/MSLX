@@ -16,12 +16,16 @@ public class PluginManager
     private ILogger<PluginManager>? _logger;
     private IServiceCollection? _rootServiceCollection;
 
-    public void Initialize(IServiceProvider serviceProvider, ApplicationPartManager partManager, ILogger<PluginManager> logger, IServiceCollection rootServiceCollection)
+    public IEndpointRouteBuilder? AppRouteBuilder { get; private set; }
+    public PluginCompositeEndpointDataSource DynamicEndpoints { get; } = new();
+
+    public void Initialize(IServiceProvider serviceProvider, ApplicationPartManager partManager, ILogger<PluginManager> logger, IServiceCollection rootServiceCollection, Microsoft.AspNetCore.Routing.IEndpointRouteBuilder app)
     {
         _serviceProvider = serviceProvider;
         _partManager = partManager;
         _logger = logger;
         _rootServiceCollection = rootServiceCollection;
+        AppRouteBuilder = app;
     }
 
     public IPlugin? GetPluginMetadata(string dllPath)
@@ -41,7 +45,7 @@ public class PluginManager
             }
 
             var pluginInstance = (IPlugin)Activator.CreateInstance(pluginType)!;
-            // 卸载 ALC。当 pluginInstance 被 GC 回收后，ALC 及其程序集也会被物理卸载。
+            // 卸载 ALC
             loadContext.Unload(); 
             return pluginInstance;
         }
@@ -65,10 +69,9 @@ public class PluginManager
                 return false;
             }
 
-            // 1. 初始化独立的 AssemblyLoadContext
+            // 初始化独立的 AssemblyLoadContext
             var loadContext = new PluginLoadContext(dllPath);
             
-            // 使用 FileStream 读取 DLL，避免文件被独占锁定，使得后续可以直接覆盖下载更新
             using var fs = new FileStream(dllPath, FileMode.Open, FileAccess.Read, FileShare.Read);
             var pdbPath = Path.ChangeExtension(dllPath, ".pdb");
             Assembly assembly;
@@ -102,7 +105,7 @@ public class PluginManager
                 _logger.LogWarning($"[MSLX Plugin] [兼容性警告] 插件 '{pluginInstance.Name}' 要求最低节点版本 v{minVersion}，当前 v{hostVersion}");
             }
 
-            // 构建插件专属的 ServiceCollection
+            // 插件专属 ServiceCollection
             var pluginServices = new ServiceCollection();
             
             // 将主程序的 Service 映射给插件
@@ -112,7 +115,6 @@ public class PluginManager
                 {
                     if (descriptor.Lifetime == ServiceLifetime.Singleton && !descriptor.ServiceType.IsGenericTypeDefinition)
                     {
-                        // 单例直接从 Root 获取，保证全局状态一致
                         pluginServices.AddSingleton(descriptor.ServiceType, sp => _serviceProvider.GetService(descriptor.ServiceType)!);
                     }
                     else
@@ -122,7 +124,7 @@ public class PluginManager
                 }
             }
 
-            // 让插件注册自己的服务
+            // 插件注册自己的服务
             pluginInstance.OnRegisterServices(pluginServices);
             
             // 构建插件的 Provider 并生成 Scope
@@ -137,6 +139,26 @@ public class PluginManager
             _partManager.ApplicationParts.Add(part);
             NotifyRouteChanges();
 
+            List<Microsoft.AspNetCore.Routing.EndpointDataSource> capturedDataSources = new();
+            if (AppRouteBuilder != null)
+            {
+                var routeWrapper = new PluginEndpointRouteBuilderWrapper(AppRouteBuilder);
+                try
+                {
+                    pluginInstance.OnRegisterEndpoints(routeWrapper);
+                    if (routeWrapper.CapturedDataSources.Count > 0)
+                    {
+                        DynamicEndpoints.AddDataSources(routeWrapper.CapturedDataSources);
+                        capturedDataSources = routeWrapper.CapturedDataSources;
+                        _logger.LogInformation($"[MSLX Plugin] 插件高级路由端点动态注册成功: {pluginInstance.Name}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError($"[MSLX Plugin] 插件 {pluginInstance.Name} 注册扩展路由时抛出异常: {ex.Message}");
+                }
+            }
+
             Plugins.Add(new LoadedPlugin 
             { 
                 Assembly = assembly, 
@@ -145,7 +167,8 @@ public class PluginManager
                 ServiceProvider = pluginProvider,
                 Scope = scope,
                 Part = part,
-                DllPath = dllPath
+                DllPath = dllPath,
+                DataSourcesAdded = capturedDataSources
             });
 
             _logger.LogInformation($"[MSLX Plugin] 成功加载插件: {pluginInstance.Name} v{pluginInstance.Version}");
@@ -169,27 +192,33 @@ public class PluginManager
         {
             _logger.LogInformation($"[MSLX Plugin] 正在卸载插件: {plugin.Metadata.Name}");
 
-            // 1. 调用生命周期
+            // 调用生命周期
             plugin.Metadata.OnUnload();
 
-            // 2. 移除路由并刷新
+            // 移除路由并刷新
             if (plugin.Part != null)
             {
                 _partManager.ApplicationParts.Remove(plugin.Part);
+                
+                // 动态移除该插件注册的所有路由端点
+                if (DynamicEndpoints != null)
+                {
+                    DynamicEndpoints.RemoveDataSources(plugin.DataSourcesAdded);
+                }
                 NotifyRouteChanges();
             }
 
-            // 3. 释放 DI Scope
+            // 释放 DI Scope
             plugin.Scope?.Dispose();
             if (plugin.ServiceProvider is IDisposable spDisposable)
             {
                 spDisposable.Dispose();
             }
 
-            // 4. 从列表中移除
+            // 从列表中移除
             Plugins.Remove(plugin);
 
-            // 5. 卸载上下文 (异步回收)
+            // 卸载上下文
             plugin.LoadContext?.Unload();
 
             // 手动触发 GC 以尝试立刻回收
@@ -236,4 +265,5 @@ public class LoadedPlugin
     public IServiceScope Scope { get; set; } = null!;
     public ApplicationPart Part { get; set; } = null!;
     public string DllPath { get; set; } = string.Empty;
+    public List<Microsoft.AspNetCore.Routing.EndpointDataSource> DataSourcesAdded { get; set; } = new();
 }
