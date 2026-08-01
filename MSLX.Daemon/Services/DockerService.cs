@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Text;
 using System.Text.RegularExpressions;
 using CliWrap;
@@ -66,11 +66,11 @@ public class DockerService : IDockerService
                 try
                 {
                     var json = JObject.Parse(result.StandardOutput.Trim());
-                    status.ClientVersion = json["Client"]?["Version"]?.ToString();
-                    status.ServerVersion = json["Server"]?["Version"]?.ToString();
-                    status.OsType = json["Server"]?["Os"]?.ToString() ?? json["Client"]?["Os"]?.ToString();
+                    status.ClientVersion = (json["Client"] as JObject)?["Version"]?.ToString();
+                    status.ServerVersion = (json["Server"] as JObject)?["Version"]?.ToString();
+                    status.OsType = (json["Server"] as JObject)?["Os"]?.ToString() ?? (json["Client"] as JObject)?["Os"]?.ToString();
                 }
-                catch (JsonException ex)
+                catch (Exception ex)
                 {
                     _logger.LogWarning("[Docker-Image] docker version 输出解析失败: {Message}", ex.Message);
                 }
