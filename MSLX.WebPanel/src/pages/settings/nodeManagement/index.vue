@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { linkSlaveNode, unlinkSlaveNode, postEditSlaveNode } from '@/api/node';
 import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next';
 import {
@@ -10,6 +10,7 @@ import {
   DeleteIcon,
   ServerIcon,
   HelpCircleIcon,
+  CloudUploadIcon
 } from 'tdesign-icons-vue-next';
 import { useUserStore, useNodeStore } from '@/store';
 import * as signalR from '@microsoft/signalr';
@@ -42,8 +43,89 @@ const slavesStats = ref<Record<string, any>>({});
 const isSignalRConnected = ref(false);
 const hasReceivedFirstPayload = ref(false);
 
+import UpdateModal from '@/components/UpdateModal.vue';
+import { UpdateDownloadInfoModel, UpdateInfoModel } from '@/api/model/update';
+const showUpdateModal = ref(false);
+const slaveUpdateInfo = ref<UpdateInfoModel | null>(null);
+const slaveDownloadInfo = ref<UpdateDownloadInfoModel | null>(null);
+const targetUpdateNodeId = ref('');
+const targetUpdateNodeUrl = ref('');
+const targetUpdateNodeName = ref('');
+
+import { getDaemonStatusInfo, getDaemonUpdateInfo, getDaemonUpdateDownloadInfo } from '@/api/update';
+const masterVersion = ref('');
+const nodeVersions = ref<Record<string, string>>({});
+
+const formatVersion = (ver: string) => {
+  if (!ver) return '';
+  const match = ver.match(/^([0-9]+(?:\.[0-9]+){1,2})/);
+  if (match) {
+    return `v${match[1]}`;
+  }
+  return `v${ver}`;
+};
+
+const fetchVersions = async () => {
+  try {
+    const masterInfo = await getDaemonStatusInfo('local');
+    if (masterInfo?.version) {
+      masterVersion.value = formatVersion(masterInfo.version);
+    }
+  } catch (e) {
+    console.error('获取主节点版本失败', e);
+  }
+
+  nodes.value.forEach(async (node) => {
+    try {
+      const nodeInfo = await getDaemonStatusInfo(node.nodeId, node.nodeUrl);
+      if (nodeInfo?.version) {
+        nodeVersions.value[node.nodeId] = formatVersion(nodeInfo.version);
+      } else {
+        nodeVersions.value[node.nodeId] = '';
+      }
+    } catch (e) {
+      console.error(`获取子节点 ${node.nodeId} 版本失败`, e);
+      nodeVersions.value[node.nodeId] = '';
+    }
+  });
+};
+
+watch(slavesStats, (newStats) => {
+  nodes.value.forEach(async (node) => {
+    if (newStats[node.nodeId] && !nodeVersions.value[node.nodeId]) {
+      try {
+        const nodeInfo = await getDaemonStatusInfo(node.nodeId, node.nodeUrl);
+        if (nodeInfo?.version) {
+          nodeVersions.value[node.nodeId] = formatVersion(nodeInfo.version);
+        }
+      } catch { /* empty */ }
+    }
+  });
+}, { deep: true });
+
+const handleUpdateNode = async (nodeId: string, nodeUrl: string, nodeName: string) => {
+  try {
+    targetUpdateNodeId.value = nodeId;
+    targetUpdateNodeUrl.value = nodeUrl;
+    targetUpdateNodeName.value = nodeName;
+
+    // 获取远端节点的更新信息
+    const [infoRes, downloadRes] = await Promise.all([
+      getDaemonUpdateInfo(nodeId, nodeUrl),
+      getDaemonUpdateDownloadInfo(nodeId, nodeUrl)
+    ]);
+
+    slaveUpdateInfo.value = infoRes;
+    slaveDownloadInfo.value = downloadRes;
+    showUpdateModal.value = true;
+  } catch (e: any) {
+    MessagePlugin.error(`无法获取远端节点更新信息: ${e.message}`);
+  }
+};
+
 const fetchNodes = async (force = false) => {
   await nodeStore.fetchNodes(force);
+  fetchVersions();
 };
 
 const handleAddNode = () => {
@@ -395,11 +477,29 @@ onUnmounted(async () => {
           </div>
 
           <div class="flex items-center justify-between mt-4 gap-2">
-            <t-button variant="text" size="small" @click="handleShowDetails(item)">
-              <template #icon><info-circle-icon /></template>
-              详细
-            </t-button>
+            <div class="flex items-center gap-1.5">
+              <span v-if="nodeVersions[item.nodeId]"
+                :class="[
+                  'text-[10px] px-1.5 py-0.5 rounded-md shrink-0 border font-mono',
+                  nodeVersions[item.nodeId] === masterVersion
+                    ? 'bg-emerald-50 text-emerald-600 border-transparent dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20'
+                    : 'bg-red-50 text-red-600 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20'
+                ]"
+                :title="nodeVersions[item.nodeId] === masterVersion ? '与主节点版本一致' : '与主节点版本不一致，建议更新'"
+              >
+                {{ nodeVersions[item.nodeId] }}
+              </span>
+              <t-button variant="text" size="small" @click="handleShowDetails(item)">
+                <template #icon><info-circle-icon /></template>
+                详细
+              </t-button>
+            </div>
             <div class="flex gap-2">
+              <t-button v-if="nodeVersions[item.nodeId] && nodeVersions[item.nodeId] !== masterVersion"
+                        variant="outline" theme="primary" size="small" @click="handleUpdateNode(item.nodeId, item.nodeUrl, item.nodeName)">
+                <template #icon><cloud-upload-icon /></template>
+                升级
+              </t-button>
               <t-button variant="outline" size="small" @click="handleEditNode(item)">
                 <template #icon><edit-icon /></template>
                 编辑
@@ -557,6 +657,19 @@ onUnmounted(async () => {
         </div>
       </div>
     </t-dialog>
+
+    <!-- 升级弹窗 -->
+    <update-modal
+      :visible="showUpdateModal"
+      :update-info="slaveUpdateInfo"
+      :download-info="slaveDownloadInfo"
+      :target-node-id="targetUpdateNodeId"
+      :target-node-url="targetUpdateNodeUrl"
+      :target-node-name="targetUpdateNodeName"
+      @close="showUpdateModal = false"
+      @success="showUpdateModal = false; fetchNodes(true)"
+      @skip="showUpdateModal = false"
+    />
   </div>
 </template>
 

@@ -23,6 +23,9 @@ interface Props {
   visible: boolean;
   updateInfo: UpdateInfoModel | null;
   downloadInfo: UpdateDownloadInfoModel | null;
+  targetNodeId?: string;
+  targetNodeUrl?: string;
+  targetNodeName?: string;
 }
 
 const props = defineProps<Props>();
@@ -123,8 +126,12 @@ const startSignalR = async () => {
   await stopSignalR();
 
   const { baseUrl, token } = userStore;
-  const hubUrl = new URL('/api/hubs/daemonUpdate', baseUrl || window.location.origin);
+  const hubBaseUrl = props.targetNodeUrl || baseUrl || window.location.origin;
+  const hubUrl = new URL('/api/hubs/daemonUpdate', hubBaseUrl);
   if (token) hubUrl.searchParams.append('x-user-token', token);
+  if (props.targetNodeId && props.targetNodeId !== 'local') {
+    hubUrl.searchParams.append('x-node-id', props.targetNodeId);
+  }
 
   hubConnection = new HubConnectionBuilder()
     .withUrl(hubUrl.toString(), { withCredentials: false })
@@ -198,7 +205,7 @@ const handleAutoUpdate = async () => {
   await startSignalR();
 
   try {
-    await postUpdateDaemon();
+    await postUpdateDaemon(props.targetNodeId, props.targetNodeUrl);
   } catch (error: any) {
     isUpdating.value = false;
     stopSignalR();
@@ -224,7 +231,12 @@ const startPollingPing = async () => {
 
   const checkStatus = async () => {
     try {
-      await request.get({ url: '/api/ping', timeout: 3000 });
+      await request.get({ 
+        url: '/api/ping', 
+        baseURL: props.targetNodeUrl || undefined,
+        headers: props.targetNodeId && props.targetNodeId !== 'local' ? { 'x-node-id': props.targetNodeId } : {},
+        timeout: 3000 
+      });
       return true;
     } catch {
       return false;
@@ -277,6 +289,9 @@ onUnmounted(() => {
           <h3 class="m-0 text-[20px] font-bold text-[var(--td-text-color-primary)] tracking-wide">
             {{ updateSuccess ? '更新完成' : '发现新版本' }}
           </h3>
+          <t-tag v-if="targetNodeName" theme="primary" variant="light" class="!rounded-md font-bold">
+            {{ targetNodeName }}
+          </t-tag>
           <t-tag v-if="isBeta" theme="warning" variant="light-outline" class="!rounded-md !font-bold">Beta</t-tag>
           <t-tag v-else theme="success" variant="light-outline" class="!rounded-md !font-bold">Release</t-tag>
         </div>
