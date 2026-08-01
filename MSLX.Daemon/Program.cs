@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using MSLX.Daemon.Adapters;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Middleware;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Services.DeployServerService;
+using MSLX.Daemon.Services.PluginsService;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.BackgroundTasks;
 using MSLX.Daemon.Utils.ConfigUtils;
@@ -186,8 +188,11 @@ builder.Services.AddSingleton(typeof(IBackgroundTaskQueue<>), typeof(BackgroundT
 builder.Services.AddSingleton<IMCServerService,MCServerService>();
 builder.Services.AddSingleton<IDockerService,DockerService>();
 builder.Services.AddSingleton<SystemMonitor>();
+// 插件的一些服务
 var pluginManager = new PluginManager();
 builder.Services.AddSingleton(pluginManager);
+builder.Services.AddSingleton<Microsoft.AspNetCore.Mvc.Infrastructure.IActionDescriptorChangeProvider>(HotReloadActionDescriptorChangeProvider.Instance);
+builder.Services.Replace(ServiceDescriptor.Transient<Microsoft.AspNetCore.Mvc.Controllers.IControllerActivator, PluginControllerActivator>());
 
 // 后台服务注册
 builder.Services.AddHostedService<ServerCreationService>();
@@ -230,7 +235,7 @@ var mvcBuilder = builder.Services.AddControllers()
         };
     });
 
-// 插件加载
+// 插件删除 & 更新（旧版逻辑 暂时保留 大概率用不上的了）
 var loadedPlugins = new List<LoadedPlugin>();
 var pluginsPath = Path.Combine(IConfigBase.GetAppDataPath(), "Plugins");
 var pluginLogger = bootstrapLoggerFactory.CreateLogger("PluginLoader");
@@ -278,69 +283,6 @@ else
             pluginLogger.LogWarning($"[MSLX Plugin] 无法应用插件更新 {Path.GetFileName(targetDll)}: {ex.Message}");
         }
     }
-
-    // 加载dll
-    foreach (var dllPath in Directory.GetFiles(pluginsPath, "*.dll"))
-    {
-        try
-        {
-            var disabledMarker = dllPath + ".disabled";
-            if (File.Exists(disabledMarker))
-            {
-                pluginLogger.LogInformation($"[MSLX Plugin] 插件被禁用，跳过加载: {Path.GetFileName(dllPath)}");
-                continue; 
-            }
-            
-            var assembly = System.Runtime.Loader.AssemblyLoadContext.Default.LoadFromAssemblyPath(dllPath);
-
-            var pluginType = assembly.GetTypes().FirstOrDefault(t => 
-                typeof(MSLX.SDK.IPlugin).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
-
-            if (pluginType != null)
-            {
-                var pluginInstance = (MSLX.SDK.IPlugin)Activator.CreateInstance(pluginType)!;
-                
-                // 检查MinSdkVersion
-                try
-                {
-                    var hostVersion = Assembly.GetEntryAssembly()?.GetName().Version ?? new Version("0.0.0.0");
-                    var minSdkStr = pluginInstance.MinSDKVersion; 
-                    
-                    if (!string.IsNullOrWhiteSpace(minSdkStr))
-                    {
-                        if (Version.TryParse(minSdkStr.TrimStart('v', 'V'), out var minVersion))
-                        {
-                            if (minVersion > hostVersion)
-                            {
-                                pluginLogger.LogWarning($"[MSLX Plugin] [兼容性警告] 插件 '{pluginInstance.Name}' 要求最低节点版本 v{minVersion}，当前版本 v{hostVersion}，可能存在运行风险！");
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    pluginLogger.LogDebug($"[MSLX Plugin] 校验插件 '{pluginInstance.Name}' 版本依赖时发生异常: {ex.Message}");
-                }
-                
-                pluginManager.Plugins.Add(new LoadedPlugin { 
-                    Assembly = assembly, 
-                    Metadata = pluginInstance 
-                });
-                
-                // 注册 API
-                pluginInstance.OnRegisterServices(builder.Services);
-                mvcBuilder.PartManager.ApplicationParts.Add(new Microsoft.AspNetCore.Mvc.ApplicationParts.AssemblyPart(assembly));
-                mvcBuilder.AddControllersAsServices();
-                loadedPlugins.Add(new LoadedPlugin { Assembly = assembly, Metadata = pluginInstance });
-
-                pluginLogger.LogInformation($"[MSLX Plugin] 正在加载插件: {pluginInstance.Name} v{pluginInstance.Version} by @{pluginInstance.Developer}");
-            }
-        }
-        catch (Exception ex) 
-        { 
-            pluginLogger.LogError($"[MSLX Plugin] 插件加载失败 ({Path.GetFileName(dllPath)}): {ex.Message}"); 
-        }
-    }
 }
 
 builder.Services.AddMemoryCache();
@@ -351,6 +293,11 @@ var app = builder.Build();
 var loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
 var logger = loggerFactory.CreateLogger("Program");
 
+// 初始化 PluginManager 服务
+var partManager = app.Services.GetRequiredService<Microsoft.AspNetCore.Mvc.ApplicationParts.ApplicationPartManager>();
+pluginManager.Initialize(app.Services, partManager, loggerFactory.CreateLogger<PluginManager>(), builder.Services);
+
+
 // 注册代理方法给SDK
 MSLX.SDK.MSLX.Initialize(
     new DaemonConfigProvider(),
@@ -360,15 +307,11 @@ MSLX.SDK.MSLX.Initialize(
 );
 
 // 插件初始化方法
-foreach (var plugin in loadedPlugins)
+if (Directory.Exists(pluginsPath))
 {
-    try
+    foreach (var dllPath in Directory.GetFiles(pluginsPath, "*.dll"))
     {
-        plugin.Metadata.OnPluginInitialize(app.Services);
-    }
-    catch (Exception ex)
-    {
-        logger.LogError($"[MSLX Plugin] 插件 {plugin.Metadata.Name} 执行生命周期初始化失败: {ex.Message}");
+        pluginManager.LoadPlugin(dllPath);
     }
 }
 
@@ -414,25 +357,12 @@ app.UseStaticFiles(new StaticFileOptions
     RequestPath = "" 
 });
 
-// 加载插件的静态资源
-foreach (var plugin in loadedPlugins)
+// 动态加载插件静态资源
+app.UseStaticFiles(new StaticFileOptions
 {
-    try
-    {
-        var fileProvider = new ManifestEmbeddedFileProvider(plugin.Assembly, "Frontend/dist");
-
-        app.UseStaticFiles(new StaticFileOptions
-        {
-            FileProvider = fileProvider,
-            RequestPath = $"/plugins/{plugin.Metadata.Id.ToLower()}/{plugin.Metadata.Version}"
-        });
-        logger.LogInformation($"[MSLX Plugin] 映射资源: /plugins/{plugin.Metadata.Id.ToLower()}");
-    }
-    catch(Exception ex)
-    {
-         /* 忽略无前端资源的插件 */
-    }
-}
+    FileProvider = new MSLX.Daemon.Services.PluginsService.PluginDynamicFileProvider(pluginManager),
+    RequestPath = "/plugins"
+});
 
 // 自定义的中间件
 app.UseMiddleware<BlockLoopbackMiddleware>(); 

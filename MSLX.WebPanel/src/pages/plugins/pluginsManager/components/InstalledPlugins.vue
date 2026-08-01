@@ -70,10 +70,10 @@ async function handleAction(id: string, action: string) {
 
     await postPluginAction(id, action);
 
-    MessagePlugin.success('操作成功');
-
-    // 刷新
+    MessagePlugin.success('处理成功');
     await getList();
+    const { pluginStateChanged } = await import('@/utils/pluginManager');
+    pluginStateChanged.value = true;
   } catch (error: any) {
     console.error(error);
     MessagePlugin.error('操作失败: ' + (error.message || '未知错误'));
@@ -216,10 +216,14 @@ const pollUpdateStatus = (taskId: string, pluginId: string) => {
 
         NotificationPlugin.success({
           title: '插件更新成功',
-          content: '新版本文件已就绪，将在下次重启时生效。',
+          content: '新版本插件已就绪并自动热重载生效！',
           duration: 5000,
         });
-        getList();
+        setTimeout(async () => {
+          await getList(); // 重新拉取最新插件列表
+          const { pluginStateChanged } = await import('@/utils/pluginManager');
+          pluginStateChanged.value = true;
+        }, 1500);
       } else if (res.status === 'error') {
         clearInterval(updateState.timer);
         updateState.isUpdating = false;

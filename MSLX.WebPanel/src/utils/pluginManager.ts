@@ -2,7 +2,9 @@ import router, { asyncRouterList } from '@/router';
 import Layout from '@/layouts/index.vue';
 import { getPermissionStore, usePluginUIStore, useUserStore } from '@/store';
 import { getPluginList } from '@/api/plugins';
-import { markRaw } from 'vue';
+import { markRaw, ref } from 'vue';
+
+export const pluginStateChanged = ref(false);
 
 let pluginsLoaded = false;
 
@@ -25,7 +27,9 @@ export async function loadAllPlugins() {
     }
     const userStore = useUserStore();
     const { baseUrl } = userStore;
-    const pluginUrls = plugins.map((plugin) => `${baseUrl || window.location.origin}${plugin.entryPath}`);
+    const pluginUrls = plugins
+      .filter((plugin: any) => plugin.status === '已启用' && plugin.entryPath)
+      .map((plugin: any) => `${baseUrl || window.location.origin}${plugin.entryPath}`);
 
     await Promise.all(pluginUrls.map((url) => loadPlugin(url)));
 
@@ -37,7 +41,6 @@ export async function loadAllPlugins() {
 }
 
 function findMenuByName(menus: any[], name: string): any {
-  if (!menus) return null;
   for (const menu of menus) {
     if (menu.name === name) return menu;
     if (menu.children && menu.children.length > 0) {
@@ -86,7 +89,12 @@ export async function loadPlugin(pluginUrl: string) {
             router.addRoute(parentName, route);
 
             parentMenu.children = parentMenu.children ? [...parentMenu.children] : [];
-            parentMenu.children.push(route);
+            const existingIdx = parentMenu.children.findIndex((c: any) => c.name === route.name);
+            if (existingIdx > -1) {
+              parentMenu.children[existingIdx] = route;
+            } else {
+              parentMenu.children.push(route);
+            }
             if (permissionStore.routers) {
               hasChanges = true;
             }
@@ -95,8 +103,14 @@ export async function loadPlugin(pluginUrl: string) {
           }
         } else {
           router.addRoute(route);
-          if (reactiveRouters) reactiveRouters.push(route);
-          if (searchSource !== reactiveRouters) searchSource.push(route);
+          if (reactiveRouters) {
+            const existingIdx = reactiveRouters.findIndex((c: any) => c.name === route.name);
+            if (existingIdx > -1) {
+              reactiveRouters[existingIdx] = route;
+            } else {
+              reactiveRouters.push(route);
+            }
+          }
           hasChanges = true;
         }
       });
