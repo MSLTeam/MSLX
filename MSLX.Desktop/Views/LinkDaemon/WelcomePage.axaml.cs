@@ -7,6 +7,7 @@ using MSLX.Desktop.Utils;
 using SukiUI.Controls;
 using SukiUI.Dialogs;
 using SukiUI.Toasts;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Threading.Tasks;
 
@@ -14,9 +15,14 @@ namespace MSLX.Desktop.Views.LinkDaemon;
 
 public partial class WelcomePage : UserControl
 {
+    // 日志数据源
+    private readonly ObservableCollection<string> _logLines = new();
+
     public WelcomePage()
     {
         InitializeComponent();
+
+        LogListBox.ItemsSource = _logLines;
 
         this.Loaded += WelcomePage_Loaded;
         this.Retry.Click += Retry_Click;
@@ -29,8 +35,37 @@ public partial class WelcomePage : UserControl
     {
         Dispatcher.UIThread.Post(() =>
         {
-            LogTextBox.Text += log + "\n";
-            LogTextBox.CaretIndex = LogTextBox.Text.Length;
+            _logLines.Add(log);
+
+            // 日志过多时丢弃最旧的行，控制集合大小
+            while (_logLines.Count > 500)
+            {
+                _logLines.RemoveAt(0);
+            }
+
+            // 新日志到达后自动滚动到底部
+            if (_logLines.Count > 0)
+            {
+                LogScroll.ScrollToEnd();
+            }
+        });
+    }
+
+    // 展开日志面板：切换 Class，具体的高度/透明度动画由 Styles 里的 Transition 驱动
+    private void ShowLogPanel()
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            LogContainer.Classes.Add("expanded");
+        });
+    }
+
+    // 收起日志面板：移除 Class
+    private void HideLogPanel()
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            LogContainer.Classes.Remove("expanded");
         });
     }
 
@@ -65,6 +100,7 @@ public partial class WelcomePage : UserControl
                 if (autoRunDaemon)
                 {
                     // 尝试启动守护程序
+                    ShowLogPanel();
                     var (Success, Msg) = await DaemonManager.StartDaemon(ConfigService.GetAppDataPath());
                     if (Success)
                     {
@@ -140,6 +176,7 @@ public partial class WelcomePage : UserControl
         }
         else
         {
+            ShowLogPanel();
             var (Success, Msg) = await DaemonManager.StartDaemon(ConfigService.GetAppDataPath());
             if (Success)
             {
@@ -160,6 +197,7 @@ public partial class WelcomePage : UserControl
     private void MethodC()
     {
         Debug.WriteLine("WelcomePage: MethodC Start");
+        HideLogPanel();
         Next.Tag = 0;
         Next.IsVisible = true;
     }
@@ -167,6 +205,7 @@ public partial class WelcomePage : UserControl
     private void MethodD()
     {
         Debug.WriteLine("WelcomePage: MethodD Start");
+        HideLogPanel();
         Next.Tag = 1;
         Next.IsVisible = true;
     }
