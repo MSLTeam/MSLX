@@ -409,6 +409,11 @@
 										</ListBox.ItemTemplate>
 									</ListBox>
 								</Border>
+
+								<Button x:Name="BtnCancelCreation"
+										Content="取消部署"
+										HorizontalAlignment="Center"
+										Click="BtnCancelCreation_Click"/>
 							</StackPanel>
 
 							<StackPanel x:Name="PanelSuccess" Spacing="15" IsVisible="False" HorizontalAlignment="Center" Margin="0,20">

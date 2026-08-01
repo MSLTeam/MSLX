@@ -72,7 +72,6 @@ namespace MSLX.Desktop.Models
             }
         };
 
-        private static readonly CreateMCServer CreateMCServerPage = new();
         public static SukiSideMenuItem CreateMCServerMenuItem = new SukiSideMenuItem
         {
             Header = "创建实例",
@@ -81,7 +80,7 @@ namespace MSLX.Desktop.Models
                 Kind = MaterialIconKind.AddCircle,
             },
             IsContentMovable = false,
-            PageContent = PageStore.CreateMCServerPage
+            PageContent = new CreateMCServer()
         };
         private static readonly CreateMSLFrpTunnel CreateMSLFrpTunnelPage = new();
         public static SukiSideMenuItem CreateMSLFrpTunnelMenuItem = new SukiSideMenuItem

@@ -248,6 +248,46 @@ namespace MSLX.Desktop.Utils.API
             }
         }
 
+        /// <summary>
+        /// 取消服务器实例创建任务
+        /// </summary>
+        /// <param name="serverId">要取消的服务器ID</param>
+        /// <returns>成功标志、消息</returns>
+        public static async Task<(bool Success, string? Message)> CancelServerCreationAsync(string serverId)
+        {
+            try
+            {
+                var response = await PostApiAsync(
+                    "/api/instance/cancelCreation",
+                    null,
+                    HttpService.PostContentType.Json,
+                    new { serverId }
+                );
+
+                if (response.IsSuccess && !string.IsNullOrEmpty(response.Content))
+                {
+                    var json = JObject.Parse(response.Content);
+                    var code = json["code"]?.ToString();
+                    var message = json["message"]?.ToString();
+
+                    if (code == "200")
+                    {
+                        return (true, message);
+                    }
+                    else
+                    {
+                        return (false, message ?? "取消失败");
+                    }
+                }
+
+                return (false, response.Exception?.Message ?? "请求失败");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"异常: {ex.Message}");
+            }
+        }
+
         #region 文件上传
 
         /// <summary>
