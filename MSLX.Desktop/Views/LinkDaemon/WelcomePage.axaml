@@ -40,9 +40,35 @@
                   VerticalAlignment="Center" HorizontalAlignment="Stretch">
 
 				<StackPanel Grid.Row="0" HorizontalAlignment="Center">
-					<Image Source="avares://MSLX-Desktop/Assets/icon.ico" Width="96" Height="96"/>
-					<TextBlock Text="欢迎使用 MSLX !" FontSize="24" FontWeight="Bold"
-                               HorizontalAlignment="Center" Margin="0,10,0,0"/>
+					<Image Source="avares://MSLX-Desktop/Assets/icon.ico" Width="108" Height="108">
+						<Image.Transitions>
+							<Transitions>
+								<TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.5" Easing="CubicEaseOut"/>
+							</Transitions>
+						</Image.Transitions>
+					</Image>
+					<TextBlock Text="欢迎使用 MSLX !" FontSize="32" FontWeight="Bold"
+                               HorizontalAlignment="Center" Margin="0,15,0,0"/>
+					
+					<TextBlock Text="全新一代开服工具，极速部署您的 MC 服务器" FontSize="16" Opacity="0.7" HorizontalAlignment="Center" Margin="0,8,0,15"/>
+					
+					<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10" Margin="0,5,0,15">
+						<Border Background="#1A0072FF" CornerRadius="15" Padding="15,6">
+							<TextBlock Text="✨ 传承经典 UI" Foreground="#0072FF" FontSize="13" FontWeight="SemiBold"/>
+						</Border>
+						<Border Background="#1A00C6FF" CornerRadius="15" Padding="15,6">
+							<TextBlock Text="🌍 跨平台运行" Foreground="#0096FF" FontSize="13" FontWeight="SemiBold"/>
+						</Border>
+						<Border Background="#1A8A2BE2" CornerRadius="15" Padding="15,6">
+							<TextBlock Text="🚀 强大远程访问" Foreground="#8A2BE2" FontSize="13" FontWeight="SemiBold"/>
+						</Border>
+					</StackPanel>
+
+					<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0" Opacity="0.6">
+						<TextBlock Text="Copyright © " FontSize="12" Foreground="Gray"/>
+						<TextBlock Text="MSLTeam" FontSize="12" Foreground="#0072FF" FontWeight="SemiBold" Cursor="Hand" ToolTip.Tip="https://github.com/MSLTeam/"/>
+						<TextBlock Text=" 2021-2026" FontSize="12" Foreground="Gray"/>
+					</StackPanel>
 				</StackPanel>
 
 				<!-- 日志容器：Height 由 Style 的 expanded/非 expanded 状态动画驱动，
