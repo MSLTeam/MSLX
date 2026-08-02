@@ -160,7 +160,7 @@ const handleAvatarClick = () => {
               <t-menu
                 :value="active"
                 :theme="theme"
-                expand-mutex
+                :expand-mutex="settingStore.expandMutex"
                 class="max-h-[calc(100vh-64px)] overflow-y-auto !bg-white/95 dark:!bg-zinc-800/95 backdrop-blur-xl !border-none !border-t !border-zinc-200/50 dark:!border-zinc-700/50 shadow-2xl"
                 @change="handleMenuChange"
               >

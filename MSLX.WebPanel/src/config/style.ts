@@ -12,4 +12,5 @@ export default {
   backgroundTheme: 'blueGrey',
   brandTheme: 'default',
   enableCustomTheme: false,
+  expandMutex: true,
 };
