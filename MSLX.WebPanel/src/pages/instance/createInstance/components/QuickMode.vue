@@ -8,7 +8,7 @@ import { getHubUrl } from '@/utils/hub';
 import ServerCoreSelector from './ServerCoreSelector.vue';
 import { getJavaVersionList } from '@/api/mslapi/java';
 import { getLocalJavaList } from '@/api/localJava';
-import { postCreateInstanceQuickMode } from '@/api/instance';
+import { postCreateInstanceQuickMode, postCancelCreateInstance } from '@/api/instance';
 import { deleteUpload } from '@/api/files';
 import { CreateInstanceQucikModeModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
@@ -53,7 +53,6 @@ const selectedJavaVersion = ref('');
 const customJavaPath = ref('');
 const onlineGameVersion = ref('');
 
-
 const detectedGameVersion = computed(() => {
   if (downloadType.value === 'online') {
     return onlineGameVersion.value;
@@ -73,7 +72,7 @@ const javaVersionsWithOptions = computed(() => {
     const isRec = recommendedJavaVersion.value && v.value === recommendedJavaVersion.value;
     return {
       ...v,
-      label: isRec ? `${v.label} (推荐)` : v.label
+      label: isRec ? `${v.label} (推荐)` : v.label,
     };
   });
 });
@@ -81,14 +80,14 @@ const javaVersionsWithOptions = computed(() => {
 const localJavaVersionsWithOptions = computed(() => {
   return localJavaVersions.value.map((v) => {
     if (recommendedJavaVersion.value) {
-      const raw = localJavaVersionsRaw.value.find(item => item.path === v.value);
+      const raw = localJavaVersionsRaw.value.find((item) => item.path === v.value);
       if (raw) {
         const vStr = String(raw.version);
         const isRec = vStr === recommendedJavaVersion.value || vStr.startsWith(recommendedJavaVersion.value + '.');
         if (isRec) {
           return {
             ...v,
-            label: `${v.label} (推荐)`
+            label: `${v.label} (推荐)`,
           };
         }
       }
@@ -96,8 +95,6 @@ const localJavaVersionsWithOptions = computed(() => {
     return v;
   });
 });
-
-
 
 const fetchJavaVersions = async (force: boolean = false) => {
   try {
@@ -241,7 +238,7 @@ const updateJavaSelectionByRecommendation = () => {
 
   // 本地Java
   if (localJavaVersionsRaw.value && localJavaVersionsRaw.value.length > 0) {
-    const found = localJavaVersionsRaw.value.find(v => {
+    const found = localJavaVersionsRaw.value.find((v) => {
       const vStr = String(v.version);
       return vStr === targetVer || vStr.startsWith(targetVer + '.');
     });
@@ -253,9 +250,13 @@ const updateJavaSelectionByRecommendation = () => {
   }
 };
 
-watch([recommendedJavaVersion, javaVersions, localJavaVersionsRaw], () => {
-  updateJavaSelectionByRecommendation();
-}, { deep: true, immediate: true });
+watch(
+  [recommendedJavaVersion, javaVersions, localJavaVersionsRaw],
+  () => {
+    updateJavaSelectionByRecommendation();
+  },
+  { deep: true, immediate: true },
+);
 
 // 监听选择java的状态变量 修改表单数据
 watch(
@@ -449,6 +450,20 @@ const removeUploadedFile = async () => {
 // --- 上传相关 ---
 
 // 提交 & SignalR 状态
+const isCanceling = ref(false);
+const handleCancelCreation = async () => {
+  if (!createdServerId.value) return;
+  try {
+    isCanceling.value = true;
+    await postCancelCreateInstance(createdServerId.value.toString());
+    MessagePlugin.success('已发送取消指令');
+  } catch (error) {
+    MessagePlugin.error('取消失败: ' + error.message);
+  } finally {
+    isCanceling.value = false;
+  }
+};
+
 const onSubmit = async () => {
   const validateResult = await formRef.value.validate();
   const isValid = validateResult === true;
@@ -789,9 +804,16 @@ const goToHome = () => {
 
             <!-- Java 环境 -->
             <div v-show="currentStep === 2" class="list-item-anim flex-1 pt-1">
-              <t-alert v-if="recommendedJavaVersion" theme="success" :title="`推荐 Java 版本: Java ${recommendedJavaVersion}`" class="!mb-6 !rounded-xl">
+              <t-alert
+                v-if="recommendedJavaVersion"
+                theme="success"
+                :title="`推荐 Java 版本: Java ${recommendedJavaVersion}`"
+                class="!mb-6 !rounded-xl"
+              >
                 <template #message>
-                  检测到您的游戏版本为 <span class="font-bold text-[var(--color-success)]">{{ detectedGameVersion }}</span>，已为您自动选择推荐的 Java {{ recommendedJavaVersion }}。
+                  检测到您的游戏版本为
+                  <span class="font-bold text-[var(--color-success)]">{{ detectedGameVersion }}</span
+                  >，已为您自动选择推荐的 Java {{ recommendedJavaVersion }}。
                 </template>
               </t-alert>
 
@@ -886,10 +908,22 @@ const goToHome = () => {
                       <div class="flex items-center gap-3">
                         <span class="text-xs font-bold text-zinc-500 shrink-0">运行环境:</span>
                         <t-select v-model="dockerImagePresetVersion" class="!w-48" :clearable="false">
-                          <t-option :label="recommendedJavaVersion === '25' ? 'Java 25 (推荐)' : 'Java 25'" value="25" />
-                          <t-option :label="recommendedJavaVersion === '21' ? 'Java 21 (推荐)' : 'Java 21'" value="21" />
-                          <t-option :label="recommendedJavaVersion === '17' ? 'Java 17 (推荐)' : 'Java 17'" value="17" />
-                          <t-option :label="recommendedJavaVersion === '11' ? 'Java 11 (推荐)' : 'Java 11'" value="11" />
+                          <t-option
+                            :label="recommendedJavaVersion === '25' ? 'Java 25 (推荐)' : 'Java 25'"
+                            value="25"
+                          />
+                          <t-option
+                            :label="recommendedJavaVersion === '21' ? 'Java 21 (推荐)' : 'Java 21'"
+                            value="21"
+                          />
+                          <t-option
+                            :label="recommendedJavaVersion === '17' ? 'Java 17 (推荐)' : 'Java 17'"
+                            value="17"
+                          />
+                          <t-option
+                            :label="recommendedJavaVersion === '11' ? 'Java 11 (推荐)' : 'Java 11'"
+                            value="11"
+                          />
                           <t-option :label="recommendedJavaVersion === '8' ? 'Java 8 (推荐)' : 'Java 8'" value="8" />
                         </t-select>
                       </div>
@@ -1279,6 +1313,11 @@ const goToHome = () => {
                 <span class="text-[var(--td-text-color-primary)] font-medium">{{ log.message }}</span>
               </div>
             </div>
+          </div>
+          <div class="mt-6 flex justify-center w-full">
+            <t-button theme="danger" variant="outline" @click="handleCancelCreation" :loading="isCanceling"
+              >取消部署</t-button
+            >
           </div>
         </div>
 

@@ -22,6 +22,15 @@ export async function postCreateInstanceQuickMode(data:CreateInstanceQucikModeMo
   });
 }
 
+export async function postCancelCreateInstance(serverId:string) {
+  return await request.post({
+    url: '/api/instance/cancelCreation',
+    data: {
+      serverId
+    }
+  });
+}
+
 export async function postDeleteInstance(id:number,deleteFiles:boolean = false) {
   return await request.post({
     url: '/api/instance/delete',

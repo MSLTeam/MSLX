@@ -9,7 +9,7 @@ import ServerCoreSelector from './ServerCoreSelector.vue';
 import { getJavaVersionList } from '@/api/mslapi/java';
 import { getLocalJavaList } from '@/api/localJava';
 import { getPythonList } from '@/api/localPython';
-import { postCreateInstanceQuickMode } from '@/api/instance';
+import { postCreateInstanceQuickMode, postCancelCreateInstance } from '@/api/instance';
 import { deleteUpload } from '@/api/files';
 import { CreateInstanceQucikModeModel, PythonInfoModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
@@ -92,24 +92,21 @@ const onlineGameVersion = ref('');
 const recommendedJavaVersion = ref('');
 const detectedGameVersion = ref('');
 
-
 const javaVersionsWithOptions = computed(() =>
   javaVersions.value.map((opt) => ({
     ...opt,
-    label: recommendedJavaVersion.value && opt.value === recommendedJavaVersion.value
-      ? `${opt.label} (推荐)`
-      : opt.label,
-  }))
+    label:
+      recommendedJavaVersion.value && opt.value === recommendedJavaVersion.value ? `${opt.label} (推荐)` : opt.label,
+  })),
 );
 
 const localJavaVersionsRaw = ref<{ label: string; value: string; javaVer: string }[]>([]);
 const localJavaVersionsWithOptions = computed(() =>
   localJavaVersionsRaw.value.map((opt) => ({
     ...opt,
-    label: recommendedJavaVersion.value && opt.javaVer === recommendedJavaVersion.value
-      ? `${opt.label} (推荐)`
-      : opt.label,
-  }))
+    label:
+      recommendedJavaVersion.value && opt.javaVer === recommendedJavaVersion.value ? `${opt.label} (推荐)` : opt.label,
+  })),
 );
 
 const fetchJavaVersions = async (force: boolean = false) => {
@@ -415,6 +412,20 @@ const removeUploadedFile = async () => {
 // --- 上传相关 ---
 
 // 提交 & SignalR 状态
+const isCanceling = ref(false);
+const handleCancelCreation = async () => {
+  if (!createdServerId.value) return;
+  try {
+    isCanceling.value = true;
+    await postCancelCreateInstance(createdServerId.value.toString());
+    MessagePlugin.success('已发送取消指令');
+  } catch (error) {
+    MessagePlugin.error('取消失败: ' + error.message);
+  } finally {
+    isCanceling.value = false;
+  }
+};
+
 const onSubmit = async () => {
   const validateResult = await formRef.value.validate();
   const isValid = validateResult === true;
@@ -603,11 +614,7 @@ const updateJavaSelectionByRecommendation = () => {
   if (matchLocal) customJavaPath.value = matchLocal.value;
 };
 
-watch(
-  [onlineGameVersion, () => formData.value.core],
-  () => updateJavaSelectionByRecommendation(),
-  { deep: true },
-);
+watch([onlineGameVersion, () => formData.value.core], () => updateJavaSelectionByRecommendation(), { deep: true });
 </script>
 
 <template>
@@ -878,9 +885,17 @@ watch(
             </div>
 
             <div v-show="currentStep === 3" class="list-item-anim flex-1 pt-1">
-              <t-alert v-if="recommendedJavaVersion" theme="success" :title="`推荐 Java 版本: Java ${recommendedJavaVersion}`" class="!mb-6 !rounded-xl">
+              <t-alert
+                v-if="recommendedJavaVersion"
+                theme="success"
+                :title="`推荐 Java 版本: Java ${recommendedJavaVersion}`"
+                class="!mb-6 !rounded-xl"
+              >
                 <template #message>
-                  检测到您的游戏版本为 <span class="font-bold text-[var(--color-success)]">{{ detectedGameVersion }}</span>，已为您自动选择推荐的 Java {{ recommendedJavaVersion }}。此 Java 用于运行 MCDR 内部的真实服务端核心。
+                  检测到您的游戏版本为
+                  <span class="font-bold text-[var(--color-success)]">{{ detectedGameVersion }}</span
+                  >，已为您自动选择推荐的 Java {{ recommendedJavaVersion }}。此 Java 用于运行 MCDR
+                  内部的真实服务端核心。
                 </template>
               </t-alert>
 
@@ -1290,6 +1305,11 @@ watch(
                 <span class="text-[var(--td-text-color-primary)] font-medium">{{ log.message }}</span>
               </div>
             </div>
+          </div>
+          <div class="mt-6 flex justify-center w-full">
+            <t-button theme="danger" variant="outline" @click="handleCancelCreation" :loading="isCanceling"
+              >取消部署</t-button
+            >
           </div>
         </div>
 

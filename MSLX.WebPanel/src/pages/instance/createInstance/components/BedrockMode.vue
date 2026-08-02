@@ -5,7 +5,7 @@ import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signal
 import { useUserStore } from '@/store';
 import { getHubUrl } from '@/utils/hub';
 
-import { postCreateInstanceQuickMode } from '@/api/instance';
+import { postCreateInstanceQuickMode, postCancelCreateInstance } from '@/api/instance';
 import { CreateInstanceQucikModeModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
 import { useInstanceListStore } from '@/store/modules/instance';
@@ -221,6 +221,20 @@ const nextStep = async () => {
 };
 
 // 提交 & SignalR 状态
+const isCanceling = ref(false);
+const handleCancelCreation = async () => {
+  if (!createdServerId.value) return;
+  try {
+    isCanceling.value = true;
+    await postCancelCreateInstance(createdServerId.value.toString());
+    MessagePlugin.success('已发送取消指令');
+  } catch (error) {
+    MessagePlugin.error('取消失败: ' +error.message);
+  } finally {
+    isCanceling.value = false;
+  }
+};
+
 const onSubmit = async () => {
   const validateResult = await formRef.value.validate();
   if (validateResult !== true) {
@@ -664,6 +678,9 @@ const goToHome = () => {
                 <span class="text-[var(--td-text-color-primary)] font-medium">{{ log.message }}</span>
               </div>
             </div>
+          </div>
+          <div class="mt-6 flex justify-center w-full">
+            <t-button theme="danger" variant="outline" @click="handleCancelCreation" :loading="isCanceling">取消部署</t-button>
           </div>
         </div>
 
