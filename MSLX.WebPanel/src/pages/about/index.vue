@@ -33,28 +33,34 @@ const developers = [
 
 const contributors = [
   {
-    name: 'alright-qwq',
+    name: 'chaoji233',
     role: 'Contributors',
-    avatar: 'https://avatars.githubusercontent.com/u/151932943?s=48&v=4',
-    desc: '帮忙在MSLX中完成对MCDR的适配',
-  },
-  {
-    name: 'LegendarySHT',
-    role: 'Contributors',
-    avatar: 'https://avatars.githubusercontent.com/u/198100090?s=80&v=4',
-    desc: '优化了地图渲染功能',
+    avatar: 'https://hk-gh.mslmc.cn/https://avatars.githubusercontent.com/u/126066634?s=80&v=4',
+    desc: '帮忙优化了一些功能，重构了Chmlfrp部分',
   },
   {
     name: 'Hongbro886',
     role: 'Contributors',
-    avatar: 'https://avatars.githubusercontent.com/u/185684679?s=80&v=4',
+    avatar: 'https://hk-gh.mslmc.cn/https://avatars.githubusercontent.com/u/185684679?s=80&v=4',
     desc: '帮忙修了一些bug',
   },
   {
-    name: 'chaoji233',
+    name: 'alright-qwq',
     role: 'Contributors',
-    avatar: 'https://avatars.githubusercontent.com/u/126066634?s=80&v=4',
-    desc: '帮忙优化了一些功能，重构了Chmlfrp部分',
+    avatar: 'https://hk-gh.mslmc.cn/https://avatars.githubusercontent.com/u/151932943?s=48&v=4',
+    desc: '帮忙在MSLX中完成对MCDR的适配',
+  },
+  {
+    name: 'CoZooo',
+    role: 'Contributors',
+    avatar: 'https://hk-gh.mslmc.cn/https://avatars.githubusercontent.com/u/57851661?v=4',
+    desc: '帮忙做了Homebrew的发布适配',
+  },
+  {
+    name: 'LegendarySHT',
+    role: 'Contributors',
+    avatar: 'https://hk-gh.mslmc.cn/https://avatars.githubusercontent.com/u/198100090?s=80&v=4',
+    desc: '优化了地图渲染功能',
   },
 ];
 
