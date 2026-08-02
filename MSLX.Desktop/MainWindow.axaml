@@ -7,7 +7,8 @@
         xmlns:micon="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="MSLX.Desktop.MainWindow"
-        Title="MSLX.Desktop">
+        Title="MSLX.Desktop"
+        BackgroundAnimationEnabled="True">
     <suki:SukiWindow.Hosts>
 		<suki:SukiDialogHost Name="DialogManager"/>
 		<suki:SukiToastHost Name="ToastManager" Position="TopRight"/>
