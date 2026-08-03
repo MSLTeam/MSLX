@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Styling;
@@ -66,7 +66,7 @@ public partial class MainWindow : SukiWindow
 
     public void SetBackgroundImage(string? path)
     {
-        var mainPanel = this.GetVisualDescendants().OfType<SukiMainPanel>().FirstOrDefault();
+        var mainPanel = this.GetVisualDescendants().OfType<SukiMainHost>().FirstOrDefault();
         if (mainPanel == null) return;
 
         var rootPanel = mainPanel.GetVisualDescendants().OfType<Panel>().FirstOrDefault(p => p.Name == "PART_Root");
@@ -108,7 +108,7 @@ public partial class MainWindow : SukiWindow
 
     public void SetBackgroundOpacity(double opacity)
     {
-        var mainPanel = this.GetVisualDescendants().OfType<SukiMainPanel>().FirstOrDefault();
+        var mainPanel = this.GetVisualDescendants().OfType<SukiMainHost>().FirstOrDefault();
         if (mainPanel == null) return;
 
         var rootPanel = mainPanel.GetVisualDescendants().OfType<Panel>().FirstOrDefault(p => p.Name == "PART_Root");
