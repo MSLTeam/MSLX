@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -124,6 +124,24 @@ public class PluginManager
                 }
             }
 
+            // 修正依赖注入 DI 问题：拦截插件内部的 Hub，确保其 IHubContext<T> 使用 Root Provider 的单例
+            try
+            {
+                var hubTypes = assembly.GetTypes().Where(t => typeof(Microsoft.AspNetCore.SignalR.Hub).IsAssignableFrom(t) && !t.IsAbstract);
+                foreach (var hubType in hubTypes)
+                {
+                    var hubContextType = typeof(Microsoft.AspNetCore.SignalR.IHubContext<>).MakeGenericType(hubType);
+                    if (_serviceProvider != null)
+                    {
+                        pluginServices.AddSingleton(hubContextType, sp => _serviceProvider.GetService(hubContextType)!);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"[MSLX Plugin] 注册 HubContext 失败: {ex.Message}");
+            }
+
             // 插件注册自己的服务
             pluginInstance.OnRegisterServices(pluginServices);
             
@@ -194,6 +212,45 @@ public class PluginManager
 
             // 调用生命周期
             plugin.Metadata.OnUnload();
+            
+            // 尝试断开插件的所有SignalR连接
+            try
+            {
+                var hubTypes = plugin.Assembly.GetTypes().Where(t => typeof(Microsoft.AspNetCore.SignalR.Hub).IsAssignableFrom(t) && !t.IsAbstract);
+                foreach (var hubType in hubTypes)
+                {
+                    var hubContextType = typeof(Microsoft.AspNetCore.SignalR.IHubContext<>).MakeGenericType(hubType);
+                    if (_serviceProvider != null)
+                    {
+                        var hubContext = _serviceProvider.GetService(hubContextType);
+                        if (hubContext != null)
+                        {
+                            var clientsProp = hubContextType.GetProperty("Clients");
+                            if (clientsProp != null)
+                            {
+                                var clients = clientsProp.GetValue(hubContext);
+                                var allProp = clients?.GetType().GetProperty("All");
+                                if (allProp != null)
+                                {
+                                    var all = allProp.GetValue(clients);
+                                    var sendAsyncMethod = typeof(Microsoft.AspNetCore.SignalR.ClientProxyExtensions)
+                                        .GetMethod("SendCoreAsync", new[] { typeof(Microsoft.AspNetCore.SignalR.IClientProxy), typeof(string), typeof(object[]), typeof(CancellationToken) });
+                                    
+                                    if (sendAsyncMethod != null && all != null)
+                                    {
+                                        // 发送 ForcePluginReload 消息
+                                        sendAsyncMethod.Invoke(null, new object[] { all, "ForcePluginReload", Array.Empty<object>(), CancellationToken.None });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"[MSLX Plugin] 卸载时通知 SignalR 客户端失败: {ex.Message}");
+            }
 
             // 移除路由并刷新
             if (plugin.Part != null)
