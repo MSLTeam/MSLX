@@ -19,6 +19,9 @@ public class PluginManager
     public IEndpointRouteBuilder? AppRouteBuilder { get; private set; }
     public PluginCompositeEndpointDataSource DynamicEndpoints { get; } = new();
 
+    // 弱引用表保存 Assembly 到 ServiceProvider 的映射，避免卸载时因未断开的连接导致 DI 解析失败崩溃
+    public System.Runtime.CompilerServices.ConditionalWeakTable<Assembly, IServiceProvider> PluginProviders { get; } = new();
+
     public void Initialize(IServiceProvider serviceProvider, ApplicationPartManager partManager, ILogger<PluginManager> logger, IServiceCollection rootServiceCollection, Microsoft.AspNetCore.Routing.IEndpointRouteBuilder app)
     {
         _serviceProvider = serviceProvider;
@@ -177,6 +180,9 @@ public class PluginManager
                 }
             }
 
+            // 注册到弱引用表
+            PluginProviders.AddOrUpdate(assembly, pluginProvider);
+
             Plugins.Add(new LoadedPlugin 
             { 
                 Assembly = assembly, 
@@ -265,12 +271,8 @@ public class PluginManager
                 NotifyRouteChanges();
             }
 
-            // 释放 DI Scope
+            // 释放 DI Scope (不强制 Dispose Provider，依靠弱引用表和 GC 自动回收，防止僵尸连接崩溃)
             plugin.Scope?.Dispose();
-            if (plugin.ServiceProvider is IDisposable spDisposable)
-            {
-                spDisposable.Dispose();
-            }
 
             // 从列表中移除
             Plugins.Remove(plugin);
