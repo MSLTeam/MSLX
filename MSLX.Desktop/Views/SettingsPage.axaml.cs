@@ -63,7 +63,26 @@ public partial class SettingsPage : UserControl
             }
         }
 
-        if (double.TryParse(ConfigService.Config.ReadConfigKey("BackgroundOpacity")?.ToString(), out var opacity))
+        ComboBackgroundTarget.SelectedIndex = 0;
+        LoadBackgroundSettings();
+
+        _isUiLoaded = true;
+    }
+
+    private string GetConfigKey(string baseKey)
+    {
+        if (ComboBackgroundTarget?.SelectedItem is ComboBoxItem item && item.Tag?.ToString() is string tag && tag != "Global")
+        {
+            return $"{baseKey}_{tag}";
+        }
+        return baseKey;
+    }
+
+    private void LoadBackgroundSettings()
+    {
+        _isUiLoaded = false;
+        
+        if (double.TryParse(ConfigService.Config.ReadConfigKey(GetConfigKey("BackgroundOpacity"))?.ToString(), out var opacity))
         {
             SliderBackgroundOpacity.Value = opacity;
         }
@@ -72,7 +91,7 @@ public partial class SettingsPage : UserControl
             SliderBackgroundOpacity.Value = 0.8;
         }
 
-        if (double.TryParse(ConfigService.Config.ReadConfigKey("BackgroundBlur")?.ToString(), out var blur))
+        if (double.TryParse(ConfigService.Config.ReadConfigKey(GetConfigKey("BackgroundBlur"))?.ToString(), out var blur))
         {
             SliderBackgroundBlur.Value = blur;
         }
@@ -80,8 +99,14 @@ public partial class SettingsPage : UserControl
         {
             SliderBackgroundBlur.Value = 0;
         }
-
+        
         _isUiLoaded = true;
+    }
+
+    private void OnBackgroundTargetChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (!_isUiLoaded) return;
+        LoadBackgroundSettings();
     }
 
     private async Task LoadDataAsync()
@@ -290,8 +315,8 @@ public partial class SettingsPage : UserControl
             if (files != null && files.Count > 0)
             {
                 var path = files[0].Path.LocalPath;
-                window.SetBackgroundImage(path);
-                ConfigService.Config.WriteConfigKey("BackgroundImage", path);
+                ConfigService.Config.WriteConfigKey(GetConfigKey("BackgroundImage"), path);
+                window.RefreshBackground();
             }
         }
     }
@@ -300,8 +325,8 @@ public partial class SettingsPage : UserControl
     {
         if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow is MainWindow window)
         {
-            window.SetBackgroundImage(null);
-            ConfigService.Config.WriteConfigKey("BackgroundImage", "");
+            ConfigService.Config.WriteConfigKey(GetConfigKey("BackgroundImage"), "");
+            window.RefreshBackground();
         }
     }
 
@@ -309,11 +334,11 @@ public partial class SettingsPage : UserControl
     {
         if (!_isUiLoaded) return;
         var opacity = e.NewValue;
-        ConfigService.Config.WriteConfigKey("BackgroundOpacity", opacity);
+        ConfigService.Config.WriteConfigKey(GetConfigKey("BackgroundOpacity"), opacity);
         
         if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow is MainWindow window)
         {
-            window.SetBackgroundOpacity(opacity);
+            window.RefreshBackground();
         }
     }
 
@@ -321,11 +346,11 @@ public partial class SettingsPage : UserControl
     {
         if (!_isUiLoaded) return;
         var blur = e.NewValue;
-        ConfigService.Config.WriteConfigKey("BackgroundBlur", blur);
+        ConfigService.Config.WriteConfigKey(GetConfigKey("BackgroundBlur"), blur);
         
         if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow is MainWindow window)
         {
-            window.SetBackgroundBlur(blur);
+            window.RefreshBackground();
         }
     }
 }
