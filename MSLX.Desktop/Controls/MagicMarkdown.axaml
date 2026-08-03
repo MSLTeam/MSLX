@@ -84,7 +84,7 @@
 
 							<Setter Property="CornerRadius" Value="3"/>
 
-							<Setter Property="FontFamily" Value="Menlo, Monaco, Consolas, Courier New, monospace"/>
+							<Setter Property="FontFamily" Value="monospace"/>
 							<Setter Property="FontSize" Value="14"/>
 						</Style>
 
@@ -98,7 +98,7 @@
 							<Setter Property="Margin" Value="0,10"/>
 						</Style>
 						<Style Selector="Border.CodeBlock ctxt|CTextBlock">
-							<Setter Property="FontFamily" Value="Menlo, Monaco, Consolas, Courier New, monospace"/>
+							<Setter Property="FontFamily" Value="monospace"/>
 						</Style>
 
 						<Style Selector="Border.Table">
