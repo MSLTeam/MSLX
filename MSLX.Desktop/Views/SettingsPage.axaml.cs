@@ -72,6 +72,15 @@ public partial class SettingsPage : UserControl
             SliderBackgroundOpacity.Value = 0.8;
         }
 
+        if (double.TryParse(ConfigService.Config.ReadConfigKey("BackgroundBlur")?.ToString(), out var blur))
+        {
+            SliderBackgroundBlur.Value = blur;
+        }
+        else
+        {
+            SliderBackgroundBlur.Value = 0;
+        }
+
         _isUiLoaded = true;
     }
 
@@ -305,6 +314,18 @@ public partial class SettingsPage : UserControl
         if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow is MainWindow window)
         {
             window.SetBackgroundOpacity(opacity);
+        }
+    }
+
+    private void OnBackgroundBlurChanged(object? sender, Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    {
+        if (!_isUiLoaded) return;
+        var blur = e.NewValue;
+        ConfigService.Config.WriteConfigKey("BackgroundBlur", blur);
+        
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop && desktop.MainWindow is MainWindow window)
+        {
+            window.SetBackgroundBlur(blur);
         }
     }
 }

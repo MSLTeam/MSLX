@@ -93,19 +93,28 @@ public partial class MainWindow : SukiWindow
         try
         {
             var bitmap = new Avalonia.Media.Imaging.Bitmap(path);
+            var opacityStr = ConfigService.Config.ReadConfigKey("BackgroundOpacity")?.ToString();
+            var opacity = double.TryParse(opacityStr, out var parsedOpacity) ? parsedOpacity : 0.8;
+
+            var blurStr = ConfigService.Config.ReadConfigKey("BackgroundBlur")?.ToString();
+            var blur = double.TryParse(blurStr, out var parsedBlur) ? parsedBlur : 0;
+
             if (bgImage == null)
             {
-                var opacityStr = ConfigService.Config.ReadConfigKey("BackgroundOpacity")?.ToString();
-                var opacity = double.TryParse(opacityStr, out var parsed) ? parsed : 0.8;
-
                 bgImage = new Image 
                 { 
                     Name = "CustomGlobalBg", 
                     Stretch = Stretch.UniformToFill,
-                    Opacity = opacity
+                    Opacity = opacity,
+                    Effect = blur > 0 ? new Avalonia.Media.BlurEffect { Radius = blur } : null
                 };
                 // 背景图高于 SukiBackground
                 rootPanel.Children.Insert(1, bgImage);
+            }
+            else
+            {
+                bgImage.Opacity = opacity;
+                bgImage.Effect = blur > 0 ? new Avalonia.Media.BlurEffect { Radius = blur } : null;
             }
             bgImage.Source = bitmap;
         }
@@ -127,6 +136,21 @@ public partial class MainWindow : SukiWindow
         if (bgImage != null)
         {
             bgImage.Opacity = opacity;
+        }
+    }
+
+    public void SetBackgroundBlur(double blur)
+    {
+        var mainPanel = this.GetVisualDescendants().OfType<SukiMainHost>().FirstOrDefault();
+        if (mainPanel == null) return;
+
+        var rootPanel = mainPanel.GetVisualDescendants().OfType<Panel>().FirstOrDefault(p => p.Name == "PART_Root");
+        if (rootPanel == null) return;
+
+        var bgImage = rootPanel.Children.OfType<Image>().FirstOrDefault(i => i.Name == "CustomGlobalBg");
+        if (bgImage != null)
+        {
+            bgImage.Effect = blur > 0 ? new Avalonia.Media.BlurEffect { Radius = blur } : null;
         }
     }
 }

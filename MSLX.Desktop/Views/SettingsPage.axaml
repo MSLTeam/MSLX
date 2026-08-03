@@ -111,10 +111,21 @@
                             <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
                                 <icons:MaterialIcon Kind="Opacity" Classes="SettingIcon"/>
                                 <StackPanel Grid.Column="1" Margin="15,0">
-                                    <TextBlock Text="背景透明度" Classes="SettingTitle"/>
-                                    <TextBlock Text="调节自定义背景图片的显示透明度" Classes="SettingDesc"/>
+                                    <TextBlock Text="背景不透明度" Classes="SettingTitle"/>
+                                    <TextBlock Text="调节自定义背景图片的显示不透明度" Classes="SettingDesc"/>
                                 </StackPanel>
                                 <Slider Grid.Column="2" Name="SliderBackgroundOpacity" Minimum="0" Maximum="1" Value="0.8" MinWidth="180" ValueChanged="OnBackgroundOpacityChanged" />
+                            </Grid>
+
+                            <Separator Opacity="0.1" Margin="15,0"/>
+
+                            <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                                <icons:MaterialIcon Kind="Blur" Classes="SettingIcon"/>
+                                <StackPanel Grid.Column="1" Margin="15,0">
+                                    <TextBlock Text="背景高斯模糊" Classes="SettingTitle"/>
+                                    <TextBlock Text="调节自定义背景图片的模糊程度" Classes="SettingDesc"/>
+                                </StackPanel>
+                                <Slider Grid.Column="2" Name="SliderBackgroundBlur" Minimum="0" Maximum="50" Value="0" MinWidth="180" ValueChanged="OnBackgroundBlurChanged" />
                             </Grid>
                         </StackPanel>
                     </Border>
