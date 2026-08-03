@@ -91,7 +91,7 @@
 							<ItemsControl.ItemTemplate>
 								<DataTemplate>
 									<TextBlock Text="{Binding}"
-                                               FontFamily="Consolas,Courier New,monospace"
+                                               FontFamily="monospace"
                                                FontSize="12" TextWrapping="NoWrap"/>
 								</DataTemplate>
 							</ItemsControl.ItemTemplate>

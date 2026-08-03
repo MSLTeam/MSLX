@@ -1,4 +1,4 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -161,7 +161,7 @@
                                                 <Border Background="{DynamicResource SukiPrimaryColor}" CornerRadius="4" Padding="6,2">
                                                     <TextBlock Text="{Binding Version}" Foreground="White" FontSize="12"/>
                                                 </Border>
-                                                <TextBlock Text="{Binding Time}" VerticalAlignment="Center" Opacity="0.6" FontSize="12" FontFamily="Consolas"/>
+                                                <TextBlock Text="{Binding Time}" VerticalAlignment="Center" Opacity="0.6" FontSize="12" FontFamily="monospace"/>
                                             </StackPanel>
                                             <TextBlock Text="{Binding Changes}" TextWrapping="Wrap" Margin="0,4,0,0"/>
                                         </StackPanel>

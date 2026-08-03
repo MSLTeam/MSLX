@@ -17,6 +17,7 @@
   <markdown:MarkdownScrollViewer x:Name="MdViewer"
 											   Grid.Row="1"
 											   Classes="MSLXMarkdownStyle"
+											   MarkdownStyleName="None"
 											   Markdown="# 🎉 欢迎使用 MSLX 开服器软件!" >
 					<markdown:MarkdownScrollViewer.Styles>
 						<Style Selector="ctxt|CTextBlock.Heading1">
