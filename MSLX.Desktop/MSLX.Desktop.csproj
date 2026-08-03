@@ -20,10 +20,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Avalonia" Version="12.0.5" />
-		<PackageReference Include="Avalonia.Desktop" Version="12.0.5" />
+		<PackageReference Include="Avalonia" Version="12.1.1" />
+		<PackageReference Include="Avalonia.Desktop" Version="12.1.1" />
 		<!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-		<PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.5" />
+		<PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.1" />
 		<PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.1" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
 		<PackageReference Include="Downloader" Version="4.1.0" />
