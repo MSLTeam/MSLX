@@ -3,6 +3,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Avalonia.Input.Platform;
 
 namespace MSLX.Desktop.Utils
 {
@@ -35,10 +36,11 @@ namespace MSLX.Desktop.Utils
             var appLifetime = Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
             if (appLifetime != null)
             {
-                var mainWindow = appLifetime.MainWindow as MainWindow;
+                var mainWindow = appLifetime.MainWindow as Avalonia.Controls.Window;
                 if (mainWindow != null)
                 {
-                    var clipboard = mainWindow.Clipboard;
+                    var topLevel = Avalonia.Controls.TopLevel.GetTopLevel(mainWindow);
+                    var clipboard = topLevel?.Clipboard;
                     if (clipboard != null)
                         await clipboard.SetTextAsync(text);
                 }
