@@ -61,6 +61,15 @@ public partial class MainWindow : SukiWindow
         {
             var bgPath = ConfigService.Config.ReadConfigKey("BackgroundImage")?.ToString();
             SetBackgroundImage(bgPath);
+            
+            // 开启 FPS 监控悬浮窗
+#if DEBUG
+            var topLevel = TopLevel.GetTopLevel(this);
+            if (topLevel != null)
+            {
+                topLevel.RendererDiagnostics.DebugOverlays = Avalonia.Rendering.RendererDebugOverlays.Fps;
+            }
+#endif
         };
     }
 
