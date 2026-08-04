@@ -98,6 +98,46 @@
 
             <suki:GlassCard>
                 <StackPanel Spacing="15">
+                    <TextBlock Text="贡献者" FontSize="18" FontWeight="SemiBold"/>
+                    <TextBlock Text="感谢以下贡献者对项目的支持～" FontSize="14" Opacity="0.7"/>
+                    
+                    <ItemsControl ItemsSource="{Binding Contributors}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:MemberModel">
+                                <Border Width="260" Margin="0,0,15,15" Padding="10" 
+                                        Background="{DynamicResource SukiBackground}" 
+                                        CornerRadius="8" BoxShadow="0 2 5 0 #10000000">
+                                    <Grid ColumnDefinitions="Auto,*">
+                                        <Ellipse Width="56" Height="56" Margin="0,0,15,0" 
+                                                 RenderOptions.BitmapInterpolationMode="HighQuality">
+                                            <Ellipse.Fill>
+                                                <ImageBrush Source="{Binding AvatarBitmap}" />
+                                            </Ellipse.Fill>
+                                        </Ellipse>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="16"/>
+                                            <Border Background="{DynamicResource SukiPrimaryColor}" 
+                                                    CornerRadius="4" HorizontalAlignment="Left" 
+                                                    Padding="6,2" Margin="0,4">
+                                                <TextBlock Text="{Binding Role}" FontSize="10" Foreground="White"/>
+                                            </Border>
+                                            <TextBlock Text="{Binding Desc}" FontSize="12" Opacity="0.6" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </suki:GlassCard>
+
+            <suki:GlassCard>
+                <StackPanel Spacing="15">
                     <TextBlock Text="鸣谢" FontSize="18" FontWeight="SemiBold"/>
                     <TextBlock Text="特别感谢参与内测并提供反馈的伙伴们：" FontSize="14" Opacity="0.7"/>
 
