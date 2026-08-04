@@ -63,7 +63,19 @@ jobs:
           BASE_NAME="MSLX-Desktop_${{ env.VERSION_NAME }}_${{ matrix.rid }}"
           DIST_DIR="./dist"
           
-          cd ./publish_temp
+          # 使用 find 寻找 .app 文件夹，因为它可能叫 MSLX-Desktop.app 并且可能不在 publish_temp 下
+          APP_PATH=$(find . -name "*.app" -type d | head -n 1)
+          if [ -z "$APP_PATH" ]; then
+            echo "错误：未找到生成的 .app 文件夹！Dotnet.Bundle 可能没有正常执行。"
+            exit 1
+          fi
+          echo "找到 .app 文件夹：$APP_PATH"
+          APP_NAME=$(basename "$APP_PATH")
+          
+          # 把 .app 复制到一个干净的目录进行打包
+          mkdir -p dmg_build
+          cp -r "$APP_PATH" dmg_build/
+          cd dmg_build
           
           # create-dmg 对 .app 进行打包
           create-dmg \
@@ -71,11 +83,11 @@ jobs:
             --window-pos 200 120 \
             --window-size 600 400 \
             --icon-size 100 \
-            --icon "MSLX.app" 150 190 \
-            --hide-extension "MSLX.app" \
+            --icon "$APP_NAME" 150 190 \
+            --hide-extension "$APP_NAME" \
             --app-drop-link 450 190 \
             "../$DIST_DIR/$BASE_NAME.dmg" \
-            "MSLX.app/"
+            "$APP_NAME"
             
           cd ..
           echo "UPLOAD_PATH=$DIST_DIR/$BASE_NAME.dmg" >> $GITHUB_ENV
