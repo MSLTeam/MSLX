@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
@@ -157,7 +157,9 @@ public class AppInfoController : ControllerBase
                 string environment =
                     (inContainer != null && inContainer.Equals("true", StringComparison.OrdinalIgnoreCase))
                         ? "docker"
-                        : "native";
+                        : PlatFormServices.IsHomebrewInstallation()
+                            ? "homebrew"
+                            : "native";
 
                 if (needUpdate)
                 {
@@ -301,8 +303,10 @@ public class AppInfoController : ControllerBase
             });
         } */
 
+        bool isHomebrewInstallation = PlatFormServices.IsHomebrewInstallation();
+
         // 启动后台更新任务
-        _ = Task.Run(async () => await PerformUpdateProcessAsync(autoRestart));
+        _ = Task.Run(async () => await PerformUpdateProcessAsync(autoRestart, isHomebrewInstallation));
 
         return Ok(new ApiResponse<object>
         {
@@ -314,10 +318,16 @@ public class AppInfoController : ControllerBase
     /// <summary>
     /// 后台执行完整的更新流程
     /// </summary>
-    private async Task PerformUpdateProcessAsync(bool autoRestart)
+    private async Task PerformUpdateProcessAsync(bool autoRestart, bool isHomebrewInstallation)
     {
         try
         {
+            if (isHomebrewInstallation)
+            {
+                await PerformHomebrewUpdateProcessAsync();
+                return;
+            }
+
             await SendUpdateProgressAsync(0, "0 KB/s", "downloading", "正在获取版本信息...");
 
             // 获取系统信息
@@ -397,6 +407,85 @@ public class AppInfoController : ControllerBase
             await _updateHubContext.Clients.All.SendAsync("UpdateFailed", ex.Message);
             Console.WriteLine($"更新失败: {ex}");
         }
+    }
+
+    /// <summary>
+    /// 通过 Homebrew 更新守护进程并重启服务
+    /// </summary>
+    private async Task PerformHomebrewUpdateProcessAsync()
+    {
+        string? brewPath = PlatFormServices.GetHomebrewBrewPath(RuntimeInformation.ProcessArchitecture);
+        if (string.IsNullOrEmpty(brewPath) || !System.IO.File.Exists(brewPath))
+        {
+            throw new FileNotFoundException("未找到当前架构对应的 Homebrew 可执行文件。", brewPath);
+        }
+
+        await SendUpdateProgressAsync(0, "0 KB/s", "upgrading", "正在通过 Homebrew 更新 MSLX-Daemon...");
+
+        // 先等待升级成功，再执行服务重启，等价于 shell 命令中的 &&。
+        var upgradeResult = await RunProcessAsync(brewPath, "upgrade", "mslx-daemon");
+        if (upgradeResult.ExitCode != 0)
+        {
+            string errorMessage = string.IsNullOrWhiteSpace(upgradeResult.StandardError)
+                ? upgradeResult.StandardOutput
+                : upgradeResult.StandardError;
+            throw new Exception($"Homebrew 更新失败（退出代码 {upgradeResult.ExitCode}）：{errorMessage.Trim()}");
+        }
+
+        if (_serverService.HasRunningServers())
+        {
+            await SendUpdateProgressAsync(100, "0 KB/s", "preparing", "正在关闭运行中的实例...");
+            _serverService.StopAllServers();
+        }
+
+        await SendUpdateProgressAsync(100, "0 KB/s", "restarting", "Homebrew 更新完成，正在重启服务...");
+        await Task.Delay(1000);
+
+        var restartStartInfo = CreateProcessStartInfo(brewPath, "services", "restart", "mslx-daemon");
+        using Process? restartProcess = Process.Start(restartStartInfo);
+        if (restartProcess == null)
+        {
+            throw new Exception("无法启动 Homebrew 服务重启命令。");
+        }
+    }
+
+    private static async Task<(int ExitCode, string StandardOutput, string StandardError)> RunProcessAsync(
+        string fileName,
+        params string[] arguments)
+    {
+        var startInfo = CreateProcessStartInfo(fileName, arguments);
+        startInfo.RedirectStandardOutput = true;
+        startInfo.RedirectStandardError = true;
+
+        using var process = new Process { StartInfo = startInfo };
+        if (!process.Start())
+        {
+            throw new Exception($"无法启动命令：{fileName}");
+        }
+
+        Task<string> standardOutputTask = process.StandardOutput.ReadToEndAsync();
+        Task<string> standardErrorTask = process.StandardError.ReadToEndAsync();
+
+        await process.WaitForExitAsync();
+        return (process.ExitCode, await standardOutputTask, await standardErrorTask);
+    }
+
+    private static ProcessStartInfo CreateProcessStartInfo(string fileName, params string[] arguments)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = fileName,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WorkingDirectory = Path.GetDirectoryName(fileName) ?? Path.GetTempPath()
+        };
+
+        foreach (string argument in arguments)
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
+        return startInfo;
     }
 
     /// <summary>

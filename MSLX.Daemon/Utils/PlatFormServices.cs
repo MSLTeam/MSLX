@@ -9,6 +9,9 @@ namespace MSLX.Daemon.Utils;
 
 public class PlatFormServices
 {
+    private const string HomebrewFormulaName = "mslx-daemon";
+    private const string DaemonExecutableName = "MSLX-Daemon";
+
     public static string GetOs()
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) return "Windows";
@@ -24,6 +27,99 @@ public class PlatFormServices
         if (RuntimeInformation.ProcessArchitecture == Architecture.X64) return "amd64";
 
         return "unknown";
+    }
+
+    public static bool IsHomebrewInstallation()
+    {
+        if (!OperatingSystem.IsMacOS()) return false;
+
+        var version = Assembly.GetEntryAssembly()?.GetName().Version;
+        if (version == null) return false;
+
+        var architecture = RuntimeInformation.ProcessArchitecture;
+        var processPath = Environment.ProcessPath;
+        if (IsHomebrewInstallationPath(processPath, architecture, version)) return true;
+
+        var appHostPath = Path.Combine(AppContext.BaseDirectory, DaemonExecutableName);
+        return IsHomebrewInstallationPath(appHostPath, architecture, version);
+    }
+
+    public static bool IsHomebrewInstallationPath(
+        string? executablePath,
+        Architecture architecture,
+        Version version)
+    {
+        if (string.IsNullOrWhiteSpace(executablePath)) return false;
+
+        var expectedExecutablePath = GetHomebrewExecutablePath(architecture, version);
+        var expectedLauncherPath = GetHomebrewLauncherPath(architecture, version);
+        if (expectedExecutablePath == null || expectedLauncherPath == null) return false;
+
+        try
+        {
+            var fullPath = Path.GetFullPath(executablePath);
+            return string.Equals(fullPath, Path.GetFullPath(expectedExecutablePath), StringComparison.Ordinal) ||
+                   string.Equals(fullPath, Path.GetFullPath(expectedLauncherPath), StringComparison.Ordinal);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return false;
+        }
+    }
+
+    public static string? GetHomebrewExecutablePath(Architecture architecture, Version version)
+    {
+        var versionRoot = GetHomebrewVersionRoot(architecture, version);
+        return versionRoot == null
+            ? null
+            : Path.Combine(versionRoot, "libexec", DaemonExecutableName);
+    }
+
+    public static string? GetHomebrewLauncherPath(Architecture architecture, Version version)
+    {
+        var versionRoot = GetHomebrewVersionRoot(architecture, version);
+        return versionRoot == null
+            ? null
+            : Path.Combine(versionRoot, "bin", "mslx");
+    }
+
+    public static string? GetHomebrewBrewPath(Architecture architecture)
+    {
+        var homebrewPrefix = GetHomebrewPrefix(architecture);
+        return homebrewPrefix == null
+            ? null
+            : Path.Combine(homebrewPrefix, "bin", "brew");
+    }
+
+    private static string? GetHomebrewVersionRoot(Architecture architecture, Version version)
+    {
+        var homebrewPrefix = GetHomebrewPrefix(architecture);
+
+        if (homebrewPrefix == null || version.Major < 0 || version.Minor < 0) return null;
+
+        var versionDirectory = version switch
+        {
+            { Build: >= 0, Revision: > 0 } =>
+                $"{version.Major}.{version.Minor}.{version.Build}.{version.Revision}",
+            { Build: >= 0 } => $"{version.Major}.{version.Minor}.{version.Build}",
+            _ => $"{version.Major}.{version.Minor}"
+        };
+
+        return Path.Combine(
+            homebrewPrefix,
+            "Cellar",
+            HomebrewFormulaName,
+            versionDirectory);
+    }
+
+    private static string? GetHomebrewPrefix(Architecture architecture)
+    {
+        return architecture switch
+        {
+            Architecture.Arm64 => "/opt/homebrew",
+            Architecture.X64 => "/usr/local",
+            _ => null
+        };
     }
 
 
@@ -106,7 +202,7 @@ public class PlatFormServices
             {
                 var display = Environment.GetEnvironmentVariable("DISPLAY");
                 var waylandDisplay = Environment.GetEnvironmentVariable("WAYLAND_DISPLAY");
-            
+
                 // 没有 X11 DISPLAY & 没有 Wayland DISPLAY → 无头环境
                 if (string.IsNullOrEmpty(display) && string.IsNullOrEmpty(waylandDisplay))
                 {
@@ -156,7 +252,7 @@ public static class ProcessTracker
             InitWindowsJobObject();
         }
     }
-    
+
     public static void Track(Process process, bool killOnClose = true)
     {
         if (process == null) return;
@@ -221,13 +317,13 @@ public static class ProcessTracker
         public UIntPtr PeakProcessMemoryLimit;
         public UIntPtr PeakJobMemoryLimit;
     }
-    
+
     private const uint JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x2000;
 
     private static void InitWindowsJobObject()
     {
         _jobHandle = CreateJobObject(IntPtr.Zero, null);
-        
+
         var info = new JOBOBJECT_EXTENDED_LIMIT_INFORMATION
         {
             BasicLimitInformation = new JOBOBJECT_BASIC_LIMIT_INFORMATION

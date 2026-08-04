@@ -48,7 +48,7 @@ public static class IConfigBase
         if (isMacAppBundle)
         {
             // MacOS 且在 .app 包内
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MSLX",
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MSLX","MSLXData",
                 "DaemonData");
         }
 
