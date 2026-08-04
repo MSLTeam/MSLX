@@ -1,6 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
+		<CFBundleName>MSLX</CFBundleName>
+		<CFBundleDisplayName>MSLX</CFBundleDisplayName>
+		<CFBundleIdentifier>cn.mslmc.mslx</CFBundleIdentifier>
+		<CFBundleVersion>1.0.0</CFBundleVersion>
+		<CFBundleShortVersionString>1.0.0</CFBundleShortVersionString>
+		<CFBundleIconFile>Assets\icon.icns</CFBundleIconFile>
 		<TargetFramework>net10.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
@@ -20,6 +26,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Dotnet.Bundle" Version="0.9.13" />
 		<PackageReference Include="Avalonia" Version="12.1.1" />
 		<PackageReference Include="Avalonia.Desktop" Version="12.1.1" />
 		<!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
