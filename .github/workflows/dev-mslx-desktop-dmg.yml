@@ -103,20 +103,17 @@ jobs:
           
           cd dmg_build
           
-          # 处理高分辨率背景图 (使用 macOS 自带的 sips 工具将其强制缩放为 600x400 的 PNG)
-          sips -s format png -z 400 600 ../MSLX.Desktop/Assets/bg_night.jpg --out bg_night_scaled.png
-          
           # create-dmg 对 .app 进行打包，加入美化参数
           create-dmg \
             --volname "MSLX Installer" \
             --window-pos 200 120 \
-            --window-size 600 400 \
+            --window-size 600 317 \
             --icon-size 120 \
             --text-size 14 \
-            --background "bg_night_scaled.png" \
-            --icon "$APP_NAME" 150 190 \
+            --background "../MSLX.Desktop/Assets/bg_night.jpg" \
+            --icon "$APP_NAME" 150 158 \
             --hide-extension "$APP_NAME" \
-            --app-drop-link 450 190 \
+            --app-drop-link 450 158 \
             "../$DIST_DIR/$BASE_NAME.dmg" \
             "$APP_NAME"
             
