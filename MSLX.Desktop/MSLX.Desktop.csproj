@@ -1,20 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
-		<CFBundleName>MSLX</CFBundleName>
-		<CFBundleDisplayName>MSLX</CFBundleDisplayName>
-		<CFBundleIdentifier>cn.mslmc.mslx</CFBundleIdentifier>
-		<CFBundleVersion>1.0.0</CFBundleVersion>
-		<CFBundleShortVersionString>1.0.0</CFBundleShortVersionString>
-		<CFBundleIconFile>Assets\icon.icns</CFBundleIconFile>
 		<TargetFramework>net10.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
 		<ApplicationIcon>Assets\icon.ico</ApplicationIcon>
-		<AssemblyVersion>1.0.0.0</AssemblyVersion>
-		<FileVersion>1.0.0.0</FileVersion>
+		<AssemblyVersion>1.5.7</AssemblyVersion>
+		<FileVersion>1.5.7</FileVersion>
 		<AssemblyName>MSLX-Desktop</AssemblyName>
 		<AssemblyTitle>MSLX.Desktop</AssemblyTitle>
 		<AssemblyDescription>MSLX Desktop</AssemblyDescription>
