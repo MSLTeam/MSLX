@@ -83,14 +83,17 @@ public class PlatFormServices
             : Path.Combine(versionRoot, "bin", "mslx");
     }
 
+    public static string? GetHomebrewBrewPath(Architecture architecture)
+    {
+        var homebrewPrefix = GetHomebrewPrefix(architecture);
+        return homebrewPrefix == null
+            ? null
+            : Path.Combine(homebrewPrefix, "bin", "brew");
+    }
+
     private static string? GetHomebrewVersionRoot(Architecture architecture, Version version)
     {
-        var homebrewPrefix = architecture switch
-        {
-            Architecture.Arm64 => "/opt/homebrew",
-            Architecture.X64 => "/usr/local",
-            _ => null
-        };
+        var homebrewPrefix = GetHomebrewPrefix(architecture);
 
         if (homebrewPrefix == null || version.Major < 0 || version.Minor < 0) return null;
 
@@ -107,6 +110,16 @@ public class PlatFormServices
             "Cellar",
             HomebrewFormulaName,
             versionDirectory);
+    }
+
+    private static string? GetHomebrewPrefix(Architecture architecture)
+    {
+        return architecture switch
+        {
+            Architecture.Arm64 => "/opt/homebrew",
+            Architecture.X64 => "/usr/local",
+            _ => null
+        };
     }
 
 
