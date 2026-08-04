@@ -63,18 +63,44 @@ jobs:
           BASE_NAME="MSLX-Desktop_${{ env.VERSION_NAME }}_${{ matrix.rid }}"
           DIST_DIR="./dist"
           
-          # 使用 find 寻找 .app 文件夹，因为它可能叫 MSLX-Desktop.app 并且可能不在 publish_temp 下
-          APP_PATH=$(find . -name "*.app" -type d | head -n 1)
-          if [ -z "$APP_PATH" ]; then
-            echo "错误：未找到生成的 .app 文件夹！Dotnet.Bundle 可能没有正常执行。"
-            exit 1
-          fi
-          echo "找到 .app 文件夹：$APP_PATH"
-          APP_NAME=$(basename "$APP_PATH")
+          echo "开始手动构建 macOS .app 结构..."
+          APP_NAME="MSLX.app"
+          APP_DIR="dmg_build/$APP_NAME"
           
-          # 把 .app 复制到一个干净的目录进行打包
-          mkdir -p dmg_build
-          cp -r "$APP_PATH" dmg_build/
+          mkdir -p "$APP_DIR/Contents/MacOS"
+          mkdir -p "$APP_DIR/Contents/Resources"
+          
+          # 1. 移动所有发布的文件到 MacOS 目录
+          cp -r ./publish_temp/* "$APP_DIR/Contents/MacOS/"
+          chmod +x "$APP_DIR/Contents/MacOS/${{ matrix.bin }}"
+          
+          # 2. 拷贝图标文件
+          cp ./MSLX.Desktop/Assets/icon.icns "$APP_DIR/Contents/Resources/icon.icns"
+          
+          # 3. 写入标准的 Info.plist 文件
+          cat <<EOF > "$APP_DIR/Contents/Info.plist"
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleExecutable</key>
+              <string>${{ matrix.bin }}</string>
+              <key>CFBundleIconFile</key>
+              <string>icon.icns</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.mslteam.mslx</string>
+              <key>CFBundleName</key>
+              <string>MSLX</string>
+              <key>CFBundleDisplayName</key>
+              <string>MSLX</string>
+              <key>CFBundleVersion</key>
+              <string>1.0.0</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0.0</string>
+          </dict>
+          </plist>
+          EOF
+          
           cd dmg_build
           
           # create-dmg 对 .app 进行打包

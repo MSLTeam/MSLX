@@ -26,7 +26,6 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Dotnet.Bundle" Version="0.9.13" />
 		<PackageReference Include="Avalonia" Version="12.1.1" />
 		<PackageReference Include="Avalonia.Desktop" Version="12.1.1" />
 		<!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
