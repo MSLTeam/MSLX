@@ -29,6 +29,8 @@ public class PlatFormServices
         return "unknown";
     }
 
+    #region macOS Homebrew 相关工具
+
     public static bool IsHomebrewInstallation()
     {
         if (!OperatingSystem.IsMacOS()) return false;
@@ -121,7 +123,7 @@ public class PlatFormServices
             _ => null
         };
     }
-
+    #endregion
 
     public static string? GetDeviceId()
     {
