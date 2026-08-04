@@ -2,10 +2,6 @@ using Avalonia.Controls;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils;
 using MSLX.Desktop.Utils.API;
-using Newtonsoft.Json.Linq;
-using SukiUI.Controls;
-using SukiUI.Dialogs;
-using SukiUI.Toasts;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -55,6 +51,8 @@ public partial class HomePage : UserControl
 
     private void StartBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        SideMenuHelper.Current?.NavigateTo<InstanceListPage>();
+        /*
         DialogService.DialogManager.CreateDialog()
             .OfType(Avalonia.Controls.Notifications.NotificationType.Information)
             .WithTitle("Hello")
@@ -62,10 +60,13 @@ public partial class HomePage : UserControl
             .WithActionButton("保持打开", _ => { })
             .WithActionButton("关闭", _ => { }, true)
             .TryShow();
+        */
     }
 
     private void GithubBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        Process.Start(new ProcessStartInfo("https://github.com/MSLTeam/MSLX") { UseShellExecute = true });
+        /*
         DialogService.ToastManager.CreateToast()
             .OfType(Avalonia.Controls.Notifications.NotificationType.Success)
             .WithTitle("已打开GitHub页面")
@@ -73,10 +74,13 @@ public partial class HomePage : UserControl
             .Dismiss().After(TimeSpan.FromSeconds(3))
             .WithActionButton("Dismiss", _ => { }, true)
             .Queue();
+        */
     }
 
     private void DocsBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        Process.Start(new ProcessStartInfo("https://mslx.mslmc.cn") { UseShellExecute = true });
+        /*
         // SukiTheme.GetInstance().ChangeColorTheme(SukiColor.Orange);
         // SukiTheme.GetInstance().SwitchBaseTheme();
         SideMenuHelper.Current?.NavigateTo(new SukiSideMenuItem
@@ -89,5 +93,6 @@ public partial class HomePage : UserControl
             PageContent = new HomePage(),
             IsContentMovable = false,
         }, true);
+        */
     }
 }

@@ -1,0 +1,232 @@
+name: 发布 MSLX-Desktop (macOS DMG包)
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch: # 允许手动触发
+
+permissions:
+  contents: write
+
+jobs:
+  release-mac:
+    runs-on: macos-latest
+    name: 构建并发布 macOS DMG
+    
+    strategy:
+      matrix:
+        include:
+          - { arch: x64,   rid: osx-x64,   bin: 'MSLX-Desktop' }
+          - { arch: arm64, rid: osx-arm64, bin: 'MSLX-Desktop' }
+
+    steps:
+      - name: 签出代码
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: 设置 .NET 10 环境
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: 确定版本号 (Tag vs Manual)
+        id: version
+        shell: bash
+        run: |
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "VERSION_NAME=${{ github.ref_name }}" >> $GITHUB_ENV
+            echo "这是正式 Release 构建: ${{ github.ref_name }}"
+          else
+            echo "VERSION_NAME=beta" >> $GITHUB_ENV
+            echo "这是手动触发构建，使用版本号: beta"
+          fi
+
+      - name: 发布 macOS 独立运行包 (生成 .app)
+        run: |
+          PUBLISH_DIR="./publish_temp"
+          DIST_DIR="./dist"
+          mkdir -p $DIST_DIR
+          
+          dotnet publish ./MSLX.Desktop/MSLX.Desktop.csproj \
+            -c Release \
+            -r ${{ matrix.rid }} \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -p:DebugType=None \
+            -p:DebugSymbols=false \
+            -o "$PUBLISH_DIR" \
+            -p:IncludeNativeLibrariesForSelfExtract=true
+
+      - name: 安装 create-dmg 工具
+        run: brew install create-dmg
+
+      - name: 生成 .dmg 安装包
+        run: |
+          BASE_NAME="MSLX-Desktop_${{ env.VERSION_NAME }}_${{ matrix.rid }}"
+          DIST_DIR="./dist"
+          
+          echo "开始手动构建 macOS .app 结构..."
+          APP_NAME="MSLX.app"
+          APP_DIR="dmg_build/$APP_NAME"
+          
+          mkdir -p "$APP_DIR/Contents/MacOS"
+          mkdir -p "$APP_DIR/Contents/Resources"
+          
+          # 1. 移动所有发布的文件到 MacOS 目录
+          cp -r ./publish_temp/* "$APP_DIR/Contents/MacOS/"
+          chmod +x "$APP_DIR/Contents/MacOS/${{ matrix.bin }}"
+          
+          # 2. 拷贝图标文件
+          cp ./MSLX.Desktop/Assets/icon.icns "$APP_DIR/Contents/Resources/icon.icns"
+          
+          # 3. 写入标准的 Info.plist 文件
+          cat <<EOF > "$APP_DIR/Contents/Info.plist"
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleExecutable</key>
+              <string>${{ matrix.bin }}</string>
+              <key>CFBundleIconFile</key>
+              <string>icon.icns</string>
+              <key>CFBundleIdentifier</key>
+              <string>cn.mslmc.mslx</string>
+              <key>CFBundleName</key>
+              <string>MSLX</string>
+              <key>CFBundleDisplayName</key>
+              <string>MSLX</string>
+              <key>CFBundleVersion</key>
+              <string>${{ env.VERSION_NAME }}</string>
+              <key>CFBundleShortVersionString</key>
+              <string>${{ env.VERSION_NAME }}</string>
+          </dict>
+          </plist>
+          EOF
+          
+          cd dmg_build
+          
+          # create-dmg 对 .app 进行打包，加入极简美化参数
+          create-dmg \
+            --volname "MSLX Installer" \
+            --volicon "../MSLX.Desktop/Assets/icon.icns" \
+            --window-pos 200 120 \
+            --window-size 500 300 \
+            --icon-size 120 \
+            --text-size 14 \
+            --icon "$APP_NAME" 120 120 \
+            --hide-extension "$APP_NAME" \
+            --app-drop-link 380 120 \
+            "../$DIST_DIR/$BASE_NAME.dmg" \
+            "$APP_NAME"
+            
+          cd ..
+          
+          # 将生成的包路径保存到环境变量
+          echo "ASSET_PATH=./dist/$BASE_NAME.dmg" >> $GITHUB_ENV
+
+      - name: 上传到 GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ASSET_PATH }}
+          tag_name: ${{ env.VERSION_NAME }}
+          prerelease: ${{ env.VERSION_NAME == 'beta' }}
+
+      - name: 同步上传到 CNB Release
+        env:
+          CNB_REPO_SLUG: "mslmc/mslx"
+          CNB_TOKEN: ${{ secrets.CNB_MAIN_REPO_TOKEN }}
+          TAG_NAME: ${{ env.VERSION_NAME }}
+        run: |
+          echo "正在准备同步 macOS DMG 到国内 CNB 主节点..."
+          
+          if [[ "$TAG_NAME" == "beta" ]]; then
+            echo "当前为手动测试构建，跳过 CNB 同步。"
+            exit 0
+          fi
+
+          if [ ! -f "${{ env.ASSET_PATH }}" ]; then
+            echo "❌ 错误：未找到生成的 dmg 压缩包文件！"
+            exit 1
+          fi
+
+          FILE_NAME=$(basename "${{ env.ASSET_PATH }}")
+          # macOS runner 下获取文件大小的 stat 参数是 -f%z 而非 Linux 的 -c%s
+          FILE_SIZE=$(stat -f%z "${{ env.ASSET_PATH }}")
+
+          curl -s \
+            -H "Authorization: token $CNB_TOKEN" \
+            -H "Accept: application/json" \
+            "https://api.cnb.cool/${CNB_REPO_SLUG}/-/git/branches?page_size=1" > branches_res.json
+          
+          CNB_TARGET_BRANCH=$(jq -r 'if type == "array" then .[0].name else .data[0].name? // .items[0].name? // "main" end' branches_res.json)
+          
+          if [ -z "$CNB_TARGET_BRANCH" ] || [ "$CNB_TARGET_BRANCH" = "null" ]; then
+            CNB_TARGET_BRANCH="main" # 兜底安全分支
+          fi
+          echo "💡 锁定 CNB 侧分支为: $CNB_TARGET_BRANCH"
+
+          curl -s -X POST \
+            -H "Authorization: token $CNB_TOKEN" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json" \
+            -d "{\"tag_name\": \"${TAG_NAME}\", \"target_commitish\": \"${CNB_TARGET_BRANCH}\", \"name\": \"Release ${TAG_NAME}\", \"body\": \"Synchronized from GitHub Main Repo\"}" \
+            "https://api.cnb.cool/${CNB_REPO_SLUG}/-/releases" > create_res.json
+
+          RELEASE_ID=$(jq -r '.id // empty' create_res.json)
+
+          # 并发矩阵节点查缺补漏列表反查
+          if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
+            echo "正在反查已存在的 Release 标识符..."
+            curl -s \
+              -H "Authorization: token $CNB_TOKEN" \
+              -H "Accept: application/json" \
+              "https://api.cnb.cool/${CNB_REPO_SLUG}/-/releases" > list_res.json
+            
+            RELEASE_ID=$(jq -r --arg tag "$TAG_NAME" 'if type == "array" then .[] else .data[]? // .items[]? // .[]? end | select(.tag_name==$tag) | .id' list_res.json | head -n 1)
+          fi
+
+          if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "null" ]; then
+            echo "❌ 错误：未能获取到 CNB 的 Release ID。返回内容："
+            cat create_res.json
+            echo "列表反查内容："
+            cat list_res.json
+            exit 1
+          fi
+
+          echo "✅ 成功对接主仓 Release，ID 为: $RELEASE_ID"
+
+          # 获取附件上传地址
+          curl -s -X POST \
+            -H "Authorization: token $CNB_TOKEN" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json" \
+            -d "{\"asset_name\": \"${FILE_NAME}\", \"size\": ${FILE_SIZE}, \"overwrite\": true}" \
+            "https://api.cnb.cool/${CNB_REPO_SLUG}/-/releases/${RELEASE_ID}/asset-upload-url" > url_res.json
+
+          UPLOAD_URL=$(jq -r '.upload_url // empty' url_res.json)
+          VERIFY_URL=$(jq -r '.verify_url // empty' url_res.json)
+
+          if [ -z "$UPLOAD_URL" ] || [ "$UPLOAD_URL" = "null" ]; then
+            echo "❌ 错误：无法获取上传地址。返回内容："
+            cat url_res.json
+            exit 1
+          fi
+
+          echo "正在把文件 $FILE_NAME 推送到预签名高速通道..."
+          curl -s -X PUT -T "${{ env.ASSET_PATH }}" "$UPLOAD_URL"
+
+          echo "正在确认附件上传状态..."
+          CONFIRM_CODE=$(curl -s -o confirm_res.json -w "%{http_code}" -X POST \
+            -H "Authorization: token $CNB_TOKEN" \
+            -H "Accept: application/json" \
+            "${VERIFY_URL}?ttl=0")
+
+          if [ "$CONFIRM_CODE" -eq 200 ] || [ "$CONFIRM_CODE" -eq 201 ]; then
+            echo "🎉 [${{ matrix.rid }}] DMG 产物已成功关联到 CNB 主仓 Release 页面！"
+          else
+            echo "❌ 错误：确认附件失败。状态码: $CONFIRM_CODE，返回内容："
+            cat confirm_res.json
+            exit 1
+          fi

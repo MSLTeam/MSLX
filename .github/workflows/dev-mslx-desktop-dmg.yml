@@ -1,0 +1,129 @@
+name: 构建 MSLX-Desktop Dev 版本 (macOS DMG包)
+
+on:
+  push:
+    branches: [ "dev" ]
+  pull_request:
+    branches: [ "dev" ]
+  workflow_dispatch:
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    name: 构建发布 macOS DMG
+    
+    strategy:
+      matrix:
+        include:
+          - { arch: x64,   rid: osx-x64,   bin: 'MSLX-Desktop' }
+          - { arch: arm64, rid: osx-arm64, bin: 'MSLX-Desktop' }
+
+    steps:
+      - name: 签出代码
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: 设置 .NET 10 环境
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: 确定版本号名称
+        id: version
+        shell: bash
+        run: |
+          if [[ $GITHUB_REF_TYPE == 'tag' ]]; then
+            echo "VERSION_NAME=$GITHUB_REF_NAME" >> $GITHUB_ENV
+          else
+            echo "VERSION_NAME=dev" >> $GITHUB_ENV
+          fi
+
+      - name: 发布 macOS 独立运行包 (生成 .app)
+        run: |
+          PUBLISH_DIR="./publish_temp"
+          DIST_DIR="./dist"
+          mkdir -p $DIST_DIR
+          
+          dotnet publish ./MSLX.Desktop/MSLX.Desktop.csproj \
+            -c Release \
+            -r ${{ matrix.rid }} \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -p:DebugType=None \
+            -p:DebugSymbols=false \
+            -o "$PUBLISH_DIR" \
+            -p:IncludeNativeLibrariesForSelfExtract=true
+
+      - name: 安装 create-dmg 工具
+        run: brew install create-dmg
+
+      - name: 生成 .dmg 安装包
+        run: |
+          BASE_NAME="MSLX-Desktop_${{ env.VERSION_NAME }}_${{ matrix.rid }}"
+          DIST_DIR="./dist"
+          
+          echo "开始手动构建 macOS .app 结构..."
+          APP_NAME="MSLX.app"
+          APP_DIR="dmg_build/$APP_NAME"
+          
+          mkdir -p "$APP_DIR/Contents/MacOS"
+          mkdir -p "$APP_DIR/Contents/Resources"
+          
+          # 1. 移动所有发布的文件到 MacOS 目录
+          cp -r ./publish_temp/* "$APP_DIR/Contents/MacOS/"
+          chmod +x "$APP_DIR/Contents/MacOS/${{ matrix.bin }}"
+          
+          # 2. 拷贝图标文件
+          cp ./MSLX.Desktop/Assets/icon.icns "$APP_DIR/Contents/Resources/icon.icns"
+          
+          # 3. 写入标准的 Info.plist 文件
+          cat <<EOF > "$APP_DIR/Contents/Info.plist"
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleExecutable</key>
+              <string>${{ matrix.bin }}</string>
+              <key>CFBundleIconFile</key>
+              <string>icon.icns</string>
+              <key>CFBundleIdentifier</key>
+              <string>cn.mslmc.mslx</string>
+              <key>CFBundleName</key>
+              <string>MSLX</string>
+              <key>CFBundleDisplayName</key>
+              <string>MSLX</string>
+              <key>CFBundleVersion</key>
+              <string>1.0.0</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0.0</string>
+          </dict>
+          </plist>
+          EOF
+          
+          cd dmg_build
+          
+          # create-dmg 对 .app 进行打包，加入极简美化参数
+          create-dmg \
+            --volname "MSLX Installer" \
+            --volicon "../MSLX.Desktop/Assets/icon.icns" \
+            --window-pos 200 120 \
+            --window-size 500 300 \
+            --icon-size 120 \
+            --text-size 14 \
+            --icon "$APP_NAME" 120 120 \
+            --hide-extension "$APP_NAME" \
+            --app-drop-link 380 120 \
+            "../$DIST_DIR/$BASE_NAME.dmg" \
+            "$APP_NAME"
+            
+          cd ..
+          echo "UPLOAD_PATH=$DIST_DIR/$BASE_NAME.dmg" >> $GITHUB_ENV
+          echo "ARTIFACT_NAME=$BASE_NAME" >> $GITHUB_ENV
+
+      - name: 上传构建结果
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.UPLOAD_PATH }}
+          if-no-files-found: error

@@ -101,6 +101,7 @@ watchEffect(() => {
     layout: formData.value.layout,
     brandTheme: formData.value.brandTheme,
     enableCustomTheme: formData.value.enableCustomTheme,
+    expandMutex: formData.value.expandMutex,
   });
 });
 </script>
@@ -240,48 +241,61 @@ watchEffect(() => {
           <div class="text-[13px] font-bold text-[var(--td-text-color-secondary)] mb-4 tracking-widest uppercase">
             导航布局
           </div>
-          <div
-            class="flex items-center justify-between p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-700/50 transition-colors hover:border-zinc-300 dark:hover:border-zinc-600"
-          >
-            <div class="flex flex-col">
-              <span class="text-[14px] font-bold text-[var(--td-text-color-primary)]">当前布局</span>
-              <span class="text-[11px] text-zinc-400 mt-0.5">选择侧边栏或顶部导航</span>
+          <div class="flex flex-col gap-3">
+            <div
+              class="flex items-center justify-between p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-700/50 transition-colors hover:border-zinc-300 dark:hover:border-zinc-600"
+            >
+              <div class="flex flex-col">
+                <span class="text-[14px] font-bold text-[var(--td-text-color-primary)]">当前布局</span>
+                <span class="text-[11px] text-zinc-400 mt-0.5">选择侧边栏或顶部导航</span>
+              </div>
+
+              <!-- 滑动底座 -->
+              <div
+                class="relative flex items-center bg-zinc-200/60 dark:bg-zinc-800/80 rounded-lg p-1 w-[130px] h-[34px]"
+              >
+                <!-- 动态滑块 -->
+                <div
+                  class="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white dark:bg-zinc-600 rounded-md shadow-sm transition-transform duration-300 ease-out"
+                  :class="formData.layout === 'top' ? 'translate-x-full' : 'translate-x-0'"
+                ></div>
+
+                <!-- 侧边栏按钮 -->
+                <div
+                  class="relative z-10 flex-1 flex items-center justify-center text-[12px] font-medium rounded-md cursor-pointer transition-colors duration-300 select-none"
+                  :class="
+                    formData.layout === 'side'
+                      ? 'text-zinc-800 dark:text-zinc-100'
+                      : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'
+                  "
+                  @click="formData.layout = 'side'"
+                >
+                  侧边栏
+                </div>
+                <!-- 顶栏按钮 -->
+                <div
+                  class="relative z-10 flex-1 flex items-center justify-center text-[12px] font-medium rounded-md cursor-pointer transition-colors duration-300 select-none"
+                  :class="
+                    formData.layout === 'top'
+                      ? 'text-zinc-800 dark:text-zinc-100'
+                      : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'
+                  "
+                  @click="formData.layout = 'top'"
+                >
+                  顶栏
+                </div>
+              </div>
             </div>
 
-            <!-- 滑动底座 -->
             <div
-              class="relative flex items-center bg-zinc-200/60 dark:bg-zinc-800/80 rounded-lg p-1 w-[130px] h-[34px]"
+              v-show="formData.layout === 'side'"
+              class="flex items-center justify-between p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-700/50 transition-colors hover:border-zinc-300 dark:hover:border-zinc-600 animate-fade-in"
             >
-              <!-- 动态滑块 -->
-              <div
-                class="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white dark:bg-zinc-600 rounded-md shadow-sm transition-transform duration-300 ease-out"
-                :class="formData.layout === 'top' ? 'translate-x-full' : 'translate-x-0'"
-              ></div>
-
-              <!-- 侧边栏按钮 -->
-              <div
-                class="relative z-10 flex-1 flex items-center justify-center text-[12px] font-medium rounded-md cursor-pointer transition-colors duration-300 select-none"
-                :class="
-                  formData.layout === 'side'
-                    ? 'text-zinc-800 dark:text-zinc-100'
-                    : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'
-                "
-                @click="formData.layout = 'side'"
-              >
-                侧边栏
+              <div class="flex flex-col">
+                <span class="text-[14px] font-bold text-[var(--td-text-color-primary)]">自动折叠菜单</span>
+                <span class="text-[11px] text-zinc-400 mt-0.5">开启后仅允许展开一个菜单</span>
               </div>
-              <!-- 顶栏按钮 -->
-              <div
-                class="relative z-10 flex-1 flex items-center justify-center text-[12px] font-medium rounded-md cursor-pointer transition-colors duration-300 select-none"
-                :class="
-                  formData.layout === 'top'
-                    ? 'text-zinc-800 dark:text-zinc-100'
-                    : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'
-                "
-                @click="formData.layout = 'top'"
-              >
-                顶栏
-              </div>
+              <t-switch v-model="formData.expandMutex" size="large" />
             </div>
           </div>
         </section>

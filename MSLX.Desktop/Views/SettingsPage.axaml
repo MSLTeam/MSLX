@@ -59,7 +59,93 @@
             <ScrollViewer Grid.Row="1" Padding="0,0,15,0">
                 <StackPanel>
 
-                    <TextBlock Text="守护进程设置 (DAEMON)" FontWeight="Bold" FontSize="12" Opacity="0.5" Margin="5,0,0,5"/>
+                    <TextBlock Text="界面与外观 (APPEARANCE)" FontWeight="Bold" FontSize="12" Opacity="0.5" Margin="5,0,0,5"/>
+                    <Border Classes="SectionCard">
+                        <StackPanel>
+                            <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                                <icons:MaterialIcon Kind="Palette" Classes="SettingIcon"/>
+                                <StackPanel Grid.Column="1" Margin="15,0">
+                                    <TextBlock Text="主题色" Classes="SettingTitle"/>
+                                    <TextBlock Text="选择您喜欢的主题色调" Classes="SettingDesc"/>
+                                </StackPanel>
+                                <ComboBox Grid.Column="2" Name="ComboThemeColor" MinWidth="180" SelectionChanged="OnThemeColorChanged">
+                                    <ComboBoxItem Content="清霁蓝" Tag="Blue"/>
+                                    <ComboBoxItem Content="竹月青" Tag="Teal"/>
+                                    <ComboBoxItem Content="紫藤萝" Tag="Purple"/>
+                                    <ComboBoxItem Content="落樱粉" Tag="Pink"/>
+                                    <ComboBoxItem Content="暮云橙" Tag="Orange"/>
+                                    <ComboBoxItem Content="朱砂红" Tag="Red"/>
+                                    <ComboBoxItem Content="苍黛青" Tag="DarkCyan"/>
+                                </ComboBox>
+                            </Grid>
+
+                            <Separator Opacity="0.1" Margin="15,0"/>
+
+                            <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                                <icons:MaterialIcon Kind="ThemeLightDark" Classes="SettingIcon"/>
+                                <StackPanel Grid.Column="1" Margin="15,0">
+                                    <TextBlock Text="深色模式" Classes="SettingTitle"/>
+                                    <TextBlock Text="设置应用的亮/暗色外观" Classes="SettingDesc"/>
+                                </StackPanel>
+                                <ComboBox Grid.Column="2" Name="ComboThemeMode" MinWidth="180" SelectionChanged="OnThemeModeChanged">
+                                    <ComboBoxItem Content="跟随系统" Tag="System"/>
+                                    <ComboBoxItem Content="浅色模式" Tag="Light"/>
+                                    <ComboBoxItem Content="深色模式" Tag="Dark"/>
+                                </ComboBox>
+                            </Grid>
+
+                            <Separator Opacity="0.1" Margin="15,0"/>
+
+                            <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                                <icons:MaterialIcon Kind="ImageMultiple" Classes="SettingIcon"/>
+                                <StackPanel Grid.Column="1" Margin="15,0">
+                                    <TextBlock Text="背景设置应用范围" Classes="SettingTitle"/>
+                                    <TextBlock Text="选择下方背景设置的应用范围 (全局/浅色/深色)" Classes="SettingDesc"/>
+                                </StackPanel>
+                                <ComboBox Grid.Column="2" Name="ComboBackgroundTarget" MinWidth="180" SelectionChanged="OnBackgroundTargetChanged">
+                                    <ComboBoxItem Content="全局通用" Tag="Global"/>
+                                    <ComboBoxItem Content="仅浅色模式" Tag="Light"/>
+                                    <ComboBoxItem Content="仅深色模式" Tag="Dark"/>
+                                </ComboBox>
+                            </Grid>
+
+                            <Separator Opacity="0.1" Margin="15,0"/>
+
+                            <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto, Auto">
+                                <icons:MaterialIcon Kind="Image" Classes="SettingIcon"/>
+                                <StackPanel Grid.Column="1" Margin="15,0">
+                                    <TextBlock Text="自定义背景图" Classes="SettingTitle"/>
+                                    <TextBlock Text="设置应用的全局背景图片" Classes="SettingDesc"/>
+                                </StackPanel>
+                                <Button Grid.Column="2" Content="选择图片" Click="OnSelectBackgroundImage" Margin="0,0,10,0" />
+                                <Button Grid.Column="3" Content="清除" Click="OnClearBackgroundImage" />
+                            </Grid>
+
+                            <Separator Opacity="0.1" Margin="15,0"/>
+
+                            <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                                <icons:MaterialIcon Kind="Opacity" Classes="SettingIcon"/>
+                                <StackPanel Grid.Column="1" Margin="15,0">
+                                    <TextBlock Text="背景不透明度" Classes="SettingTitle"/>
+                                    <TextBlock Text="调节自定义背景图片的显示不透明度" Classes="SettingDesc"/>
+                                </StackPanel>
+                                <Slider Grid.Column="2" Name="SliderBackgroundOpacity" Minimum="0" Maximum="1" Value="0.8" MinWidth="180" ValueChanged="OnBackgroundOpacityChanged" />
+                            </Grid>
+
+                            <Separator Opacity="0.1" Margin="15,0"/>
+
+                            <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                                <icons:MaterialIcon Kind="Blur" Classes="SettingIcon"/>
+                                <StackPanel Grid.Column="1" Margin="15,0">
+                                    <TextBlock Text="背景高斯模糊" Classes="SettingTitle"/>
+                                    <TextBlock Text="调节自定义背景图片的模糊程度" Classes="SettingDesc"/>
+                                </StackPanel>
+                                <Slider Grid.Column="2" Name="SliderBackgroundBlur" Minimum="0" Maximum="50" Value="0" MinWidth="180" ValueChanged="OnBackgroundBlurChanged" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Text="守护进程设置 (DAEMON)" FontWeight="Bold" FontSize="12" Opacity="0.5" Margin="5,10,0,5"/>
                     <Border Classes="SectionCard">
                         <StackPanel>
                             <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">

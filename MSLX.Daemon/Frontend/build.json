@@ -1,6 +1,6 @@
 {
-  "version": "1.5.6",
-  "buildTime": "2026-08-01 17:49:10",
+  "version": "1.5.7",
+  "buildTime": "2026-08-05 00:13:33",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -77,10 +77,238 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "57476a3dca46a3cf24a69224ee9f515d4d76b2a6",
-  "commitMsg": "feat(daemon): 优化Docker未启动的报错信息",
+  "commitId": "0bfcb5193f1bcdafa04768bb1c1bbba7eebc3fd2",
+  "commitMsg": "feat(desktop & webpanel): 关于页面中更新Contributors列表",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "0bfcb5193f1bcdafa04768bb1c1bbba7eebc3fd2",
+      "commitTime": "2026-08-04 18:59:21 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop & webpanel): 关于页面中更新Contributors列表"
+    },
+    {
+      "commitId": "3dbb8cb10115f56773fc26e608a51e6925c96fee",
+      "commitTime": "2026-08-04 18:52:00 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop):新增 macos dmg 发布工作流"
+    },
+    {
+      "commitId": "b3572ef8ca963a37bc61ef75299cc68aaad95e52",
+      "commitTime": "2026-08-04 18:17:14 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): macos dmg 调整位置"
+    },
+    {
+      "commitId": "f87ed3e3f854ba6a793fe3939e643c48839aaa1e",
+      "commitTime": "2026-08-04 18:08:14 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): macos dmg 调整位置"
+    },
+    {
+      "commitId": "c1e8c2b4b1ee1ded767081cbfa38f4433ff483b7",
+      "commitTime": "2026-08-04 17:59:05 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): macos dmg 加个背景图"
+    },
+    {
+      "commitId": "b65d376e005946c236914309e2e90fbf7b193e61",
+      "commitTime": "2026-08-04 17:50:54 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): macos dmg 加个背景图"
+    },
+    {
+      "commitId": "3c661018474830a2d42c1bc353948ac6eac93254",
+      "commitTime": "2026-08-04 17:39:44 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): 修复macos dmg dev构建"
+    },
+    {
+      "commitId": "5d4558bbd418cae93c28a126bf155a1d701fce8e",
+      "commitTime": "2026-08-04 17:36:56 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): 修复macos dmg dev构建"
+    },
+    {
+      "commitId": "4ea7980119fd09811715025fec05fdb665bfc7cf",
+      "commitTime": "2026-08-04 17:33:46 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): 新增macos dmg dev构建"
+    },
+    {
+      "commitId": "862234668b455f65f8b6a673a144eec5f9af35bf",
+      "commitTime": "2026-08-04 16:05:24 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(ddaemon): PlatformUtils打个region"
+    },
+    {
+      "commitId": "49016fc1b907ec235aba3b4c1f52ba2eefe952f6",
+      "commitTime": "2026-08-04 16:01:23 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #203 from CoZooo/dev"
+    },
+    {
+      "commitId": "f168cc967a03b06fea7e6b6d13108953ad28d743",
+      "commitTime": "2026-08-04 15:51:32 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "fix(Daemon): 将.app内Daemon数据路径对齐Desktop"
+    },
+    {
+      "commitId": "75f91b58e5bc72b1ac279cf41f3f45fb96e3a006",
+      "commitTime": "2026-08-04 15:51:28 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "feat(Daemon): 加入Homebrew一键更新支持"
+    },
+    {
+      "commitId": "a7dd63708ddaeec09672f6b59be81ff7c32b6932",
+      "commitTime": "2026-08-04 15:47:58 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "feat(Daemon): 加入Homebrew安装检测"
+    },
+    {
+      "commitId": "4cf5509fc3b63ed4125f75b075b65e2c9e9d05ef",
+      "commitTime": "2026-08-04 00:36:40 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): 背景主题支持白天/黑夜模式独立设置"
+    },
+    {
+      "commitId": "8cdf3a466ef60c78dcb3fbd77f2551b1d139591a",
+      "commitTime": "2026-08-04 00:27:26 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): 背景新增高斯模糊功能"
+    },
+    {
+      "commitId": "fb8554d13d7a8bee17c2b432825fe3e802c7b30c",
+      "commitTime": "2026-08-03 18:00:38 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(desktop): 这个字体过分了嗷"
+    },
+    {
+      "commitId": "a6a2c1a5c2f28ddbf12a82cd6b915bd039c2e87e",
+      "commitTime": "2026-08-03 17:56:50 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(desktop): 修复组件字体丢失"
+    },
+    {
+      "commitId": "5b86f474ca5f829673d08c7bed34af8598506a49",
+      "commitTime": "2026-08-03 17:54:19 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(desktop): 修复md组件字体丢失"
+    },
+    {
+      "commitId": "aa3bd94f99bb9410f04300a9fe0509b201db26a3",
+      "commitTime": "2026-08-03 17:47:49 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): 新增平滑滚动支持"
+    },
+    {
+      "commitId": "8bf27e242660cd9966440a0f8c3abc3b36c5d79e",
+      "commitTime": "2026-08-03 17:39:21 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): 更新SukiUI子模块"
+    },
+    {
+      "commitId": "9e3ead066f3cdd732465a692968b5380dacdbeb1",
+      "commitTime": "2026-08-03 17:35:56 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): 升级 Avalonia 至 12.1.1"
+    },
+    {
+      "commitId": "5bf5b9d5ead0d9bcfb117fd14c81e495ad347525",
+      "commitTime": "2026-08-03 17:28:16 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): Markdown组件重新适配主题色"
+    },
+    {
+      "commitId": "90d7e514a034a2eaace8da721e22af2b7a4083ae",
+      "commitTime": "2026-08-03 16:52:26 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): 背景图更换适配新版SukiUI"
+    },
+    {
+      "commitId": "709fff5125fc557047d2f14974dbab8857bc6d4c",
+      "commitTime": "2026-08-03 16:42:10 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): 更新SukiUI"
+    },
+    {
+      "commitId": "3b0f095141523d52bcba505f5851d1492b6fcd60",
+      "commitTime": "2026-08-03 16:37:00 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): 升级 Avalonia 12 核心并修复 API 变更"
+    },
+    {
+      "commitId": "c5c05d608901fc2ad250db896efc103835193d59",
+      "commitTime": "2026-08-03 13:06:52 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复插件重载时SignalR旧连接导致的崩溃问题"
+    },
+    {
+      "commitId": "ab7ba5e89236f8e38ae9f865fbcda63db88a1a46",
+      "commitTime": "2026-08-03 12:47:39 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix: 修复插件调用SignalR时依赖注入实例不正确的问题"
+    },
+    {
+      "commitId": "16b8691a8ed5db1da0e6f1e0de42dea27fc8a4be",
+      "commitTime": "2026-08-02 20:52:13 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 新增自动折叠一级菜单的支持 #201"
+    },
+    {
+      "commitId": "1f687b8c7ea8d1880ef9f8042c84c2a49c2b6158",
+      "commitTime": "2026-08-02 20:41:53 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 部署实例新增取消功能"
+    },
+    {
+      "commitId": "67fc3b4062f4c7a7eaa9053320c2ecbf446213d3",
+      "commitTime": "2026-08-02 20:28:42 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(webpanel): 新增Contributors"
+    },
+    {
+      "commitId": "88525d83e43c8f4b69fa9cdf6c2bb1729552b862",
+      "commitTime": "2026-08-02 11:59:34 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): 新增主题色设置功能 & 新增背景图设置功能"
+    },
+    {
+      "commitId": "9db2830af11b928dbb800d61f246bfe2a41f5865",
+      "commitTime": "2026-08-02 11:19:07 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): 优化欢迎页面元素"
+    },
+    {
+      "commitId": "5f09846779b0757bd2ba0f70521ad1dbbbebf0ea",
+      "commitTime": "2026-08-02 00:46:08 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "perf(desktop): 优化欢迎界面与Frp隧道创建界面的UI体验"
+    },
+    {
+      "commitId": "a2e611f852f5658440029879a859eab8634461b3",
+      "commitTime": "2026-08-01 23:33:23 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "perf(desktop): 优化Daemon启动和链接体验"
+    },
+    {
+      "commitId": "b99bf5a34ccbca77b0f51c76239ca17f295198d1",
+      "commitTime": "2026-08-01 19:39:11 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 支持在主节点控制台远程更新子节点"
+    },
+    {
+      "commitId": "89179bbe317990e524b457c1b20eddb1acfe3cf2",
+      "commitTime": "2026-08-01 17:50:25 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #198 from MSLTeam/dev"
+    },
+    {
+      "commitId": "ba56b2a5cc157b2454e1edc03b3865367c719e6c",
+      "commitTime": "2026-08-01 17:49:30 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.5.6版本"
+    },
     {
       "commitId": "57476a3dca46a3cf24a69224ee9f515d4d76b2a6",
       "commitTime": "2026-08-01 17:44:50 +0800",
@@ -152,234 +380,6 @@
       "commitTime": "2026-07-25 23:27:15 +0800",
       "commitAuthor": "小宇",
       "commitMsg": "Merge pull request #194 from MSLTeam/dev"
-    },
-    {
-      "commitId": "63f8c320a4ff36b39c92c3d9c8d3d058ccc5ad48",
-      "commitTime": "2026-07-25 23:25:52 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.5.5.1-hotfix版本"
-    },
-    {
-      "commitId": "82a620c6add6974f6d2c2f9b7b5481dfaa86466a",
-      "commitTime": "2026-07-25 23:24:23 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复推荐Java后Docker版本选择的与实际不符的问题"
-    },
-    {
-      "commitId": "921d4434533a009de401d6ba0f9a6bb6d530b4a2",
-      "commitTime": "2026-07-25 21:14:00 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #192 from MSLTeam/dev"
-    },
-    {
-      "commitId": "1b0f9a8c3924996c1cc90ad8e84f25ac8c8c1456",
-      "commitTime": "2026-07-25 21:13:24 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.5.5版本"
-    },
-    {
-      "commitId": "3da97e1ac51d087eaaafa37c87b2eedd34243553",
-      "commitTime": "2026-07-25 01:09:33 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复`26.1.2`类型格式的MC版本号Java版本推荐错误的问题 fix #190"
-    },
-    {
-      "commitId": "00bb59ad08961316d880321e39cce4512634f294",
-      "commitTime": "2026-07-22 23:04:21 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
-    },
-    {
-      "commitId": "8f2e362e8647a2dc994b6fcaae1357c93389933f",
-      "commitTime": "2026-07-22 23:04:10 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修正MEFrp流量单位错误 fix #189"
-    },
-    {
-      "commitId": "9380bf05f18ae1014905f93380f0fdf4a82f663f",
-      "commitTime": "2026-07-22 15:38:15 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
-    },
-    {
-      "commitId": "65701b3a8b5aab50ce474d59ad5020ef40310a4f",
-      "commitTime": "2026-07-22 15:37:29 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "perf(desktop): 点对点联机功能可用 perf(desktop): 优化选择服务端功能 perf(desktop): 优化部分UI布局，增强使用体验 fix(desktop): 修复若干已知的bug"
-    },
-    {
-      "commitId": "0b0c1c712b805ae1102f39e8600f6c97a3a94e64",
-      "commitTime": "2026-07-22 14:46:29 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修正插件插槽间距不正常的问题"
-    },
-    {
-      "commitId": "3b53b32cf2e2589334f8b0ee11dc3c88f6beadd2",
-      "commitTime": "2026-07-21 18:01:16 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复Docker监控数据CPU超过100%的问题"
-    },
-    {
-      "commitId": "d5ebd852d4fbbc40cdba89187d63ca349a9f68c2",
-      "commitTime": "2026-07-21 17:43:43 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 对单容器实例的资源监控进行支持"
-    },
-    {
-      "commitId": "3efd8dad533ae2dec4aede460d7fe3175fc78351",
-      "commitTime": "2026-07-21 17:25:16 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 优化节点管理页面的样式 & 动画效果"
-    },
-    {
-      "commitId": "d14ae152e08214cd1bbef4cfdd0b6ae5f3a407ce",
-      "commitTime": "2026-07-21 17:17:32 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 文件管理器切换目录时自动清空搜索框 #185"
-    },
-    {
-      "commitId": "831d41cd45a70c17349f22c28d559eca3ec0c6ee",
-      "commitTime": "2026-07-21 17:14:16 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 控制台支持Ctrl+C / Cmd+C 复制文本 #186"
-    },
-    {
-      "commitId": "0c6ea4ac26dbae8584bf16c14dc47a2e026b8d91",
-      "commitTime": "2026-07-20 23:46:56 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #187 from MSLTeam/dev"
-    },
-    {
-      "commitId": "4874897d9d9da7e224f72257cd2cd056b8138d9f",
-      "commitTime": "2026-07-20 23:45:57 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.5.4版本"
-    },
-    {
-      "commitId": "7ad09ce9f286e12bb552dad3b2c34dd51b3a6e73",
-      "commitTime": "2026-07-20 23:44:37 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 节点管理页面新增文档和issue跳转入口"
-    },
-    {
-      "commitId": "3c00888407722f729f40fc463bf04de8f7da4ea1",
-      "commitTime": "2026-07-20 23:00:22 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复快照版本的自动推荐Java版本错误的问题"
-    },
-    {
-      "commitId": "40d3213bd883f1a484eb64d3554860591c1d36cc",
-      "commitTime": "2026-07-20 22:58:12 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复带前缀后缀的输入框样式没有正常圆角的问题"
-    },
-    {
-      "commitId": "a98418849cdfa91089d393811c8ba6cf883f7f03",
-      "commitTime": "2026-07-20 22:37:11 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
-    },
-    {
-      "commitId": "f282c9190f4f6791c7ae6b622b25c5c3fe8cbda1",
-      "commitTime": "2026-07-20 22:37:03 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel & daemon): 新增连接多个子节点的支持"
-    },
-    {
-      "commitId": "220e351ef913a9883eebe61550f10c890f2e5cb5",
-      "commitTime": "2026-07-19 22:50:17 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): Docker Cpu百分比限制参数修改为单核百分比"
-    },
-    {
-      "commitId": "f4e8f2bb80e2b7ddd6e5f07fd16eb68c509e1a7e",
-      "commitTime": "2026-07-18 23:24:39 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #183 from MSLTeam/dev"
-    },
-    {
-      "commitId": "f19004dc84c45a3026c160fa64cb299b0839bcbb",
-      "commitTime": "2026-07-18 23:23:36 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新到 v1.5.3 版本"
-    },
-    {
-      "commitId": "b31944c154b304c0bb5cec28301face9ec3fae2b",
-      "commitTime": "2026-07-18 23:23:16 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新到 v1.5.3 版本"
-    },
-    {
-      "commitId": "79bc01e75f54185193c9a90918fd2b75a41b5e85",
-      "commitTime": "2026-07-18 12:57:28 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #181 from chaoji233/fix/issue-180"
-    },
-    {
-      "commitId": "679054c7b9d18813afa9ceaee8c4e1e14883152a",
-      "commitTime": "2026-07-18 11:35:18 +0800",
-      "commitAuthor": "chaoji233",
-      "commitMsg": "feat(webpanel): 新增文件编辑器未保存更改提示，修复对话框和上传提示问题"
-    },
-    {
-      "commitId": "66460179f821096aa493aafcee0e0fd3ceff9ef7",
-      "commitTime": "2026-07-18 11:09:11 +0800",
-      "commitAuthor": "chaoji233",
-      "commitMsg": "feat(webpanel): 对文件编辑器添加Ctrl/Cmd+S快捷键保存文件的功能"
-    },
-    {
-      "commitId": "53be0761408275fc6286c0eef1ae6e8393dcb76f",
-      "commitTime": "2026-07-18 11:01:43 +0800",
-      "commitAuthor": "chaoji233",
-      "commitMsg": "fix(webpanel): 修复文件管理页跳转后携带 path 参数导致 NaN 的问题"
-    },
-    {
-      "commitId": "8bf0abc1b8c4a8d20abfe58bcef81c1bcaf9cadf",
-      "commitTime": "2026-07-18 10:51:47 +0800",
-      "commitAuthor": "chaoji233",
-      "commitMsg": "feat(webpanel): 添加拖拽上传与上传冲突校验提示"
-    },
-    {
-      "commitId": "1ba7413b76647b6cb0e06a135d4000655492d02c",
-      "commitTime": "2026-07-14 19:52:32 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 修复部分输入组件存在淡淡的方角问题呀"
-    },
-    {
-      "commitId": "102c92c0916ea87491a3b3807e9414b0f9c7531a",
-      "commitTime": "2026-07-14 19:49:25 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "style(webpanel): 统一下拉选择组件的样式"
-    },
-    {
-      "commitId": "25e0ede2716290c9bd5ac778aba10e626abb9bb5",
-      "commitTime": "2026-07-14 17:25:34 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(webpanel): 提取推荐Java的工具函数"
-    },
-    {
-      "commitId": "7d7ac711ea5e13b1f78d12f77c582dd606e7b3fd",
-      "commitTime": "2026-07-14 17:18:35 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 使用快速模式 & 整合包模式 & MCDR模式时会尝试自动推荐Java版本"
-    },
-    {
-      "commitId": "f7820376e71726132dfe0782c6646fbf83bccf06",
-      "commitTime": "2026-07-14 15:42:07 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 快速模式 & 整合包模式创建服务端的时候Docker模式端口映射新增TCP/UDP协议选择"
-    },
-    {
-      "commitId": "784b68c403c365573f00180b4123d04b5f7ac1bf",
-      "commitTime": "2026-07-14 15:20:31 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel & daemon): Docker容器端口映射新增UDP协议支持"
-    },
-    {
-      "commitId": "ef78dc6089f8d1d502b1997d2028a004d2844411",
-      "commitTime": "2026-07-14 13:29:00 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 新增基岩版Docker容器化部署支持"
     }
   ]
 }

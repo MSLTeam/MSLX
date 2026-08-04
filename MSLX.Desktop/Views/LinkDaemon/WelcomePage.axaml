@@ -3,16 +3,105 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             xmlns:conv="clr-namespace:MSLX.Desktop.Converters"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="MSLX.Desktop.Views.LinkDaemon.WelcomePage">
-  <suki:GlassCard Margin="10">
-      <Grid HorizontalAlignment="Center" VerticalAlignment="Center" RowDefinitions="*,auto,auto" RowSpacing="20">
-		  <StackPanel>
-			  <Image Source="avares://MSLX-Desktop/Assets/icon.ico" Width="128" Height="128"/>
-              <TextBlock Text="欢迎使用 MSLX !" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,10,0,0"/>
-          </StackPanel>
-          <Button x:Name="Retry" Content="重试" Grid.Row="1" IsVisible="False"/>
-          <Button x:Name="Next" Content="下一步" Classes="Flat" Grid.Row="2" IsVisible="False"/>
-      </Grid>
-  </suki:GlassCard>
+
+	<UserControl.Resources>
+		<conv:ProportionalHeightConverter x:Key="ProportionalHeightConverter"/>
+	</UserControl.Resources>
+
+	<UserControl.Styles>
+		<!-- 日志容器折叠样式：高度 0、完全透明，且声明好过渡动画 -->
+		<Style Selector="Border.logContainer">
+			<Setter Property="Height" Value="0"/>
+			<Setter Property="Opacity" Value="0"/>
+			<Setter Property="Transitions">
+				<Transitions>
+					<DoubleTransition Property="Height" Duration="0:0:0.35" Easing="CubicEaseInOut"/>
+					<DoubleTransition Property="Opacity" Duration="0:0:0.35" Easing="CubicEaseInOut"/>
+				</Transitions>
+			</Setter>
+		</Style>
+		<!-- 日志容器展开样式：这个 350 只是“理想目标值”，
+             实际渲染高度会被下面绑定的 MaxHeight 卡住，不会超出窗口可用空间 -->
+		<Style Selector="Border.logContainer.expanded">
+			<Setter Property="Height" Value="350"/>
+			<Setter Property="Opacity" Value="1"/>
+		</Style>
+	</UserControl.Styles>
+
+	<suki:GlassCard Margin="10">
+		<!-- 命名根 Grid，用于把它的实际高度按比例传给 LogContainer 的 MaxHeight -->
+		<Grid x:Name="RootGrid" RowDefinitions="*,auto,auto" RowSpacing="10">
+			<!-- 图标 + 日志的整体容器，始终垂直居中；
+                 LogContainer 高度变化时整体块变高，居中对齐会让图标自然被推挤上移 -->
+			<Grid x:Name="ContentGrid" Grid.Row="0" RowDefinitions="auto,auto" RowSpacing="10"
+                  VerticalAlignment="Center" HorizontalAlignment="Stretch">
+
+				<StackPanel Grid.Row="0" HorizontalAlignment="Center">
+					<Image Source="avares://MSLX-Desktop/Assets/icon.ico" Width="108" Height="108">
+						<Image.Transitions>
+							<Transitions>
+								<TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.5" Easing="CubicEaseOut"/>
+							</Transitions>
+						</Image.Transitions>
+					</Image>
+					<TextBlock Text="欢迎使用 MSLX !" FontSize="32" FontWeight="Bold"
+                               HorizontalAlignment="Center" Margin="0,15,0,0"/>
+					
+					<TextBlock Text="全新一代开服工具，极速部署您的 MC 服务器" FontSize="16" Opacity="0.7" HorizontalAlignment="Center" Margin="0,8,0,15"/>
+					
+					<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10" Margin="0,5,0,15">
+						<Border Background="#1A0072FF" CornerRadius="15" Padding="15,6">
+							<TextBlock Text="✨ 传承经典 UI" Foreground="#0072FF" FontSize="13" FontWeight="SemiBold"/>
+						</Border>
+						<Border Background="#1A00C6FF" CornerRadius="15" Padding="15,6">
+							<TextBlock Text="🌍 跨平台运行" Foreground="#0096FF" FontSize="13" FontWeight="SemiBold"/>
+						</Border>
+						<Border Background="#1A8A2BE2" CornerRadius="15" Padding="15,6">
+							<TextBlock Text="🚀 强大远程访问" Foreground="#8A2BE2" FontSize="13" FontWeight="SemiBold"/>
+						</Border>
+					</StackPanel>
+
+					<StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0" Opacity="0.6">
+						<TextBlock Text="Copyright © " FontSize="12" Foreground="Gray"/>
+						<TextBlock Text="MSLTeam" FontSize="12" Foreground="#0072FF" FontWeight="SemiBold" Cursor="Hand" ToolTip.Tip="https://github.com/MSLTeam/"/>
+						<TextBlock Text=" 2021-2026" FontSize="12" Foreground="Gray"/>
+					</StackPanel>
+				</StackPanel>
+
+				<!-- 日志容器：Height 由 Style 的 expanded/非 expanded 状态动画驱动，
+                     MaxHeight 绑定 RootGrid 的实际高度 * 0.45，防止小窗口下溢出错位 -->
+				<Border x:Name="LogContainer" Grid.Row="1" Classes="logContainer"
+                        MaxHeight="{Binding #RootGrid.Bounds.Height, Converter={StaticResource ProportionalHeightConverter}, ConverterParameter=0.45}"
+                        ClipToBounds="True" Margin="5,0">
+					<ScrollViewer x:Name="LogScroll"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Auto">
+						<ItemsControl x:Name="LogListBox"
+                                      Background="Transparent" BorderThickness="0"
+                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                      ScrollViewer.VerticalScrollBarVisibility="Auto">
+							<ItemsControl.ItemsPanel>
+								<ItemsPanelTemplate>
+									<VirtualizingStackPanel/>
+								</ItemsPanelTemplate>
+							</ItemsControl.ItemsPanel>
+							<ItemsControl.ItemTemplate>
+								<DataTemplate>
+									<TextBlock Text="{Binding}"
+                                               FontFamily="monospace"
+                                               FontSize="12" TextWrapping="NoWrap"/>
+								</DataTemplate>
+							</ItemsControl.ItemTemplate>
+						</ItemsControl>
+					</ScrollViewer>
+				</Border>
+			</Grid>
+
+			<Button x:Name="Retry" Content="重试" Grid.Row="1" IsVisible="False" HorizontalAlignment="Center"/>
+			<Button x:Name="Next" Content="下一步" Classes="Flat" Grid.Row="2" IsVisible="False" HorizontalAlignment="Center"/>
+		</Grid>
+	</suki:GlassCard>
 </UserControl>

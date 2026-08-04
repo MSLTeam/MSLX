@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 
 namespace MSLX.Daemon.Services.PluginsService;
@@ -15,11 +15,9 @@ public class PluginControllerActivator : IControllerActivator
     public object Create(ControllerContext context)
     {
         var type = context.ActionDescriptor.ControllerTypeInfo.AsType();
-        var plugin = _pluginManager.Plugins.FirstOrDefault(p => p.Assembly == type.Assembly);
-        
-        if (plugin != null && plugin.ServiceProvider != null)
+        if (_pluginManager.PluginProviders.TryGetValue(type.Assembly, out var provider))
         {
-            return ActivatorUtilities.CreateInstance(plugin.ServiceProvider, type);
+            return ActivatorUtilities.CreateInstance(provider, type);
         }
 
         return ActivatorUtilities.CreateInstance(context.HttpContext.RequestServices, type);

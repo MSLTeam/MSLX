@@ -9,7 +9,7 @@
       ]"
     >
 
-      <t-menu :class="[menuCls, 'sidebar-menu-clear']" :theme="theme" :value="active" :collapsed="collapsed" :default-expanded="defaultExpanded">
+      <t-menu :class="[menuCls, 'sidebar-menu-clear']" :theme="theme" :value="active" :collapsed="collapsed" :default-expanded="defaultExpanded" :expand-mutex="settingStore.expandMutex">
         <template #logo>
           <div
             v-if="showLogo"

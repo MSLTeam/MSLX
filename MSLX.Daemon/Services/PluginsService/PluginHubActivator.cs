@@ -17,11 +17,9 @@ public class PluginHubActivator<THub> : IHubActivator<THub> where THub : Hub
     public THub Create()
     {
         var type = typeof(THub);
-        var plugin = _pluginManager.Plugins.FirstOrDefault(p => p.Assembly == type.Assembly);
-
-        if (plugin != null && plugin.ServiceProvider != null)
+        if (_pluginManager.PluginProviders.TryGetValue(type.Assembly, out var provider))
         {
-            return (THub)ActivatorUtilities.CreateInstance(plugin.ServiceProvider, type);
+            return (THub)ActivatorUtilities.CreateInstance(provider, type);
         }
 
         return (THub)ActivatorUtilities.CreateInstance(_rootServiceProvider, type);

@@ -7,11 +7,18 @@
 			 xmlns:mdctl="clr-namespace:Markdown.Avalonia.Controls;assembly=Markdown.Avalonia"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="MSLX.Desktop.Controls.MagicMarkdown">
+	<UserControl.Resources>
+		<!-- 覆写 Markdown.Avalonia 样式到SukiUI的主题色 -->
+		<SolidColorBrush x:Key="MarkdownHyperlinkForeground" Color="{DynamicResource SukiPrimaryColor0}" />
+		<SolidColorBrush x:Key="MarkdownHyperlinkForegroundVisited" Color="{DynamicResource SukiPrimaryColor0}" />
+		<SolidColorBrush x:Key="MarkdownHyperlinkForegroundPointerOver" Color="{DynamicResource SukiPrimaryColor0}" />
+	</UserControl.Resources>
+
   <markdown:MarkdownScrollViewer x:Name="MdViewer"
 											   Grid.Row="1"
 											   Classes="MSLXMarkdownStyle"
+											   MarkdownStyleName="None"
 											   Markdown="# 🎉 欢迎使用 MSLX 开服器软件!" >
-
 					<markdown:MarkdownScrollViewer.Styles>
 						<Style Selector="ctxt|CTextBlock.Heading1">
 							<Setter Property="Foreground" Value="{DynamicResource SukiText}"/>
@@ -39,11 +46,16 @@
 							<Setter Property="Margin" Value="0,8,0,4"/>
 						</Style>
 
-						<Style Selector="ctxt|CHyperlink">
+						<Style Selector="markdown|MarkdownScrollViewer.MSLXMarkdownStyle ctxt|CHyperlink">
 							<Setter Property="Foreground" Value="{DynamicResource SukiPrimaryColor}"/>
+							<Setter Property="HoverForeground" Value="{DynamicResource SukiPrimaryColor}"/>
 							<Setter Property="IsUnderline" Value="False"/>
 						</Style>
-						<Style Selector="ctxt|CHyperlink:pointerover">
+						<Style Selector="markdown|MarkdownScrollViewer.MSLXMarkdownStyle ctxt|CHyperlink:pointerover">
+							<Setter Property="IsUnderline" Value="True"/>
+							<Setter Property="Foreground" Value="{DynamicResource SukiPrimaryColor}"/>
+						</Style>
+						<Style Selector="markdown|MarkdownScrollViewer.MSLXMarkdownStyle ctxt|CHyperlink:pressed">
 							<Setter Property="IsUnderline" Value="True"/>
 							<Setter Property="Foreground" Value="{DynamicResource SukiPrimaryColor}"/>
 						</Style>
@@ -60,7 +72,7 @@
 							<Setter Property="Opacity" Value="0.8"/>
 							<Setter Property="FontSize" Value="15"/>
 						</Style>
-						<Style Selector="ctxt|CCode">
+						<Style Selector="markdown|MarkdownScrollViewer.MSLXMarkdownStyle ctxt|CCode">
 							<Setter Property="Foreground" Value="{DynamicResource SukiPrimaryColor}"/>
 
 							<Setter Property="Background" Value="Transparent"/>
@@ -73,7 +85,7 @@
 
 							<Setter Property="CornerRadius" Value="3"/>
 
-							<Setter Property="FontFamily" Value="Maple Mono NF, Consolas, monospace"/>
+							<Setter Property="FontFamily" Value="monospace"/>
 							<Setter Property="FontSize" Value="14"/>
 						</Style>
 
@@ -85,6 +97,9 @@
 							<Setter Property="CornerRadius" Value="6"/>
 							<Setter Property="Padding" Value="12"/>
 							<Setter Property="Margin" Value="0,10"/>
+						</Style>
+						<Style Selector="Border.CodeBlock ctxt|CTextBlock">
+							<Setter Property="FontFamily" Value="monospace"/>
 						</Style>
 
 						<Style Selector="Border.Table">
