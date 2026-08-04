@@ -103,17 +103,17 @@ jobs:
           
           cd dmg_build
           
-          # create-dmg 对 .app 进行打包，加入美化参数
+          # create-dmg 对 .app 进行打包，加入极简美化参数
           create-dmg \
             --volname "MSLX Installer" \
+            --volicon "../MSLX.Desktop/Assets/icon.icns" \
             --window-pos 200 120 \
-            --window-size 600 317 \
+            --window-size 500 300 \
             --icon-size 120 \
             --text-size 14 \
-            --background "../MSLX.Desktop/Assets/bg_night.jpg" \
-            --icon "$APP_NAME" 150 130 \
+            --icon "$APP_NAME" 120 120 \
             --hide-extension "$APP_NAME" \
-            --app-drop-link 450 130 \
+            --app-drop-link 380 120 \
             "../$DIST_DIR/$BASE_NAME.dmg" \
             "$APP_NAME"
             
