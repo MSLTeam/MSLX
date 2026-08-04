@@ -111,9 +111,9 @@ jobs:
             --icon-size 120 \
             --text-size 14 \
             --background "../MSLX.Desktop/Assets/bg_night.jpg" \
-            --icon "$APP_NAME" 150 158 \
+            --icon "$APP_NAME" 150 130 \
             --hide-extension "$APP_NAME" \
-            --app-drop-link 450 158 \
+            --app-drop-link 450 130 \
             "../$DIST_DIR/$BASE_NAME.dmg" \
             "$APP_NAME"
             
