@@ -8,7 +8,6 @@ using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils;
 using SukiUI;
 using SukiUI.Controls;
-using SukiUI.Enums;
 using SukiUI.Models;
 
 namespace MSLX.Desktop;
@@ -37,22 +36,23 @@ public partial class MainWindow : SukiWindow
     protected override void OnApplyTemplate(Avalonia.Controls.Primitives.TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
+        // 让Dialog和Toast下移，避免遮挡标题栏
+        // 先找到标题栏控件，然后监听其Bounds属性变化
         var titleBar = e.NameScope.Find<Control>("PART_TitleBar");
-        if (titleBar != null)
-        {
-            titleBar.PropertyChanged += (s, ev) =>
+        titleBar?.PropertyChanged += (s, ev) =>
             {
-                if (ev.Property == Avalonia.Visual.BoundsProperty)
+                if (ev.Property == BoundsProperty)
                 {
+                    // 获取标题栏高度
                     var h = titleBar.Bounds.Height;
                     if (h > 0)
                     {
-                        if (DialogManager != null) DialogManager.Margin = new Avalonia.Thickness(0, h, 0, 0);
-                        if (ToastManager != null) ToastManager.Margin = new Avalonia.Thickness(0, h + 3, 0, 0);
+                        // 调整DialogManager和ToastManager的Margin
+                        DialogManager?.Margin = new Avalonia.Thickness(0, h, 0, 0);
+                        ToastManager?.Margin = new Avalonia.Thickness(0, h + 3, 0, 0);
                     }
                 }
             };
-        }
     }
 
     public void UpdateUserHeader(string username, string? avatarUrl)
@@ -106,25 +106,28 @@ public partial class MainWindow : SukiWindow
         else if (themeMode == "Dark")
             Avalonia.Application.Current!.RequestedThemeVariant = ThemeVariant.Dark;
 
-        var themeColorStr = ConfigService.Config.ReadConfigKey("ThemeColor")?.ToString() ?? "Blue";
-        SukiColorTheme theme = themeColorStr switch
+        var themeColorStr = ConfigService.Config.ReadConfigKey("ThemeColor")?.ToString() ?? "Default";
+        if (themeColorStr != "Default")
         {
-            "Teal" => new SukiColorTheme("Teal", Color.Parse("#20B2AA"), Color.Parse("#FF69B4")),
-            "Purple" => new SukiColorTheme("Purple", Color.Parse("#8A2BE2"), Color.Parse("#00FF7F")),
-            "Pink" => new SukiColorTheme("Pink", Color.Parse("#FFB6C1"), Color.Parse("#4682B4")),
-            "Orange" => new SukiColorTheme("Orange", Color.Parse("#FF8C00"), Color.Parse("#4169E1")),
-            "Red" => new SukiColorTheme("Red", Color.Parse("#DC143C"), Color.Parse("#00CED1")),
-            "DarkCyan" => new SukiColorTheme("DarkCyan", Color.Parse("#008B8B"), Color.Parse("#FFD700")),
-            _ => new SukiColorTheme("Blue", Color.Parse("#1E90FF"), Color.Parse("#FFA500"))
-        };
-        SukiTheme.GetInstance().ChangeColorTheme(theme);
+            SukiColorTheme theme = themeColorStr switch
+            {
+                "Teal" => new SukiColorTheme("Teal", Color.Parse("#20B2AA"), Color.Parse("#FF69B4")),
+                "Purple" => new SukiColorTheme("Purple", Color.Parse("#8A2BE2"), Color.Parse("#00FF7F")),
+                "Pink" => new SukiColorTheme("Pink", Color.Parse("#FFB6C1"), Color.Parse("#4682B4")),
+                "Orange" => new SukiColorTheme("Orange", Color.Parse("#FF8C00"), Color.Parse("#4169E1")),
+                "Red" => new SukiColorTheme("Red", Color.Parse("#DC143C"), Color.Parse("#00CED1")),
+                "DarkCyan" => new SukiColorTheme("DarkCyan", Color.Parse("#008B8B"), Color.Parse("#FFD700")),
+                _ => new SukiColorTheme("Blue", Color.Parse("#1E90FF"), Color.Parse("#FFA500")), // Blue
+            };
+            SukiTheme.GetInstance().ChangeColorTheme(theme);
+        }
 
         this.Loaded += (s, e) =>
         {
             RefreshBackground();
-            
-            // 开启 FPS 监控悬浮窗
+
 #if DEBUG
+            // 开启 FPS 监控悬浮窗
             var topLevel = TopLevel.GetTopLevel(this);
             if (topLevel != null)
             {
@@ -133,13 +136,10 @@ public partial class MainWindow : SukiWindow
 #endif
         };
 
-        if (Avalonia.Application.Current != null)
+        Avalonia.Application.Current?.ActualThemeVariantChanged += (s, e) =>
         {
-            Avalonia.Application.Current.ActualThemeVariantChanged += (s, e) =>
-            {
-                RefreshBackground();
-            };
-        }
+            RefreshBackground();
+        };
     }
 
     public void RefreshBackground()

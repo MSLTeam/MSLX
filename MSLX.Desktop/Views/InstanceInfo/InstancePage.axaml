@@ -9,7 +9,6 @@
              x:Class="MSLX.Desktop.Views.InstanceInfo.InstancePage">
 
   <Grid RowDefinitions="Auto,*" Margin="10">
-
     <!-- 顶部实例信息栏 -->
     <suki:GlassCard Grid.Row="0" Margin="0,0,0,8">
       <Grid ColumnDefinitions="*,Auto" Margin="8,4">
@@ -71,5 +70,11 @@
 
 		  </TabControl>
 	  </suki:GlassCard>
+      <Button VerticalAlignment="Top" HorizontalAlignment="Right"
+        ToolTip.Tip="关闭当前页面"
+        CornerRadius="36" Height="24" Width="24" Padding="0" Margin="5"
+        Click="CloseBtn_Click">
+        <micon:MaterialIcon Kind="Close"/>
+      </Button>
   </Grid>
 </UserControl>

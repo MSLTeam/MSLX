@@ -59,6 +59,16 @@ namespace MSLX.Desktop.Utils
             }
         }
 
+        public void NavigateRemove(SukiSideMenuItem sukiSideMenuItem)
+        {
+            if (sukiSideMenuItem != null)
+            {
+                if (SideMenu.SelectedItem == sukiSideMenuItem)
+                    SideMenu.SelectedItem = PageStore.MainPages.FirstOrDefault() ?? new SukiSideMenuItem();
+                PageStore.MainPages.Remove(sukiSideMenuItem);
+            }
+        }
+
         public int GetActivePageIndex()
         {
             var page = PageStore.MainPages.FirstOrDefault(p => p == SideMenu.SelectedItem);

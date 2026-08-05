@@ -284,7 +284,8 @@
 												   Maximum="65536"
 												   Value="1024"
 												   Increment="256"
-												   FormatString="0 MB"/>
+												   FormatString="0 MB"
+												   ShowButtonSpinner="True"/>
 								</StackPanel>
 
 								<!-- 最大内存 -->
@@ -295,7 +296,8 @@
 												   Maximum="65536"
 												   Value="4096"
 												   Increment="256"
-												   FormatString="0 MB"/>
+												   FormatString="0 MB"
+												   ShowButtonSpinner="True"/>
 								</StackPanel>
 							</Grid>
 
@@ -383,15 +385,12 @@
 								<TextBlock Text="正在请求服务器资源并部署实例，请勿关闭此页面..."
 										   Opacity="0.7" TextWrapping="Wrap"/>
 
-								<Grid ColumnDefinitions="*,Auto">
-									<ProgressBar x:Name="ProgressCreation"
-												 Height="10"
-												 Minimum="0"
-												 Maximum="100"
-												 Value="0"
-												 ShowProgressText="True"/>
-								</Grid>
-
+								<ProgressBar x:Name="ProgressCreation"
+											 Height="12"
+											 Minimum="0"
+											 Maximum="100"
+											 Value="0"
+											 ShowProgressText="True"/>
 								<Border CornerRadius="6"
 										BorderBrush="{DynamicResource SukiBorderBrush}"
 										BorderThickness="1"
@@ -424,7 +423,9 @@
 
 								<StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Center" Margin="0,15,0,0">
 									<Button Content="返回列表" Click="BtnReturnList_Click" Classes="Flat"/>
+									<!--
 									<Button Content="前往控制台" Classes="Primary" Click="BtnGoConsole_Click"/>
+									-->
 								</StackPanel>
 							</StackPanel>
 

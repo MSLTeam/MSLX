@@ -2,6 +2,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using System;
 
 namespace MSLX.Desktop.Utils
@@ -36,10 +37,60 @@ namespace MSLX.Desktop.Utils
             if (sender is not ScrollViewer scrollViewer) return;
             if (e.KeyModifiers.HasFlag(KeyModifiers.Shift) || e.KeyModifiers.HasFlag(KeyModifiers.Control)) return;
 
+            if (e.Source is Visual sourceVisual)
+            {
+                // 事件源不在当前 ScrollViewer 的顶层窗口中（如在 Popup 内），不处理
+                if (TopLevel.GetTopLevel(sourceVisual) != TopLevel.GetTopLevel(scrollViewer))
+                    return;
+
+                var (nestedScroller, isComboBox) = FindNestedScrollable(sourceVisual, scrollViewer);
+
+                if (isComboBox)
+                    return; // ComboBox 不穿透，保持原位（让ComboBox处理滚轮滚动事件）
+
+                if (nestedScroller != null)
+                {
+                    // 检查子 ScrollViewer 是否已经滚动到边界
+                    // 如果到了边界，让父视图继续滚动；否则让子控件自己处理
+                    var scrollingUp = e.Delta.Y > 0;
+                    var atBoundary = scrollingUp
+                        ? nestedScroller.Offset.Y <= 0
+                        : nestedScroller.Offset.Y >= nestedScroller.Extent.Height - nestedScroller.Viewport.Height;
+
+                    if (!atBoundary)
+                        return; // 没到边界，让子控件自己处理
+                }
+            }
+
             e.Handled = true;
 
             var smoothScroller = GetOrCreateScroller(scrollViewer);
-            smoothScroller.ScrollBy(-e.Delta.Y * 60); // 控制一次滚动的跨度的倍率
+
+            // 100代表滚动倍率
+            smoothScroller.ScrollBy(-e.Delta.Y * 80);
+        }
+
+        private static (ScrollViewer? scroller, bool isComboBox) FindNestedScrollable(Visual source, ScrollViewer parent)
+        {
+            var current = source.GetVisualParent();
+            ScrollViewer? foundScroller = null;
+            bool isComboBox = false;
+
+            while (current != null && current != parent)
+            {
+                if (current is ComboBox)
+                {
+                    isComboBox = true;
+                    break; // 遇到 ComboBox 就停止，不穿透
+                }
+                if (current is ScrollViewer sv)
+                {
+                    foundScroller = sv;
+                }
+                current = current.GetVisualParent();
+            }
+
+            return (foundScroller, isComboBox);
         }
 
         private static readonly AttachedProperty<SmoothScroller> ScrollerProperty =
@@ -61,6 +112,7 @@ namespace MSLX.Desktop.Utils
             private readonly ScrollViewer _scrollViewer;
             private double _targetOffset;
             private DispatcherTimer? _timer;
+            private bool _isAnimating;
 
             public SmoothScroller(ScrollViewer scrollViewer)
             {
@@ -69,22 +121,34 @@ namespace MSLX.Desktop.Utils
 
             public void ScrollBy(double delta)
             {
-                if (_timer == null || !_timer.IsEnabled)
+                if (!_isAnimating)
                 {
                     _targetOffset = _scrollViewer.Offset.Y;
                 }
 
                 _targetOffset += delta;
-                
+
                 var maxOffset = Math.Max(0, _scrollViewer.Extent.Height - _scrollViewer.Viewport.Height);
                 _targetOffset = Math.Max(0, Math.Min(_targetOffset, maxOffset));
 
-                if (_timer == null)
+                if (!_isAnimating)
                 {
-                    _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(16), DispatcherPriority.Render, OnTick);
+                    StartAnimation();
                 }
-                
+            }
+
+            private void StartAnimation()
+            {
+                _isAnimating = true;
+                _timer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(1), DispatcherPriority.Send, OnTick);
+
                 _timer.Start();
+            }
+
+            private void StopAnimation()
+            {
+                _isAnimating = false;
+                _timer?.Stop();
             }
 
             private void OnTick(object? sender, EventArgs e)
@@ -92,15 +156,16 @@ namespace MSLX.Desktop.Utils
                 var currentOffset = _scrollViewer.Offset.Y;
                 var diff = _targetOffset - currentOffset;
 
-                // 阻尼系数，决定顺滑度和停止速度
-                if (Math.Abs(diff) < 1.0)
+                // 0.3代表停止阈值
+                if (Math.Abs(diff) < 0.3)
                 {
                     _scrollViewer.Offset = new Vector(_scrollViewer.Offset.X, _targetOffset);
-                    _timer?.Stop();
+                    StopAnimation();
                     return;
                 }
 
-                _scrollViewer.Offset = new Vector(_scrollViewer.Offset.X, currentOffset + diff * 0.25);
+                // 0.06代表阻尼系数
+                _scrollViewer.Offset = new Vector(_scrollViewer.Offset.X, currentOffset + diff * 0.06);
             }
         }
     }
