@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
@@ -190,6 +190,7 @@ builder.Services.AddSingleton<IMCServerService,MCServerService>();
 builder.Services.AddSingleton<IDockerService,DockerService>();
 builder.Services.AddSingleton<SystemMonitor>();
 builder.Services.AddSingleton<CreationTaskTracker>();
+builder.Services.AddSingleton<AiService>();
 // 插件的一些服务
 var pluginManager = new PluginManager();
 builder.Services.AddSingleton(pluginManager);
@@ -435,6 +436,7 @@ app.MapHub<FrpConsoleHub>("/api/hubs/frpLogsHub");
 app.MapHub<InstanceConsoleHub>("/api/hubs/instanceControlHub");
 app.MapHub<SystemMonitorHub>("/api/hubs/system");
 app.MapHub<DaemonUpdateHub>("/api/hubs/daemonUpdate");
+app.MapHub<AiChatHub>("/api/hubs/aiChatHub");
 app.MapControllers();
 
 
