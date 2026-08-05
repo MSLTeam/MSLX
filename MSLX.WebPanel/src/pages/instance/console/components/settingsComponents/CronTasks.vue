@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
+import { useUserStore } from '@/store';
 import { useRoute } from 'vue-router';
 import { MessagePlugin, DialogPlugin, type FormRules, type FormInstanceFunctions } from 'tdesign-vue-next';
 import {
@@ -25,6 +26,7 @@ import { DOC_URLS } from '@/api/docs';
 
 const route = useRoute();
 const instanceId = computed(() => parseInt(route.params.serverId as string));
+const userStore = useUserStore();
 
 // --- 状态管理 ---
 const taskList = ref<CronTaskItemModel[]>([]);
@@ -43,16 +45,23 @@ const formData = ref({
   type: 'command',
   payload: '',
   enable: true,
+  runWhenOffline: true,
 });
 
 // 任务类型
-const taskTypeOptions = [
-  { label: '发送命令 (Command)', value: 'command' },
-  { label: '备份存档 (Backup)', value: 'backup' },
-  { label: '开启服务器 (Start)', value: 'start' },
-  { label: '停止服务器 (Stop)', value: 'stop' },
-  { label: '重启服务器 (Restart)', value: 'restart' },
-];
+const taskTypeOptions = computed(() => {
+  const options = [
+    { label: '发送命令 (Command)', value: 'command' },
+    { label: '备份存档 (Backup)', value: 'backup' },
+    { label: '开启服务器 (Start)', value: 'start' },
+    { label: '停止服务器 (Stop)', value: 'stop' },
+    { label: '重启服务器 (Restart)', value: 'restart' },
+  ];
+  if (userStore.isAdmin) {
+    options.push({ label: '执行脚本 (Shell Command)', value: 'shell' });
+  }
+  return options;
+});
 
 // 校验规则
 const rules: FormRules = {
@@ -62,7 +71,7 @@ const rules: FormRules = {
   payload: [
     {
       validator: (val) => {
-        if (formData.value.type === 'command' && !val)
+        if ((formData.value.type === 'command' || formData.value.type === 'shell') && !val)
           return { result: false, message: '命令内容不能为空', type: 'error' };
         return true;
       },
@@ -89,7 +98,7 @@ const fetchData = async () => {
 // 开启创建模式
 const handleStartCreate = () => {
   if (isCreating.value) return; // 已经打开了
-  formData.value = { id: '', name: '', cron: '', type: 'command', payload: '', enable: true };
+  formData.value = { id: '', name: '', cron: '', type: 'command', payload: '', enable: true, runWhenOffline: true };
   isEditingId.value = null;
   isCreating.value = true;
 };
@@ -103,6 +112,7 @@ const handleEdit = (item: CronTaskItemModel) => {
     type: item.type.toLowerCase(),
     payload: item.payload,
     enable: item.enable,
+    runWhenOffline: item.runWhenOffline ?? true,
   };
   isEditingId.value = item.id;
   isCreating.value = true; // 打开顶部容器
@@ -133,6 +143,7 @@ const handleSubmit = async () => {
         formData.value.payload,
         formData.value.type,
         formData.value.enable,
+        formData.value.runWhenOffline
       );
       MessagePlugin.success('更新成功');
     } else {
@@ -144,6 +155,7 @@ const handleSubmit = async () => {
         formData.value.payload,
         formData.value.type,
         formData.value.enable,
+        formData.value.runWhenOffline
       );
       MessagePlugin.success('创建成功');
     }
@@ -187,6 +199,7 @@ const getIconByType = (type: string) => {
   if (t === 'start') return PlayCircleIcon;
   if (t === 'stop') return StopCircleIcon;
   if (t === 'restart') return RefreshIcon;
+  if (t === 'shell') return CodeIcon;
   return CodeIcon;
 };
 const getColorByType = (type: string) => {
@@ -194,6 +207,7 @@ const getColorByType = (type: string) => {
   if (t === 'start') return 'success';
   if (t === 'stop') return 'danger';
   if (t === 'restart') return 'warning';
+  if (t === 'shell') return 'default';
   return 'primary';
 };
 
@@ -251,11 +265,11 @@ onMounted(fetchData);
             </div>
           </div>
 
-          <div v-if="formData.type === 'command' || formData.type === 'restart'" class="flex flex-col md:flex-row md:items-start justify-between p-5 border-b border-dashed border-zinc-100 dark:border-zinc-800">
+          <div v-if="formData.type === 'command' || formData.type === 'restart' || formData.type === 'shell'" class="flex flex-col md:flex-row md:items-start justify-between p-5 border-b border-dashed border-zinc-100 dark:border-zinc-800">
             <div class="flex-1 md:max-w-[40%] pr-0 md:pr-8 mb-3 md:mb-0">
-              <div class="text-sm font-bold text-[var(--td-text-color-primary)]">{{ formData.type === 'restart' ? '重启提示语' : '控制台命令' }}</div>
+              <div class="text-sm font-bold text-[var(--td-text-color-primary)]">{{ formData.type === 'restart' ? '重启提示语' : (formData.type === 'shell' ? 'Shell 命令' : '控制台命令') }}</div>
               <div class="text-xs text-[var(--td-text-color-secondary)] mt-1">
-                {{ formData.type === 'restart' ? '重启前发送给玩家的消息' : '直接输入内容，不需要加 /' }}
+                {{ formData.type === 'restart' ? '重启前发送给玩家的消息' : (formData.type === 'shell' ? '输入要执行的宿主机 Shell 命令' : '直接输入内容，不需要加 /') }}
               </div>
             </div>
             <div class="flex-1 md:max-w-[60%] w-full">
@@ -269,6 +283,14 @@ onMounted(fetchData);
               <div class="text-xs text-[var(--td-text-color-secondary)] mt-1">暂时禁用此任务而不删除它</div>
             </div>
             <t-switch v-model="formData.enable" />
+          </div>
+
+          <div v-if="formData.type === 'shell'" class="flex items-center justify-between p-5 border-t border-dashed border-zinc-100 dark:border-zinc-800">
+            <div class="flex-1 pr-8">
+              <div class="text-sm font-bold text-[var(--td-text-color-primary)]">离线执行</div>
+              <div class="text-xs text-[var(--td-text-color-secondary)] mt-1">实例未运行时，也会执行该命令</div>
+            </div>
+            <t-switch v-model="formData.runWhenOffline" />
           </div>
 
           <div class="px-5 py-4 bg-zinc-50/50 dark:bg-zinc-800/20 flex gap-3">

@@ -53,15 +53,22 @@ const formData = ref({
   type: 'command',
   payload: '',
   enable: true,
+  runWhenOffline: true,
 });
 
-const taskTypeOptions = [
-  { label: '发送命令 (Command)', value: 'command' },
-  { label: '备份存档 (Backup)', value: 'backup' },
-  { label: '开启服务器 (Start)', value: 'start' },
-  { label: '停止服务器 (Stop)', value: 'stop' },
-  { label: '重启服务器 (Restart)', value: 'restart' },
-];
+const taskTypeOptions = computed(() => {
+  const options = [
+    { label: '发送命令 (Command)', value: 'command' },
+    { label: '备份存档 (Backup)', value: 'backup' },
+    { label: '开启服务器 (Start)', value: 'start' },
+    { label: '停止服务器 (Stop)', value: 'stop' },
+    { label: '重启服务器 (Restart)', value: 'restart' },
+  ];
+  if (userStore.isAdmin) {
+    options.push({ label: '执行脚本 (Shell Command)', value: 'shell' });
+  }
+  return options;
+});
 
 const rules: FormRules = {
   instanceId: [{ required: true, message: '请选择归属实例', trigger: 'change' }],
@@ -71,7 +78,7 @@ const rules: FormRules = {
   payload: [
     {
       validator: (val) => {
-        if ((formData.value.type === 'command' || formData.value.type === 'restart') && !val) {
+        if ((formData.value.type === 'command' || formData.value.type === 'restart' || formData.value.type === 'shell') && !val) {
           return { result: false, message: '此类型下内容不能为空', type: 'error' };
         }
         return true;
@@ -148,6 +155,7 @@ const handleAdd = (instanceId?: number) => {
     type: 'command',
     payload: '',
     enable: true,
+    runWhenOffline: true,
   };
   formVisible.value = true;
 };
@@ -163,6 +171,7 @@ const handleEdit = (item: CronTaskItemModel) => {
     type: item.type.toLowerCase(),
     payload: item.payload,
     enable: item.enable,
+    runWhenOffline: item.runWhenOffline ?? true,
   };
   formVisible.value = true;
 };
@@ -174,12 +183,12 @@ const onDialogConfirm = async () => {
 
   submitLoading.value = true;
   try {
-    const { instanceId, id, name, cron, payload, type, enable } = formData.value;
+    const { instanceId, id, name, cron, payload, type, enable, runWhenOffline } = formData.value;
     if (isEdit.value) {
-      await updateCronTask(instanceId as number, id, name, cron, payload, type, enable);
+      await updateCronTask(instanceId as number, id, name, cron, payload, type, enable, runWhenOffline);
       MessagePlugin.success('更新成功');
     } else {
-      await addCronTask(instanceId as number, name, cron, payload, type, enable);
+      await addCronTask(instanceId as number, name, cron, payload, type, enable, runWhenOffline);
       MessagePlugin.success('创建成功');
     }
     formVisible.value = false;
@@ -194,7 +203,7 @@ const onDialogConfirm = async () => {
 // 切换启停状态
 const handleToggleEnable = async (item: CronTaskItemModel, val: boolean) => {
   try {
-    await updateCronTask(item.instanceId, item.id, item.name, item.cron, item.payload, item.type, val);
+    await updateCronTask(item.instanceId, item.id, item.name, item.cron, item.payload, item.type, val, item.runWhenOffline ?? true);
     MessagePlugin.success(`任务 [${item.name}] 已${val ? '启用' : '暂停'}`);
     item.enable = val;
   } catch (error: any) {
@@ -261,6 +270,7 @@ const getIconByType = (type: string) => {
   if (t === 'start') return PlayCircleIcon;
   if (t === 'stop') return StopCircleIcon;
   if (t === 'restart') return RefreshIcon;
+  if (t === 'shell') return CodeIcon;
   return CodeIcon;
 };
 const getColorByType = (type: string) => {
@@ -268,6 +278,7 @@ const getColorByType = (type: string) => {
   if (t === 'start') return 'success';
   if (t === 'stop') return 'danger';
   if (t === 'restart') return 'warning';
+  if (t === 'shell') return 'default';
   return 'primary';
 };
 
@@ -465,8 +476,8 @@ onMounted(() => {
         </t-form-item>
 
         <t-form-item
-          v-if="formData.type === 'command' || formData.type === 'restart'"
-          :label="formData.type === 'restart' ? '重启全服倒计时提示语' : '控制台执行命令'"
+          v-if="formData.type === 'command' || formData.type === 'restart' || formData.type === 'shell'"
+          :label="formData.type === 'restart' ? '重启全服倒计时提示语' : (formData.type === 'shell' ? '执行宿主机 Shell 命令' : '控制台执行命令')"
           name="payload"
         >
           <t-textarea
@@ -477,11 +488,20 @@ onMounted(() => {
         </t-form-item>
 
         <t-form-item label="初始状态" name="enable">
-          <div class="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-[var(--td-component-border)] w-full mt-1">
-            <t-switch v-model="formData.enable" />
-            <span class="text-xs font-medium text-[var(--td-text-color-secondary)]">
-              {{ formData.enable ? '保存后立即生效运行' : '保存后处于暂停状态' }}
-            </span>
+          <div class="flex flex-col gap-3 w-full">
+            <div class="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-[var(--td-component-border)] w-full mt-1">
+              <t-switch v-model="formData.enable" />
+              <span class="text-xs font-medium text-[var(--td-text-color-secondary)]">
+                {{ formData.enable ? '保存后立即生效运行' : '保存后处于暂停状态' }}
+              </span>
+            </div>
+            
+            <div v-if="formData.type === 'shell'" class="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-[var(--td-component-border)] w-full">
+              <t-switch v-model="formData.runWhenOffline" />
+              <span class="text-xs font-medium text-[var(--td-text-color-secondary)]">
+                {{ formData.runWhenOffline ? '实例未运行时，也会执行该命令' : '仅在实例运行时执行' }}
+              </span>
+            </div>
           </div>
         </t-form-item>
 

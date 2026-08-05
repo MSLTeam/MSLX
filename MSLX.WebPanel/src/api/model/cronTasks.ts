@@ -6,5 +6,6 @@ export interface CronTaskItemModel{
   enable: boolean;
   lastRunTime: string;
   instanceId: number;
-  type:string;
+  type: string;
+  runWhenOffline: boolean;
 }

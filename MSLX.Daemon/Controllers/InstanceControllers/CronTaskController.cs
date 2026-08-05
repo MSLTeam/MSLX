@@ -97,9 +97,20 @@ public class CronTaskController : ControllerBase
     [HttpPost("create")]
     public IActionResult CreateTask([FromBody] CreateTaskRequest request)
     {
-        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server",
+        var userId = User?.FindFirst("UserId")?.Value ?? "";
+        if (!IConfigBase.UserList.HasResourcePermission(userId, "server",
                 (int)request.InstanceId))
             return NotFound(ApiResponseService.NotFound());
+            
+        if (request.Type.ToLower() == "shell")
+        {
+            var currentUser = IConfigBase.UserList.GetUserById(userId);
+            if (currentUser?.Role != "admin")
+            {
+                return BadRequest(new ApiResponse<object> { Code = 403, Message = "仅管理员可创建 shell 类型的计划任务" });
+            }
+        }
+        
         try
         {
             var newTask = new ScheduleTask
@@ -110,6 +121,7 @@ public class CronTaskController : ControllerBase
                 Type = request.Type,
                 Payload = request.Payload,
                 Enable = request.Enable,
+                RunWhenOffline = request.RunWhenOffline,
                 LastRunTime = null
             };
 
@@ -143,9 +155,20 @@ public class CronTaskController : ControllerBase
     [HttpPost("update")]
     public IActionResult UpdateTask([FromBody] UpdateTaskRequest request)
     {
-        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server",
+        var userId = User?.FindFirst("UserId")?.Value ?? "";
+        if (!IConfigBase.UserList.HasResourcePermission(userId, "server",
                 (int)request.InstanceId))
             return NotFound(ApiResponseService.NotFound());
+            
+        if (request.Type.ToLower() == "shell")
+        {
+            var currentUser = IConfigBase.UserList.GetUserById(userId);
+            if (currentUser?.Role != "admin")
+            {
+                return BadRequest(new ApiResponse<object> { Code = 403, Message = "仅管理员可更新为 shell 类型的计划任务" });
+            }
+        }
+        
         try
         {
             // 检查任务是否存在
@@ -163,6 +186,7 @@ public class CronTaskController : ControllerBase
             existingTask.Type = request.Type;
             existingTask.Payload = request.Payload;
             existingTask.Enable = request.Enable;
+            existingTask.RunWhenOffline = request.RunWhenOffline;
 
             // 保存
             bool success = IConfigBase.TaskList.UpdateTask(existingTask);

@@ -13,17 +13,17 @@ export async function getAllCronTasks() {
   });
 }
 
-export async function addCronTask(instanceId: number, name: string, cron: string, payload: string,type:string,enable: boolean) {
+export async function addCronTask(instanceId: number, name: string, cron: string, payload: string, type: string, enable: boolean, runWhenOffline: boolean) {
   return await request.post({
     url: `/api/instance/tasks/create`,
-    data: { instanceId, name, cron, payload,type,enable },
+    data: { instanceId, name, cron, payload, type, enable, runWhenOffline },
   });
 }
 
-export async function updateCronTask(instanceId: number, id: string, name: string, cron: string, payload: string,type:string,enable: boolean) {
+export async function updateCronTask(instanceId: number, id: string, name: string, cron: string, payload: string, type: string, enable: boolean, runWhenOffline: boolean) {
   return await request.post({
     url: `/api/instance/tasks/update`,
-    data: { instanceId, id, name, cron, payload,type,enable },
+    data: { instanceId, id, name, cron, payload, type, enable, runWhenOffline },
   });
 }
 
