@@ -285,14 +285,14 @@ onMounted(() => {
                 >设置 MSLX 守护进程的监听地址。(需要重启守护进程生效，若不明白这是干什么的请一定不要修改！)</span
               >
             </template>
-            <div class="flex items-center gap-2 w-full sm:w-96">
-              <div class="flex-1">
+            <div class="flex items-center gap-1.5 sm:gap-2 w-full max-w-full sm:w-96">
+              <div class="flex-1 min-w-0">
                 <t-input v-model="sysData.listenHost" placeholder="localhost">
-                  <template #prefix-icon><server-icon class="opacity-60 text-zinc-400" /></template>
+                  <template #prefix-icon><server-icon class="opacity-60 text-zinc-400 hidden sm:block" /></template>
                 </t-input>
               </div>
-              <div class="text-[var(--td-text-color-secondary)] font-extrabold pb-1">:</div>
-              <div class="w-24 shrink-0">
+              <div class="text-[var(--td-text-color-secondary)] font-extrabold pb-1 shrink-0">:</div>
+              <div class="w-20 sm:w-24 shrink-0">
                 <t-input v-model="sysData.listenPort" placeholder="1027" align="center">
                   <template #prefix-icon
                     ><control-platform-icon class="opacity-60 text-zinc-400 hidden sm:block"
