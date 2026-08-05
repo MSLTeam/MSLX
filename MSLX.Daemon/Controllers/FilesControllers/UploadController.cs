@@ -1,4 +1,4 @@
-﻿using System.IO.Compression;
+using System.IO.Compression;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -346,6 +346,17 @@ public class UploadController : ControllerBase
                 }
             }
 
+            var metadataEntry = archive.Entries.FirstOrDefault(e => 
+                e.FullName.Equals($"{basePrefix}mslx-pack-metadata.json", StringComparison.OrdinalIgnoreCase));
+            
+            JObject metadata = null;
+            if (metadataEntry != null)
+            {
+                using var stream = metadataEntry.Open();
+                using var reader = new StreamReader(stream, System.Text.Encoding.UTF8);
+                metadata = JObject.Parse(reader.ReadToEnd());
+            }
+
             return Ok(new ApiResponse<JObject>
             {
                 Code = 200,
@@ -354,7 +365,8 @@ public class UploadController : ControllerBase
                 {
                     ["count"] = jarFiles.Count,
                     ["jars"] = JToken.FromObject(jarFiles),
-                    ["detectedRoot"] = basePrefix
+                    ["detectedRoot"] = basePrefix,
+                    ["metadata"] = metadata
                 }
             });
         }

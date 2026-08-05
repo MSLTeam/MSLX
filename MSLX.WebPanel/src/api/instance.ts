@@ -167,3 +167,14 @@ export async function getWorldSpawn(id: number) {
     url: `/api/instance/map/spawn/${id}`,
   });
 }
+
+// 导出服务端包
+export async function exportInstancePack(id: number, excludes: string[]) {
+  return await request.post<{ taskId: string }>({
+    url: `/api/instance/${id}/export`,
+    data: {
+      excludes: excludes
+    },
+    timeout: 10 * 1000 // 获取任务id应该很快
+  });
+}
