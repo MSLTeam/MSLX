@@ -24,6 +24,7 @@ const sysData = reactive<SettingsModel>({
   listenPort: 1027,
   oAuthMSLClientID: '',
   oAuthMSLClientSecret: '',
+  downloadThreadCount: 5,
 });
 
 const mirrorOptions = [
@@ -152,6 +153,34 @@ onMounted(() => {
               >
             </template>
             <t-select v-model="sysData.neoForgeInstallerMirrors" :options="mirrorOptions" class="!w-full sm:!w-72" />
+          </t-form-item>
+
+          <t-form-item label="下载线程数量">
+            <template #help>
+              <div class="flex flex-col gap-1 mt-1">
+                <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)]">
+                  设置文件下载时的并行分块线程数量 (1-8，默认 5)。
+                </span>
+                <span
+                  v-if="sysData.downloadThreadCount > 5"
+                  class="text-[11px] font-bold text-amber-500 flex items-center gap-1"
+                >
+                  ⚠️ 提示：线程数量过大可能导致拒绝连接或下载中断！
+                </span>
+              </div>
+            </template>
+            <div class="flex items-center gap-4 w-full sm:w-80">
+              <t-slider
+                v-model="sysData.downloadThreadCount"
+                :min="1"
+                :max="8"
+                :step="1"
+                class="flex-1"
+              />
+              <span class="text-xs font-bold w-8 text-right text-[var(--td-text-color-primary)]">
+                {{ sysData.downloadThreadCount }}
+              </span>
+            </div>
           </t-form-item>
 
           <template v-if="!isInternalNetwork()">

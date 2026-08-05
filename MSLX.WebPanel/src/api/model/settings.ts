@@ -7,6 +7,7 @@ export interface SettingsModel {
   listenPort: number;
   oAuthMSLClientID: string;
   oAuthMSLClientSecret: string;
+  downloadThreadCount: number;
 }
 
 export interface WebpanelSettingsModel {

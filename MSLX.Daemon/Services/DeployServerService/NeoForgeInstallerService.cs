@@ -193,8 +193,11 @@ public class NeoForgeInstallerService
             }
 
             ReportLog($"开始下载 {InstallMcVersion} 原版服务端核心···");
-            var downloader = new ParallelDownloader(parallelCount: 5);
-            var (success, errorMsg) = await downloader.DownloadFileAsync(vanillaUrl, serverJarPath,
+            // 原版服务端下载器
+            var serverDownloader = new ParallelDownloader();
+            // 库文件下载器 不启用分块
+            var libDownloader = new ParallelDownloader(parallelCount: 1, maxSimultaneousFiles: 3);
+            var (success, errorMsg) = await serverDownloader.DownloadFileAsync(vanillaUrl, serverJarPath,
                 // 进度回调
                 async (progress, speed) =>
                 {
@@ -257,7 +260,7 @@ public class NeoForgeInstallerService
             var fallbackDict = new Dictionary<string, string>(); // 相对路径/原始下载地址
 
             /* 下载用法
-            var taskCore = downloader.DownloadFileAsync(
+            var taskCore = libDownloader.DownloadFileAsync(
                 "http://url/core.jar",
                 "path/core.jar",
                 (p, s) => Console.WriteLine($"Core: {p}%") // 简单日志
@@ -309,7 +312,7 @@ public class NeoForgeInstallerService
                     ReportLog($"[ {InstallName} 运行库]下载：" + path);
 
                     // 添加下载项
-                    var taskLib = downloader.DownloadFileAsync(
+                    var taskLib = libDownloader.DownloadFileAsync(
                         _dlurl,
                         Path.Combine(InstallBasePath, "libraries", path),
                         async (progress, speed) => { ReportLog($"正在下载 {path} 进度: {progress:0.00}% | 下载速度: {speed}"); }
@@ -345,7 +348,7 @@ public class NeoForgeInstallerService
                     ReportLog($"[ {InstallName} 运行库]下载：" + path);
 
                     // 添加下载项
-                    var taskLib = downloader.DownloadFileAsync(
+                    var taskLib = libDownloader.DownloadFileAsync(
                         _dlurl,
                         Path.Combine(InstallBasePath, "libraries", path),
                         async (progress, speed) => { ReportLog($"正在下载 {path} 进度: {progress:0.00}% | 下载速度: {speed}"); }
@@ -387,7 +390,7 @@ public class NeoForgeInstallerService
                     ReportLog($"[ {InstallName} 运行库]下载：" + libPath);
 
                     // 添加下载项
-                    var taskLib = downloader.DownloadFileAsync(
+                    var taskLib = libDownloader.DownloadFileAsync(
                         _dlurl,
                         Path.Combine(InstallBasePath, "libraries", libPath),
                         async (progress, speed) =>
@@ -431,7 +434,7 @@ public class NeoForgeInstallerService
                 var patchTasks = new List<Task<(bool Success, string ErrorMessage)>>();
                 foreach (var kv in missingFiles)
                 {
-                    patchTasks.Add(downloader.DownloadFileAsync(
+                    patchTasks.Add(libDownloader.DownloadFileAsync(
                         ReplaceStr(kv.Value),
                         Path.Combine(InstallBasePath, "libraries", kv.Key),
                         async (progress, speed) =>
@@ -646,7 +649,7 @@ public class NeoForgeInstallerService
 
                             // 下载到指定位置
                             ReportLog($"映射表文件下载到: {mappings_file_path}");
-                            var (suc_mojmap, err_mojmap) = await downloader.DownloadFileAsync(
+                            var (suc_mojmap, err_mojmap) = await libDownloader.DownloadFileAsync(
                                 ReplaceStr(mappingsUrl),
                                 mappings_file_path,
                                 // 进度回调

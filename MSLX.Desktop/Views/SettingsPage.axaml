@@ -187,6 +187,27 @@
                                     <ComboBoxItem Content="MSL镜像源 - 备用" Tag="MSL Mirrors Backup"/>
                                 </ComboBox>
                             </Grid>
+
+                            <Separator Opacity="0.1" Margin="15,0"/>
+
+                            <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                                <icons:MaterialIcon Kind="Download" Classes="SettingIcon"/>
+                                <StackPanel Grid.Column="1" Margin="15,0">
+                                    <TextBlock Text="下载线程数量" Classes="SettingTitle"/>
+                                    <TextBlock Text="文件下载时的并行分块线程数 (1-8，默认 5)" Classes="SettingDesc"/>
+                                    <TextBlock Name="TxtDownloadThreadWarning" 
+                                               Text="⚠️ 提示：线程数量过大可能导致拒绝连接或下载中断！" 
+                                               FontSize="11" 
+                                               Foreground="OrangeRed" 
+                                               FontWeight="SemiBold"
+                                               Margin="0,4,0,0" 
+                                               IsVisible="False"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                                    <Slider Name="SliderDownloadThreadCount" Minimum="1" Maximum="8" Value="5" Width="140" TickFrequency="1" IsSnapToTickEnabled="True" />
+                                    <TextBlock Name="TxtDownloadThreadCountVal" Text="5" Width="20" VerticalAlignment="Center" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Grid>
                         </StackPanel>
                     </Border>
 

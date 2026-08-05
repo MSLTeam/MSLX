@@ -1,4 +1,4 @@
-﻿namespace MSLX.Desktop.Models
+namespace MSLX.Desktop.Models
 {
     public class SettingsModel
     {
@@ -11,6 +11,8 @@
         // 以下字段在UI中隐藏，但必须在保存时回传
         public string OAuthMSLClientID { get; set; } = string.Empty;
         public string OAuthMSLClientSecret { get; set; } = string.Empty;
+
+        public int DownloadThreadCount { get; set; } = 5;
     }
 
     // 用于下拉框的选项类

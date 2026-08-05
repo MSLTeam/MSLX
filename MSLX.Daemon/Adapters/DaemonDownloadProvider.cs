@@ -5,12 +5,7 @@ namespace MSLX.Daemon.Adapters;
 
 public class DaemonDownloadProvider : IDownloadService
 {
-    private readonly ParallelDownloader _downloader;
-
-    public DaemonDownloadProvider()
-    {
-        _downloader = new ParallelDownloader(); 
-    }
+    private readonly ParallelDownloader _downloader = new ParallelDownloader();
 
     public Task<(bool Success, string ErrorMessage)> DownloadFileAsync(
         string url, 
