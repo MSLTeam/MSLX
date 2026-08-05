@@ -420,17 +420,16 @@ public class AppInfoController : ControllerBase
             throw new FileNotFoundException("未找到当前架构对应的 Homebrew 可执行文件。", brewPath);
         }
 
-        await SendUpdateProgressAsync(0, "0 KB/s", "upgrading", "正在通过 Homebrew 更新 MSLX-Daemon...");
+        await SendUpdateProgressAsync(0, "0 KB/s", "updating_tap", "正在更新 Homebrew 软件源信息...");
 
-        // 先等待升级成功，再执行服务重启，等价于 shell 命令中的 &&。
+        // 先更新软件源信息，确保后续升级使用最新的 Formula 元数据。
+        var updateResult = await RunProcessAsync(brewPath, "update");
+        EnsureHomebrewCommandSucceeded("brew update", updateResult);
+
+        await SendUpdateProgressAsync(25, "0 KB/s", "upgrading", "正在通过 Homebrew 更新 MSLX-Daemon...");
+
         var upgradeResult = await RunProcessAsync(brewPath, "upgrade", "mslx-daemon");
-        if (upgradeResult.ExitCode != 0)
-        {
-            string errorMessage = string.IsNullOrWhiteSpace(upgradeResult.StandardError)
-                ? upgradeResult.StandardOutput
-                : upgradeResult.StandardError;
-            throw new Exception($"Homebrew 更新失败（退出代码 {upgradeResult.ExitCode}）：{errorMessage.Trim()}");
-        }
+        EnsureHomebrewCommandSucceeded("brew upgrade mslx-daemon", upgradeResult);
 
         if (_serverService.HasRunningServers())
         {
@@ -447,6 +446,18 @@ public class AppInfoController : ControllerBase
         {
             throw new Exception("无法启动 Homebrew 服务重启命令。");
         }
+    }
+
+    private static void EnsureHomebrewCommandSucceeded(
+        string command,
+        (int ExitCode, string StandardOutput, string StandardError) result)
+    {
+        if (result.ExitCode == 0) return;
+
+        string errorMessage = string.IsNullOrWhiteSpace(result.StandardError)
+            ? result.StandardOutput
+            : result.StandardError;
+        throw new Exception($"{command} 执行失败（退出代码 {result.ExitCode}）：{errorMessage.Trim()}");
     }
 
     private static async Task<(int ExitCode, string StandardOutput, string StandardError)> RunProcessAsync(
