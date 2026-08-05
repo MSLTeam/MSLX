@@ -2,6 +2,7 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using System;
 
 namespace MSLX.Desktop.Utils
@@ -36,12 +37,60 @@ namespace MSLX.Desktop.Utils
             if (sender is not ScrollViewer scrollViewer) return;
             if (e.KeyModifiers.HasFlag(KeyModifiers.Shift) || e.KeyModifiers.HasFlag(KeyModifiers.Control)) return;
 
+            if (e.Source is Visual sourceVisual)
+            {
+                // 事件源不在当前 ScrollViewer 的顶层窗口中（如在 Popup 内），不处理
+                if (TopLevel.GetTopLevel(sourceVisual) != TopLevel.GetTopLevel(scrollViewer))
+                    return;
+
+                var (nestedScroller, isComboBox) = FindNestedScrollable(sourceVisual, scrollViewer);
+
+                if (isComboBox)
+                    return; // ComboBox 不穿透，保持原位（让ComboBox处理滚轮滚动事件）
+
+                if (nestedScroller != null)
+                {
+                    // 检查子 ScrollViewer 是否已经滚动到边界
+                    // 如果到了边界，让父视图继续滚动；否则让子控件自己处理
+                    var scrollingUp = e.Delta.Y > 0;
+                    var atBoundary = scrollingUp
+                        ? nestedScroller.Offset.Y <= 0
+                        : nestedScroller.Offset.Y >= nestedScroller.Extent.Height - nestedScroller.Viewport.Height;
+
+                    if (!atBoundary)
+                        return; // 没到边界，让子控件自己处理
+                }
+            }
+
             e.Handled = true;
 
             var smoothScroller = GetOrCreateScroller(scrollViewer);
 
             // 100代表滚动倍率
             smoothScroller.ScrollBy(-e.Delta.Y * 80);
+        }
+
+        private static (ScrollViewer? scroller, bool isComboBox) FindNestedScrollable(Visual source, ScrollViewer parent)
+        {
+            var current = source.GetVisualParent();
+            ScrollViewer? foundScroller = null;
+            bool isComboBox = false;
+
+            while (current != null && current != parent)
+            {
+                if (current is ComboBox)
+                {
+                    isComboBox = true;
+                    break; // 遇到 ComboBox 就停止，不穿透
+                }
+                if (current is ScrollViewer sv)
+                {
+                    foundScroller = sv;
+                }
+                current = current.GetVisualParent();
+            }
+
+            return (foundScroller, isComboBox);
         }
 
         private static readonly AttachedProperty<SmoothScroller> ScrollerProperty =
