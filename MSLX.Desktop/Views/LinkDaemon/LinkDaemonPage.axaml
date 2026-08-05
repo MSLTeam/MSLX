@@ -16,7 +16,7 @@
               </StackPanel>
               <StackPanel Spacing="5" VerticalAlignment="Center">
                   <TextBlock Text="API Key：" VerticalAlignment="Center" FontWeight="DemiBold"/>
-                  <TextBox x:Name="DaemonKeyTextBox" Width="300" Watermark="请输入API Key"/>
+                  <TextBox x:Name="DaemonKeyTextBox" Width="300" PlaceholderText="请输入API Key"/>
               </StackPanel>
               <CheckBox x:Name="RememberLinkInfo" IsChecked="True" Content="记住连接信息，以后自动链接"/>
           </StackPanel>

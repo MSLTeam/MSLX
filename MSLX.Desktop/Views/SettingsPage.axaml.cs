@@ -13,13 +13,9 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Styling;
 using Avalonia.Media;
-using Avalonia.Styling;
-using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using Avalonia.Controls.ApplicationLifetimes;
 using SukiUI;
-using SukiUI.Controls;
-using SukiUI.Enums;
 using SukiUI.Models;
 
 namespace MSLX.Desktop.Views;
