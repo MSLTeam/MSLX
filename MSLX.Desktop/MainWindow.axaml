@@ -1,4 +1,4 @@
-<suki:SukiWindow xmlns="https://github.com/avaloniaui"
+﻿<suki:SukiWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:local="using:MSLX.Desktop"
@@ -7,8 +7,11 @@
         xmlns:micon="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="MSLX.Desktop.MainWindow"
-        Title="MSLX.Desktop"
+        Title="MSLX"
         BackgroundAnimationEnabled="True">
+    <suki:SukiWindow.LogoContent>
+        <Image Source="avares://MSLX-Desktop/Assets/icon.ico" Width="22" Height="22" Margin="4,0,4,0"/>
+    </suki:SukiWindow.LogoContent>
     <suki:SukiWindow.Hosts>
 		<suki:SukiDialogHost Name="DialogManager"/>
 		<suki:SukiToastHost Name="ToastManager" Position="TopRight"/>
@@ -17,10 +20,18 @@
                        IsSelectedItemContentMovable="False">
         <suki:SukiSideMenu.HeaderContent>
 			<Grid RowDefinitions="*,auto">
-				<Image Source="avares://MSLX-Desktop/Assets/icon.ico" Width="72" Height="72" Margin="5"/>
+				<Grid Width="72" Height="72" Margin="5">
+					<Image x:Name="MenuLogoImage" Source="avares://MSLX-Desktop/Assets/icon.ico" Width="72" Height="72"/>
+					<Ellipse x:Name="MenuAvatarEllipse" Width="72" Height="72" IsVisible="False"
+							 RenderOptions.BitmapInterpolationMode="HighQuality">
+						<Ellipse.Fill>
+							<ImageBrush Stretch="UniformToFill"/>
+						</Ellipse.Fill>
+					</Ellipse>
+				</Grid>
                 <StackPanel Grid.Row="1">
-					<TextBlock Grid.Row="1" Text="MSLX" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    <TextBlock Text="海内存知己，天涯若比邻" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,5,0,20"/>
+					<TextBlock x:Name="MenuUsernameText" Grid.Row="1" Text="MSLX" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock Text="MSLX Desktop" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,5,0,20"/>
                 </StackPanel>
             </Grid>
         </suki:SukiSideMenu.HeaderContent>

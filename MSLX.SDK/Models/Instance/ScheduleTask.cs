@@ -12,6 +12,7 @@ public class ScheduleTask
     public string Cron { get; set; } = "";   // Cron 表达式
     public string Payload { get; set; } = "";// 负载
     public bool Enable { get; set; } = true; // 是否启用
+    public bool RunWhenOffline { get; set; } = true; // 实例未运行时是否执行
     public DateTime? LastRunTime { get; set; } // 最后一次运行时间
 }
 
@@ -28,12 +29,14 @@ public class CreateTaskRequest
     public string Cron { get; set; } = ""; 
     
     [Required]
-    [AllowedValues("command", "start", "stop", "restart","backup", ErrorMessage = "不支持的任务类型，仅支持: command, start, stop, restart, backup")]
+    [AllowedValues("command", "start", "stop", "restart", "backup", "shell", ErrorMessage = "不支持的任务类型，仅支持: command, start, stop, restart, backup, shell")]
     public string Type { get; set; } = "command"; 
         
     public string Payload { get; set; } = "";
         
     public bool Enable { get; set; } = true;
+    
+    public bool RunWhenOffline { get; set; } = true;
     
     public class CronExpressionAttribute : ValidationAttribute
     {

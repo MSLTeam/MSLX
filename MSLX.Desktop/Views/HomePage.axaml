@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
 			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -7,17 +7,176 @@
 			 xmlns:micon="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
 			 xmlns:ctrl="using:MSLX.Desktop.Controls"
 			 xmlns:avedit="https://github.com/avaloniaui/avaloniaedit"
-			 mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
+			 mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
 			 x:Class="MSLX.Desktop.Views.HomePage">
-	<Grid RowDefinitions="*,auto">
-		<suki:GlassCard Margin="12" Padding="20">
+
+	<UserControl.Styles>
+		<Style Selector="Border.InfoItem">
+			<Setter Property="Background" Value="{DynamicResource SukiLightBackground}"/>
+			<Setter Property="BorderBrush" Value="{DynamicResource SukiControlBorderBrush}"/>
+			<Setter Property="BorderThickness" Value="1"/>
+			<Setter Property="CornerRadius" Value="12"/>
+			<Setter Property="Padding" Value="12,10"/>
+			<Setter Property="Margin" Value="4"/>
+			<Setter Property="Transitions">
+				<Transitions>
+					<BrushTransition Property="BorderBrush" Duration="0:0:0.2"/>
+					<BrushTransition Property="Background" Duration="0:0:0.2"/>
+				</Transitions>
+			</Setter>
+		</Style>
+		<Style Selector="Border.InfoItem:pointerover">
+			<Setter Property="BorderBrush" Value="{DynamicResource SukiPrimaryColor}"/>
+		</Style>
+		<Style Selector="Border.Clickable">
+			<Setter Property="Cursor" Value="Hand"/>
+		</Style>
+	</UserControl.Styles>
+
+	<Grid RowDefinitions="Auto,Auto,*,Auto">
+		<!-- Banner 卡片 -->
+		<suki:GlassCard Grid.Row="0" Margin="12,12,12,6" Padding="16">
+			<Grid ColumnDefinitions="Auto,*">
+				<!-- 头像容器 -->
+				<Grid Width="64" Height="64" Margin="0,0,16,0" VerticalAlignment="Center">
+					<!-- 默认/占位图标背景 -->
+					<Border Width="64" Height="64" CornerRadius="32" 
+							Background="{DynamicResource SukiLightBackground}" 
+							BorderBrush="{DynamicResource SukiPrimaryColor}" 
+							BorderThickness="2">
+						<micon:MaterialIcon Kind="Account" Width="36" Height="36" Foreground="{DynamicResource SukiPrimaryColor}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+					</Border>
+
+					<!-- 网络/自定义图片头像 -->
+					<Ellipse x:Name="AvatarEllipse" Width="64" Height="64" IsVisible="False"
+							 RenderOptions.BitmapInterpolationMode="HighQuality">
+						<Ellipse.Fill>
+							<ImageBrush Stretch="UniformToFill"/>
+						</Ellipse.Fill>
+					</Ellipse>
+				</Grid>
+
+				<!-- 问候语与一言 (Hitokoto) -->
+				<StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="6">
+					<StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+						<micon:MaterialIcon Kind="WeatherSunny" Width="20" Height="20" Foreground="#F59E0B" VerticalAlignment="Center"/>
+						<TextBlock Text="你好，" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+						<TextBlock x:Name="UsernameText" Text="管理员" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource SukiPrimaryColor}" VerticalAlignment="Center"/>
+						<Border x:Name="UserRoleBadge" Background="#10B981" CornerRadius="10" Padding="8,2" VerticalAlignment="Center">
+							<TextBlock x:Name="UserRoleText" Text="管理员" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+						</Border>
+					</StackPanel>
+					<TextBlock x:Name="HitokotoText" Text="Loading..."
+							   FontSize="13" Foreground="{DynamicResource SukiLowText}" TextWrapping="Wrap" FontStyle="Italic"/>
+				</StackPanel>
+			</Grid>
+		</suki:GlassCard>
+
+		<!-- 信息卡片 (Info Card) -->
+		<suki:GlassCard Grid.Row="1" Margin="12,6,12,6" Padding="12">
+			<UniformGrid Columns="4">
+				<!-- 在线实例 -->
+				<Border Classes="InfoItem Clickable" PointerPressed="OnlineInstances_PointerPressed" ToolTip.Tip="点击查看实例列表">
+					<Grid ColumnDefinitions="Auto,*,Auto">
+						<StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+							<micon:MaterialIcon Kind="Server" Width="18" Height="18" Foreground="{DynamicResource SukiLowText}"/>
+							<TextBlock Text="在线实例：" FontSize="13" Foreground="{DynamicResource SukiLowText}" VerticalAlignment="Center"/>
+						</StackPanel>
+						<TextBlock Grid.Column="2" x:Name="OnlineInstancesText" Text="0 / 0" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right"/>
+					</Grid>
+				</Border>
+
+				<!-- NET环境 -->
+				<Border Classes="InfoItem">
+					<Grid ColumnDefinitions="Auto,*,Auto">
+						<StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+							<micon:MaterialIcon Kind="CodeTags" Width="18" Height="18" Foreground="{DynamicResource SukiLowText}"/>
+							<TextBlock Text="NET环境：" FontSize="13" Foreground="{DynamicResource SukiLowText}" VerticalAlignment="Center"/>
+						</StackPanel>
+						<TextBlock Grid.Column="2" x:Name="NetVersionText" Text="Loading..." FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right"/>
+					</Grid>
+				</Border>
+
+				<!-- 客户端版本 -->
+				<Border Classes="InfoItem">
+					<Grid ColumnDefinitions="Auto,*,Auto">
+						<StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+							<micon:MaterialIcon Kind="ViewDashboardOutline" Width="18" Height="18" Foreground="{DynamicResource SukiLowText}"/>
+							<TextBlock Text="客户端版本：" FontSize="13" Foreground="{DynamicResource SukiLowText}" VerticalAlignment="Center"/>
+						</StackPanel>
+						<TextBlock Grid.Column="2" x:Name="DesktopVersionText" Text="v1.0.0" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right"/>
+					</Grid>
+				</Border>
+
+				<!-- 节点版本 -->
+				<Border Classes="InfoItem">
+					<Grid ColumnDefinitions="Auto,*,Auto">
+						<StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+							<micon:MaterialIcon Kind="CloudOutline" Width="18" Height="18" Foreground="{DynamicResource SukiLowText}"/>
+							<TextBlock Text="节点版本：" FontSize="13" Foreground="{DynamicResource SukiLowText}" VerticalAlignment="Center"/>
+						</StackPanel>
+						<TextBlock Grid.Column="2" x:Name="DaemonVersionText" Text="v1.0.0" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right"/>
+					</Grid>
+				</Border>
+
+				<!-- 主机名 -->
+				<Border Classes="InfoItem">
+					<Grid ColumnDefinitions="Auto,*,Auto">
+						<StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+							<micon:MaterialIcon Kind="Monitor" Width="18" Height="18" Foreground="{DynamicResource SukiLowText}"/>
+							<TextBlock Text="主机名：" FontSize="13" Foreground="{DynamicResource SukiLowText}" VerticalAlignment="Center"/>
+						</StackPanel>
+						<TextBlock Grid.Column="2" x:Name="HostnameText" Text="Loading..." FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right" TextTrimming="CharacterEllipsis" MaxWidth="120"/>
+					</Grid>
+				</Border>
+
+				<!-- 系统类型 -->
+				<Border Classes="InfoItem">
+					<Grid ColumnDefinitions="Auto,*,Auto">
+						<StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+							<micon:MaterialIcon Kind="Console" Width="18" Height="18" Foreground="{DynamicResource SukiLowText}"/>
+							<TextBlock Text="系统类型：" FontSize="13" Foreground="{DynamicResource SukiLowText}" VerticalAlignment="Center"/>
+						</StackPanel>
+						<TextBlock Grid.Column="2" x:Name="OsTypeText" Text="Loading..." FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right" TextTrimming="CharacterEllipsis" MaxWidth="120"/>
+					</Grid>
+				</Border>
+
+				<!-- 系统版本 -->
+				<Border Classes="InfoItem">
+					<Grid ColumnDefinitions="Auto,*,Auto">
+						<StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+							<micon:MaterialIcon Kind="CogOutline" Width="18" Height="18" Foreground="{DynamicResource SukiLowText}"/>
+							<TextBlock Text="系统版本：" FontSize="13" Foreground="{DynamicResource SukiLowText}" VerticalAlignment="Center"/>
+						</StackPanel>
+						<TextBlock Grid.Column="2" x:Name="OsVersionText" Text="Loading..." FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right" TextTrimming="CharacterEllipsis" MaxWidth="120"/>
+					</Grid>
+				</Border>
+
+				<!-- 版本匹配 -->
+				<Border Classes="InfoItem">
+					<Grid ColumnDefinitions="Auto,*,Auto">
+						<StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+							<micon:MaterialIcon Kind="CheckCircleOutline" Width="18" Height="18" Foreground="{DynamicResource SukiLowText}"/>
+							<TextBlock Text="版本匹配：" FontSize="13" Foreground="{DynamicResource SukiLowText}" VerticalAlignment="Center"/>
+						</StackPanel>
+						<Border Grid.Column="2" x:Name="VersionMatchBadge" CornerRadius="10" Padding="8,2" VerticalAlignment="Center" Background="#10B981">
+							<TextBlock x:Name="VersionMatchText" Text="正确匹配" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+						</Border>
+					</Grid>
+				</Border>
+			</UniformGrid>
+		</suki:GlassCard>
+
+		<!-- 公告 -->
+		<suki:GlassCard Grid.Row="2" Margin="12,6,12,6" Padding="20">
 			<Grid RowDefinitions="auto,*">
 				<TextBlock Classes="h3" Text="公告"/>
 				<ctrl:MagicMarkdown Grid.Row="1" x:Name="MarkdownViewer"/>
 			</Grid>
 		</suki:GlassCard>
 
-		<UniformGrid Grid.Row="1" Columns="3" Height="50" Margin="12,0,12,12" HorizontalAlignment="Right" VerticalAlignment="Center">
+		<!-- 底部操作按钮 -->
+		<UniformGrid Grid.Row="3" Columns="3" Height="50" Margin="12,0,12,12" HorizontalAlignment="Right" VerticalAlignment="Center">
 			<Button x:Name="DocsBtn" Margin="5" Classes="Outlined" BorderThickness="1">
 				<StackPanel Orientation="Horizontal" Spacing="5">
 					<micon:MaterialIcon Kind="BookOpenOutline" Width="16" Height="16"/>

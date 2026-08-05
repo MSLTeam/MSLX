@@ -102,7 +102,7 @@ public class OfflineDownloadController : ControllerBase
 
             string savePath = checkTarget.FullPath;
 
-            var downloader = new ParallelDownloader(parallelCount: 8, maxSimultaneousFiles: 1);
+            var downloader = new ParallelDownloader(maxSimultaneousFiles: 1);
 
             var (success, errorMessage) = await downloader.DownloadFileAsync(
                 url: request.Url,

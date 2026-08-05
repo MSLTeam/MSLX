@@ -156,6 +156,37 @@ namespace MSLX.Daemon.Services
                         _mcService.StartBackupServer(task.InstanceId);
                         break;
                     
+                    case "shell":
+                        if (!task.RunWhenOffline && !_mcService.IsServerRunning(task.InstanceId))
+                        {
+                            _logger.LogInformation($"任务 [{task.Name}] 取消执行：实例 {task.InstanceId} 处于离线状态，且配置为未运行时不执行。");
+                            break;
+                        }
+                        
+                        var serverInfo = IConfigBase.ServerList.GetServer(task.InstanceId);
+                        if (serverInfo != null && !string.IsNullOrWhiteSpace(serverInfo.Base))
+                        {
+                            bool isWindows = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows);
+                            var startInfo = new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = isWindows ? "cmd.exe" : "/bin/bash",
+                                Arguments = isWindows ? $"/c \"{task.Payload}\"" : $"-c \"{task.Payload.Replace("\"", "\\\"")}\"",
+                                WorkingDirectory = serverInfo.Base,
+                                RedirectStandardOutput = true,
+                                RedirectStandardError = true,
+                                UseShellExecute = false,
+                                CreateNoWindow = true
+                            };
+                            
+                            using var process = System.Diagnostics.Process.Start(startInfo);
+                            _logger.LogInformation($"任务 [{task.Name}] 执行指令于: {serverInfo.Base}");
+                        }
+                        else
+                        {
+                            _logger.LogWarning($"任务 [{task.Name}] 执行失败: 实例 ID {task.InstanceId} 不存在或工作路径为空");
+                        }
+                        break;
+                    
                     default:
                         _logger.LogWarning($"未知的任务类型: {task.Type}");
                         break;

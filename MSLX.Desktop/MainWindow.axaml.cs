@@ -15,9 +15,12 @@ namespace MSLX.Desktop;
 
 public partial class MainWindow : SukiWindow
 {
+    public static MainWindow? Instance { get; private set; }
+
     public MainWindow()
     {
         InitializeComponent();
+        Instance = this;
 
         ApplyVisualSettings();
 
@@ -29,6 +32,44 @@ public partial class MainWindow : SukiWindow
         SideMenuHelper.Current.SideMenu = this.MainSideMenu;
         this.MainSideMenu.ItemsSource = PageStore.MainPages;
         SideMenuHelper.Current?.HideMainPages(0);
+    }
+
+    public void UpdateUserHeader(string username, string? avatarUrl)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            if (!string.IsNullOrEmpty(username))
+            {
+                MenuUsernameText.Text = username;
+            }
+
+            if (!string.IsNullOrWhiteSpace(avatarUrl))
+            {
+                _ = LoadMenuAvatarAsync(avatarUrl);
+            }
+        });
+    }
+
+    private async System.Threading.Tasks.Task LoadMenuAvatarAsync(string avatarUrl)
+    {
+        try
+        {
+            using var client = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            var data = await client.GetByteArrayAsync(avatarUrl);
+            using var stream = new System.IO.MemoryStream(data);
+            var bitmap = new Avalonia.Media.Imaging.Bitmap(stream);
+
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+            {
+                MenuLogoImage.IsVisible = false;
+                MenuAvatarEllipse.Fill = new Avalonia.Media.ImageBrush(bitmap) { Stretch = Avalonia.Media.Stretch.UniformToFill };
+                MenuAvatarEllipse.IsVisible = true;
+            });
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"加载菜单头像失败: {ex.Message}");
+        }
     }
 
     private void MainWindow_Closing(object? sender, WindowClosingEventArgs e)

@@ -10,6 +10,7 @@ export interface UploadPackageCheckJarResponse {
   count: number;
   jars: string[];
   detectedRoot: string;
+  metadata?: Record<string, any>;
 }
 
 export interface FilesListModel{

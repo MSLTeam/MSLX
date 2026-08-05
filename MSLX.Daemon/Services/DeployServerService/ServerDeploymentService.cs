@@ -1,4 +1,4 @@
-﻿using CliWrap;
+using CliWrap;
 using CliWrap.EventStream;
 using Downloader;
 using MSLX.Daemon.Utils;
@@ -21,7 +21,7 @@ public class ServerDeploymentService
 {
     private readonly ILogger<ServerDeploymentService> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly ParallelDownloader _parallelDownloader = new ParallelDownloader(parallelCount: 8, maxSimultaneousFiles: 3);
+    private readonly ParallelDownloader _parallelDownloader = new ParallelDownloader(maxSimultaneousFiles: 3);
 
     // 定义进度回调委托
     public delegate Task ReportProgress(string message, double? progress, bool isError = false, Exception? ex = null);
@@ -325,6 +325,7 @@ public class ServerDeploymentService
     public async Task DeployCoreAsync(string serverId, string baseDir, string coreName, string? userUploadKey,
         string? downloadUrl, string? sha256, ReportProgress report, CancellationToken? ct)
     {
+        await MSLApi.RefreshDownloadDomainAsync();
         string destPath = Path.Combine(baseDir, coreName);
         Directory.CreateDirectory(baseDir);
 
@@ -729,9 +730,11 @@ public class ServerDeploymentService
     {
         if (string.IsNullOrEmpty(url)) return false;
 
+        int threadCount = ParallelDownloader.GetConfiguredThreadCount();
         var downloadOpt = new DownloadConfiguration()
         {
-            ChunkCount = 8,
+            ChunkCount = threadCount,
+            ParallelCount = threadCount,
             ParallelDownload = true,
             MaxTryAgainOnFailure = 5,
             RequestConfiguration =

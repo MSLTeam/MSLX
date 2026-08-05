@@ -72,7 +72,10 @@ const detectedGameVersion = computed(() => {
   return parseMcVersion(formData.value.core);
 });
 
+const metadataJavaVersion = ref<string | null>(null);
+
 const recommendedJavaVersion = computed(() => {
+  if (metadataJavaVersion.value) return metadataJavaVersion.value;
   const version = detectedGameVersion.value;
   if (!version) return null;
   const rec = getRecommendedJava(version);
@@ -466,6 +469,35 @@ const onFileChange = async (event: Event) => {
   }
 };
 
+// 处理导入信息
+const packMetadataRef = ref<any>(null);
+const showMetadataDialog = ref(false);
+
+const applyMetadata = () => {
+  const meta = packMetadataRef.value;
+  if (!meta) return;
+
+  const config = meta.config;
+  if (!config) return;
+
+  const javaVer = config.java || config.Java;
+  const minM = config.minM || config.MinM;
+  const maxM = config.maxM || config.MaxM;
+  const args = config.args || config.Args;
+
+  if (minM) formData.value.minM = parseInt(minM);
+  if (maxM) formData.value.maxM = parseInt(maxM);
+  if (args) formData.value.args = args;
+
+  if (javaVer) {
+    metadataJavaVersion.value = String(javaVer);
+  }
+
+  showMetadataDialog.value = false;
+  MessagePlugin.success('已自动应用实例部署配置');
+};
+
+// 分析包内的核心和是否存在mslx pack metadata
 const analyzePackage = async (key: string, localPath?: string) => {
   isCheckingPackage.value = true;
   try {
@@ -473,6 +505,11 @@ const analyzePackage = async (key: string, localPath?: string) => {
 
     detectedJars.value = res.jars || [];
     detectedRoot.value = res.detectedRoot || '';
+
+    if (res.metadata) {
+      packMetadataRef.value = res.metadata;
+      showMetadataDialog.value = true;
+    }
 
     if (res.count === 1 && res.jars.length > 0) {
       formData.value.core = res.jars[0];
@@ -841,11 +878,22 @@ const goToHome = () => {
                 </t-alert>
 
                 <t-form-item label="选择启动核心" name="core">
-                  <t-radio-group v-model="formData.core" class="flex flex-col gap-3 w-full items-start">
-                    <div v-for="jar in detectedJars" :key="jar" class="flex w-full items-center justify-start">
-                      <t-radio :value="jar" class="!font-mono !text-sm">{{ jar }}</t-radio>
-                    </div>
-                  </t-radio-group>
+                  <div class="w-full flex flex-col gap-4">
+                    <t-radio-group v-model="formData.core" class="flex flex-col gap-3 w-full items-start">
+                      <div v-for="jar in detectedJars" :key="jar" class="flex w-full items-center justify-start">
+                        <t-radio :value="jar" class="!font-mono !text-sm">{{ jar }}</t-radio>
+                      </div>
+                      <div class="flex w-full items-center justify-start mt-2">
+                         <t-radio value="custom_input" class="!font-mono !text-sm">自定义</t-radio>
+                      </div>
+                    </t-radio-group>
+                    <t-input
+                      v-if="formData.core === 'custom_input' || (!detectedJars.includes(formData.core) && formData.core !== '')"
+                      v-model="formData.core"
+                      placeholder="输入自定义核心文件名，如 custom-server.jar"
+                      class="!w-full sm:!w-[28rem] mt-2"
+                    />
+                  </div>
                 </t-form-item>
               </div>
 
@@ -910,8 +958,11 @@ const goToHome = () => {
 
                   <div v-if="downloadType === 'manual'" class="mt-2">
                     <div class="text-sm text-[var(--td-text-color-secondary)] mb-4">
-                      请在整合包解压后手动放入核心，或在此处不填写等待创建后手动上传。
+                      请在整合包解压后手动放入核心，或在此处不填写等待创建后手动上传。您可以指定期望的核心文件名。
                     </div>
+                    <t-form-item label="核心文件名 (可选)" class="!mb-4">
+                      <t-input v-model="formData.core" placeholder="例如: custom-server.jar" class="!w-full sm:!w-[28rem]" />
+                    </t-form-item>
                     <t-alert
                       theme="error"
                       message="此模式下建议确保压缩包内包含核心，或者使用在线下载功能。"
@@ -1512,6 +1563,17 @@ const goToHome = () => {
         </div>
       </div>
     </div>
+
+    <t-dialog
+      v-model:visible="showMetadataDialog"
+      header="检测到实例配置元数据"
+      width="400px"
+      @confirm="applyMetadata"
+      @cancel="showMetadataDialog = false"
+    >
+      <p class="text-sm text-[var(--td-text-color-secondary)]">该整合包包含原本的服务端配置参数 (例如内存、Java版本和启动参数)。是否要自动应用这些配置？</p>
+    </t-dialog>
+
     <host-file-selector v-model:visible="showHostFileSelector" search-pattern="*.zip" @select="onHostFileSelected" />
     <server-core-selector v-model:visible="showCoreSelector" @confirm="onCoreSelected" />
   </div>

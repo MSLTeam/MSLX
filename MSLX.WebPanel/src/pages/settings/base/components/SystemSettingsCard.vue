@@ -24,6 +24,7 @@ const sysData = reactive<SettingsModel>({
   listenPort: 1027,
   oAuthMSLClientID: '',
   oAuthMSLClientSecret: '',
+  downloadThreadCount: 5,
 });
 
 const mirrorOptions = [
@@ -154,6 +155,34 @@ onMounted(() => {
             <t-select v-model="sysData.neoForgeInstallerMirrors" :options="mirrorOptions" class="!w-full sm:!w-72" />
           </t-form-item>
 
+          <t-form-item label="下载线程数量">
+            <template #help>
+              <div class="flex flex-col gap-1 mt-1">
+                <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)]">
+                  设置文件下载时的并行分块线程数量 (1-8，默认 5)。
+                </span>
+                <span
+                  v-if="sysData.downloadThreadCount > 5"
+                  class="text-[11px] font-bold text-amber-500 flex items-center gap-1"
+                >
+                  ⚠️ 提示：线程数量过大可能导致拒绝连接或下载中断！
+                </span>
+              </div>
+            </template>
+            <div class="flex items-center gap-4 w-full sm:w-80">
+              <t-slider
+                v-model="sysData.downloadThreadCount"
+                :min="1"
+                :max="8"
+                :step="1"
+                class="flex-1"
+              />
+              <span class="text-xs font-bold w-8 text-right text-[var(--td-text-color-primary)]">
+                {{ sysData.downloadThreadCount }}
+              </span>
+            </div>
+          </t-form-item>
+
           <template v-if="!isInternalNetwork()">
             <div class="flex items-center gap-3 mt-8 mb-6">
               <span class="text-xs font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest"
@@ -256,14 +285,14 @@ onMounted(() => {
                 >设置 MSLX 守护进程的监听地址。(需要重启守护进程生效，若不明白这是干什么的请一定不要修改！)</span
               >
             </template>
-            <div class="flex items-center gap-2 w-full sm:w-96">
-              <div class="flex-1">
+            <div class="flex items-center gap-1.5 sm:gap-2 w-full max-w-full sm:w-96">
+              <div class="flex-1 min-w-0">
                 <t-input v-model="sysData.listenHost" placeholder="localhost">
-                  <template #prefix-icon><server-icon class="opacity-60 text-zinc-400" /></template>
+                  <template #prefix-icon><server-icon class="opacity-60 text-zinc-400 hidden sm:block" /></template>
                 </t-input>
               </div>
-              <div class="text-[var(--td-text-color-secondary)] font-extrabold pb-1">:</div>
-              <div class="w-24 shrink-0">
+              <div class="text-[var(--td-text-color-secondary)] font-extrabold pb-1 shrink-0">:</div>
+              <div class="w-20 sm:w-24 shrink-0">
                 <t-input v-model="sysData.listenPort" placeholder="1027" align="center">
                   <template #prefix-icon
                     ><control-platform-icon class="opacity-60 text-zinc-400 hidden sm:block"

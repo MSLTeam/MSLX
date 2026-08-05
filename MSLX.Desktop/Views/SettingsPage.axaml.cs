@@ -35,6 +35,7 @@ public partial class SettingsPage : UserControl
     {
         InitializeComponent();
         SwitchFirewall.IsCheckedChanged += (s, e) => UpdateFirewallText(SwitchFirewall.IsChecked == true);
+        SliderDownloadThreadCount.ValueChanged += (s, e) => UpdateDownloadThreadUi((int)e.NewValue);
 
         LoadLocalSettings();
 
@@ -168,6 +169,16 @@ public partial class SettingsPage : UserControl
         // Host & Port
         TxtListenHost.Text = _currentSettings.ListenHost;
         NumListenPort.Value = _currentSettings.ListenPort;
+
+        // Download Thread Count
+        SliderDownloadThreadCount.Value = _currentSettings.DownloadThreadCount;
+        UpdateDownloadThreadUi(_currentSettings.DownloadThreadCount);
+    }
+
+    private void UpdateDownloadThreadUi(int val)
+    {
+        TxtDownloadThreadCountVal.Text = val.ToString();
+        TxtDownloadThreadWarning.IsVisible = val > 5;
     }
 
     private async void OnSaveClick(object? sender, RoutedEventArgs e)
@@ -187,6 +198,7 @@ public partial class SettingsPage : UserControl
             _currentSettings.FireWallBanLocalAddr = SwitchFirewall.IsChecked ?? false;
             _currentSettings.ListenHost = TxtListenHost.Text ?? "localhost";
             _currentSettings.ListenPort = (int)(NumListenPort.Value ?? 1027);
+            _currentSettings.DownloadThreadCount = (int)SliderDownloadThreadCount.Value;
 
             // 提交数据
             var response = await DaemonAPIService.PostApiAsync(

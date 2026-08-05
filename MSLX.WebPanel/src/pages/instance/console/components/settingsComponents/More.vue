@@ -5,7 +5,7 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import { ImageIcon, RefreshIcon, UploadIcon } from 'tdesign-icons-vue-next';
 import { downloadFileStream, finishUpload, initUpload, saveUploadedFile, uploadChunk } from '@/api/files';
 import BedrockAutoUpdater from './MoreComponents/BedrockAutoUpdater.vue';
-import { getInstanceInfo } from '@/api/instance';
+import { getInstanceInfo, exportInstancePack } from '@/api/instance';
 import { InstanceInfoModel } from '@/api/model/instance';
 import PluginSlot from '@/components/PluginSlot.vue';
 
@@ -239,6 +239,41 @@ const handleOpenBedrockUpdater = () => {
   showBedrockUpdater.value = true;
 };
 
+// --- 导出服务端 ---
+const showExportDialog = ref(false);
+const exportOptions = ref({
+  world: true,
+  logs: false,
+  plugins: true,
+  mods: true,
+  config: true,
+  crashReports: false,
+  versions: false,
+});
+const isExporting = ref(false);
+
+const handleExport = async () => {
+  const excludes = [];
+  if (!exportOptions.value.world) excludes.push('world');
+  if (!exportOptions.value.logs) excludes.push('logs');
+  if (!exportOptions.value.plugins) excludes.push('plugins');
+  if (!exportOptions.value.mods) excludes.push('mods');
+  if (!exportOptions.value.config) excludes.push('config');
+  if (!exportOptions.value.crashReports) excludes.push('crash-reports');
+  if (!exportOptions.value.versions) excludes.push('versions');
+
+  isExporting.value = true;
+  try {
+    const res = await exportInstancePack(instanceId.value, excludes);
+    MessagePlugin.success(`导出任务已提交 (任务ID: ${res.taskId})，请稍后到实例文件夹下的 mslx-packs 目录中查看生成的整合包。`);
+    showExportDialog.value = false;
+  } catch (e: any) {
+    MessagePlugin.error('导出失败: ' + e.message);
+  } finally {
+    isExporting.value = false;
+  }
+};
+
 // --- 生命周期 ---
 onMounted(() => {
   fetchCurrentIcon();
@@ -371,6 +406,26 @@ watch(
         :instance-id="instanceId"
         @success="fetchInstanceInfo"
       />
+
+      <div class="mt-8">
+        <div class="flex items-center gap-2 mb-4 pb-2 border-b border-dashed border-zinc-200/60 dark:border-zinc-700/60">
+          <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
+          <h2 class="text-base font-bold text-[var(--td-text-color-primary)] m-0">服务端导出</h2>
+        </div>
+        <div class="flex flex-col md:flex-row md:items-center justify-between py-4 gap-4">
+          <div class="flex-1 md:pr-8">
+            <div class="text-sm font-bold text-[var(--td-text-color-primary)]">导出为整合包</div>
+            <div class="text-xs text-[var(--td-text-color-secondary)] mt-1.5 leading-relaxed">
+              将当前服务端及其配置打包为整合包，导出后可以直接导入其他 MSLX 面板中使用。您可以自行选择是否包含运行后生成的缓存或数据文件夹。
+            </div>
+          </div>
+          <div class="flex items-center gap-4 shrink-0 w-full md:w-auto mt-2 md:mt-0">
+            <t-button theme="primary" class="!rounded-lg shadow-sm" @click="showExportDialog = true">
+              导出服务端包
+            </t-button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <plugin-slot name="instance-setting-more" :server-id="instanceId" />
@@ -434,6 +489,33 @@ watch(
             ></div>
           </div>
         </div>
+      </div>
+    </t-dialog>
+
+    <t-dialog
+      v-model:visible="showExportDialog"
+      header="导出服务端包配置"
+      width="450px"
+      attach="body"
+      :confirm-btn="{ content: '开始导出', loading: isExporting }"
+      @confirm="handleExport"
+    >
+      <div class="flex flex-col gap-4 p-2">
+        <p class="text-sm text-[var(--td-text-color-secondary)]">
+          请选择导出时需要包含的目录。未选中的目录将被排除在整合包之外，从而减小整合包体积。
+        </p>
+        <div class="grid grid-cols-2 gap-4">
+          <t-checkbox v-model="exportOptions.world">包含世界地图 (world)</t-checkbox>
+          <t-checkbox v-model="exportOptions.plugins">包含插件 (plugins)</t-checkbox>
+          <t-checkbox v-model="exportOptions.mods">包含模组 (mods)</t-checkbox>
+          <t-checkbox v-model="exportOptions.config">包含配置文件 (config)</t-checkbox>
+          <t-checkbox v-model="exportOptions.logs">包含日志 (logs)</t-checkbox>
+          <t-checkbox v-model="exportOptions.crashReports">包含崩溃报告 (crash-reports)</t-checkbox>
+          <t-checkbox v-model="exportOptions.versions">包含核心版本库 (versions)</t-checkbox>
+        </div>
+        <p class="text-[12px] text-amber-600 mt-2">
+          注意: 导出任务会在后台运行，生成后的压缩包会自动保存在该实例的 <code>mslx-packs</code> 目录中。
+        </p>
       </div>
     </t-dialog>
   </div>

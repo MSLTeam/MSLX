@@ -464,7 +464,10 @@ try
     {
         var uid = jsonData["userInfo"]?["uid"]?.ToString();
         var regtime = jsonData["userInfo"]?["regTime"]?.ToString();
-        logger.LogInformation($"MSLAPI V3 主服务连接成功！当前设备 UID: {uid}，注册时间: {regtime}");
+        var publicSource = jsonData["apiInfo"]?["downloadSources"]?["public"]?.ToString();
+        MSLApi.SetDownloadDomainFromPublicUrl(publicSource);
+
+        logger.LogInformation($"MSLAPI V3 主服务连接成功！当前设备 UID: {uid}，注册时间: {regtime}，下载源域名: {MSLApi.DownloadDomain}");
     }
     else
     {
@@ -473,10 +476,15 @@ try
         // 切换备用地址
         MSLApi.ApiUrl = "https://api.mslmc.net/v4";
 
-        var (backupSuccess, _, backupMsg) = await MSLApi.GetDataAsync("/");
+        var (backupSuccess, backupData, backupMsg) = await MSLApi.GetDataAsync("/");
         if (backupSuccess)
         {
-            logger.LogInformation("已成功切换并连接到备用 API服务！");
+            if (backupData is Newtonsoft.Json.Linq.JToken backupJsonData)
+            {
+                var publicSource = backupJsonData["apiInfo"]?["downloadSources"]?["public"]?.ToString();
+                MSLApi.SetDownloadDomainFromPublicUrl(publicSource);
+            }
+            logger.LogInformation($"已成功切换并连接到备用 API服务！当前下载源域名: {MSLApi.DownloadDomain}");
         }
         else
         {

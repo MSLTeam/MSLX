@@ -33,6 +33,9 @@ public class NeoForgeInstallerService
 
     public async Task<(bool IsSuccess, string? McVersion)> InstallNeoForge(string basePath, string installerPath, string javaEnvPath, string dockerImagePath = "")
     {
+        // 获取最新下载源域名
+        await MSLApi.RefreshDownloadDomainAsync();
+
         // 编译输出日志的缓存变量
         string logTemp = "";
         int counter = 100;
@@ -185,12 +188,16 @@ public class NeoForgeInstallerService
 
             if (InstallMirrorsName == "Official") // 是否使用镜像源 不用镜像就替换回原版
             {
-                vanillaUrl = vanillaUrl.Replace("file.mslmc.cn/mirrors/vanilla/", "piston-data.mojang.com/v1/objects/");
+                vanillaUrl = vanillaUrl.Replace($"{MSLApi.DownloadDomain}/mirrors/vanilla/", "piston-data.mojang.com/v1/objects/")
+                                       .Replace("file.mslmc.cn/mirrors/vanilla/", "piston-data.mojang.com/v1/objects/");
             }
 
             ReportLog($"开始下载 {InstallMcVersion} 原版服务端核心···");
-            var downloader = new ParallelDownloader(parallelCount: 1);
-            var (success, errorMsg) = await downloader.DownloadFileAsync(vanillaUrl, serverJarPath,
+            // 原版服务端下载器
+            var serverDownloader = new ParallelDownloader();
+            // 库文件下载器 不启用分块
+            var libDownloader = new ParallelDownloader(parallelCount: 1, maxSimultaneousFiles: 3);
+            var (success, errorMsg) = await serverDownloader.DownloadFileAsync(vanillaUrl, serverJarPath,
                 // 进度回调
                 async (progress, speed) =>
                 {
@@ -253,7 +260,7 @@ public class NeoForgeInstallerService
             var fallbackDict = new Dictionary<string, string>(); // 相对路径/原始下载地址
 
             /* 下载用法
-            var taskCore = downloader.DownloadFileAsync(
+            var taskCore = libDownloader.DownloadFileAsync(
                 "http://url/core.jar",
                 "path/core.jar",
                 (p, s) => Console.WriteLine($"Core: {p}%") // 简单日志
@@ -305,7 +312,7 @@ public class NeoForgeInstallerService
                     ReportLog($"[ {InstallName} 运行库]下载：" + path);
 
                     // 添加下载项
-                    var taskLib = downloader.DownloadFileAsync(
+                    var taskLib = libDownloader.DownloadFileAsync(
                         _dlurl,
                         Path.Combine(InstallBasePath, "libraries", path),
                         async (progress, speed) => { ReportLog($"正在下载 {path} 进度: {progress:0.00}% | 下载速度: {speed}"); }
@@ -341,7 +348,7 @@ public class NeoForgeInstallerService
                     ReportLog($"[ {InstallName} 运行库]下载：" + path);
 
                     // 添加下载项
-                    var taskLib = downloader.DownloadFileAsync(
+                    var taskLib = libDownloader.DownloadFileAsync(
                         _dlurl,
                         Path.Combine(InstallBasePath, "libraries", path),
                         async (progress, speed) => { ReportLog($"正在下载 {path} 进度: {progress:0.00}% | 下载速度: {speed}"); }
@@ -383,7 +390,7 @@ public class NeoForgeInstallerService
                     ReportLog($"[ {InstallName} 运行库]下载：" + libPath);
 
                     // 添加下载项
-                    var taskLib = downloader.DownloadFileAsync(
+                    var taskLib = libDownloader.DownloadFileAsync(
                         _dlurl,
                         Path.Combine(InstallBasePath, "libraries", libPath),
                         async (progress, speed) =>
@@ -427,7 +434,7 @@ public class NeoForgeInstallerService
                 var patchTasks = new List<Task<(bool Success, string ErrorMessage)>>();
                 foreach (var kv in missingFiles)
                 {
-                    patchTasks.Add(downloader.DownloadFileAsync(
+                    patchTasks.Add(libDownloader.DownloadFileAsync(
                         ReplaceStr(kv.Value),
                         Path.Combine(InstallBasePath, "libraries", kv.Key),
                         async (progress, speed) =>
@@ -642,7 +649,7 @@ public class NeoForgeInstallerService
 
                             // 下载到指定位置
                             ReportLog($"映射表文件下载到: {mappings_file_path}");
-                            var (suc_mojmap, err_mojmap) = await downloader.DownloadFileAsync(
+                            var (suc_mojmap, err_mojmap) = await libDownloader.DownloadFileAsync(
                                 ReplaceStr(mappingsUrl),
                                 mappings_file_path,
                                 // 进度回调
@@ -877,7 +884,7 @@ public class NeoForgeInstallerService
             str = str.Replace("https://files.minecraftforge.net", "https://v2.mirrors.mslmc.cn/libs/forge-files");
             str = str.Replace("https://libraries.minecraft.net", "https://v2.mirrors.mslmc.cn/libs/mc-libs");
             str = str.Replace("https://piston-meta.mojang.com", "https://v2.mirrors.mslmc.cn/libs/mc-meta");
-            str = str.Replace("piston-data.mojang.com/v1/objects/", "file.mslmc.cn/mirrors/vanilla/");
+            str = str.Replace("piston-data.mojang.com/v1/objects/", $"{MSLApi.DownloadDomain}/mirrors/vanilla/");
         }
 
         // 备用镜像源
@@ -889,7 +896,7 @@ public class NeoForgeInstallerService
             str = str.Replace("https://files.minecraftforge.net", "https://forge-files.mirrors.mslmc.cn");
             str = str.Replace("https://libraries.minecraft.net", "https://mclibs.mirrors.mslmc.cn");
             str = str.Replace("https://piston-meta.mojang.com", "https://mc-meta.mirrors.mslmc.cn");
-            str = str.Replace("piston-data.mojang.com/v1/objects/", "file.mslmc.cn/mirrors/vanilla/");
+            str = str.Replace("piston-data.mojang.com/v1/objects/", $"{MSLApi.DownloadDomain}/mirrors/vanilla/");
         }
 
         //构建时候的变量

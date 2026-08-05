@@ -1,21 +1,33 @@
 ﻿using Downloader;
+using MSLX.Daemon.Utils.ConfigUtils;
 using System.Reflection;
 
 namespace MSLX.Daemon.Utils
 {
     public class ParallelDownloader
     {
-        private readonly DownloadConfiguration _config;
+        private readonly int _parallelCount;
         private readonly SemaphoreSlim _fileConcurrencySemaphore;
 
-        public ParallelDownloader(int parallelCount = 8, int maxSimultaneousFiles = 3)
+        /// <summary>
+        /// 创建并行下载器
+        /// </summary>
+        /// <param name="parallelCount">每个文件的分块并发数。0 表示从系统配置动态读取（默认）</param>
+        /// <param name="maxSimultaneousFiles">最大同时下载文件数</param>
+        public ParallelDownloader(int parallelCount = 0, int maxSimultaneousFiles = 3)
         {
             _fileConcurrencySemaphore = new SemaphoreSlim(maxSimultaneousFiles);
-            _config = new DownloadConfiguration
+            _parallelCount = parallelCount;
+        }
+
+        private DownloadConfiguration CreateConfig()
+        {
+            int count = _parallelCount > 0 ? _parallelCount : GetConfiguredThreadCount();
+            return new DownloadConfiguration
             {
-                ChunkCount = parallelCount,
+                ChunkCount = count,
                 ParallelDownload = true,
-                ParallelCount = parallelCount,
+                ParallelCount = count,
                 MaxTryAgainOnFailure = 5,
                 RequestConfiguration =
                 {
@@ -40,6 +52,23 @@ namespace MSLX.Daemon.Utils
         }
 
         /// <summary>
+        /// 从系统配置中读取下载线程数量（1-8，默认5）
+        /// </summary>
+        public static int GetConfiguredThreadCount()
+        {
+            try
+            {
+                var val = IConfigBase.Config.ReadConfigKey("downloadThreadCount");
+                if (val != null)
+                {
+                    return Math.Clamp(Convert.ToInt32(val), 1, 8);
+                }
+            }
+            catch { /* 回退默认咯 */ }
+            return 5;
+        }
+
+        /// <summary>
         /// 异步下载文件
         /// </summary>
         /// <param name="url">下载地址</param>
@@ -56,7 +85,7 @@ namespace MSLX.Daemon.Utils
             await _fileConcurrencySemaphore.WaitAsync();
             try
             {
-                var downloader = new DownloadService(_config);
+                var downloader = new DownloadService(CreateConfig());
                 DateTime lastReportTime = DateTime.MinValue;
 
                 downloader.DownloadProgressChanged += (s, e) =>

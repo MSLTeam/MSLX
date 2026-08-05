@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
@@ -32,6 +32,7 @@ public class SettingsController : ControllerBase
                     ListenPort = IConfigBase.Config.ReadConfig()["listenPort"] ?? 1027,
                     OAuthMSLClientID = IConfigBase.Config.ReadConfig()["oAuthMSLClientID"] ?? "",
                     OAuthMSLClientSecret = IConfigBase.Config.ReadConfig()["oAuthMSLClientSecret"] ?? "",
+                    DownloadThreadCount = IConfigBase.Config.ReadConfig()["downloadThreadCount"] ?? 5,
                 }
             }
         );
@@ -49,6 +50,7 @@ public class SettingsController : ControllerBase
         IConfigBase.Config.WriteConfigKey("listenPort", request.ListenPort);
         IConfigBase.Config.WriteConfigKey("oAuthMSLClientID", request.OAuthMSLClientID);
         IConfigBase.Config.WriteConfigKey("oAuthMSLClientSecret", request.OAuthMSLClientSecret);
+        IConfigBase.Config.WriteConfigKey("downloadThreadCount", request.DownloadThreadCount);
         return Ok(new ApiResponse<object>
             {
                 Code = 200,
