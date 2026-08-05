@@ -9,8 +9,8 @@
   <Grid>
       <ContentControl x:Name="MainContent"/>
       <Button VerticalAlignment="Top" HorizontalAlignment="Right"
-              Classes="Flat" Background="Red"
-              CornerRadius="36" Height="24" Width="24" Padding="0" Margin="10"
+              CornerRadius="36" Height="24" Width="24" Padding="0" Margin="15"
+               ToolTip.Tip="关闭当前页面"
               Click="CloseBtn_Click">
           <icons:MaterialIcon Kind="Close"/>
       </Button>

@@ -69,9 +69,10 @@
                                     <TextBlock Text="选择您喜欢的主题色调" Classes="SettingDesc"/>
                                 </StackPanel>
                                 <ComboBox Grid.Column="2" Name="ComboThemeColor" MinWidth="180" SelectionChanged="OnThemeColorChanged">
+                                    <ComboBoxItem Content="默认蓝" Tag="Default"/>
                                     <ComboBoxItem Content="清霁蓝" Tag="Blue"/>
                                     <ComboBoxItem Content="竹月青" Tag="Teal"/>
-                                    <ComboBoxItem Content="紫藤萝" Tag="Purple"/>
+                                    <ComboBoxItem Content="藤萝紫" Tag="Purple"/>
                                     <ComboBoxItem Content="落樱粉" Tag="Pink"/>
                                     <ComboBoxItem Content="暮云橙" Tag="Orange"/>
                                     <ComboBoxItem Content="朱砂红" Tag="Red"/>

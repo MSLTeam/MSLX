@@ -8,27 +8,27 @@
              mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
              x:Class="MSLX.Desktop.Controls.EmptyStateControl">
     
-    <StackPanel HorizontalAlignment="Center" 
+    <StackPanel HorizontalAlignment="Center"
                 VerticalAlignment="Center"
                 Spacing="12"
                 Margin="20">
-        <micon:MaterialIcon Kind="{Binding IconKind}"
+        <micon:MaterialIcon Kind="{Binding $parent[controls:EmptyStateControl].IconKind}"
                            Height="64" Width="64"
                            Opacity="0.4"
                            Foreground="{DynamicResource SukiText}"/>
-        <TextBlock Text="{Binding Title}"
+        <TextBlock Text="{Binding $parent[controls:EmptyStateControl].Title}"
                   FontSize="18"
                   FontWeight="Medium"
                   HorizontalAlignment="Center"
                   Opacity="0.6"
                   TextWrapping="Wrap"
                   TextAlignment="Center"/>
-        <TextBlock Text="{Binding Description}"
+        <TextBlock Text="{Binding $parent[controls:EmptyStateControl].Description}"
                   FontSize="14"
                   HorizontalAlignment="Center"
                   Opacity="0.4"
                   TextWrapping="Wrap"
                   TextAlignment="Center"
-                  IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+                  IsVisible="{Binding $parent[controls:EmptyStateControl].Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
     </StackPanel>
 </UserControl>

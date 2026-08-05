@@ -37,6 +37,5 @@ public partial class EmptyStateControl : UserControl
     public EmptyStateControl()
     {
         InitializeComponent();
-        DataContext = this;
     }
 }

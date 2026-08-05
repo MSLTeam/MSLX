@@ -41,7 +41,7 @@ namespace MSLX.Desktop.Utils
             var smoothScroller = GetOrCreateScroller(scrollViewer);
 
             // 100代表滚动倍率
-            smoothScroller.ScrollBy(-e.Delta.Y * 100);
+            smoothScroller.ScrollBy(-e.Delta.Y * 80);
         }
 
         private static readonly AttachedProperty<SmoothScroller> ScrollerProperty =

@@ -116,7 +116,7 @@
             </Grid>
         </Grid>
 
-        <Grid Grid.ColumnSpan="2" Background="#80000000" IsVisible="False" x:Name="MaskLoading">
+        <Grid Grid.Row="1" Background="#80000000" IsVisible="False" x:Name="MaskLoading">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
                 <suki:Loading />
                 <TextBlock Text="正在获取核心信息..." Foreground="White" FontWeight="SemiBold"/>

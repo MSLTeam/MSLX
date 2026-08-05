@@ -71,10 +71,16 @@ public partial class InstanceListPage : UserControl
         {
             if (instancePages.TryGetValue(serverId, out SukiSideMenuItem? value))
             {
-                SideMenuHelper.Current?.NavigateTo(value);
+                if (SideMenuHelper.Current?.SideMenu.Items.Contains(value) == true)
+                {
+                    SideMenuHelper.Current?.NavigateTo(value);
+                    return;
+                }
+                SideMenuHelper.Current?.NavigateTo(value, true, 2);
                 return;
             }
-            var serverPage = new SukiUI.Controls.SukiSideMenuItem
+
+            var serverPage = new SukiSideMenuItem
             {
                 Header = server.Name,
                 Icon = new MaterialIcon()
@@ -95,6 +101,31 @@ public partial class InstanceListPage : UserControl
         var server = InstanceModel.Current.ServerList.FirstOrDefault(s => s.ID == serverId);
         if (server != null)
         {
+            bool confirmDelete = false;
+            await DialogService.DialogManager.CreateDialog()
+                            .WithTitle("删除服务器")
+                            .WithContent($"您确定要删除服务器 {server.Name} 吗？此操作不可撤销！")
+                            .WithActionButton("删除", _ => confirmDelete = true, true)
+                            .WithActionButton("取消", _ => confirmDelete = false, true)
+                            .TryShowAsync();
+            if (!confirmDelete)
+            {
+                return;
+            }
+            if (server.Status != 0)
+            {
+                DialogService.ToastManager.CreateToast()
+                            .OfType(Avalonia.Controls.Notifications.NotificationType.Error)
+                            .WithTitle("删除失败")
+                            .WithContent($"服务器 {server.Name} 正在运行中，请先停止服务器再尝试删除！")
+                            .Dismiss().After(TimeSpan.FromSeconds(5))
+                            .Queue();
+                return;
+            }
+            if (instancePages.TryGetValue(serverId, out SukiSideMenuItem? value) && SideMenuHelper.Current?.SideMenu.Items.Contains(value) == true)
+            {
+                SideMenuHelper.Current?.NavigateRemove(value);
+            }
             await DaemonAPIService.PostApiAsync("/api/instance/delete", null, HttpService.PostContentType.Json, new { id = serverId });
             await LoadServersList();
             DialogService.ToastManager.CreateToast()

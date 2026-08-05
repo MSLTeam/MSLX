@@ -106,25 +106,28 @@ public partial class MainWindow : SukiWindow
         else if (themeMode == "Dark")
             Avalonia.Application.Current!.RequestedThemeVariant = ThemeVariant.Dark;
 
-        var themeColorStr = ConfigService.Config.ReadConfigKey("ThemeColor")?.ToString() ?? "Blue";
-        SukiColorTheme theme = themeColorStr switch
+        var themeColorStr = ConfigService.Config.ReadConfigKey("ThemeColor")?.ToString() ?? "Default";
+        if (themeColorStr != "Default")
         {
-            "Teal" => new SukiColorTheme("Teal", Color.Parse("#20B2AA"), Color.Parse("#FF69B4")),
-            "Purple" => new SukiColorTheme("Purple", Color.Parse("#8A2BE2"), Color.Parse("#00FF7F")),
-            "Pink" => new SukiColorTheme("Pink", Color.Parse("#FFB6C1"), Color.Parse("#4682B4")),
-            "Orange" => new SukiColorTheme("Orange", Color.Parse("#FF8C00"), Color.Parse("#4169E1")),
-            "Red" => new SukiColorTheme("Red", Color.Parse("#DC143C"), Color.Parse("#00CED1")),
-            "DarkCyan" => new SukiColorTheme("DarkCyan", Color.Parse("#008B8B"), Color.Parse("#FFD700")),
-            _ => new SukiColorTheme("Blue", Color.Parse("#1E90FF"), Color.Parse("#FFA500"))
-        };
-        SukiTheme.GetInstance().ChangeColorTheme(theme);
+            SukiColorTheme theme = themeColorStr switch
+            {
+                "Teal" => new SukiColorTheme("Teal", Color.Parse("#20B2AA"), Color.Parse("#FF69B4")),
+                "Purple" => new SukiColorTheme("Purple", Color.Parse("#8A2BE2"), Color.Parse("#00FF7F")),
+                "Pink" => new SukiColorTheme("Pink", Color.Parse("#FFB6C1"), Color.Parse("#4682B4")),
+                "Orange" => new SukiColorTheme("Orange", Color.Parse("#FF8C00"), Color.Parse("#4169E1")),
+                "Red" => new SukiColorTheme("Red", Color.Parse("#DC143C"), Color.Parse("#00CED1")),
+                "DarkCyan" => new SukiColorTheme("DarkCyan", Color.Parse("#008B8B"), Color.Parse("#FFD700")),
+                _ => new SukiColorTheme("Blue", Color.Parse("#1E90FF"), Color.Parse("#FFA500")), // Blue
+            };
+            SukiTheme.GetInstance().ChangeColorTheme(theme);
+        }
 
         this.Loaded += (s, e) =>
         {
             RefreshBackground();
-            
-            // 开启 FPS 监控悬浮窗
+
 #if DEBUG
+            // 开启 FPS 监控悬浮窗
             var topLevel = TopLevel.GetTopLevel(this);
             if (topLevel != null)
             {
@@ -133,13 +136,10 @@ public partial class MainWindow : SukiWindow
 #endif
         };
 
-        if (Avalonia.Application.Current != null)
+        Avalonia.Application.Current?.ActualThemeVariantChanged += (s, e) =>
         {
-            Avalonia.Application.Current.ActualThemeVariantChanged += (s, e) =>
-            {
-                RefreshBackground();
-            };
-        }
+            RefreshBackground();
+        };
     }
 
     public void RefreshBackground()
