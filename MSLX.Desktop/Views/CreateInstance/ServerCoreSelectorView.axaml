@@ -58,7 +58,7 @@
                     <TextBlock Text="选择核心" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     <TextBox x:Name="TxtSearch" Grid.Column="1"
                              MinWidth="150" MaxWidth="250"
-                             Watermark="搜索核心..." Classes="RevealPasswordButton" TextChanged="TxtSearch_TextChanged"/>
+                             PlaceholderText="搜索核心..." Classes="RevealPasswordButton" TextChanged="TxtSearch_TextChanged"/>
                 </Grid>
 
                 <Border Grid.Row="1"

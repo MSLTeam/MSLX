@@ -50,11 +50,11 @@
 						<StackPanel Margin="10" Spacing="10">
 							<StackPanel Orientation="Horizontal" Spacing="10">
 								<TextBlock Text="房间名称：" VerticalAlignment="Center" MinWidth="80"/>
-								<TextBox x:Name="hostRoomName" Width="200" Watermark="输入房间名称"/>
+								<TextBox x:Name="hostRoomName" Width="200" PlaceholderText="输入房间名称"/>
 							</StackPanel>
 							<StackPanel Orientation="Horizontal" Spacing="10">
 								<TextBlock Text="连接密码：" VerticalAlignment="Center" MinWidth="80"/>
-								<TextBox x:Name="hostSecretKey" Width="200" Watermark="输入连接密码"/>
+								<TextBox x:Name="hostSecretKey" Width="200" PlaceholderText="输入连接密码"/>
 							</StackPanel>
 							<StackPanel Orientation="Horizontal" Spacing="10">
 								<TextBlock Text="本地端口：" VerticalAlignment="Center" MinWidth="80"/>
@@ -89,11 +89,11 @@
 						<StackPanel Margin="10" Spacing="10">
 							<StackPanel Orientation="Horizontal" Spacing="10">
 								<TextBlock Text="房间名称：" VerticalAlignment="Center" MinWidth="80"/>
-								<TextBox x:Name="visitorRoomName" Width="200" Watermark="输入房主的房间名称"/>
+								<TextBox x:Name="visitorRoomName" Width="200" PlaceholderText="输入房主的房间名称"/>
 							</StackPanel>
 							<StackPanel Orientation="Horizontal" Spacing="10">
 								<TextBlock Text="连接密码：" VerticalAlignment="Center" MinWidth="80"/>
-								<TextBox x:Name="visitorSecretKey" Width="200" Watermark="输入房主的连接密码"/>
+								<TextBox x:Name="visitorSecretKey" Width="200" PlaceholderText="输入房主的连接密码"/>
 							</StackPanel>
 							<StackPanel Orientation="Horizontal" Spacing="10">
 								<TextBlock Text="绑定端口：" VerticalAlignment="Center" MinWidth="80"/>

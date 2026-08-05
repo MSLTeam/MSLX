@@ -169,10 +169,7 @@
 
 		<!-- 公告 -->
 		<suki:GlassCard Grid.Row="2" Margin="12,6,12,6" Padding="20">
-			<Grid RowDefinitions="auto,*">
-				<TextBlock Classes="h3" Text="公告"/>
-				<ctrl:MagicMarkdown Grid.Row="1" x:Name="MarkdownViewer"/>
-			</Grid>
+			<ctrl:MagicMarkdown Grid.Row="1" x:Name="MarkdownViewer"/>
 		</suki:GlassCard>
 
 		<!-- 底部操作按钮 -->

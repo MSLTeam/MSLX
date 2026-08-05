@@ -46,10 +46,10 @@
       <suki:GroupBox Header="启动选项">
         <StackPanel Spacing="6" Margin="4">
           <TextBlock Text="附加 JVM 参数"/>
-          <TextBox x:Name="ArgsBox" Watermark="-Xms512m -Xmx4g ..."/>
+          <TextBox x:Name="ArgsBox" PlaceholderText="-Xms512m -Xmx4g ..."/>
 
           <TextBlock Text="Yggdrasil API 地址" Margin="0,4,0,0"/>
-          <TextBox x:Name="YggdrasilBox" Watermark="留空则不启用"/>
+          <TextBox x:Name="YggdrasilBox" PlaceholderText="留空则不启用"/>
 
           <Grid ColumnDefinitions="*,*" Margin="0,6,0,0">
             <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">

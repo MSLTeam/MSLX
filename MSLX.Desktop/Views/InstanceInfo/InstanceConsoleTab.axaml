@@ -36,7 +36,7 @@
     <!-- 指令输入区 -->
     <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,6,0,0">
       <TextBox x:Name="CmdInput"
-               Watermark="输入指令，回车发送..."
+               PlaceholderText="输入指令，回车发送..."
                KeyDown="OnCmdInputKeyDown"/>
       <Button Grid.Column="1"
               Content="发送"
