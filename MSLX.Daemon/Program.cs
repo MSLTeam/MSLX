@@ -1,5 +1,6 @@
-using Microsoft.AspNetCore.HttpOverrides;
+﻿using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using MSLX.Daemon.Adapters;
@@ -357,17 +358,60 @@ app.UseDefaultFiles(new DefaultFilesOptions
     FileProvider = embeddedProvider,
     RequestPath = ""
 });
+
+Action<StaticFileResponseContext> setCacheControl = ctx =>
+{
+    var fileName = ctx.File?.Name ?? "";
+    var ext = Path.GetExtension(fileName).ToLowerInvariant();
+    var contentType = ctx.Context.Response.ContentType ?? "";
+
+    // HTML响应 缓存3分钟
+    if (ext == ".html" || ext == ".htm" || contentType.StartsWith("text/html", StringComparison.OrdinalIgnoreCase))
+    {
+        ctx.Context.Response.Headers.CacheControl = "public, max-age=180";
+        return;
+    }
+
+    switch (ext)
+    {
+        case ".js":
+        case ".css":
+        case ".png":
+        case ".jpg":
+        case ".jpeg":
+        case ".gif":
+        case ".ico":
+        case ".svg":
+        case ".woff":
+        case ".woff2":
+        case ".ttf":
+        case ".eot":
+        case ".webp":
+        case ".avif":
+        case ".mp4":
+        case ".webm":
+            ctx.Context.Response.Headers.CacheControl = "public, max-age=31536000, immutable";
+            break;
+
+        default:
+            ctx.Context.Response.Headers.CacheControl = "public, max-age=300";
+            break;
+    }
+};
+
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = embeddedProvider,
-    RequestPath = "" 
+    RequestPath = "",
+    OnPrepareResponse = setCacheControl
 });
 
 // 动态加载插件静态资源
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new MSLX.Daemon.Services.PluginsService.PluginDynamicFileProvider(pluginManager),
-    RequestPath = "/plugins"
+    RequestPath = "/plugins",
+    OnPrepareResponse = setCacheControl
 });
 
 app.UseRouting();
@@ -397,7 +441,8 @@ app.MapControllers();
 // SPA
 app.MapFallbackToFile("index.html", new StaticFileOptions
 {
-    FileProvider = embeddedProvider
+    FileProvider = embeddedProvider,
+    OnPrepareResponse = setCacheControl
 });
 
 var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
