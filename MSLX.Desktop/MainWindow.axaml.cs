@@ -34,6 +34,27 @@ public partial class MainWindow : SukiWindow
         SideMenuHelper.Current?.HideMainPages(0);
     }
 
+    protected override void OnApplyTemplate(Avalonia.Controls.Primitives.TemplateAppliedEventArgs e)
+    {
+        base.OnApplyTemplate(e);
+        var titleBar = e.NameScope.Find<Control>("PART_TitleBar");
+        if (titleBar != null)
+        {
+            titleBar.PropertyChanged += (s, ev) =>
+            {
+                if (ev.Property == Avalonia.Visual.BoundsProperty)
+                {
+                    var h = titleBar.Bounds.Height;
+                    if (h > 0)
+                    {
+                        if (DialogManager != null) DialogManager.Margin = new Avalonia.Thickness(0, h, 0, 0);
+                        if (ToastManager != null) ToastManager.Margin = new Avalonia.Thickness(0, h + 3, 0, 0);
+                    }
+                }
+            };
+        }
+    }
+
     public void UpdateUserHeader(string username, string? avatarUrl)
     {
         Avalonia.Threading.Dispatcher.UIThread.Post(() =>
@@ -137,7 +158,8 @@ public partial class MainWindow : SukiWindow
         if (string.IsNullOrEmpty(blurStr)) blurStr = ConfigService.Config.ReadConfigKey("BackgroundBlur")?.ToString();
         var blur = double.TryParse(blurStr, out var parsedBlur) ? parsedBlur : 0;
 
-        var mainPanel = this.GetVisualDescendants().OfType<SukiMainHost>().FirstOrDefault();
+        Control? mainPanel = (Control?)this.GetVisualDescendants().OfType<SukiMainPanel>().FirstOrDefault()
+                             ?? this.GetVisualDescendants().OfType<SukiMainHost>().FirstOrDefault();
         if (mainPanel == null) return;
 
         var rootPanel = mainPanel.GetVisualDescendants().OfType<Panel>().FirstOrDefault(p => p.Name == "PART_Root");
