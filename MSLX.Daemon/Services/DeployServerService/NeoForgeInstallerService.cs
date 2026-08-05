@@ -33,6 +33,9 @@ public class NeoForgeInstallerService
 
     public async Task<(bool IsSuccess, string? McVersion)> InstallNeoForge(string basePath, string installerPath, string javaEnvPath, string dockerImagePath = "")
     {
+        // 获取最新下载源域名
+        await MSLApi.RefreshDownloadDomainAsync();
+
         // 编译输出日志的缓存变量
         string logTemp = "";
         int counter = 100;
@@ -185,11 +188,12 @@ public class NeoForgeInstallerService
 
             if (InstallMirrorsName == "Official") // 是否使用镜像源 不用镜像就替换回原版
             {
-                vanillaUrl = vanillaUrl.Replace("file.mslmc.cn/mirrors/vanilla/", "piston-data.mojang.com/v1/objects/");
+                vanillaUrl = vanillaUrl.Replace($"{MSLApi.DownloadDomain}/mirrors/vanilla/", "piston-data.mojang.com/v1/objects/")
+                                       .Replace("file.mslmc.cn/mirrors/vanilla/", "piston-data.mojang.com/v1/objects/");
             }
 
             ReportLog($"开始下载 {InstallMcVersion} 原版服务端核心···");
-            var downloader = new ParallelDownloader(parallelCount: 1);
+            var downloader = new ParallelDownloader(parallelCount: 5);
             var (success, errorMsg) = await downloader.DownloadFileAsync(vanillaUrl, serverJarPath,
                 // 进度回调
                 async (progress, speed) =>
@@ -877,7 +881,7 @@ public class NeoForgeInstallerService
             str = str.Replace("https://files.minecraftforge.net", "https://v2.mirrors.mslmc.cn/libs/forge-files");
             str = str.Replace("https://libraries.minecraft.net", "https://v2.mirrors.mslmc.cn/libs/mc-libs");
             str = str.Replace("https://piston-meta.mojang.com", "https://v2.mirrors.mslmc.cn/libs/mc-meta");
-            str = str.Replace("piston-data.mojang.com/v1/objects/", "file.mslmc.cn/mirrors/vanilla/");
+            str = str.Replace("piston-data.mojang.com/v1/objects/", $"{MSLApi.DownloadDomain}/mirrors/vanilla/");
         }
 
         // 备用镜像源
@@ -889,7 +893,7 @@ public class NeoForgeInstallerService
             str = str.Replace("https://files.minecraftforge.net", "https://forge-files.mirrors.mslmc.cn");
             str = str.Replace("https://libraries.minecraft.net", "https://mclibs.mirrors.mslmc.cn");
             str = str.Replace("https://piston-meta.mojang.com", "https://mc-meta.mirrors.mslmc.cn");
-            str = str.Replace("piston-data.mojang.com/v1/objects/", "file.mslmc.cn/mirrors/vanilla/");
+            str = str.Replace("piston-data.mojang.com/v1/objects/", $"{MSLApi.DownloadDomain}/mirrors/vanilla/");
         }
 
         //构建时候的变量

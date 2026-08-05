@@ -1,4 +1,4 @@
-﻿using CliWrap;
+using CliWrap;
 using CliWrap.EventStream;
 using Downloader;
 using MSLX.Daemon.Utils;
@@ -325,6 +325,7 @@ public class ServerDeploymentService
     public async Task DeployCoreAsync(string serverId, string baseDir, string coreName, string? userUploadKey,
         string? downloadUrl, string? sha256, ReportProgress report, CancellationToken? ct)
     {
+        await MSLApi.RefreshDownloadDomainAsync();
         string destPath = Path.Combine(baseDir, coreName);
         Directory.CreateDirectory(baseDir);
 

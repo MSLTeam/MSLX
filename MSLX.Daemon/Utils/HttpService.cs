@@ -9,6 +9,42 @@ namespace MSLX.Daemon.Utils;
     public class MSLApi
     {
     public static string ApiUrl { get; set; } = "https://api.mslmc.cn/v4";
+    public static string DownloadDomain { get; set; } = "file.mslmc.cn";
+
+    public static void SetDownloadDomainFromPublicUrl(string? publicUrl)
+    {
+        if (string.IsNullOrWhiteSpace(publicUrl))
+            return;
+
+        var urlToParse = publicUrl.Trim();
+        if (!urlToParse.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
+            !urlToParse.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            urlToParse = "https://" + urlToParse;
+        }
+
+        if (Uri.TryCreate(urlToParse, UriKind.Absolute, out var uri) && !string.IsNullOrWhiteSpace(uri.Host))
+        {
+            DownloadDomain = uri.Host;
+        }
+    }
+
+    public static async Task RefreshDownloadDomainAsync()
+    {
+        try
+        {
+            var (success, data, _) = await GetDataAsync("/");
+            if (success && data is JToken jsonData)
+            {
+                var publicSource = jsonData["apiInfo"]?["downloadSources"]?["public"]?.ToString();
+                SetDownloadDomainFromPublicUrl(publicSource);
+            }
+        }
+        catch
+        {
+            // 忽略刷新失败，保持现有的 DownloadDomain 避免阻塞后续操作
+        }
+    }
 
     public static async Task<(bool Success, object? Data, string? Msg)> GetDataAsync(string path, string dataKey = "data", Dictionary<string, string>? queryParameters = null)
         {
@@ -365,7 +401,7 @@ namespace MSLX.Daemon.Utils;
     {
         public enum UAType { MSLX, Win, Linux, Mac }
 
-        private static readonly string _mslxUA = "MSLTeam-MSLX(Daemon)/" + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+        private static readonly string _mslxUA = $"MSLX/{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} Daemon/{PlatFormServices.GetFormattedVersion()} (.NET/{Environment.Version})";
         private static readonly string _winUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36";
         private static readonly string _linuxUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36";
         private static readonly string _macUA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36";
