@@ -8,9 +8,9 @@
              Initialized="OnInitialized">
   <Grid>
       <ContentControl x:Name="MainContent"/>
-      <Button VerticalAlignment="Bottom" HorizontalAlignment="Right"
+      <Button VerticalAlignment="Top" HorizontalAlignment="Right"
               Classes="Flat" Background="Red"
-              CornerRadius="36" Height="48" Width="48" Padding="0" Margin="10"
+              CornerRadius="36" Height="24" Width="24" Padding="0" Margin="10"
               Click="CloseBtn_Click">
           <icons:MaterialIcon Kind="Close"/>
       </Button>

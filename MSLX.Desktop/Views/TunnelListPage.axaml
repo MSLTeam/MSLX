@@ -6,6 +6,8 @@
              xmlns:icons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:models="clr-namespace:MSLX.Desktop.Models"
              xmlns:vm="clr-namespace:MSLX.Desktop.ViewModels"
+             xmlns:controls="clr-namespace:MSLX.Desktop.Controls"
+             xmlns:ic="clr-namespace:MSLX.Desktop.Converters"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="MSLX.Desktop.Views.TunnelListPage"
              x:DataType="vm:TunnelListPageViewModel">
@@ -24,48 +26,54 @@
             </Button>
         </StackPanel>
 
-        <ScrollViewer Grid.Row="1">
-            <ItemsControl ItemsSource="{Binding Tunnels}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <suki:GlassCard Margin="10">
-                            <Grid ColumnDefinitions="*, Auto">
-                                <StackPanel Spacing="5">
-                                    <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="Medium"/>
-                                    <StackPanel Orientation="Horizontal" Spacing="10">
-                                        <TextBlock Text="{Binding Service}" Opacity="0.6"/>
-                                        <TextBlock Text="{Binding ConfigType}" Opacity="0.6"/>
+        <Grid Grid.Row="1">
+            <ScrollViewer IsVisible="{Binding Tunnels.Count, Converter={x:Static ic:CountToBoolConverter.Instance}}">
+                <ItemsControl ItemsSource="{Binding Tunnels}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <suki:GlassCard Margin="10">
+                                <Grid ColumnDefinitions="*, Auto">
+                                    <StackPanel Spacing="5">
+                                        <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="Medium"/>
+                                        <StackPanel Orientation="Horizontal" Spacing="10">
+                                            <TextBlock Text="{Binding Service}" Opacity="0.6"/>
+                                            <TextBlock Text="{Binding ConfigType}" Opacity="0.6"/>
+                                        </StackPanel>
                                     </StackPanel>
-                                </StackPanel>
-                                
-                                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="15" VerticalAlignment="Center">
-                                    <Border Background="{Binding StatusColor}" CornerRadius="4" Padding="8,4">
-                                        <TextBlock Text="{Binding StatusText}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontSize="12"/>
-                                    </Border>
-                                    
-                                    <Button IsEnabled="{Binding !Status}" Foreground="Green"
-                                            Click="RunTunnel_Click" Tag="{Binding ID}">
-                                        <icons:MaterialIcon Kind="Play"/>
-                                    </Button>
-                                    <Button IsEnabled="{Binding Status}" Foreground="Red"
-                                            Click="StopTunnel_Click" Tag="{Binding ID}">
-                                        <icons:MaterialIcon Kind="Stop"/>
-                                    </Button>
-                                    <Button Foreground="Blue"
-                                            Click="TunnelLogs_Click" Tag="{Binding ID}">
-                                        <icons:MaterialIcon Kind="FileDocument"/>
-                                    </Button>
-                                    <Button Foreground="Red"
-                                            Click="DeleteTunnel_Click" Tag="{Binding ID}">
-                                        <icons:MaterialIcon Kind="Delete"/>
-                                    </Button>
-                                </StackPanel>
-                            </Grid>
-                        </suki:GlassCard>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="15" VerticalAlignment="Center">
+                                        <Border Background="{Binding StatusColor}" CornerRadius="4" Padding="8,4">
+                                            <TextBlock Text="{Binding StatusText}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontSize="12"/>
+                                        </Border>
+
+                                        <Button IsEnabled="{Binding !Status}" Foreground="Green"
+                                                Click="RunTunnel_Click" Tag="{Binding ID}">
+                                            <icons:MaterialIcon Kind="Play"/>
+                                        </Button>
+                                        <Button IsEnabled="{Binding Status}" Foreground="Red"
+                                                Click="StopTunnel_Click" Tag="{Binding ID}">
+                                            <icons:MaterialIcon Kind="Stop"/>
+                                        </Button>
+                                        <Button Foreground="Blue"
+                                                Click="TunnelLogs_Click" Tag="{Binding ID}">
+                                            <icons:MaterialIcon Kind="FileDocument"/>
+                                        </Button>
+                                        <Button Foreground="Red"
+                                                Click="DeleteTunnel_Click" Tag="{Binding ID}">
+                                            <icons:MaterialIcon Kind="Delete"/>
+                                        </Button>
+                                    </StackPanel>
+                                </Grid>
+                            </suki:GlassCard>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+            <controls:EmptyStateControl IsVisible="{Binding Tunnels.Count, Converter={x:Static ic:CountToInverseBoolConverter.Instance}}"
+                                       Title="暂无隧道"
+                                       Description="点击 + 按钮添加新隧道"
+                                       IconKind="Tunnel"/>
+        </Grid>
     </Grid>
   </suki:GlassCard>
 </UserControl>

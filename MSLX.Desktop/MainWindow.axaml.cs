@@ -8,7 +8,6 @@ using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils;
 using SukiUI;
 using SukiUI.Controls;
-using SukiUI.Enums;
 using SukiUI.Models;
 
 namespace MSLX.Desktop;
@@ -37,22 +36,23 @@ public partial class MainWindow : SukiWindow
     protected override void OnApplyTemplate(Avalonia.Controls.Primitives.TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
+        // 让Dialog和Toast下移，避免遮挡标题栏
+        // 先找到标题栏控件，然后监听其Bounds属性变化
         var titleBar = e.NameScope.Find<Control>("PART_TitleBar");
-        if (titleBar != null)
-        {
-            titleBar.PropertyChanged += (s, ev) =>
+        titleBar?.PropertyChanged += (s, ev) =>
             {
-                if (ev.Property == Avalonia.Visual.BoundsProperty)
+                if (ev.Property == BoundsProperty)
                 {
+                    // 获取标题栏高度
                     var h = titleBar.Bounds.Height;
                     if (h > 0)
                     {
-                        if (DialogManager != null) DialogManager.Margin = new Avalonia.Thickness(0, h, 0, 0);
-                        if (ToastManager != null) ToastManager.Margin = new Avalonia.Thickness(0, h + 3, 0, 0);
+                        // 调整DialogManager和ToastManager的Margin
+                        DialogManager?.Margin = new Avalonia.Thickness(0, h, 0, 0);
+                        ToastManager?.Margin = new Avalonia.Thickness(0, h + 3, 0, 0);
                     }
                 }
             };
-        }
     }
 
     public void UpdateUserHeader(string username, string? avatarUrl)

@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:micon="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:controls="clr-namespace:MSLX.Desktop.Controls"
+             x:DataType="controls:EmptyStateControl"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
+             x:Class="MSLX.Desktop.Controls.EmptyStateControl">
+    
+    <StackPanel HorizontalAlignment="Center" 
+                VerticalAlignment="Center"
+                Spacing="12"
+                Margin="20">
+        <micon:MaterialIcon Kind="{Binding IconKind}"
+                           Height="64" Width="64"
+                           Opacity="0.4"
+                           Foreground="{DynamicResource SukiText}"/>
+        <TextBlock Text="{Binding Title}"
+                  FontSize="18"
+                  FontWeight="Medium"
+                  HorizontalAlignment="Center"
+                  Opacity="0.6"
+                  TextWrapping="Wrap"
+                  TextAlignment="Center"/>
+        <TextBlock Text="{Binding Description}"
+                  FontSize="14"
+                  HorizontalAlignment="Center"
+                  Opacity="0.4"
+                  TextWrapping="Wrap"
+                  TextAlignment="Center"
+                  IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+    </StackPanel>
+</UserControl>

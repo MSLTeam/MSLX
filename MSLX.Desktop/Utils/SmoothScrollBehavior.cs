@@ -39,7 +39,9 @@ namespace MSLX.Desktop.Utils
             e.Handled = true;
 
             var smoothScroller = GetOrCreateScroller(scrollViewer);
-            smoothScroller.ScrollBy(-e.Delta.Y * 60); // 控制一次滚动的跨度的倍率
+
+            // 100代表滚动倍率
+            smoothScroller.ScrollBy(-e.Delta.Y * 100);
         }
 
         private static readonly AttachedProperty<SmoothScroller> ScrollerProperty =
@@ -61,6 +63,7 @@ namespace MSLX.Desktop.Utils
             private readonly ScrollViewer _scrollViewer;
             private double _targetOffset;
             private DispatcherTimer? _timer;
+            private bool _isAnimating;
 
             public SmoothScroller(ScrollViewer scrollViewer)
             {
@@ -69,22 +72,34 @@ namespace MSLX.Desktop.Utils
 
             public void ScrollBy(double delta)
             {
-                if (_timer == null || !_timer.IsEnabled)
+                if (!_isAnimating)
                 {
                     _targetOffset = _scrollViewer.Offset.Y;
                 }
 
                 _targetOffset += delta;
-                
+
                 var maxOffset = Math.Max(0, _scrollViewer.Extent.Height - _scrollViewer.Viewport.Height);
                 _targetOffset = Math.Max(0, Math.Min(_targetOffset, maxOffset));
 
-                if (_timer == null)
+                if (!_isAnimating)
                 {
-                    _timer = new DispatcherTimer(TimeSpan.FromMilliseconds(16), DispatcherPriority.Render, OnTick);
+                    StartAnimation();
                 }
-                
+            }
+
+            private void StartAnimation()
+            {
+                _isAnimating = true;
+                _timer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(1), DispatcherPriority.Send, OnTick);
+
                 _timer.Start();
+            }
+
+            private void StopAnimation()
+            {
+                _isAnimating = false;
+                _timer?.Stop();
             }
 
             private void OnTick(object? sender, EventArgs e)
@@ -92,15 +107,16 @@ namespace MSLX.Desktop.Utils
                 var currentOffset = _scrollViewer.Offset.Y;
                 var diff = _targetOffset - currentOffset;
 
-                // 阻尼系数，决定顺滑度和停止速度
-                if (Math.Abs(diff) < 1.0)
+                // 0.3代表停止阈值
+                if (Math.Abs(diff) < 0.3)
                 {
                     _scrollViewer.Offset = new Vector(_scrollViewer.Offset.X, _targetOffset);
-                    _timer?.Stop();
+                    StopAnimation();
                     return;
                 }
 
-                _scrollViewer.Offset = new Vector(_scrollViewer.Offset.X, currentOffset + diff * 0.25);
+                // 0.06代表阻尼系数
+                _scrollViewer.Offset = new Vector(_scrollViewer.Offset.X, currentOffset + diff * 0.06);
             }
         }
     }
