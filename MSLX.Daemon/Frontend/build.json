@@ -1,6 +1,6 @@
 {
-  "version": "1.5.7",
-  "buildTime": "2026-08-05 00:13:33",
+  "version": "1.5.8",
+  "buildTime": "2026-08-05 17:29:25",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -77,10 +77,76 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "0bfcb5193f1bcdafa04768bb1c1bbba7eebc3fd2",
-  "commitMsg": "feat(desktop & webpanel): 关于页面中更新Contributors列表",
+  "commitId": "6b19fb7835ead729c32d4cf5d469304ecd90eabc",
+  "commitMsg": "feat(desktop): 完善首页仪表盘页面 & 优化菜单栏以及标题栏样式",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "6b19fb7835ead729c32d4cf5d469304ecd90eabc",
+      "commitTime": "2026-08-05 17:27:45 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): 完善首页仪表盘页面 & 优化菜单栏以及标题栏样式"
+    },
+    {
+      "commitId": "90bdde6104db45c740508a3fec8132550718242f",
+      "commitTime": "2026-08-05 17:27:18 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复移动端下监听地址的端口会超出卡片飘出去"
+    },
+    {
+      "commitId": "8cdbc85900c99e97c0036ffdc21ceaed1fbe64ff",
+      "commitTime": "2026-08-05 17:05:22 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "deps(daemon): 更新依赖包"
+    },
+    {
+      "commitId": "5f2e90b700cdf617e1a4dab2640711918085bf7f",
+      "commitTime": "2026-08-05 16:59:59 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & wenbpanel & daemon): 支持配置下载器的线程数量 & 优化安装NeoForge时的下载逻辑"
+    },
+    {
+      "commitId": "a68469ebff42415886627a564531afb6d2f3c279",
+      "commitTime": "2026-08-05 16:03:58 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #207 from CoZooo/dev"
+    },
+    {
+      "commitId": "b89bab6a066825b9ee86b7ef7b65ea7ea307dea7",
+      "commitTime": "2026-08-05 16:00:52 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & wenbpanel): 新增导出服务端功能 #112"
+    },
+    {
+      "commitId": "3b378894aab3384f5202ebdd03ed97ee2c5b8034",
+      "commitTime": "2026-08-05 15:46:33 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): NeoForge安装源修改为在线获取"
+    },
+    {
+      "commitId": "3876a4804411229d67dbfb02d2a983e9021af561",
+      "commitTime": "2026-08-05 13:17:21 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "fix(daemon): 在使用Homebrew更新前先执行元数据更新"
+    },
+    {
+      "commitId": "c79251b741294851f05d27e4d0186ed37b1d9a45",
+      "commitTime": "2026-08-05 10:41:43 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 定时任务新增执行命令功能 #196"
+    },
+    {
+      "commitId": "433d9bcf4f01abb1d0256198d71c742e3d5e22bc",
+      "commitTime": "2026-08-05 00:17:55 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #204 from MSLTeam/dev"
+    },
+    {
+      "commitId": "b0b0352289591baec3e3643345a31310ff30abb7",
+      "commitTime": "2026-08-05 00:13:47 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel & desktop): 更新到v1.5.7版本"
+    },
     {
       "commitId": "0bfcb5193f1bcdafa04768bb1c1bbba7eebc3fd2",
       "commitTime": "2026-08-04 18:59:21 +0800",
@@ -314,72 +380,6 @@
       "commitTime": "2026-08-01 17:44:50 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "feat(daemon): 优化Docker未启动的报错信息"
-    },
-    {
-      "commitId": "03e03060ea1582af7c535117ba83bb96acb3ac1b",
-      "commitTime": "2026-08-01 17:30:40 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 优化插件管理页面样式"
-    },
-    {
-      "commitId": "46c30fd2d6b9dd0534f606db34868c7094ccb3dc",
-      "commitTime": "2026-08-01 17:29:37 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复插件注册高级路由的问题"
-    },
-    {
-      "commitId": "2db8ed828464376d01ac0b1ae9a3b14a32c73fc1",
-      "commitTime": "2026-08-01 16:50:28 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复合并冲突时丢失的 CreationTaskTracker 服务注册"
-    },
-    {
-      "commitId": "c46e89509733e644cb610ae5970390d66efdf516",
-      "commitTime": "2026-08-01 16:47:54 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
-    },
-    {
-      "commitId": "5614c48f0ba8255a7914afc48b0a3137479e04b8",
-      "commitTime": "2026-08-01 16:47:10 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 插件实现热重载支持"
-    },
-    {
-      "commitId": "39b291b33ef744f689722f3404e1bfca8e3dde41",
-      "commitTime": "2026-07-30 22:04:15 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #197 from CoZooo/dev"
-    },
-    {
-      "commitId": "54baa1b96277b813ece831808dc2e35f47e1be01",
-      "commitTime": "2026-07-30 21:38:47 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "chore: 增加Homebrew自动更新工作流"
-    },
-    {
-      "commitId": "ff8781cfb53c89dfebe457687c9808e8a8972019",
-      "commitTime": "2026-07-28 16:36:33 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "perf: 新增取消实例部署功能 fix(desktop): 修复创建服务器界面重新载入时，部分布局没有恢复默认的bug fix: 修复其他若干有关服务器实例部署的问题"
-    },
-    {
-      "commitId": "e75197d2f98607923b6d00c0aa76f2093a42fa2e",
-      "commitTime": "2026-07-27 15:57:30 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复空插件插槽导致组件上下边距异常的问题"
-    },
-    {
-      "commitId": "e891dbc7a9b943a0d39ce3d5f6fe4b20b122afa0",
-      "commitTime": "2026-07-27 15:54:08 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 新增Docker镜像管理功能"
-    },
-    {
-      "commitId": "024e11e9faaed8834f192013453a7fa52fb3ca2b",
-      "commitTime": "2026-07-25 23:27:15 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #194 from MSLTeam/dev"
     }
   ]
 }
