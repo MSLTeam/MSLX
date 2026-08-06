@@ -629,6 +629,100 @@ public class AiService
                         }
                     }
                 }
+            },
+            new JsonObject
+                {
+                    ["type"] = "function",
+                    ["function"] = new JsonObject
+                    {
+                        ["name"] = "read_server_log",
+                        ["description"] = "专用于诊断服务器崩溃与实时日志排查。读取服务器 `logs/latest.log` 末尾指定行数的文本，或直接检索 `crash-reports/` 目录下最新的崩溃报告文件。采用 FileShare.ReadWrite 共享模式，即使服务器运行中或崩溃卡死时也可安全读取。",
+                        ["parameters"] = new JsonObject
+                        {
+                            ["type"] = "object",
+                            ["properties"] = new JsonObject
+                            {
+                                ["server_id"] = new JsonObject { ["type"] = "number", ["description"] = "服务器 ID，未指定时结合【当前用户界面上下文】的主机 ID 或最新服务器" },
+                                ["log_type"] = new JsonObject { ["type"] = "string", ["description"] = "日志类型，取值为 'latest' (运行日志) 或 'crash_report' (崩溃文件)，默认为 'latest'" },
+                                ["tail_lines"] = new JsonObject { ["type"] = "integer", ["description"] = "读取末尾行数，默认 100 行" }
+                            }
+                        }
+                    }
+                },
+                new JsonObject
+                {
+                    ["type"] = "function",
+                    ["function"] = new JsonObject
+                    {
+                        ["name"] = "copy_server_file",
+                        ["description"] = "在指定服务器实例目录下复制文件或文件夹（如备份配置文件 `server.properties` 为 `server.properties.bak`，备份存档，或复制 Mod/插件）。",
+                        ["parameters"] = new JsonObject
+                        {
+                            ["type"] = "object",
+                            ["properties"] = new JsonObject
+                            {
+                                ["server_id"] = new JsonObject { ["type"] = "number", ["description"] = "服务器 ID，未指定时结合【当前用户界面上下文】的主机 ID 或最新服务器" },
+                                ["source_path"] = new JsonObject { ["type"] = "string", ["description"] = "源相对路径，如 'server.properties', 'mods/test.jar', 'world'" },
+                                ["destination_path"] = new JsonObject { ["type"] = "string", ["description"] = "目标相对路径，如 'server.properties.bak', 'mods_bak/test.jar', 'world_backup'" }
+                            },
+                            ["required"] = new JsonArray { "source_path", "destination_path" }
+                        }
+                    }
+                },
+                new JsonObject
+                {
+                    ["type"] = "function",
+                    ["function"] = new JsonObject
+                    {
+                        ["name"] = "move_server_file",
+                        ["description"] = "在指定服务器实例目录下移动或重命名文件/文件夹（如将崩服的 Mod `mod.jar` 重命名为 `mod.jar.disabled` 以禁用模组，移动备份，重命名地图文件夹等）。",
+                        ["parameters"] = new JsonObject
+                        {
+                            ["type"] = "object",
+                            ["properties"] = new JsonObject
+                            {
+                                ["server_id"] = new JsonObject { ["type"] = "number", ["description"] = "服务器 ID，未指定时结合【当前用户界面上下文】的主机 ID 或最新服务器" },
+                                ["source_path"] = new JsonObject { ["type"] = "string", ["description"] = "源相对路径，如 'mods/badmod.jar', 'server.properties'" },
+                                ["destination_path"] = new JsonObject { ["type"] = "string", ["description"] = "目标相对路径，如 'mods/badmod.jar.disabled', 'server.properties.old'" }
+                            },
+                            ["required"] = new JsonArray { "source_path", "destination_path" }
+                        }
+                    }
+                },
+                new JsonObject
+                {
+                    ["type"] = "function",
+                    ["function"] = new JsonObject
+                    {
+                        ["name"] = "query_system_metrics",
+                        ["description"] = "实时查询宿主机及指定 Minecraft 服务器实例的 CPU 使用率、已用/可用系统内存、磁盘空间、网卡流量以及运行实例性能状态。",
+                        ["parameters"] = new JsonObject
+                        {
+                            ["type"] = "object",
+                            ["properties"] = new JsonObject
+                            {
+                                ["server_id"] = new JsonObject { ["type"] = "number", ["description"] = "可选服务器 ID" }
+                            }
+                        }
+                    }
+                },
+                new JsonObject
+                {
+                    ["type"] = "function",
+                    ["function"] = new JsonObject
+                    {
+                        ["name"] = "list_server_mods_plugins",
+                        ["description"] = "专门列出指定服务器实例目录下的 `mods/` 或 `plugins/` 文件夹中的所有模组/插件文件（包括启用状态 `.jar` 和已禁用 `.jar.disabled`）、文件大小及修改时间。",
+                        ["parameters"] = new JsonObject
+                        {
+                            ["type"] = "object",
+                            ["properties"] = new JsonObject
+                            {
+                            ["server_id"] = new JsonObject { ["type"] = "number", ["description"] = "服务器 ID，未指定时结合【当前用户界面上下文】的主机 ID 或最新服务器" },
+                            ["folder_type"] = new JsonObject { ["type"] = "string", ["description"] = "分类，取值为 'mods', 'plugins', 'both'，默认为 'both'" }
+                        }
+                    }
+                }
             }
         };
     }
@@ -1327,6 +1421,272 @@ public class AiService
                     return $"[SUCCESS] 当前服务器列表与状态:\n" + JsonSerializer.Serialize(list);
                 }
 
+                case "read_server_log":
+                {
+                    int targetId = 0;
+                    if (args != null && args.ContainsKey("server_id") && args["server_id"] != null)
+                        int.TryParse(args["server_id"].ToString(), out targetId);
+
+                    string logType = (args != null && args.ContainsKey("log_type") && args["log_type"] != null)
+                        ? args["log_type"].ToString().Trim()
+                        : "latest";
+
+                    int tailLines = 100;
+                    if (args != null && args.ContainsKey("tail_lines") && args["tail_lines"] != null)
+                        int.TryParse(args["tail_lines"].ToString(), out tailLines);
+
+                    var serverList = IConfigBase.ServerList.GetServerList();
+                    var targetServer = targetId > 0
+                        ? serverList.FirstOrDefault(s => s.ID == targetId)
+                        : serverList.OrderByDescending(s => s.ID).FirstOrDefault();
+
+                    if (targetServer == null) return "[ERROR] 未找到目标服务器实例。";
+
+                    string serverDir = targetServer.Base;
+                    if (string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir))
+                    {
+                        serverDir = Path.Combine(IConfigBase.GetAppDataPath(), "Servers", targetServer.ID.ToString());
+                    }
+
+                    string targetFilePath = "";
+                    if (logType.Equals("crash_report", StringComparison.OrdinalIgnoreCase))
+                    {
+                        string crashDir = Path.Combine(serverDir, "crash-reports");
+                        if (!Directory.Exists(crashDir)) return "[INFO] 未找到 crash-reports 崩溃日志目录，服务器暂无崩溃记录。";
+
+                        var latestCrashFile = new DirectoryInfo(crashDir)
+                            .GetFiles("*.txt")
+                            .OrderByDescending(f => f.LastWriteTime)
+                            .FirstOrDefault();
+
+                        if (latestCrashFile == null) return "[INFO] crash-reports 目录下暂无崩溃文件。";
+                        targetFilePath = latestCrashFile.FullName;
+                    }
+                    else
+                    {
+                        targetFilePath = Path.Combine(serverDir, "logs", "latest.log");
+                        if (!File.Exists(targetFilePath)) return "[INFO] 未找到 logs/latest.log 运行日志文件。";
+                    }
+
+                    try
+                    {
+                        using var fs = new FileStream(targetFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                        using var reader = new StreamReader(fs, Encoding.UTF8);
+                        var lines = new List<string>();
+                        string? line;
+                        while ((line = await reader.ReadLineAsync()) != null)
+                        {
+                            lines.Add(line);
+                        }
+
+                        var selectedLines = lines.TakeLast(Math.Min(tailLines, 300)).ToList();
+                        var resultText = string.Join("\n", selectedLines);
+                        var resData = new { file = Path.GetFileName(targetFilePath), linesCount = selectedLines.Count, content = resultText };
+                        await onToolExecuted("read_server_log", resData);
+                        return $"[SUCCESS] 成功提取日志 {Path.GetFileName(targetFilePath)} 末尾 {selectedLines.Count} 行内容：\n\n```log\n{resultText}\n```";
+                    }
+                    catch (Exception ex)
+                    {
+                        return $"[ERROR] 读取日志文件失败: {ex.Message}";
+                    }
+                }
+
+                case "copy_server_file":
+                {
+                    int targetId = 0;
+                    if (args != null && args.ContainsKey("server_id") && args["server_id"] != null)
+                        int.TryParse(args["server_id"].ToString(), out targetId);
+
+                    string srcRel = args?["source_path"]?.ToString().Trim() ?? "";
+                    string dstRel = args?["destination_path"]?.ToString().Trim() ?? "";
+
+                    if (string.IsNullOrWhiteSpace(srcRel) || string.IsNullOrWhiteSpace(dstRel))
+                        return "[ERROR] 参数缺失：source_path 和 destination_path 不能为空。";
+
+                    var serverList = IConfigBase.ServerList.GetServerList();
+                    var targetServer = targetId > 0
+                        ? serverList.FirstOrDefault(s => s.ID == targetId)
+                        : serverList.OrderByDescending(s => s.ID).FirstOrDefault();
+
+                    if (targetServer == null) return "[ERROR] 未找到目标服务器实例。";
+
+                    string serverDir = targetServer.Base;
+                    if (string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir))
+                    {
+                        serverDir = Path.Combine(IConfigBase.GetAppDataPath(), "Servers", targetServer.ID.ToString());
+                    }
+
+                    string srcPath = Path.GetFullPath(Path.Combine(serverDir, srcRel));
+                    string dstPath = Path.GetFullPath(Path.Combine(serverDir, dstRel));
+
+                    if (!srcPath.StartsWith(serverDir, StringComparison.OrdinalIgnoreCase) ||
+                        !dstPath.StartsWith(serverDir, StringComparison.OrdinalIgnoreCase))
+                        return "[ERROR] 越权访问：文件路径超出目标服务器根目录。";
+
+                    if (File.Exists(srcPath))
+                    {
+                        Directory.CreateDirectory(Path.GetDirectoryName(dstPath)!);
+                        File.Copy(srcPath, dstPath, overwrite: true);
+                        var resData = new { action = "copy", source = srcRel, destination = dstRel };
+                        await onToolExecuted("copy_server_file", resData);
+                        return $"[SUCCESS] 成功复制文件: {srcRel} ➔ {dstRel}";
+                    }
+                    else if (Directory.Exists(srcPath))
+                    {
+                        CopyDirectoryRecursively(srcPath, dstPath);
+                        var resData = new { action = "copy_dir", source = srcRel, destination = dstRel };
+                        await onToolExecuted("copy_server_file", resData);
+                        return $"[SUCCESS] 成功复制目录: {srcRel} ➔ {dstRel}";
+                    }
+                    return $"[ERROR] 源文件或目录不存在: {srcRel}";
+                }
+
+                case "move_server_file":
+                {
+                    int targetId = 0;
+                    if (args != null && args.ContainsKey("server_id") && args["server_id"] != null)
+                        int.TryParse(args["server_id"].ToString(), out targetId);
+
+                    string srcRel = args?["source_path"]?.ToString().Trim() ?? "";
+                    string dstRel = args?["destination_path"]?.ToString().Trim() ?? "";
+
+                    if (string.IsNullOrWhiteSpace(srcRel) || string.IsNullOrWhiteSpace(dstRel))
+                        return "[ERROR] 参数缺失：source_path 和 destination_path 不能为空。";
+
+                    var serverList = IConfigBase.ServerList.GetServerList();
+                    var targetServer = targetId > 0
+                        ? serverList.FirstOrDefault(s => s.ID == targetId)
+                        : serverList.OrderByDescending(s => s.ID).FirstOrDefault();
+
+                    if (targetServer == null) return "[ERROR] 未找到目标服务器实例。";
+
+                    string serverDir = targetServer.Base;
+                    if (string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir))
+                    {
+                        serverDir = Path.Combine(IConfigBase.GetAppDataPath(), "Servers", targetServer.ID.ToString());
+                    }
+
+                    string srcPath = Path.GetFullPath(Path.Combine(serverDir, srcRel));
+                    string dstPath = Path.GetFullPath(Path.Combine(serverDir, dstRel));
+
+                    if (!srcPath.StartsWith(serverDir, StringComparison.OrdinalIgnoreCase) ||
+                        !dstPath.StartsWith(serverDir, StringComparison.OrdinalIgnoreCase))
+                        return "[ERROR] 越权访问：文件路径超出目标服务器根目录。";
+
+                    if (File.Exists(srcPath))
+                    {
+                        Directory.CreateDirectory(Path.GetDirectoryName(dstPath)!);
+                        if (File.Exists(dstPath)) File.Delete(dstPath);
+                        File.Move(srcPath, dstPath);
+                        var resData = new { action = "move", source = srcRel, destination = dstRel };
+                        await onToolExecuted("move_server_file", resData);
+                        return $"[SUCCESS] 成功移动/重命名文件: {srcRel} ➔ {dstRel}";
+                    }
+                    else if (Directory.Exists(srcPath))
+                    {
+                        if (Directory.Exists(dstPath)) Directory.Delete(dstPath, true);
+                        Directory.Move(srcPath, dstPath);
+                        var resData = new { action = "move_dir", source = srcRel, destination = dstRel };
+                        await onToolExecuted("move_server_file", resData);
+                        return $"[SUCCESS] 成功移动/重命名目录: {srcRel} ➔ {dstRel}";
+                    }
+                    return $"[ERROR] 源文件或目录不存在: {srcRel}";
+                }
+
+                case "query_system_metrics":
+                {
+                    int targetId = 0;
+                    if (args != null && args.ContainsKey("server_id") && args["server_id"] != null)
+                        int.TryParse(args["server_id"].ToString(), out targetId);
+
+                    var serverList = IConfigBase.ServerList.GetServerList();
+                    var targetServer = targetId > 0
+                        ? serverList.FirstOrDefault(s => s.ID == targetId)
+                        : serverList.OrderByDescending(s => s.ID).FirstOrDefault();
+
+                    var gcMemoryMb = GC.GetTotalMemory(false) / 1024 / 1024;
+                    var process = System.Diagnostics.Process.GetCurrentProcess();
+                    var processWorkingSetMb = process.WorkingSet64 / 1024 / 1024;
+
+                    var resData = new
+                    {
+                        systemMemoryMb = processWorkingSetMb,
+                        gcMemoryMb = gcMemoryMb,
+                        targetServerId = targetServer?.ID,
+                        targetServerName = targetServer?.Name,
+                        targetServerJava = targetServer?.Java,
+                        targetServerMemory = targetServer?.MaxM
+                    };
+
+                    await onToolExecuted("query_system_metrics", resData);
+                    return $"[SUCCESS] 系统性能状态：宿主机 Daemon 进程内存使用 {processWorkingSetMb}MB (GC堆: {gcMemoryMb}MB)；当前服务器 #{targetServer?.ID ?? 0} [{targetServer?.Name}] 设定内存: {targetServer?.MaxM?.ToString() ?? "默认"}MB，绑定Java: {targetServer?.Java ?? "默认"}。";
+                }
+
+                case "list_server_mods_plugins":
+                {
+                    int targetId = 0;
+                    if (args != null && args.ContainsKey("server_id") && args["server_id"] != null)
+                        int.TryParse(args["server_id"].ToString(), out targetId);
+
+                    string folderType = args?["folder_type"]?.ToString().Trim() ?? "both";
+
+                    var serverList = IConfigBase.ServerList.GetServerList();
+                    var targetServer = targetId > 0
+                        ? serverList.FirstOrDefault(s => s.ID == targetId)
+                        : serverList.OrderByDescending(s => s.ID).FirstOrDefault();
+
+                    if (targetServer == null) return "[ERROR] 未找到目标服务器实例。";
+
+                    string serverDir = targetServer.Base;
+                    if (string.IsNullOrEmpty(serverDir) || !Directory.Exists(serverDir))
+                    {
+                        serverDir = Path.Combine(IConfigBase.GetAppDataPath(), "Servers", targetServer.ID.ToString());
+                    }
+
+                    var mods = new List<object>();
+                    var plugins = new List<object>();
+
+                    if (folderType == "mods" || folderType == "both")
+                    {
+                        string modsDir = Path.Combine(serverDir, "mods");
+                        if (Directory.Exists(modsDir))
+                        {
+                            var files = new DirectoryInfo(modsDir).GetFiles("*.*")
+                                .Where(f => f.Extension.Equals(".jar", StringComparison.OrdinalIgnoreCase) || f.Extension.Equals(".disabled", StringComparison.OrdinalIgnoreCase) || f.Name.EndsWith(".jar.disabled", StringComparison.OrdinalIgnoreCase))
+                                .OrderBy(f => f.Name);
+
+                            foreach (var f in files)
+                            {
+                                bool isEnabled = f.Extension.Equals(".jar", StringComparison.OrdinalIgnoreCase);
+                                mods.Add(new { name = f.Name, sizeKb = f.Length / 1024, enabled = isEnabled, lastModified = f.LastWriteTime.ToString("yyyy-MM-dd HH:mm") });
+                            }
+                        }
+                    }
+
+                    if (folderType == "plugins" || folderType == "both")
+                    {
+                        string pluginsDir = Path.Combine(serverDir, "plugins");
+                        if (Directory.Exists(pluginsDir))
+                        {
+                            var files = new DirectoryInfo(pluginsDir).GetFiles("*.*")
+                                .Where(f => f.Extension.Equals(".jar", StringComparison.OrdinalIgnoreCase) || f.Extension.Equals(".disabled", StringComparison.OrdinalIgnoreCase) || f.Name.EndsWith(".jar.disabled", StringComparison.OrdinalIgnoreCase))
+                                .OrderBy(f => f.Name);
+
+                            foreach (var f in files)
+                            {
+                                bool isEnabled = f.Extension.Equals(".jar", StringComparison.OrdinalIgnoreCase);
+                                plugins.Add(new { name = f.Name, sizeKb = f.Length / 1024, enabled = isEnabled, lastModified = f.LastWriteTime.ToString("yyyy-MM-dd HH:mm") });
+                            }
+                        }
+                    }
+
+                    var resData = new { modsCount = mods.Count, pluginsCount = plugins.Count, mods = mods, plugins = plugins };
+                    await onToolExecuted("list_server_mods_plugins", resData);
+                    return $"[SUCCESS] 服务器 #{targetServer.ID} Mod 数量: {mods.Count} 个, 插件数量: {plugins.Count} 个。" +
+                           (mods.Count > 0 ? "\n\nMod 列表:\n" + string.Join("\n", mods.Select(m => $"- {((dynamic)m).name} ({(((dynamic)m).enabled ? "✅ 已启用" : "❌ 已禁用")}, {((dynamic)m).sizeKb}KB)")) : "") +
+                           (plugins.Count > 0 ? "\n\n插件列表:\n" + string.Join("\n", plugins.Select(p => $"- {((dynamic)p).name} ({(((dynamic)p).enabled ? "✅ 已启用" : "❌ 已禁用")}, {((dynamic)p).sizeKb}KB)")) : "");
+                }
+
                 default:
                     return $"[ERROR] 未找到工具处理逻辑 {name}";
             }
@@ -1410,6 +1770,21 @@ public class AiService
 
         string result = await ExecuteToolAsync(pending.ToolName, pending.ArgsJson, onToolExecuted, assumeConfirmed: true);
         return (true, result, new { confirmed = true });
+    }
+
+    private static void CopyDirectoryRecursively(string sourceDir, string targetDir)
+    {
+        Directory.CreateDirectory(targetDir);
+        foreach (var file in Directory.GetFiles(sourceDir))
+        {
+            string dest = Path.Combine(targetDir, Path.GetFileName(file));
+            File.Copy(file, dest, overwrite: true);
+        }
+        foreach (var dir in Directory.GetDirectories(sourceDir))
+        {
+            string dest = Path.Combine(targetDir, Path.GetFileName(dir));
+            CopyDirectoryRecursively(dir, dest);
+        }
     }
 }
 
