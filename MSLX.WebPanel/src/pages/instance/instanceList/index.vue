@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { onMounted, reactive, ref, watch } from 'vue';
+import { onMounted, reactive, ref, watch, computed } from 'vue';
 import {
   AddIcon,
   CheckCircleFilledIcon,
@@ -10,6 +10,7 @@ import {
   MinusCircleFilledIcon,
   RefreshIcon,
   FilterIcon,
+  SearchIcon,
   UsergroupIcon,
 } from 'tdesign-icons-vue-next';
 import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next';
@@ -36,12 +37,31 @@ const handleNodeChange = (_val: string) => {
   store.refreshInstanceList();
 };
 
-watch(() => nodeStore.activeNodeId, () => {
-  store.refreshInstanceList();
-});
+watch(
+  () => nodeStore.activeNodeId,
+  () => {
+    store.refreshInstanceList();
+  },
+);
 
 onMounted(() => {
   store.refreshInstanceList();
+});
+
+// 搜索
+const searchKeyword = ref('');
+const filteredInstanceList = computed(() => {
+  if (!store.instanceList) return [];
+  if (!searchKeyword.value.trim()) return store.instanceList;
+
+  const keyword = searchKeyword.value.toLowerCase().trim();
+  return store.instanceList.filter((item) => {
+    return (
+      item.name?.toLowerCase().includes(keyword) ||
+      String(item.id).includes(keyword) ||
+      item.core?.toLowerCase().includes(keyword)
+    );
+  });
 });
 
 const getStatusConfig = (status: number) => {
@@ -216,18 +236,29 @@ const handleConfirmDelete = async () => {
 <template>
   <div class="mx-auto flex flex-col gap-6 text-[var(--td-text-color-primary)] pb-5">
     <div
-      class="design-card flex flex-col sm:flex-row flex-wrap sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
+      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
     >
-      <div class="flex flex-col gap-1 items-start shrink-0 flex-1 min-w-0">
+      <div class="flex flex-col gap-1 items-start shrink-0 min-w-0">
         <h2 class="text-lg font-bold tracking-tight text-[var(--td-text-color-primary)] m-0">服务端列表</h2>
         <p class="text-sm text-[var(--td-text-color-secondary)] m-0">
           管理您的 Minecraft 服务器实例，监控运行状态与核心版本
         </p>
       </div>
 
-      <div class="flex flex-col sm:flex-row flex-wrap items-center sm:justify-end gap-3">
+      <div class="flex flex-wrap items-center sm:justify-end gap-3">
         <template v-if="!isBatchMode">
           <node-switcher @change="handleNodeChange" />
+          <t-input
+            v-model="searchKeyword"
+            placeholder="搜索名称 / ID / 核心..."
+            clearable
+            class="!w-48 sm:!w-56 shrink-0"
+          >
+            <template #prefix-icon>
+              <search-icon />
+            </template>
+          </t-input>
+
           <t-button variant="outline" :disabled="!store.instanceList?.length" @click="toggleBatchMode">
             <template #icon><filter-icon /></template>
             批量操作
@@ -289,10 +320,10 @@ const handleConfirmDelete = async () => {
     </div>
 
     <div v-loading="false" class="relative min-h-[400px]">
-      <template v-if="store.instanceList && store.instanceList.length > 0">
+      <template v-if="filteredInstanceList && filteredInstanceList.length > 0">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
           <div
-            v-for="(item, index) in store.instanceList"
+            v-for="(item, index) in filteredInstanceList"
             :key="item.id"
             class="list-item-anim h-full"
             :style="{ animationDelay: `${index * 0.05}s` }"
