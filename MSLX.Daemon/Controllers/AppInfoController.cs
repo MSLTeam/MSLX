@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
@@ -426,10 +426,25 @@ public class AppInfoController : ControllerBase
         var updateResult = await RunProcessAsync(brewPath, "update");
         EnsureHomebrewCommandSucceeded("brew update", updateResult);
 
+        // 信任当前 Formula，避免因为 Tap 未受信任而导致升级失败。
+        var trustResult = await RunProcessAsync(
+            brewPath,
+            "trust",
+            "--formula",
+            "mslteam/tap/mslx-daemon");
+        EnsureHomebrewCommandSucceeded(
+            "brew trust --formula mslteam/tap/mslx-daemon",
+            trustResult);
+
         await SendUpdateProgressAsync(25, "0 KB/s", "upgrading", "正在通过 Homebrew 更新 MSLX-Daemon...");
 
-        var upgradeResult = await RunProcessAsync(brewPath, "upgrade", "mslx-daemon");
-        EnsureHomebrewCommandSucceeded("brew upgrade mslx-daemon", upgradeResult);
+        var upgradeResult = await RunProcessAsync(
+            brewPath,
+            "upgrade",
+            "mslteam/tap/mslx-daemon");
+        EnsureHomebrewCommandSucceeded(
+            "brew upgrade mslteam/tap/mslx-daemon",
+            upgradeResult);
 
         if (_serverService.HasRunningServers())
         {
