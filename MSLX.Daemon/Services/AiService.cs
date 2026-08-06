@@ -557,18 +557,32 @@ public class AiService
                 ["function"] = new JsonObject
                 {
                     ["name"] = "create_mc_server",
-                    ["description"] = "在 MSLX 面板中创建新的 Minecraft 基础服务器实例（支持 neoforge, forge, paper, fabric, spigot 等）。系统会自动根据 MC 版本推导并选择匹配的 Java 大版本。",
+                    ["description"] = "在 MSLX 面板中创建并部署 Minecraft 服务器实例。支持 4 种开服模式：1. 快速在线部署模式 (Paper/NeoForge/Fabric/Forge/Vanilla/Spigot/Mohist 等)；2. 整合包/压缩包部署模式 (支持本地 .zip 绝对路径或远程 URL 下载)；3. MCDReforged (MCDR) 架构模式；4. 自定义/导入模式 (自定义主机路径、核心与 JVM 参数)。系统会根据 MC 版本自动精确推导并绑定最匹配的 Java 版本。",
                     ["parameters"] = new JsonObject
                     {
                         ["type"] = "object",
                         ["properties"] = new JsonObject
                         {
-                            ["server_name"] = new JsonObject { ["type"] = "string", ["description"] = "服务器名称，如：我的 NeoForge 服务器" },
-                            ["server_type"] = new JsonObject { ["type"] = "string", ["description"] = "核心类型，如 neoforge, forge, paper, fabric, spigot, vanilla, mohist, arclight" },
-                            ["mc_version"] = new JsonObject { ["type"] = "string", ["description"] = "Minecraft 游戏版本号或 NeoForge 版本号，如 26.2, 1.20.2, 1.20.1" },
-                            ["java"] = new JsonObject { ["type"] = "string", ["description"] = "可选 Java 环境标识（如 'MSLX://Java/21'），留空时系统按 MC 版本自动精确推导并绑定" }
-                        },
-                        ["required"] = new JsonArray { "server_type", "mc_version" }
+                            ["server_name"] = new JsonObject { ["type"] = "string", ["description"] = "服务器实例名称，如 '我的 Fabric 1.20.2 服务器'" },
+                            ["server_type"] = new JsonObject { ["type"] = "string", ["description"] = "核心类型，如 paper, fabric, neoforge, forge, spigot, vanilla, mohist, arclight, custom, package, mcdr" },
+                            ["mc_version"] = new JsonObject { ["type"] = "string", ["description"] = "Minecraft 游戏版本号或核心版本号，如 '1.20.2', '26.2', '1.12.2'" },
+                            ["java"] = new JsonObject { ["type"] = "string", ["description"] = "可选 Java 环境标识（如 'MSLX://Java/21'），留空时系统按 MC 版本自动推导并绑定" },
+                            ["max_m"] = new JsonObject { ["type"] = "integer", ["description"] = "最大分配内存 MB，默认 2048" },
+                            ["min_m"] = new JsonObject { ["type"] = "integer", ["description"] = "最小分配内存 MB，默认 1024" },
+                            ["args"] = new JsonObject { ["type"] = "string", ["description"] = "附加 JVM 启动参数" },
+                            ["ignore_eula"] = new JsonObject { ["type"] = "boolean", ["description"] = "是否自动同意 EULA，默认 true" },
+                            ["server_port"] = new JsonObject { ["type"] = "integer", ["description"] = "服务器映射端口，如 25565" },
+                            ["path"] = new JsonObject { ["type"] = "string", ["description"] = "自定义开服宿主机绝对路径，留空使用默认存放目录" },
+                            ["package_local_path"] = new JsonObject { ["type"] = "string", ["description"] = "【整合包模式】宿主机上的整合包 .zip 文件的绝对路径" },
+                            ["package_url"] = new JsonObject { ["type"] = "string", ["description"] = "【整合包模式】整合包 .zip 的远程下载地址 (http/https)" },
+                            ["mcdr"] = new JsonObject { ["type"] = "boolean", ["description"] = "【MCDR 模式】是否启用 MCDReforged 架构控制端" },
+                            ["mcdr_python"] = new JsonObject { ["type"] = "string", ["description"] = "【MCDR 模式】Python 可执行文件路径，默认为 'python'" },
+                            ["mcdr_handler"] = new JsonObject { ["type"] = "string", ["description"] = "【MCDR 模式】Handler 类型，如 'vanilla', 'paper', 'fabric', 'custom'" },
+                            ["mcdr_install"] = new JsonObject { ["type"] = "boolean", ["description"] = "【MCDR 模式】是否自动 pip 安装 MCDReforged，默认 true" },
+                            ["mcdr_pip_mirror"] = new JsonObject { ["type"] = "string", ["description"] = "【MCDR 模式】pip 镜像源 URL" },
+                            ["core_url"] = new JsonObject { ["type"] = "string", ["description"] = "【自定义核心】核心 JAR 文件的直接下载链接" },
+                            ["core_filename"] = new JsonObject { ["type"] = "string", ["description"] = "【自定义核心】核心 JAR 文件名，如 'server.jar'" }
+                        }
                     }
                 }
             },
@@ -967,6 +981,43 @@ public class AiService
                     string serverName = args?["server_name"]?.ToString() ?? $"{type.ToUpper()}-{version}";
                     string specifiedJava = args?["java"]?.ToString() ?? "";
 
+                    int maxM = 2048;
+                    if (args != null && args.ContainsKey("max_m") && args["max_m"] != null)
+                        int.TryParse(args["max_m"].ToString(), out maxM);
+
+                    int minM = 1024;
+                    if (args != null && args.ContainsKey("min_m") && args["min_m"] != null)
+                        int.TryParse(args["min_m"].ToString(), out minM);
+
+                    string jvmArgs = args?["args"]?.ToString() ?? "";
+                    bool ignoreEula = true;
+                    if (args != null && args.ContainsKey("ignore_eula") && args["ignore_eula"] != null)
+                        bool.TryParse(args["ignore_eula"].ToString(), out ignoreEula);
+
+                    string serverPort = args?["server_port"]?.ToString() ?? "25565";
+                    string customPath = args?["path"]?.ToString() ?? "";
+
+                    // 整合包 / 压缩包模式参数
+                    string packageLocalPath = args?["package_local_path"]?.ToString() ?? "";
+                    string packageUrl = args?["package_url"]?.ToString() ?? "";
+
+                    // MCDR 模式参数
+                    bool isMcdr = false;
+                    if (args != null && args.ContainsKey("mcdr") && args["mcdr"] != null)
+                        bool.TryParse(args["mcdr"].ToString(), out isMcdr);
+
+                    string mcdrPython = args?["mcdr_python"]?.ToString() ?? "python";
+                    string mcdrHandler = args?["mcdr_handler"]?.ToString() ?? "";
+                    bool mcdrInstall = true;
+                    if (args != null && args.ContainsKey("mcdr_install") && args["mcdr_install"] != null)
+                        bool.TryParse(args["mcdr_install"].ToString(), out mcdrInstall);
+
+                    string mcdrPipMirror = args?["mcdr_pip_mirror"]?.ToString() ?? "";
+
+                    // 自定义核心 / 核心直链参数
+                    string customCoreUrl = args?["core_url"]?.ToString() ?? "";
+                    string customCoreFileName = args?["core_filename"]?.ToString() ?? "";
+
                     int recJavaMajor = GetRecommendedJavaMajor(version);
 
                     string selectedJava = specifiedJava;
@@ -1007,26 +1058,29 @@ public class AiService
                         selectedJava = "auto";
                     }
 
-                    string? coreUrl = null;
+                    string? coreUrl = string.IsNullOrWhiteSpace(customCoreUrl) ? null : customCoreUrl;
                     string? coreSha256 = null;
-                    string coreFileName = $"{type}-{version}.jar";
+                    string coreFileName = string.IsNullOrWhiteSpace(customCoreFileName) ? $"{type}-{version}.jar" : customCoreFileName;
 
-                    try
+                    if (string.IsNullOrWhiteSpace(coreUrl) && string.IsNullOrWhiteSpace(packageLocalPath) && string.IsNullOrWhiteSpace(packageUrl))
                     {
-                        var (apiSuccess, apiData, _) = await MSLApi.GetDataAsync($"/download/server/{type.ToLower()}/{version}?build=latest");
-                        if (apiSuccess && apiData is JToken token)
+                        try
                         {
-                            coreUrl = token["url"]?.ToString();
-                            coreSha256 = token["sha256"]?.ToString();
-                            if (token["name"] != null && !string.IsNullOrEmpty(token["name"].ToString()))
+                            var (apiSuccess, apiData, _) = await MSLApi.GetDataAsync($"/download/server/{type.ToLower()}/{version}?build=latest");
+                            if (apiSuccess && apiData is JToken token)
                             {
-                                coreFileName = token["name"].ToString();
+                                coreUrl = token["url"]?.ToString();
+                                coreSha256 = token["sha256"]?.ToString();
+                                if (token["name"] != null && !string.IsNullOrEmpty(token["name"].ToString()))
+                                {
+                                    coreFileName = token["name"].ToString();
+                                }
                             }
                         }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "向镜像站查询核心下载地址失败: {Type} {Version}", type, version);
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "向镜像站查询核心下载地址失败: {Type} {Version}", type, version);
+                        }
                     }
 
                     var serverId = IConfigBase.ServerList.GenerateServerId();
@@ -1037,9 +1091,19 @@ public class AiService
                         coreUrl = coreUrl,
                         coreSha256 = coreSha256,
                         java = selectedJava,
-                        maxM = 2048,
-                        minM = 1024,
-                        DockerPorts = "25565:25565"
+                        maxM = maxM,
+                        minM = minM,
+                        args = string.IsNullOrWhiteSpace(jvmArgs) ? null : jvmArgs,
+                        ignoreEula = ignoreEula,
+                        path = string.IsNullOrWhiteSpace(customPath) ? null : customPath,
+                        DockerPorts = $"{serverPort}:{serverPort}",
+                        packageLocalPath = string.IsNullOrWhiteSpace(packageLocalPath) ? null : packageLocalPath,
+                        packageUrl = string.IsNullOrWhiteSpace(packageUrl) ? null : packageUrl,
+                        mcdr = isMcdr,
+                        mcdrPython = isMcdr ? mcdrPython : null,
+                        mcdrHandler = isMcdr && !string.IsNullOrWhiteSpace(mcdrHandler) ? mcdrHandler : null,
+                        mcdrInstall = mcdrInstall,
+                        mcdrPipMirror = string.IsNullOrWhiteSpace(mcdrPipMirror) ? null : mcdrPipMirror
                     };
 
                     var task = new CreateServerTask
