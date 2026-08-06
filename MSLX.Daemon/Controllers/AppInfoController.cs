@@ -448,18 +448,19 @@ public class AppInfoController : ControllerBase
 
         if (_serverService.HasRunningServers())
         {
-            await SendUpdateProgressAsync(100, "0 KB/s", "preparing", "正在关闭运行中的实例...");
+            await SendUpdateProgressAsync(90, "0 KB/s", "preparing", "正在关闭运行中的实例...");
             _serverService.StopAllServers();
         }
 
         await SendUpdateProgressAsync(100, "0 KB/s", "restarting", "Homebrew 更新完成，正在重启服务...");
         await Task.Delay(1000);
 
-        var restartStartInfo = CreateProcessStartInfo(brewPath, "services", "restart", "mslx-daemon");
-        using Process? restartProcess = Process.Start(restartStartInfo);
-        if (restartProcess == null)
+        // Homebrew service 配置启用了 keep_alive。终止当前进程后，由 launchd 自动拉起新版本。
+        using Process? killProcess = Process.Start(
+            CreateProcessStartInfo("/bin/kill", "-TERM", Environment.ProcessId.ToString()));
+        if (killProcess == null)
         {
-            throw new Exception("无法启动 Homebrew 服务重启命令。");
+            throw new Exception("无法重启服务。请手动执行 brew services restart mslx-daemon");
         }
     }
 
