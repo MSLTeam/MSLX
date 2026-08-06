@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -24,6 +25,8 @@ public class AiService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly IMemoryCache _memoryCache;
     private readonly ILogger<AiService> _logger;
+    private readonly ConcurrentDictionary<string, PendingToolOperation> _pendingToolOperations = new();
+    private static readonly TimeSpan PendingOperationTtl = TimeSpan.FromMinutes(30);
 
     public AiService(
         IMCServerService mcServerService,
@@ -50,12 +53,12 @@ public class AiService
         string apiKey = (string?)(config["aiApiKey"]) ?? "";
         string baseUrl = (string?)(config["aiBaseUrl"]) ?? "https://api.deepseek.com/v1";
         string modelName = (string?)(config["aiModelName"]) ?? "deepseek-chat";
-        string systemPrompt = (string?)(config["aiSystemPrompt"]) ?? """
+        const string systemPrompt = """
 你是一个高效、果断的 Minecraft 服务器运维助手。
 
 【敏感操作与前端 UI 二次确认规范 - 必须严格遵守】：
 1. 当用户要求删除文件/目录(如删除存档 'world'、旧插件、模组或日志)或修改文件时，【绝对禁止在回复文本中反问用户“你确认要删除/修改吗”】！
-2. 必须【立即、果断调用 delete_server_file 或 write_server_file 工具】！系统与前端 UI 界面会自动捕捉该 Tool Call，并在聊天卡片下方弹出漂亮的交互式黄色二次确认框与 [确认授权删除/写入] 按钮供用户点击！
+2. 必须【立即、果断调用 delete_server_file 或 write_server_file 工具】！系统会自动挂起该操作，并在前端聊天卡片下方弹出交互式二次确认框与 [确认授权删除/写入] 按钮；用户点击确认后系统才会真正执行操作，你无需再次调用工具！
 3. 当用户要求“把 Java 切换为合适的版本”或修改设置时，绝对禁止反问用户或询问“你想用 Java 21 还是 25”，必须立即调用 update_instance_settings 工具！
 4. 当服务器属于 NeoForge 26.x 或 MC 26.1+ 时，必须严格直接匹配 Java 25 (MSLX://Java/25)！
 5. 在你每次回答的末尾，必须生成 3 个适合当前上下文的预设快捷回复选项：
@@ -107,7 +110,11 @@ public class AiService
                 ["model"] = modelName,
                 ["messages"] = reqMessages.DeepClone(),
                 ["tools"] = tools.DeepClone(),
-                ["stream"] = false
+                ["stream"] = true,
+                ["stream_options"] = new JsonObject
+                {
+                    ["include_usage"] = true
+                }
             };
 
             using var request = new HttpRequestMessage(HttpMethod.Post, requestUrl);
@@ -116,31 +123,128 @@ public class AiService
 
             try
             {
-                var response = await _httpClient.SendAsync(request);
-                var responseContent = await response.Content.ReadAsStringAsync();
+                using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
                 if (!response.IsSuccessStatusCode)
                 {
+                    var responseContent = await response.Content.ReadAsStringAsync();
                     _logger.LogError("调用大模型失败 HTTP {Status}: {Body}", response.StatusCode, responseContent);
                     await onChunkReceived($"调用大模型失败 (HTTP {(int)response.StatusCode}): {responseContent}");
                     return;
                 }
 
-                var resJson = JsonNode.Parse(responseContent)?.AsObject();
-                var messageObj = resJson?["choices"]?[0]?["message"]?.AsObject();
+                using var responseStream = await response.Content.ReadAsStreamAsync();
+                using var reader = new StreamReader(responseStream, Encoding.UTF8);
 
-                if (messageObj == null)
+                var assistantMessage = new JsonObject { ["role"] = "assistant" };
+                var toolCallsByIndex = new Dictionary<int, JsonObject>();
+                var toolCallNameBuilders = new Dictionary<int, StringBuilder>();
+                var toolCallArgsBuilders = new Dictionary<int, StringBuilder>();
+                var textContent = new StringBuilder();
+
+                string? line;
+                while ((line = await reader.ReadLineAsync()) != null)
                 {
-                    await onChunkReceived("大模型未返回有效的响应数据。");
-                    return;
+                    if (string.IsNullOrWhiteSpace(line) || !line.StartsWith("data:")) continue;
+
+                    var data = line.Substring(5).Trim();
+                    if (data == "[DONE]") break;
+
+                    JsonObject? chunk;
+                    try
+                    {
+                        chunk = JsonNode.Parse(data)?.AsObject();
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+
+                    var choices = chunk?["choices"]?.AsArray();
+                    if (choices == null || choices.Count == 0) continue;
+
+                    var delta = choices[0]?["delta"]?.AsObject();
+                    if (delta == null)
+                    {
+                        // 兼容个别不真正流式返回、直接给整段 message 的接口
+                        delta = choices[0]?["message"]?.AsObject();
+                    }
+                    if (delta == null) continue;
+
+                    var contentDelta = GetStringOrNull(delta["content"]);
+                    if (!string.IsNullOrEmpty(contentDelta))
+                    {
+                        textContent.Append(contentDelta);
+                        await onChunkReceived(contentDelta);
+                    }
+
+                    var deltaToolCalls = delta["tool_calls"]?.AsArray();
+                    if (deltaToolCalls == null) continue;
+
+                    foreach (var deltaToolCall in deltaToolCalls)
+                    {
+                        if (deltaToolCall is not JsonObject toolCallObj) continue;
+
+                        int index = toolCallObj["index"] is JsonValue indexValue && indexValue.TryGetValue<int>(out int idx)
+                            ? idx
+                            : toolCallsByIndex.Count;
+
+                        if (!toolCallsByIndex.TryGetValue(index, out var toolCallBuilder))
+                        {
+                            toolCallBuilder = new JsonObject
+                            {
+                                ["id"] = GetStringOrNull(toolCallObj["id"]) ?? $"call_{index}",
+                                ["type"] = GetStringOrNull(toolCallObj["type"]) ?? "function",
+                                ["function"] = new JsonObject()
+                            };
+                            toolCallsByIndex[index] = toolCallBuilder;
+                            toolCallNameBuilders[index] = new StringBuilder();
+                            toolCallArgsBuilders[index] = new StringBuilder();
+                        }
+
+                        var idDelta = GetStringOrNull(toolCallObj["id"]);
+                        if (!string.IsNullOrEmpty(idDelta) && string.IsNullOrEmpty(GetStringOrNull(toolCallBuilder["id"])))
+                        {
+                            toolCallBuilder["id"] = idDelta;
+                        }
+
+                        var functionObj = toolCallObj["function"]?.AsObject();
+                        if (functionObj == null) continue;
+
+                        var nameDelta = GetStringOrNull(functionObj["name"]);
+                        if (!string.IsNullOrEmpty(nameDelta))
+                        {
+                            toolCallNameBuilders[index].Append(nameDelta);
+                        }
+
+                        var argsDelta = GetStringOrNull(functionObj["arguments"]);
+                        if (!string.IsNullOrEmpty(argsDelta))
+                        {
+                            toolCallArgsBuilders[index].Append(argsDelta);
+                        }
+                    }
                 }
 
-                var toolCalls = messageObj["tool_calls"]?.AsArray();
-                if (toolCalls != null && toolCalls.Count > 0)
+                if (toolCallsByIndex.Count > 0)
                 {
-                    reqMessages.Add(messageObj.DeepClone());
+                    if (textContent.Length > 0)
+                    {
+                        assistantMessage["content"] = textContent.ToString();
+                    }
 
-                    foreach (var call in toolCalls)
+                    var toolCallsArray = new JsonArray();
+                    foreach (var kvp in toolCallsByIndex.OrderBy(k => k.Key))
+                    {
+                        var functionObj = kvp.Value["function"]!.AsObject();
+                        functionObj["name"] = toolCallNameBuilders[kvp.Key].ToString();
+                        functionObj["arguments"] = toolCallArgsBuilders[kvp.Key].ToString();
+                        toolCallsArray.Add(kvp.Value);
+                    }
+
+                    assistantMessage["tool_calls"] = toolCallsArray;
+                    reqMessages.Add(assistantMessage);
+
+                    foreach (var call in toolCallsArray)
                     {
                         var toolCallId = call?["id"]?.ToString() ?? "";
                         var functionObj = call?["function"]?.AsObject();
@@ -161,41 +265,32 @@ public class AiService
 
                     continue;
                 }
-                else
+
+                var contentText = textContent.ToString();
+
+                List<string>? suggestions = null;
+                var sugMatch = Regex.Match(contentText, @"<<<SUGGESTIONS:(?<json>\[.*?\])>>>", RegexOptions.Singleline);
+                if (sugMatch.Success)
                 {
-                    var contentText = messageObj["content"]?.ToString() ?? "";
-
-                    List<string>? suggestions = null;
-                    var sugMatch = Regex.Match(contentText, @"<<<SUGGESTIONS:(?<json>\[.*?\])>>>", RegexOptions.Singleline);
-                    if (sugMatch.Success)
+                    try
                     {
-                        try
-                        {
-                            suggestions = JsonSerializer.Deserialize<List<string>>(sugMatch.Groups["json"].Value);
-                            contentText = Regex.Replace(contentText, @"<<<SUGGESTIONS:\[.*?\]>>>", "", RegexOptions.Singleline).Trim();
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogWarning(ex, "解析建议回复 JSON 失败");
-                        }
+                        suggestions = JsonSerializer.Deserialize<List<string>>(sugMatch.Groups["json"].Value);
+                        contentText = Regex.Replace(contentText, @"<<<SUGGESTIONS:\[.*?\]>>>", "", RegexOptions.Singleline).Trim();
                     }
-
-                    if (suggestions != null && suggestions.Count > 0)
+                    catch (Exception ex)
                     {
-                        await onToolExecuted("suggested_replies", suggestions);
+                        _logger.LogWarning(ex, "解析建议回复 JSON 失败");
                     }
-
-                    var dsmlHandledResult = await TryHandleDsmlTextToolCallsAsync(contentText, onToolExecuted);
-                    if (dsmlHandledResult != null)
-                    {
-                        await onChunkReceived(dsmlHandledResult);
-                    }
-                    else
-                    {
-                        await onChunkReceived(contentText);
-                    }
-                    break;
                 }
+
+                if (suggestions != null && suggestions.Count > 0)
+                {
+                    await onToolExecuted("suggested_replies", suggestions);
+                }
+
+                // 内容已在流式过程中逐块推送，这里只负责处理文本内嵌工具调用（如 DSML），不再重复发送整段文本
+                await TryHandleDsmlTextToolCallsAsync(contentText, onToolExecuted);
+                break;
             }
             catch (Exception ex)
             {
@@ -394,7 +489,7 @@ public class AiService
                 ["function"] = new JsonObject
                 {
                     ["name"] = "write_server_file",
-                    ["description"] = "创建或覆盖写入指定服务器实例目录下的文本文件（如修改 server.properties, eula.txt, 插件配置）。修改已有敏感文件请直接调用本工具，前端会自动弹出授权确认卡片供用户点击。",
+                    ["description"] = "创建或覆盖写入指定服务器实例目录下的文本文件（如修改 server.properties, eula.txt, 插件配置）。若目标文件已存在，系统会自动挂起操作并在前端弹出授权确认卡片，用户点击确认后才会真正写入，无需在参数中指定确认状态。",
                     ["parameters"] = new JsonObject
                     {
                         ["type"] = "object",
@@ -402,8 +497,7 @@ public class AiService
                         {
                             ["server_id"] = new JsonObject { ["type"] = "number", ["description"] = "服务器 ID，未指定时结合【当前用户界面上下文】的主机 ID 或最新服务器" },
                             ["file_path"] = new JsonObject { ["type"] = "string", ["description"] = "相对文件路径，如 'server.properties', 'eula.txt', 'spigot.yml'" },
-                            ["content"] = new JsonObject { ["type"] = "string", ["description"] = "写入文件的完整文本内容" },
-                            ["confirmed"] = new JsonObject { ["type"] = "boolean", ["description"] = "修改已有敏感文件时用户是否已在前端界面确认" }
+                            ["content"] = new JsonObject { ["type"] = "string", ["description"] = "写入文件的完整文本内容" }
                         },
                         ["required"] = new JsonArray { "file_path", "content" }
                     }
@@ -415,15 +509,14 @@ public class AiService
                 ["function"] = new JsonObject
                 {
                     ["name"] = "delete_server_file",
-                    ["description"] = "删除指定服务器实例目录下的文件或文件夹（如删除存档 'world'、旧插件、模组或日志文件）。【请直接果断调用本工具，严禁在回复文本中反问用户，前端界面会自动拦截并展示交互式确认按钮卡片供用户点击授权】。",
+                    ["description"] = "删除指定服务器实例目录下的文件或文件夹（如删除存档 'world'、旧插件、模组或日志文件）。【请直接果断调用本工具，严禁在回复文本中反问用户；系统会自动挂起操作并在前端弹出确认卡片，用户点击确认授权后才会真正删除】。",
                     ["parameters"] = new JsonObject
                     {
                         ["type"] = "object",
                         ["properties"] = new JsonObject
                         {
                             ["server_id"] = new JsonObject { ["type"] = "number", ["description"] = "服务器 ID，未指定时结合【当前用户界面上下文】的主机 ID 或最新服务器" },
-                            ["file_path"] = new JsonObject { ["type"] = "string", ["description"] = "相对文件或目录路径，如 'world', 'plugins/old_plugin.jar', 'mods/test.jar'" },
-                            ["confirmed"] = new JsonObject { ["type"] = "boolean", ["description"] = "删除文件前用户是否已在前端界面确认" }
+                            ["file_path"] = new JsonObject { ["type"] = "string", ["description"] = "相对文件或目录路径，如 'world', 'plugins/old_plugin.jar', 'mods/test.jar'" }
                         },
                         ["required"] = new JsonArray { "file_path" }
                     }
@@ -560,7 +653,7 @@ public class AiService
         };
     }
 
-    private async Task<string> ExecuteToolAsync(string name, string argsJson, Func<string, object, Task> onToolExecuted)
+    private async Task<string> ExecuteToolAsync(string name, string argsJson, Func<string, object, Task> onToolExecuted, bool assumeConfirmed = false)
     {
         try
         {
@@ -995,7 +1088,7 @@ public class AiService
                     }
                     string filePath = args?["file_path"]?.ToString() ?? "";
                     string content = args?["content"]?.ToString() ?? "";
-                    bool isConfirmed = args != null && args.ContainsKey("confirmed") && (bool?)(args["confirmed"]) == true;
+                    bool isConfirmed = assumeConfirmed;
 
                     if (string.IsNullOrWhiteSpace(filePath))
                     {
@@ -1030,9 +1123,10 @@ public class AiService
                     bool exists = File.Exists(targetFilePath);
                     if (exists && !isConfirmed)
                     {
-                        var needConfirmData = new { serverId = targetServer.ID, filePath = filePath, action = "edit", requiresConfirmation = true, confirmed = false, content = content };
+                        string confirmationId = CreateOrGetPendingOperation("write_server_file", argsJson, targetServer.ID, filePath, "edit");
+                        var needConfirmData = new { serverId = targetServer.ID, filePath = filePath, action = "edit", requiresConfirmation = true, confirmed = false, confirmationId = confirmationId, content = content };
                         await onToolExecuted("write_server_file", needConfirmData);
-                        return $"[REQUIRES_CONFIRMATION] 警告：准备覆盖编辑已有文件 `{filePath}`。已在前端弹出确认按钮，请提醒用户点击确认后再执行写文件。";
+                        return $"[PENDING_CONFIRMATION] 警告：准备覆盖编辑已有文件 `{filePath}`。操作已挂起，前端已弹出确认按钮，用户点击确认授权后系统将自动执行写入，无需再次调用工具。";
                     }
 
                     string? parentDir = Path.GetDirectoryName(targetFilePath);
@@ -1055,7 +1149,7 @@ public class AiService
                         int.TryParse(args["server_id"].ToString(), out targetId);
                     }
                     string filePath = args?["file_path"]?.ToString() ?? "";
-                    bool isConfirmed = args != null && args.ContainsKey("confirmed") && (bool?)(args["confirmed"]) == true;
+                    bool isConfirmed = assumeConfirmed;
 
                     if (string.IsNullOrWhiteSpace(filePath))
                     {
@@ -1088,9 +1182,10 @@ public class AiService
 
                     if (!isConfirmed)
                     {
-                        var confirmData = new { serverId = targetServer.ID, filePath = filePath, action = "delete", requiresConfirmation = true, confirmed = false };
+                        string confirmationId = CreateOrGetPendingOperation("delete_server_file", argsJson, targetServer.ID, filePath, "delete");
+                        var confirmData = new { serverId = targetServer.ID, filePath = filePath, action = "delete", requiresConfirmation = true, confirmed = false, confirmationId = confirmationId };
                         await onToolExecuted("delete_server_file", confirmData);
-                        return $"[REQUIRES_CONFIRMATION] 高风险警告：已申请删除服务器文件/目录 `{filePath}`！已在前端弹出 UI 按钮卡片，等待用户在界面点击确认授权。";
+                        return $"[PENDING_CONFIRMATION] 高风险警告：已申请删除服务器文件/目录 `{filePath}`！操作已挂起，前端已弹出确认按钮，用户点击确认授权后系统将自动执行删除，无需再次调用工具。";
                     }
 
                     if (File.Exists(targetPath))
@@ -1256,4 +1351,89 @@ public class AiService
             return $"[ERROR] 执行工具 {name} 失败: {ex.Message}";
         }
     }
+
+    private static string? GetStringOrNull(JsonNode? node)
+    {
+        return node != null && node.GetValueKind() == System.Text.Json.JsonValueKind.String
+            ? node.GetValue<string>()
+            : null;
+    }
+
+    private string CreateOrGetPendingOperation(string toolName, string argsJson, int serverId, string filePath, string action)
+    {
+        PurgeExpiredPendingOperations();
+
+        var existing = _pendingToolOperations.Values.FirstOrDefault(p =>
+            p.ToolName == toolName &&
+            p.ServerId == serverId &&
+            string.Equals(p.FilePath, filePath, StringComparison.OrdinalIgnoreCase));
+
+        if (existing != null)
+        {
+            return existing.Id;
+        }
+
+        var pending = new PendingToolOperation
+        {
+            Id = Guid.NewGuid().ToString("N"),
+            ToolName = toolName,
+            ArgsJson = argsJson,
+            ServerId = serverId,
+            FilePath = filePath,
+            Action = action,
+            CreatedAt = DateTime.UtcNow
+        };
+        _pendingToolOperations[pending.Id] = pending;
+        return pending.Id;
+    }
+
+    private void PurgeExpiredPendingOperations()
+    {
+        var cutoff = DateTime.UtcNow - PendingOperationTtl;
+        foreach (var kvp in _pendingToolOperations)
+        {
+            if (kvp.Value.CreatedAt < cutoff)
+            {
+                _pendingToolOperations.TryRemove(kvp.Key, out _);
+            }
+        }
+    }
+
+    public async Task<(bool Success, string Message, object? Data)> ConfirmPendingToolAsync(
+        string confirmationId,
+        bool approved,
+        Func<string, object, Task> onToolExecuted)
+    {
+        if (string.IsNullOrWhiteSpace(confirmationId) || !_pendingToolOperations.TryRemove(confirmationId, out var pending))
+        {
+            return (false, "确认凭证无效或已过期，请重新发起操作。", null);
+        }
+
+        if (!approved)
+        {
+            await onToolExecuted(pending.ToolName, new
+            {
+                serverId = pending.ServerId,
+                filePath = pending.FilePath,
+                action = pending.Action,
+                confirmed = false,
+                rejected = true
+            });
+            return (true, $"已拒绝{(pending.Action == "delete" ? "删除" : "覆盖写入")} `{pending.FilePath}`，操作已取消。", new { confirmed = false, rejected = true });
+        }
+
+        string result = await ExecuteToolAsync(pending.ToolName, pending.ArgsJson, onToolExecuted, assumeConfirmed: true);
+        return (true, result, new { confirmed = true });
+    }
+}
+
+internal sealed class PendingToolOperation
+{
+    public required string Id { get; init; }
+    public required string ToolName { get; init; }
+    public required string ArgsJson { get; init; }
+    public required int ServerId { get; init; }
+    public required string FilePath { get; init; }
+    public required string Action { get; init; }
+    public required DateTime CreatedAt { get; init; }
 }

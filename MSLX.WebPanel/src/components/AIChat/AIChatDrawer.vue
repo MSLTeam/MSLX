@@ -2,13 +2,13 @@
 import { ref, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { MessagePlugin, Loading as TLoading } from 'tdesign-vue-next';
-import { Chat as TChat, ChatItem as TChatItem } from '@tdesign-vue-next/chat';
+import { Chat as TChat, ChatItem as TChatItem, ChatSender as TChatSender } from '@tdesign-vue-next/chat';
 import '@tdesign-vue-next/chat/es/style/index.css';
 import { MdPreview, type Themes } from 'md-editor-v3';
 import 'md-editor-v3/lib/preview.css';
 import { useDark } from '@vueuse/core';
 import { useUserStore } from '@/store';
-import { sendAiChatStream, abortAiChatStream, ChatMessage } from '@/api/aiApi';
+import { sendAiChatStream, abortAiChatStream, ChatMessage, confirmAiToolAction } from '@/api/aiApi';
 
 const props = defineProps<{
   visible: boolean;
@@ -30,11 +30,26 @@ interface DisplayMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  time?: string;
   toolData?: { tool: string; data: any };
   toolExpanded?: string[];
 }
 
 const AI_CHAT_HISTORY_KEY = 'mslx_ai_chat_history';
+
+const SUGGESTIONS_MARKER_REGEX = /<<<SUGGESTIONS:\[.*?\]>>>/g;
+const DSML_TOOL_CALLS_REGEX = /<｜DSML｜tool_calls[\s\S]*?<\/｜DSML｜tool_calls>/g;
+const DSML_INVOKE_REGEX = /<｜DSML｜invoke[\s\S]*?<\/｜DSML｜invoke>/g;
+
+const stripStreamMarkers = (raw: string): string =>
+  raw.replace(SUGGESTIONS_MARKER_REGEX, '').replace(DSML_TOOL_CALLS_REGEX, '').replace(DSML_INVOKE_REGEX, '');
+
+const cleanStreamedContent = (raw: string): string => stripStreamMarkers(raw).trim();
+
+const formatTime = (d: Date = new Date()): string => {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
 
 const defaultWelcomeMessage: DisplayMessage = {
   id: 'welcome',
@@ -72,6 +87,9 @@ const loadHistory = (): DisplayMessage[] => {
             if (m.role === 'assistant' && m.content === '正在思考与处理...') {
               return { ...m, content: '⚠️ 上次对话因页面刷新而中断。' };
             }
+            if (m.role === 'assistant') {
+              return { ...m, content: cleanStreamedContent(m.content) };
+            }
             return m;
           });
         if (cleaned.length > 0) return cleaned;
@@ -87,6 +105,8 @@ const chatList = ref<DisplayMessage[]>(loadHistory());
 const inputText = ref('');
 const loading = ref(false);
 const suggestedReplies = ref<string[]>([]);
+const confirmingToolId = ref<string | null>(null);
+const activeStreamingId = ref<string | null>(null);
 
 watch(
   chatList,
@@ -133,22 +153,51 @@ const handleAbort = () => {
   MessagePlugin.warning('已手动中断 AI 对话响应');
 };
 
-const handleConfirmToolAction = (msg: DisplayMessage) => {
-  if (!msg.toolData || !msg.toolData.data) return;
-  msg.toolData.data.confirmed = true;
-  const data = msg.toolData.data;
+const cleanToolResultText = (text: string): string =>
+  text.replace(/^\[(?:SUCCESS|ERROR|INFO|CANCELLED|PENDING_CONFIRMATION|REQUIRES_CONFIRMATION)\]\s*/, '');
 
-  inputText.value = `【用户已确认】我已授权执行此敏感操作：对服务器 (ID: ${data.serverId}) 的文件/目录 ${data.filePath} 执行 ${data.action === 'delete' ? '删除' : '写入/覆盖'}。确认参数 confirmed: true。请立即完成操作！`;
-  handleSend();
+const appendToolResult = (msg: DisplayMessage, resultText: string) => {
+  const text = cleanToolResultText(resultText) || '操作已处理。';
+  if (!msg.content || msg.content === '正在思考与处理...') {
+    msg.content = text;
+  } else {
+    msg.content = `${msg.content}\n\n${text}`;
+  }
 };
 
-const handleRejectToolAction = (msg: DisplayMessage) => {
-  if (!msg.toolData || !msg.toolData.data) return;
-  msg.toolData.data.rejected = true;
-  MessagePlugin.info('已拒绝该敏感文件操作');
+const handleConfirmToolAction = async (msg: DisplayMessage) => {
+  if (!msg.toolData?.data?.confirmationId || confirmingToolId.value) return;
+  confirmingToolId.value = msg.id;
+  try {
+    const result = await confirmAiToolAction(msg.toolData.data.confirmationId, true);
+    const resultData = (result.data || {}) as Record<string, any>;
+    msg.toolData.data = { ...msg.toolData.data, ...resultData, confirmed: true };
+    appendToolResult(msg, result.message);
+    if (result.message && result.message.includes('[ERROR]')) {
+      MessagePlugin.error(cleanToolResultText(result.message));
+    } else {
+      MessagePlugin.success('已确认授权，操作已执行');
+    }
+  } catch (e: any) {
+    MessagePlugin.error(`确认失败: ${e.message || e}`);
+  } finally {
+    confirmingToolId.value = null;
+  }
+};
 
-  inputText.value = `【用户已拒绝】我拒绝了关于 ${msg.toolData.data.filePath} 的 ${msg.toolData.data.action === 'delete' ? '删除' : '覆盖编辑'} 请求。请取消该操作，不要修改文件。`;
-  handleSend();
+const handleRejectToolAction = async (msg: DisplayMessage) => {
+  if (!msg.toolData?.data?.confirmationId || confirmingToolId.value) return;
+  confirmingToolId.value = msg.id;
+  try {
+    const result = await confirmAiToolAction(msg.toolData.data.confirmationId, false);
+    msg.toolData.data = { ...msg.toolData.data, rejected: true, confirmed: false };
+    appendToolResult(msg, result.message || '已拒绝该敏感操作。');
+    MessagePlugin.info('已拒绝该敏感文件操作');
+  } catch (e: any) {
+    MessagePlugin.error(`操作失败: ${e.message || e}`);
+  } finally {
+    confirmingToolId.value = null;
+  }
 };
 
 const handleQuickSend = (text: string) => {
@@ -156,8 +205,33 @@ const handleQuickSend = (text: string) => {
   handleSend();
 };
 
-const handleSend = async () => {
-  const query = inputText.value.trim();
+const handleCopyMessage = async (msg: DisplayMessage) => {
+  try {
+    await navigator.clipboard.writeText(msg.content);
+    MessagePlugin.success('已复制回复内容');
+  } catch {
+    MessagePlugin.error('复制失败');
+  }
+};
+
+const handleReplayMessage = (msg: DisplayMessage) => {
+  const idx = chatList.value.findIndex((m) => m.id === msg.id);
+  if (idx <= 0) {
+    MessagePlugin.warning('没有可重发的上一条用户消息');
+    return;
+  }
+  const prevUser = chatList.value[idx - 1];
+  if (!prevUser || prevUser.role !== 'user') {
+    MessagePlugin.warning('没有可重发的上一条用户消息');
+    return;
+  }
+  chatList.value = chatList.value.slice(0, idx);
+  inputText.value = prevUser.content;
+  handleSend();
+};
+
+const handleSend = async (value?: string) => {
+  const query = (value ?? inputText.value).trim();
   if (!query || loading.value) return;
 
   const userMsgId = `user_${Date.now()}`;
@@ -165,6 +239,7 @@ const handleSend = async () => {
     id: userMsgId,
     role: 'user',
     content: query,
+    time: formatTime(),
   });
 
   inputText.value = '';
@@ -175,8 +250,10 @@ const handleSend = async () => {
     id: botMsgId,
     role: 'assistant',
     content: '正在思考与处理...',
+    time: formatTime(),
     toolExpanded: [],
   });
+  activeStreamingId.value = botMsgId;
 
   const activeServerId = getCurrentServerId();
 
@@ -205,10 +282,10 @@ const handleSend = async () => {
       const target = chatList.value.find((m) => m.id === botMsgId);
       if (target) {
         if (isFirstChunk) {
-          target.content = chunk;
+          target.content = stripStreamMarkers(chunk);
           isFirstChunk = false;
         } else {
-          target.content = chunk;
+          target.content = stripStreamMarkers(target.content + chunk);
         }
       }
     },
@@ -225,6 +302,7 @@ const handleSend = async () => {
     },
     (err) => {
       const target = chatList.value.find((m) => m.id === botMsgId);
+      activeStreamingId.value = null;
       if (target) {
         target.content = `❌ ${err}`;
       } else {
@@ -232,6 +310,15 @@ const handleSend = async () => {
       }
     },
     () => {
+      const target = chatList.value.find((m) => m.id === botMsgId);
+      activeStreamingId.value = null;
+      if (target) {
+        target.content = cleanStreamedContent(target.content);
+        if (target.content === '正在思考与处理...') {
+          target.content = '';
+        }
+        target.time = formatTime();
+      }
       loading.value = false;
     }
   );
@@ -264,18 +351,25 @@ const handleSend = async () => {
 
     <div class="ai-chat-container">
       <div class="chat-list-wrapper">
-        <t-chat class="mslx-chat-component">
+        <t-chat
+          class="mslx-chat-component"
+          :auto-scroll="true"
+          :show-scroll-button="true"
+          :default-scroll-to="'bottom'"
+        >
           <t-chat-item
             v-for="msg in chatList"
             :key="msg.id"
             :role="msg.role"
             :name="msg.role === 'assistant' ? 'MSLX AI' : (userStore.userInfo.name || userStore.userInfo.username || '用户')"
             :avatar="msg.role === 'assistant' ? 'https://www.mslmc.cn/logo.png' : (userStore.userInfo.avatar || 'https://tdesign.gtimg.com/site/avatar.jpg')"
+            :datetime="msg.time"
+            :animation="'gradient'"
           >
             <template #content>
-              <!-- 思考状态动效 -->
+              <!-- 思考/加载状态动效 -->
               <div v-if="msg.content === '正在思考与处理...'" class="thinking-state">
-                <t-loading size="small" text="AI 正在思考并处理中..." />
+                <t-loading size="small" text="AI 正在思考中..." />
               </div>
 
               <!-- 用户消息文本 -->
@@ -314,11 +408,25 @@ const handleSend = async () => {
                   </strong> 操作。此操作不可逆！
                 </div>
                 <div class="card-footer">
-                  <t-button theme="danger" size="small" class="action-btn" @click="handleConfirmToolAction(msg)">
+                  <t-button
+                    theme="danger"
+                    size="small"
+                    class="action-btn"
+                    :loading="confirmingToolId === msg.id"
+                    :disabled="!!confirmingToolId"
+                    @click="handleConfirmToolAction(msg)"
+                  >
                     <template #icon><t-icon name="check-circle" /></template>
                     确认授权{{ msg.toolData.data.action === 'delete' ? '删除' : '写入' }}
                   </t-button>
-                  <t-button theme="default" variant="outline" size="small" class="action-btn" @click="handleRejectToolAction(msg)">
+                  <t-button
+                    theme="default"
+                    variant="outline"
+                    size="small"
+                    class="action-btn"
+                    :disabled="!!confirmingToolId"
+                    @click="handleRejectToolAction(msg)"
+                  >
                     <template #icon><t-icon name="close-circle" /></template>
                     拒绝操作
                   </t-button>
@@ -352,6 +460,35 @@ const handleSend = async () => {
                 </t-collapse>
               </div>
             </template>
+            <template #actions>
+              <div
+                v-if="msg.role === 'assistant' && msg.content && msg.content !== '正在思考与处理...'"
+                class="msg-actions"
+              >
+                <t-tooltip content="复制">
+                  <t-button
+                    variant="text"
+                    shape="square"
+                    size="small"
+                    class="msg-action-btn"
+                    @click="handleCopyMessage(msg)"
+                  >
+                    <template #icon><t-icon name="copy" /></template>
+                  </t-button>
+                </t-tooltip>
+                <t-tooltip content="重新生成">
+                  <t-button
+                    variant="text"
+                    shape="square"
+                    size="small"
+                    class="msg-action-btn"
+                    @click="handleReplayMessage(msg)"
+                  >
+                    <template #icon><t-icon name="refresh" /></template>
+                  </t-button>
+                </t-tooltip>
+              </div>
+            </template>
           </t-chat-item>
         </t-chat>
       </div>
@@ -372,23 +509,13 @@ const handleSend = async () => {
       </div>
 
       <div class="chat-input-area">
-        <t-input
+        <t-chat-sender
           v-model="inputText"
+          :loading="loading"
           placeholder="请输入指令，如“把 Java 切换成 25”、“重启服务器”..."
-          :disabled="loading"
-          size="large"
-          @enter="handleSend"
-        >
-          <template #suffixIcon>
-            <t-button v-if="loading" theme="danger" variant="base" size="small" @click="handleAbort">
-              <template #icon><t-icon name="stop-circle" /></template>
-              中断
-            </t-button>
-            <t-button v-else theme="primary" shape="square" @click="handleSend">
-              <template #icon><t-icon name="send" /></template>
-            </t-button>
-          </template>
-        </t-input>
+          @send="handleSend"
+          @stop="handleAbort"
+        />
       </div>
     </div>
   </t-drawer>
@@ -420,12 +547,50 @@ const handleSend = async () => {
 
 .chat-list-wrapper {
   flex: 1;
-  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   padding: 12px 0;
+  position: relative;
 }
 
 .mslx-chat-component {
   width: 100%;
+  height: 100%;
+}
+
+/* 优雅重置与定位【划到最下面】(t-chat__to-bottom) 悬浮按钮，消除 left:50% 死板居中与双重圆角嵌套 */
+.mslx-chat-component :deep(.t-chat__to-bottom) {
+  position: absolute !important;
+  left: auto !important;
+  right: 24px !important;
+  margin-left: 0 !important;
+  bottom: 16px !important;
+  z-index: 50 !important;
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
+  overflow: hidden !important;
+  transition: all 0.2s cubic-bezier(0.38, 0, 0.24, 1) !important;
+}
+
+.mslx-chat-component :deep(.t-chat__to-bottom-inner) {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 50% !important;
+  border: 1px solid var(--td-component-border) !important;
+  background: var(--td-bg-color-container) !important;
+  box-sizing: border-box !important;
+}
+
+.mslx-chat-component :deep(.t-chat__to-bottom:hover) {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25) !important;
 }
 
 .chat-bubble-text {
@@ -438,10 +603,33 @@ const handleSend = async () => {
   font-size: 14px;
 }
 
+/* 精致思考/加载动画胶囊 */
 .thinking-state {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  padding: 6px 0;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: var(--td-bg-color-component);
+  border: 1px solid var(--td-component-border);
+  margin-top: 4px;
+}
+
+/* 消息操作栏（复制 / 重新生成） */
+.msg-actions {
+  display: flex;
+  gap: 2px;
+  margin-top: 4px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.msg-actions:hover {
+  opacity: 1;
+}
+
+.msg-action-btn {
+  color: var(--td-text-color-placeholder);
 }
 
 /* 现代化高风险操作卡片样式 */
@@ -575,8 +763,65 @@ const handleSend = async () => {
   opacity: 0.9;
 }
 
+/* 彻底消除双层嵌套边框，将 .t-chat-sender 打造为唯一单层卡片 */
 .chat-input-area {
   padding-top: 12px;
   border-top: 1px solid var(--td-component-border);
+}
+
+.chat-input-area :deep(.t-chat-sender) {
+  position: relative !important;
+  border: 1px solid var(--td-component-border) !important;
+  border-radius: 16px !important;
+  background-color: var(--td-bg-color-container) !important;
+  padding: 12px 14px 8px 14px !important;
+  box-sizing: border-box !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+.chat-input-area :deep(.t-chat-sender:focus-within) {
+  border-color: var(--td-brand-color) !important;
+  box-shadow: 0 0 0 2px var(--td-brand-color-focus) !important;
+}
+
+/* 彻底剥离所有内部元素的边框、阴影、背景与聚焦边框 */
+.chat-input-area :deep(.t-chat-sender__textarea),
+.chat-input-area :deep(.t-textarea),
+.chat-input-area :deep(.t-textarea__inner),
+.chat-input-area :deep(textarea) {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.chat-input-area :deep(.t-chat-sender__textarea--focus),
+.chat-input-area :deep(.t-textarea__inner.t-is-focused) {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.chat-input-area :deep(textarea) {
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+  color: var(--td-text-color-primary) !important;
+  min-height: 48px !important;
+}
+
+.chat-input-area :deep(.t-chat-sender__footer) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  margin-top: 4px !important;
+  padding-top: 0 !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+.chat-input-area :deep(.t-chat-sender__upload) {
+  display: none !important;
 }
 </style>

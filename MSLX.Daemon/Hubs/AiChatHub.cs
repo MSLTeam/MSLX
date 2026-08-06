@@ -40,7 +40,35 @@ public class AiChatHub : Hub
         catch (Exception ex)
         {
             _logger.LogError(ex, "SignalR AI 对话处理异常");
-            await Clients.Caller.SendAsync("ChatError", ex.Message);
+            try
+            {
+                await Clients.Caller.SendAsync("ChatError", ex.Message);
+            }
+            catch (Exception sendEx)
+            {
+                _logger.LogWarning(sendEx, "向已断开的 SignalR 客户端发送 ChatError 失败");
+            }
+        }
+    }
+
+    public async Task<object> ConfirmToolAction(string confirmationId, bool approved)
+    {
+        try
+        {
+            var (success, message, data) = await _aiService.ConfirmPendingToolAsync(
+                confirmationId,
+                approved,
+                async (toolName, toolData) =>
+                {
+                    await Clients.Caller.SendAsync("ToolExecuted", toolName, toolData);
+                });
+
+            return new { success, message, data };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "SignalR AI 敏感操作确认异常");
+            return new { success = false, message = ex.Message, data = (object?)null };
         }
     }
 }

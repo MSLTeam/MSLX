@@ -1,6 +1,6 @@
 import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 import { request } from '@/utils/request';
-import { TOKEN_NAME } from '@/config/global';
+import { TOKEN_NAME, BASE_URL_NAME } from '@/config/global';
 import { getHubUrl } from '@/utils/hub';
 
 export interface AiSettingsModel {
@@ -8,7 +8,6 @@ export interface AiSettingsModel {
   aiApiKey: string;
   aiBaseUrl: string;
   aiModelName: string;
-  aiSystemPrompt?: string;
 }
 
 export function getAiSettings() {
@@ -107,7 +106,7 @@ async function sendAiChatStreamHttp(
   onDone: () => void
 ) {
   const token = localStorage.getItem(TOKEN_NAME) || '';
-  const baseUrl = localStorage.getItem('BASE_URL_NAME') || '';
+  const baseUrl = localStorage.getItem(BASE_URL_NAME) || '';
   const url = `${baseUrl}/api/ai/chat`;
 
   activeHttpAbortController = new AbortController();
@@ -191,4 +190,48 @@ async function sendAiChatStreamHttp(
   } finally {
     activeHttpAbortController = null;
   }
+}
+
+export interface ConfirmToolResult {
+  success: boolean;
+  message: string;
+  tool?: string;
+  data?: any;
+}
+
+export async function confirmAiToolAction(
+  confirmationId: string,
+  approved: boolean
+): Promise<ConfirmToolResult> {
+  if (aiChatSignalRConn && aiChatSignalRConn.state === 'Connected') {
+    try {
+      const result = await aiChatSignalRConn.invoke<ConfirmToolResult>('ConfirmToolAction', confirmationId, approved);
+      if (result && result.success) {
+        return result;
+      }
+      console.warn('SignalR 确认未成功，回退 HTTP:', result);
+    } catch (e) {
+      console.warn('SignalR 敏感操作确认失败，回退 HTTP:', e);
+    }
+  }
+
+  const token = localStorage.getItem(TOKEN_NAME) || '';
+  const baseUrl = localStorage.getItem(BASE_URL_NAME) || '';
+  const url = `${baseUrl}/api/ai/confirm-tool`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-user-token': token,
+      Authorization: token ? `Bearer ${token}` : '',
+    },
+    body: JSON.stringify({ confirmationId, approved }),
+  });
+
+  const json = await response.json().catch(() => null);
+  if (!response.ok || !json || json.code !== 200) {
+    throw new Error(json?.message || `请求失败 (${response.status})`);
+  }
+  return json.data;
 }

@@ -2,7 +2,7 @@ using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Services;
-using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.Models;
 
 namespace MSLX.Daemon.Controllers;
 
@@ -73,10 +73,55 @@ public class AiAssistantController : ControllerBase
 
     private async Task SendSseEventAsync(string eventType, string data)
     {
-        var formattedData = data.Replace("\r", "").Replace("\n", "\\n");
-        await Response.WriteAsync($"event: {eventType}\ndata: {formattedData}\n\n");
-        await Response.Body.FlushAsync();
+        try
+        {
+            var formattedData = data.Replace("\r", "").Replace("\n", "\\n");
+            await Response.WriteAsync($"event: {eventType}\ndata: {formattedData}\n\n");
+            await Response.Body.FlushAsync();
+        }
+        catch (Exception ex)
+        {
+            // 客户端已断开（如用户中断对话），忽略写入异常
+            Console.WriteLine($"SSE 写入失败 (客户端可能已断开): {ex.Message}");
+        }
     }
+
+    [HttpPost("confirm-tool")]
+    [Authorize(Roles = "admin")]
+    public async Task<IActionResult> ConfirmTool([FromBody] ConfirmToolRequest request)
+    {
+        string? toolName = null;
+        object? toolData = null;
+
+        var (success, message, _) = await _aiService.ConfirmPendingToolAsync(
+            request.ConfirmationId,
+            request.Approved,
+            async (name, data) =>
+            {
+                toolName = name;
+                toolData = data;
+                await Task.CompletedTask;
+            });
+
+        return Ok(new ApiResponse<object>
+        {
+            Code = success ? 200 : 400,
+            Message = message,
+            Data = new
+            {
+                success,
+                message,
+                tool = toolName,
+                data = toolData
+            }
+        });
+    }
+}
+
+public class ConfirmToolRequest
+{
+    public string ConfirmationId { get; set; } = "";
+    public bool Approved { get; set; }
 }
 
 public class ChatRequest
