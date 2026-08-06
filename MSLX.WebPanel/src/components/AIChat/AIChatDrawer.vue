@@ -37,6 +37,46 @@ interface DisplayMessage {
 
 const AI_CHAT_HISTORY_KEY = 'mslx_ai_chat_history';
 
+const displayMode = ref<'drawer' | 'floating'>(
+  (localStorage.getItem('mslx_ai_display_mode') as 'drawer' | 'floating') || 'drawer'
+);
+
+const floatPos = ref<{ x: number; y: number }>({
+  x: Math.max(20, window.innerWidth - 580),
+  y: 80,
+});
+
+let isDragging = false;
+let dragOffset = { x: 0, y: 0 };
+
+const startDrag = (e: MouseEvent) => {
+  const target = e.target as HTMLElement;
+  if (target.closest('.header-actions') || target.closest('.clear-btn') || target.closest('.t-button')) return;
+  isDragging = true;
+  dragOffset.x = e.clientX - floatPos.value.x;
+  dragOffset.y = e.clientY - floatPos.value.y;
+  window.addEventListener('mousemove', onDrag);
+  window.addEventListener('mouseup', stopDrag);
+};
+
+const onDrag = (e: MouseEvent) => {
+  if (!isDragging) return;
+  const newX = Math.max(0, Math.min(window.innerWidth - 300, e.clientX - dragOffset.x));
+  const newY = Math.max(0, Math.min(window.innerHeight - 150, e.clientY - dragOffset.y));
+  floatPos.value = { x: newX, y: newY };
+};
+
+const stopDrag = () => {
+  isDragging = false;
+  window.removeEventListener('mousemove', onDrag);
+  window.removeEventListener('mouseup', stopDrag);
+};
+
+const toggleDisplayMode = () => {
+  displayMode.value = displayMode.value === 'drawer' ? 'floating' : 'drawer';
+  localStorage.setItem('mslx_ai_display_mode', displayMode.value);
+};
+
 const SUGGESTIONS_MARKER_REGEX = /<<<SUGGESTIONS:\[.*?\]>>>/g;
 const DSML_TOOL_CALLS_REGEX = /<｜DSML｜tool_calls[\s\S]*?<\/｜DSML｜tool_calls>/g;
 const DSML_INVOKE_REGEX = /<｜DSML｜invoke[\s\S]*?<\/｜DSML｜invoke>/g;
@@ -326,199 +366,398 @@ const handleSend = async (value?: string) => {
 </script>
 
 <template>
-  <t-drawer
-    attach="body"
-    :visible="visible"
-    size="560px"
-    :footer="false"
-    :body-style="{ background: 'var(--td-bg-color-container)', height: 'calc(100% - 48px)', padding: '16px' }"
-    @close="handleClose"
-  >
-    <template #header>
-      <div class="drawer-header-row">
-        <div class="drawer-title">
-          <span>MSLX AI 智能运维助手</span>
-          <t-tag v-if="getCurrentServerId()" theme="primary" variant="outline" size="small" style="margin-left: 8px">
-            当前选中服: #{{ getCurrentServerId() }}
+  <div>
+    <!-- 模式 1：右侧抽屉模式 -->
+    <t-drawer
+      v-if="displayMode === 'drawer'"
+      attach="body"
+      :visible="visible"
+      size="560px"
+      :footer="false"
+      :body-style="{ background: 'var(--td-bg-color-container)', height: 'calc(100% - 48px)', padding: '16px' }"
+      @close="handleClose"
+    >
+      <template #header>
+        <div class="drawer-header-row">
+          <div class="drawer-title">
+            <span>MSLX AI 智能运维助手</span>
+            <t-tag v-if="getCurrentServerId()" theme="primary" variant="outline" size="small" style="margin-left: 8px">
+              当前选中服: #{{ getCurrentServerId() }}
+            </t-tag>
+          </div>
+          <div class="header-actions">
+            <t-tooltip content="切换至自由悬浮小窗">
+              <t-button variant="text" shape="square" size="small" class="mode-btn" @click="toggleDisplayMode">
+                <template #icon><t-icon name="desktop" class="mode-icon" /></template>
+              </t-button>
+            </t-tooltip>
+            <t-button variant="text" theme="danger" size="small" class="clear-btn" @click="handleClearHistory">
+              <template #icon><t-icon name="delete" /></template>
+              清空历史
+            </t-button>
+          </div>
+        </div>
+      </template>
+
+      <!-- 统一的 AI 对话核心界面组件 -->
+      <div class="ai-chat-container">
+        <div class="chat-list-wrapper">
+          <t-chat
+            class="mslx-chat-component"
+            :auto-scroll="true"
+            :show-scroll-button="true"
+            :default-scroll-to="'bottom'"
+          >
+            <t-chat-item
+              v-for="msg in chatList"
+              :key="msg.id"
+              :role="msg.role"
+              :name="msg.role === 'assistant' ? 'MSLX AI' : (userStore.userInfo.name || userStore.userInfo.username || '用户')"
+              :avatar="msg.role === 'assistant' ? 'https://www.mslmc.cn/logo.png' : (userStore.userInfo.avatar || 'https://tdesign.gtimg.com/site/avatar.jpg')"
+              :datetime="msg.time"
+              :animation="'gradient'"
+            >
+              <template #content>
+                <div v-if="msg.content === '正在思考与处理...'" class="thinking-state">
+                  <t-loading size="small" text="AI 正在思考中..." />
+                </div>
+                <div v-else-if="msg.role === 'user'" class="chat-bubble-text">
+                  {{ msg.content }}
+                </div>
+                <div v-else class="md-preview-wrapper">
+                  <md-preview
+                    :editor-id="`ai-msg-${msg.id}`"
+                    :model-value="msg.content"
+                    :theme="mdTheme"
+                    style="background: transparent; padding: 0"
+                  />
+                </div>
+
+                <div
+                  v-if="msg.toolData?.data?.requiresConfirmation && !msg.toolData?.data?.confirmed && !msg.toolData?.data?.rejected"
+                  class="action-confirm-card danger-theme"
+                >
+                  <div class="card-header">
+                    <div class="header-left">
+                      <div class="pulse-icon danger">
+                        <t-icon name="warning-circle-filled" />
+                      </div>
+                      <span class="card-title">需要您的授权确认</span>
+                    </div>
+                    <t-tag size="small" theme="danger" variant="light-outline">高风险操作</t-tag>
+                  </div>
+                  <div class="card-body">
+                    AI 申请对文件/目录 <code class="file-code">{{ msg.toolData.data.filePath }}</code> 执行
+                    <strong class="action-highlight red">
+                      {{ msg.toolData.data.action === 'delete' ? '【彻底删除】' : '【覆盖修改】' }}
+                    </strong> 操作。此操作不可逆！
+                  </div>
+                  <div class="card-footer">
+                    <t-button
+                      theme="danger"
+                      size="small"
+                      class="action-btn"
+                      :loading="confirmingToolId === msg.id"
+                      :disabled="!!confirmingToolId"
+                      @click="handleConfirmToolAction(msg)"
+                    >
+                      <template #icon><t-icon name="check-circle" /></template>
+                      确认授权{{ msg.toolData.data.action === 'delete' ? '删除' : '写入' }}
+                    </t-button>
+                    <t-button
+                      theme="default"
+                      variant="outline"
+                      size="small"
+                      class="action-btn"
+                      :disabled="!!confirmingToolId"
+                      @click="handleRejectToolAction(msg)"
+                    >
+                      <template #icon><t-icon name="close-circle" /></template>
+                      拒绝操作
+                    </t-button>
+                  </div>
+                </div>
+
+                <div v-else-if="msg.toolData?.data?.confirmed || msg.toolData?.data?.rejected" class="action-status-bar">
+                  <t-tag v-if="msg.toolData?.data?.confirmed" theme="success" variant="light" size="small">
+                    <template #icon><t-icon name="check-circle-filled" /></template>
+                    已授权{{ msg.toolData.data.action === 'delete' ? '删除' : '写入' }}: {{ msg.toolData.data.filePath }}
+                  </t-tag>
+                  <t-tag v-else theme="danger" variant="light" size="small">
+                    <template #icon><t-icon name="close-circle-filled" /></template>
+                    已拒绝{{ msg.toolData.data.action === 'delete' ? '删除' : '写入' }}操作
+                  </t-tag>
+                </div>
+
+                <div v-if="msg.toolData" class="tool-debug-collapse">
+                  <t-collapse v-model="msg.toolExpanded" borderless size="small">
+                    <t-collapse-panel value="tool_detail">
+                      <template #header>
+                        <div class="tool-debug-title">
+                          <t-icon name="code" />
+                          <span>调取工具: {{ msg.toolData.tool }}</span>
+                        </div>
+                      </template>
+                      <pre class="tool-json-code">{{ JSON.stringify(msg.toolData.data, null, 2) }}</pre>
+                    </t-collapse-panel>
+                  </t-collapse>
+                </div>
+              </template>
+              <template #actions>
+                <div
+                  v-if="msg.role === 'assistant' && msg.content && msg.content !== '正在思考与处理...'"
+                  class="msg-actions"
+                >
+                  <t-tooltip content="复制">
+                    <t-button
+                      variant="text"
+                      shape="square"
+                      size="small"
+                      class="msg-action-btn"
+                      @click="handleCopyMessage(msg)"
+                    >
+                      <template #icon><t-icon name="copy" /></template>
+                    </t-button>
+                  </t-tooltip>
+                  <t-tooltip content="重新生成">
+                    <t-button
+                      variant="text"
+                      shape="square"
+                      size="small"
+                      class="msg-action-btn"
+                      @click="handleReplayMessage(msg)"
+                    >
+                      <template #icon><t-icon name="refresh" /></template>
+                    </t-button>
+                  </t-tooltip>
+                </div>
+              </template>
+            </t-chat-item>
+          </t-chat>
+        </div>
+
+        <div v-if="suggestedReplies.length > 0 && !loading" class="suggested-replies-bar">
+          <span class="sug-hint"><t-icon name="lightbulb" /> 快捷回复：</span>
+          <t-tag
+            v-for="(sug, index) in suggestedReplies"
+            :key="index"
+            theme="primary"
+            variant="light"
+            class="sug-chip"
+            @click="handleQuickSend(sug)"
+          >
+            {{ sug }}
           </t-tag>
         </div>
-        <t-button variant="text" theme="danger" size="small" class="clear-btn" @click="handleClearHistory">
-          <template #icon><t-icon name="delete" /></template>
-          清空历史
-        </t-button>
+
+        <div class="chat-input-area">
+          <t-chat-sender
+            v-model="inputText"
+            :loading="loading"
+            placeholder="请输入指令，如“把 Java 切换成 25”、“重启服务器”..."
+            @send="handleSend"
+            @stop="handleAbort"
+          />
+        </div>
       </div>
-    </template>
+    </t-drawer>
 
-    <div class="ai-chat-container">
-      <div class="chat-list-wrapper">
-        <t-chat
-          class="mslx-chat-component"
-          :auto-scroll="true"
-          :show-scroll-button="true"
-          :default-scroll-to="'bottom'"
-        >
-          <t-chat-item
-            v-for="msg in chatList"
-            :key="msg.id"
-            :role="msg.role"
-            :name="msg.role === 'assistant' ? 'MSLX AI' : (userStore.userInfo.name || userStore.userInfo.username || '用户')"
-            :avatar="msg.role === 'assistant' ? 'https://www.mslmc.cn/logo.png' : (userStore.userInfo.avatar || 'https://tdesign.gtimg.com/site/avatar.jpg')"
-            :datetime="msg.time"
-            :animation="'gradient'"
-          >
-            <template #content>
-              <!-- 思考/加载状态动效 -->
-              <div v-if="msg.content === '正在思考与处理...'" class="thinking-state">
-                <t-loading size="small" text="AI 正在思考中..." />
-              </div>
+    <!-- 模式 2：自由悬浮拖拽小窗模式 (使用 Teleport 直接挂载至 Document Body) -->
+    <teleport to="body">
+      <div
+        v-if="visible && displayMode === 'floating'"
+        class="floating-ai-card"
+        :style="{ left: `${floatPos.x}px`, top: `${floatPos.y}px` }"
+      >
+        <div class="floating-header" @mousedown="startDrag">
+          <div class="drawer-title draggable-title">
+            <t-icon name="move" class="drag-icon" />
+            <span>MSLX AI 智能运维助手</span>
+            <t-tag v-if="getCurrentServerId()" theme="primary" variant="outline" size="small" style="margin-left: 8px">
+              当前选中服: #{{ getCurrentServerId() }}
+            </t-tag>
+          </div>
+          <div class="header-actions">
+            <t-tooltip content="切换至侧边抽屉">
+              <t-button variant="text" shape="square" size="small" class="mode-btn" @click="toggleDisplayMode">
+                <template #icon><t-icon name="view-list" class="mode-icon" /></template>
+              </t-button>
+            </t-tooltip>
+            <t-button variant="text" theme="danger" size="small" class="clear-btn" @click="handleClearHistory">
+              <template #icon><t-icon name="delete" /></template>
+              清空历史
+            </t-button>
+            <t-button variant="text" shape="square" size="small" class="close-btn" @click="handleClose">
+              <template #icon><t-icon name="close" /></template>
+            </t-button>
+          </div>
+        </div>
 
-              <!-- 用户消息文本 -->
-              <div v-else-if="msg.role === 'user'" class="chat-bubble-text">
-                {{ msg.content }}
-              </div>
-
-              <!-- AI 回复 Markdown -->
-              <div v-else class="md-preview-wrapper">
-                <md-preview
-                  :editor-id="`ai-msg-${msg.id}`"
-                  :model-value="msg.content"
-                  :theme="mdTheme"
-                  style="background: transparent; padding: 0"
-                />
-              </div>
-
-              <!-- 高风险敏感操作授权确认卡片（独占呈现，极简质感） -->
-              <div
-                v-if="msg.toolData?.data?.requiresConfirmation && !msg.toolData?.data?.confirmed && !msg.toolData?.data?.rejected"
-                class="action-confirm-card danger-theme"
+        <div class="floating-body">
+          <div class="ai-chat-container">
+            <div class="chat-list-wrapper">
+              <t-chat
+                class="mslx-chat-component"
+                :auto-scroll="true"
+                :show-scroll-button="true"
+                :default-scroll-to="'bottom'"
               >
-                <div class="card-header">
-                  <div class="header-left">
-                    <div class="pulse-icon danger">
-                      <t-icon name="warning-circle-filled" />
+                <t-chat-item
+                  v-for="msg in chatList"
+                  :key="msg.id"
+                  :role="msg.role"
+                  :name="msg.role === 'assistant' ? 'MSLX AI' : (userStore.userInfo.name || userStore.userInfo.username || '用户')"
+                  :avatar="msg.role === 'assistant' ? 'https://www.mslmc.cn/logo.png' : (userStore.userInfo.avatar || 'https://tdesign.gtimg.com/site/avatar.jpg')"
+                  :datetime="msg.time"
+                  :animation="'gradient'"
+                >
+                  <template #content>
+                    <div v-if="msg.content === '正在思考与处理...'" class="thinking-state">
+                      <t-loading size="small" text="AI 正在思考中..." />
                     </div>
-                    <span class="card-title">需要您的授权确认</span>
-                  </div>
-                  <t-tag size="small" theme="danger" variant="light-outline">高风险操作</t-tag>
-                </div>
-                <div class="card-body">
-                  AI 申请对文件/目录 <code class="file-code">{{ msg.toolData.data.filePath }}</code> 执行
-                  <strong class="action-highlight red">
-                    {{ msg.toolData.data.action === 'delete' ? '【彻底删除】' : '【覆盖修改】' }}
-                  </strong> 操作。此操作不可逆！
-                </div>
-                <div class="card-footer">
-                  <t-button
-                    theme="danger"
-                    size="small"
-                    class="action-btn"
-                    :loading="confirmingToolId === msg.id"
-                    :disabled="!!confirmingToolId"
-                    @click="handleConfirmToolAction(msg)"
-                  >
-                    <template #icon><t-icon name="check-circle" /></template>
-                    确认授权{{ msg.toolData.data.action === 'delete' ? '删除' : '写入' }}
-                  </t-button>
-                  <t-button
-                    theme="default"
-                    variant="outline"
-                    size="small"
-                    class="action-btn"
-                    :disabled="!!confirmingToolId"
-                    @click="handleRejectToolAction(msg)"
-                  >
-                    <template #icon><t-icon name="close-circle" /></template>
-                    拒绝操作
-                  </t-button>
-                </div>
-              </div>
+                    <div v-else-if="msg.role === 'user'" class="chat-bubble-text">
+                      {{ msg.content }}
+                    </div>
+                    <div v-else class="md-preview-wrapper">
+                      <md-preview
+                        :editor-id="`ai-msg-float-${msg.id}`"
+                        :model-value="msg.content"
+                        :theme="mdTheme"
+                        style="background: transparent; padding: 0"
+                      />
+                    </div>
 
-              <!-- 操作已确认/已拒绝的状态显示 -->
-              <div v-else-if="msg.toolData?.data?.confirmed || msg.toolData?.data?.rejected" class="action-status-bar">
-                <t-tag v-if="msg.toolData?.data?.confirmed" theme="success" variant="light" size="small">
-                  <template #icon><t-icon name="check-circle-filled" /></template>
-                  已授权{{ msg.toolData.data.action === 'delete' ? '删除' : '写入' }}: {{ msg.toolData.data.filePath }}
-                </t-tag>
-                <t-tag v-else theme="danger" variant="light" size="small">
-                  <template #icon><t-icon name="close-circle-filled" /></template>
-                  已拒绝{{ msg.toolData.data.action === 'delete' ? '删除' : '写入' }}操作
-                </t-tag>
-              </div>
-
-              <!-- 工具调用细节折叠（纯调试用，默认收起） -->
-              <div v-if="msg.toolData" class="tool-debug-collapse">
-                <t-collapse v-model="msg.toolExpanded" borderless size="small">
-                  <t-collapse-panel value="tool_detail">
-                    <template #header>
-                      <div class="tool-debug-title">
-                        <t-icon name="code" />
-                        <span>调取工具: {{ msg.toolData.tool }}</span>
+                    <div
+                      v-if="msg.toolData?.data?.requiresConfirmation && !msg.toolData?.data?.confirmed && !msg.toolData?.data?.rejected"
+                      class="action-confirm-card danger-theme"
+                    >
+                      <div class="card-header">
+                        <div class="header-left">
+                          <div class="pulse-icon danger">
+                            <t-icon name="warning-circle-filled" />
+                          </div>
+                          <span class="card-title">需要您的授权确认</span>
+                        </div>
+                        <t-tag size="small" theme="danger" variant="light-outline">高风险操作</t-tag>
                       </div>
-                    </template>
-                    <pre class="tool-json-code">{{ JSON.stringify(msg.toolData.data, null, 2) }}</pre>
-                  </t-collapse-panel>
-                </t-collapse>
-              </div>
-            </template>
-            <template #actions>
-              <div
-                v-if="msg.role === 'assistant' && msg.content && msg.content !== '正在思考与处理...'"
-                class="msg-actions"
+                      <div class="card-body">
+                        AI 申请对文件/目录 <code class="file-code">{{ msg.toolData.data.filePath }}</code> 执行
+                        <strong class="action-highlight red">
+                          {{ msg.toolData.data.action === 'delete' ? '【彻底删除】' : '【覆盖修改】' }}
+                        </strong> 操作。此操作不可逆！
+                      </div>
+                      <div class="card-footer">
+                        <t-button
+                          theme="danger"
+                          size="small"
+                          class="action-btn"
+                          :loading="confirmingToolId === msg.id"
+                          :disabled="!!confirmingToolId"
+                          @click="handleConfirmToolAction(msg)"
+                        >
+                          <template #icon><t-icon name="check-circle" /></template>
+                          确认授权{{ msg.toolData.data.action === 'delete' ? '删除' : '写入' }}
+                        </t-button>
+                        <t-button
+                          theme="default"
+                          variant="outline"
+                          size="small"
+                          class="action-btn"
+                          :disabled="!!confirmingToolId"
+                          @click="handleRejectToolAction(msg)"
+                        >
+                          <template #icon><t-icon name="close-circle" /></template>
+                          拒绝操作
+                        </t-button>
+                      </div>
+                    </div>
+
+                    <div v-else-if="msg.toolData?.data?.confirmed || msg.toolData?.data?.rejected" class="action-status-bar">
+                      <t-tag v-if="msg.toolData?.data?.confirmed" theme="success" variant="light" size="small">
+                        <template #icon><t-icon name="check-circle-filled" /></template>
+                        已授权{{ msg.toolData.data.action === 'delete' ? '删除' : '写入' }}: {{ msg.toolData.data.filePath }}
+                      </t-tag>
+                      <t-tag v-else theme="danger" variant="light" size="small">
+                        <template #icon><t-icon name="close-circle-filled" /></template>
+                        已拒绝{{ msg.toolData.data.action === 'delete' ? '删除' : '写入' }}操作
+                      </t-tag>
+                    </div>
+
+                    <div v-if="msg.toolData" class="tool-debug-collapse">
+                      <t-collapse v-model="msg.toolExpanded" borderless size="small">
+                        <t-collapse-panel value="tool_detail">
+                          <template #header>
+                            <div class="tool-debug-title">
+                              <t-icon name="code" />
+                              <span>调取工具: {{ msg.toolData.tool }}</span>
+                            </div>
+                          </template>
+                          <pre class="tool-json-code">{{ JSON.stringify(msg.toolData.data, null, 2) }}</pre>
+                        </t-collapse-panel>
+                      </t-collapse>
+                    </div>
+                  </template>
+                  <template #actions>
+                    <div
+                      v-if="msg.role === 'assistant' && msg.content && msg.content !== '正在思考与处理...'"
+                      class="msg-actions"
+                    >
+                      <t-tooltip content="复制">
+                        <t-button
+                          variant="text"
+                          shape="square"
+                          size="small"
+                          class="msg-action-btn"
+                          @click="handleCopyMessage(msg)"
+                        >
+                          <template #icon><t-icon name="copy" /></template>
+                        </t-button>
+                      </t-tooltip>
+                      <t-tooltip content="重新生成">
+                        <t-button
+                          variant="text"
+                          shape="square"
+                          size="small"
+                          class="msg-action-btn"
+                          @click="handleReplayMessage(msg)"
+                        >
+                          <template #icon><t-icon name="refresh" /></template>
+                        </t-button>
+                      </t-tooltip>
+                    </div>
+                  </template>
+                </t-chat-item>
+              </t-chat>
+            </div>
+
+            <div v-if="suggestedReplies.length > 0 && !loading" class="suggested-replies-bar">
+              <span class="sug-hint"><t-icon name="lightbulb" /> 快捷回复：</span>
+              <t-tag
+                v-for="(sug, index) in suggestedReplies"
+                :key="index"
+                theme="primary"
+                variant="light"
+                class="sug-chip"
+                @click="handleQuickSend(sug)"
               >
-                <t-tooltip content="复制">
-                  <t-button
-                    variant="text"
-                    shape="square"
-                    size="small"
-                    class="msg-action-btn"
-                    @click="handleCopyMessage(msg)"
-                  >
-                    <template #icon><t-icon name="copy" /></template>
-                  </t-button>
-                </t-tooltip>
-                <t-tooltip content="重新生成">
-                  <t-button
-                    variant="text"
-                    shape="square"
-                    size="small"
-                    class="msg-action-btn"
-                    @click="handleReplayMessage(msg)"
-                  >
-                    <template #icon><t-icon name="refresh" /></template>
-                  </t-button>
-                </t-tooltip>
-              </div>
-            </template>
-          </t-chat-item>
-        </t-chat>
-      </div>
+                {{ sug }}
+              </t-tag>
+            </div>
 
-      <!-- AI 推荐快捷回复卡片（始终位于输入框正上方） -->
-      <div v-if="suggestedReplies.length > 0 && !loading" class="suggested-replies-bar">
-        <span class="sug-hint"><t-icon name="lightbulb" /> 快捷回复：</span>
-        <t-tag
-          v-for="(sug, index) in suggestedReplies"
-          :key="index"
-          theme="primary"
-          variant="light"
-          class="sug-chip"
-          @click="handleQuickSend(sug)"
-        >
-          {{ sug }}
-        </t-tag>
+            <div class="chat-input-area">
+              <t-chat-sender
+                v-model="inputText"
+                :loading="loading"
+                placeholder="请输入指令，如“把 Java 切换成 25”、“重启服务器”..."
+                @send="handleSend"
+                @stop="handleAbort"
+              />
+            </div>
+          </div>
+        </div>
       </div>
-
-      <div class="chat-input-area">
-        <t-chat-sender
-          v-model="inputText"
-          :loading="loading"
-          placeholder="请输入指令，如“把 Java 切换成 25”、“重启服务器”..."
-          @send="handleSend"
-          @stop="handleAbort"
-        />
-      </div>
-    </div>
-  </t-drawer>
+    </teleport>
+  </div>
 </template>
 
 <style scoped>
@@ -527,7 +766,7 @@ const handleSend = async (value?: string) => {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding-right: 24px;
+  padding-right: 12px;
 }
 
 .drawer-title {
@@ -535,8 +774,67 @@ const handleSend = async (value?: string) => {
   align-items: center;
 }
 
-.clear-btn {
-  margin-left: auto;
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mode-btn {
+  color: var(--td-text-color-primary) !important;
+}
+
+.mode-icon {
+  font-size: 16px !important;
+  color: var(--td-text-color-primary) !important;
+}
+
+/* 自由悬浮小窗样式：纯实心高不透明背景，消除背景内容透穿与字迹模糊 */
+.floating-ai-card {
+  position: fixed;
+  z-index: 2000;
+  width: 540px;
+  height: 660px;
+  background-color: var(--td-bg-color-container) !important;
+  border: 1px solid var(--td-component-border);
+  border-radius: 16px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  opacity: 1 !important;
+}
+
+.floating-header {
+  padding: 12px 16px;
+  background-color: var(--td-bg-color-secondarycontainer) !important;
+  border-bottom: 1px solid var(--td-component-border);
+  cursor: move;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.floating-body {
+  flex: 1;
+  min-height: 0;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--td-bg-color-container) !important;
+}
+
+.draggable-title {
+  display: flex;
+  align-items: center;
+  cursor: move;
+}
+
+.drag-icon {
+  margin-right: 6px;
+  color: var(--td-brand-color);
 }
 
 .ai-chat-container {
@@ -822,6 +1120,35 @@ const handleSend = async (value?: string) => {
 }
 
 .chat-input-area :deep(.t-chat-sender__upload) {
+  display: none !important;
+}
+
+/* 解决发送按钮内部图标被组件库原生 display:none 隐藏的问题 */
+.chat-input-area :deep(.t-chat-sender__button__default > div) {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.chat-input-area :deep(.t-chat-sender__button__default) {
+  background-color: var(--td-brand-color) !important;
+  color: #ffffff !important;
+}
+
+.chat-input-area :deep(.t-chat-sender__button__default .t-icon),
+.chat-input-area :deep(.t-chat-sender__button__default svg) {
+  color: #ffffff !important;
+  fill: currentColor !important;
+  display: inline-block !important;
+  opacity: 1 !important;
+}
+
+/* 彻底隐藏 TChat 组件内置在对话列表底部自带的“清空历史”分割线与按钮 */
+.mslx-chat-component :deep(.t-chat__list .clear-btn),
+.mslx-chat-component :deep(.clear-btn-text),
+.mslx-chat-component :deep(.t-chat__list .t-divider) {
   display: none !important;
 }
 </style>
