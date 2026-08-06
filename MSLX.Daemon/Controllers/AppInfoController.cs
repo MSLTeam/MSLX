@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
@@ -426,25 +426,41 @@ public class AppInfoController : ControllerBase
         var updateResult = await RunProcessAsync(brewPath, "update");
         EnsureHomebrewCommandSucceeded("brew update", updateResult);
 
+        // 信任当前 Formula，避免因为 Tap 未受信任而导致升级失败。
+        var trustResult = await RunProcessAsync(
+            brewPath,
+            "trust",
+            "--formula",
+            "mslteam/tap/mslx-daemon");
+        EnsureHomebrewCommandSucceeded(
+            "brew trust --formula mslteam/tap/mslx-daemon",
+            trustResult);
+
         await SendUpdateProgressAsync(25, "0 KB/s", "upgrading", "正在通过 Homebrew 更新 MSLX-Daemon...");
 
-        var upgradeResult = await RunProcessAsync(brewPath, "upgrade", "mslx-daemon");
-        EnsureHomebrewCommandSucceeded("brew upgrade mslx-daemon", upgradeResult);
+        var upgradeResult = await RunProcessAsync(
+            brewPath,
+            "upgrade",
+            "mslteam/tap/mslx-daemon");
+        EnsureHomebrewCommandSucceeded(
+            "brew upgrade mslteam/tap/mslx-daemon",
+            upgradeResult);
 
         if (_serverService.HasRunningServers())
         {
-            await SendUpdateProgressAsync(100, "0 KB/s", "preparing", "正在关闭运行中的实例...");
+            await SendUpdateProgressAsync(90, "0 KB/s", "preparing", "正在关闭运行中的实例...");
             _serverService.StopAllServers();
         }
 
         await SendUpdateProgressAsync(100, "0 KB/s", "restarting", "Homebrew 更新完成，正在重启服务...");
         await Task.Delay(1000);
 
-        var restartStartInfo = CreateProcessStartInfo(brewPath, "services", "restart", "mslx-daemon");
-        using Process? restartProcess = Process.Start(restartStartInfo);
-        if (restartProcess == null)
+        // Homebrew service 配置启用了 keep_alive。终止当前进程后，由 launchd 自动拉起新版本。
+        using Process? killProcess = Process.Start(
+            CreateProcessStartInfo("/bin/kill", "-TERM", Environment.ProcessId.ToString()));
+        if (killProcess == null)
         {
-            throw new Exception("无法启动 Homebrew 服务重启命令。");
+            throw new Exception("无法重启服务。请手动执行 brew services restart mslx-daemon");
         }
     }
 
