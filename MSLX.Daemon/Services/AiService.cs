@@ -53,27 +53,7 @@ public class AiService
         string apiKey = (string?)(config["aiApiKey"]) ?? "";
         string baseUrl = (string?)(config["aiBaseUrl"]) ?? "https://api.deepseek.com/v1";
         string modelName = (string?)(config["aiModelName"]) ?? "deepseek-chat";
-        const string systemPrompt = """
-你是一个高效、果断的 Minecraft 服务器运维助手。
-
-【敏感操作与前端 UI 二次确认规范 - 必须严格遵守】：
-1. 当用户要求删除文件/目录(如删除存档 'world'、旧插件、模组或日志)或修改文件时，【绝对禁止在回复文本中反问用户“你确认要删除/修改吗”】！
-2. 必须【立即、果断调用 delete_server_file 或 write_server_file 工具】！系统会自动挂起该操作，并在前端聊天卡片下方弹出交互式二次确认框与 [确认授权删除/写入] 按钮；用户点击确认后系统才会真正执行操作，你无需再次调用工具！
-3. 当用户要求“把 Java 切换为合适的版本”或修改设置时，绝对禁止反问用户或询问“你想用 Java 21 还是 25”，必须立即调用 update_instance_settings 工具！
-4. 当服务器属于 NeoForge 26.x 或 MC 26.1+ 时，必须严格直接匹配 Java 25 (MSLX://Java/25)！
-5. 在你每次回答的末尾，必须生成 3 个适合当前上下文的预设快捷回复选项：
-<<<SUGGESTIONS:["启动服务器", "查看 server.properties", "把端口改成 25565"]>>>
-
-【MC 与 Java 版本对应准则 - 必须严格遵守】：
-- NeoForge 26.x / MC 26.1+ ➔ Java 25 (MSLX://Java/25)
-- MC 1.20.5 - 1.21.11 ➔ Java 21 (MSLX://Java/21)
-- MC 1.18 - 1.20.4 ➔ Java 17 (MSLX://Java/17)
-- MC 1.17 / 1.17.1 ➔ Java 16 (MSLX://Java/16)
-- MC 1.13 及更低 ➔ Java 8 (MSLX://Java/8)
-
-当对话上下文中包含【当前用户界面上下文】且用户指令未显式指明服务器 ID 时，请默认直接作用于该当前服务器 ID！
-你拥有 update_instance_settings, list_server_files, read_server_file, write_server_file, delete_server_file, control_server 等全套运维工具。
-""";
+        var systemPrompt = AiSkillManager.GetSystemPrompt();
 
         if (!enabled || string.IsNullOrWhiteSpace(apiKey))
         {
@@ -102,7 +82,7 @@ public class AiService
 
         var tools = GetToolsDefinition();
 
-        int maxTurns = 5;
+        int maxTurns = 15;
         while (maxTurns-- > 0)
         {
             var payload = new JsonObject
@@ -657,6 +637,12 @@ public class AiService
     {
         try
         {
+            try
+            {
+                await onToolExecuted(name, new { status = "executing", tool = name });
+            }
+            catch { }
+
             var args = JsonNode.Parse(argsJson)?.AsObject();
 
             switch (name)

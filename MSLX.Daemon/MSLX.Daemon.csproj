@@ -60,4 +60,8 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\MSLX.SDK\MSLX.SDK.csproj" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <EmbeddedResource Include="Skills\**\*.md" />
+	</ItemGroup>
 </Project>

@@ -196,6 +196,26 @@ const handleAbort = () => {
 const cleanToolResultText = (text: string): string =>
   text.replace(/^\[(?:SUCCESS|ERROR|INFO|CANCELLED|PENDING_CONFIRMATION|REQUIRES_CONFIRMATION)\]\s*/, '');
 
+const getToolFriendlyName = (toolName?: string): string => {
+  if (!toolName) return '思考与处理';
+  const map: Record<string, string> = {
+    create_server: '下载与部署服务端核心',
+    create_mc_server: '下载与部署服务端核心',
+    query_available_server_cores: '查询可用服务端核心',
+    query_java_environments: '扫描 Java 运行环境',
+    query_creation_status: '查询开服进度',
+    update_instance_settings: '修改服务器配置',
+    update_server_config: '更新服务端配置文件',
+    list_server_files: '读取服务器文件列表',
+    read_server_file: '读取文件内容',
+    write_server_file: '写入/修改文件内容',
+    delete_server_file: '删除服务器文件',
+    control_server: '控制服务器状态(启动/停止/重启)',
+    query_server_status: '查询服务器在线状态',
+  };
+  return map[toolName] || toolName;
+};
+
 const appendToolResult = (msg: DisplayMessage, resultText: string) => {
   const text = cleanToolResultText(resultText) || '操作已处理。';
   if (!msg.content || msg.content === '正在思考与处理...') {
@@ -418,20 +438,30 @@ const handleSend = async (value?: string) => {
               :animation="'gradient'"
             >
               <template #content>
-                <div v-if="msg.content === '正在思考与处理...'" class="thinking-state">
-                  <t-loading size="small" text="AI 正在思考中..." />
-                </div>
-                <div v-else-if="msg.role === 'user'" class="chat-bubble-text">
+                <!-- 用户消息文本 -->
+                <div v-if="msg.role === 'user'" class="chat-bubble-text">
                   {{ msg.content }}
                 </div>
-                <div v-else class="md-preview-wrapper">
-                  <md-preview
-                    :editor-id="`ai-msg-${msg.id}`"
-                    :model-value="msg.content"
-                    :theme="mdTheme"
-                    style="background: transparent; padding: 0"
-                  />
-                </div>
+
+                <!-- AI 回复 Markdown -->
+                <template v-else>
+                  <div v-if="msg.content && msg.content !== '正在思考与处理...'" class="md-preview-wrapper">
+                    <md-preview
+                      :editor-id="`ai-msg-${msg.id}`"
+                      :model-value="msg.content"
+                      :theme="mdTheme"
+                      style="background: transparent; padding: 0"
+                    />
+                  </div>
+
+                  <!-- 只要请求未结束(loading 为 true)，且正在对当前消息流式响应或后台调取工具，常驻展示动态思考/执行动效胶囊 -->
+                  <div v-if="loading && msg.id === activeStreamingId" class="thinking-state active-thinking">
+                    <t-loading
+                      size="small"
+                      :text="msg.toolData?.tool ? `正在后台【${getToolFriendlyName(msg.toolData.tool)}】...` : 'AI 正在思考并处理中...'"
+                    />
+                  </div>
+                </template>
 
                 <div
                   v-if="msg.toolData?.data?.requiresConfirmation && !msg.toolData?.data?.confirmed && !msg.toolData?.data?.rejected"
@@ -612,20 +642,30 @@ const handleSend = async (value?: string) => {
                   :animation="'gradient'"
                 >
                   <template #content>
-                    <div v-if="msg.content === '正在思考与处理...'" class="thinking-state">
-                      <t-loading size="small" text="AI 正在思考中..." />
-                    </div>
-                    <div v-else-if="msg.role === 'user'" class="chat-bubble-text">
+                    <!-- 用户消息文本 -->
+                    <div v-if="msg.role === 'user'" class="chat-bubble-text">
                       {{ msg.content }}
                     </div>
-                    <div v-else class="md-preview-wrapper">
-                      <md-preview
-                        :editor-id="`ai-msg-float-${msg.id}`"
-                        :model-value="msg.content"
-                        :theme="mdTheme"
-                        style="background: transparent; padding: 0"
-                      />
-                    </div>
+
+                    <!-- AI 回复 Markdown -->
+                    <template v-else>
+                      <div v-if="msg.content && msg.content !== '正在思考与处理...'" class="md-preview-wrapper">
+                        <md-preview
+                          :editor-id="`ai-msg-float-${msg.id}`"
+                          :model-value="msg.content"
+                          :theme="mdTheme"
+                          style="background: transparent; padding: 0"
+                        />
+                      </div>
+
+                      <!-- 只要请求未结束(loading 为 true)，且正在对当前消息流式响应或后台调取工具，常驻展示动态思考/执行动效胶囊 -->
+                      <div v-if="loading && msg.id === activeStreamingId" class="thinking-state active-thinking">
+                        <t-loading
+                          size="small"
+                          :text="msg.toolData?.tool ? `正在后台【${getToolFriendlyName(msg.toolData.tool)}】...` : 'AI 正在思考并处理中...'"
+                        />
+                      </div>
+                    </template>
 
                     <div
                       v-if="msg.toolData?.data?.requiresConfirmation && !msg.toolData?.data?.confirmed && !msg.toolData?.data?.rejected"
@@ -911,6 +951,13 @@ const handleSend = async (value?: string) => {
   background: var(--td-bg-color-component);
   border: 1px solid var(--td-component-border);
   margin-top: 4px;
+}
+
+.active-thinking {
+  margin-top: 8px;
+  background: var(--td-brand-color-light);
+  border-color: var(--td-brand-color-light-hover);
+  color: var(--td-brand-color);
 }
 
 /* 消息操作栏（复制 / 重新生成） */
