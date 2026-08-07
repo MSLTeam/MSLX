@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using System.Net;
 using System.Text;
 using System.Text.Json;
@@ -232,31 +232,53 @@ namespace MSLX.Daemon.Utils;
     // 底层封装
     public class HttpService : IDisposable
     {
+        private static readonly SocketsHttpHandler _sharedHandler = new SocketsHttpHandler
+        {
+            PooledConnectionLifetime = TimeSpan.FromMinutes(15),
+            PooledConnectionIdleTimeout = TimeSpan.FromMinutes(2),
+            EnableMultipleHttp2Connections = true
+        };
+        private static readonly HttpClient _sharedHttpClient = new HttpClient(_sharedHandler);
+
+        public static HttpClient SharedClient => _sharedHttpClient;
+
         private readonly HttpClient _httpClient;
-        private readonly HttpClientHandler _httpHandler;
+        private readonly HttpClientHandler? _httpHandler;
+        private readonly bool _isCustomClient;
+        private string? _customUserAgent;
         private bool _disposed = false;
 
         public HttpService(TimeSpan? timeout = null, bool? allowAutoRedirect = null, bool? useCookies = null, DecompressionMethods? decompressionMethods = null)
         {
-            _httpHandler = new HttpClientHandler();
-            if (allowAutoRedirect != null)
+            if (allowAutoRedirect != null || useCookies != null || decompressionMethods != null)
             {
-                _httpHandler.AllowAutoRedirect = allowAutoRedirect.Value;
-            }
-            if (useCookies != null)
-            {
-                _httpHandler.UseCookies = useCookies.Value;
-                _httpHandler.CookieContainer = new CookieContainer();
-            }
-            if (decompressionMethods != null)
-            {
-                _httpHandler.AutomaticDecompression = decompressionMethods.Value;
-            }
+                _httpHandler = new HttpClientHandler();
+                if (allowAutoRedirect != null)
+                {
+                    _httpHandler.AllowAutoRedirect = allowAutoRedirect.Value;
+                }
+                if (useCookies != null)
+                {
+                    _httpHandler.UseCookies = useCookies.Value;
+                    _httpHandler.CookieContainer = new CookieContainer();
+                }
+                if (decompressionMethods != null)
+                {
+                    _httpHandler.AutomaticDecompression = decompressionMethods.Value;
+                }
 
-            _httpClient = new HttpClient(_httpHandler);
-            if (timeout != null)
+                _httpClient = new HttpClient(_httpHandler);
+                _isCustomClient = true;
+                if (timeout != null)
+                {
+                    _httpClient.Timeout = timeout.Value;
+                }
+            }
+            else
             {
-                _httpClient.Timeout = timeout.Value;
+                _httpClient = _sharedHttpClient;
+                _isCustomClient = false;
+                _httpHandler = null;
             }
         }
 
@@ -283,6 +305,13 @@ namespace MSLX.Daemon.Utils;
         public async Task<HttpResponse> SendAsync(HttpRequest request)
         {
             using var message = new HttpRequestMessage(request.Method, request.Url);
+            message.Version = HttpVersion.Version20;
+            message.VersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+
+            if (!string.IsNullOrEmpty(_customUserAgent))
+            {
+                message.Headers.TryAddWithoutValidation("User-Agent", _customUserAgent);
+            }
 
             foreach (var header in request.Headers)
             {
@@ -291,7 +320,7 @@ namespace MSLX.Daemon.Utils;
 
             if (request.Method != HttpMethod.Get && request.Data != null)
             {
-                _httpClient.DefaultRequestHeaders.Accept.TryParseAdd(HttpAcceptType(request.ContentType));
+                message.Headers.Accept.TryParseAdd(HttpAcceptType(request.ContentType));
                 message.Content = CreateHttpContent(request.ContentType, request.Data);
             }
 
@@ -357,7 +386,7 @@ namespace MSLX.Daemon.Utils;
                     .ToDictionary(h => h.Key, h => string.Join("; ", h.Value))
             };
 
-            if (_httpHandler.CookieContainer != null)
+            if (_httpHandler?.CookieContainer != null)
             {
                 var cookies = _httpHandler.CookieContainer.GetCookies(new Uri(response.RequestMessage?.RequestUri?.GetLeftPart(UriPartial.Authority) ?? string.Empty));
                 result.Cookies = cookies.Cast<Cookie>()
@@ -370,25 +399,25 @@ namespace MSLX.Daemon.Utils;
 
         public void SetDefaultHeadersUA(string ua)
         {
-            if (_httpClient.DefaultRequestHeaders.Contains("User-Agent"))
-            {
-                _httpClient.DefaultRequestHeaders.Remove("User-Agent");
-            }
-
-            // 管你呢！直接塞！咩规范啊？我唔知啊～
-            _httpClient.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", ua);
+            _customUserAgent = ua;
         }
 
         public void ClearCookies()
         {
-            _httpHandler.CookieContainer = new CookieContainer();
+            if (_httpHandler?.CookieContainer != null)
+            {
+                _httpHandler.CookieContainer = new CookieContainer();
+            }
         }
 
         public void Dispose()
         {
             if (_disposed) return;
-            _httpClient?.Dispose();
-            _httpHandler?.Dispose();
+            if (_isCustomClient)
+            {
+                _httpClient?.Dispose();
+                _httpHandler?.Dispose();
+            }
             _disposed = true;
             GC.SuppressFinalize(this);
         }

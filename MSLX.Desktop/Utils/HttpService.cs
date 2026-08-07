@@ -36,7 +36,16 @@ namespace MSLX.Desktop.Utils
     /// </summary>
     public class HttpService : IDisposable
     {
-        // private static readonly HttpClient _HttpClient = new HttpClient();
+        private static readonly SocketsHttpHandler _sharedHandler = new SocketsHttpHandler
+        {
+            PooledConnectionLifetime = TimeSpan.FromMinutes(15),
+            PooledConnectionIdleTimeout = TimeSpan.FromMinutes(2),
+            EnableMultipleHttp2Connections = true
+        };
+        private static readonly HttpClient _sharedClient = new HttpClient(_sharedHandler);
+
+        public static HttpClient SharedClient => _sharedClient;
+
         private bool _disposed = false;
 
         /// <summary>
@@ -96,27 +105,31 @@ namespace MSLX.Desktop.Utils
             string? customUA = null,
             CancellationToken cancellationToken = default)
         {
-            using var httpClient = new HttpClient();
             var httpResponse = new HttpResponse();
             try
             {
-                // 配置User-Agent
-                ConfigureUserAgent(httpClient, uaType, customUA);
                 // 拼接查询参数
                 if (queryParameters != null)
                 {
                     url = AppendQueryParameters(url, queryParameters);
                 }
+
+                using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Version = HttpVersion.Version20;
+                request.VersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+
+                // 配置User-Agent到单次请求Header（防线程污染）
+                ConfigureUserAgent(request.Headers, uaType, customUA);
+                // 应用自定义请求头到单次请求
+                configureHeaders?.Invoke(request.Headers);
+
                 Debug.WriteLine($"准备发送HTTP GET请求 - URL: {url}");
-                // 应用自定义请求头
-                configureHeaders?.Invoke(httpClient.DefaultRequestHeaders);
                 Console.WriteLine($"HTTP GET: {url}");
                 Debug.WriteLine($"HTTP GET: {url}");
 
-                // 传递 CancellationToken
-                var response = await httpClient.GetAsync(url, cancellationToken);
+                var response = await _sharedClient.SendAsync(request, cancellationToken);
                 httpResponse.StatusCode = response.StatusCode;
-                httpResponse.Content = await response.Content.ReadAsStringAsync();
+                httpResponse.Content = await response.Content.ReadAsStringAsync(cancellationToken);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -136,7 +149,6 @@ namespace MSLX.Desktop.Utils
                 Console.WriteLine($"HTTP GET异常: {ex.Message} - URL: {url}");
                 Debug.WriteLine($"HTTP GET异常: {ex.Message} - URL: {url}");
             }
-            httpClient.Dispose();
             return httpResponse;
         }
 
@@ -163,46 +175,45 @@ namespace MSLX.Desktop.Utils
             UAManager.UAType uaType = UAManager.UAType.MSLX,
             string? customUA = null)
         {
-            using var httpClient = new HttpClient();
             var httpResponse = new HttpResponse();
 
             try
             {
-                // 配置User-Agent
-                ConfigureUserAgent(httpClient, uaType, customUA);
-
                 if (queryParameters != null)
                 {
                     url = AppendQueryParameters(url, queryParameters);
                 }
 
-                // 创建请求内容
-                var content = CreateHttpContent(contentType, parameterData, httpClient);
+                using var request = new HttpRequestMessage(HttpMethod.Post, url);
+                request.Version = HttpVersion.Version20;
+                request.VersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+
+                // 配置User-Agent到单次请求Header（防线程污染）
+                ConfigureUserAgent(request.Headers, uaType, customUA);
+
+                // 创建请求内容并应用 Accept Header
+                request.Content = CreateHttpContent(contentType, parameterData, request.Headers);
 
                 // 应用自定义请求头
-                configureHeaders?.Invoke(httpClient.DefaultRequestHeaders);
+                configureHeaders?.Invoke(request.Headers);
 
-                // LogHelper.Write.Info($"HTTP POST: {url}");
                 Console.WriteLine($"HTTP POST: {url}");
 
-                var response = await httpClient.PostAsync(url, content);
+                var response = await _sharedClient.SendAsync(request);
                 httpResponse.StatusCode = response.StatusCode;
                 httpResponse.Content = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    // LogHelper.Write.Warning($"HTTP POST 返回非成功状态码: {response.StatusCode} - {url}");
                     Console.WriteLine($"HTTP POST 返回非成功状态码: {response.StatusCode} - {url}");
                 }
             }
             catch (Exception ex)
             {
                 httpResponse.Exception = ex;
-                // LogHelper.Write.Error($"HTTP POST异常: {ex.Message} - URL: {url}");
                 Console.WriteLine($"HTTP POST异常: {ex.Message} - URL: {url}");
             }
 
-            httpClient.Dispose();
             return httpResponse;
         }
 
@@ -211,15 +222,15 @@ namespace MSLX.Desktop.Utils
         #region 私有辅助方法
 
         /// <summary>
-        /// 配置HttpClient的User-Agent
+        /// 配置HttpRequestMessage的User-Agent
         /// </summary>
         private static void ConfigureUserAgent(
-            HttpClient httpClient,
+            HttpRequestHeaders headers,
             UAManager.UAType uaType,
             string? customUA)
         {
             string userAgent;
-            if (uaType== UAManager.UAType.Custom)
+            if (uaType == UAManager.UAType.Custom)
             {
                 userAgent = string.IsNullOrEmpty(customUA)
                 ? UAManager.GetUA(uaType)
@@ -231,7 +242,7 @@ namespace MSLX.Desktop.Utils
             }
             if (!string.IsNullOrEmpty(userAgent))
             {
-                httpClient.DefaultRequestHeaders.UserAgent.TryParseAdd(userAgent);
+                headers.UserAgent.TryParseAdd(userAgent);
             }
         }
 
@@ -241,12 +252,12 @@ namespace MSLX.Desktop.Utils
         private static HttpContent? CreateHttpContent(
             PostContentType contentType,
             object? parameterData,
-            HttpClient httpClient)
+            HttpRequestHeaders requestHeaders)
         {
             switch (contentType)
             {
                 case PostContentType.Json:
-                    httpClient.DefaultRequestHeaders.Accept.Add(
+                    requestHeaders.Accept.Add(
                         new MediaTypeWithQualityHeaderValue("application/json"));
                     return new StringContent(
                         JsonSerializer.Serialize(parameterData),
@@ -254,7 +265,7 @@ namespace MSLX.Desktop.Utils
                         "application/json");
 
                 case PostContentType.Text:
-                    httpClient.DefaultRequestHeaders.Accept.Add(
+                    requestHeaders.Accept.Add(
                         new MediaTypeWithQualityHeaderValue("text/plain"));
                     return new StringContent(
                         parameterData?.ToString() ?? string.Empty,
@@ -262,7 +273,7 @@ namespace MSLX.Desktop.Utils
                         "text/plain");
 
                 case PostContentType.FormUrlEncoded:
-                    httpClient.DefaultRequestHeaders.Accept.Add(
+                    requestHeaders.Accept.Add(
                         new MediaTypeWithQualityHeaderValue("application/x-www-form-urlencoded"));
                     return CreateFormUrlEncodedContent(parameterData);
 
