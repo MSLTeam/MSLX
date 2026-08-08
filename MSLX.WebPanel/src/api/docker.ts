@@ -1,5 +1,6 @@
 import {
   DockerEnvStatusModel,
+  DockerImageCheckUpdateItemModel,
   DockerImageDeleteRequestModel,
   DockerImageDetailModel,
   DockerImageModel,
@@ -84,5 +85,14 @@ export async function postTagDockerImage(source: string, target: string) {
     url: '/api/docker/images/tag',
     data: { source, target },
     timeout: 30 * 1000,
+  });
+}
+
+// 检查镜像更新
+export async function postCheckDockerImageUpdate(references?: string[]) {
+  return await request.post<DockerImageCheckUpdateItemModel[]>({
+    url: '/api/docker/images/check-update',
+    data: { references },
+    timeout: 60 * 1000,
   });
 }

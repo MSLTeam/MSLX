@@ -46,16 +46,27 @@ html[theme-mode='dark'] .t-menu__popup {
 
 
 /* ================= Tooltip (提示气泡) ================= */
-.t-tooltip--default .t-popup__content {
+.t-tooltip .t-popup__content,
+.t-tooltip--default .t-popup__content,
+.t-tooltip__content {
   @apply !bg-zinc-800 dark:!bg-zinc-700 !text-white !border-none !rounded-lg !px-3 !py-1.5 !text-xs !font-medium;
+  color: #ffffff !important;
   box-shadow: 0 4px 6px -1px rgb(0, 0, 0, 0.1) !important;
 }
 
+.t-tooltip .t-popup__content *,
+.t-tooltip--default .t-popup__content *,
+.t-tooltip__content * {
+  color: #ffffff !important;
+}
+
 /* 强制重写小三角 */
+.t-tooltip .t-popup__arrow,
 .t-tooltip--default .t-popup__arrow {
   background-color: #27272a !important; /* zinc-800 */
   border: none !important;
 }
+html[theme-mode='dark'] .t-tooltip .t-popup__arrow,
 html[theme-mode='dark'] .t-tooltip--default .t-popup__arrow {
   background-color: #3f3f46 !important; /* zinc-700 */
 }
