@@ -82,3 +82,12 @@ export interface DockerImageDeleteRequestModel {
   force?: boolean;
   noPrune?: boolean;
 }
+
+export interface DockerImageCheckUpdateItemModel {
+  reference: string;
+  hasUpdate: boolean;
+  localDigest?: string;
+  remoteDigest?: string;
+  status: 'upToDate' | 'hasUpdate' | 'error';
+  message?: string;
+}

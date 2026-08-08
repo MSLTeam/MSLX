@@ -6,6 +6,7 @@ import { useUserStore } from '@/store';
 import { getHubUrl } from '@/utils/hub';
 
 import ServerCoreSelector from './ServerCoreSelector.vue';
+import DockerImageSelector from '@/components/docker-image-selector/index.vue';
 import { getJavaVersionList } from '@/api/mslapi/java';
 import { getLocalJavaList } from '@/api/localJava';
 import { getPythonList } from '@/api/localPython';
@@ -161,6 +162,11 @@ const handlerOptions = [
   { label: 'velocity_handler (Velocity)', value: 'velocity_handler' },
 ];
 
+// docker相关
+const deployMode = ref<'native' | 'docker'>('native');
+const dockerImageType = ref<'preset' | 'custom'>('preset'); // 'preset' | 'custom'
+const dockerImagePresetVersion = ref('25');
+
 const formData = ref(<CreateInstanceQucikModeModel>{
   name: '新建 MCDR 服务器',
   path: '',
@@ -179,6 +185,8 @@ const formData = ref(<CreateInstanceQucikModeModel>{
   mcdrHandler: '',
   mcdrInstall: true,
   mcdrPipMirror: 'https://pypi.tuna.tsinghua.edu.cn/simple',
+  dockerImage: 'MSLX://DockerImage/Java/25',
+  dockerPorts: '25565:25565',
 });
 
 // 处理内存的单位
@@ -220,10 +228,30 @@ watch(
   { immediate: true },
 );
 
+// 监听 deployMode 变动
+watch(deployMode, (val) => {
+  if (val === 'docker') {
+    javaType.value = 'docker';
+    formData.value.mcdrInstall = false;
+  } else if (javaType.value === 'docker') {
+    javaType.value = 'online';
+    formData.value.mcdrInstall = true;
+  }
+});
+
+// 监听 docker 镜像选择
+watch([javaType, dockerImageType, dockerImagePresetVersion], ([jType, type, ver]) => {
+  if (jType === 'docker') {
+    if (type === 'preset') {
+      formData.value.dockerImage = `MSLX://DockerImage/Java/${ver}`;
+    }
+  }
+});
+
 // 监听选择java的状态变量 修改表单数据
 watch(
-  [javaType, selectedJavaVersion, customJavaPath],
-  ([type, ver, path]) => {
+  [javaType, selectedJavaVersion, customJavaPath, () => formData.value.dockerImage],
+  ([type, ver, path, _dockerImg]) => {
     if (type === 'env') {
       formData.value.java = 'java';
     } else if (type === 'custom') {
@@ -232,6 +260,8 @@ watch(
       formData.value.java = path;
     } else if (type === 'online') {
       formData.value.java = ver ? `MSLX://Java/${ver}` : '';
+    } else if (type === 'docker') {
+      formData.value.java = 'docker-custom';
     }
 
     if (formData.value.java) {
@@ -287,6 +317,19 @@ const FORM_RULES = computed<FormRules>(() => {
     ],
     minM: [{ required: true, min: 1, message: '最小内存必须大于0', trigger: 'blur' }],
     maxM: [{ required: true, min: 1, message: '最大内存必须大于0', trigger: 'blur' }],
+    dockerPorts: [
+      {
+        validator: (val: string) => {
+          if (javaType.value === 'docker' && val && val !== '0') {
+            if (!/^\d+:\d+$/.test(val)) {
+              return { result: false, message: '端口格式错误，请填写如 25565:25565 或 0', type: 'error' };
+            }
+          }
+          return true;
+        },
+        trigger: 'blur',
+      },
+    ],
   };
 });
 
@@ -301,12 +344,24 @@ const stepValidationFields = [
 
 // 步骤导航
 const prevStep = () => {
-  if (currentStep.value > 0) {
+  if (currentStep.value === 2 && deployMode.value === 'docker') {
+    currentStep.value = 0;
+  } else if (currentStep.value > 0) {
     currentStep.value -= 1;
   }
 };
 
 const nextStep = async () => {
+  if (currentStep.value === 0 && deployMode.value === 'docker') {
+    const validateResult = await formRef.value.validate({ fields: ['name', 'path'] });
+    if (validateResult === true) {
+      currentStep.value = 2;
+      return;
+    }
+    MessagePlugin.warning('请检查当前步骤的输入');
+    return;
+  }
+
   if (currentStep.value === 2) {
     if (downloadType.value === 'online') {
       if (!formData.value.coreUrl || !formData.value.core) {
@@ -447,6 +502,8 @@ const onSubmit = async () => {
     args: formData.value.args || null,
     mcdr: true,
     mcdrHandler: handlerType.value === 'manual' ? formData.value.mcdrHandler : '',
+    dockerImage: javaType.value === 'docker' ? formData.value.dockerImage : undefined,
+    dockerPorts: javaType.value === 'docker' ? formData.value.dockerPorts : undefined,
   };
 
   if (downloadType.value === 'manual') {
@@ -575,8 +632,6 @@ const goToHome = () => {
   removeUploadData();
 };
 
-// Docker 镜像预设版本
-const dockerImagePresetVersion = ref('25');
 
 const updateJavaSelectionByRecommendation = () => {
   // 优先使用在线选择器提供的精确版本号，其次尝试从文件名解析
@@ -632,8 +687,8 @@ watch([onlineGameVersion, () => formData.value.core], () => updateJavaSelectionB
           readonly
           class="custom-steps !bg-transparent !mt-2"
         >
-          <t-step-item title="基本信息" content="填写实例名称和路径" />
-          <t-step-item title="Python 环境" content="配置 MCDR 运行环境" />
+          <t-step-item title="基本信息" content="选择部署模式与名称" />
+          <t-step-item title="Python 环境" :content="javaType === 'docker' ? '容器已预装(跳过)' : '配置 MCDR 运行环境'" />
           <t-step-item title="核心文件" content="指定内部服务端核心" />
           <t-step-item title="Java 环境" content="配置内部服务端 Java" />
           <t-step-item title="资源配置" content="设置内存与高级选项" />
@@ -673,6 +728,22 @@ watch([onlineGameVersion, () => formData.value.core], () => updateJavaSelectionB
                 />
               </t-form-item>
 
+              <t-form-item label="部署/运行模式" class="!mb-6">
+                <div class="w-full">
+                  <t-radio-group v-model="deployMode" variant="default-filled">
+                    <t-radio-button value="native">本机原生部署</t-radio-button>
+                    <t-radio-button value="docker">Docker 容器部署 🐳</t-radio-button>
+                  </t-radio-group>
+                  <div class="text-[11px] text-zinc-500 mt-2">
+                    {{
+                      deployMode === 'docker'
+                        ? '已选择 Docker 模式，容器内已预装 Python 3 与 MCDReforged 环境，将自动跳过宿主机 Python 配置。'
+                        : '原生模式下需确保宿主机已安装 Python 3.8+ 环境。'
+                    }}
+                  </div>
+                </div>
+              </t-form-item>
+
               <t-form-item
                 label="实例路径"
                 name="path"
@@ -692,7 +763,14 @@ watch([onlineGameVersion, () => formData.value.core], () => updateJavaSelectionB
             </div>
 
             <div v-show="currentStep === 1" class="list-item-anim flex-1 pt-1">
-              <t-alert theme="info" title="Python 环境说明" class="!mb-6 !rounded-xl">
+              <t-alert v-if="javaType === 'docker'" theme="success" class="!mb-6 !rounded-xl">
+                <template #message>
+                  <div class="text-sm leading-relaxed">
+                    当前已选择 <b>Docker 容器环境</b>。内置的 MSLX Docker 镜像已内置 Python 3 与 MCDReforged 环境，创建时将自动使用容器环境，无需在宿主机配置 Python。
+                  </div>
+                </template>
+              </t-alert>
+              <t-alert v-else theme="info" title="Python 环境说明" class="!mb-6 !rounded-xl">
                 <template #message>
                   <div class="text-sm leading-relaxed mt-2">
                     MCDR 需要 <b>Python 3.8+</b> 环境运行。建议直接选择已检测到的 Python，若未安装
@@ -961,14 +1039,19 @@ watch([onlineGameVersion, () => formData.value.core], () => updateJavaSelectionB
                 </template>
               </t-alert>
 
-              <t-form-item label="内部服务端 Java 来源" name="java" class="!mb-0">
+              <t-form-item label="内部服务端 Java / 运行环境" name="java" class="!mb-0">
                 <div class="w-full">
                   <t-radio-group v-model="javaType" variant="default-filled" class="!mb-4">
-                    <t-radio-button value="online">在线下载</t-radio-button>
-                    <t-radio-button value="local">选择电脑上的 Java</t-radio-button>
-                    <t-radio-button value="env">环境变量</t-radio-button>
-                    <t-radio-button value="custom">自定义路径</t-radio-button>
+                    <t-radio-button value="online" :disabled="deployMode === 'docker'">在线下载</t-radio-button>
+                    <t-radio-button value="local" :disabled="deployMode === 'docker'">选择电脑上的 Java</t-radio-button>
+                    <t-radio-button value="env" :disabled="deployMode === 'docker'">环境变量</t-radio-button>
+                    <t-radio-button value="custom" :disabled="deployMode === 'docker'">自定义路径</t-radio-button>
+                    <t-radio-button value="docker" :disabled="deployMode === 'native'">Docker 容器环境 🐳</t-radio-button>
                   </t-radio-group>
+                  <t-alert v-if="javaType === 'docker'" class="!mb-5" theme="info"
+                    >使用容器环境前请确保您的宿主机已经安装了
+                    <b>Docker</b> ，否则会导致无法启动。内置镜像均已准备好 Python + MCDR 基础环境。</t-alert
+                  >
 
                   <div class="w-full sm:w-[32rem] min-h-[70px] mt-2">
                     <div v-if="javaType === 'online'">
@@ -1013,6 +1096,54 @@ watch([onlineGameVersion, () => formData.value.core], () => updateJavaSelectionB
                         placeholder="例如: C:\Program Files\Java\jdk-17\bin\java.exe"
                         class="!font-mono"
                       />
+                    </div>
+
+                    <div
+                      v-if="javaType === 'docker'"
+                      class="list-item-anim border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 bg-zinc-50/30 dark:bg-zinc-900/10 w-full sm:w-[32rem]"
+                    >
+                      <div class="mb-4">
+                        <t-radio-group v-model="dockerImageType" size="small" variant="outline">
+                          <t-radio-button value="preset">MSLX 官方运行时镜像</t-radio-button>
+                          <t-radio-button value="custom">自定义公网镜像</t-radio-button>
+                        </t-radio-group>
+                      </div>
+
+                      <div v-if="dockerImageType === 'preset'">
+                        <div class="flex items-center gap-3">
+                          <span class="text-xs font-bold text-zinc-500 shrink-0">运行环境:</span>
+                          <t-select v-model="dockerImagePresetVersion" class="!w-48" :clearable="false">
+                            <t-option
+                              :label="recommendedJavaVersion === '25' ? 'Java 25 (推荐)' : 'Java 25'"
+                              value="25"
+                            />
+                            <t-option
+                              :label="recommendedJavaVersion === '21' ? 'Java 21 (推荐)' : 'Java 21'"
+                              value="21"
+                            />
+                            <t-option
+                              :label="recommendedJavaVersion === '17' ? 'Java 17 (推荐)' : 'Java 17'"
+                              value="17"
+                            />
+                            <t-option
+                              :label="recommendedJavaVersion === '11' ? 'Java 11 (推荐)' : 'Java 11'"
+                              value="11"
+                            />
+                            <t-option :label="recommendedJavaVersion === '8' ? 'Java 8 (推荐)' : 'Java 8'" value="8" />
+                          </t-select>
+                        </div>
+                      </div>
+
+                      <div v-if="dockerImageType === 'custom'">
+                        <docker-image-selector
+                          v-model="formData.dockerImage"
+                          placeholder="输入或选择本地镜像，例如: library/openjdk:17-slim"
+                        />
+                        <div class="text-[11px] text-amber-500 mt-2">
+                          ⚠️ 提示：使用自定义公共镜像创建时，系统将通过终端执行标准 docker
+                          pull，请确保网络通畅。
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1066,6 +1197,20 @@ watch([onlineGameVersion, () => formData.value.core], () => updateJavaSelectionB
                 />
               </t-form-item>
 
+              <t-form-item
+                v-if="javaType === 'docker'"
+                label="Docker 端口映射"
+                name="dockerPorts"
+                class="!mt-8 w-full sm:w-[40rem]"
+              >
+                <template #help>
+                  <span class="text-[11px] text-zinc-500 mt-1 inline-block">
+                    格式: 宿主机端口:容器端口 (例如 25565:25565)。输入 0 则代表使用 Host 宿主机网络模式。
+                  </span>
+                </template>
+                <t-input v-model="formData.dockerPorts" placeholder="25565:25565" class="!font-mono" />
+              </t-form-item>
+
               <t-collapse :default-value="[]" class="!mt-8 !bg-transparent !border-none">
                 <t-collapse-panel value="adv" header="高级选项 (Handler / MCDR 安装 / 镜像源)">
                   <t-form-item label="MCDR Handler" class="!mb-6">
@@ -1087,9 +1232,13 @@ watch([onlineGameVersion, () => formData.value.core], () => updateJavaSelectionB
 
                   <t-form-item label="自动安装 MCDReforged" class="!mb-6">
                     <div class="flex items-center gap-3">
-                      <t-switch v-model="formData.mcdrInstall" size="large" />
+                      <t-switch v-model="formData.mcdrInstall" :disabled="deployMode === 'docker'" size="large" />
                       <span class="text-sm">{{
-                        formData.mcdrInstall ? '创建时自动 pip 安装' : '不自动安装(需自行安装)'
+                        deployMode === 'docker'
+                          ? 'Docker 镜像已内置 MCDR，无需自动 pip 安装'
+                          : formData.mcdrInstall
+                          ? '创建时自动 pip 安装'
+                          : '不自动安装(需自行安装)'
                       }}</span>
                     </div>
                   </t-form-item>
@@ -1198,6 +1347,12 @@ watch([onlineGameVersion, () => formData.value.core], () => updateJavaSelectionB
                         >Java {{ selectedJavaVersion }}</span
                       >
                       <span
+                        v-else-if="javaType === 'docker'"
+                        class="text-sm font-bold text-[var(--td-text-color-primary)] truncate max-w-[200px] sm:max-w-[300px]"
+                        :title="formData.dockerImage"
+                        >{{ formData.dockerImage }}</span
+                      >
+                      <span
                         v-else
                         class="text-sm font-bold text-[var(--td-text-color-primary)] truncate max-w-[200px] sm:max-w-[300px]"
                         :title="formData.java"
@@ -1206,9 +1361,13 @@ watch([onlineGameVersion, () => formData.value.core], () => updateJavaSelectionB
                       <t-tag v-if="javaType === 'online'" theme="success" variant="light" size="small" class="!rounded"
                         >自动安装</t-tag
                       >
+                      <t-tag v-else-if="javaType === 'docker'" theme="primary" variant="light" size="small" class="!rounded"
+                        >Docker 容器</t-tag
+                      >
                     </div>
                     <div class="text-[11px] text-zinc-500 mt-1 truncate max-w-[250px] sm:max-w-[350px]">
                       <span v-if="javaType === 'online'">将自动从镜像源下载并解压 JDK</span>
+                      <span v-else-if="javaType === 'docker'">目标环境: 沙盒隔离镜像 ({{ formData.dockerImage }})</span>
                       <span v-else>目标环境: {{ formData.java }}</span>
                     </div>
                   </div>

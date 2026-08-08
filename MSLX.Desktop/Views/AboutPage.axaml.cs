@@ -1,4 +1,4 @@
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 using Avalonia.Media.Imaging;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils.API;
@@ -42,9 +42,9 @@ public partial class AboutPage : UserControl
     {
         Developers.Add(new MemberModel { Name = "Weheal", Role = "Core Developer", AvatarUrl = "https://q.qlogo.cn/headimg_dl?dst_uin=2035582067&spec=640&img_type=jpg", Desc = "核心开发者" });
         Developers.Add(new MemberModel { Name = "xiaoyu", Role = "Core Developer", AvatarUrl = "https://q.qlogo.cn/headimg_dl?dst_uin=1791123970&spec=640&img_type=jpg", Desc = "核心开发者" });
-
-        Contributors.Add(new MemberModel { Name = "chaoji233", Role = "Contributors", AvatarUrl = "https://hk-gh.mslmc.cn/https://avatars.githubusercontent.com/u/126066634?s=80&v=4", Desc = "帮忙优化了一些功能，重构了Chmlfrp部分" });
+        
         Contributors.Add(new MemberModel { Name = "CoZooo", Role = "Contributors", AvatarUrl = "https://hk-gh.mslmc.cn/https://avatars.githubusercontent.com/u/57851661?v=4", Desc = "帮忙做了Homebrew的发布适配" });
+        Contributors.Add(new MemberModel { Name = "chaoji233", Role = "Contributors", AvatarUrl = "https://hk-gh.mslmc.cn/https://avatars.githubusercontent.com/u/126066634?s=80&v=4", Desc = "帮忙优化了一些功能，重构了Chmlfrp部分" });
         Contributors.Add(new MemberModel { Name = "Hongbro886", Role = "Contributors", AvatarUrl = "https://hk-gh.mslmc.cn/https://avatars.githubusercontent.com/u/185684679?s=80&v=4", Desc = "帮忙修了一些bug" });
         Contributors.Add(new MemberModel { Name = "alright-qwq", Role = "Contributors", AvatarUrl = "https://hk-gh.mslmc.cn/https://avatars.githubusercontent.com/u/151932943?s=48&v=4", Desc = "帮忙在MSLX中完成对MCDR的适配" });
         Contributors.Add(new MemberModel { Name = "LegendarySHT", Role = "Contributors", AvatarUrl = "https://hk-gh.mslmc.cn/https://avatars.githubusercontent.com/u/198100090?s=80&v=4", Desc = "优化了地图渲染功能" });

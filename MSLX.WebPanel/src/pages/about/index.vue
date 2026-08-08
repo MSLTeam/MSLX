@@ -33,16 +33,16 @@ const developers = [
 
 const contributors = [
   {
-    name: 'chaoji233',
-    role: 'Contributors',
-    avatar: 'https://hk-gh.mslmc.cn/https://avatars.githubusercontent.com/u/126066634?s=80&v=4',
-    desc: '帮忙优化了一些功能，重构了Chmlfrp部分',
-  },
-  {
     name: 'CoZooo',
     role: 'Contributors',
     avatar: 'https://hk-gh.mslmc.cn/https://avatars.githubusercontent.com/u/57851661?v=4',
     desc: '帮忙做了Homebrew的发布适配',
+  },
+  {
+    name: 'chaoji233',
+    role: 'Contributors',
+    avatar: 'https://hk-gh.mslmc.cn/https://avatars.githubusercontent.com/u/126066634?s=80&v=4',
+    desc: '帮忙优化了一些功能，重构了Chmlfrp部分',
   },
   {
     name: 'Hongbro886',

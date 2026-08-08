@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
@@ -104,8 +104,8 @@ public class AppInfoController : ControllerBase
                 ["serverTime"] = DateTime.Now,
                 ["targetFrontendVersion"] = new JObject
                 {
-                    ["desktop"] = "1.5.8",
-                    ["panel"] = "1.5.8"
+                    ["desktop"] = "1.5.9",
+                    ["panel"] = "1.5.9"
                 },
                 ["systemInfo"] = systemInfo
             };
