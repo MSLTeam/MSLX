@@ -10,6 +10,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Formats.Tar;
 using System.IO.Compression;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace MSLX.Daemon.Services.DeployServerService;
@@ -59,7 +60,7 @@ public class ServerDeploymentService
     /// 处理整合包解压与目录调整
     /// </summary>
     public async Task DeployPackageAsync(string serverId, string? packageFileKey, string? packageLocalPath,
-        string targetDir, ReportProgress report)
+    string targetDir, ReportProgress report)
     {
         if (string.IsNullOrEmpty(packageFileKey) && string.IsNullOrEmpty(packageLocalPath)) return;
 
@@ -76,39 +77,124 @@ public class ServerDeploymentService
         try
         {
             _logger.LogInformation("开始解压整合包: {Path}", sourceFilePath);
-            await report("正在解压服务端整合包...", 10);
+            await report("准备解压服务端整合包...", 1);
 
-            // 解压
-            ZipFile.ExtractToDirectory(sourceFilePath, targetDir, System.Text.Encoding.GetEncoding("GBK"), true);
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            Encoding gbkEncoding = Encoding.GetEncoding("GBK");
 
-            // 去除套娃逻辑
+            using (var archive = ZipFile.Open(sourceFilePath, ZipArchiveMode.Read, gbkEncoding))
+            {
+                string fullTargetDir = Path.GetFullPath(targetDir);
+
+                // 过滤出所有需要解压的文件项
+                var entries = archive.Entries.Where(e => !string.IsNullOrEmpty(e.Name)).ToList();
+                int totalCount = entries.Count;
+                int extractedCount = 0;
+                int lastReportedProgress = -1;
+
+                int minExtractProgress = 1;
+                int maxExtractProgress = 90;
+
+                for (int i = 0; i < archive.Entries.Count; i++)
+                {
+                    var entry = archive.Entries[i];
+                    string entryPath = entry.FullName;
+                    if (string.IsNullOrWhiteSpace(entryPath)) continue;
+
+                    // 跨平台路径归一化
+                    string normalizedPath = entryPath
+                        .Replace('\\', Path.DirectorySeparatorChar)
+                        .Replace('/', Path.DirectorySeparatorChar);
+
+                    string destinationPath = Path.GetFullPath(Path.Combine(fullTargetDir, normalizedPath));
+
+                    // Zip Slip 防御
+                    if (!destinationPath.StartsWith(fullTargetDir, StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new IOException($"检测到非法解压路径: {entry.FullName}");
+                    }
+
+                    bool isDirectory = string.IsNullOrEmpty(entry.Name) ||
+                                       normalizedPath.EndsWith(Path.DirectorySeparatorChar.ToString());
+
+                    if (isDirectory)
+                    {
+                        Directory.CreateDirectory(destinationPath);
+                        continue;
+                    }
+
+                    // 创建父级文件夹
+                    string? parentDir = Path.GetDirectoryName(destinationPath);
+                    if (!string.IsNullOrEmpty(parentDir) && !Directory.Exists(parentDir))
+                    {
+                        Directory.CreateDirectory(parentDir);
+                    }
+
+                    // 写入文件
+                    entry.ExtractToFile(destinationPath, overwrite: true);
+                    extractedCount++;
+
+                    // 计算当前解压进度
+                    if (totalCount > 0)
+                    {
+                        int currentProgress = minExtractProgress + (int)((double)extractedCount / totalCount * (maxExtractProgress - minExtractProgress));
+
+                        if (currentProgress != lastReportedProgress && currentProgress <= maxExtractProgress)
+                        {
+                            lastReportedProgress = currentProgress;
+                            await report($"正在解压文件 ({extractedCount}/{totalCount})...", currentProgress);
+                        }
+                    }
+                }
+            }
+
+            // 去除套娃文件夹逻辑
             var rootDirs = Directory.GetDirectories(targetDir);
             var rootFiles = Directory.GetFiles(targetDir);
 
             if (rootFiles.Length == 0 && rootDirs.Length == 1)
             {
                 string nestedDir = rootDirs[0];
-                await report("检测到多余文件夹，正在调整目录结构...", 15);
+                await report("检测到多余文件夹，正在调整目录结构...", 95);
+
+                var nestedFiles = Directory.GetFiles(nestedDir);
+                var nestedSubDirs = Directory.GetDirectories(nestedDir);
+                int totalMoveItems = nestedFiles.Length + nestedSubDirs.Length;
+                int movedCount = 0;
 
                 // 移动文件
-                foreach (var file in Directory.GetFiles(nestedDir))
+                foreach (var file in nestedFiles)
                 {
                     string destFile = Path.Combine(targetDir, Path.GetFileName(file));
                     File.Move(file, destFile, true);
+                    movedCount++;
+
+                    int moveProgress = 85 + (int)((double)movedCount / Math.Max(1, totalMoveItems) * 13); // 85 ~ 98
+                    if (moveProgress <= 98)
+                    {
+                        await report("正在调整文件位置...", moveProgress);
+                    }
                 }
 
                 // 移动文件夹
-                foreach (var dir in Directory.GetDirectories(nestedDir))
+                foreach (var dir in nestedSubDirs)
                 {
                     string destDir = Path.Combine(targetDir, Path.GetFileName(dir));
                     if (Directory.Exists(destDir)) Directory.Delete(destDir, true);
                     Directory.Move(dir, destDir);
+                    movedCount++;
+
+                    int moveProgress = 85 + (int)((double)movedCount / Math.Max(1, totalMoveItems) * 13);
+                    if (moveProgress <= 98)
+                    {
+                        await report("正在调整目录结构...", moveProgress);
+                    }
                 }
 
                 Directory.Delete(nestedDir);
             }
 
-            await report("压缩包解压部署完成。", 20);
+            await report("整合包解压与部署完成。", 99);
         }
         catch (Exception ex)
         {

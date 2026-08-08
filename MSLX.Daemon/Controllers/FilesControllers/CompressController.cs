@@ -1,4 +1,4 @@
-using System.IO.Compression;
+﻿using System.IO.Compression;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
@@ -258,27 +258,36 @@ public class CompressController: ControllerBase
             {
                 int total = archive.Entries.Count;
                 int current = 0;
+                int lastReportedPercent = -1;
 
                 foreach (var entry in archive.Entries)
                 {
                     current++;
-                    
+
                     // 进度防抖
-                    if (current % 10 == 0 || current == total)
+                    if (total > 0)
                     {
                         int percent = (int)((double)current / total * 100);
-                        UpdateStatus(cacheKey, "processing", percent, $"正在解压: {entry.Name}");
-                    }
-
-                    // Zip Slip 防御：跳过包含 ".." 的恶意路径
-                    if (entry.FullName.Contains("..") || entry.FullName.Contains(":\\"))
-                    {
-                        continue; 
+                        if (percent != lastReportedPercent)
+                        {
+                            lastReportedPercent = percent;
+                            UpdateStatus(cacheKey, "processing", percent, $"正在解压: {entry.Name}");
+                        }
                     }
 
                     // 组合最终目标路径 = 解压根目录 + Zip内路径
-                    string destinationPath = Path.Combine(extractRootPath, entry.FullName);
-                    
+                    string normalizedPath = entry.FullName
+    .Replace('\\', Path.DirectorySeparatorChar)
+    .Replace('/', Path.DirectorySeparatorChar);
+
+                    string destinationPath = Path.GetFullPath(Path.Combine(extractRootPath, normalizedPath));
+
+                    // Zip Slip 防御：跳过包含 ".." 的恶意路径
+                    if (!destinationPath.StartsWith(Path.GetFullPath(extractRootPath), StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
                     // 最终安全检查
                     if (!FileUtils.GetSafePath(server.Base, Path.GetRelativePath(server.Base, destinationPath)).IsSafe)
                     {
@@ -286,7 +295,7 @@ public class CompressController: ControllerBase
                     }
 
                     // 处理逻辑
-                    if (string.IsNullOrEmpty(entry.Name) || entry.FullName.EndsWith("/"))
+                    if (string.IsNullOrEmpty(entry.Name) || normalizedPath.EndsWith(Path.DirectorySeparatorChar.ToString()))
                     {
                         // 是目录
                         if (!Directory.Exists(destinationPath)) Directory.CreateDirectory(destinationPath);
