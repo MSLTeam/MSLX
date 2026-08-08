@@ -278,6 +278,7 @@ const FORM_RULES = computed<FormRules>(() => {
     mcdrPython: [
       {
         validator: () => {
+          if (deployMode.value === 'docker') return true;
           if (pythonType.value === 'custom' && !customPython.value) {
             return { result: false, message: '请填写 Python 命令或路径', type: 'error' };
           }
