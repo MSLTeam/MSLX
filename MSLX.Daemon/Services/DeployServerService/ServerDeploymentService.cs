@@ -1,4 +1,4 @@
-using CliWrap;
+﻿using CliWrap;
 using CliWrap.EventStream;
 using Downloader;
 using MSLX.Daemon.Utils;
@@ -512,36 +512,45 @@ public class ServerDeploymentService
         Directory.CreateDirectory(serverDir);
         Directory.CreateDirectory(Path.Combine(baseDir, "plugins")); // MCDR 插件目录(与 server/plugins 不同)
 
-        // 验证python环境
-        string python = string.IsNullOrWhiteSpace(request.mcdrPython) ? "python" : request.mcdrPython.Trim();
-        var (pyOk, pyVer) = await TryGetPythonVersionAsync(python);
-        if (pyOk)
+        bool isDocker = "docker-custom".Equals(request.java, StringComparison.OrdinalIgnoreCase);
+
+        if (isDocker)
         {
-            await report($"检测到 Python: {pyVer}", 10);
+            await report("检测到 Docker 部署模式，使用容器内置 Python 及 MCDR 环境。", 10);
         }
         else
         {
-            await report(
-                $"⚠ 未能运行 Python ({python})，请确认已安装 Python 3.8+ 且可通过该命令调用。实例仍会创建，你可稍后修复后再启动。",
-                10);
-        }
-
-        // 安装/更新mcdr
-        if (request.mcdrInstall && pyOk)
-        {
-            await report("正在通过 pip 安装/更新 MCDReforged(耗时较长，请耐心等待)...", 15);
-            string pipArgs = "-m pip install -U mcdreforged";
-            if (!string.IsNullOrWhiteSpace(request.mcdrPipMirror))
+            // 验证python环境
+            string python = string.IsNullOrWhiteSpace(request.mcdrPython) ? "python" : request.mcdrPython.Trim();
+            var (pyOk, pyVer) = await TryGetPythonVersionAsync(python);
+            if (pyOk)
             {
-                pipArgs += $" -i {request.mcdrPipMirror.Trim()}";
+                await report($"检测到 Python: {pyVer}", 10);
             }
-            if (!OperatingSystem.IsWindows())
+            else
             {
-                pipArgs += " --break-system-packages";
+                await report(
+                    $"⚠ 未能运行 Python ({python})，请确认已安装 Python 3.8+ 且可通过该命令调用。实例仍会创建，你可稍后修复后再启动。",
+                    10);
             }
 
-            var (pipOk, _) = await RunCommandAsync(python, pipArgs, baseDir, report, "pip", 600000);
-            await report(pipOk ? "MCDReforged 安装完成。" : "⚠ MCDReforged 自动安装失败，请稍后手动执行 pip install mcdreforged。", 30);
+            // 安装/更新mcdr
+            if (request.mcdrInstall && pyOk)
+            {
+                await report("正在通过 pip 安装/更新 MCDReforged(耗时较长，请耐心等待)...", 15);
+                string pipArgs = "-m pip install -U mcdreforged";
+                if (!string.IsNullOrWhiteSpace(request.mcdrPipMirror))
+                {
+                    pipArgs += $" -i {request.mcdrPipMirror.Trim()}";
+                }
+                if (!OperatingSystem.IsWindows())
+                {
+                    pipArgs += " --break-system-packages";
+                }
+
+                var (pipOk, _) = await RunCommandAsync(python, pipArgs, baseDir, report, "pip", 600000);
+                await report(pipOk ? "MCDReforged 安装完成。" : "⚠ MCDReforged 自动安装失败，请稍后手动执行 pip install mcdreforged。", 30);
+            }
         }
 
         // java
@@ -616,7 +625,7 @@ public class ServerDeploymentService
     /// </summary>
     private string ResolveJavaExecPath(string? javaConfig)
     {
-        if (string.IsNullOrWhiteSpace(javaConfig) || javaConfig is "java" or "none")
+        if (string.IsNullOrWhiteSpace(javaConfig) || javaConfig is "java" or "none" or "docker-java" or "docker-custom")
             return "java";
 
         if (javaConfig.StartsWith("MSLX://Java/"))

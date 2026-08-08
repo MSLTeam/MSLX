@@ -201,11 +201,19 @@ const selectedJavaVersion = ref('');
 const customJavaPath = ref('');
 
 // --- MCDReforged 逻辑 ---
-// MCDR 使用java=“none” 即自定义模式
+// MCDR 使用java=“none” 即自定义模式（或 docker-custom）
 const mcdrPython = ref('python');
 const initialized = ref(false); // 首次加载完成前不套用 MCDR 预设，避免覆盖已加载配置
-const isMcdr = computed(() => javaType.value === 'mcdr');
-const isCustomLike = computed(() => javaType.value === 'none' || javaType.value === 'mcdr');
+const isMcdr = computed(
+  () => javaType.value === 'mcdr' || javaType.value === 'mcdr-docker-java' || javaType.value === 'mcdr-docker-custom',
+);
+const isCustomLike = computed(
+  () =>
+    javaType.value === 'none' ||
+    javaType.value === 'mcdr' ||
+    javaType.value === 'mcdr-docker-java' ||
+    javaType.value === 'mcdr-docker-custom',
+);
 // 仅 Java 模式才显示的区块(核心/内存/外置登录/强制UTF8)
 const showJavaOnly = computed(() => {
   return (
@@ -238,7 +246,12 @@ const applyMcdrDefaults = () => {
 // ====== Docker相关配置参数 ======
 const expandedPanels = ref([]);
 const isDockerMode = computed(() => {
-  return javaType.value === 'docker-java' || javaType.value === 'docker-custom';
+  return (
+    javaType.value === 'docker-java' ||
+    javaType.value === 'docker-custom' ||
+    javaType.value === 'mcdr-docker-java' ||
+    javaType.value === 'mcdr-docker-custom'
+  );
 });
 
 // 内置网络的 bridge, host, none 强制禁用网络别名
@@ -494,20 +507,25 @@ watch([javaType, selectedJavaVersion, customJavaPath], ([type, ver, path]) => {
   if (type === 'none' || type === 'mcdr') formData.value.java = 'none';
   else if (type === 'env') formData.value.java = 'java';
   else if (type === 'docker-java' || type === 'docker-custom') formData.value.java = type;
+  else if (type === 'mcdr-docker-java' || type === 'mcdr-docker-custom') formData.value.java = 'docker-custom';
   else if (type === 'custom' || type === 'local') formData.value.java = path;
   else if (type === 'online') formData.value.java = ver ? `MSLX://Java/${ver}` : '';
 });
 
 // MCDR 输出完整启动指令到args
 watch([javaType, mcdrPython], ([type]) => {
-  if (type === 'mcdr') {
+  if (type === 'mcdr' || type === 'mcdr-docker-java' || type === 'mcdr-docker-custom') {
     formData.value.args = mcdrLaunchCommand.value;
   }
 });
 
 // 切换到MCDR时配置参数
 watch(javaType, (nv, ov) => {
-  if (initialized.value && nv === 'mcdr' && ov !== 'mcdr') {
+  if (
+    initialized.value &&
+    (nv === 'mcdr' || nv === 'mcdr-docker-java' || nv === 'mcdr-docker-custom') &&
+    !ov?.startsWith('mcdr')
+  ) {
     applyMcdrDefaults();
   }
 });
@@ -745,16 +763,19 @@ const initData = async () => {
     isPathEditable.value = false;
 
     // 解析 Java 类型
-    if (res.java === 'docker-java' || res.java === 'docker-custom') {
+    if ((res.args ?? '').includes('mcdreforged')) {
+      if (res.java === 'docker-java' || res.java === 'docker-custom') {
+        const isPreset = res.dockerImage?.startsWith('MSLX://DockerImage/Java/') || !res.dockerImage;
+        javaType.value = isPreset ? 'mcdr-docker-java' : 'mcdr-docker-custom';
+      } else {
+        javaType.value = 'mcdr';
+      }
+      const m = (res.args ?? '').match(/^\s*"?([^"]+?)"?\s+-m\s+mcdreforged/);
+      mcdrPython.value = m ? m[1].trim() : 'python';
+    } else if (res.java === 'docker-java' || res.java === 'docker-custom') {
       javaType.value = res.java;
     } else if (res.java === 'none') {
-      if ((res.args ?? '').includes('mcdreforged')) {
-        javaType.value = 'mcdr';
-        const m = (res.args ?? '').match(/^\s*"?([^"]+?)"?\s+-m\s+mcdreforged/);
-        mcdrPython.value = m ? m[1].trim() : 'python';
-      } else {
-        javaType.value = 'none';
-      }
+      javaType.value = 'none';
     } else if (res.java === 'java') {
       javaType.value = 'env';
     } else if (res.java.startsWith('MSLX://Java/')) {
@@ -860,8 +881,15 @@ const onSubmit = async () => {
       formData.value.args = mcdrLaunchCommand.value;
     }
   }
-  if (javaType.value === 'docker-java' || javaType.value === 'docker-custom') {
-    formData.value.java = javaType.value;
+  if (
+    javaType.value === 'docker-java' ||
+    javaType.value === 'docker-custom' ||
+    javaType.value === 'mcdr-docker-java' ||
+    javaType.value === 'mcdr-docker-custom'
+  ) {
+    formData.value.java = javaType.value === 'docker-java' ? 'docker-java' : 'docker-custom';
+  } else if (javaType.value === 'mcdr') {
+    formData.value.java = 'none';
   }
   submitting.value = true;
   try {
@@ -1023,7 +1051,9 @@ onUnmounted(() => {
                 { label: '环境变量 (Java)', value: 'env' },
                 { label: 'Docker MSLX 内置运行时 (使用容器推荐这个)', value: 'docker-java' },
                 { label: 'Docker 自定义容器', value: 'docker-custom' },
-                { label: 'MCDReforged (MCDR)', value: 'mcdr' },
+                { label: 'MCDReforged (MCDR - 本地原生)', value: 'mcdr' },
+                { label: 'MCDReforged (MCDR - Docker 内置 Java 容器)', value: 'mcdr-docker-java' },
+                { label: 'MCDReforged (MCDR - Docker 自定义容器)', value: 'mcdr-docker-custom' },
                 { label: '自定义命令 (无Java)', value: 'none' },
               ]"
             />
@@ -1047,7 +1077,7 @@ onUnmounted(() => {
                 placeholder="输入 java 可执行文件完整路径"
               />
             </div>
-            <div v-if="javaType === 'docker-java'" class="w-full">
+            <div v-if="javaType === 'docker-java' || javaType === 'mcdr-docker-java'" class="w-full">
               <t-select
                 v-model="currentDockerJavaVersion"
                 :options="[
