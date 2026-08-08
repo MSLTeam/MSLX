@@ -25,7 +25,7 @@
 							<StackPanel Spacing="5">
 								<TextBlock Text="服务器名称 *" />
 								<TextBox x:Name="TxtServerName"
-										 Watermark="输入服务器名称"
+										 PlaceholderText="输入服务器名称"
 										 MaxLength="50"/>
 							</StackPanel>
 
@@ -34,7 +34,7 @@
 								<TextBlock Text="存储路径" />
 								<Grid ColumnDefinitions="*,Auto">
 									<TextBox x:Name="TxtStoragePath"
-											 Watermark="留空将使用默认路径"
+											 PlaceholderText="留空将使用默认路径"
 											 Grid.Column="0"/>
 									<Button x:Name="BtnBrowsePath"
 											Content="浏览"
@@ -98,7 +98,7 @@
 										<StackPanel Spacing="10" Margin="5,10,5,5">
 											<TextBlock Text="Java可执行文件绝对路径:" Opacity="0.8" FontSize="12"/>
 											<Grid ColumnDefinitions="*,Auto">
-												<TextBox x:Name="TxtJavaPath" Watermark="例如: C:\Program Files\Java\jdk-21\bin\java.exe" Grid.Column="0"/>
+												<TextBox x:Name="TxtJavaPath" PlaceholderText="例如: C:\Program Files\Java\jdk-21\bin\java.exe" Grid.Column="0"/>
 												<Button x:Name="BtnBrowseJava" Content="浏览" Grid.Column="1" Margin="5,0,0,0" Click="BtnBrowseJava_Click"/>
 											</Grid>
 										</StackPanel>
@@ -233,9 +233,9 @@
 							<StackPanel x:Name="PanelDownloadCore" Spacing="10" IsVisible="False">
 								<StackPanel IsVisible="False">
 									<TextBlock Text="核心下载URL" />
-									<TextBox x:Name="TxtCoreUrl" Watermark="通过在线选择自动填充"/>
+									<TextBox x:Name="TxtCoreUrl" PlaceholderText="通过在线选择自动填充"/>
 									<TextBlock Text="SHA256校验值" />
-									<TextBox x:Name="TxtCoreSha256" Watermark="通过在线选择自动填充"/>
+									<TextBox x:Name="TxtCoreSha256" PlaceholderText="通过在线选择自动填充"/>
 								</StackPanel>
 
 								<Border x:Name="CoreSelectorBorder" CornerRadius="8" Padding="15" BorderBrush="{DynamicResource SukiBorderBrush}" BorderThickness="1" Background="{DynamicResource SukiBackground}">
@@ -261,7 +261,7 @@
 								<TextBlock Text="核心文件名称 *" FontWeight="SemiBold"/>
 								<TextBox x:Name="TxtCoreName"
 										 IsEnabled="False"
-										 Watermark="选择在线核心后自动生成..."
+										 PlaceholderText="选择在线核心后自动生成..."
 										 MaxLength="100"/>
 								<TextBlock Text="💡 实例启动时将自动检测并下载此核心文件" FontSize="12" Opacity="0.7"/>
 							</StackPanel>
@@ -284,7 +284,8 @@
 												   Maximum="65536"
 												   Value="1024"
 												   Increment="256"
-												   FormatString="0 MB"/>
+												   FormatString="0 MB"
+												   ShowButtonSpinner="True"/>
 								</StackPanel>
 
 								<!-- 最大内存 -->
@@ -295,7 +296,8 @@
 												   Maximum="65536"
 												   Value="4096"
 												   Increment="256"
-												   FormatString="0 MB"/>
+												   FormatString="0 MB"
+												   ShowButtonSpinner="True"/>
 								</StackPanel>
 							</Grid>
 
@@ -307,7 +309,7 @@
 							<StackPanel Spacing="5" Margin="0,10,0,0">
 								<TextBlock Text="额外JVM参数 (可选)" />
 								<TextBox x:Name="TxtExtraArgs"
-										 Watermark="例如: -XX:+UseG1GC -XX:+ParallelRefProcEnabled"
+										 PlaceholderText="例如: -XX:+UseG1GC -XX:+ParallelRefProcEnabled"
 										 AcceptsReturn="True"
 										 TextWrapping="Wrap"
 										 Height="60"/>
@@ -383,15 +385,12 @@
 								<TextBlock Text="正在请求服务器资源并部署实例，请勿关闭此页面..."
 										   Opacity="0.7" TextWrapping="Wrap"/>
 
-								<Grid ColumnDefinitions="*,Auto">
-									<ProgressBar x:Name="ProgressCreation"
-												 Height="10"
-												 Minimum="0"
-												 Maximum="100"
-												 Value="0"
-												 ShowProgressText="True"/>
-								</Grid>
-
+								<ProgressBar x:Name="ProgressCreation"
+											 Height="12"
+											 Minimum="0"
+											 Maximum="100"
+											 Value="0"
+											 ShowProgressText="True"/>
 								<Border CornerRadius="6"
 										BorderBrush="{DynamicResource SukiBorderBrush}"
 										BorderThickness="1"
@@ -424,7 +423,9 @@
 
 								<StackPanel Orientation="Horizontal" Spacing="20" HorizontalAlignment="Center" Margin="0,15,0,0">
 									<Button Content="返回列表" Click="BtnReturnList_Click" Classes="Flat"/>
+									<!--
 									<Button Content="前往控制台" Classes="Primary" Click="BtnGoConsole_Click"/>
+									-->
 								</StackPanel>
 							</StackPanel>
 

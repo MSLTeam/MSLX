@@ -608,6 +608,165 @@ public class DockerService : IDockerService
         };
     }
 
+    public async Task<List<DockerImageCheckUpdateItem>> CheckImagesUpdateAsync(List<string>? references)
+    {
+        var status = await GetStatusAsync();
+        if (!status.Available)
+        {
+            throw new InvalidOperationException("Docker 环境不可用");
+        }
+
+        List<string> targetRefs = new();
+        if (references != null && references.Count > 0)
+        {
+            targetRefs = references.Where(r => !string.IsNullOrWhiteSpace(r)).Select(r => r.Trim()).Distinct().ToList();
+        }
+        else
+        {
+            var localImages = await ListImagesAsync(includeDangling: false);
+            targetRefs = localImages
+                .Where(i => !i.IsDangling && !string.IsNullOrWhiteSpace(i.Reference) && i.Reference != "<none>:<none>")
+                .Select(i => i.Reference)
+                .Distinct()
+                .ToList();
+        }
+
+        var results = new System.Collections.Concurrent.ConcurrentBag<DockerImageCheckUpdateItem>();
+
+        await Parallel.ForEachAsync(targetRefs, new ParallelOptions { MaxDegreeOfParallelism = 4 }, async (rawRef, ct) =>
+        {
+            string refName = DockerImageResolver.Resolve(rawRef);
+            var item = new DockerImageCheckUpdateItem
+            {
+                Reference = rawRef
+            };
+
+            try
+            {
+                var localInspect = await InspectImageAsync(refName);
+                if (localInspect == null)
+                {
+                    item.Status = "error";
+                    item.Message = "本地未找到该镜像";
+                    results.Add(item);
+                    return;
+                }
+
+                var sha256Regex = new System.Text.RegularExpressions.Regex(@"sha256:[a-fA-F0-9]{64}", System.Text.RegularExpressions.RegexOptions.Compiled);
+
+                var localShaSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                if (localInspect.RepoDigests != null)
+                {
+                    foreach (var rd in localInspect.RepoDigests)
+                    {
+                        foreach (System.Text.RegularExpressions.Match m in sha256Regex.Matches(rd)) localShaSet.Add(m.Value);
+                    }
+                }
+                if (!string.IsNullOrEmpty(localInspect.Raw))
+                {
+                    foreach (System.Text.RegularExpressions.Match m in sha256Regex.Matches(localInspect.Raw)) localShaSet.Add(m.Value);
+                }
+                if (!string.IsNullOrEmpty(localInspect.ImageId))
+                {
+                    foreach (System.Text.RegularExpressions.Match m in sha256Regex.Matches(localInspect.ImageId)) localShaSet.Add(m.Value);
+                }
+
+                item.LocalDigest = localShaSet.FirstOrDefault();
+
+                var remoteShaSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                var buildxResult = await Cli.Wrap("docker")
+                    .WithArguments(new[] { "buildx", "imagetools", "inspect", refName, "--format", "{{json .Manifest}}" })
+                    .WithValidation(CommandResultValidation.None)
+                    .ExecuteBufferedAsync(ct);
+
+                if (buildxResult.ExitCode == 0 && !string.IsNullOrWhiteSpace(buildxResult.StandardOutput))
+                {
+                    foreach (System.Text.RegularExpressions.Match m in sha256Regex.Matches(buildxResult.StandardOutput))
+                    {
+                        remoteShaSet.Add(m.Value);
+                    }
+                }
+
+                var result = await Cli.Wrap("docker")
+                    .WithArguments(new[] { "manifest", "inspect", refName })
+                    .WithValidation(CommandResultValidation.None)
+                    .ExecuteBufferedAsync(ct);
+
+                if (result.ExitCode == 0 && !string.IsNullOrWhiteSpace(result.StandardOutput))
+                {
+                    string json = result.StandardOutput;
+                    foreach (System.Text.RegularExpressions.Match m in sha256Regex.Matches(json))
+                    {
+                        remoteShaSet.Add(m.Value);
+                    }
+
+                    if (json.Contains("\"manifests\":"))
+                    {
+                        string repoPrefix = refName.Contains(':') ? refName.Substring(0, refName.LastIndexOf(':')) : refName;
+                        if (repoPrefix.Contains('@')) repoPrefix = repoPrefix.Substring(0, repoPrefix.IndexOf('@'));
+
+                        var subDigests = new List<string>();
+                        try
+                        {
+                            using var doc = System.Text.Json.JsonDocument.Parse(json);
+                            if (doc.RootElement.TryGetProperty("manifests", out var manifestsProp) && manifestsProp.ValueKind == System.Text.Json.JsonValueKind.Array)
+                            {
+                                foreach (var m in manifestsProp.EnumerateArray())
+                                {
+                                    if (m.TryGetProperty("digest", out var dProp) && dProp.GetString() is string dStr)
+                                    {
+                                        subDigests.Add(dStr);
+                                    }
+                                }
+                            }
+                        }
+                        catch { }
+
+                        foreach (var subDigest in subDigests)
+                        {
+                            string subRef = $"{repoPrefix}@{subDigest}";
+                            var subResult = await Cli.Wrap("docker")
+                                .WithArguments(new[] { "manifest", "inspect", subRef })
+                                .WithValidation(CommandResultValidation.None)
+                                .ExecuteBufferedAsync(ct);
+
+                            if (subResult.ExitCode == 0 && !string.IsNullOrWhiteSpace(subResult.StandardOutput))
+                            {
+                                foreach (System.Text.RegularExpressions.Match m in sha256Regex.Matches(subResult.StandardOutput))
+                                {
+                                    remoteShaSet.Add(m.Value);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                item.RemoteDigest = remoteShaSet.FirstOrDefault();
+
+                if (remoteShaSet.Count > 0 && localShaSet.Count > 0)
+                {
+                    bool isUpToDate = remoteShaSet.Overlaps(localShaSet);
+                    item.HasUpdate = !isUpToDate;
+                    item.Status = isUpToDate ? "upToDate" : "hasUpdate";
+                }
+                else
+                {
+                    item.Status = "upToDate";
+                }
+            }
+            catch (Exception ex)
+            {
+                item.Status = "error";
+                item.Message = ex.Message;
+            }
+
+            results.Add(item);
+        });
+
+        return results.ToList();
+    }
+
     #endregion
 
     #region 通用

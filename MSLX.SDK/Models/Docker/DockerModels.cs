@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace MSLX.SDK.Models.Docker;
 
@@ -187,4 +187,20 @@ public class DockerOperationResult
 
     /// <summary>docker 的原始输出</summary>
     public string? Output { get; set; }
+}
+
+public class DockerImageCheckUpdateRequest
+{
+    /// <summary>要检测的镜像列表（为空时检测所有有标签的镜像）</summary>
+    public List<string>? References { get; set; }
+}
+
+public class DockerImageCheckUpdateItem
+{
+    public string Reference { get; set; } = string.Empty;
+    public bool HasUpdate { get; set; }
+    public string? LocalDigest { get; set; }
+    public string? RemoteDigest { get; set; }
+    public string Status { get; set; } = "unknown"; // "upToDate" | "hasUpdate" | "error"
+    public string? Message { get; set; }
 }

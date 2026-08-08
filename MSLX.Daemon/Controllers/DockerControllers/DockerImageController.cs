@@ -235,6 +235,27 @@ public class DockerImageController : ControllerBase
             new { UsedBy = usedBy, Containers = containers });
     }
 
+    /// <summary>
+    /// 检查镜像更新
+    /// </summary>
+    [HttpPost("images/check-update")]
+    public async Task<IActionResult> CheckUpdate([FromBody] DockerImageCheckUpdateRequest? request)
+    {
+        var status = await _docker.GetStatusAsync();
+        if (!status.Available) return StatusCode(503, BuildUnavailableResponse(status));
+
+        try
+        {
+            var results = await _docker.CheckImagesUpdateAsync(request?.References);
+            return Ok(ApiResponseService.Success(results));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning("[Docker-Image] 检查镜像更新失败: {Message}", ex.Message);
+            return StatusCode(500, ApiResponseService.Error(ex.Message, 500));
+        }
+    }
+
     private static object BuildUnavailableResponse(DockerEnvStatus status)
     {
         var message = status.ErrorType switch

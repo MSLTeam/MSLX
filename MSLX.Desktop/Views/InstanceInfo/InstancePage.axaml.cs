@@ -207,6 +207,12 @@ public partial class InstancePage : UserControl
             BackupBtn.IsEnabled = true;
         }
     }
+
+    private void CloseBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        SideMenuHelper.Current.NavigateTo<InstanceListPage>();
+        SideMenuHelper.Current.NavigateRemove(this);
+    }
     #endregion
 
     #region UI&其他

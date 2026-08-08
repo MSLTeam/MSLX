@@ -5,6 +5,7 @@ import {
   CloudDownloadIcon,
   DeleteIcon,
   InfoCircleIcon,
+  CheckCircleIcon,
   LayersIcon,
   LinkIcon,
   RefreshIcon,
@@ -16,8 +17,14 @@ import {
   getDockerStatus,
   postDeleteDockerImage,
   postPruneDockerImages,
+  postCheckDockerImageUpdate,
 } from '@/api/docker';
-import { DockerEnvStatusModel, DockerImageModel, DockerPresetImageModel } from '@/api/model/docker';
+import {
+  DockerEnvStatusModel,
+  DockerImageModel,
+  DockerPresetImageModel,
+  DockerImageCheckUpdateItemModel,
+} from '@/api/model/docker';
 import NodeSwitcher from '@/components/node-switcher/index.vue';
 import { copyText } from '@/utils/clipboard';
 import PullImageDialog from './components/PullImageDialog.vue';
@@ -35,6 +42,9 @@ const pullVisible = ref(false);
 const pullPreset = ref('');
 const inspectVisible = ref(false);
 const inspectReference = ref('');
+
+const updateStatusMap = ref<Record<string, DockerImageCheckUpdateItemModel>>({});
+const isCheckingUpdate = ref(false);
 
 const dockerReady = computed(() => status.value?.available === true);
 
@@ -104,11 +114,12 @@ const danglingCount = computed(() => images.value.filter((i) => i.isDangling).le
 
 const columns = [
   { colKey: 'reference', title: '镜像', ellipsis: true, minWidth: 260 },
+  { colKey: 'status', title: '版本状态', width: 120 },
   { colKey: 'shortId', title: '镜像 ID', width: 130 },
   { colKey: 'size', title: '大小', width: 110 },
   { colKey: 'createdAt', title: '创建时间', width: 190, ellipsis: true },
   { colKey: 'usedBy', title: '引用实例', width: 160 },
-  { colKey: 'op', title: '操作', width: 190, fixed: 'right' },
+  { colKey: 'op', title: '操作', width: 220, fixed: 'right' },
 ];
 
 const fetchStatus = async () => {
@@ -147,6 +158,33 @@ const refreshAll = async () => {
   await fetchImages();
 };
 
+const handleCheckUpdates = async (references?: string[], silent = false) => {
+  if (!dockerReady.value) return;
+  isCheckingUpdate.value = true;
+  try {
+    const list = await postCheckDockerImageUpdate(references);
+    if (list && Array.isArray(list)) {
+      list.forEach((item) => {
+        updateStatusMap.value[item.reference] = item;
+      });
+      const hasUpdateCount = list.filter((i) => i.hasUpdate).length;
+      if (!silent) {
+        if (hasUpdateCount > 0) {
+          MessagePlugin.warning(`检测完成，发现 ${hasUpdateCount} 个镜像有新版本可更新！`);
+        } else {
+          MessagePlugin.success('检测完成，镜像均为最新版本');
+        }
+      } else if (hasUpdateCount > 0) {
+        MessagePlugin.warning(`发现 ${hasUpdateCount} 个镜像有新版本，可在列表中进行更新！`);
+      }
+    }
+  } catch (error: any) {
+    if (!silent) MessagePlugin.error(`检查更新失败：${error?.message ?? error}`);
+  } finally {
+    isCheckingUpdate.value = false;
+  }
+};
+
 const handleNodeChange = () => {
   images.value = [];
   presets.value = [];
@@ -156,6 +194,18 @@ const handleNodeChange = () => {
 const openPullDialog = (preset = '') => {
   pullPreset.value = preset;
   pullVisible.value = true;
+};
+
+const handlePullFinished = async () => {
+  await fetchImages();
+  if (pullPreset.value) {
+    updateStatusMap.value[pullPreset.value] = {
+      reference: pullPreset.value,
+      hasUpdate: false,
+      status: 'upToDate',
+    };
+  }
+  handleCheckUpdates(pullPreset.value ? [pullPreset.value] : undefined, true);
 };
 
 const openInspect = (reference: string) => {
@@ -234,7 +284,12 @@ const handlePrune = () => {
   });
 };
 
-onMounted(refreshAll);
+onMounted(async () => {
+  await refreshAll();
+  if (dockerReady.value) {
+    handleCheckUpdates(undefined, true);
+  }
+});
 </script>
 
 <template>
@@ -341,6 +396,16 @@ onMounted(refreshAll);
             <template #icon><cloud-download-icon /></template>
             拉取
           </t-button>
+          <t-button
+            v-else-if="updateStatusMap[preset.image]?.hasUpdate"
+            size="small"
+            variant="text"
+            theme="warning"
+            @click="openPullDialog(preset.image)"
+          >
+            <template #icon><cloud-download-icon /></template>
+            更新
+          </t-button>
         </div>
       </div>
     </div>
@@ -362,6 +427,10 @@ onMounted(refreshAll);
         <div class="flex flex-wrap items-center gap-3">
           <t-input v-model="keyword" placeholder="搜索仓库 / 标签 / ID" clearable class="!w-56" />
           <t-checkbox v-model="showDangling">显示无标签镜像</t-checkbox>
+          <t-button variant="outline" theme="primary" :loading="isCheckingUpdate" @click="() => handleCheckUpdates()">
+            <template #icon><refresh-icon /></template>
+            检查更新
+          </t-button>
           <t-button theme="primary" @click="openPullDialog('')">
             <template #icon><cloud-download-icon /></template>
             拉取镜像
@@ -408,6 +477,46 @@ onMounted(refreshAll);
           </div>
         </template>
 
+        <template #status="{ row }">
+          <div class="flex items-center">
+            <template v-if="!row.isDangling && updateStatusMap[row.reference]">
+              <t-tag
+                v-if="updateStatusMap[row.reference].hasUpdate"
+                theme="warning"
+                variant="light"
+                size="small"
+                class="!font-medium cursor-pointer inline-flex items-center shrink-0"
+                @click="openPullDialog(row.reference)"
+              >
+                <template #icon><cloud-download-icon /></template>
+                可更新
+              </t-tag>
+              <t-tag
+                v-else-if="updateStatusMap[row.reference].status === 'upToDate'"
+                theme="success"
+                variant="light"
+                size="small"
+                class="!font-medium inline-flex items-center shrink-0"
+              >
+                <template #icon><check-circle-icon /></template>
+                已是最新
+              </t-tag>
+              <t-tag
+                v-else
+                theme="danger"
+                variant="light"
+                size="small"
+                class="!font-medium inline-flex items-center shrink-0"
+                :title="updateStatusMap[row.reference].message"
+              >
+                <template #icon><info-circle-icon /></template>
+                检测失败
+              </t-tag>
+            </template>
+            <span v-else class="text-xs text-[var(--td-text-color-placeholder)]">-</span>
+          </div>
+        </template>
+
         <template #shortId="{ row }">
           <span class="text-xs font-mono text-[var(--td-text-color-secondary)]">{{ row.shortId }}</span>
         </template>
@@ -439,6 +548,16 @@ onMounted(refreshAll);
         <template #op="{ row }">
           <div class="flex items-center gap-1">
             <t-button
+              v-if="!row.isDangling && updateStatusMap[row.reference]?.hasUpdate"
+              theme="warning"
+              variant="text"
+              size="small"
+              @click="openPullDialog(row.reference)"
+            >
+              <template #icon><cloud-download-icon /></template>
+              更新
+            </t-button>
+            <t-button
               theme="primary"
               variant="text"
               size="small"
@@ -460,7 +579,7 @@ onMounted(refreshAll);
       </t-table>
     </div>
 
-    <pull-image-dialog v-model:visible="pullVisible" :preset-image="pullPreset" @finished="fetchImages" />
+    <pull-image-dialog v-model:visible="pullVisible" :preset-image="pullPreset" @finished="handlePullFinished" />
     <image-inspect-dialog v-model:visible="inspectVisible" :reference="inspectReference" />
   </div>
 </template>

@@ -431,17 +431,17 @@ public partial class CreateMCServer : UserControl
         if (RbDownloadCore.IsChecked == true)
         {
             TxtCoreName.IsEnabled = false; 
-            TxtCoreName.Watermark = "点击'在线选择'以确定文件名";
+            TxtCoreName.PlaceholderText = "点击'在线选择'以确定文件名";
         }
         else if (RbCustomCore.IsChecked == true)
         {
             TxtCoreName.IsEnabled = true;
-            TxtCoreName.Watermark = "请输入文件名，如 server.jar";
+            TxtCoreName.PlaceholderText = "请输入文件名，如 server.jar";
         }
         else // 本地上传
         {
             TxtCoreName.IsEnabled = false;
-            TxtCoreName.Watermark = "上传文件后将自动显示文件名";
+            TxtCoreName.PlaceholderText = "上传文件后将自动显示文件名";
         }
     }
 

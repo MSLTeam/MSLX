@@ -45,11 +45,11 @@ public partial class TunnelListPage : UserControl
             JObject res = await DaemonAPIService.GetJsonContentAsync("/api/frp/list");
             JArray tunnels = (JArray)res["data"]!;
 
-            _vm.Tunnels.Clear();
+            var list = new System.Collections.ObjectModel.ObservableCollection<TunnelModel>();
 
             foreach (JObject item in tunnels.Cast<JObject>())
             {
-                _vm.Tunnels.Add(new TunnelModel
+                list.Add(new TunnelModel
                 {
                     ID = (int)item["id"]!,
                     Name = (string)item["name"]!,
@@ -58,6 +58,8 @@ public partial class TunnelListPage : UserControl
                     Status = (bool)item["status"]!
                 });
             }
+
+            _vm.Tunnels = list;
         }
         catch (Exception ex)
         {

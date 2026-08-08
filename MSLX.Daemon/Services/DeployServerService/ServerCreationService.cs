@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Caching.Memory;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Services.DeployServerService;
@@ -118,7 +118,10 @@ public class ServerCreationService : BackgroundService
         // MCDReforged 模式
         if (request.mcdr)
         {
-            server.Java = "none";
+            if (!"docker-custom".Equals(request.java, StringComparison.OrdinalIgnoreCase))
+            {
+                server.Java = "none";
+            }
             server.Core = "none";
             server.Args = BuildMcdrLaunchCommand(request.mcdrPython);
             server.StopCommand = "stop";

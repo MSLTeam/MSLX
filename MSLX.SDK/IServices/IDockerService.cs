@@ -55,4 +55,9 @@ public interface IDockerService
     /// 查询占用了指定镜像的容器名称列表
     /// </summary>
     Task<List<string>> GetContainersUsingImageAsync(string reference);
+
+    /// <summary>
+    /// 检查一个或多个镜像是否有远程更新
+    /// </summary>
+    Task<List<DockerImageCheckUpdateItem>> CheckImagesUpdateAsync(List<string>? references);
 }

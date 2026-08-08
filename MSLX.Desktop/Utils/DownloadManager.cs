@@ -600,9 +600,8 @@ namespace MSLX.Desktop.Utils
                 {
                     request.Headers.TryAddWithoutValidation("User-Agent", userAgent);
                 }
-                HttpClient? _httpClient = new HttpClient();
                 // 发送请求并获取响应（使用 HttpCompletionOption.ResponseHeadersRead 以支持流式下载）
-                using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, item.CancellationTokenSource.Token);
+                using var response = await HttpService.SharedClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, item.CancellationTokenSource.Token);
                 response.EnsureSuccessStatusCode();
 
                 long totalBytes = response.Content.Headers.ContentLength ?? 0;
@@ -655,8 +654,6 @@ namespace MSLX.Desktop.Utils
                 await fileStream.FlushAsync(item.CancellationTokenSource.Token);
                 await fileStream.DisposeAsync();
                 fileStream = null;
-                _httpClient.Dispose();
-                _httpClient = null;
 
                 // 验证文件完整性
                 if (totalBytes > 0 && totalDownloaded != totalBytes)
@@ -748,9 +745,8 @@ namespace MSLX.Desktop.Utils
             try
             {
                 // 使用 HttpClient 发送 HEAD 请求，只获取头部不下载内容，速度极快
-                using var client = new System.Net.Http.HttpClient();
                 using var request = new System.Net.Http.HttpRequestMessage(System.Net.Http.HttpMethod.Head, url);
-                using var response = await client.SendAsync(request);
+                using var response = await HttpService.SharedClient.SendAsync(request);
 
                 if (response.IsSuccessStatusCode)
                 {

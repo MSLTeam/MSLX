@@ -69,9 +69,10 @@
                                     <TextBlock Text="选择您喜欢的主题色调" Classes="SettingDesc"/>
                                 </StackPanel>
                                 <ComboBox Grid.Column="2" Name="ComboThemeColor" MinWidth="180" SelectionChanged="OnThemeColorChanged">
+                                    <ComboBoxItem Content="默认蓝" Tag="Default"/>
                                     <ComboBoxItem Content="清霁蓝" Tag="Blue"/>
                                     <ComboBoxItem Content="竹月青" Tag="Teal"/>
-                                    <ComboBoxItem Content="紫藤萝" Tag="Purple"/>
+                                    <ComboBoxItem Content="藤萝紫" Tag="Purple"/>
                                     <ComboBoxItem Content="落樱粉" Tag="Pink"/>
                                     <ComboBoxItem Content="暮云橙" Tag="Orange"/>
                                     <ComboBoxItem Content="朱砂红" Tag="Red"/>
@@ -235,7 +236,7 @@
                                     <TextBlock Text="设置守护进程的监听 Host 和 Port (不知道这是什么请不要修改，需重启)" Classes="SettingDesc" Foreground="OrangeRed"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5">
-                                    <TextBox Name="TxtListenHost" Watermark="localhost" Width="140"/>
+                                    <TextBox Name="TxtListenHost" PlaceholderText="localhost" Width="140"/>
                                     <TextBlock Text=":" VerticalAlignment="Center"/>
                                     <NumericUpDown Name="NumListenPort" Minimum="1" Maximum="65535" Value="1027" Width="100"/>
                                 </StackPanel>

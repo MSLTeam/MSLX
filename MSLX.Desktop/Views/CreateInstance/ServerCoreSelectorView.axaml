@@ -58,7 +58,7 @@
                     <TextBlock Text="选择核心" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
                     <TextBox x:Name="TxtSearch" Grid.Column="1"
                              MinWidth="150" MaxWidth="250"
-                             Watermark="搜索核心..." Classes="RevealPasswordButton" TextChanged="TxtSearch_TextChanged"/>
+                             PlaceholderText="搜索核心..." Classes="RevealPasswordButton" TextChanged="TxtSearch_TextChanged"/>
                 </Grid>
 
                 <Border Grid.Row="1"
@@ -116,7 +116,7 @@
             </Grid>
         </Grid>
 
-        <Grid Grid.ColumnSpan="2" Background="#80000000" IsVisible="False" x:Name="MaskLoading">
+        <Grid Grid.Row="1" Background="#80000000" IsVisible="False" x:Name="MaskLoading">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
                 <suki:Loading />
                 <TextBlock Text="正在获取核心信息..." Foreground="White" FontWeight="SemiBold"/>

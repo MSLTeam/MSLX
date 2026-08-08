@@ -137,13 +137,16 @@ namespace MSLX.Desktop.Utils.API
             if (!path.StartsWith("/"))
                 path = "/" + path;
 
-            using var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Add("x-api-key", ConfigStore.DaemonApiKey);
-            httpClient.DefaultRequestHeaders.Add("User-Agent", UAManager.GetUA(UAManager.UAType.MSLX));
+            using var request = new HttpRequestMessage(HttpMethod.Post, url + path);
+            request.Version = System.Net.HttpVersion.Version20;
+            request.VersionPolicy = HttpVersionPolicy.RequestVersionOrLower;
+            request.Headers.TryAddWithoutValidation("x-api-key", ConfigStore.DaemonApiKey);
+            request.Headers.TryAddWithoutValidation("User-Agent", UAManager.GetUA(UAManager.UAType.MSLX));
+            request.Content = content;
 
             try
             {
-                var response = await httpClient.PostAsync(url + path, content);
+                var response = await HttpService.SharedClient.SendAsync(request);
                 var responseContent = await response.Content.ReadAsStringAsync();
 
                 return new HttpResponse
@@ -160,10 +163,6 @@ namespace MSLX.Desktop.Utils.API
                     StatusCode = 0,
                     Exception = ex
                 };
-            }
-            finally
-            {
-                httpClient.Dispose();
             }
         }
 
