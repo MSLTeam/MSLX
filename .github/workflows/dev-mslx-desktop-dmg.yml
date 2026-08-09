@@ -39,6 +39,53 @@ jobs:
             echo "VERSION_NAME=dev" >> $GITHUB_ENV
           fi
 
+      - name: 导入 Developer ID Application 证书
+        if: github.event_name != 'pull_request'
+        env:
+          MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          CERTIFICATE_PATH="$RUNNER_TEMP/mslx-developer-id.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/mslx-signing.keychain-db"
+          KEYCHAIN_PASSWORD=$(openssl rand -hex 32)
+          echo "::add-mask::$KEYCHAIN_PASSWORD"
+          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+          echo "KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> "$GITHUB_ENV"
+
+          if [[ -z "$MACOS_CERTIFICATE_BASE64" || -z "$MACOS_CERTIFICATE_PASSWORD" ]]; then
+            echo "::error::缺少 macOS 签名证书 Secrets"
+            exit 1
+          fi
+
+          printf '%s' "$MACOS_CERTIFICATE_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
+          chmod 600 "$CERTIFICATE_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" \
+            -k "$KEYCHAIN_PATH" \
+            -P "$MACOS_CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign
+          security set-key-partition-list \
+            -S apple-tool:,apple:,codesign: \
+            -s \
+            -k "$KEYCHAIN_PASSWORD" \
+            "$KEYCHAIN_PATH"
+
+          security list-keychains -d user -s "$KEYCHAIN_PATH"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+          SIGNING_IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | sed -n 's/.*"\(Developer ID Application:.*\)"/\1/p' | head -n 1)
+          if [[ -z "$SIGNING_IDENTITY" ]]; then
+            echo "::error::证书中未找到 Developer ID Application 身份"
+            exit 1
+          fi
+
+          echo "SIGNING_IDENTITY=$SIGNING_IDENTITY" >> "$GITHUB_ENV"
+          rm -f "$CERTIFICATE_PATH"
+
       - name: 发布 macOS 独立运行包 (生成 .app)
         run: |
           PUBLISH_DIR="./publish_temp"
@@ -70,8 +117,8 @@ jobs:
           mkdir -p "$APP_DIR/Contents/MacOS"
           mkdir -p "$APP_DIR/Contents/Resources"
           
-          # 1. 移动所有发布的文件到 MacOS 目录
-          cp -r ./publish_temp/* "$APP_DIR/Contents/MacOS/"
+          # 1. 仅可执行文件能位于 Contents/MacOS
+          cp "./publish_temp/${{ matrix.bin }}" "$APP_DIR/Contents/MacOS/"
           chmod +x "$APP_DIR/Contents/MacOS/${{ matrix.bin }}"
           
           # 2. 拷贝图标文件
@@ -89,6 +136,8 @@ jobs:
               <string>icon.icns</string>
               <key>CFBundleIdentifier</key>
               <string>cn.mslmc.mslx</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
               <key>CFBundleName</key>
               <string>MSLX</string>
               <key>CFBundleDisplayName</key>
@@ -100,6 +149,37 @@ jobs:
           </dict>
           </plist>
           EOF
+
+          test "$(plutil -extract CFBundlePackageType raw -o - "$APP_DIR/Contents/Info.plist")" = "APPL"
+
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            echo "开始签名 $APP_NAME..."
+            security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+            while IFS= read -r -d '' FILE_PATH; do
+              if file "$FILE_PATH" | grep -q 'Mach-O'; then
+                echo "签名: $FILE_PATH"
+                codesign \
+                  --force \
+                  --timestamp \
+                  --options runtime \
+                  --entitlements ./MSLX.Desktop/macOS.entitlements \
+                  --keychain "$KEYCHAIN_PATH" \
+                  --sign "$SIGNING_IDENTITY" \
+                  "$FILE_PATH"
+              fi
+            done < <(find "$APP_DIR/Contents/MacOS" -type f -print0)
+
+            codesign \
+              --force \
+              --timestamp \
+              --options runtime \
+              --entitlements ./MSLX.Desktop/macOS.entitlements \
+              --keychain "$KEYCHAIN_PATH" \
+              --sign "$SIGNING_IDENTITY" \
+              "$APP_DIR"
+
+            codesign --verify --deep --strict --verbose=2 "$APP_DIR"
+          fi
           
           cd dmg_build
           
@@ -120,6 +200,28 @@ jobs:
           cd ..
           echo "UPLOAD_PATH=$DIST_DIR/$BASE_NAME.dmg" >> $GITHUB_ENV
           echo "ARTIFACT_NAME=$BASE_NAME" >> $GITHUB_ENV
+
+      - name: 签名 DMG
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          codesign \
+            --force \
+            --timestamp \
+            --keychain "$KEYCHAIN_PATH" \
+            --sign "$SIGNING_IDENTITY" \
+            "${{ env.UPLOAD_PATH }}"
+          codesign --verify --verbose=2 "${{ env.UPLOAD_PATH }}"
+
+      - name: 清理签名凭据
+        if: always() && github.event_name != 'pull_request'
+        run: |
+          rm -f "$RUNNER_TEMP/mslx-developer-id.p12"
+          if [[ -n "${KEYCHAIN_PATH:-}" ]]; then
+            security delete-keychain "$KEYCHAIN_PATH" || true
+          fi
 
       - name: 上传构建结果
         uses: actions/upload-artifact@v4
