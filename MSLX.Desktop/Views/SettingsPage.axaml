@@ -149,7 +149,7 @@
                     <TextBlock Text="守护进程设置 (DAEMON)" FontWeight="Bold" FontSize="12" Opacity="0.5" Margin="5,10,0,5"/>
                     <Border Classes="SectionCard">
                         <StackPanel>
-                            <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                            <Grid Name="DaemonUpdateSettingRow" Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
                                 <icons:MaterialIcon Kind="CloudSync" Classes="SettingIcon"/>
                                 <StackPanel Grid.Column="1" Margin="15,0">
                                     <TextBlock Text="软件更新" Classes="SettingTitle"/>
@@ -163,7 +163,7 @@
                                 </Button>
                             </Grid>
 
-                            <Separator Opacity="0.1" Margin="15,0"/>
+                            <Separator Name="DaemonUpdateSettingSeparator" Opacity="0.1" Margin="15,0"/>
 
                             <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
                                 <icons:MaterialIcon Kind="Web" Classes="SettingIcon"/>

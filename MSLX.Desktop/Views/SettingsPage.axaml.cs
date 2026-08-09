@@ -54,6 +54,8 @@ public partial class SettingsPage : UserControl
 
         FirewallSettingRow.IsVisible = false;
         FirewallSettingSeparator.IsVisible = false;
+        DaemonUpdateSettingRow.IsVisible = false;
+        DaemonUpdateSettingSeparator.IsVisible = false;
         ExternalAccessSettingRow.IsVisible = true;
         ExternalAccessSettingSeparator.IsVisible = true;
         TxtListenSettingTitle.Text = "监听端口";
@@ -315,7 +317,7 @@ public partial class SettingsPage : UserControl
 
     private async void OnCheckUpdateClick(object? sender, RoutedEventArgs e)
     {
-        await UpdateService.UpdateDesktopApp();
+        await UpdateService.UpdateDaemonApp(false);
     }
 
     private void OnRemoteAccessHelpClick(object? sender, RoutedEventArgs e)
