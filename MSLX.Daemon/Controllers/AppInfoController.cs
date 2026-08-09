@@ -135,6 +135,10 @@ public class AppInfoController : ControllerBase
         try
         {
             bool isFnOS = Environment.GetEnvironmentVariable("IS_FNOS_APP") == "true";
+            bool isEmbeddedDaemon = string.Equals(
+                Environment.GetEnvironmentVariable("MSLX_EMBEDDED_DAEMON"),
+                "true",
+                StringComparison.OrdinalIgnoreCase);
             var inContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER");
 
             var localVerObj = Assembly.GetEntryAssembly()?.GetName().Version ?? new Version("0.0.0.0");
@@ -154,12 +158,23 @@ public class AppInfoController : ControllerBase
 
                 bool needUpdate = normalizedRemote > normalizedLocal;
                 string status = "release";
-                string environment =
-                    (inContainer != null && inContainer.Equals("true", StringComparison.OrdinalIgnoreCase))
-                        ? "docker"
-                        : PlatFormServices.IsHomebrewInstallation()
-                            ? "homebrew"
-                            : "native";
+                string environment;
+                if (inContainer != null && inContainer.Equals("true", StringComparison.OrdinalIgnoreCase))
+                {
+                    environment = "docker";
+                }
+                else if (isEmbeddedDaemon)
+                {
+                    environment = "desktop-bundle";
+                }
+                else if (PlatFormServices.IsHomebrewInstallation())
+                {
+                    environment = "homebrew";
+                }
+                else
+                {
+                    environment = "native";
+                }
 
                 if (needUpdate)
                 {
@@ -176,6 +191,12 @@ public class AppInfoController : ControllerBase
                     needUpdate = false;
                     status = "managed";
                     environment = "fnos";
+                }
+                else if (isEmbeddedDaemon)
+                {
+                    needUpdate = false;
+                    status = "managed";
+                    environment = "desktop-bundle";
                 }
 
                 var responseData = new
@@ -282,6 +303,18 @@ public class AppInfoController : ControllerBase
     [Authorize(Roles = "admin")]
     public IActionResult PostUpdate([FromQuery] bool autoRestart = true)
     {
+        if (string.Equals(
+                Environment.GetEnvironmentVariable("MSLX_EMBEDDED_DAEMON"),
+                "true",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest(new ApiResponse<object>
+            {
+                Code = 400,
+                Message = "内置守护进程由 MSLX Desktop 随应用统一更新，不能单独更新。",
+            });
+        }
+
         // 环境预检
         if (IsRunningInContainer())
         {

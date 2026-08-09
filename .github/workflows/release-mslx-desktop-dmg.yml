@@ -105,9 +105,17 @@ jobs:
 
       - name: 发布 macOS 独立运行包 (生成 .app)
         run: |
-          PUBLISH_DIR="./publish_temp"
+          DESKTOP_PUBLISH_DIR="./publish_desktop_temp"
+          DAEMON_PUBLISH_DIR="./publish_daemon_temp"
           DIST_DIR="./dist"
           mkdir -p $DIST_DIR
+
+          DESKTOP_VERSION=$(sed -n 's:.*<AssemblyVersion>\([^<]*\)</AssemblyVersion>.*:\1:p' ./MSLX.Desktop/MSLX.Desktop.csproj)
+          DAEMON_VERSION=$(sed -n 's:.*<AssemblyVersion>\([^<]*\)</AssemblyVersion>.*:\1:p' ./MSLX.Daemon/MSLX.Daemon.csproj)
+          if [[ "$DESKTOP_VERSION" != "$DAEMON_VERSION" ]]; then
+            echo "::error::Desktop 与 Daemon 版本不一致: $DESKTOP_VERSION != $DAEMON_VERSION"
+            exit 1
+          fi
           
           dotnet publish ./MSLX.Desktop/MSLX.Desktop.csproj \
             -c Release \
@@ -116,7 +124,17 @@ jobs:
             -p:PublishSingleFile=true \
             -p:DebugType=None \
             -p:DebugSymbols=false \
-            -o "$PUBLISH_DIR" \
+            -o "$DESKTOP_PUBLISH_DIR" \
+            -p:IncludeNativeLibrariesForSelfExtract=true
+
+          dotnet publish ./MSLX.Daemon/MSLX.Daemon.csproj \
+            -c Release \
+            -r ${{ matrix.rid }} \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -p:DebugType=None \
+            -p:DebugSymbols=false \
+            -o "$DAEMON_PUBLISH_DIR" \
             -p:IncludeNativeLibrariesForSelfExtract=true
 
       - name: 安装 create-dmg 工具
@@ -134,9 +152,11 @@ jobs:
           mkdir -p "$APP_DIR/Contents/MacOS"
           mkdir -p "$APP_DIR/Contents/Resources"
           
-          # 1. 仅可执行文件能位于 Contents/MacOS
-          cp "./publish_temp/${{ matrix.bin }}" "$APP_DIR/Contents/MacOS/"
+          # 1. 将同架构 Desktop 与 Daemon 放入 Contents/MacOS
+          cp "./publish_desktop_temp/${{ matrix.bin }}" "$APP_DIR/Contents/MacOS/"
+          cp "./publish_daemon_temp/MSLX-Daemon" "$APP_DIR/Contents/MacOS/"
           chmod +x "$APP_DIR/Contents/MacOS/${{ matrix.bin }}"
+          chmod +x "$APP_DIR/Contents/MacOS/MSLX-Daemon"
           
           # 2. 拷贝图标文件
           cp ./MSLX.Desktop/Assets/icon.icns "$APP_DIR/Contents/Resources/icon.icns"

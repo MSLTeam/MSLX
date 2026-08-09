@@ -35,19 +35,28 @@ namespace MSLX.Desktop.Utils
         /// 验证DaemonApiKey
         /// </summary>
         /// <returns>Success：true代表成功，false代表失败或已取消</returns>
-        public static async Task<(bool Success, string Message)> VerifyDaemonApiKey()
+        public static Task<(bool Success, string Message)> VerifyDaemonApiKey()
+        {
+            return VerifyDaemonApiKey(showFeedback: true);
+        }
+
+        private static async Task<(bool Success, string Message)> VerifyDaemonApiKey(bool showFeedback)
         {
             CancellationTokenSource cts = new CancellationTokenSource();
-            // 关闭先前对话框并显示验证中对话框
-            DialogService.DialogManager.DismissDialog();
-            DialogService.DialogManager.CreateDialog()
-                .WithTitle("验证中...")
-                .WithContent("请稍候，正在验证Daemon API Key的有效性。")
-                .WithActionButton("取消", _ =>
-                {
-                    cts.Cancel();
-                }, true, "Standard")
-                .TryShow();
+            if (showFeedback)
+            {
+                // 关闭先前对话框并显示验证中对话框
+                DialogService.DialogManager.DismissDialog();
+                DialogService.DialogManager.CreateDialog()
+                    .WithTitle("验证中...")
+                    .WithContent("请稍候，正在验证Daemon API Key的有效性。")
+                    .WithActionButton("取消", _ =>
+                    {
+                        cts.Cancel();
+                    }, true, "Standard")
+                    .TryShow();
+            }
+
             try
             {
                 var (isSuccess, msg, data) = await DaemonAPIService.VerifyDaemonApiKey(cts.Token);
@@ -57,7 +66,11 @@ namespace MSLX.Desktop.Utils
                 string targetFrontendVersion = data?["targetFrontendVersion"]?["desktop"]?.Value<string>() ?? "0.0.0";
                 Version targetVersion = Version.Parse(targetFrontendVersion);
 
-                DialogService.DialogManager.DismissDialog();
+                if (showFeedback)
+                {
+                    DialogService.DialogManager.DismissDialog();
+                }
+
                 if (isSuccess)
                 {
                     // 截取前三位版本号进行比较
@@ -65,7 +78,7 @@ namespace MSLX.Desktop.Utils
                     Version currentVersionTrimmed = new(ConfigStore.Version.Major, ConfigStore.Version.Minor, ConfigStore.Version.Build);
 
                     // 比较版本号
-                    if (currentVersionTrimmed != targetVersionTrimmed)
+                    if (showFeedback && currentVersionTrimmed != targetVersionTrimmed)
                     {
                         DialogService.ToastManager.CreateToast()
                             .OfType(Avalonia.Controls.Notifications.NotificationType.Warning)
@@ -76,15 +89,19 @@ namespace MSLX.Desktop.Utils
                     }
 
                     // 验证成功
-                    DialogService.ToastManager.CreateToast()
-                                .WithTitle(msg)
-                                .WithContent(new TextBlock
-                                {
-                                    Text = $"Client Name: {clientName}\nVersion: {version}\nServer Time: {serverTime}",
-                                })
-                                .WithActionButton("关闭", _ => { },true)
-                                .Dismiss().After(TimeSpan.FromSeconds(5))
-                                .Queue();
+                    if (showFeedback)
+                    {
+                        DialogService.ToastManager.CreateToast()
+                            .WithTitle(msg)
+                            .WithContent(new TextBlock
+                            {
+                                Text = $"Client Name: {clientName}\nVersion: {version}\nServer Time: {serverTime}",
+                            })
+                            .WithActionButton("关闭", _ => { }, true)
+                            .Dismiss().After(TimeSpan.FromSeconds(5))
+                            .Queue();
+                    }
+
                     // ConfigStore.DaemonVersion = Version.Parse(version.Contains('-') ? version.Substring(0, version.IndexOf('-')) : version);
                     ConfigStore.DaemonVersion = Version.Parse(version.Split('-')[0]);
                     Debug.WriteLine(ConfigStore.DaemonVersion);
@@ -102,19 +119,27 @@ namespace MSLX.Desktop.Utils
             {
                 ConfigStore.DaemonApiKey = string.Empty;
                 ConfigStore.DaemonAddress = string.Empty;
-                DialogService.DialogManager.DismissDialog();
+                if (showFeedback)
+                {
+                    DialogService.DialogManager.DismissDialog();
+                }
+
                 return (false, "验证已取消");
             }
             catch (Exception ex)
             {
                 ConfigStore.DaemonApiKey = string.Empty;
                 ConfigStore.DaemonAddress = string.Empty;
-                DialogService.ToastManager.CreateToast()
-                            .OfType(Avalonia.Controls.Notifications.NotificationType.Error)
-                            .WithTitle("出现异常")
-                            .WithContent(ex.Message)
-                            .Dismiss().After(TimeSpan.FromSeconds(5))
-                            .Queue();
+                if (showFeedback)
+                {
+                    DialogService.ToastManager.CreateToast()
+                        .OfType(Avalonia.Controls.Notifications.NotificationType.Error)
+                        .WithTitle("出现异常")
+                        .WithContent(ex.Message)
+                        .Dismiss().After(TimeSpan.FromSeconds(5))
+                        .Queue();
+                }
+
                 return (false, $"请检查MSLX守护进程端连接地址是否有效！" + ex.Message);
             }
         }
@@ -189,6 +214,71 @@ namespace MSLX.Desktop.Utils
         }
 
         /// <summary>
+        /// 获取 macOS .app 包内的 Daemon 可执行文件路径。
+        /// </summary>
+        public static string? GetBundledDaemonPath()
+        {
+            return PlatformHelper.IsMacAppBundle()
+                ? Path.Combine(AppContext.BaseDirectory, "MSLX-Daemon")
+                : null;
+        }
+
+        /// <summary>
+        /// 启动并连接 macOS .app 包内置的 Daemon。
+        /// </summary>
+        public static async Task<(bool Success, string Message)> StartAndConnectBundledDaemon()
+        {
+            string? executablePath = GetBundledDaemonPath();
+            if (string.IsNullOrEmpty(executablePath))
+            {
+                return (false, "当前程序未运行在 macOS .app 包内。");
+            }
+
+            if (!File.Exists(executablePath))
+            {
+                return (false, $"未找到内置 Daemon：{executablePath}");
+            }
+
+            if (DaemonProcess == null || DaemonProcess.HasExited)
+            {
+                DaemonProcess = FindBundledDaemonProcess(executablePath);
+                if (DaemonProcess == null)
+                {
+                    var startResult = await StartDaemon(AppContext.BaseDirectory);
+                    if (!startResult.Success)
+                    {
+                        return startResult;
+                    }
+                }
+            }
+
+            string lastMessage = "尚未读取到内置 Daemon 的连接信息。";
+            for (int attempt = 0; attempt < 20; attempt++)
+            {
+                ConfigStore.DaemonAddress = ConfigService.GetLocalDaemonAddress();
+                ConfigService.GetDaemonApiKey();
+
+                if (!string.IsNullOrWhiteSpace(ConfigStore.DaemonApiKey))
+                {
+                    var verifyResult = await VerifyDaemonApiKey(showFeedback: false);
+                    if (verifyResult.Success)
+                    {
+                        ConfigService.Config.WriteConfigKey("DaemonAddress", ConfigStore.DaemonAddress);
+                        ConfigService.Config.WriteConfigKey("DaemonApiKey", ConfigStore.DaemonApiKey);
+                        ConfigService.Config.WriteConfigKey("AutoRunDaemon", true);
+                        return (true, "内置 Daemon 已启动并连接成功。");
+                    }
+
+                    lastMessage = verifyResult.Message;
+                }
+
+                await Task.Delay(500);
+            }
+
+            return (false, $"无法连接内置 Daemon：{lastMessage}");
+        }
+
+        /// <summary>
         /// 启动Daemon程序
         /// </summary>
         /// <param name="daemonPath">Daemon程序所在目录</param>
@@ -217,9 +307,12 @@ namespace MSLX.Desktop.Utils
 
                 Debug.WriteLine($"[DaemonManager] 找到Daemon可执行文件: {executablePath}");
 
-                // 在Linux和macOS上设置执行权限
+                bool isBundledDaemon = GetBundledDaemonPath() is { } bundledPath &&
+                                       PathsEqual(executablePath, bundledPath);
+
+                // Bundle 内的执行权限由打包流程设置，运行时不修改已签名应用。
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ||
-                    RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                    (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && !isBundledDaemon))
                 {
                     await SetExecutablePermission(executablePath);
                 }
@@ -235,6 +328,12 @@ namespace MSLX.Desktop.Utils
                     RedirectStandardOutput = true,
                     RedirectStandardError = true
                 };
+
+                if (isBundledDaemon)
+                {
+                    processStartInfo.Environment["MSLX_EMBEDDED_DAEMON"] = "true";
+                    processStartInfo.Environment["MSLX_DESKTOP_PID"] = Environment.ProcessId.ToString();
+                }
 
                 DaemonProcess = Process.Start(processStartInfo);
 
@@ -333,8 +432,25 @@ namespace MSLX.Desktop.Utils
         {
             try
             {
-                if (DaemonProcess != null)
-                    await ProcessHelper.SendCtrlC(DaemonProcess);
+                Process? process = DaemonProcess;
+                if (process == null || process.HasExited)
+                {
+                    DaemonProcess = null;
+                    return;
+                }
+
+                await ProcessHelper.SendCtrlC(process);
+
+                // 优先让 Daemon 进行正常清理，超时后再结束由 Desktop 管理的进程。
+                Task exitTask = process.WaitForExitAsync();
+                if (await Task.WhenAny(exitTask, Task.Delay(TimeSpan.FromSeconds(3))) != exitTask &&
+                    !process.HasExited)
+                {
+                    process.Kill(entireProcessTree: true);
+                    await process.WaitForExitAsync();
+                }
+
+                DaemonProcess = null;
             }
             catch
             {
@@ -479,6 +595,51 @@ namespace MSLX.Desktop.Utils
         {
             var processes = Process.GetProcessesByName(GetDaemonProcessName());
             return processes?.FirstOrDefault();
+        }
+
+        /// <summary>
+        /// 查找由当前 .app 包提供的 Daemon，避免误用 Homebrew 或其他目录中的同名进程。
+        /// </summary>
+        private static Process? FindBundledDaemonProcess(string executablePath)
+        {
+            foreach (Process process in Process.GetProcessesByName(GetDaemonProcessName()))
+            {
+                try
+                {
+                    if (PathsEqual(process.MainModule?.FileName, executablePath))
+                    {
+                        return process;
+                    }
+                }
+                catch
+                {
+                    // 无法读取其他进程路径时忽略该进程。
+                }
+
+                process.Dispose();
+            }
+
+            return null;
+        }
+
+        private static bool PathsEqual(string? left, string? right)
+        {
+            if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
+            {
+                return false;
+            }
+
+            try
+            {
+                return string.Equals(
+                    Path.GetFullPath(left),
+                    Path.GetFullPath(right),
+                    StringComparison.Ordinal);
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                return false;
+            }
         }
 
         /// <summary>

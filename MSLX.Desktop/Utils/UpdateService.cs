@@ -355,6 +355,11 @@ namespace MSLX.Desktop.Utils
 
         public static async Task<(bool isSuccess, string? msg)> UpdateDaemonApp(bool autoRestart)
         {
+            if (PlatformHelper.IsMacAppBundle())
+            {
+                return (true, "内置 Daemon 由 Desktop 随应用统一更新。");
+            }
+
             var (Success, Data, Msg) = await DaemonAPIService.GetJsonDataAsync("/api/update/info");
             if (!Success)
             {
