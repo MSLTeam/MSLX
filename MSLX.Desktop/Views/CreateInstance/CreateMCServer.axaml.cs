@@ -1,4 +1,4 @@
-using Avalonia.Controls;
+﻿using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -997,9 +997,18 @@ public partial class CreateMCServer : UserControl
     {
         if (_hubConnection != null)
         {
-            await _hubConnection.StopAsync();
-            await _hubConnection.DisposeAsync();
-            _hubConnection = null;
+            var conn = _hubConnection;
+            _hubConnection = null; 
+
+            try
+            {
+                await conn.StopAsync();
+                await conn.DisposeAsync();
+            }
+            catch
+            {
+                // 不重要喵
+            }
         }
     }
 
