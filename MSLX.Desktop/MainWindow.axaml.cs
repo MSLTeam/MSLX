@@ -95,6 +95,15 @@ public partial class MainWindow : SukiWindow
 
     private void MainWindow_Closing(object? sender, WindowClosingEventArgs e)
     {
+        // macOS 下关闭窗口只隐藏应用，Daemon 和菜单栏图标继续运行。
+        if ((App.Instance?.IsMacAppBundle ?? false) &&
+            !(App.Instance?.IsExitRequested ?? false))
+        {
+            e.Cancel = true;
+            Hide();
+            return;
+        }
+
         _ = DaemonManager.StopRunningDaemon();
     }
 
