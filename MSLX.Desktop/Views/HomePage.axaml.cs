@@ -28,6 +28,7 @@ public partial class HomePage : UserControl
         this.StartBtn.Click += StartBtn_Click;
         this.GithubBtn.Click += GithubBtn_Click;
         this.DocsBtn.Click += DocsBtn_Click;
+        this.OpenPanelBtn.Click += OpenPanelBtn_Click;
     }
 
     private async void HomePage_Initialized(object? sender, EventArgs e)
@@ -261,5 +262,42 @@ public partial class HomePage : UserControl
     private void DocsBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         Process.Start(new ProcessStartInfo("https://mslx.mslmc.cn") { UseShellExecute = true });
+    }
+
+    private async void OpenPanelBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        try
+        {
+            var response = await DaemonAPIService.PostApiAsync(
+                "/api/auth/browser-launch",
+                null,
+                HttpService.PostContentType.Json,
+                null);
+
+            if (!response.IsSuccess || string.IsNullOrWhiteSpace(response.Content))
+            {
+                throw new InvalidOperationException("无法创建浏览器登录令牌。");
+            }
+
+            var result = JObject.Parse(response.Content);
+            if (result["code"]?.Value<int>() != 200)
+            {
+                throw new InvalidOperationException(result["message"]?.ToString() ?? "无法创建浏览器登录令牌。");
+            }
+
+            string? launchToken = result["data"]?["token"]?.Value<string>();
+            if (string.IsNullOrWhiteSpace(launchToken))
+            {
+                throw new InvalidOperationException("Daemon 返回的浏览器登录令牌为空。");
+            }
+
+            string address = ConfigStore.DaemonAddress.TrimEnd('/');
+            string launchUrl = $"{address}/api/auth/browser-launch?token={Uri.EscapeDataString(launchToken)}";
+            Process.Start(new ProcessStartInfo(launchUrl) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"打开控制台失败: {ex.Message}");
+        }
     }
 }

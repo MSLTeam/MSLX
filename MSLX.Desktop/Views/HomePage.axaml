@@ -173,7 +173,7 @@
 		</suki:GlassCard>
 
 		<!-- 底部操作按钮 -->
-		<UniformGrid Grid.Row="3" Columns="3" Height="50" Margin="12,0,12,12" HorizontalAlignment="Right" VerticalAlignment="Center">
+		<UniformGrid Grid.Row="3" Columns="4" Height="50" Margin="12,0,12,12" HorizontalAlignment="Right" VerticalAlignment="Center">
 			<Button x:Name="DocsBtn" Margin="5" Classes="Outlined" BorderThickness="1">
 				<StackPanel Orientation="Horizontal" Spacing="5">
 					<micon:MaterialIcon Kind="BookOpenOutline" Width="16" Height="16"/>
@@ -184,6 +184,12 @@
 				<StackPanel Orientation="Horizontal" Spacing="5">
 					<micon:MaterialIcon Kind="Github" Width="16" Height="16"/>
 					<TextBlock Text="GitHub" VerticalAlignment="Center" FontSize="14"/>
+				</StackPanel>
+			</Button>
+			<Button x:Name="OpenPanelBtn" Margin="5" Classes="Outlined" BorderThickness="1">
+				<StackPanel Orientation="Horizontal" Spacing="5">
+					<micon:MaterialIcon Kind="OpenInNew" Width="16" Height="16"/>
+					<TextBlock Text="网页控制台" VerticalAlignment="Center" FontSize="14"/>
 				</StackPanel>
 			</Button>
 			<Button x:Name="StartBtn" Classes="Flat" Margin="5">
