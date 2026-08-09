@@ -34,9 +34,28 @@ public partial class SettingsPage : UserControl
         SwitchFirewall.IsCheckedChanged += (s, e) => UpdateFirewallText(SwitchFirewall.IsChecked == true);
         SliderDownloadThreadCount.ValueChanged += (s, e) => UpdateDownloadThreadUi((int)e.NewValue);
 
+        ApplyDaemonBundleRestrictions();
+
         LoadLocalSettings();
 
         Loaded += async (s, e) => await LoadDataAsync();
+    }
+
+    /// <summary>
+    /// 内置 Daemon 由 Desktop 管理时，固定本地连接和监听地址。
+    /// </summary>
+    private void ApplyDaemonBundleRestrictions()
+    {
+        if (!PlatformHelper.IsMacAppBundle())
+        {
+            return;
+        }
+
+        FirewallSettingRow.IsVisible = false;
+        FirewallSettingSeparator.IsVisible = false;
+        TxtListenHost.Text = "localhost";
+        TxtListenHost.IsReadOnly = true;
+        TxtListenHost.IsEnabled = false;
     }
 
     private void LoadLocalSettings()
@@ -159,12 +178,15 @@ public partial class SettingsPage : UserControl
             ComboMirrors.SelectedIndex = 1;
         }
 
-        // Firewall
-        SwitchFirewall.IsChecked = _currentSettings.FireWallBanLocalAddr;
-        UpdateFirewallText(_currentSettings.FireWallBanLocalAddr);
+        // 内置 Daemon 不读取或使用禁止本地访问配置。
+        if (!PlatformHelper.IsMacAppBundle())
+        {
+            SwitchFirewall.IsChecked = _currentSettings.FireWallBanLocalAddr;
+            UpdateFirewallText(_currentSettings.FireWallBanLocalAddr);
+        }
 
         // Host & Port
-        TxtListenHost.Text = _currentSettings.ListenHost;
+        TxtListenHost.Text = PlatformHelper.IsMacAppBundle() ? "localhost" : _currentSettings.ListenHost;
         NumListenPort.Value = _currentSettings.ListenPort;
 
         // Download Thread Count
@@ -192,8 +214,17 @@ public partial class SettingsPage : UserControl
                 _currentSettings.NeoForgeInstallerMirrors = selectedItem.Tag.ToString()!;
             }
 
-            _currentSettings.FireWallBanLocalAddr = SwitchFirewall.IsChecked ?? false;
-            _currentSettings.ListenHost = TxtListenHost.Text ?? "localhost";
+            if (PlatformHelper.IsMacAppBundle())
+            {
+                // 内置 Daemon 固定 localhost，防止错误配置影响 Desktop 连接。
+                _currentSettings.FireWallBanLocalAddr = false;
+                _currentSettings.ListenHost = "localhost";
+            }
+            else
+            {
+                _currentSettings.FireWallBanLocalAddr = SwitchFirewall.IsChecked ?? false;
+                _currentSettings.ListenHost = TxtListenHost.Text ?? "localhost";
+            }
             _currentSettings.ListenPort = (uint)(NumListenPort.Value ?? 1027);
             _currentSettings.DownloadThreadCount = (int)SliderDownloadThreadCount.Value;
 
@@ -239,7 +270,7 @@ public partial class SettingsPage : UserControl
         LoadingBar.IsVisible = isLoading;
         BtnSave.IsEnabled = !isLoading;
         BtnRefresh.IsEnabled = !isLoading;
-        TxtListenHost.IsEnabled = !isLoading;
+        TxtListenHost.IsEnabled = !isLoading && !PlatformHelper.IsMacAppBundle();
     }
 
     private void ShowToast(string title, string content, NotificationType type)

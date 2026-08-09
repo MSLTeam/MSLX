@@ -47,6 +47,12 @@ builder.Host.UseSerilog();
 var bootstrapLoggerFactory = LoggerFactory.Create(logging => logging.AddSerilog());
 IConfigBase.Initialize(bootstrapLoggerFactory);
 
+// 内置 Daemon 由 Desktop 管理时，监听地址固定为 localhost。
+bool isEmbeddedDaemon = string.Equals(
+    Environment.GetEnvironmentVariable("MSLX_EMBEDDED_DAEMON"),
+    "true",
+    StringComparison.OrdinalIgnoreCase);
+
 // 检查启动参数
 var argHost = builder.Configuration["host"]; // 支持 --host 或 /host
 var argPort = builder.Configuration["port"]; // 支持 --port 或 /port
@@ -54,7 +60,7 @@ var argNoBrowser = builder.Configuration["nobrowser"]; // 支持 --nobrowser 或
 bool configUpdated = false;
 
 //传入了 host 参数，更新配置
-if (!string.IsNullOrWhiteSpace(argHost))
+if (!isEmbeddedDaemon && !string.IsNullOrWhiteSpace(argHost))
 {
     IConfigBase.Config.WriteConfigKey("listenHost", argHost);
     configUpdated = true;
@@ -118,7 +124,9 @@ if (configUpdated)
 }
 
 // 读取最终配置
-string finalIp = IConfigBase.Config.ReadConfig()["listenHost"]?.ToString() ?? "";
+string finalIp = isEmbeddedDaemon
+    ? "localhost"
+    : IConfigBase.Config.ReadConfig()["listenHost"]?.ToString() ?? "";
 string finalPort = IConfigBase.Config.ReadConfig()["listenPort"]?.ToString() ?? "";
 
 // 默认值回退

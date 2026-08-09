@@ -51,7 +51,13 @@ public class UserListConfig : IDisposable
         var config = IConfigBase.Config.ReadConfig();
 
         var openOnLaunch = (bool?)config["openWebConsoleOnLaunch"] ?? true;
-        var rawHost = (config["listenHost"] ?? "localhost").ToString().Trim();
+        bool isEmbeddedDaemon = string.Equals(
+            Environment.GetEnvironmentVariable("MSLX_EMBEDDED_DAEMON"),
+            "true",
+            StringComparison.OrdinalIgnoreCase);
+        var rawHost = isEmbeddedDaemon
+            ? "localhost"
+            : (config["listenHost"] ?? "localhost").ToString().Trim();
         var port = config["listenPort"] ?? 1027;
 
         if (openOnLaunch)

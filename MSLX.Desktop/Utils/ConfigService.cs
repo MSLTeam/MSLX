@@ -38,8 +38,12 @@ namespace MSLX.Desktop.Utils
         /// </summary>
         public static string GetLocalDaemonAddress()
         {
+            // 内置 Daemon 固定监听 localhost，避免错误的监听地址配置导致 Desktop 无法连接。
+            bool isMacAppBundle = PlatformHelper.IsMacAppBundle();
             JObject config = Config.ReadDaemonConfig();
-            string host = config["listenHost"]?.ToString()?.Trim() ?? string.Empty;
+            string host = isMacAppBundle
+                ? "localhost"
+                : config["listenHost"]?.ToString()?.Trim() ?? string.Empty;
             string portText = config["listenPort"]?.ToString()?.Trim() ?? string.Empty;
             bool enableSsl = bool.TryParse(config["enableSsl"]?.ToString(), out bool ssl) && ssl;
 

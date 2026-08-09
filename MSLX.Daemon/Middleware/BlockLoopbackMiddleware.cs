@@ -16,7 +16,15 @@ public class BlockLoopbackMiddleware
     {
         var remoteIp = context.Connection.RemoteIpAddress ?? IPAddress.Loopback;
 
-        if (IPAddress.IsLoopback(remoteIp) && ((bool?)IConfigBase.Config.ReadConfig()["fireWallBanLocalAddr"] ?? false))
+        // 内置 Daemon 必须允许 Desktop 通过 localhost 访问，忽略旧的防火墙配置。
+        bool isEmbeddedDaemon = string.Equals(
+            Environment.GetEnvironmentVariable("MSLX_EMBEDDED_DAEMON"),
+            "true",
+            StringComparison.OrdinalIgnoreCase);
+
+        if (!isEmbeddedDaemon &&
+            IPAddress.IsLoopback(remoteIp) &&
+            ((bool?)IConfigBase.Config.ReadConfig()["fireWallBanLocalAddr"] ?? false))
         {
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             context.Response.ContentType = "application/json";

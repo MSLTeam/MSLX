@@ -215,7 +215,7 @@
                     <TextBlock Text="网络与安全 (NETWORK)" FontWeight="Bold" FontSize="12" Opacity="0.5" Margin="5,10,0,5"/>
                     <Border Classes="SectionCard">
                         <StackPanel>
-                            <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                            <Grid Name="FirewallSettingRow" Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
                                 <icons:MaterialIcon Kind="SecurityNetwork" Classes="SettingIcon"/>
                                 <StackPanel Grid.Column="1" Margin="15,0">
                                     <TextBlock Text="禁止本地访问" Classes="SettingTitle"/>
@@ -227,7 +227,7 @@
                                 </StackPanel>
                             </Grid>
 
-                            <Separator Opacity="0.1" Margin="15,0"/>
+                            <Separator Name="FirewallSettingSeparator" Opacity="0.1" Margin="15,0"/>
 
                             <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
                                 <icons:MaterialIcon Kind="IpNetwork" Classes="SettingIcon"/>
