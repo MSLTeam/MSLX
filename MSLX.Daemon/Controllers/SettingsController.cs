@@ -33,6 +33,7 @@ public class SettingsController : ControllerBase
                         IConfigBase.Config.ReadConfig()["neoForgeInstallerMirrors"] ?? "MSL Mirrors",
                     ListenHost = isEmbeddedDaemon ? "localhost" : config["listenHost"] ?? "localhost",
                     ListenPort = config["listenPort"] ?? 1027,
+                    AllowExternalAccess = isEmbeddedDaemon ? config["allowExternalAccess"] ?? false : false,
                     OAuthMSLClientID = config["oAuthMSLClientID"] ?? "",
                     OAuthMSLClientSecret = config["oAuthMSLClientSecret"] ?? "",
                     DownloadThreadCount = config["downloadThreadCount"] ?? 5,
@@ -59,6 +60,10 @@ public class SettingsController : ControllerBase
             IConfigBase.Config.WriteConfigKey("listenHost", request.ListenHost);
         }
         IConfigBase.Config.WriteConfigKey("listenPort", request.ListenPort);
+        if (isEmbeddedDaemon)
+        {
+            IConfigBase.Config.WriteConfigKey("allowExternalAccess", request.AllowExternalAccess);
+        }
         IConfigBase.Config.WriteConfigKey("oAuthMSLClientID", request.OAuthMSLClientID);
         IConfigBase.Config.WriteConfigKey("oAuthMSLClientSecret", request.OAuthMSLClientSecret);
         IConfigBase.Config.WriteConfigKey("downloadThreadCount", request.DownloadThreadCount);

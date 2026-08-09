@@ -32,6 +32,7 @@ public partial class SettingsPage : UserControl
     {
         InitializeComponent();
         SwitchFirewall.IsCheckedChanged += (s, e) => UpdateFirewallText(SwitchFirewall.IsChecked == true);
+        SwitchExternalAccess.IsCheckedChanged += (s, e) => UpdateExternalAccessText(SwitchExternalAccess.IsChecked == true);
         SliderDownloadThreadCount.ValueChanged += (s, e) => UpdateDownloadThreadUi((int)e.NewValue);
 
         ApplyDaemonBundleRestrictions();
@@ -53,6 +54,12 @@ public partial class SettingsPage : UserControl
 
         FirewallSettingRow.IsVisible = false;
         FirewallSettingSeparator.IsVisible = false;
+        ExternalAccessSettingRow.IsVisible = true;
+        ExternalAccessSettingSeparator.IsVisible = true;
+        TxtListenSettingTitle.Text = "监听端口";
+        TxtListenSettingDescription.Text = "设置内置守护进程的监听端口，修改后需重启";
+        TxtListenHost.IsVisible = false;
+        TxtListenHostSeparator.IsVisible = false;
         TxtListenHost.Text = "localhost";
         TxtListenHost.IsReadOnly = true;
         TxtListenHost.IsEnabled = false;
@@ -185,6 +192,12 @@ public partial class SettingsPage : UserControl
             UpdateFirewallText(_currentSettings.FireWallBanLocalAddr);
         }
 
+        if (PlatformHelper.IsMacAppBundle())
+        {
+            SwitchExternalAccess.IsChecked = _currentSettings.AllowExternalAccess;
+            UpdateExternalAccessText(_currentSettings.AllowExternalAccess);
+        }
+
         // Host & Port
         TxtListenHost.Text = PlatformHelper.IsMacAppBundle() ? "localhost" : _currentSettings.ListenHost;
         NumListenPort.Value = _currentSettings.ListenPort;
@@ -219,11 +232,13 @@ public partial class SettingsPage : UserControl
                 // 内置 Daemon 固定 localhost，防止错误配置影响 Desktop 连接。
                 _currentSettings.FireWallBanLocalAddr = false;
                 _currentSettings.ListenHost = "localhost";
+                _currentSettings.AllowExternalAccess = SwitchExternalAccess.IsChecked ?? false;
             }
             else
             {
                 _currentSettings.FireWallBanLocalAddr = SwitchFirewall.IsChecked ?? false;
                 _currentSettings.ListenHost = TxtListenHost.Text ?? "localhost";
+                _currentSettings.AllowExternalAccess = false;
             }
             _currentSettings.ListenPort = (uint)(NumListenPort.Value ?? 1027);
             _currentSettings.DownloadThreadCount = (int)SliderDownloadThreadCount.Value;
@@ -263,6 +278,11 @@ public partial class SettingsPage : UserControl
         TxtFirewallStatus.Text = isChecked ? "已开启" : "已关闭";
     }
 
+    private void UpdateExternalAccessText(bool isChecked)
+    {
+        TxtExternalAccessStatus.Text = isChecked ? "已开启" : "已关闭";
+    }
+
     private void SetLoadingState(bool isLoading)
     {
         _isLoading = isLoading;
@@ -270,6 +290,7 @@ public partial class SettingsPage : UserControl
         LoadingBar.IsVisible = isLoading;
         BtnSave.IsEnabled = !isLoading;
         BtnRefresh.IsEnabled = !isLoading;
+        SwitchExternalAccess.IsEnabled = !isLoading;
         TxtListenHost.IsEnabled = !isLoading && !PlatformHelper.IsMacAppBundle();
     }
 

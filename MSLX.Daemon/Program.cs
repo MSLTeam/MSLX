@@ -124,10 +124,16 @@ if (configUpdated)
 }
 
 // 读取最终配置
+var finalConfig = IConfigBase.Config.ReadConfig();
 string finalIp = isEmbeddedDaemon
     ? "localhost"
-    : IConfigBase.Config.ReadConfig()["listenHost"]?.ToString() ?? "";
-string finalPort = IConfigBase.Config.ReadConfig()["listenPort"]?.ToString() ?? "";
+    : finalConfig["listenHost"]?.ToString() ?? "";
+string finalPort = finalConfig["listenPort"]?.ToString() ?? "";
+bool allowExternalAccess = false;
+if (isEmbeddedDaemon)
+{
+    bool.TryParse(finalConfig["allowExternalAccess"]?.ToString(), out allowExternalAccess);
+}
 
 // 默认值回退
 string targetIp = string.IsNullOrEmpty(finalIp) ? "localhost" : finalIp;
@@ -137,7 +143,9 @@ int port = int.Parse(targetPort);
 // 检测SSL开启状态
 bool enableSsl = (bool?)IConfigBase.Config.ReadConfig()["enableSsl"] ?? false;
 string protocol = enableSsl ? "https" : "http";
-string listenAddr = $"{protocol}://{targetIp}:{targetPort}";
+string listenAddr = isEmbeddedDaemon && allowExternalAccess
+    ? $"{protocol}://0.0.0.0:{targetPort} 和 {protocol}://[::]:{targetPort}"
+    : $"{protocol}://{targetIp}:{targetPort}";
 
 builder.WebHost.ConfigureKestrel(serverOptions =>
 {
@@ -157,7 +165,13 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
         }
     };
     
-    if (targetIp == "0.0.0.0" || targetIp == "*")
+    if (isEmbeddedDaemon && allowExternalAccess)
+    {
+        // Kestrel 的 ListenAnyIP 使用 IPv6Any，并在支持的平台上启用双栈，
+        // 对应监听 IPv4 的 0.0.0.0 和 IPv6 的 [::]。
+        serverOptions.ListenAnyIP(port, configureListen);
+    }
+    else if (targetIp == "0.0.0.0" || targetIp == "*")
     {
         serverOptions.ListenAnyIP(port, configureListen);
     }
