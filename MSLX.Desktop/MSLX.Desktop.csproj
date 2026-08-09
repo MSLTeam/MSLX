@@ -41,6 +41,7 @@
 
 	<ItemGroup>
 		<ProjectReference Include="..\SukiUI\SukiUI\SukiUI.csproj" />
+		<ProjectReference Include="..\MSLX.SDK\MSLX.SDK.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

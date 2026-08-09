@@ -1,9 +1,10 @@
-﻿using Avalonia.Controls;
+using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Microsoft.AspNetCore.SignalR.Client;
 using MSLX.Desktop.Models;
+using MSLX.SDK.Models.Instance;
 using MSLX.Desktop.Utils;
 using MSLX.Desktop.Utils.API;
 using Newtonsoft.Json.Linq;
@@ -39,7 +40,7 @@ public partial class CreateMCServer : UserControl
 
     // Java 选择相关数据
     private ObservableCollection<string> _onlineJavaList = new();
-    private ObservableCollection<LocalJavaListModel> _localJavaList = new();
+    private ObservableCollection<JavaInfo> _localJavaList = new();
 
     public CreateMCServer()
     {
@@ -258,7 +259,7 @@ public partial class CreateMCServer : UserControl
                 TxtConfirmJava.Text = $"在线安装: Java {ComboOnlineJava.SelectedItem}";
                 break;
             case 1:
-                var local = ComboLocalJava.SelectedItem as LocalJavaListModel;
+                var local = ComboLocalJava.SelectedItem as JavaInfo;
                 TxtConfirmJava.Text = $"本地环境: {local?.Version} ({local?.Vendor})";
                 break;
             case 2:
@@ -370,7 +371,7 @@ public partial class CreateMCServer : UserControl
             if (result.Success && result.Data is JArray jArray)
             {
                 _localJavaList.Clear();
-                var list = jArray.ToObject<List<LocalJavaListModel>>();
+                var list = jArray.ToObject<List<JavaInfo>>();
                 if (list != null)
                 {
                     foreach (var item in list) _localJavaList.Add(item);
@@ -768,7 +769,7 @@ public partial class CreateMCServer : UserControl
                 break;
 
             case 1: // 本地版本
-                var selected = ComboLocalJava.SelectedItem as LocalJavaListModel;
+                var selected = ComboLocalJava.SelectedItem as JavaInfo;
                 if (selected != null)
                     javaCmd = selected.Path;
                 break;

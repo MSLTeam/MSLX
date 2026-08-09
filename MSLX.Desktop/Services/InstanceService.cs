@@ -1,6 +1,7 @@
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils;
 using MSLX.Desktop.Utils.API;
+using MSLX.SDK.Models;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -60,7 +61,7 @@ public class InstanceService
     /// <summary>
     /// 获取实例通用设置
     /// </summary>
-    public static async Task<(bool Success, InstanceModel.InstanceGeneralSettings? Settings, string? Msg)> GetGeneralSettingsAsync(int id)
+    public static async Task<(bool Success, McServerInfo.ServerInfo? Settings, string? Msg)> GetGeneralSettingsAsync(int id)
     {
         var (success, data, msg) = await DaemonAPIService.GetJsonDataAsync($"/api/instance/settings/general/{id}");
 
@@ -70,7 +71,7 @@ public class InstanceService
         try
         {
             var token = data as JToken ?? JToken.FromObject(data);
-            var settings = token.ToObject<InstanceModel.InstanceGeneralSettings>();
+            var settings = token.ToObject<McServerInfo.ServerInfo>();
             return (true, settings, msg);
         }
         catch (Exception ex)
@@ -82,7 +83,7 @@ public class InstanceService
     /// <summary>
     /// 更新实例通用设置
     /// </summary>
-    public static async Task<(bool Success, string? Msg)> UpdateGeneralSettingsAsync(int id, InstanceModel.InstanceGeneralSettings settings)
+    public static async Task<(bool Success, string? Msg)> UpdateGeneralSettingsAsync(int id, McServerInfo.ServerInfo settings)
     {
         var response = await DaemonAPIService.PostApiAsync(
             $"/api/instance/settings/general/{id}",

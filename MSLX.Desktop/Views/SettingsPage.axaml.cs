@@ -3,6 +3,7 @@ using Avalonia.Controls.Notifications;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using MSLX.Desktop.Models;
+using MSLX.SDK.Models.Settings;
 using MSLX.Desktop.Utils;
 using MSLX.Desktop.Utils.API;
 using Newtonsoft.Json.Linq;
@@ -22,7 +23,7 @@ namespace MSLX.Desktop.Views;
 
 public partial class SettingsPage : UserControl
 {
-    private SettingsModel _currentSettings = new SettingsModel();
+    private UpdateSettingsRequest _currentSettings = new UpdateSettingsRequest();
     private bool _isLoading = false;
 
     private bool _isUiLoaded = false;
@@ -117,7 +118,7 @@ public partial class SettingsPage : UserControl
 
             if (result.Success && result.Data is JToken jsonToken)
             {
-                _currentSettings = jsonToken.ToObject<SettingsModel>() ?? new SettingsModel();
+                _currentSettings = jsonToken.ToObject<UpdateSettingsRequest>() ?? new UpdateSettingsRequest();
                 MapModelToUi();
             }
             else
@@ -193,7 +194,7 @@ public partial class SettingsPage : UserControl
 
             _currentSettings.FireWallBanLocalAddr = SwitchFirewall.IsChecked ?? false;
             _currentSettings.ListenHost = TxtListenHost.Text ?? "localhost";
-            _currentSettings.ListenPort = (int)(NumListenPort.Value ?? 1027);
+            _currentSettings.ListenPort = (uint)(NumListenPort.Value ?? 1027);
             _currentSettings.DownloadThreadCount = (int)SliderDownloadThreadCount.Value;
 
             // 提交数据

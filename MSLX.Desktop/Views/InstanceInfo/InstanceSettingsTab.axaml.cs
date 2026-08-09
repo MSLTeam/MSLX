@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Services;
+using MSLX.SDK.Models;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,7 +11,7 @@ namespace MSLX.Desktop.Views.InstanceInfo;
 public partial class InstanceSettingsTab : UserControl
 {
     private int _instanceId;
-    private InstanceModel.InstanceGeneralSettings? _original;
+    private McServerInfo.ServerInfo? _original;
     public Action<string, bool>? OnSaveResult { get; set; } // 保存成功/失败回调，可由外部注入用于显示 Toast 等
 
     public InstanceSettingsTab()
@@ -59,7 +60,7 @@ public partial class InstanceSettingsTab : UserControl
     #endregion
 
     #region 表单辅助
-    private void FillForm(InstanceModel.InstanceGeneralSettings s)
+    private void FillForm(McServerInfo.ServerInfo s)
     {
         NameBox.Text         = s.Name;
         JavaBox.Text         = s.Java;
@@ -79,9 +80,9 @@ public partial class InstanceSettingsTab : UserControl
         AllowOriginASCIIColorsToggle.IsChecked = s.AllowOriginASCIIColors;
     }
 
-    private InstanceModel.InstanceGeneralSettings BuildSettings() => new()
+    private McServerInfo.ServerInfo BuildSettings() => new()
     {
-        Id              = _instanceId,
+        ID              = _instanceId,
         Name            = NameBox.Text ?? "",
         Java            = JavaBox.Text ?? "",
         Core            = CoreBox.Text ?? "",
