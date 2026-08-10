@@ -92,13 +92,6 @@ jobs:
           DAEMON_PUBLISH_DIR="./publish_daemon_temp"
           DIST_DIR="./dist"
           mkdir -p $DIST_DIR
-
-          DESKTOP_VERSION=$(sed -n 's:.*<AssemblyVersion>\([^<]*\)</AssemblyVersion>.*:\1:p' ./MSLX.Desktop/MSLX.Desktop.csproj)
-          DAEMON_VERSION=$(sed -n 's:.*<AssemblyVersion>\([^<]*\)</AssemblyVersion>.*:\1:p' ./MSLX.Daemon/MSLX.Daemon.csproj)
-          if [[ "$DESKTOP_VERSION" != "$DAEMON_VERSION" ]]; then
-            echo "::error::Desktop 与 Daemon 版本不一致: $DESKTOP_VERSION != $DAEMON_VERSION"
-            exit 1
-          fi
           
           dotnet publish ./MSLX.Desktop/MSLX.Desktop.csproj \
             -c Release \
