@@ -104,8 +104,8 @@ public class AppInfoController : ControllerBase
                 ["serverTime"] = DateTime.Now,
                 ["targetFrontendVersion"] = new JObject
                 {
-                    ["desktop"] = "1.5.9",
-                    ["panel"] = "1.5.9"
+                    ["desktop"] = PlatFormServices.GetAssemblyMetadata("TargetDesktopVersion"),
+                    ["panel"] = PlatFormServices.GetAssemblyMetadata("TargetPanelVersion")
                 },
                 ["systemInfo"] = systemInfo
             };
