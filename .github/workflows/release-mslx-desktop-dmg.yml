@@ -186,6 +186,13 @@ jobs:
           <dict>
               <key>CFBundleExecutable</key>
               <string>${{ matrix.bin }}</string>
+              <key>CFBundleDevelopmentRegion</key>
+              <string>zh_CN</string>
+              <key>CFBundleLocalizations</key>
+              <array>
+                  <string>zh_CN</string>
+                  <string>zh-Hans</string>
+              </array>
               <key>CFBundleIconFile</key>
               <string>icon.icns</string>
               <key>CFBundleIdentifier</key>

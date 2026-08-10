@@ -6,6 +6,7 @@ using Avalonia.VisualTree;
 using System.Linq;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils;
+using MSLX.Desktop.Views;
 using SukiUI;
 using SukiUI.Controls;
 using SukiUI.Models;
@@ -31,6 +32,12 @@ public partial class MainWindow : SukiWindow
         SideMenuHelper.Current.SideMenu = this.MainSideMenu;
         this.MainSideMenu.ItemsSource = PageStore.MainPages;
         SideMenuHelper.Current?.HideMainPages(0);
+    }
+
+    private void NativeMenuAbout_Click(object? sender, EventArgs e)
+    {
+        App.Instance?.ShowMainWindow();
+        SideMenuHelper.Current?.NavigateTo<AboutPage>();
     }
 
     protected override void OnApplyTemplate(Avalonia.Controls.Primitives.TemplateAppliedEventArgs e)
