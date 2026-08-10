@@ -32,7 +32,16 @@ jobs:
             FINAL_VERSION="${RAW_TAG#v}"
             echo "触发正式构建，使用 Tag 版本号: $FINAL_VERSION"
           else
-            BASE_VERSION=$(grep -oP '(?<=<Version>)[^<]+' MSLX.SDK/MSLX.SDK.csproj)
+            VERSION_RAW=$(grep -oP '(?<=<Version>)[^<]+' MSLX.SDK/MSLX.SDK.csproj || true)
+            if [[ "$VERSION_RAW" =~ \$\((.*)\) ]]; then
+              PROP_NAME="${BASH_REMATCH[1]}"
+              BASE_VERSION=$(grep -oP "(?<=<${PROP_NAME}>)[^<]+" Version.props || true)
+            else
+              BASE_VERSION="$VERSION_RAW"
+            fi
+            if [ -z "$BASE_VERSION" ]; then
+              BASE_VERSION="1.0.0"
+            fi
             TIMESTAMP=$(TZ=Asia/Hong_Kong date +'%Y%m%d.%H%M')
             FINAL_VERSION="${BASE_VERSION}-beta.${TIMESTAMP}"
             echo "手动触发构建，使用测试版本号: $FINAL_VERSION"
