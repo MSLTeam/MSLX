@@ -9,11 +9,7 @@
         x:Class="MSLX.Desktop.MainWindow"
         Title="MSLX"
         BackgroundAnimationEnabled="True">
-    <NativeMenu.Menu>
-        <NativeMenu>
-            <NativeMenuItem Header="关于MSLX" Click="NativeMenuAbout_Click" />
-        </NativeMenu>
-    </NativeMenu.Menu>
+
     <suki:SukiWindow.LogoContent>
         <Image Source="avares://MSLX-Desktop/Assets/icon.ico" Width="22" Height="22" Margin="4,0,4,0"/>
     </suki:SukiWindow.LogoContent>

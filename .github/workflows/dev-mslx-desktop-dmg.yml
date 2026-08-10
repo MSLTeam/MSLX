@@ -134,8 +134,10 @@ jobs:
           chmod +x "$APP_DIR/Contents/MacOS/${{ matrix.bin }}"
           chmod +x "$APP_DIR/Contents/MacOS/MSLX-Daemon"
           
-          # 2. 拷贝图标文件
+          # 2. 拷贝图标文件及设置本地化资源目录
           cp ./MSLX.Desktop/Assets/icon.icns "$APP_DIR/Contents/Resources/icon.icns"
+          mkdir -p "$APP_DIR/Contents/Resources/zh_CN.lproj"
+          mkdir -p "$APP_DIR/Contents/Resources/zh-Hans.lproj"
           
           # 3. 写入标准的 Info.plist 文件
           cat <<EOF > "$APP_DIR/Contents/Info.plist"

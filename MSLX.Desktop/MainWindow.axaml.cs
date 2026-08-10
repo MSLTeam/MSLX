@@ -34,11 +34,7 @@ public partial class MainWindow : SukiWindow
         SideMenuHelper.Current?.HideMainPages(0);
     }
 
-    private void NativeMenuAbout_Click(object? sender, EventArgs e)
-    {
-        App.Instance?.ShowMainWindow();
-        SideMenuHelper.Current?.NavigateTo<AboutPage>();
-    }
+
 
     protected override void OnApplyTemplate(Avalonia.Controls.Primitives.TemplateAppliedEventArgs e)
     {

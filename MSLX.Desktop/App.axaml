@@ -4,8 +4,21 @@
 			 xmlns:micon="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
 			 xmlns:utils="clr-namespace:MSLX.Desktop.Utils"
 			 x:Class="MSLX.Desktop.App"
+			 Name="MSLX"
 			 RequestedThemeVariant="Default">
 	<!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+
+	<NativeMenu.Menu>
+		<NativeMenu>
+			<NativeMenuItem Header="关于 MSLX" Click="NativeMenuAbout_Click" />
+			<NativeMenuItemSeparator />
+			<NativeMenuItem Header="隐藏 MSLX" Gesture="Meta+H" Click="NativeMenuHide_Click" />
+			<NativeMenuItem Header="隐藏其他" Gesture="Meta+Alt+H" Click="NativeMenuHideOthers_Click" />
+			<NativeMenuItem Header="显示全部" Click="NativeMenuShowAll_Click" />
+			<NativeMenuItemSeparator />
+			<NativeMenuItem Header="退出 MSLX" Gesture="Meta+Q" Click="NativeMenuExit_Click" />
+		</NativeMenu>
+	</NativeMenu.Menu>
 
 	<Application.Resources>
 		<ResourceDictionary>

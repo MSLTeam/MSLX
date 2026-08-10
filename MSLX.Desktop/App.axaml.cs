@@ -4,6 +4,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using MSLX.Desktop.Utils;
+using MSLX.Desktop.Views;
 using System;
 using System.Threading.Tasks;
 
@@ -127,6 +128,32 @@ namespace MSLX.Desktop
         }
 
         private void TrayExit_Click(object? sender, EventArgs e)
+        {
+            ExitApplication();
+        }
+
+        private void NativeMenuAbout_Click(object? sender, EventArgs e)
+        {
+            ShowMainWindow();
+            SideMenuHelper.Current?.NavigateTo<AboutPage>();
+        }
+
+        private void NativeMenuHide_Click(object? sender, EventArgs e)
+        {
+            MacOsNativeHelper.HideApp();
+        }
+
+        private void NativeMenuHideOthers_Click(object? sender, EventArgs e)
+        {
+            MacOsNativeHelper.HideOthers();
+        }
+
+        private void NativeMenuShowAll_Click(object? sender, EventArgs e)
+        {
+            MacOsNativeHelper.ShowAll();
+        }
+
+        private void NativeMenuExit_Click(object? sender, EventArgs e)
         {
             ExitApplication();
         }
