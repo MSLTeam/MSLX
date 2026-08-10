@@ -30,6 +30,7 @@ namespace MSLX.Desktop.Utils
         public static event Action<string>? DaemonLogReceived;
 
         private const string DaemonReadyMarker = "MSLX 守护进程服务已就绪";
+        private const string HomebrewFormulaName = "mslx-daemon";
 
         /// <summary>
         /// 验证DaemonApiKey
@@ -239,6 +240,12 @@ namespace MSLX.Desktop.Utils
                 return (false, $"未找到内置 Daemon：{executablePath}");
             }
 
+            var stopHomebrewResult = await StopHomebrewDaemonServices();
+            if (!stopHomebrewResult.Success)
+            {
+                return stopHomebrewResult;
+            }
+
             if (DaemonProcess == null || DaemonProcess.HasExited)
             {
                 DaemonProcess = FindBundledDaemonProcess(executablePath);
@@ -276,6 +283,118 @@ namespace MSLX.Desktop.Utils
             }
 
             return (false, $"无法连接内置 Daemon：{lastMessage}");
+        }
+
+        /// <summary>
+        /// 停止当前机器上由 Homebrew 管理的 MSLX-Daemon 服务，避免占用内置 Daemon 的端口。
+        /// </summary>
+        private static async Task<(bool Success, string Message)> StopHomebrewDaemonServices()
+        {
+            if (!PlatformHelper.IsMacAppBundle())
+            {
+                return (true, string.Empty);
+            }
+
+            string[] brewPaths =
+            [
+                "/opt/homebrew/bin/brew",
+                "/usr/local/bin/brew"
+            ];
+
+            foreach (string brewPath in brewPaths.Where(File.Exists))
+            {
+                var listResult = await RunHomebrewCommand(brewPath, "services", "list");
+                if (!listResult.Success)
+                {
+                    return (false, $"无法检查 Homebrew 服务：{listResult.Message}");
+                }
+
+                string[]? serviceColumns = listResult.StandardOutput
+                    .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+                    .Select(line => line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+                    .FirstOrDefault(columns => columns.Length > 0 &&
+                                               columns[0].Equals(HomebrewFormulaName, StringComparison.OrdinalIgnoreCase));
+
+                if (serviceColumns == null ||
+                    (serviceColumns.Length > 1 &&
+                     (serviceColumns[1].Equals("none", StringComparison.OrdinalIgnoreCase) ||
+                      serviceColumns[1].Equals("stopped", StringComparison.OrdinalIgnoreCase))))
+                {
+                    continue;
+                }
+
+                DaemonLogReceived?.Invoke($"[Desktop] 正在停止 Homebrew 服务：{brewPath} services stop {HomebrewFormulaName}");
+                var stopResult = await RunHomebrewCommand(
+                    brewPath,
+                    "services",
+                    "stop",
+                    HomebrewFormulaName);
+
+                if (!stopResult.Success)
+                {
+                    return (false, $"停止 Homebrew MSLX-Daemon 服务失败：{stopResult.Message}");
+                }
+
+                DaemonLogReceived?.Invoke("[Desktop] Homebrew MSLX-Daemon 服务已停止。");
+            }
+
+            return (true, string.Empty);
+        }
+
+        private static async Task<(bool Success, string Message, string StandardOutput)> RunHomebrewCommand(
+            string brewPath,
+            params string[] arguments)
+        {
+            try
+            {
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = brewPath,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true
+                };
+                startInfo.Environment["HOMEBREW_NO_AUTO_UPDATE"] = "1";
+
+                foreach (string argument in arguments)
+                {
+                    startInfo.ArgumentList.Add(argument);
+                }
+
+                using var process = Process.Start(startInfo);
+                if (process == null)
+                {
+                    return (false, $"无法启动命令：{brewPath}", string.Empty);
+                }
+
+                Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+                Task<string> errorTask = process.StandardError.ReadToEndAsync();
+                Task exitTask = process.WaitForExitAsync();
+
+                if (await Task.WhenAny(exitTask, Task.Delay(TimeSpan.FromSeconds(30))) != exitTask)
+                {
+                    process.Kill(entireProcessTree: true);
+                    await process.WaitForExitAsync();
+                    return (false, "命令执行超时。", await outputTask);
+                }
+
+                string standardOutput = await outputTask;
+                string standardError = await errorTask;
+                if (process.ExitCode != 0)
+                {
+                    string errorMessage = string.IsNullOrWhiteSpace(standardError)
+                        ? standardOutput.Trim()
+                        : standardError.Trim();
+                    return (false, $"{brewPath} {string.Join(' ', arguments)}：{errorMessage}", standardOutput);
+                }
+
+                return (true, string.Empty, standardOutput);
+            }
+            catch (Exception ex)
+            {
+                return (false, ex.Message, string.Empty);
+            }
         }
 
         /// <summary>
