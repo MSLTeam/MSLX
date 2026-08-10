@@ -33,6 +33,41 @@ namespace MSLX.Desktop.Utils
             ConfigStore.DaemonApiKey = Config.ReadDaemonConfigKey("apiKey")?.ToString() ?? Config.ReadConfigKey("ApiKey")?.ToString() ?? string.Empty;
         }
 
+        /// <summary>
+        /// 根据本地 Daemon 配置生成 Desktop 使用的连接地址。
+        /// </summary>
+        public static string GetLocalDaemonAddress()
+        {
+            // 内置 Daemon 固定监听 localhost，避免错误的监听地址配置导致 Desktop 无法连接。
+            bool isMacAppBundle = PlatformHelper.IsMacAppBundle();
+            JObject config = Config.ReadDaemonConfig();
+            string host = isMacAppBundle
+                ? "localhost"
+                : config["listenHost"]?.ToString()?.Trim() ?? string.Empty;
+            string portText = config["listenPort"]?.ToString()?.Trim() ?? string.Empty;
+            bool enableSsl = bool.TryParse(config["enableSsl"]?.ToString(), out bool ssl) && ssl;
+
+            if (string.IsNullOrWhiteSpace(host))
+            {
+                host = "localhost";
+            }
+            else if (host is "*" or "+" or "0.0.0.0" or "[::]" or "::")
+            {
+                host = "localhost";
+            }
+            else if (host.Contains(':') && !host.StartsWith('[') && !host.EndsWith(']'))
+            {
+                host = $"[{host}]";
+            }
+
+            if (!int.TryParse(portText, out int port) || port is < 1 or > 65535)
+            {
+                port = 1027;
+            }
+
+            return $"{(enableSsl ? "https" : "http")}://{host}:{port}";
+        }
+
         public class IConfigService : IDisposable
         {
             private readonly string _configPath = Path.Combine(GetAppDataPath(), "Configs", "config.json");

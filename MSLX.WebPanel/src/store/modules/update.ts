@@ -21,7 +21,7 @@ export const useUpdateStore = defineStore('update', () => {
    */
   const checkAppUpdate = async (force = false) => {
     const userStore = useUserStore();
-    if(!userStore.isAdmin) return;
+    if (!userStore.isAdmin) return;
     if (loading.value) return;
     loading.value = true;
 
@@ -29,6 +29,14 @@ export const useUpdateStore = defineStore('update', () => {
       // 获取版本信息
       const res = await getDaemonUpdateInfo();
       const data = res as unknown as UpdateInfoModel;
+
+      if (data?.environment === 'desktop-bundle') {
+        // macOS App 内置 Daemon 由 Desktop 的应用更新机制统一管理。
+        showUpdateModal.value = false;
+        updateInfo.value = null;
+        downloadInfo.value = null;
+        return;
+      }
 
       if (data && data.needUpdate) {
         // 检查是否跳过
@@ -59,9 +67,9 @@ export const useUpdateStore = defineStore('update', () => {
         }
       } else {
         if (force) {
-          if(data.environment === 'fnos'){
+          if (data.environment === 'fnos') {
             MessagePlugin.success('请前往飞牛应用商店检查更新！');
-          }else{
+          } else {
             MessagePlugin.success('当前已是最新版本');
           }
         }

@@ -8,6 +8,8 @@
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
 		<ApplicationIcon>Assets\icon.ico</ApplicationIcon>
+		<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <Version>$(DesktopBaseVersion)</Version>
 		<FileVersion>$(DesktopBaseVersion)</FileVersion>
 		<AssemblyVersion>$(DesktopBaseVersion)</AssemblyVersion>
 		<AssemblyName>MSLX-Desktop</AssemblyName>
@@ -31,8 +33,19 @@
 		<PackageReference Include="Markdown.Avalonia" Version="12.0.0-a3" />
 		<PackageReference Include="Material.Icons.Avalonia" Version="3.0.2" />
 		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.2" />
+		<PackageReference Include="NetSparkleUpdater.UI.Avalonia" Version="4.0.0-preview20260505001" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="Tmds.DBus.Protocol" Version="0.94.2" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- 正式发布时通过 MSBuild 属性注入，仓库中不保存更新签名密钥。 -->
+		<AssemblyMetadata Include="NetSparkleAppCastUrl"
+						  Value="$(NetSparkleAppCastUrl)"
+						  Condition="'$(NetSparkleAppCastUrl)' != ''" />
+		<AssemblyMetadata Include="NetSparkleEd25519PublicKey"
+						  Value="$(NetSparkleEd25519PublicKey)"
+						  Condition="'$(NetSparkleEd25519PublicKey)' != ''" />
 	</ItemGroup>
 
 	<ItemGroup>

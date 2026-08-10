@@ -1,0 +1,38 @@
+<suki:SukiWindow xmlns="https://github.com/avaloniaui"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+                 xmlns:icons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+                 x:Class="MSLX.Desktop.Views.NetSparkle.DownloadProgressWindow"
+                 Title="下载更新"
+                 Width="520"
+                 Height="340"
+                 CanResize="False"
+                 ShowInTaskbar="False"
+                 BackgroundAnimationEnabled="True">
+    <suki:SukiWindow.LogoContent>
+        <Image Source="avares://MSLX-Desktop/Assets/icon.ico" Width="22" Height="22" Margin="4,0,4,0"/>
+    </suki:SukiWindow.LogoContent>
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Margin="28,18,28,24">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="14">
+            <Border Width="48" Height="48" CornerRadius="8" Background="{DynamicResource SukiControlTouchBackground}">
+                <icons:MaterialIcon Kind="Download" Width="26" Height="26" Foreground="{DynamicResource SukiPrimaryColor}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <TextBlock Grid.Column="1" x:Name="DownloadTitleText" FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+        </Grid>
+
+        <ProgressBar x:Name="DownloadProgressBar" Grid.Row="1" Height="8" Margin="0,28,0,10" Minimum="0" Maximum="100"/>
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+            <TextBlock x:Name="DownloadStatusText" FontSize="13" Opacity="0.72"/>
+            <TextBlock x:Name="DownloadPercentageText" Grid.Column="1" FontSize="13" FontWeight="SemiBold" Foreground="{DynamicResource SukiPrimaryColor}"/>
+        </Grid>
+
+        <Border x:Name="ErrorBorder" Grid.Row="3" IsVisible="False" Margin="0,18,0,0" Padding="12" CornerRadius="6" Background="#20B91C1C">
+            <TextBlock x:Name="ErrorText" Foreground="#DC2626" TextWrapping="Wrap"/>
+        </Border>
+
+        <Button x:Name="ActionButton" Grid.Row="4" HorizontalAlignment="Right" Classes="Flat Primary" Click="ActionButton_Click" Padding="20,8" Margin="0,20,0,0">
+            <TextBlock x:Name="ActionButtonText" Text="取消下载" FontWeight="SemiBold"/>
+        </Button>
+    </Grid>
+</suki:SukiWindow>

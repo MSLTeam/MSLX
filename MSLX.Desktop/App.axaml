@@ -15,6 +15,22 @@
 		</ResourceDictionary>
 	</Application.Resources>
 
+	<!-- 仅在 macOS .app 启动后显示的菜单栏图标。 -->
+	<TrayIcon.Icons>
+		<TrayIcons>
+			<TrayIcon Icon="avares://MSLX-Desktop/Assets/icon.ico"
+					  IsVisible="False"
+					  ToolTipText="MSLX">
+				<TrayIcon.Menu>
+					<NativeMenu>
+						<NativeMenuItem Header="打开 MSLX" Click="TrayOpen_Click" />
+						<NativeMenuItem Header="退出 MSLX" Click="TrayExit_Click" />
+					</NativeMenu>
+				</TrayIcon.Menu>
+			</TrayIcon>
+		</TrayIcons>
+	</TrayIcon.Icons>
+
 	<Application.Styles>
 		<sukiUi:SukiTheme Locale="zh-CN" ThemeColor="Blue" />
 		<micon:MaterialIconStyles />

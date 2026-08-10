@@ -134,10 +134,28 @@ public class AppInfoController : ControllerBase
     {
         try
         {
+            var localVerObj = Assembly.GetEntryAssembly()?.GetName().Version ?? new Version("0.0.0.0");
+            if (IsEmbeddedDaemon())
+            {
+                return Ok(new ApiResponse<object>()
+                {
+                    Code = 200,
+                    Message = "内置守护进程由应用更新机制统一管理。",
+                    Data = new
+                    {
+                        needUpdate = false,
+                        currentVersion = localVerObj.ToString(),
+                        latestVersion = localVerObj.ToString(),
+                        status = "managed",
+                        environment = "desktop-bundle",
+                        log = (string?)null,
+                    }
+                });
+            }
+
             bool isFnOS = Environment.GetEnvironmentVariable("IS_FNOS_APP") == "true";
             var inContainer = Environment.GetEnvironmentVariable("DOTNET_RUNNING_IN_CONTAINER");
 
-            var localVerObj = Assembly.GetEntryAssembly()?.GetName().Version ?? new Version("0.0.0.0");
             HttpService.HttpResponse res = await MSLApi.GetAsync("/software/update?software=MSLX", null);
 
             if (res.IsSuccessStatusCode)
@@ -154,12 +172,19 @@ public class AppInfoController : ControllerBase
 
                 bool needUpdate = normalizedRemote > normalizedLocal;
                 string status = "release";
-                string environment =
-                    (inContainer != null && inContainer.Equals("true", StringComparison.OrdinalIgnoreCase))
-                        ? "docker"
-                        : PlatFormServices.IsHomebrewInstallation()
-                            ? "homebrew"
-                            : "native";
+                string environment;
+                if (inContainer != null && inContainer.Equals("true", StringComparison.OrdinalIgnoreCase))
+                {
+                    environment = "docker";
+                }
+                else if (PlatFormServices.IsHomebrewInstallation())
+                {
+                    environment = "homebrew";
+                }
+                else
+                {
+                    environment = "native";
+                }
 
                 if (needUpdate)
                 {
@@ -177,7 +202,6 @@ public class AppInfoController : ControllerBase
                     status = "managed";
                     environment = "fnos";
                 }
-
                 var responseData = new
                 {
                     needUpdate,
@@ -231,6 +255,15 @@ public class AppInfoController : ControllerBase
     {
         try
         {
+            if (IsEmbeddedDaemon())
+            {
+                return BadRequest(new ApiResponse<object>()
+                {
+                    Code = 400,
+                    Message = "内置守护进程由应用更新机制统一管理，不能单独下载更新。",
+                });
+            }
+
             HttpService.HttpResponse res = await MSLApi.GetAsync(
                 $"/download/update?software=MSLX&system={PlatFormServices.GetOs().Replace("MacOS", "macOS")}&arch={PlatFormServices.GetOsArch().Replace("amd64", "x64")}",
                 null);
@@ -278,10 +311,30 @@ public class AppInfoController : ControllerBase
         return inContainer != null && inContainer.Equals("true", StringComparison.OrdinalIgnoreCase);
     }
 
+    /// <summary>
+    /// 检测当前守护进程是否由 macOS .app 内置启动。
+    /// </summary>
+    private static bool IsEmbeddedDaemon()
+    {
+        return string.Equals(
+            Environment.GetEnvironmentVariable("MSLX_EMBEDDED_DAEMON"),
+            "true",
+            StringComparison.OrdinalIgnoreCase);
+    }
+
     [HttpPost("api/update")]
     [Authorize(Roles = "admin")]
     public IActionResult PostUpdate([FromQuery] bool autoRestart = true)
     {
+        if (IsEmbeddedDaemon())
+        {
+            return BadRequest(new ApiResponse<object>
+            {
+                Code = 400,
+                Message = "内置守护进程由应用更新机制统一管理，不能单独更新。",
+            });
+        }
+
         // 环境预检
         if (IsRunningInContainer())
         {

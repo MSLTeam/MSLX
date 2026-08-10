@@ -48,6 +48,32 @@ internal partial class PlatformHelper
         };
     }
 
+    /// <summary>
+    /// 检测当前 Desktop 是否运行在标准的 macOS .app 包内。
+    /// </summary>
+    public static bool IsMacAppBundle()
+    {
+        if (GetOS() != TheOSPlatform.OSX)
+        {
+            return false;
+        }
+
+        try
+        {
+            var macOsDirectory = new DirectoryInfo(Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory));
+            var contentsDirectory = macOsDirectory.Parent;
+            var appDirectory = contentsDirectory?.Parent;
+
+            return macOsDirectory.Name.Equals("MacOS", StringComparison.OrdinalIgnoreCase) &&
+                   contentsDirectory?.Name.Equals("Contents", StringComparison.OrdinalIgnoreCase) == true &&
+                   appDirectory?.Name.EndsWith(".app", StringComparison.OrdinalIgnoreCase) == true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
 
     public static string? GetDeviceID()
     {
