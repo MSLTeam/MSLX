@@ -1,0 +1,26 @@
+<suki:SukiWindow xmlns="https://github.com/avaloniaui"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+                 xmlns:icons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+                 x:Class="MSLX.Desktop.Views.NetSparkle.CheckingForUpdatesWindow"
+                 Title="检查更新"
+                 Width="380"
+                 Height="230"
+                 CanResize="False"
+                 ShowInTaskbar="False"
+                 BackgroundAnimationEnabled="True">
+    <suki:SukiWindow.LogoContent>
+        <Image Source="avares://MSLX-Desktop/Assets/icon.ico" Width="22" Height="22" Margin="4,0,4,0"/>
+    </suki:SukiWindow.LogoContent>
+
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
+        <Border Width="58" Height="58" CornerRadius="29" Background="{DynamicResource SukiControlTouchBackground}">
+            <icons:MaterialIcon Kind="CloudSync" Width="30" Height="30" Foreground="{DynamicResource SukiPrimaryColor}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        </Border>
+        <StackPanel Spacing="4" HorizontalAlignment="Center">
+            <TextBlock Text="正在检查更新" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+            <TextBlock Text="正在获取最新版本信息，请稍候" FontSize="12" Opacity="0.62" HorizontalAlignment="Center"/>
+        </StackPanel>
+        <ProgressBar Width="220" Height="4" IsIndeterminate="True"/>
+    </StackPanel>
+</suki:SukiWindow>

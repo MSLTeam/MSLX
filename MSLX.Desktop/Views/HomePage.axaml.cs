@@ -60,6 +60,11 @@ public partial class HomePage : UserControl
         HostnameText.Text = Environment.MachineName;
         OsTypeText.Text = $"{PlatformHelper.GetOS()} ({PlatformHelper.GetOSArch()})";
         OsVersionText.Text = RuntimeInformation.OSDescription;
+
+        if (PlatformHelper.IsMacAppBundle())
+        {
+            ShowAppIntegrationStatus();
+        }
     }
 
     private async Task FetchHitokotoAsync()
@@ -189,33 +194,40 @@ public partial class HomePage : UserControl
                     if (!string.IsNullOrEmpty(osVer)) OsVersionText.Text = osVer;
                 }
 
-                var targetVerObj = data["targetFrontendVersion"] as JObject;
-                string targetDesktopVerStr = targetVerObj?["desktop"]?.Value<string>() ?? "";
-
-                var currentAsmVer = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-                string currentVerStr = currentAsmVer != null ? $"{currentAsmVer.Major}.{currentAsmVer.Minor}.{currentAsmVer.Build}" : ConfigStore.Version.ToString();
-
-                if (!string.IsNullOrEmpty(targetDesktopVerStr))
+                if (PlatformHelper.IsMacAppBundle())
                 {
-                    bool isMatch = currentVerStr.StartsWith(targetDesktopVerStr);
-                    if (isMatch)
+                    ShowAppIntegrationStatus();
+                }
+                else
+                {
+                    var targetVerObj = data["targetFrontendVersion"] as JObject;
+                    string targetDesktopVerStr = targetVerObj?["desktop"]?.Value<string>() ?? "";
+
+                    var currentAsmVer = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                    string currentVerStr = currentAsmVer != null ? $"{currentAsmVer.Major}.{currentAsmVer.Minor}.{currentAsmVer.Build}" : ConfigStore.Version.ToString();
+
+                    if (!string.IsNullOrEmpty(targetDesktopVerStr))
+                    {
+                        bool isMatch = currentVerStr.StartsWith(targetDesktopVerStr);
+                        if (isMatch)
+                        {
+                            VersionMatchBadge.Background = new SolidColorBrush(Color.Parse("#10B981"));
+                            VersionMatchText.Text = "正确匹配";
+                        }
+                        else
+                        {
+                            VersionMatchBadge.Background = new SolidColorBrush(Color.Parse("#EF4444"));
+                            VersionMatchText.Text = "请更新";
+                        }
+                    }
+                    else
                     {
                         VersionMatchBadge.Background = new SolidColorBrush(Color.Parse("#10B981"));
                         VersionMatchText.Text = "正确匹配";
                     }
-                    else
-                    {
-                        VersionMatchBadge.Background = new SolidColorBrush(Color.Parse("#EF4444"));
-                        VersionMatchText.Text = "请更新";
-                    }
-                }
-                else
-                {
-                    VersionMatchBadge.Background = new SolidColorBrush(Color.Parse("#10B981"));
-                    VersionMatchText.Text = "正确匹配";
                 }
             }
-            else
+            else if (!PlatformHelper.IsMacAppBundle())
             {
                 VersionMatchBadge.Background = new SolidColorBrush(Color.Parse("#6B7280"));
                 VersionMatchText.Text = "未连接";
@@ -224,9 +236,18 @@ public partial class HomePage : UserControl
         catch (Exception ex)
         {
             Debug.WriteLine($"获取系统状态失败: {ex.Message}");
-            VersionMatchBadge.Background = new SolidColorBrush(Color.Parse("#6B7280"));
-            VersionMatchText.Text = "未连接";
+            if (!PlatformHelper.IsMacAppBundle())
+            {
+                VersionMatchBadge.Background = new SolidColorBrush(Color.Parse("#6B7280"));
+                VersionMatchText.Text = "未连接";
+            }
         }
+    }
+
+    private void ShowAppIntegrationStatus()
+    {
+        VersionMatchBadge.Background = new SolidColorBrush(Color.Parse("#10B981"));
+        VersionMatchText.Text = "App集成";
     }
 
     private async Task LoadInstanceCountAsync()

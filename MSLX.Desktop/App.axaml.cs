@@ -5,6 +5,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using MSLX.Desktop.Utils;
 using System;
+using System.Threading.Tasks;
 
 namespace MSLX.Desktop
 {
@@ -94,6 +95,14 @@ namespace MSLX.Desktop
                 window.Activate();
                 window.Focus();
             });
+        }
+
+        /// <summary>
+        /// 立即检查 macOS 应用更新。
+        /// </summary>
+        public Task CheckForMacAppUpdatesAsync()
+        {
+            return _macAppUpdateService.CheckForUpdatesAsync();
         }
 
         public void ExitApplication()

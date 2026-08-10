@@ -71,7 +71,7 @@ jobs:
           fi
 
           echo "NETSPARKLE_ENABLED=true" >> "$GITHUB_ENV"
-          echo "NETSPARKLE_APPCAST_URL=https://github.com/MSLTeam/MSLX/releases/latest/download/appcast-${{ matrix.rid }}.xml" >> "$GITHUB_ENV"
+          echo "NETSPARKLE_APPCAST_URL=https://api.mslmc.cn/v4/download/update/appcast/xml/latest/appcast-${{ matrix.rid }}.xml" >> "$GITHUB_ENV"
           echo "NETSPARKLE_ED25519_PUBLIC_KEY=$SPARKLE_PUBLIC_KEY" >> "$GITHUB_ENV"
 
       - name: 导入 Developer ID Application 证书
@@ -360,6 +360,31 @@ jobs:
             exit 0
           fi
 
+          CHANGELOG_DIR="$RUNNER_TEMP/netsparkle-changelogs-${{ matrix.rid }}"
+          CHANGELOG_PATH="$CHANGELOG_DIR/$BUNDLE_SHORT_VERSION.md"
+          mkdir -p "$CHANGELOG_DIR"
+
+          CHANGELOG_CONTENT=""
+          if CHANGELOG_RESPONSE=$(curl \
+              --fail \
+              --silent \
+              --show-error \
+              --retry 3 \
+              "https://api.mslmc.cn/v4/software/changelogs?software=MSLX-Desktop"); then
+            CHANGELOG_CONTENT=$(jq -r \
+              --arg version "$BUNDLE_SHORT_VERSION" \
+              'if .code == 200 then first(.data[]? | select(.version == $version) | .changes) // empty else empty end' \
+              <<< "$CHANGELOG_RESPONSE" 2>/dev/null || true)
+          else
+            echo "::warning::无法获取更新日志，继续生成 AppCast"
+          fi
+
+          if [[ -n "${CHANGELOG_CONTENT//[[:space:]]/}" ]]; then
+            printf '%s\n' "$CHANGELOG_CONTENT" > "$CHANGELOG_PATH"
+          else
+            echo "::warning::更新日志 API 中没有版本 $BUNDLE_SHORT_VERSION 的有效内容，继续生成 AppCast"
+          fi
+
           TOOL_DIR="$RUNNER_TEMP/netsparkle-tools"
           dotnet tool install NetSparkleUpdater.Tools.AppCastGenerator \
             --version 2.9.0 \
@@ -369,7 +394,8 @@ jobs:
             --single-file "${{ env.ASSET_PATH }}" \
             --file-version "$BUNDLE_SHORT_VERSION" \
             --os "macos-${{ matrix.arch }}" \
-            --base-url "https://github.com/MSLTeam/MSLX/releases/download/$VERSION_NAME" \
+            --base-url "https://api.mslmc.cn/v4/download/update/appcast/dmg/$VERSION_NAME" \
+            --change-log-path "$CHANGELOG_DIR" \
             --appcast-output-directory ./dist \
             --output-file-name "appcast-${{ matrix.rid }}" \
             --link-tag "$NETSPARKLE_APPCAST_URL" \

@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+             xmlns:icons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
              xmlns:local="clr-namespace:MSLX.Desktop.Views"
              xmlns:models="clr-namespace:MSLX.Desktop.Models"
              mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="1200"
@@ -53,6 +54,15 @@
                             </StackPanel>
                         </StackPanel>
                     </WrapPanel>
+                    <Button x:Name="BtnCheckDesktopUpdate"
+                            Classes="Outlined"
+                            HorizontalAlignment="Left"
+                            Click="OnCheckDesktopUpdateClick">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <icons:MaterialIcon Kind="Update" Width="18" Height="18"/>
+                            <TextBlock x:Name="CheckDesktopUpdateText" Text="检查更新"/>
+                        </StackPanel>
+                    </Button>
                 </StackPanel>
             </suki:GlassCard>
 
