@@ -301,7 +301,7 @@ namespace MSLX.Desktop.Utils
                 "/usr/local/bin/brew"
             ];
 
-            foreach (string brewPath in brewPaths.Where(File.Exists))
+            foreach (string brewPath in brewPaths.Where(IsUsableHomebrewExecutable))
             {
                 var listResult = await RunHomebrewCommand(brewPath, "services", "list");
                 if (!listResult.Success)
@@ -339,6 +339,41 @@ namespace MSLX.Desktop.Utils
             }
 
             return (true, string.Empty);
+        }
+
+        private static bool IsUsableHomebrewExecutable(string brewPath)
+        {
+            if (!OperatingSystem.IsMacOS())
+            {
+                return false;
+            }
+
+            try
+            {
+                if (!File.Exists(brewPath))
+                {
+                    return false;
+                }
+
+                // File.Exists 对断开的符号链接仍可能返回 true，需要确认最终目标真实存在。
+                FileSystemInfo? resolvedTarget = File.ResolveLinkTarget(brewPath, returnFinalTarget: true);
+                string executablePath = resolvedTarget?.FullName ?? brewPath;
+                if (!File.Exists(executablePath))
+                {
+                    return false;
+                }
+
+                UnixFileMode mode = File.GetUnixFileMode(executablePath);
+                const UnixFileMode executeModes =
+                    UnixFileMode.UserExecute |
+                    UnixFileMode.GroupExecute |
+                    UnixFileMode.OtherExecute;
+                return (mode & executeModes) != 0;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or PlatformNotSupportedException)
+            {
+                return false;
+            }
         }
 
         private static async Task<(bool Success, string Message, string StandardOutput)> RunHomebrewCommand(
