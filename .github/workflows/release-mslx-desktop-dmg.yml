@@ -57,6 +57,23 @@ jobs:
           echo "BUNDLE_SHORT_VERSION=$BUNDLE_SHORT_VERSION" >> "$GITHUB_ENV"
           echo "BUNDLE_VERSION=${{ github.run_number }}" >> "$GITHUB_ENV"
 
+      - name: 配置 NetSparkle 发布参数
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.NETSPARKLE_ED25519_PRIVATE_KEY }}
+          SPARKLE_PUBLIC_KEY: ${{ secrets.NETSPARKLE_ED25519_PUBLIC_KEY }}
+        run: |
+          if [[ "$VERSION_NAME" == "beta" || -z "$SPARKLE_PRIVATE_KEY" || -z "$SPARKLE_PUBLIC_KEY" ]]; then
+            echo "NETSPARKLE_ENABLED=false" >> "$GITHUB_ENV"
+            echo "NETSPARKLE_APPCAST_URL=" >> "$GITHUB_ENV"
+            echo "NETSPARKLE_ED25519_PUBLIC_KEY=" >> "$GITHUB_ENV"
+            echo "::notice::NetSparkle 未启用；正式发布需要同时配置 Ed25519 公钥和私钥"
+            exit 0
+          fi
+
+          echo "NETSPARKLE_ENABLED=true" >> "$GITHUB_ENV"
+          echo "NETSPARKLE_APPCAST_URL=https://github.com/MSLTeam/MSLX/releases/latest/download/appcast-${{ matrix.rid }}.xml" >> "$GITHUB_ENV"
+          echo "NETSPARKLE_ED25519_PUBLIC_KEY=$SPARKLE_PUBLIC_KEY" >> "$GITHUB_ENV"
+
       - name: 导入 Developer ID Application 证书
         env:
           MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
@@ -116,6 +133,11 @@ jobs:
             echo "::error::Desktop 与 Daemon 版本不一致: $DESKTOP_VERSION != $DAEMON_VERSION"
             exit 1
           fi
+
+          if [[ "$VERSION_NAME" != "beta" && "$DESKTOP_VERSION" != "$BUNDLE_SHORT_VERSION" ]]; then
+            echo "::error::Git Tag 与 Desktop 版本不一致: $BUNDLE_SHORT_VERSION != $DESKTOP_VERSION"
+            exit 1
+          fi
           
           dotnet publish ./MSLX.Desktop/MSLX.Desktop.csproj \
             -c Release \
@@ -125,7 +147,9 @@ jobs:
             -p:DebugType=None \
             -p:DebugSymbols=false \
             -o "$DESKTOP_PUBLISH_DIR" \
-            -p:IncludeNativeLibrariesForSelfExtract=true
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -p:NetSparkleAppCastUrl="$NETSPARKLE_APPCAST_URL" \
+            -p:NetSparkleEd25519PublicKey="$NETSPARKLE_ED25519_PUBLIC_KEY"
 
           dotnet publish ./MSLX.Daemon/MSLX.Daemon.csproj \
             -c Release \
@@ -324,6 +348,43 @@ jobs:
           xcrun stapler staple "${{ env.ASSET_PATH }}"
           xcrun stapler validate "${{ env.ASSET_PATH }}"
 
+      - name: 生成 NetSparkle AppCast
+        env:
+          SPARKLE_PRIVATE_KEY: ${{ secrets.NETSPARKLE_ED25519_PRIVATE_KEY }}
+          SPARKLE_PUBLIC_KEY: ${{ secrets.NETSPARKLE_ED25519_PUBLIC_KEY }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$NETSPARKLE_ENABLED" != "true" ]]; then
+            echo "::notice::当前构建未启用 NetSparkle，跳过 AppCast 生成"
+            exit 0
+          fi
+
+          TOOL_DIR="$RUNNER_TEMP/netsparkle-tools"
+          dotnet tool install NetSparkleUpdater.Tools.AppCastGenerator \
+            --version 2.9.0 \
+            --tool-path "$TOOL_DIR"
+
+          "$TOOL_DIR/netsparkle-generate-appcast" \
+            --single-file "${{ env.ASSET_PATH }}" \
+            --file-version "$BUNDLE_SHORT_VERSION" \
+            --os "macos-${{ matrix.arch }}" \
+            --base-url "https://github.com/MSLTeam/MSLX/releases/download/$VERSION_NAME" \
+            --appcast-output-directory ./dist \
+            --output-file-name "appcast-${{ matrix.rid }}" \
+            --link-tag "$NETSPARKLE_APPCAST_URL" \
+            --product-name "MSLX" \
+            --description-tag "MSLX macOS 更新" \
+            --human-readable true
+
+          APPCAST_PATH="./dist/appcast-${{ matrix.rid }}.xml"
+          APPCAST_SIGNATURE_PATH="$APPCAST_PATH.signature"
+          test -f "$APPCAST_PATH"
+          test -f "$APPCAST_SIGNATURE_PATH"
+
+          echo "APPCAST_PATH=$APPCAST_PATH" >> "$GITHUB_ENV"
+          echo "APPCAST_SIGNATURE_PATH=$APPCAST_SIGNATURE_PATH" >> "$GITHUB_ENV"
+
       - name: 清理签名凭据
         if: always()
         run: |
@@ -339,6 +400,16 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: ${{ env.ASSET_PATH }}
+          tag_name: ${{ env.VERSION_NAME }}
+          prerelease: ${{ env.VERSION_NAME == 'beta' }}
+
+      - name: 上传 NetSparkle AppCast 到 GitHub Release
+        if: env.APPCAST_PATH != '' && env.APPCAST_SIGNATURE_PATH != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ env.APPCAST_PATH }}
+            ${{ env.APPCAST_SIGNATURE_PATH }}
           tag_name: ${{ env.VERSION_NAME }}
           prerelease: ${{ env.VERSION_NAME == 'beta' }}
 

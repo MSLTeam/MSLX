@@ -13,6 +13,7 @@ namespace MSLX.Desktop
         public static App? Instance { get; private set; }
 
         private IClassicDesktopStyleApplicationLifetime? _desktopLifetime;
+        private readonly MacAppUpdateService _macAppUpdateService = new();
         private bool _isExiting;
 
         public bool IsExitRequested => _isExiting;
@@ -57,6 +58,12 @@ namespace MSLX.Desktop
                     desktop.ShutdownRequested += (_, _) => _isExiting = true;
                 }
                 desktop.MainWindow = new MainWindow();
+                desktop.Exit += (_, _) => _macAppUpdateService.Dispose();
+
+                if (IsMacAppBundle)
+                {
+                    _ = _macAppUpdateService.StartAsync();
+                }
             }
 
             if (IsMacAppBundle && Application.Current?.TryGetFeature<IActivatableLifetime>() is { } activatable)
@@ -92,6 +99,7 @@ namespace MSLX.Desktop
         public void ExitApplication()
         {
             _isExiting = true;
+            _macAppUpdateService.Dispose();
             _desktopLifetime?.Shutdown();
         }
 
