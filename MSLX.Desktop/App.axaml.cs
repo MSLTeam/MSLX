@@ -59,7 +59,7 @@ namespace MSLX.Desktop
                 desktop.MainWindow = new MainWindow();
             }
 
-            if (IsMacAppBundle && ApplicationLifetime is IActivatableLifetime activatable)
+            if (IsMacAppBundle && Application.Current?.TryGetFeature<IActivatableLifetime>() is { } activatable)
             {
                 activatable.Activated += Application_Activated;
             }
@@ -76,6 +76,8 @@ namespace MSLX.Desktop
 
             Dispatcher.UIThread.Post(() =>
             {
+                Application.Current?.TryGetFeature<IActivatableLifetime>()?.TryLeaveBackground();
+
                 if (window.WindowState == WindowState.Minimized)
                 {
                     window.WindowState = WindowState.Normal;
