@@ -1,0 +1,9 @@
+<Project>
+    <PropertyGroup>
+        <DaemonBaseVersion>1.5.9</DaemonBaseVersion>
+        <DesktopBaseVersion>1.5.9</DesktopBaseVersion>
+        <PanelBaseVersion>1.5.9</PanelBaseVersion>
+        
+        <VersionSuffix>-release</VersionSuffix>
+    </PropertyGroup>
+</Project>

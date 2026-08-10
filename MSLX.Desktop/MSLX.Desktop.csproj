@@ -1,4 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
+	<Import Project="..\Version.props" />
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net10.0</TargetFramework>
@@ -7,8 +8,8 @@
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
 		<ApplicationIcon>Assets\icon.ico</ApplicationIcon>
-		<AssemblyVersion>1.5.9</AssemblyVersion>
-		<FileVersion>1.5.9</FileVersion>
+		<FileVersion>$(DesktopBaseVersion)</FileVersion>
+		<AssemblyVersion>$(DesktopBaseVersion)</AssemblyVersion>
 		<AssemblyName>MSLX-Desktop</AssemblyName>
 		<AssemblyTitle>MSLX.Desktop</AssemblyTitle>
 		<AssemblyDescription>MSLX Desktop</AssemblyDescription>
