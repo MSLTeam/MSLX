@@ -102,6 +102,7 @@ public class AuthController : ControllerBase
             <body>
             <p>正在完成登录，请稍候...</p>
             <script>
+            localStorage.removeItem('user');
             localStorage.setItem('mslx-web-token', {serializedWebToken});
             localStorage.setItem('mslx-base-url', window.location.origin);
             window.location.replace('/');
