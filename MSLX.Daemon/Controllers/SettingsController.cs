@@ -34,6 +34,7 @@ public class SettingsController : ControllerBase
                     ListenHost = isEmbeddedDaemon ? "localhost" : config["listenHost"] ?? "localhost",
                     ListenPort = config["listenPort"] ?? 1027,
                     AllowExternalAccess = isEmbeddedDaemon ? config["allowExternalAccess"] ?? false : false,
+                    IsEmbeddedDaemon = isEmbeddedDaemon,
                     OAuthMSLClientID = config["oAuthMSLClientID"] ?? "",
                     OAuthMSLClientSecret = config["oAuthMSLClientSecret"] ?? "",
                     DownloadThreadCount = config["downloadThreadCount"] ?? 5,
