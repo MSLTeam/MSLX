@@ -26,6 +26,12 @@ namespace MSLX.Desktop.Utils
 
         public static async Task<bool> UpdateDesktopApp()
         {
+            // macOS .app 的更新由统一的应用更新机制接管，停用旧的 Desktop 自更新流程。
+            if (PlatformHelper.IsMacAppBundle())
+            {
+                return true;
+            }
+
             var (Success, Data, Msg) = await MSLAPIService.GetJsonDataAsync("/software/update?software=MSLX");
             if (!Success)
             {
@@ -357,7 +363,8 @@ namespace MSLX.Desktop.Utils
         {
             if (PlatformHelper.IsMacAppBundle())
             {
-                return (true, "内置 Daemon 由 Desktop 随应用统一更新。");
+                // 内置 Daemon 与 Desktop 同属一个 .app，由统一的应用更新机制管理。
+                return (true, "内置 Daemon 由应用更新机制统一管理。");
             }
 
             var (Success, Data, Msg) = await DaemonAPIService.GetJsonDataAsync("/api/update/info");
