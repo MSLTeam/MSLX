@@ -40,19 +40,19 @@ jobs:
 
   build-backend:
     needs: build-frontend
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     name: 构建发布
     strategy:
       matrix:
         include:
-          - { os: linux,   arch: x64,   rid: linux-x64,   bin: 'MSLX-Daemon' }
-          - { os: linux,   arch: arm64, rid: linux-arm64, bin: 'MSLX-Daemon' }
-          - { os: linux,   arch: musl-x64,   rid: linux-musl-x64,   bin: 'MSLX-Daemon' }
-          - { os: linux,   arch: musl-arm64, rid: linux-musl-arm64, bin: 'MSLX-Daemon' }
-          - { os: windows, arch: x64,   rid: win-x64,     bin: 'MSLX-Daemon.exe' }
-          - { os: windows, arch: arm64, rid: win-arm64,   bin: 'MSLX-Daemon.exe' }
-          - { os: osx,     arch: x64,   rid: osx-x64,     bin: 'MSLX-Daemon' }
-          - { os: osx,     arch: arm64, rid: osx-arm64,   bin: 'MSLX-Daemon' }
+          - { os: linux,   arch: x64,        rid: linux-x64,        bin: 'MSLX-Daemon',     runner: ubuntu-latest }
+          - { os: linux,   arch: arm64,      rid: linux-arm64,      bin: 'MSLX-Daemon',     runner: ubuntu-latest }
+          - { os: linux,   arch: musl-x64,   rid: linux-musl-x64,   bin: 'MSLX-Daemon',     runner: ubuntu-latest }
+          - { os: linux,   arch: musl-arm64, rid: linux-musl-arm64, bin: 'MSLX-Daemon',     runner: ubuntu-latest }
+          - { os: windows, arch: x64,        rid: win-x64,          bin: 'MSLX-Daemon.exe', runner: ubuntu-latest }
+          - { os: windows, arch: arm64,      rid: win-arm64,        bin: 'MSLX-Daemon.exe', runner: ubuntu-latest }
+          - { os: osx,     arch: x64,        rid: osx-x64,          bin: 'MSLX-Daemon',     runner: macos-latest }
+          - { os: osx,     arch: arm64,      rid: osx-arm64,        bin: 'MSLX-Daemon',     runner: macos-latest }
 
     steps:
       - name: 签出代码
@@ -82,8 +82,57 @@ jobs:
             echo "VERSION_NAME=dev" >> $GITHUB_ENV
           fi
 
+      - name: 导入 Developer ID Application 证书
+        if: matrix.os == 'osx' && github.event_name != 'pull_request'
+        env:
+          MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          CERTIFICATE_PATH="$RUNNER_TEMP/mslx-developer-id.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/mslx-signing.keychain-db"
+          KEYCHAIN_PASSWORD=$(openssl rand -hex 32)
+          echo "::add-mask::$KEYCHAIN_PASSWORD"
+          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+          echo "KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> "$GITHUB_ENV"
+
+          if [[ -z "$MACOS_CERTIFICATE_BASE64" || -z "$MACOS_CERTIFICATE_PASSWORD" ]]; then
+            echo "::error::缺少 macOS 签名证书 Secrets"
+            exit 1
+          fi
+
+          printf '%s' "$MACOS_CERTIFICATE_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
+          chmod 600 "$CERTIFICATE_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" \
+            -k "$KEYCHAIN_PATH" \
+            -P "$MACOS_CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign
+          security set-key-partition-list \
+            -S apple-tool:,apple:,codesign: \
+            -s \
+            -k "$KEYCHAIN_PASSWORD" \
+            "$KEYCHAIN_PATH"
+
+          security list-keychains -d user -s "$KEYCHAIN_PATH"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+          SIGNING_IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | sed -n 's/.*"\(Developer ID Application:.*\)"/\1/p' | head -n 1)
+          if [[ -z "$SIGNING_IDENTITY" ]]; then
+            echo "::error::证书中未找到 Developer ID Application 身份"
+            exit 1
+          fi
+
+          echo "SIGNING_IDENTITY=$SIGNING_IDENTITY" >> "$GITHUB_ENV"
+          rm -f "$CERTIFICATE_PATH"
+
       - name: 发布并提取单文件
         run: |
+          set -euo pipefail
+
           BASE_NAME="MSLX-Daemon_${{ env.VERSION_NAME }}_${{ matrix.rid }}"
           PUBLISH_DIR="./publish_temp"
           DIST_DIR="./dist"
@@ -97,6 +146,19 @@ jobs:
             -p:DebugType=None \
             -p:DebugSymbols=false \
             -o "$PUBLISH_DIR"
+
+          if [[ "${{ matrix.os }}" == "osx" && "${{ github.event_name }}" != "pull_request" ]]; then
+            security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+            codesign \
+              --force \
+              --timestamp \
+              --options runtime \
+              --entitlements ./MSLX.Daemon/macOS.entitlements \
+              --keychain "$KEYCHAIN_PATH" \
+              --sign "$SIGNING_IDENTITY" \
+              "$PUBLISH_DIR/${{ matrix.bin }}"
+            codesign --verify --strict --verbose=2 "$PUBLISH_DIR/${{ matrix.bin }}"
+          fi
 
           echo "正在处理纯净文件..."
           
@@ -112,6 +174,14 @@ jobs:
           fi
 
           echo "ARTIFACT_NAME=$BASE_NAME" >> $GITHUB_ENV
+
+      - name: 清理 macOS 签名凭据
+        if: always() && matrix.os == 'osx' && github.event_name != 'pull_request'
+        run: |
+          rm -f "$RUNNER_TEMP/mslx-developer-id.p12"
+          if [[ -n "${KEYCHAIN_PATH:-}" ]]; then
+            security delete-keychain "$KEYCHAIN_PATH" || true
+          fi
 
       - name: 上传构建结果
         uses: actions/upload-artifact@v4

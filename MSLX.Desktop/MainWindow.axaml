@@ -1,4 +1,4 @@
-﻿<suki:SukiWindow xmlns="https://github.com/avaloniaui"
+<suki:SukiWindow xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:local="using:MSLX.Desktop"
@@ -9,6 +9,7 @@
         x:Class="MSLX.Desktop.MainWindow"
         Title="MSLX"
         BackgroundAnimationEnabled="True">
+
     <suki:SukiWindow.LogoContent>
         <Image Source="avares://MSLX-Desktop/Assets/icon.ico" Width="22" Height="22" Margin="4,0,4,0"/>
     </suki:SukiWindow.LogoContent>

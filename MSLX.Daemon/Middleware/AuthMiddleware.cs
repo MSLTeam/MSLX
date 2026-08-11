@@ -109,7 +109,7 @@ namespace MSLX.Daemon.Middleware
                         var claims = new List<Claim> { 
                             new Claim(ClaimTypes.Name, "MSLX Manager"),
                             new Claim(ClaimTypes.Role, "admin"),
-                            new Claim("UserId", "system-admin") 
+                            new Claim("UserId", "system-admin"),
                         };
                         context.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "ApiKey"));
                         isAuthenticated = true;

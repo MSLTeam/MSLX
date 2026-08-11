@@ -149,7 +149,7 @@
                     <TextBlock Text="守护进程设置 (DAEMON)" FontWeight="Bold" FontSize="12" Opacity="0.5" Margin="5,10,0,5"/>
                     <Border Classes="SectionCard">
                         <StackPanel>
-                            <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                            <Grid Name="DaemonUpdateSettingRow" Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
                                 <icons:MaterialIcon Kind="CloudSync" Classes="SettingIcon"/>
                                 <StackPanel Grid.Column="1" Margin="15,0">
                                     <TextBlock Text="软件更新" Classes="SettingTitle"/>
@@ -163,7 +163,7 @@
                                 </Button>
                             </Grid>
 
-                            <Separator Opacity="0.1" Margin="15,0"/>
+                            <Separator Name="DaemonUpdateSettingSeparator" Opacity="0.1" Margin="15,0"/>
 
                             <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
                                 <icons:MaterialIcon Kind="Web" Classes="SettingIcon"/>
@@ -215,7 +215,7 @@
                     <TextBlock Text="网络与安全 (NETWORK)" FontWeight="Bold" FontSize="12" Opacity="0.5" Margin="5,10,0,5"/>
                     <Border Classes="SectionCard">
                         <StackPanel>
-                            <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                            <Grid Name="FirewallSettingRow" Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
                                 <icons:MaterialIcon Kind="SecurityNetwork" Classes="SettingIcon"/>
                                 <StackPanel Grid.Column="1" Margin="15,0">
                                     <TextBlock Text="禁止本地访问" Classes="SettingTitle"/>
@@ -227,17 +227,31 @@
                                 </StackPanel>
                             </Grid>
 
-                            <Separator Opacity="0.1" Margin="15,0"/>
+                            <Separator Name="FirewallSettingSeparator" Opacity="0.1" Margin="15,0"/>
 
-                            <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                            <Grid Name="ExternalAccessSettingRow" IsVisible="False" Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                                <icons:MaterialIcon Kind="RemoteDesktop" Classes="SettingIcon"/>
+                                <StackPanel Grid.Column="1" Margin="15,0">
+                                    <TextBlock Text="允许外部访问" Classes="SettingTitle"/>
+                                    <TextBlock Text="允许局域网或其他设备访问内置 Daemon，修改后需重启" Classes="SettingDesc" Foreground="OrangeRed"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
+                                    <TextBlock Name="TxtExternalAccessStatus" Text="已关闭" VerticalAlignment="Center" FontSize="12" Opacity="0.7"/>
+                                    <ToggleSwitch Name="SwitchExternalAccess"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Separator Name="ExternalAccessSettingSeparator" IsVisible="False" Opacity="0.1" Margin="15,0"/>
+
+                            <Grid Name="ListenSettingRow" Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
                                 <icons:MaterialIcon Kind="IpNetwork" Classes="SettingIcon"/>
                                 <StackPanel Grid.Column="1" Margin="15,0">
-                                    <TextBlock Text="监听地址" Classes="SettingTitle"/>
-                                    <TextBlock Text="设置守护进程的监听 Host 和 Port (不知道这是什么请不要修改，需重启)" Classes="SettingDesc" Foreground="OrangeRed"/>
+                                    <TextBlock Name="TxtListenSettingTitle" Text="监听地址" Classes="SettingTitle"/>
+                                    <TextBlock Name="TxtListenSettingDescription" Text="设置守护进程的监听 Host 和 Port (不知道这是什么请不要修改，需重启)" Classes="SettingDesc" Foreground="OrangeRed"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5">
                                     <TextBox Name="TxtListenHost" PlaceholderText="localhost" Width="140"/>
-                                    <TextBlock Text=":" VerticalAlignment="Center"/>
+                                    <TextBlock Name="TxtListenHostSeparator" Text=":" VerticalAlignment="Center"/>
                                     <NumericUpDown Name="NumListenPort" Minimum="1" Maximum="65535" Value="1027" Width="100"/>
                                 </StackPanel>
                             </Grid>

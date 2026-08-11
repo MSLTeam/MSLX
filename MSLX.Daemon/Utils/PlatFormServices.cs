@@ -194,6 +194,17 @@ public class PlatFormServices
 
         return rawVersion;
     }
+    
+    // 获取指定元数据版本号
+    public static string GetAssemblyMetadata(string key, string defaultValue = "1.0.0")
+    {
+        var assembly = Assembly.GetExecutingAssembly();
+
+        return assembly
+            .GetCustomAttributes<AssemblyMetadataAttribute>()
+            .FirstOrDefault(a => string.Equals(a.Key, key, StringComparison.OrdinalIgnoreCase))
+            ?.Value ?? defaultValue;
+    }
 
     // 打开浏览器
     public static void OpenBrowser(string url)

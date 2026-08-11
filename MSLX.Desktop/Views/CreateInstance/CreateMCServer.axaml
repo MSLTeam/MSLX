@@ -1,8 +1,9 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
 			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 			 xmlns:local="using:MSLX.Desktop.Views.CreateInstance"
 			 xmlns:models="clr-namespace:MSLX.Desktop.Models;assembly=MSLX-Desktop"
+			 xmlns:sdkInstance="clr-namespace:MSLX.SDK.Models.Instance;assembly=MSLX.SDK"
 			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 			 xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
 			 xmlns:sukitheme="clr-namespace:SukiUI.Theme;assembly=SukiUI"
@@ -71,7 +72,7 @@
 											<Grid ColumnDefinitions="*,Auto">
 												<ComboBox x:Name="ComboLocalJava" HorizontalAlignment="Stretch" PlaceholderText="正在扫描本地环境..." Grid.Column="0">
 													<ComboBox.ItemTemplate>
-														<DataTemplate DataType="{x:Type models:LocalJavaListModel}">
+														<DataTemplate DataType="{x:Type sdkInstance:JavaInfo}">
 															<StackPanel Orientation="Horizontal" Spacing="10">
 																<TextBlock Text="{Binding Version}" FontWeight="Bold"/>
 																<TextBlock Text="{Binding Vendor}" Opacity="0.7"/>

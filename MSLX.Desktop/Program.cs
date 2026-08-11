@@ -1,4 +1,4 @@
-﻿using Avalonia;
+using Avalonia;
 using System;
 
 namespace MSLX.Desktop
@@ -19,7 +19,10 @@ namespace MSLX.Desktop
                              .UsePlatformDetect()
                              .WithInterFont()
                              .With(new Win32PlatformOptions())
-                             .UsePlatformDetect()
+                             .With(new MacOSPlatformOptions
+                             {
+                                 DisableDefaultApplicationMenuItems = true
+                             })
                              .LogToTrace();
         }
     }

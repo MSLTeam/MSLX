@@ -25,6 +25,11 @@ public class UpdateSettingsRequest
     [Range(1, 65536, ErrorMessage = "监听端口 (listenPort) 错误")]
     public uint ListenPort { get; set; }
 
+    /// <summary>
+    /// macOS 内置 Daemon 是否允许外部设备访问。
+    /// </summary>
+    public bool AllowExternalAccess { get; set; }
+
     [RegularExpression(@"^$|^.{27}$", ErrorMessage = "MSL OAuth Client ID 格式错误")]
     public string OAuthMSLClientID { get; set; } = "";
 

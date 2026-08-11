@@ -194,6 +194,34 @@ public partial class WelcomePage : UserControl
         }
     }
 
+    private async Task ConnectBundledDaemon()
+    {
+        Debug.WriteLine("WelcomePage: ConnectBundledDaemon Start");
+
+        Next.IsVisible = false;
+        Retry.IsVisible = false;
+        ShowLogPanel();
+
+        var (success, message) = await DaemonManager.StartAndConnectBundledDaemon();
+        if (success)
+        {
+            SideMenuHelper.Current?.ShowMainPages();
+            SideMenuHelper.Current?.NavigateRemove(this);
+            SideMenuHelper.Current?.NavigateTo<HomePage>();
+            return;
+        }
+
+        OnDaemonLogReceived($"[Desktop] {message}");
+        Retry.IsVisible = true;
+
+        DialogService.DialogManager.CreateDialog()
+            .OfType(Avalonia.Controls.Notifications.NotificationType.Error)
+            .WithTitle("内置 Daemon 启动失败")
+            .WithContent(message)
+            .WithActionButton("确定", _ => { }, true)
+            .TryShow();
+    }
+
     private void MethodC()
     {
         Debug.WriteLine("WelcomePage: MethodC Start");
@@ -218,6 +246,12 @@ public partial class WelcomePage : UserControl
 
     private async void WelcomePage_Loaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        if (PlatformHelper.IsMacAppBundle())
+        {
+            await ConnectBundledDaemon();
+            return;
+        }
+
 #if DEBUG
         DialogService.ToastManager.CreateToast()
             .WithTitle("Debug")
@@ -268,6 +302,13 @@ public partial class WelcomePage : UserControl
 
     private async void Retry_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
-        await MethodA();
+        if (PlatformHelper.IsMacAppBundle())
+        {
+            await ConnectBundledDaemon();
+        }
+        else
+        {
+            await MethodA();
+        }
     }
 }

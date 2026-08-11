@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { ServerIcon, ControlPlatformIcon, BookIcon, LinkIcon, CloudDownloadIcon } from 'tdesign-icons-vue-next';
 import { getSettings, updateSettings } from '@/api/settings';
@@ -22,6 +22,8 @@ const sysData = reactive<SettingsModel>({
   neoForgeInstallerMirrors: 'MSL Mirrors',
   listenHost: 'localhost',
   listenPort: 1027,
+  allowExternalAccess: false,
+  isEmbeddedDaemon: false,
   oAuthMSLClientID: '',
   oAuthMSLClientSecret: '',
   downloadThreadCount: 5,
@@ -34,12 +36,17 @@ const mirrorOptions = [
 ];
 
 const emit = defineEmits(['refresh']);
+const isEmbeddedDaemon = computed(() => sysData.isEmbeddedDaemon);
 
 const initData = async () => {
   loading.value = true;
   try {
     const sysRes = await getSettings();
     Object.assign(sysData, sysRes);
+    if (sysData.isEmbeddedDaemon) {
+      sysData.fireWallBanLocalAddr = false;
+      sysData.listenHost = 'localhost';
+    }
   } catch (e: any) {
     MessagePlugin.error(e.message || '系统设置加载失败');
   } finally {
@@ -50,6 +57,11 @@ const initData = async () => {
 const onSysSubmit = async () => {
   submitLoading.value = true;
   try {
+    if (sysData.isEmbeddedDaemon) {
+      // 内置 Daemon 固定允许本机访问，并由“启用外部访问”控制监听范围。
+      sysData.fireWallBanLocalAddr = false;
+      sysData.listenHost = 'localhost';
+    }
     await updateSettings(sysData);
     MessagePlugin.success('系统设置保存成功');
   } catch (error: any) {
@@ -104,7 +116,7 @@ onMounted(() => {
             <div class="h-px bg-zinc-200/60 dark:bg-zinc-700/60 flex-1"></div>
           </div>
 
-          <t-form-item label="软件更新">
+          <t-form-item v-if="!isEmbeddedDaemon" label="软件更新">
             <t-button
               theme="default"
               :loading="updateStore.loading"
@@ -170,13 +182,7 @@ onMounted(() => {
               </div>
             </template>
             <div class="flex items-center gap-4 w-full sm:w-80">
-              <t-slider
-                v-model="sysData.downloadThreadCount"
-                :min="1"
-                :max="8"
-                :step="1"
-                class="flex-1"
-              />
+              <t-slider v-model="sysData.downloadThreadCount" :min="1" :max="8" :step="1" class="flex-1" />
               <span class="text-xs font-bold w-8 text-right text-[var(--td-text-color-primary)]">
                 {{ sysData.downloadThreadCount }}
               </span>
@@ -258,7 +264,7 @@ onMounted(() => {
             <div class="h-px bg-zinc-200/60 dark:bg-zinc-700/60 flex-1"></div>
           </div>
 
-          <t-form-item label="禁止本地访问">
+          <t-form-item v-if="!isEmbeddedDaemon" label="禁止本地访问">
             <template #help>
               <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block"
                 >开启后将禁止本地回环地址访问，增强安全性。</span
@@ -279,20 +285,51 @@ onMounted(() => {
             </div>
           </t-form-item>
 
-          <t-form-item label="监听地址设置">
+          <t-form-item v-if="isEmbeddedDaemon" label="启用外部访问">
             <template #help>
-              <span class="text-[11px] font-medium text-amber-500/80 dark:text-amber-500/70 mt-1 inline-block"
+              <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block"
+                >开启后，局域网内的其他设备可以通过当前端口访问网页控制台，修改后需重启 App 生效。</span
+              >
+            </template>
+            <div class="flex items-center gap-3">
+              <t-switch v-model="sysData.allowExternalAccess" />
+              <span
+                class="text-[11px] font-extrabold px-2 py-0.5 rounded-md transition-colors"
+                :class="
+                  sysData.allowExternalAccess
+                    ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20'
+                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border border-zinc-200 dark:border-zinc-700'
+                "
+              >
+                {{ sysData.allowExternalAccess ? '已开启' : '已关闭' }}
+              </span>
+            </div>
+          </t-form-item>
+
+          <t-form-item :label="isEmbeddedDaemon ? '监听端口' : '监听地址设置'">
+            <template #help>
+              <span
+                v-if="isEmbeddedDaemon"
+                class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block"
+                >设置内置守护进程的监听端口，修改后需重启 App 生效。</span
+              >
+              <span v-else class="text-[11px] font-medium text-amber-500/80 dark:text-amber-500/70 mt-1 inline-block"
                 >设置 MSLX 守护进程的监听地址。(需要重启守护进程生效，若不明白这是干什么的请一定不要修改！)</span
               >
             </template>
-            <div class="flex items-center gap-1.5 sm:gap-2 w-full max-w-full sm:w-96">
-              <div class="flex-1 min-w-0">
+            <div
+              class="flex items-center gap-1.5 sm:gap-2 w-full max-w-full"
+              :class="isEmbeddedDaemon ? 'sm:w-32' : 'sm:w-96'"
+            >
+              <div v-if="!isEmbeddedDaemon" class="flex-1 min-w-0">
                 <t-input v-model="sysData.listenHost" placeholder="localhost">
                   <template #prefix-icon><server-icon class="opacity-60 text-zinc-400 hidden sm:block" /></template>
                 </t-input>
               </div>
-              <div class="text-[var(--td-text-color-secondary)] font-extrabold pb-1 shrink-0">:</div>
-              <div class="w-20 sm:w-24 shrink-0">
+              <div v-if="!isEmbeddedDaemon" class="text-[var(--td-text-color-secondary)] font-extrabold pb-1 shrink-0">
+                :
+              </div>
+              <div :class="isEmbeddedDaemon ? 'w-full' : 'w-20 sm:w-24 shrink-0'">
                 <t-input v-model="sysData.listenPort" placeholder="1027" align="center">
                   <template #prefix-icon
                     ><control-platform-icon class="opacity-60 text-zinc-400 hidden sm:block"

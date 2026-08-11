@@ -5,6 +5,8 @@ export interface SettingsModel {
   neoForgeInstallerMirrors: string;
   listenHost: string;
   listenPort: number;
+  allowExternalAccess: boolean;
+  isEmbeddedDaemon: boolean;
   oAuthMSLClientID: string;
   oAuthMSLClientSecret: string;
   downloadThreadCount: number;

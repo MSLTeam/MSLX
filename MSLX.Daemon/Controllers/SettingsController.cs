@@ -17,6 +17,9 @@ public class SettingsController : ControllerBase
     [Authorize(Roles = "admin")]
     public IActionResult GetSettings()
     {
+        bool isEmbeddedDaemon = IsEmbeddedDaemon();
+        var config = IConfigBase.Config.ReadConfig();
+
         return Ok(new ApiResponse<object>
             {
                 Code = 200,
@@ -24,15 +27,17 @@ public class SettingsController : ControllerBase
                 Data = new
                 {
                     AllowNormalUserChangeUserName = IConfigBase.Config.ReadConfig()["allowNormalUserChangeUserName"] ?? true,
-                    FireWallBanLocalAddr = IConfigBase.Config.ReadConfig()["fireWallBanLocalAddr"] ?? false,
-                    OpenWebConsoleOnLaunch = IConfigBase.Config.ReadConfig()["openWebConsoleOnLaunch"] ?? true,
+                    FireWallBanLocalAddr = isEmbeddedDaemon ? false : config["fireWallBanLocalAddr"] ?? false,
+                    OpenWebConsoleOnLaunch = config["openWebConsoleOnLaunch"] ?? true,
                     NeoForgeInstallerMirrors =
                         IConfigBase.Config.ReadConfig()["neoForgeInstallerMirrors"] ?? "MSL Mirrors",
-                    ListenHost = IConfigBase.Config.ReadConfig()["listenHost"] ?? "localhost",
-                    ListenPort = IConfigBase.Config.ReadConfig()["listenPort"] ?? 1027,
-                    OAuthMSLClientID = IConfigBase.Config.ReadConfig()["oAuthMSLClientID"] ?? "",
-                    OAuthMSLClientSecret = IConfigBase.Config.ReadConfig()["oAuthMSLClientSecret"] ?? "",
-                    DownloadThreadCount = IConfigBase.Config.ReadConfig()["downloadThreadCount"] ?? 5,
+                    ListenHost = isEmbeddedDaemon ? "localhost" : config["listenHost"] ?? "localhost",
+                    ListenPort = config["listenPort"] ?? 1027,
+                    AllowExternalAccess = isEmbeddedDaemon ? config["allowExternalAccess"] ?? false : false,
+                    IsEmbeddedDaemon = isEmbeddedDaemon,
+                    OAuthMSLClientID = config["oAuthMSLClientID"] ?? "",
+                    OAuthMSLClientSecret = config["oAuthMSLClientSecret"] ?? "",
+                    DownloadThreadCount = config["downloadThreadCount"] ?? 5,
                 }
             }
         );
@@ -42,12 +47,24 @@ public class SettingsController : ControllerBase
     [Authorize(Roles = "admin")]
     public IActionResult UpdateSettings([FromBody] UpdateSettingsRequest request)
     {
+        bool isEmbeddedDaemon = IsEmbeddedDaemon();
+
         IConfigBase.Config.WriteConfigKey("allowNormalUserChangeUserName", request.AllowNormalUserChangeUserName);
-        IConfigBase.Config.WriteConfigKey("fireWallBanLocalAddr", request.FireWallBanLocalAddr);
+        if (!isEmbeddedDaemon)
+        {
+            IConfigBase.Config.WriteConfigKey("fireWallBanLocalAddr", request.FireWallBanLocalAddr);
+        }
         IConfigBase.Config.WriteConfigKey("openWebConsoleOnLaunch", request.OpenWebConsoleOnLaunch);
         IConfigBase.Config.WriteConfigKey("neoForgeInstallerMirrors", request.NeoForgeInstallerMirrors);
-        IConfigBase.Config.WriteConfigKey("listenHost", request.ListenHost);
+        if (!isEmbeddedDaemon)
+        {
+            IConfigBase.Config.WriteConfigKey("listenHost", request.ListenHost);
+        }
         IConfigBase.Config.WriteConfigKey("listenPort", request.ListenPort);
+        if (isEmbeddedDaemon)
+        {
+            IConfigBase.Config.WriteConfigKey("allowExternalAccess", request.AllowExternalAccess);
+        }
         IConfigBase.Config.WriteConfigKey("oAuthMSLClientID", request.OAuthMSLClientID);
         IConfigBase.Config.WriteConfigKey("oAuthMSLClientSecret", request.OAuthMSLClientSecret);
         IConfigBase.Config.WriteConfigKey("downloadThreadCount", request.DownloadThreadCount);
@@ -57,6 +74,17 @@ public class SettingsController : ControllerBase
                 Message = "更新成功",
             }
         );
+    }
+
+    /// <summary>
+    /// 判断当前 Daemon 是否由 macOS Desktop 应用内置管理。
+    /// </summary>
+    private static bool IsEmbeddedDaemon()
+    {
+        return string.Equals(
+            Environment.GetEnvironmentVariable("MSLX_EMBEDDED_DAEMON"),
+            "true",
+            StringComparison.OrdinalIgnoreCase);
     }
 
     [HttpGet("webpanel/style")]

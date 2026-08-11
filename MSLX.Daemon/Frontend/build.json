@@ -1,6 +1,6 @@
 {
-  "version": "1.5.9",
-  "buildTime": "2026-08-08 13:31:57",
+  "version": "1.5.10",
+  "buildTime": "2026-08-11 16:02:12",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -77,10 +77,226 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "fa7fc69bbcd30f8fdb7f1af147f86ca88cdf1101",
-  "commitMsg": "fix(daemon): 修复解压整合包可能存在解压文件位置路径错误的问题 & 新增解压进度显示",
+  "commitId": "5e40fd7f40a615e4620664b3d92375d3d2d3426f",
+  "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "5e40fd7f40a615e4620664b3d92375d3d2d3426f",
+      "commitTime": "2026-08-11 15:58:56 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
+    },
+    {
+      "commitId": "91ae150e31ca1515d5a5569792b92ed6438a946f",
+      "commitTime": "2026-08-11 15:57:51 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(proj): 项目解决方案引用版本号维护文件"
+    },
+    {
+      "commitId": "4731a60f31b39eaefcbdcfafa6b24a21aa33df39",
+      "commitTime": "2026-08-11 15:53:36 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): 完善服务端实例设置组件"
+    },
+    {
+      "commitId": "8d6be0072718f07466bb8ffe57b383024b863cba",
+      "commitTime": "2026-08-11 10:35:27 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 全局管理员APIKey账户新增头像信息 & 前端禁止修改用户信息"
+    },
+    {
+      "commitId": "bd11e6ef5f3bfb74f5fc686e11fff93b7198757b",
+      "commitTime": "2026-08-11 10:24:55 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): macos下顶部菜单使用原生红绿灯"
+    },
+    {
+      "commitId": "92420618445a7caf0ad434bf7e347eb586769c1b",
+      "commitTime": "2026-08-11 01:36:33 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): 优化 macOS 下的 Desktop 顶部控制栏与菜单"
+    },
+    {
+      "commitId": "a245a82d3a59d54cb0c836a31c05a59fa88a9103",
+      "commitTime": "2026-08-11 00:29:03 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(ci): 修复SDK构建工作流"
+    },
+    {
+      "commitId": "1b058cc8c724868ed71c49a0f2d3f52671318c4b",
+      "commitTime": "2026-08-11 00:24:31 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop): 新增 Native Menu"
+    },
+    {
+      "commitId": "6c99cd87fe0f64719f4aa5345f3d0d4db3401a09",
+      "commitTime": "2026-08-11 00:16:20 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(ci): 移除工作流的版本绑定"
+    },
+    {
+      "commitId": "9259cd9161942235b80b587bf5c3a6d9be435ce4",
+      "commitTime": "2026-08-11 00:11:15 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #217 from CoZooo/dev"
+    },
+    {
+      "commitId": "e85100e02fdc78069cbaaa2e1077af2f9db33588",
+      "commitTime": "2026-08-11 00:07:32 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(sdk): 丢了引用版本号文件"
+    },
+    {
+      "commitId": "e22e59768503fb623cb7c1403169378d2a2653bb",
+      "commitTime": "2026-08-11 00:05:51 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge branch 'dev' into dev"
+    },
+    {
+      "commitId": "68acbfd157ba2aa21d220c8ba8681b9d314e41ba",
+      "commitTime": "2026-08-10 23:38:24 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(ci): 统一项目版本号管理入口"
+    },
+    {
+      "commitId": "434d5d30c0075eda27e02b8c4dc0fbc66f3d7aba",
+      "commitTime": "2026-08-10 21:44:15 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "chore(app): App模式下部分设置项调整"
+    },
+    {
+      "commitId": "7a3641a26eff10a79f8f621c0a7ac2928fe09345",
+      "commitTime": "2026-08-10 17:01:55 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "feat(app): 完善NetSparkle更新逻辑及UI"
+    },
+    {
+      "commitId": "0cc33cb71b8e639b3f13b5a497a40665c9119af0",
+      "commitTime": "2026-08-10 12:38:43 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "feat(app): macOS App接入NetSparkle更新模块"
+    },
+    {
+      "commitId": "235bca8779a22f3185af3e38b2435b3e017d6af2",
+      "commitTime": "2026-08-10 12:10:26 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "chore(app): 禁用App的原Desktop更新"
+    },
+    {
+      "commitId": "17affb9b7d38accae3acdabce66920814c4ebfa5",
+      "commitTime": "2026-08-10 11:53:28 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "fix(app): 修复点击Dock图标无法打开窗口的问题"
+    },
+    {
+      "commitId": "d466203f5b181638db0cf845fb7be5197face4cd",
+      "commitTime": "2026-08-10 11:31:45 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "fix(app): 修复符号链接相关问题"
+    },
+    {
+      "commitId": "3d808fcac2f1bc51bc03ebd617c74183791ed3ef",
+      "commitTime": "2026-08-10 11:07:01 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "fix(desktop): 修复快捷打开管理面板时进入登录页的问题"
+    },
+    {
+      "commitId": "ea9716d796b2f9b13f4ca4559adc128dfa4335c0",
+      "commitTime": "2026-08-10 10:50:31 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "chore(app): 在启动App时停止Homebrew Services"
+    },
+    {
+      "commitId": "21d541a66d4b8bff780de865f3020e919d14ebad",
+      "commitTime": "2026-08-10 02:23:41 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "feat(app): 后台持久化运行"
+    },
+    {
+      "commitId": "4b0929252b0f14c31ecf00172352787af82dfbb0",
+      "commitTime": "2026-08-10 01:36:01 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "feat(desktop): 支持快捷打开管理面板"
+    },
+    {
+      "commitId": "247bb3bea9d0cea785d1d2cdea60fa9372f5b49e",
+      "commitTime": "2026-08-10 00:46:19 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "fix(app): App模式下隐藏检查Daemon更新按钮"
+    },
+    {
+      "commitId": "37514e30f050975f48c93840cfc4e5ca54a4fc05",
+      "commitTime": "2026-08-10 00:42:42 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "feat(app): App模式下支持选择是否允许外部访问"
+    },
+    {
+      "commitId": "180c1e469c5741c8c161cd11bd42e765466860ce",
+      "commitTime": "2026-08-10 00:41:52 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "chore(app): App下禁止关闭本地访问"
+    },
+    {
+      "commitId": "ab1ed23a2c8a79701d142d6e1ad1c1fc9c5409e2",
+      "commitTime": "2026-08-10 00:09:51 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "refactor(app): 将Daemon内置在App中"
+    },
+    {
+      "commitId": "7362434d5ee8354964e58d9d4bd29c8699ff46df",
+      "commitTime": "2026-08-09 22:30:00 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #216 from CoZooo/dev"
+    },
+    {
+      "commitId": "74b17c737fc761be55e269f3d8fe8f315a1654b5",
+      "commitTime": "2026-08-09 21:32:56 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "fix(ci): 修复签名Library Validation问题"
+    },
+    {
+      "commitId": "5bbbca9db357dcff6335aa6718aa422c5fdeddf7",
+      "commitTime": "2026-08-09 20:15:17 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "chore(ci): 为 macOS Desktop 和 Daemon 添加签名与公证"
+    },
+    {
+      "commitId": "1827ebe47850b4368d13080223230d28f7526cc8",
+      "commitTime": "2026-08-09 11:54:27 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "docs(readme): 修复Stars图不能正常显示"
+    },
+    {
+      "commitId": "173ea0e64bdfc168670fb2e7738664f301db12a3",
+      "commitTime": "2026-08-09 11:44:24 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "refactor(desktop): Mode l从 MSLX.SDK 直接继承"
+    },
+    {
+      "commitId": "a950f5e438b0a26ccff5b58f543684806731cd99",
+      "commitTime": "2026-08-09 11:08:46 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复创建服务端的SignalR断开连接异常导致崩溃的问题"
+    },
+    {
+      "commitId": "117d31b8bb5939b6d28eec22f2b99b7a97313e37",
+      "commitTime": "2026-08-08 17:38:10 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复MCDR模式在Docker下无法正常提交创建的问题"
+    },
+    {
+      "commitId": "71e7db69d18ccd84d5b7ac7ffc95e5de5590251b",
+      "commitTime": "2026-08-08 13:33:18 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #214 from MSLTeam/dev"
+    },
+    {
+      "commitId": "449f85ad5152de3525b7f94b58b9e7ddd36f5f26",
+      "commitTime": "2026-08-08 13:32:18 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.5.9版本"
+    },
     {
       "commitId": "fa7fc69bbcd30f8fdb7f1af147f86ca88cdf1101",
       "commitTime": "2026-08-08 13:30:10 +0800",
@@ -164,222 +380,6 @@
       "commitTime": "2026-08-05 19:29:09 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "feat(daemon): 新增 Cache-Control"
-    },
-    {
-      "commitId": "622ac4d712629e733ae3f8c715c646217db3aabf",
-      "commitTime": "2026-08-05 18:40:32 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
-    },
-    {
-      "commitId": "bedf5bc3da936907fdf53eeb17d7993fda6b9ef8",
-      "commitTime": "2026-08-05 18:40:23 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "fix(desktop): 修复sukiui的一个笔误导致软件运行时出现绑定警告"
-    },
-    {
-      "commitId": "081133614a6b859149d80075291fa572e0197127",
-      "commitTime": "2026-08-05 18:36:11 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "perf(desktop): 优化主页布局，修复一些编译警告"
-    },
-    {
-      "commitId": "1c2a46de04be0256ab369d6670372ab85aba92d2",
-      "commitTime": "2026-08-05 18:32:21 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(desktop): 优化Toast提示和Dialog弹窗的位置和遮罩"
-    },
-    {
-      "commitId": "7ddae48191c1e1248c3d72d52c066a5eab91c691",
-      "commitTime": "2026-08-05 17:30:56 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #208 from MSLTeam/dev"
-    },
-    {
-      "commitId": "f087f0c092c90563196b2211473f1a155aec14e7",
-      "commitTime": "2026-08-05 17:29:41 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel & desktop): 更新到v1.5.8版本"
-    },
-    {
-      "commitId": "6b19fb7835ead729c32d4cf5d469304ecd90eabc",
-      "commitTime": "2026-08-05 17:27:45 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(desktop): 完善首页仪表盘页面 & 优化菜单栏以及标题栏样式"
-    },
-    {
-      "commitId": "90bdde6104db45c740508a3fec8132550718242f",
-      "commitTime": "2026-08-05 17:27:18 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复移动端下监听地址的端口会超出卡片飘出去"
-    },
-    {
-      "commitId": "8cdbc85900c99e97c0036ffdc21ceaed1fbe64ff",
-      "commitTime": "2026-08-05 17:05:22 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "deps(daemon): 更新依赖包"
-    },
-    {
-      "commitId": "5f2e90b700cdf617e1a4dab2640711918085bf7f",
-      "commitTime": "2026-08-05 16:59:59 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & wenbpanel & daemon): 支持配置下载器的线程数量 & 优化安装NeoForge时的下载逻辑"
-    },
-    {
-      "commitId": "a68469ebff42415886627a564531afb6d2f3c279",
-      "commitTime": "2026-08-05 16:03:58 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #207 from CoZooo/dev"
-    },
-    {
-      "commitId": "b89bab6a066825b9ee86b7ef7b65ea7ea307dea7",
-      "commitTime": "2026-08-05 16:00:52 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & wenbpanel): 新增导出服务端功能 #112"
-    },
-    {
-      "commitId": "3b378894aab3384f5202ebdd03ed97ee2c5b8034",
-      "commitTime": "2026-08-05 15:46:33 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): NeoForge安装源修改为在线获取"
-    },
-    {
-      "commitId": "3876a4804411229d67dbfb02d2a983e9021af561",
-      "commitTime": "2026-08-05 13:17:21 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "fix(daemon): 在使用Homebrew更新前先执行元数据更新"
-    },
-    {
-      "commitId": "c79251b741294851f05d27e4d0186ed37b1d9a45",
-      "commitTime": "2026-08-05 10:41:43 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel & daemon): 定时任务新增执行命令功能 #196"
-    },
-    {
-      "commitId": "433d9bcf4f01abb1d0256198d71c742e3d5e22bc",
-      "commitTime": "2026-08-05 00:17:55 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #204 from MSLTeam/dev"
-    },
-    {
-      "commitId": "b0b0352289591baec3e3643345a31310ff30abb7",
-      "commitTime": "2026-08-05 00:13:47 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel & desktop): 更新到v1.5.7版本"
-    },
-    {
-      "commitId": "0bfcb5193f1bcdafa04768bb1c1bbba7eebc3fd2",
-      "commitTime": "2026-08-04 18:59:21 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(desktop & webpanel): 关于页面中更新Contributors列表"
-    },
-    {
-      "commitId": "3dbb8cb10115f56773fc26e608a51e6925c96fee",
-      "commitTime": "2026-08-04 18:52:00 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(desktop):新增 macos dmg 发布工作流"
-    },
-    {
-      "commitId": "b3572ef8ca963a37bc61ef75299cc68aaad95e52",
-      "commitTime": "2026-08-04 18:17:14 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(desktop): macos dmg 调整位置"
-    },
-    {
-      "commitId": "f87ed3e3f854ba6a793fe3939e643c48839aaa1e",
-      "commitTime": "2026-08-04 18:08:14 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(desktop): macos dmg 调整位置"
-    },
-    {
-      "commitId": "c1e8c2b4b1ee1ded767081cbfa38f4433ff483b7",
-      "commitTime": "2026-08-04 17:59:05 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(desktop): macos dmg 加个背景图"
-    },
-    {
-      "commitId": "b65d376e005946c236914309e2e90fbf7b193e61",
-      "commitTime": "2026-08-04 17:50:54 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(desktop): macos dmg 加个背景图"
-    },
-    {
-      "commitId": "3c661018474830a2d42c1bc353948ac6eac93254",
-      "commitTime": "2026-08-04 17:39:44 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(desktop): 修复macos dmg dev构建"
-    },
-    {
-      "commitId": "5d4558bbd418cae93c28a126bf155a1d701fce8e",
-      "commitTime": "2026-08-04 17:36:56 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(desktop): 修复macos dmg dev构建"
-    },
-    {
-      "commitId": "4ea7980119fd09811715025fec05fdb665bfc7cf",
-      "commitTime": "2026-08-04 17:33:46 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(desktop): 新增macos dmg dev构建"
-    },
-    {
-      "commitId": "862234668b455f65f8b6a673a144eec5f9af35bf",
-      "commitTime": "2026-08-04 16:05:24 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(ddaemon): PlatformUtils打个region"
-    },
-    {
-      "commitId": "49016fc1b907ec235aba3b4c1f52ba2eefe952f6",
-      "commitTime": "2026-08-04 16:01:23 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #203 from CoZooo/dev"
-    },
-    {
-      "commitId": "f168cc967a03b06fea7e6b6d13108953ad28d743",
-      "commitTime": "2026-08-04 15:51:32 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "fix(Daemon): 将.app内Daemon数据路径对齐Desktop"
-    },
-    {
-      "commitId": "75f91b58e5bc72b1ac279cf41f3f45fb96e3a006",
-      "commitTime": "2026-08-04 15:51:28 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "feat(Daemon): 加入Homebrew一键更新支持"
-    },
-    {
-      "commitId": "a7dd63708ddaeec09672f6b59be81ff7c32b6932",
-      "commitTime": "2026-08-04 15:47:58 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "feat(Daemon): 加入Homebrew安装检测"
-    },
-    {
-      "commitId": "4cf5509fc3b63ed4125f75b075b65e2c9e9d05ef",
-      "commitTime": "2026-08-04 00:36:40 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(desktop): 背景主题支持白天/黑夜模式独立设置"
-    },
-    {
-      "commitId": "8cdf3a466ef60c78dcb3fbd77f2551b1d139591a",
-      "commitTime": "2026-08-04 00:27:26 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(desktop): 背景新增高斯模糊功能"
-    },
-    {
-      "commitId": "fb8554d13d7a8bee17c2b432825fe3e802c7b30c",
-      "commitTime": "2026-08-03 18:00:38 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(desktop): 这个字体过分了嗷"
-    },
-    {
-      "commitId": "a6a2c1a5c2f28ddbf12a82cd6b915bd039c2e87e",
-      "commitTime": "2026-08-03 17:56:50 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(desktop): 修复组件字体丢失"
-    },
-    {
-      "commitId": "5b86f474ca5f829673d08c7bed34af8598506a49",
-      "commitTime": "2026-08-03 17:54:19 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(desktop): 修复md组件字体丢失"
     }
   ]
 }

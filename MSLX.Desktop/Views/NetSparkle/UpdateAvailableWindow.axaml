@@ -1,0 +1,72 @@
+<suki:SukiWindow xmlns="https://github.com/avaloniaui"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+                 xmlns:icons="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+                 x:Class="MSLX.Desktop.Views.NetSparkle.UpdateAvailableWindow"
+                 Title="MSLX 更新"
+                 Width="680"
+                 Height="560"
+                 MinWidth="560"
+                 MinHeight="460"
+                 CanResize="False"
+                 ShowInTaskbar="False"
+                 BackgroundAnimationEnabled="True">
+    <suki:SukiWindow.LogoContent>
+        <Image Source="avares://MSLX-Desktop/Assets/icon.ico" Width="22" Height="22" Margin="4,0,4,0"/>
+    </suki:SukiWindow.LogoContent>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="28,18,28,24">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+            <Border Width="64" Height="64" CornerRadius="8" Background="{DynamicResource SukiControlTouchBackground}">
+                <Image Source="avares://MSLX-Desktop/Assets/icon.ico" Width="44" Height="44" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <TextBlock Grid.Column="1" Text="发现新版本" FontSize="24" FontWeight="Bold" VerticalAlignment="Center"/>
+        </Grid>
+
+        <Border Grid.Row="1" Margin="0,22,0,18" Padding="16,12" CornerRadius="8" Background="{DynamicResource SukiControlTouchBackground}">
+            <Grid ColumnDefinitions="*,Auto,*" VerticalAlignment="Center">
+                <StackPanel>
+                    <TextBlock Text="当前版本" FontSize="11" Opacity="0.58"/>
+                    <TextBlock x:Name="CurrentVersionText" FontSize="18" FontWeight="SemiBold"/>
+                </StackPanel>
+                <icons:MaterialIcon Grid.Column="1" Kind="ArrowRight" Width="24" Height="24" Margin="14,0" Foreground="{DynamicResource SukiPrimaryColor}"/>
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="可用版本" FontSize="11" Opacity="0.58"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBlock x:Name="AvailableVersionText" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource SukiPrimaryColor}"/>
+                        <Border x:Name="CriticalBadge" IsVisible="False" Background="#D97706" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                            <TextBlock Text="重要更新" FontSize="10" Foreground="White" FontWeight="SemiBold"/>
+                        </Border>
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid x:Name="ReleaseNotesSection" Grid.Row="2" RowDefinitions="Auto,*" RowSpacing="8">
+            <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Text="更新内容" FontSize="16" FontWeight="SemiBold"/>
+                <TextBlock x:Name="PublicationDateText" Grid.Column="1" FontSize="12" Opacity="0.55" VerticalAlignment="Center"/>
+            </Grid>
+            <Border Grid.Row="1" Padding="16" CornerRadius="8" BorderBrush="{DynamicResource SukiBorderBrush}" BorderThickness="1">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <TextBlock x:Name="ReleaseNotesText" TextWrapping="Wrap" LineHeight="23" Opacity="0.84"/>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10" Margin="0,22,0,0">
+            <Button x:Name="SkipButton" Click="SkipButton_Click" Padding="12,8" Background="Transparent" BorderThickness="0">
+                <TextBlock Text="跳过此版本"/>
+            </Button>
+            <Button x:Name="RemindButton" Grid.Column="2" Classes="Outlined" Click="RemindButton_Click" Padding="16,8">
+                <TextBlock Text="稍后提醒"/>
+            </Button>
+            <Button x:Name="InstallButton" Grid.Column="3" Classes="Flat Primary" Click="InstallButton_Click" Padding="18,8">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <icons:MaterialIcon Kind="Download" Width="18" Height="18"/>
+                    <TextBlock x:Name="InstallButtonText" Text="下载并安装" FontWeight="SemiBold"/>
+                </StackPanel>
+            </Button>
+        </Grid>
+    </Grid>
+</suki:SukiWindow>
