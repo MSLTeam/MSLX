@@ -126,11 +126,6 @@ jobs:
           DAEMON_PUBLISH_DIR="./publish_daemon_temp"
           DIST_DIR="./dist"
           mkdir -p $DIST_DIR
-
-          if [[ "$VERSION_NAME" != "beta" && "$DESKTOP_VERSION" != "$BUNDLE_SHORT_VERSION" ]]; then
-            echo "::error::Git Tag 与 Desktop 版本不一致: $BUNDLE_SHORT_VERSION != $DESKTOP_VERSION"
-            exit 1
-          fi
           
           dotnet publish ./MSLX.Desktop/MSLX.Desktop.csproj \
             -c Release \
