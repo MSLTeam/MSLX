@@ -11,21 +11,21 @@ permissions:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     name: 构建并发布
     
     strategy:
       matrix:
         include:
           # 定义输出的程序文件名
-          - { os: linux,   arch: x64,   rid: linux-x64,   bin: 'MSLX-Daemon' }
-          - { os: linux,   arch: arm64, rid: linux-arm64, bin: 'MSLX-Daemon' }
-          - { os: linux,   arch: musl-x64,   rid: linux-musl-x64,   bin: 'MSLX-Daemon' }
-          - { os: linux,   arch: musl-arm64, rid: linux-musl-arm64, bin: 'MSLX-Daemon' }
-          - { os: windows, arch: x64,   rid: win-x64,     bin: 'MSLX-Daemon.exe' }
-          - { os: windows, arch: arm64, rid: win-arm64,   bin: 'MSLX-Daemon.exe' }
-          - { os: osx,     arch: x64,   rid: osx-x64,     bin: 'MSLX-Daemon' }
-          - { os: osx,     arch: arm64, rid: osx-arm64,   bin: 'MSLX-Daemon' }
+          - { os: linux,   arch: x64,   rid: linux-x64,        bin: 'MSLX-Daemon',     runner: ubuntu-latest }
+          - { os: linux,   arch: arm64, rid: linux-arm64,      bin: 'MSLX-Daemon',     runner: ubuntu-latest }
+          - { os: linux,   arch: musl-x64,   rid: linux-musl-x64,   bin: 'MSLX-Daemon', runner: ubuntu-latest }
+          - { os: linux,   arch: musl-arm64, rid: linux-musl-arm64, bin: 'MSLX-Daemon', runner: ubuntu-latest }
+          - { os: windows, arch: x64,   rid: win-x64,          bin: 'MSLX-Daemon.exe', runner: ubuntu-latest }
+          - { os: windows, arch: arm64, rid: win-arm64,        bin: 'MSLX-Daemon.exe', runner: ubuntu-latest }
+          - { os: osx,     arch: x64,   rid: osx-x64,          bin: 'MSLX-Daemon',     runner: macos-latest }
+          - { os: osx,     arch: arm64, rid: osx-arm64,        bin: 'MSLX-Daemon',     runner: macos-latest }
 
     steps:
       - name: 签出代码
@@ -51,8 +51,57 @@ jobs:
             echo "这是手动触发构建，使用版本号: beta"
           fi
 
+      - name: 导入 Developer ID Application 证书
+        if: matrix.os == 'osx'
+        env:
+          MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          CERTIFICATE_PATH="$RUNNER_TEMP/mslx-developer-id.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/mslx-signing.keychain-db"
+          KEYCHAIN_PASSWORD=$(openssl rand -hex 32)
+          echo "::add-mask::$KEYCHAIN_PASSWORD"
+          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+          echo "KEYCHAIN_PASSWORD=$KEYCHAIN_PASSWORD" >> "$GITHUB_ENV"
+
+          if [[ -z "$MACOS_CERTIFICATE_BASE64" || -z "$MACOS_CERTIFICATE_PASSWORD" ]]; then
+            echo "::error::缺少 macOS 签名证书 Secrets"
+            exit 1
+          fi
+
+          printf '%s' "$MACOS_CERTIFICATE_BASE64" | base64 --decode > "$CERTIFICATE_PATH"
+          chmod 600 "$CERTIFICATE_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" \
+            -k "$KEYCHAIN_PATH" \
+            -P "$MACOS_CERTIFICATE_PASSWORD" \
+            -T /usr/bin/codesign
+          security set-key-partition-list \
+            -S apple-tool:,apple:,codesign: \
+            -s \
+            -k "$KEYCHAIN_PASSWORD" \
+            "$KEYCHAIN_PATH"
+
+          security list-keychains -d user -s "$KEYCHAIN_PATH"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+          SIGNING_IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | sed -n 's/.*"\(Developer ID Application:.*\)"/\1/p' | head -n 1)
+          if [[ -z "$SIGNING_IDENTITY" ]]; then
+            echo "::error::证书中未找到 Developer ID Application 身份"
+            exit 1
+          fi
+
+          echo "SIGNING_IDENTITY=$SIGNING_IDENTITY" >> "$GITHUB_ENV"
+          rm -f "$CERTIFICATE_PATH"
+
       - name: 编译发布文件
         run: |
+          set -euo pipefail
+
           PUBLISH_DIR="./publish_temp"
           DIST_DIR="./dist"
           mkdir -p $PUBLISH_DIR
@@ -69,6 +118,20 @@ jobs:
             -o "$PUBLISH_DIR"
 
           BASE_NAME="MSLX-Daemon_${{ env.VERSION_NAME }}_${{ matrix.rid }}"
+
+          if [[ "${{ matrix.os }}" == "osx" ]]; then
+            echo "开始签名 $PUBLISH_DIR/${{ matrix.bin }}..."
+            security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+            codesign \
+              --force \
+              --timestamp \
+              --options runtime \
+              --entitlements ./MSLX.Daemon/macOS.entitlements \
+              --keychain "$KEYCHAIN_PATH" \
+              --sign "$SIGNING_IDENTITY" \
+              "$PUBLISH_DIR/${{ matrix.bin }}"
+            codesign --verify --strict --verbose=2 "$PUBLISH_DIR/${{ matrix.bin }}"
+          fi
           
           if [[ "${{ matrix.os }}" == "windows" ]]; then
             ARCHIVE_NAME="$BASE_NAME.zip"
@@ -82,6 +145,103 @@ jobs:
           fi
           
           echo "ASSET_PATH=./dist/$ARCHIVE_NAME" >> $GITHUB_ENV
+
+      - name: 公证 macOS Daemon
+        if: matrix.os == 'osx'
+        env:
+          APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$APPLE_API_KEY_BASE64" || -z "$APPLE_API_KEY_ID" || -z "$APPLE_API_ISSUER_ID" ]]; then
+            echo "::error::缺少 App Store Connect API Key Secrets"
+            exit 1
+          fi
+
+          API_KEY_PATH="$RUNNER_TEMP/AuthKey_${APPLE_API_KEY_ID}.p8"
+          NOTARY_ARCHIVE_PATH="$RUNNER_TEMP/MSLX-Daemon_${{ matrix.rid }}-notarization.zip"
+          NOTARY_RESULT_PATH="$RUNNER_TEMP/notary-result.json"
+          echo "APPLE_API_KEY_PATH=$API_KEY_PATH" >> "$GITHUB_ENV"
+          echo "NOTARY_ARCHIVE_PATH=$NOTARY_ARCHIVE_PATH" >> "$GITHUB_ENV"
+
+          printf '%s' "$APPLE_API_KEY_BASE64" | base64 --decode > "$API_KEY_PATH"
+          chmod 600 "$API_KEY_PATH"
+
+          ditto -c -k --sequesterRsrc --keepParent \
+            "./publish_temp/${{ matrix.bin }}" \
+            "$NOTARY_ARCHIVE_PATH"
+
+          set +e
+          xcrun notarytool submit "$NOTARY_ARCHIVE_PATH" \
+            --key "$API_KEY_PATH" \
+            --key-id "$APPLE_API_KEY_ID" \
+            --issuer "$APPLE_API_ISSUER_ID" \
+            --output-format json > "$NOTARY_RESULT_PATH"
+          SUBMIT_EXIT=$?
+          set -e
+
+          cat "$NOTARY_RESULT_PATH"
+          SUBMISSION_ID=$(jq -r '.id // empty' "$NOTARY_RESULT_PATH" 2>/dev/null || true)
+
+          if [[ "$SUBMIT_EXIT" -ne 0 || -z "$SUBMISSION_ID" ]]; then
+            echo "::error::Apple 公证提交失败，未获取到 Submission ID"
+            exit 1
+          fi
+
+          echo "::notice title=Apple 公证已提交::Submission ID: $SUBMISSION_ID"
+
+          while true; do
+            set +e
+            xcrun notarytool info "$SUBMISSION_ID" \
+              --key "$API_KEY_PATH" \
+              --key-id "$APPLE_API_KEY_ID" \
+              --issuer "$APPLE_API_ISSUER_ID" \
+              --output-format json > "$NOTARY_RESULT_PATH"
+            INFO_EXIT=$?
+            set -e
+
+            cat "$NOTARY_RESULT_PATH"
+            SUBMISSION_STATUS=$(jq -r '.status // empty' "$NOTARY_RESULT_PATH" 2>/dev/null || true)
+
+            case "$SUBMISSION_STATUS" in
+              Accepted)
+                echo "Apple 公证已通过，Submission ID: $SUBMISSION_ID"
+                break
+                ;;
+              Invalid|Rejected)
+                xcrun notarytool log "$SUBMISSION_ID" \
+                  --key "$API_KEY_PATH" \
+                  --key-id "$APPLE_API_KEY_ID" \
+                  --issuer "$APPLE_API_ISSUER_ID" || true
+                echo "::error::Apple 公证失败，Submission ID: ${SUBMISSION_ID}，状态: $SUBMISSION_STATUS"
+                exit 1
+                ;;
+              *)
+                if [[ "$INFO_EXIT" -ne 0 ]]; then
+                  echo "Apple 公证状态查询失败，将继续重试，Submission ID: $SUBMISSION_ID"
+                else
+                  echo "Apple 公证仍在处理中，Submission ID: ${SUBMISSION_ID}，状态: ${SUBMISSION_STATUS:-unknown}"
+                fi
+                sleep 60
+                ;;
+            esac
+          done
+
+      - name: 清理 macOS 签名凭据
+        if: always() && matrix.os == 'osx'
+        run: |
+          if [[ -n "${APPLE_API_KEY_PATH:-}" ]]; then
+            rm -f "$APPLE_API_KEY_PATH"
+          fi
+          if [[ -n "${NOTARY_ARCHIVE_PATH:-}" ]]; then
+            rm -f "$NOTARY_ARCHIVE_PATH"
+          fi
+          rm -f "$RUNNER_TEMP/mslx-developer-id.p12"
+          if [[ -n "${KEYCHAIN_PATH:-}" ]]; then
+            security delete-keychain "$KEYCHAIN_PATH" || true
+          fi
 
       - name: 上传到 GitHub Release
         uses: softprops/action-gh-release@v2
@@ -109,7 +269,11 @@ jobs:
           fi
 
           FILE_NAME=$(basename "${{ env.ASSET_PATH }}")
-          FILE_SIZE=$(stat -c%s "${{ env.ASSET_PATH }}")
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            FILE_SIZE=$(stat -f%z "${{ env.ASSET_PATH }}")
+          else
+            FILE_SIZE=$(stat -c%s "${{ env.ASSET_PATH }}")
+          fi
 
           curl -s \
             -H "Authorization: token $CNB_TOKEN" \
@@ -182,7 +346,7 @@ jobs:
           if [ "$CONFIRM_CODE" -eq 200 ] || [ "$CONFIRM_CODE" -eq 201 ]; then
             echo "🎉 [${{ matrix.rid }}] 平台产物已关联到 CNB 主仓 Release 页面！"
           else
-            echo "❌ 错误：确认附件失败。状态码: $CONFIRM_CODE，返回内容："
+            echo "❌ 错误：确认附件失败。状态码: ${CONFIRM_CODE}，返回内容："
             cat confirm_res.json
             exit 1
           fi

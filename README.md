@@ -49,8 +49,8 @@ MSLX 是由 MSLTeam 开发的跨平台服务端管理工具。项目基于前后
 
 <a href="https://www.star-history.com/?repos=MSLTeam%2FMSLX&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=MSLTeam/MSLX&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=MSLTeam/MSLX&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=MSLTeam/MSLX&type=date&legend=top-left" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=MSLTeam/MSLX&type=date&theme=dark&legend=top-left&sealed_token=m85x0dx5oBJL2h5e8hzbka67NNWSQsO2b2kyXGxUPz6QQTSlN9Z3v5wQaxWvMpd42Uvfn51Ee7BZzGMPq0FFl-b4Zcpbb6wIxFg0VMz2UrwWwP-baix5hQ" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=MSLTeam/MSLX&type=date&legend=top-left&sealed_token=m85x0dx5oBJL2h5e8hzbka67NNWSQsO2b2kyXGxUPz6QQTSlN9Z3v5wQaxWvMpd42Uvfn51Ee7BZzGMPq0FFl-b4Zcpbb6wIxFg0VMz2UrwWwP-baix5hQ" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=MSLTeam/MSLX&type=date&legend=top-left&sealed_token=m85x0dx5oBJL2h5e8hzbka67NNWSQsO2b2kyXGxUPz6QQTSlN9Z3v5wQaxWvMpd42Uvfn51Ee7BZzGMPq0FFl-b4Zcpbb6wIxFg0VMz2UrwWwP-baix5hQ" />
  </picture>
 </a>

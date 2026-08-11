@@ -1,6 +1,8 @@
 ﻿using Avalonia.Controls;
 using Avalonia.Media.Imaging;
+using Avalonia.Interactivity;
 using MSLX.Desktop.Models;
+using MSLX.Desktop.Utils;
 using MSLX.Desktop.Utils.API;
 using Newtonsoft.Json.Linq;
 using System;
@@ -103,6 +105,32 @@ public partial class AboutPage : UserControl
         }
     }
 
+    private async void OnCheckDesktopUpdateClick(object? sender, RoutedEventArgs e)
+    {
+        BtnCheckDesktopUpdate.IsEnabled = false;
+        CheckDesktopUpdateText.Text = "正在检查...";
+
+        try
+        {
+            if (PlatformHelper.IsMacAppBundle())
+            {
+                if (App.Instance != null)
+                {
+                    await App.Instance.CheckForMacAppUpdatesAsync();
+                }
+            }
+            else
+            {
+                await UpdateService.UpdateDesktopApp();
+            }
+        }
+        finally
+        {
+            BtnCheckDesktopUpdate.IsEnabled = true;
+            CheckDesktopUpdateText.Text = "检查更新";
+        }
+    }
+
     private async void LoadMemberImages()
     {
         using var client = new HttpClient();
@@ -127,4 +155,3 @@ public partial class AboutPage : UserControl
         }
     }
 }
-

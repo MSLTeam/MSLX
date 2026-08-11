@@ -1,119 +1,738 @@
-﻿<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
+             xmlns:micon="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             xmlns:local="using:MSLX.Desktop.Views.InstanceInfo"
+             xmlns:createInstance="using:MSLX.Desktop.Views.CreateInstance"
+             mc:Ignorable="d" d:DesignWidth="850" d:DesignHeight="1200"
              x:Class="MSLX.Desktop.Views.InstanceInfo.InstanceSettingsTab">
 
-  <ScrollViewer Margin="0,4,0,0">
-    <StackPanel Spacing="10" Margin="2,0">
+  <!-- 加载状态包覆层 -->
+  <suki:BusyArea x:Name="SettingsBusyArea" IsBusy="True" BusyText="正在获取服务器配置...">
+    <Grid RowDefinitions="*,Auto">
 
-      <!-- 基础信息 -->
-      <suki:GroupBox Header="基础信息">
-        <Grid RowDefinitions="Auto,Auto,Auto,Auto" ColumnDefinitions="120,*" Margin="4">
+      <!-- 主表单区域 -->
+      <ScrollViewer Grid.Row="0" Margin="0,4,0,0">
+        <StackPanel Spacing="16" Margin="4,0,12,16">
 
-          <TextBlock Grid.Row="0" Grid.Column="0" Text="实例名称" VerticalAlignment="Center" Margin="0,0,0,6"/>
-          <TextBox   Grid.Row="0" Grid.Column="1" x:Name="NameBox" Margin="0,0,0,6"/>
+          <!-- 基础设置 -->
+          <suki:GroupBox Header="基础设置">
+            <StackPanel Spacing="12" Margin="4">
+              <!-- 服务器名称 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="服务器名称" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="在面板列表中显示的别名，支持中文" FontSize="12" Opacity="0.6" Margin="0,2,0,0"/>
+                </StackPanel>
+                <TextBox Grid.Column="1" x:Name="NameBox" PlaceholderText="请输入名称"/>
+              </Grid>
 
-          <TextBlock Grid.Row="1" Grid.Column="0" Text="Java 路径" VerticalAlignment="Center" Margin="0,0,0,6"/>
-          <TextBox   Grid.Row="1" Grid.Column="1" x:Name="JavaBox" Margin="0,0,0,6"/>
-
-          <TextBlock Grid.Row="2" Grid.Column="0" Text="核心文件" VerticalAlignment="Center" Margin="0,0,0,6"/>
-          <TextBox   Grid.Row="2" Grid.Column="1" x:Name="CoreBox" Margin="0,0,0,6"/>
-
-          <TextBlock Grid.Row="3" Grid.Column="0" Text="工作目录" VerticalAlignment="Center"/>
-          <TextBox   Grid.Row="3" Grid.Column="1" x:Name="BaseBox" IsReadOnly="True" Opacity="0.6"/>
-        </Grid>
-      </suki:GroupBox>
-
-      <!-- 内存配置 -->
-      <suki:GroupBox Header="内存配置">
-        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="120,*" Margin="4">
-
-          <TextBlock Grid.Row="0" Grid.Column="0" Text="最小内存 (MB)" VerticalAlignment="Center" Margin="0,0,0,6"/>
-          <NumericUpDown Grid.Row="0" Grid.Column="1" x:Name="MinMBox"
-                         Minimum="128" Maximum="65536" Increment="256"
-                         Margin="0,0,0,6"/>
-
-          <TextBlock Grid.Row="1" Grid.Column="0" Text="最大内存 (MB)" VerticalAlignment="Center"/>
-          <NumericUpDown Grid.Row="1" Grid.Column="1" x:Name="MaxMBox"
-                         Minimum="128" Maximum="65536" Increment="256"/>
-        </Grid>
-      </suki:GroupBox>
-
-      <!-- 启动选项 -->
-      <suki:GroupBox Header="启动选项">
-        <StackPanel Spacing="6" Margin="4">
-          <TextBlock Text="附加 JVM 参数"/>
-          <TextBox x:Name="ArgsBox" PlaceholderText="-Xms512m -Xmx4g ..."/>
-
-          <TextBlock Text="Yggdrasil API 地址" Margin="0,4,0,0"/>
-          <TextBox x:Name="YggdrasilBox" PlaceholderText="留空则不启用"/>
-
-          <Grid ColumnDefinitions="*,*" Margin="0,6,0,0">
-            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
-              <CheckBox x:Name="AutoRestartBox" Content="崩溃自动重启"/>
+              <!-- 实例路径 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="实例路径" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock x:Name="BasePathNoticeText"
+                             Text="服务器文件的物理存储路径，非必要请勿修改"
+                             FontSize="12" Opacity="0.6" Margin="0,2,0,0"/>
+                </StackPanel>
+                <Grid Grid.Column="1" ColumnDefinitions="*,Auto">
+                  <TextBox Grid.Column="0" x:Name="BaseBox" IsReadOnly="True" PlaceholderText="例如 d:/mslx/instance/1"/>
+                  <Button Grid.Column="1" x:Name="TogglePathEditBtn" Click="OnTogglePathEditClick" Margin="6,0,0,0" ToolTip.Tip="点击解锁编辑 (慎重)">
+                    <micon:MaterialIcon x:Name="PathLockIcon" Kind="Lock" Width="16" Height="16"/>
+                  </Button>
+                </Grid>
+              </Grid>
             </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-              <CheckBox x:Name="RunOnStartupBox" Content="随面板启动"/>
+          </suki:GroupBox>
+
+          <!-- 运行模式 -->
+          <suki:GroupBox Header="运行模式">
+            <StackPanel Spacing="12" Margin="4">
+              <!-- 启动方式 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="启动方式" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="选择使用 Java 启动 Minecraft，自定义命令启动其他程序 (如 Bedrock, Python 等)，或使用 Docker 进行容器化。"
+                             FontSize="12" Opacity="0.6" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="8">
+                  <ComboBox x:Name="JavaTypeCombo" HorizontalAlignment="Stretch" SelectionChanged="OnJavaTypeSelectionChanged">
+                    <ComboBoxItem Content="MSLX 在线下载 (Java)" Tag="online"/>
+                    <ComboBoxItem Content="使用本地版本 (Java)" Tag="local"/>
+                    <ComboBoxItem Content="自定义路径 (Java)" Tag="custom"/>
+                    <ComboBoxItem Content="环境变量 (Java)" Tag="env"/>
+                    <ComboBoxItem Content="Docker MSLX 内置运行时 (使用容器推荐这个)" Tag="docker-java"/>
+                    <ComboBoxItem Content="Docker 自定义容器" Tag="docker-custom"/>
+                    <ComboBoxItem Content="MCDReforged (MCDR - 本地原生)" Tag="mcdr"/>
+                    <ComboBoxItem Content="MCDReforged (MCDR - Docker 内置 Java 容器)" Tag="mcdr-docker-java"/>
+                    <ComboBoxItem Content="MCDReforged (MCDR - Docker 自定义容器)" Tag="mcdr-docker-custom"/>
+                    <ComboBoxItem Content="自定义命令 (无Java)" Tag="none"/>
+                  </ComboBox>
+
+                  <!-- 各种模式专属二级选择 -->
+                  <ComboBox x:Name="OnlineJavaCombo" HorizontalAlignment="Stretch" IsVisible="False" PlaceholderText="请选择 Java 在线版本"/>
+                  <ComboBox x:Name="LocalJavaCombo" HorizontalAlignment="Stretch" IsVisible="False" PlaceholderText="选择已识别的本地 Java"/>
+                  <TextBox x:Name="CustomJavaPathBox" IsVisible="False" PlaceholderText="输入 java 可执行文件完整路径"/>
+                  <ComboBox x:Name="DockerJavaVersionCombo" HorizontalAlignment="Stretch" IsVisible="False" PlaceholderText="请选择轻量容器内 Java 运行时版本">
+                    <ComboBoxItem Content="MSLX Docker镜像 [Java 8]" Tag="8"/>
+                    <ComboBoxItem Content="MSLX Docker镜像 [Java 11]" Tag="11"/>
+                    <ComboBoxItem Content="MSLX Docker镜像 [Java 17]" Tag="17"/>
+                    <ComboBoxItem Content="MSLX Docker镜像 [Java 21]" Tag="21"/>
+                    <ComboBoxItem Content="MSLX Docker镜像 [Java 25]" Tag="25"/>
+                  </ComboBox>
+                </StackPanel>
+              </Grid>
+
+              <!-- MCDR 专用 Python 设置 -->
+              <Grid x:Name="McdrPanel" ColumnDefinitions="*,340" IsVisible="False">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="MCDR 启动 (Python)" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="运行 MCDReforged 的 Python 命令或路径。真实服务端的 Java / 内存 / 核心请在 server/config.yml 中配置。"
+                             FontSize="12" Opacity="0.6" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="4">
+                  <TextBox x:Name="McdrPythonBox" PlaceholderText="例如: python3 或 C:\Python312\python.exe" TextChanged="OnMcdrPythonTextChanged"/>
+                  <TextBlock x:Name="McdrLaunchPreviewText" Text="实际启动命令: python -m mcdreforged start" FontSize="11" Opacity="0.7" TextWrapping="Wrap"/>
+                </StackPanel>
+              </Grid>
+
+              <!-- 启动命令 / JVM 参数 -->
+              <Grid x:Name="ArgsPanel" ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock x:Name="ArgsTitleText" Text="启动参数 (JVM Args)" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock x:Name="ArgsDescText" Text="传递给 Java 的启动参数，如 GC 策略 (例如 -XX:+UseG1GC)"
+                             FontSize="12" Opacity="0.6" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                </StackPanel>
+                <TextBox Grid.Column="1" x:Name="ArgsBox" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" PlaceholderText="无特殊需求请留空"/>
+              </Grid>
             </StackPanel>
-          </Grid>
+          </suki:GroupBox>
+
+          <!-- Docker 容器设置 -->
+          <suki:GroupBox x:Name="DockerGroup" Header="Docker 容器设置" IsVisible="False">
+            <StackPanel Spacing="12" Margin="4">
+              <!-- 基础镜像 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="容器基础镜像" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="当前运行实例所绑定的底层镜像生态。" FontSize="12" Opacity="0.6" Margin="0,2,0,0"/>
+                </StackPanel>
+                <TextBox Grid.Column="1" x:Name="DockerImageBox" PlaceholderText="例如 eclipse-temurin:21-jre"/>
+              </Grid>
+
+              <!-- 网络端口映射 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Top" Margin="0,4,0,0">
+                  <TextBlock Text="外部网络端口放行" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="将服务端口暴露给外界。切换为 Host 将共用物理机网络生态。"
+                             FontSize="12" Opacity="0.6" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="8">
+                  <StackPanel Orientation="Horizontal" Spacing="16">
+                    <RadioButton x:Name="PortModeMappedRadio" Content="端口映射" IsChecked="True" GroupName="PortModeGroup" IsCheckedChanged="OnPortModeRadioChecked"/>
+                    <RadioButton x:Name="PortModeHostRadio" Content="Host网络模式" GroupName="PortModeGroup" IsCheckedChanged="OnPortModeRadioChecked"/>
+                  </StackPanel>
+
+                  <!-- 映射端口列表 -->
+                  <StackPanel x:Name="PortMappingContainer" Spacing="6">
+                    <ItemsControl x:Name="PortItemsControl">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="local:PortMappingItem">
+                          <Grid ColumnDefinitions="*,Auto,*,Auto,Auto" Margin="0,2">
+                            <TextBox Grid.Column="0" Text="{Binding Host, Mode=TwoWay}" PlaceholderText="宿主机端口" FontSize="12"/>
+                            <TextBlock Grid.Column="1" Text=":" VerticalAlignment="Center" Margin="4,0" FontWeight="Bold" Opacity="0.5"/>
+                            <TextBox Grid.Column="2" Text="{Binding Container, Mode=TwoWay}" PlaceholderText="容器端口" FontSize="12"/>
+                            <ComboBox Grid.Column="3" SelectedValue="{Binding Protocol, Mode=TwoWay}" SelectedValueBinding="{Binding (ComboBoxItem).Tag}" Margin="4,0,0,0">
+                              <ComboBoxItem Content="TCP" Tag="tcp"/>
+                              <ComboBoxItem Content="UDP" Tag="udp"/>
+                            </ComboBox>
+                            <Button Grid.Column="4" Click="OnRemovePortRowClick" Classes="Flat" Margin="4,0,0,0" ToolTip.Tip="删除">
+                              <micon:MaterialIcon Kind="TrashCan" Width="14" Height="14"/>
+                            </Button>
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Content="+ 添加自定义映射端口" Click="OnAddPortRowClick" HorizontalAlignment="Stretch" Classes="Flat" FontSize="12"/>
+                  </StackPanel>
+                </StackPanel>
+              </Grid>
+
+              <!-- 折叠面板：Docker 高级选项 -->
+              <Expander Header="Docker 容器高级参数选项 (网络、目录挂载与算力限额)" HorizontalAlignment="Stretch" Margin="0,4,0,0">
+                <StackPanel Spacing="12" Margin="4,8">
+                  <Border Background="{DynamicResource SukiLightBorderBrush}" CornerRadius="6" Padding="10">
+                    <TextBlock Text="💡 这里是 Docker 容器的高级配置，修改这里的配置时请确保您知道您在做什么。" FontSize="12" Opacity="0.8"/>
+                  </Border>
+
+                  <!-- 工作目录 -->
+                  <Grid ColumnDefinitions="*,340">
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                      <TextBlock Text="容器工作目录" FontWeight="Medium" FontSize="13"/>
+                      <TextBlock Text="容器内部的数据挂载绝对目录，默认为 /mslx-data。" FontSize="11" Opacity="0.6"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6">
+                      <RadioButton x:Name="WorkDirDefaultRadio" Content="默认 (/mslx-data)" IsChecked="True" GroupName="WorkDirGroup" IsCheckedChanged="OnWorkDirRadioChecked"/>
+                      <RadioButton x:Name="WorkDirCustomRadio" Content="自定义路径" GroupName="WorkDirGroup" IsCheckedChanged="OnWorkDirRadioChecked"/>
+                      <TextBox x:Name="DockerWorkingDirBox" PlaceholderText="必须以 / 开头，例如 /my-server" IsVisible="False"/>
+                    </StackPanel>
+                  </Grid>
+
+                  <!-- 网络拓扑模式 -->
+                  <Grid ColumnDefinitions="*,340">
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                      <TextBlock Text="Docker 网络拓扑模式" FontWeight="Medium" FontSize="13"/>
+                      <TextBlock Text="容器加入的虚拟网桥群。bridge / host / 自定义网络。" FontSize="11" Opacity="0.6"/>
+                    </StackPanel>
+                    <TextBox Grid.Column="1" x:Name="DockerNetworkModeBox" PlaceholderText="如 bridge 或 mslx-net"/>
+                  </Grid>
+
+                  <!-- 内网集群别名 -->
+                  <Grid ColumnDefinitions="*,340">
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                      <TextBlock Text="内网集群服务解析别名" FontWeight="Medium" FontSize="13"/>
+                      <TextBlock Text="自定义隔离局域网内的通用容器代号，原生标准网桥下不可配置。" FontSize="11" Opacity="0.6" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <TextBox Grid.Column="1" x:Name="DockerNetworkAliasBox" PlaceholderText="输入微服务局域网别名"/>
+                  </Grid>
+
+                  <!-- 数据卷高级挂载 -->
+                  <Grid ColumnDefinitions="*,340">
+                    <StackPanel Grid.Column="0" VerticalAlignment="Top" Margin="0,4,0,0">
+                      <TextBlock Text="数据卷高级映射目录" FontWeight="Medium" FontSize="13"/>
+                      <TextBlock Text="用于添加额外的外部宿主机数据卷。" FontSize="11" Opacity="0.6" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6">
+                      <ItemsControl x:Name="VolumeItemsControl">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate DataType="local:VolumeMappingItem">
+                            <Grid ColumnDefinitions="*,Auto,*,Auto" Margin="0,2">
+                              <TextBox Grid.Column="0" Text="{Binding Host, Mode=TwoWay}" PlaceholderText="宿主机路径" FontSize="12"/>
+                              <TextBlock Grid.Column="1" Text=":" VerticalAlignment="Center" Margin="4,0" FontWeight="Bold" Opacity="0.5"/>
+                              <TextBox Grid.Column="2" Text="{Binding Container, Mode=TwoWay}" PlaceholderText="容器内路径" FontSize="12"/>
+                              <Button Grid.Column="3" Click="OnRemoveVolumeRowClick" Classes="Flat" Margin="4,0,0,0">
+                                <micon:MaterialIcon Kind="TrashCan" Width="14" Height="14"/>
+                              </Button>
+                            </Grid>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                      <Button Content="+ 追加新数据挂载卷" Click="OnAddVolumeRowClick" HorizontalAlignment="Stretch" Classes="Flat" FontSize="12"/>
+                    </StackPanel>
+                  </Grid>
+
+                  <!-- CPU 算力上限 -->
+                  <Grid ColumnDefinitions="*,340">
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                      <TextBlock Text="容器 CPU 算力分配上限 (%)" FontWeight="Medium" FontSize="13"/>
+                      <TextBlock Text="限额最高核心总比例。不设代表不限制。100%为1个核心。" FontSize="11" Opacity="0.6" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <NumericUpDown Grid.Column="1" x:Name="DockerCpuPercentageBox" Minimum="1" Maximum="1000"/>
+                  </Grid>
+
+                  <!-- Cpuset 绑核 -->
+                  <Grid ColumnDefinitions="*,340">
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                      <TextBlock Text="核定绑定的物理 CPU 核心 (Cpuset)" FontWeight="Medium" FontSize="13"/>
+                      <TextBlock Text="例如指定 0,1 或范围 0-3。" FontSize="11" Opacity="0.6"/>
+                    </StackPanel>
+                    <TextBox Grid.Column="1" x:Name="DockerCpuCoresBox" PlaceholderText="不绑核请留空，例如 0-2"/>
+                  </Grid>
+
+                  <!-- 物理外部边界内存限制 -->
+                  <Grid ColumnDefinitions="*,340">
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                      <TextBlock Text="容器物理外部边界内存限制 (MB)" FontWeight="Medium" FontSize="13"/>
+                      <TextBlock Text="Cgroups 物理内存封顶值。需大于 JVM 最大 Xmx。" FontSize="11" Opacity="0.6" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <NumericUpDown Grid.Column="1" x:Name="DockerMaxMemoryMbBox" Minimum="4"/>
+                  </Grid>
+
+                  <!-- 虚拟交换空间限制 -->
+                  <Grid ColumnDefinitions="*,340">
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                      <TextBlock Text="容器虚拟交换空间限制 (MB)" FontWeight="Medium" FontSize="13"/>
+                      <TextBlock Text="允许爆内存时向磁盘借用的虚拟内存最大空间。" FontSize="11" Opacity="0.6" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <NumericUpDown Grid.Column="1" x:Name="DockerMaxSwapMbBox" Minimum="0"/>
+                  </Grid>
+
+                  <!-- 磁盘容量限制 -->
+                  <Grid ColumnDefinitions="*,340">
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                      <TextBlock Text="容器磁盘容量上限限制 (仅Linux)" FontWeight="Medium" FontSize="13"/>
+                      <TextBlock Text="例如 15g 或 500m。" FontSize="11" Opacity="0.6"/>
+                    </StackPanel>
+                    <TextBox Grid.Column="1" x:Name="DockerMaxStorageBox" PlaceholderText="未设置代表不限制，例如 20g"/>
+                  </Grid>
+
+                  <!-- 上传吞吐限速 -->
+                  <Grid ColumnDefinitions="*,340">
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                      <TextBlock Text="网络出口最高上传吞吐限速" FontWeight="Medium" FontSize="13"/>
+                      <TextBlock Text="例如 500k, 2mb 或 2mbps。" FontSize="11" Opacity="0.6"/>
+                    </StackPanel>
+                    <TextBox Grid.Column="1" x:Name="DockerUploadRateBox" PlaceholderText="留空不限制，例如 5mb"/>
+                  </Grid>
+
+                  <!-- 下载吞吐限速 -->
+                  <Grid ColumnDefinitions="*,340">
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                      <TextBlock Text="网络入口最高下载吞吐限速" FontWeight="Medium" FontSize="13"/>
+                      <TextBlock Text="格式同上传限速。" FontSize="11" Opacity="0.6"/>
+                    </StackPanel>
+                    <TextBox Grid.Column="1" x:Name="DockerDownloadRateBox" PlaceholderText="留空不限制，例如 10mb"/>
+                  </Grid>
+
+                  <!-- 环境变量列表 -->
+                  <Grid ColumnDefinitions="*,340">
+                    <StackPanel Grid.Column="0" VerticalAlignment="Top" Margin="0,4,0,0">
+                      <TextBlock Text="容器基础环境变量" FontWeight="Medium" FontSize="13"/>
+                      <TextBlock Text="注入自定义环境变量如 TZ=Asia/Shanghai。" FontSize="11" Opacity="0.6" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6">
+                      <ItemsControl x:Name="EnvItemsControl">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate DataType="local:EnvVarItem">
+                            <Grid ColumnDefinitions="*,Auto,*,Auto" Margin="0,2">
+                              <TextBox Grid.Column="0" Text="{Binding Key, Mode=TwoWay}" PlaceholderText="KEY" FontSize="12"/>
+                              <TextBlock Grid.Column="1" Text="=" VerticalAlignment="Center" Margin="4,0" FontWeight="Bold" Opacity="0.5"/>
+                              <TextBox Grid.Column="2" Text="{Binding Value, Mode=TwoWay}" PlaceholderText="VALUE" FontSize="12"/>
+                              <Button Grid.Column="3" Click="OnRemoveEnvRowClick" Classes="Flat" Margin="4,0,0,0">
+                                <micon:MaterialIcon Kind="TrashCan" Width="14" Height="14"/>
+                              </Button>
+                            </Grid>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                      <Button Content="+ 新增环境变量" Click="OnAddEnvRowClick" HorizontalAlignment="Stretch" Classes="Flat" FontSize="12"/>
+                    </StackPanel>
+                  </Grid>
+
+                  <!-- Hosts 静态映射 -->
+                  <Grid ColumnDefinitions="*,340">
+                    <StackPanel Grid.Column="0" VerticalAlignment="Top" Margin="0,4,0,0">
+                      <TextBlock Text="宿主机高级 Hosts 静态映射" FontWeight="Medium" FontSize="13"/>
+                      <TextBlock Text="配置 Host -> IP 映射。" FontSize="11" Opacity="0.6" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Spacing="6">
+                      <ItemsControl x:Name="HostItemsControl">
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate DataType="local:HostMappingItem">
+                            <Grid ColumnDefinitions="*,Auto,*,Auto" Margin="0,2">
+                              <TextBox Grid.Column="0" Text="{Binding Domain, Mode=TwoWay}" PlaceholderText="域名(如 db.local)" FontSize="12"/>
+                              <TextBlock Grid.Column="1" Text="->" VerticalAlignment="Center" Margin="4,0" FontWeight="Bold" Opacity="0.5"/>
+                              <TextBox Grid.Column="2" Text="{Binding IP, Mode=TwoWay}" PlaceholderText="IP地址" FontSize="12"/>
+                              <Button Grid.Column="3" Click="OnRemoveHostRowClick" Classes="Flat" Margin="4,0,0,0">
+                                <micon:MaterialIcon Kind="TrashCan" Width="14" Height="14"/>
+                              </Button>
+                            </Grid>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                      <Button Content="+ 添加 Hosts 静态映射" Click="OnAddHostRowClick" HorizontalAlignment="Stretch" Classes="Flat" FontSize="12"/>
+                    </StackPanel>
+                  </Grid>
+
+                  <!-- ExtraArgs -->
+                  <Grid ColumnDefinitions="*,340">
+                    <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                      <TextBlock Text="Docker CLI 原生附加参数" FontWeight="Medium" FontSize="13"/>
+                      <TextBlock Text="透传给 docker run 命令的额外参数。" FontSize="11" Opacity="0.6" TextWrapping="Wrap"/>
+                    </StackPanel>
+                    <TextBox Grid.Column="1" x:Name="DockerExtraArgsBox" PlaceholderText="例如 --privileged 或 --dns=8.8.8.8"/>
+                  </Grid>
+                </StackPanel>
+              </Expander>
+            </StackPanel>
+          </suki:GroupBox>
+
+          <!-- 核心管理 (Java 模式专享) -->
+          <suki:GroupBox x:Name="CoreGroup" Header="核心管理">
+            <StackPanel Spacing="12" Margin="4">
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="服务端核心文件" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="指定启动的 Jar 文件名。如需要更新核心，点击右侧“文件工具”。"
+                             FontSize="12" Opacity="0.6" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                </StackPanel>
+                <Grid Grid.Column="1" ColumnDefinitions="*,Auto">
+                  <TextBox Grid.Column="0" x:Name="CoreBox" PlaceholderText="例如 server.jar"/>
+                  <Button Grid.Column="1" x:Name="ToggleCoreToolsBtn" Content="文件工具" Click="OnToggleCoreToolsClick" Margin="6,0,0,0"/>
+                </Grid>
+              </Grid>
+
+              <!-- 文件工具展开面板 -->
+              <Border x:Name="CoreToolsPanel" Background="{DynamicResource SukiLightBorderBrush}" CornerRadius="8" Padding="12" IsVisible="False">
+                <StackPanel Spacing="10">
+                  <TextBlock Text="💡 在此处操作会自动下载/上传文件，并填入上方的文件名。" FontSize="12" Opacity="0.8"/>
+                  <Grid ColumnDefinitions="*,*">
+                    <Button Grid.Column="0" Content="☁️ 版本库" Click="OnOpenCoreSelectorClick" HorizontalAlignment="Stretch" Margin="0,0,4,0"/>
+                    <Button Grid.Column="1" Content="📤 本地上传" Click="OnUploadCoreFileClick" HorizontalAlignment="Stretch" Margin="4,0,0,0"/>
+                  </Grid>
+
+                  <!-- 内嵌版本库选择面板 -->
+                  <createInstance:ServerCoreSelectorView x:Name="InlineCoreSelector" EnableAutoSize="False" Height="420" IsVisible="False" Margin="0,8,0,0"/>
+
+                  <StackPanel x:Name="UploadProgressPanel" Spacing="4" IsVisible="False">
+                    <TextBlock x:Name="UploadStatusText" Text="正在上传..." FontSize="12" Opacity="0.7"/>
+                    <ProgressBar x:Name="UploadProgressBar" Minimum="0" Maximum="100" Height="8"/>
+                  </StackPanel>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+          </suki:GroupBox>
+
+          <!-- 资源限制 (Java 模式专享) -->
+          <suki:GroupBox x:Name="ResourceGroup" Header="资源限制">
+            <StackPanel Spacing="12" Margin="4">
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="内存分配" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="设置 Java 堆内存大小 (Xms / Xmx)" FontSize="12" Opacity="0.6" Margin="0,2,0,0"/>
+                </StackPanel>
+                <Grid Grid.Column="1" ColumnDefinitions="*,Auto,*,Auto">
+                  <!-- Xms -->
+                  <NumericUpDown Grid.Column="0" x:Name="MinMBox" Minimum="0"/>
+                  <ComboBox Grid.Column="1" x:Name="MinMUnitCombo" SelectionChanged="OnMemoryUnitSelectionChanged" Margin="4,0,4,0">
+                    <ComboBoxItem Content="MB" Tag="MB"/>
+                    <ComboBoxItem Content="GB" Tag="GB"/>
+                  </ComboBox>
+
+                  <!-- Separator -->
+                  <TextBlock Grid.Column="2" Text="-" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+
+                  <!-- Xmx -->
+                  <NumericUpDown Grid.Column="2" x:Name="MaxMBox" Minimum="0" Margin="8,0,0,0"/>
+                  <ComboBox Grid.Column="3" x:Name="MaxMUnitCombo" SelectionChanged="OnMemoryUnitSelectionChanged" Margin="4,0,0,0">
+                    <ComboBoxItem Content="MB" Tag="MB"/>
+                    <ComboBoxItem Content="GB" Tag="GB"/>
+                  </ComboBox>
+                </Grid>
+              </Grid>
+            </StackPanel>
+          </suki:GroupBox>
+
+          <!-- 备份设置 -->
+          <suki:GroupBox Header="备份设置">
+            <StackPanel Spacing="12" Margin="4">
+              <!-- 保留份数与延迟秒数 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="备份策略" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="设置自动备份保留的最大数量，以及触发备份的延迟时间" FontSize="12" Opacity="0.6" Margin="0,2,0,0"/>
+                  <TextBlock Text="💡 什么是延迟时间？MSLX 发送 save-all 后等待指定的秒数确保落盘。" FontSize="11" Opacity="0.5" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                </StackPanel>
+                <Grid Grid.Column="1" ColumnDefinitions="*,Auto,*">
+                  <NumericUpDown Grid.Column="0" x:Name="BackupMaxCountBox" Minimum="1" Maximum="100" Increment="1"/>
+                  <TextBlock Grid.Column="1" Text="/" VerticalAlignment="Center" Margin="6,0" Opacity="0.5"/>
+                  <NumericUpDown Grid.Column="2" x:Name="BackupDelayBox" Minimum="0" Maximum="1440" Increment="5"/>
+                </Grid>
+              </Grid>
+
+              <!-- 存放路径 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="备份存放路径" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="选择备份文件存储的位置。推荐存储在实例文件夹外部以免误删。" FontSize="12" Opacity="0.6" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6">
+                  <ComboBox x:Name="BackupLocationCombo" HorizontalAlignment="Stretch" SelectionChanged="OnBackupLocationSelectionChanged">
+                    <ComboBoxItem Content="实例文件夹内 (Instance)" Tag="MSLX://Backup/Instance"/>
+                    <ComboBoxItem Content="全局数据目录 (Data)" Tag="MSLX://Backup/Data"/>
+                    <ComboBoxItem Content="自定义绝对路径" Tag="custom"/>
+                  </ComboBox>
+                  <TextBox x:Name="CustomBackupPathBox" IsVisible="False" PlaceholderText="输入备份存放的绝对路径"/>
+                </StackPanel>
+              </Grid>
+            </StackPanel>
+          </suki:GroupBox>
+
+          <!-- 外置登录 (Java 模式专享) -->
+          <suki:GroupBox x:Name="AuthGroup" Header="外置登录">
+            <StackPanel Spacing="12" Margin="4">
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="Yggdrasil API" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="选择认证服务器。留空则表示使用官方正版登录 (或离线模式)。" FontSize="12" Opacity="0.6" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6">
+                  <ComboBox x:Name="AuthSelectCombo" HorizontalAlignment="Stretch" SelectionChanged="OnAuthSelectSelectionChanged">
+                    <ComboBoxItem Content="官方/离线模式 (无)" Tag="none"/>
+                    <ComboBoxItem Content="MSL 统一身份验证 (MSL Skin)" Tag="https://skin.mslmc.net/api/yggdrasil"/>
+                    <ComboBoxItem Content="LittleSkin" Tag="https://littleskin.cn/api/yggdrasil"/>
+                    <ComboBoxItem Content="自定义服务器" Tag="custom"/>
+                  </ComboBox>
+                  <TextBox x:Name="CustomAuthUrlBox" IsVisible="False" PlaceholderText="输入 Authlib-Injector API 地址"/>
+                </StackPanel>
+              </Grid>
+            </StackPanel>
+          </suki:GroupBox>
+
+          <!-- 高级设置 -->
+          <suki:GroupBox Header="高级设置">
+            <StackPanel Spacing="12" Margin="4">
+              <!-- 停止指令 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="停止服务器指令" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="设置正常停止时所发送的指令，默认为 stop" FontSize="12" Opacity="0.6" Margin="0,2,0,0"/>
+                </StackPanel>
+                <TextBox Grid.Column="1" x:Name="StopCommandBox" PlaceholderText="stop"/>
+              </Grid>
+
+              <!-- 日志原彩 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="日志原彩显示" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="开启后注入环境变量，保留终端原有色彩" FontSize="12" Opacity="0.6" Margin="0,2,0,0"/>
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" x:Name="AllowOriginASCIIColorsToggle" HorizontalAlignment="Right"/>
+              </Grid>
+
+              <!-- 玩家监控 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="玩家监控" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="自动监控在线玩家列表及黑白名单功能" FontSize="12" Opacity="0.6" Margin="0,2,0,0"/>
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" x:Name="MonitorPlayersToggle" HorizontalAlignment="Right"/>
+              </Grid>
+
+              <!-- 自动重启 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="自动重启" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="崩溃或意外停止时重启 (熔断: 5分钟内5次则停止)" FontSize="12" Opacity="0.6" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" x:Name="AutoRestartToggle" HorizontalAlignment="Right" IsCheckedChanged="OnAutoRestartToggleCheckedChanged"/>
+              </Grid>
+
+              <!-- 强制自动重启 -->
+              <Grid x:Name="ForceAutoRestartPanel" ColumnDefinitions="*,340" IsVisible="False">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="强制自动重启" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="即使正常退出 (Exit Code 0) 也强制重启" FontSize="12" Opacity="0.6" Margin="0,2,0,0"/>
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" x:Name="ForceAutoRestartToggle" HorizontalAlignment="Right"/>
+              </Grid>
+
+              <!-- 关服强制结束延迟 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="关服强制结束时间 (秒)" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="发出 stop 后等待多久强制 Kill (10 - 300 s)" FontSize="12" Opacity="0.6" Margin="0,2,0,0"/>
+                </StackPanel>
+                <NumericUpDown Grid.Column="1" x:Name="ForceExitDelayBox" Minimum="1" Maximum="300"/>
+              </Grid>
+
+              <!-- 忽略 EULA -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="忽略 EULA 提示" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="非 MC 服务器实例可开启此选项" FontSize="12" Opacity="0.6" Margin="0,2,0,0"/>
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" x:Name="IgnoreEulaToggle" HorizontalAlignment="Right"/>
+              </Grid>
+
+              <!-- 随守护进程启动 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="随守护进程启动" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="开机或面板启动时自动拉起此实例" FontSize="12" Opacity="0.6" Margin="0,2,0,0"/>
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" x:Name="RunOnStartupToggle" HorizontalAlignment="Right"/>
+              </Grid>
+
+              <!-- 实例到期时间 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="实例到期时间" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="到期后关停且拒绝启动。留空为无限期。" FontSize="12" Opacity="0.6" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                </StackPanel>
+                <CalendarDatePicker Grid.Column="1" x:Name="ExpireTimePicker" HorizontalAlignment="Stretch" PlaceholderText="到期日期 (留空为永久)"/>
+              </Grid>
+
+              <!-- 联动 FRP 隧道自启停 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Top" Margin="0,4,0,0">
+                  <TextBlock Text="联动 FRP 隧道自启停" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="开服自动唤醒对应的 Frpc 隧道，关服/崩溃自动停止。" FontSize="12" Opacity="0.6" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6">
+                  <StackPanel Orientation="Horizontal" Spacing="16">
+                    <RadioButton x:Name="FrpSelectModeRadio" Content="列表多选" IsChecked="True" GroupName="FrpModeGroup" IsCheckedChanged="OnFrpModeRadioChecked"/>
+                    <RadioButton x:Name="FrpManualModeRadio" Content="手动输入 (8位ID)" GroupName="FrpModeGroup" IsCheckedChanged="OnFrpModeRadioChecked"/>
+                  </StackPanel>
+
+                  <!-- 多选列表 -->
+                  <ScrollViewer x:Name="FrpMultiSelectScroll" MaxHeight="120" IsVisible="True" Background="{DynamicResource SukiLightBorderBrush}" CornerRadius="4" Padding="6">
+                    <ItemsControl x:Name="FrpItemsControl">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="local:FrpTunnelItem">
+                          <CheckBox Content="{Binding Label}" IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="2"/>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </ScrollViewer>
+
+                  <!-- 手动输入 -->
+                  <TextBox x:Name="BindFrpIdBox" IsVisible="False" PlaceholderText="格式如: 10000001,10000002"/>
+                </StackPanel>
+              </Grid>
+
+              <!-- 强制 JVM UTF-8 (Java 模式专享) -->
+              <Grid x:Name="ForceJvmUtf8Panel" ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="强制 Java 使用 UTF8" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="解决 Windows 游戏内中文乱码问题" FontSize="12" Opacity="0.6" Margin="0,2,0,0"/>
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" x:Name="ForceJvmUTF8Toggle" HorizontalAlignment="Right"/>
+              </Grid>
+
+              <!-- 控制台编码 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="控制台编码" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="设置输入输出流的字符集，乱码时请尝试切换" FontSize="12" Opacity="0.6" Margin="0,2,0,0"/>
+                </StackPanel>
+                <Grid Grid.Column="1" ColumnDefinitions="*,*">
+                  <ComboBox Grid.Column="0" x:Name="InputEncodingCombo" HorizontalAlignment="Stretch" Margin="0,0,4,0">
+                    <ComboBoxItem Content="utf-8" Tag="utf-8"/>
+                    <ComboBoxItem Content="gbk" Tag="gbk"/>
+                  </ComboBox>
+                  <ComboBox Grid.Column="1" x:Name="OutputEncodingCombo" HorizontalAlignment="Stretch" Margin="4,0,0,0">
+                    <ComboBoxItem Content="utf-8" Tag="utf-8"/>
+                    <ComboBoxItem Content="gbk" Tag="gbk"/>
+                  </ComboBox>
+                </Grid>
+              </Grid>
+
+              <!-- 文件编码 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="文件编码" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="设置文件编辑保存时的编码 (Windows一般为GBK，其余UTF-8)" FontSize="12" Opacity="0.6" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                </StackPanel>
+                <ComboBox Grid.Column="1" x:Name="FileEncodingCombo" HorizontalAlignment="Stretch">
+                  <ComboBoxItem Content="UTF-8" Tag="utf-8"/>
+                  <ComboBoxItem Content="UTF-8 With BOM" Tag="utf-8-bom"/>
+                  <ComboBoxItem Content="GBK" Tag="gbk"/>
+                </ComboBox>
+              </Grid>
+            </StackPanel>
+          </suki:GroupBox>
+
+          <!-- 路径设置 -->
+          <suki:GroupBox Header="路径设置">
+            <StackPanel Spacing="12" Margin="4">
+              <TextBlock Text="💡 这里一般不需要改动，除非服务端路径不是根目录（如 MCDR）。" FontSize="12" Opacity="0.7"/>
+
+              <!-- Server.properties 路径 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="Server.properties 路径" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="相对实例路径，读取端口/难度/模式等配置" FontSize="12" Opacity="0.6" Margin="0,2,0,0"/>
+                </StackPanel>
+                <TextBox Grid.Column="1" x:Name="ServerPropertiesPathBox" PlaceholderText="server.properties"/>
+              </Grid>
+
+              <!-- 插件目录路径 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="插件目录路径" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="相对实例路径，用于管理服务端插件" FontSize="12" Opacity="0.6" Margin="0,2,0,0"/>
+                </StackPanel>
+                <TextBox Grid.Column="1" x:Name="PluginsPathBox" PlaceholderText="plugins"/>
+              </Grid>
+
+              <!-- 模组目录路径 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="模组目录路径" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="相对实例路径，用于管理服务端模组" FontSize="12" Opacity="0.6" Margin="0,2,0,0"/>
+                </StackPanel>
+                <TextBox Grid.Column="1" x:Name="ModsPathBox" PlaceholderText="mods"/>
+              </Grid>
+
+              <!-- 地图目录路径 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="地图目录路径" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="相对实例路径，用于地图渲染和 level.dat" FontSize="12" Opacity="0.6" Margin="0,2,0,0"/>
+                </StackPanel>
+                <TextBox Grid.Column="1" x:Name="WorldPathBox" PlaceholderText="world"/>
+              </Grid>
+
+              <!-- Region 目录路径 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="Region 目录路径" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="相对地图目录路径，读取 r.x.z.mca 文件" FontSize="12" Opacity="0.6" Margin="0,2,0,0"/>
+                </StackPanel>
+                <TextBox Grid.Column="1" x:Name="RegionPathBox" PlaceholderText="region"/>
+              </Grid>
+            </StackPanel>
+          </suki:GroupBox>
+
         </StackPanel>
-      </suki:GroupBox>
+      </ScrollViewer>
 
-      <!-- 编码设置 -->
-      <suki:GroupBox Header="编码设置">
-        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="120,*" Margin="4">
+      <!-- 底部固定悬浮按钮栏 -->
+      <Border Grid.Row="1" Background="{DynamicResource SukiBackgroundBrush}" BorderBrush="{DynamicResource SukiLightBorderBrush}" BorderThickness="0,1,0,0" Padding="16,10">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12">
+          <Button Content="重置更改" Click="OnResetClick" Classes="Outlined" BorderBrush="#f59e0b" Foreground="#f59e0b"/>
+          <Button x:Name="SaveBtn" Content="保存设置" Click="OnSaveClick" Classes="Flat"/>
+        </StackPanel>
+      </Border>
 
-          <TextBlock Grid.Row="0" Grid.Column="0" Text="输入编码" VerticalAlignment="Center" Margin="0,0,0,6"/>
-          <ComboBox  Grid.Row="0" Grid.Column="1" x:Name="InputEncodingBox"
-                     Margin="0,0,0,6">
-            <ComboBoxItem Content="utf-8"/>
-            <ComboBoxItem Content="gbk"/>
-          </ComboBox>
+      <!-- SignalR 实时更新进度 Modal Overlay -->
+      <Grid x:Name="ProgressOverlay" Grid.Row="0" Grid.RowSpan="2" Background="#50000000" IsVisible="False">
+        <Border Width="580" MaxWidth="640" HorizontalAlignment="Center" VerticalAlignment="Center"
+                Background="{DynamicResource SukiCardBackground}"
+                BorderBrush="{DynamicResource SukiLightBorderBrush}" BorderThickness="1"
+                CornerRadius="16" Padding="24" BoxShadow="0 16 48 #40000000">
+          <StackPanel Spacing="16">
 
-          <TextBlock Grid.Row="1" Grid.Column="0" Text="输出编码" VerticalAlignment="Center"/>
-          <ComboBox  Grid.Row="1" Grid.Column="1" x:Name="OutputEncodingBox">
-            <ComboBoxItem Content="utf-8"/>
-            <ComboBoxItem Content="gbk"/>
-          </ComboBox>
-        </Grid>
-      </suki:GroupBox>
+            <!-- 标题栏与百分比 -->
+            <Grid ColumnDefinitions="Auto,*,Auto">
+              <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <Border Background="{DynamicResource SukiPrimaryColor25}" CornerRadius="10" Padding="10">
+                  <micon:MaterialIcon Kind="CloudDownload" Width="22" Height="22" Foreground="{DynamicResource SukiPrimaryColor}"/>
+                </Border>
+                <StackPanel VerticalAlignment="Center">
+                  <TextBlock Text="正在应用更新" FontSize="16" FontWeight="Bold"/>
+                  <TextBlock Text="实时同步服务端核心下载与日志部署进度" FontSize="12" Opacity="0.6" Margin="0,2,0,0"/>
+                </StackPanel>
+              </StackPanel>
 
-      <!-- 备份设置 -->
-      <suki:GroupBox Header="备份设置">
-        <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="120,*" Margin="4">
+              <TextBlock Grid.Column="2" x:Name="SignalRProgressText" Text="0%" VerticalAlignment="Center" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource SukiPrimaryColor}"/>
+            </Grid>
 
-          <TextBlock Grid.Row="0" Grid.Column="0" Text="备份路径" VerticalAlignment="Center" Margin="0,0,0,6"/>
-          <TextBox   Grid.Row="0" Grid.Column="1" x:Name="BackupPathBox" Margin="0,0,0,6"/>
+            <!-- 进度条 -->
+            <ProgressBar x:Name="SignalRProgressBar" Minimum="0" Maximum="100" Height="8" CornerRadius="4" HorizontalAlignment="Stretch"/>
 
-          <TextBlock Grid.Row="1" Grid.Column="0" Text="最大备份数" VerticalAlignment="Center" Margin="0,0,0,6"/>
-          <NumericUpDown Grid.Row="1" Grid.Column="1" x:Name="BackupMaxCountBox"
-                         Minimum="1" Maximum="100" Increment="1"
-                         Margin="0,0,0,6"/>
+            <!-- 终端日志框 -->
+            <StackPanel Spacing="6">
+              <TextBlock Text="部署日志输出" FontSize="12" FontWeight="SemiBold" Opacity="0.7"/>
+              <Border Background="#121214" BorderBrush="#27272a" BorderThickness="1" CornerRadius="10" Height="220" Padding="12">
+                <ScrollViewer x:Name="LogScrollViewer">
+                  <SelectableTextBlock x:Name="ProgressLogsTextBlock"
+                                       FontFamily="Consolas, Cascadia Code, Menlo, Monospace"
+                                       FontSize="12" Foreground="#e4e4e7" TextWrapping="Wrap"/>
+                </ScrollViewer>
+              </Border>
+            </StackPanel>
 
-          <TextBlock Grid.Row="2" Grid.Column="0" Text="备份保存等待(秒)" VerticalAlignment="Center"/>
-          <NumericUpDown Grid.Row="2" Grid.Column="1" x:Name="BackupDelayBox"
-                         Minimum="1" Maximum="1440" Increment="5"/>
-        </Grid>
-      </suki:GroupBox>
+            <!-- 底部按钮 -->
+            <Button x:Name="CloseProgressBtn" Content="关闭并刷新" Click="OnCloseProgressClick" HorizontalAlignment="Right" Classes="Flat" IsVisible="False"/>
 
-        <!-- 日志设置 -->
-      <suki:GroupBox Header="日志设置">
-        <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="120,*" Margin="4">
-          <TextBlock Grid.Row="0" Grid.Column="0" Text="日志原彩显示" VerticalAlignment="Center" Margin="0,0,0,6"/>
-          <ToggleSwitch Grid.Row="0" Grid.Column="1" x:Name="AllowOriginASCIIColorsToggle" Margin="0,0,0,6" IsChecked="true"/>
-        </Grid>
-      </suki:GroupBox>
+          </StackPanel>
+        </Border>
+      </Grid>
 
-      <!-- 保存按钮 -->
-      <Button x:Name="SaveBtn"
-              Content="保存设置"
-              HorizontalAlignment="Right"
-              Click="OnSaveClick"
-              Margin="0,4,0,8"/>
-
-    </StackPanel>
-  </ScrollViewer>
+    </Grid>
+  </suki:BusyArea>
 </UserControl>

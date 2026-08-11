@@ -6,6 +6,7 @@ using Avalonia.VisualTree;
 using System.Linq;
 using MSLX.Desktop.Models;
 using MSLX.Desktop.Utils;
+using MSLX.Desktop.Views;
 using SukiUI;
 using SukiUI.Controls;
 using SukiUI.Models;
@@ -32,6 +33,8 @@ public partial class MainWindow : SukiWindow
         this.MainSideMenu.ItemsSource = PageStore.MainPages;
         SideMenuHelper.Current?.HideMainPages(0);
     }
+
+
 
     protected override void OnApplyTemplate(Avalonia.Controls.Primitives.TemplateAppliedEventArgs e)
     {
@@ -95,6 +98,15 @@ public partial class MainWindow : SukiWindow
 
     private void MainWindow_Closing(object? sender, WindowClosingEventArgs e)
     {
+        // macOS 下关闭窗口只隐藏应用，Daemon 和菜单栏图标继续运行。
+        if ((App.Instance?.IsMacAppBundle ?? false) &&
+            !(App.Instance?.IsExitRequested ?? false))
+        {
+            e.Cancel = true;
+            Hide();
+            return;
+        }
+
         _ = DaemonManager.StopRunningDaemon();
     }
 

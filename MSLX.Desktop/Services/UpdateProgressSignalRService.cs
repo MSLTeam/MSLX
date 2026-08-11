@@ -64,7 +64,7 @@ public class UpdateProgressSignalRService : IAsyncDisposable
         };
 
         await _connection.StartAsync();
-        await _connection.InvokeAsync("JoinGroup", instanceId);
+        await _connection.InvokeAsync("JoinGroup", instanceId.ToString());
         ConnectionStateChanged?.Invoke(true);
     }
 
@@ -74,7 +74,7 @@ public class UpdateProgressSignalRService : IAsyncDisposable
     public async Task LeaveGroupAsync(int instanceId)
     {
         if (_connection == null || !IsConnected) return;
-        await _connection.InvokeAsync("LeaveGroup", instanceId);
+        await _connection.InvokeAsync("LeaveGroup", instanceId.ToString());
     }
 
     public async ValueTask DisposeAsync()

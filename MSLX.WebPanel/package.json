@@ -1,11 +1,11 @@
 {
   "name": "mslx-webpanel",
-  "version": "1.5.9",
+  "version": "1.5.10",
   "scripts": {
-    "dev": "vite --mode development",
-    "dev:linux": "vite --mode development",
-    "build:test": "vite build --mode test",
-    "build": "vue-tsc --noEmit && vite build --mode release && node generate-build-info.js",
+    "dev": "npm run sync-version && vite --mode development",
+    "dev:linux": "npm run sync-version && vite --mode development",
+    "build:test": "npm run sync-version && vite build --mode test",
+    "build": "npm run sync-version && vue-tsc --noEmit && vite build --mode release && node generate-build-info.js",
     "preview": "vite preview",
     "lint": "eslint --ext .vue,.js,.jsx,.ts,.tsx ./ --max-warnings 0",
     "lint:fix": "eslint --ext .vue,.js,jsx,.ts,.tsx ./ --max-warnings 0 --fix",
@@ -13,8 +13,7 @@
     "stylelint:fix": "stylelint --fix src/**/*.{html,vue,vss,sass,less}",
     "prepare": "node -e \"if(require('fs').existsSync('.git')){process.exit(1)}\" || is-ci || husky install",
     "site:preview": "npm run build && cp -r dist _site",
-    "test": "echo \"no test specified,work in process\"",
-    "test:coverage": "echo \"no test:coverage specified,work in process\""
+    "sync-version": "node sync-version.js"
   },
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
