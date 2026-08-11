@@ -442,7 +442,7 @@ jobs:
           CNB_TOKEN: ${{ secrets.CNB_MAIN_REPO_TOKEN }}
           TAG_NAME: ${{ env.VERSION_NAME }}
         run: |
-          echo "正在准备同步 macOS DMG 到国内 CNB 主节点..."
+          echo "正在准备同步 macOS DMG 及 AppCast 到国内 CNB 主节点..."
           
           if [[ "$TAG_NAME" == "beta" ]]; then
             echo "当前为手动测试构建，跳过 CNB 同步。"
@@ -453,10 +453,6 @@ jobs:
             echo "❌ 错误：未找到生成的 dmg 压缩包文件！"
             exit 1
           fi
-
-          FILE_NAME=$(basename "${{ env.ASSET_PATH }}")
-          # macOS runner 下获取文件大小的 stat 参数是 -f%z 而非 Linux 的 -c%s
-          FILE_SIZE=$(stat -f%z "${{ env.ASSET_PATH }}")
 
           curl -s \
             -H "Authorization: token $CNB_TOKEN" \
@@ -500,36 +496,62 @@ jobs:
 
           echo "✅ 成功对接主仓 Release，ID 为: $RELEASE_ID"
 
-          # 获取附件上传地址
-          curl -s -X POST \
-            -H "Authorization: token $CNB_TOKEN" \
-            -H "Content-Type: application/json" \
-            -H "Accept: application/json" \
-            -d "{\"asset_name\": \"${FILE_NAME}\", \"size\": ${FILE_SIZE}, \"overwrite\": true}" \
-            "https://api.cnb.cool/${CNB_REPO_SLUG}/-/releases/${RELEASE_ID}/asset-upload-url" > url_res.json
+          upload_asset_to_cnb() {
+            local TARGET_FILE="$1"
+            if [ -z "$TARGET_FILE" ] || [ ! -f "$TARGET_FILE" ]; then
+              return 0
+            fi
 
-          UPLOAD_URL=$(jq -r '.upload_url // empty' url_res.json)
-          VERIFY_URL=$(jq -r '.verify_url // empty' url_res.json)
+            local FILE_NAME
+            FILE_NAME=$(basename "$TARGET_FILE")
+            # macOS runner 下获取文件大小的 stat 参数是 -f%z 而非 Linux 的 -c%s
+            local FILE_SIZE
+            FILE_SIZE=$(stat -f%z "$TARGET_FILE")
 
-          if [ -z "$UPLOAD_URL" ] || [ "$UPLOAD_URL" = "null" ]; then
-            echo "❌ 错误：无法获取上传地址。返回内容："
-            cat url_res.json
-            exit 1
+            echo "正在获取附件 $FILE_NAME 上传地址..."
+            curl -s -X POST \
+              -H "Authorization: token $CNB_TOKEN" \
+              -H "Content-Type: application/json" \
+              -H "Accept: application/json" \
+              -d "{\"asset_name\": \"${FILE_NAME}\", \"size\": ${FILE_SIZE}, \"overwrite\": true}" \
+              "https://api.cnb.cool/${CNB_REPO_SLUG}/-/releases/${RELEASE_ID}/asset-upload-url" > url_res.json
+
+            local UPLOAD_URL
+            local VERIFY_URL
+            UPLOAD_URL=$(jq -r '.upload_url // empty' url_res.json)
+            VERIFY_URL=$(jq -r '.verify_url // empty' url_res.json)
+
+            if [ -z "$UPLOAD_URL" ] || [ "$UPLOAD_URL" = "null" ]; then
+              echo "❌ 错误：无法获取 $FILE_NAME 的上传地址。返回内容："
+              cat url_res.json
+              exit 1
+            fi
+
+            echo "正在把文件 $FILE_NAME 推送到预签名高速通道..."
+            curl -s -X PUT -T "$TARGET_FILE" "$UPLOAD_URL"
+
+            echo "正在确认附件 $FILE_NAME 上传状态..."
+            local CONFIRM_CODE
+            CONFIRM_CODE=$(curl -s -o confirm_res.json -w "%{http_code}" -X POST \
+              -H "Authorization: token $CNB_TOKEN" \
+              -H "Accept: application/json" \
+              "${VERIFY_URL}?ttl=0")
+
+            if [ "$CONFIRM_CODE" -eq 200 ] || [ "$CONFIRM_CODE" -eq 201 ]; then
+              echo "🎉 [${{ matrix.rid }}] 附件 $FILE_NAME 已成功关联到 CNB 主仓 Release 页面！"
+            else
+              echo "❌ 错误：确认附件 $FILE_NAME 失败。状态码: ${CONFIRM_CODE}，返回内容："
+              cat confirm_res.json
+              exit 1
+            fi
+          }
+
+          upload_asset_to_cnb "${{ env.ASSET_PATH }}"
+
+          if [ -n "${APPCAST_PATH:-}" ]; then
+            upload_asset_to_cnb "${APPCAST_PATH}"
           fi
 
-          echo "正在把文件 $FILE_NAME 推送到预签名高速通道..."
-          curl -s -X PUT -T "${{ env.ASSET_PATH }}" "$UPLOAD_URL"
-
-          echo "正在确认附件上传状态..."
-          CONFIRM_CODE=$(curl -s -o confirm_res.json -w "%{http_code}" -X POST \
-            -H "Authorization: token $CNB_TOKEN" \
-            -H "Accept: application/json" \
-            "${VERIFY_URL}?ttl=0")
-
-          if [ "$CONFIRM_CODE" -eq 200 ] || [ "$CONFIRM_CODE" -eq 201 ]; then
-            echo "🎉 [${{ matrix.rid }}] DMG 产物已成功关联到 CNB 主仓 Release 页面！"
-          else
-            echo "❌ 错误：确认附件失败。状态码: ${CONFIRM_CODE}，返回内容："
-            cat confirm_res.json
-            exit 1
+          if [ -n "${APPCAST_SIGNATURE_PATH:-}" ]; then
+            upload_asset_to_cnb "${APPCAST_SIGNATURE_PATH}"
           fi
