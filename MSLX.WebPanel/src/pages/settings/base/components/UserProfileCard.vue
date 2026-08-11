@@ -109,6 +109,10 @@ const resetApiKey = () => {
 };
 
 const onUserSubmit = async () => {
+  if (userInfo.id === 'system-admin') {
+    MessagePlugin.warning('系统级APIKey账户无法修改用户信息');
+    return;
+  }
   if (securityState.changePassword) {
     if (!securityState.newPassword) {
       MessagePlugin.warning('请输入新密码');
@@ -227,7 +231,7 @@ const handleAvatarClick = () => {
 <template>
   <div
     :aria-disabled="userInfo.id === 'system-admin'"
-    class="design-card list-item-anim relative flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300"
+    class="design-card list-item-anim relative flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:pointer-events-none"
   >
     <t-loading :loading="loading" show-overlay>
       <div

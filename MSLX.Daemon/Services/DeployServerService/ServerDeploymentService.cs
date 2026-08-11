@@ -525,6 +525,10 @@ public class ServerDeploymentService
 
         _logger.LogInformation("开始 NeoForge/Forge 安装流程...");
         await report("准备运行 NeoForge/Forge 安装程序...", 0);
+        
+        // 清理老版本启动脚本
+        File.Delete(Path.Combine(baseDir, "run.bat"));
+        File.Delete(Path.Combine(baseDir, "run.sh"));
 
         try
         {
