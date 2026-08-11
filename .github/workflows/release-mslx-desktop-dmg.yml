@@ -362,19 +362,54 @@ jobs:
           mkdir -p "$CHANGELOG_DIR"
 
           CHANGELOG_CONTENT=""
-          if CHANGELOG_RESPONSE=$(curl \
-              --fail \
-              --silent \
-              --show-error \
-              --retry 3 \
-              "https://api.mslmc.cn/v4/software/changelogs?software=MSLX-Desktop"); then
-            CHANGELOG_CONTENT=$(jq -r \
-              --arg version "$BUNDLE_SHORT_VERSION" \
-              'if .code == 200 then first(.data[]? | select(.version == $version) | .changes) // empty else empty end' \
-              <<< "$CHANGELOG_RESPONSE" 2>/dev/null || true)
-          else
-            echo "::warning::无法获取更新日志，继续生成 AppCast"
-          fi
+          CHANGELOG_ATTEMPT=1
+          CHANGELOG_DEADLINE=$((SECONDS + 1800))
+
+          while true; do
+            CHANGELOG_RESPONSE=""
+            CHANGELOG_CONTENT=""
+            CHANGELOG_REMAINING=$((CHANGELOG_DEADLINE - SECONDS))
+
+            if (( CHANGELOG_REMAINING <= 0 )); then
+              echo "::warning::等待版本 $BUNDLE_SHORT_VERSION 的更新日志已达到 30 分钟，按无更新日志继续生成 AppCast"
+              break
+            fi
+
+            CHANGELOG_QUERY_TIMEOUT=30
+            if (( CHANGELOG_REMAINING < CHANGELOG_QUERY_TIMEOUT )); then
+              CHANGELOG_QUERY_TIMEOUT=$CHANGELOG_REMAINING
+            fi
+
+            if CHANGELOG_RESPONSE=$(curl \
+                --fail \
+                --silent \
+                --show-error \
+                --connect-timeout 10 \
+                --max-time "$CHANGELOG_QUERY_TIMEOUT" \
+                "https://api.mslmc.cn/v4/software/changelogs?software=MSLX-Desktop"); then
+              CHANGELOG_CONTENT=$(jq -r \
+                --arg version "$BUNDLE_SHORT_VERSION" \
+                'if .code == 200 then first(.data[]? | select(.version == $version) | .changes) // empty else empty end' \
+                <<< "$CHANGELOG_RESPONSE" 2>/dev/null || true)
+            else
+              echo "::warning::第 $CHANGELOG_ATTEMPT 次更新日志查询失败"
+            fi
+
+            if [[ -n "${CHANGELOG_CONTENT//[[:space:]]/}" ]]; then
+              echo "::notice::已获取版本 $BUNDLE_SHORT_VERSION 的更新日志，查询次数: $CHANGELOG_ATTEMPT"
+              break
+            fi
+
+            CHANGELOG_REMAINING=$((CHANGELOG_DEADLINE - SECONDS))
+            if (( CHANGELOG_REMAINING <= 0 )); then
+              echo "::warning::等待版本 $BUNDLE_SHORT_VERSION 的更新日志已达到 30 分钟，按无更新日志继续生成 AppCast"
+              break
+            fi
+
+            echo "::notice::更新日志 API 中尚无版本 $BUNDLE_SHORT_VERSION 的有效内容，60 秒后执行第 $((CHANGELOG_ATTEMPT + 1)) 次查询"
+            sleep 60
+            ((CHANGELOG_ATTEMPT += 1))
+          done
 
           if [[ -n "${CHANGELOG_CONTENT//[[:space:]]/}" ]]; then
             printf '%s\n' "$CHANGELOG_CONTENT" > "$CHANGELOG_PATH"
