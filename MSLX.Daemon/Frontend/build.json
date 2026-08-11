@@ -1,6 +1,6 @@
 {
-  "version": "1.5.10",
-  "buildTime": "2026-08-11 16:02:12",
+  "version": "1.5.10.1",
+  "buildTime": "2026-08-11 21:52:50",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -77,10 +77,46 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "5e40fd7f40a615e4620664b3d92375d3d2d3426f",
-  "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev",
+  "commitId": "13e37930fa055b9933f00cf78ca156f1c2a9bec4",
+  "commitMsg": "fix(webpanel): 修复系统级APIKey用户基础信息页面未正常禁用的问题",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "13e37930fa055b9933f00cf78ca156f1c2a9bec4",
+      "commitTime": "2026-08-11 21:50:51 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复系统级APIKey用户基础信息页面未正常禁用的问题"
+    },
+    {
+      "commitId": "9aacb851658563b9440f599addc2c82a098aade5",
+      "commitTime": "2026-08-11 21:36:57 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复Forge更换版本可能存在启动参数传错的问题"
+    },
+    {
+      "commitId": "4347151163ee12b458f40bdd650742439e953e96",
+      "commitTime": "2026-08-11 16:31:41 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(ci): 修复macos appcast数据文件未同步的问题"
+    },
+    {
+      "commitId": "b799c426c44a0d97edbd1e6c0b4e1d1f204a7aad",
+      "commitTime": "2026-08-11 16:13:10 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "chore(ci): 移除tag版本号验证"
+    },
+    {
+      "commitId": "63f776b74b8d72c9c19d5f6123fff031baa9c9b5",
+      "commitTime": "2026-08-11 16:04:14 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #218 from MSLTeam/dev"
+    },
+    {
+      "commitId": "af9d16c233febdd6941234921b26af90f59f48e0",
+      "commitTime": "2026-08-11 16:02:46 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel & desktop): 更新到v1.5.10版本"
+    },
     {
       "commitId": "5e40fd7f40a615e4620664b3d92375d3d2d3426f",
       "commitTime": "2026-08-11 15:58:56 +0800",
@@ -344,42 +380,6 @@
       "commitTime": "2026-08-06 16:41:41 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "feat(webpanel): 实例列表新增简单搜索功能"
-    },
-    {
-      "commitId": "d484d685c64acd9e6afdd8d59f59bc09de975cb1",
-      "commitTime": "2026-08-05 21:24:19 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "perf(desktop): 优化平滑滚动的使用体验"
-    },
-    {
-      "commitId": "f34a2d69b89ea8fd261e9a3cd1514ffbabaf6d79",
-      "commitTime": "2026-08-05 21:04:56 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "perf(desktop): 功能优化 fix(desktop): 问题修复"
-    },
-    {
-      "commitId": "7d3aeb360bbf333984852ec89670b21de750ff3b",
-      "commitTime": "2026-08-05 19:31:05 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
-    },
-    {
-      "commitId": "e20ae339172e68411d8365130d1cdd956542c360",
-      "commitTime": "2026-08-05 19:30:56 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "feat(desktop): 新增“无内容”占位符 perf(desktop): 优化平滑滚动动画，更流畅更符合直觉"
-    },
-    {
-      "commitId": "733cac01453080402d5e8c2cf4d688660f890517",
-      "commitTime": "2026-08-05 19:29:16 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
-    },
-    {
-      "commitId": "f0d7fcce2f3d9863dfc82de7ea801f38cfce1dc0",
-      "commitTime": "2026-08-05 19:29:09 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon): 新增 Cache-Control"
     }
   ]
 }
