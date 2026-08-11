@@ -1,6 +1,6 @@
 {
-  "version": "1.5.10.1",
-  "buildTime": "2026-08-11 21:52:50",
+  "version": "1.5.10.2",
+  "buildTime": "2026-08-12 00:18:03",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -77,10 +77,40 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "13e37930fa055b9933f00cf78ca156f1c2a9bec4",
-  "commitMsg": "fix(webpanel): 修复系统级APIKey用户基础信息页面未正常禁用的问题",
-  "commitAuthor": "luluxiaoyu",
+  "commitId": "c2087ad6fb7d3e5dc9818aa7041a744650dddb2e",
+  "commitMsg": "chore(ci): 打包dmg时等待更新日志",
+  "commitAuthor": "CoZooo",
   "history": [
+    {
+      "commitId": "c2087ad6fb7d3e5dc9818aa7041a744650dddb2e",
+      "commitTime": "2026-08-12 00:09:51 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "chore(ci): 打包dmg时等待更新日志"
+    },
+    {
+      "commitId": "fc1a9f258a335a80a2123397ca6ed37873f6c8ca",
+      "commitTime": "2026-08-11 23:23:30 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "fix(daemon): 修复运行库签名不一致拒绝加载的问题"
+    },
+    {
+      "commitId": "5317f0dc6474bdc82cc3d0520e123e316564318b",
+      "commitTime": "2026-08-11 22:14:28 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(ci): 启用四段式版本号"
+    },
+    {
+      "commitId": "6bdab708bb2942d1eabb9e33fd830877ba902dd0",
+      "commitTime": "2026-08-11 22:00:46 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #222 from MSLTeam/dev"
+    },
+    {
+      "commitId": "51d072801a3e2a2165bfca991336db7842912ebb",
+      "commitTime": "2026-08-11 21:59:14 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel & desktop): 更新到v1.5.10.1版本"
+    },
     {
       "commitId": "13e37930fa055b9933f00cf78ca156f1c2a9bec4",
       "commitTime": "2026-08-11 21:50:51 +0800",
@@ -350,36 +380,6 @@
       "commitTime": "2026-08-08 11:54:30 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "feat(daemon & webpanel): MCDR模式创建服务端适配Docker容器部署"
-    },
-    {
-      "commitId": "b1df69256f444c4609a66fb945aa138fcd495677",
-      "commitTime": "2026-08-07 13:03:24 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(daemon & desktop): 重构 HttpClient 连接池并隔离 Request Header"
-    },
-    {
-      "commitId": "fd56d13b28d06fa25d315ab6fef34f0727fda9e7",
-      "commitTime": "2026-08-06 20:02:24 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #212 from CoZooo/dev"
-    },
-    {
-      "commitId": "c0e77de1ae030db41a47fc97e1c9f81e02fd0526",
-      "commitTime": "2026-08-06 19:19:42 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "fix(daemon): 修复Homebrew服务自重启问题"
-    },
-    {
-      "commitId": "919f2e50580cbc91d74287cd394047b4df1f438b",
-      "commitTime": "2026-08-06 18:24:46 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "fix(daemon): 修复Homebrew未信任导致更新失败的问题"
-    },
-    {
-      "commitId": "aad95fc8fe60b175f2ce91b462ccae0be37ae2cd",
-      "commitTime": "2026-08-06 16:41:41 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel): 实例列表新增简单搜索功能"
     }
   ]
 }
