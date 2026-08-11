@@ -226,6 +226,7 @@ const handleAvatarClick = () => {
 
 <template>
   <div
+    :aria-disabled="userInfo.id === 'system-admin'"
     class="design-card list-item-anim relative flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300"
   >
     <t-loading :loading="loading" show-overlay>
@@ -262,8 +263,18 @@ const handleAvatarClick = () => {
 
         <div class="flex flex-col items-center sm:items-start gap-2.5 pt-1 z-10 w-full">
           <div class="flex flex-col sm:flex-row items-center gap-3">
-            <h1 class="text-2xl font-extrabold tracking-tight text-[var(--td-text-color-primary)] m-0 leading-none">
+            <h1
+              v-if="userInfo.id !== 'system-admin'"
+              class="text-2xl font-extrabold tracking-tight text-[var(--td-text-color-primary)] m-0 leading-none"
+            >
               {{ userInfo.name || '未设置昵称' }}
+            </h1>
+
+            <h1
+              v-if="userInfo.id === 'system-admin'"
+              class="text-2xl font-extrabold tracking-tight text-[var(--td-text-color-primary)] m-0 leading-none"
+            >
+              {{ userInfo.name || '未设置昵称' }} (全局管理员APIKey账户)
             </h1>
             <span
               v-if="userInfo.role === 'admin'"
