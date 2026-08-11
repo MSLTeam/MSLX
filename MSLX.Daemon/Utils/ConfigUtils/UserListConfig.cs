@@ -317,6 +317,7 @@ MSLX-Daemon 初始化成功 - 默认管理员凭据
                 Username = "MSLX Manager",
                 Name = "MSLX Manager",
                 Role = "admin",
+                Avatar = "https://www.mslmc.cn/logo.png",
                 Resources = new List<string>() 
             };
         }
