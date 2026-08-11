@@ -48,8 +48,8 @@ jobs:
             echo "这是手动触发构建，使用版本号: beta"
           fi
 
-          if [[ ! "$BUNDLE_SHORT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::CFBundleShortVersionString 必须是 x.y.z，当前值为: $BUNDLE_SHORT_VERSION"
+          if [[ ! "$BUNDLE_SHORT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(\.[0-9]+)?$ ]]; then
+            echo "::error::CFBundleShortVersionString 格式不正确，当前值为: $BUNDLE_SHORT_VERSION"
             exit 1
           fi
 
