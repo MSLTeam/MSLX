@@ -1,6 +1,6 @@
 {
   "name": "mslx-webpanel",
-  "version": "1.5.9",
+  "version": "1.5.10",
   "scripts": {
     "dev": "npm run sync-version && vite --mode development",
     "dev:linux": "npm run sync-version && vite --mode development",
