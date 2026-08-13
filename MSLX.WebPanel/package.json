@@ -2,18 +2,17 @@
   "name": "mslx-webpanel",
   "version": "1.5.10.2",
   "scripts": {
-    "dev": "pnpm run sync-version && vite --mode development",
-    "dev:linux": "pnpm run sync-version && vite --mode development",
-    "build:test": "pnpm run sync-version && vite build --mode test",
-    "build": "pnpm run sync-version && vue-tsc --noEmit && vite build --mode release && node generate-build-info.js",
+    "dev": "node sync-version.js && vite --mode development",
+    "dev:linux": "node sync-version.js && vite --mode development",
+    "build:test": "node sync-version.js && vite build --mode test",
+    "build": "node sync-version.js && vue-tsc --noEmit && vite build --mode release && node generate-build-info.js",
     "preview": "vite preview",
     "lint": "eslint --ext .vue,.js,.jsx,.ts,.tsx ./ --max-warnings 0",
     "lint:fix": "eslint --ext .vue,.js,jsx,.ts,.tsx ./ --max-warnings 0 --fix",
     "stylelint": "stylelint src/**/*.{html,vue,sass,less}",
     "stylelint:fix": "stylelint --fix src/**/*.{html,vue,vss,sass,less}",
     "prepare": "node -e \"if(require('fs').existsSync('.git')){process.exit(1)}\" || is-ci || husky install",
-    "site:preview": "pnpm run build && cp -r dist _site",
-    "sync-version": "node sync-version.js"
+    "site:preview": "pnpm run build && cp -r dist _site"
   },
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
