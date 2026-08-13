@@ -17,6 +17,7 @@ using MSLX.SDK.Models;
 using Serilog;
 using Serilog.Sinks.SystemConsole.Themes;
 using System.Reflection;
+using MSLX.Daemon.Services.ResourceServices;
 
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
@@ -232,6 +233,10 @@ builder.Services.AddScoped<IPythonScannerService,PythonScannerService>();
 builder.Services.AddTransient<NeoForgeInstallerService>();
 builder.Services.AddTransient<ServerDeploymentService>();
 
+// 资源下载相关服务注册
+builder.Services.AddHttpClient<IResourceProvider, CurseForgeService>();
+builder.Services.AddHttpClient<IResourceProvider, ModrinthService>();
+builder.Services.AddTransient<IUnifiedResourceService, UnifiedResourceService>();
 
 // 配置真实IP回传协议
 builder.Services.Configure<ForwardedHeadersOptions>(options =>

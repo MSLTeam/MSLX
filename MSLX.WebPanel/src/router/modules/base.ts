@@ -51,6 +51,12 @@ export default [
         component: () => import('@/pages/instance/cronTasksManager/index.vue'),
         meta: { title: '定时任务', icon: 'time',roleCode: ['admin', 'user'] },
       },
+      {
+        path: 'resource-center',
+        name: 'ResourceCenter',
+        component: () => import('@/pages/instance/resourceCenter/index.vue'),
+        meta: { title: '资源中心', icon: 'download',roleCode: ['admin', 'user'] },
+      },
     ],
   },
   {
