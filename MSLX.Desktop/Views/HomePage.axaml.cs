@@ -48,6 +48,7 @@ public partial class HomePage : UserControl
 
     private void HomePage_Loaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
+        InitLocalInfo();
         var now = DateTime.Now;
         if (_lastNoticeRefreshTime == null || (now - _lastNoticeRefreshTime.Value).TotalHours > 24)
         {
