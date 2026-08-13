@@ -14,6 +14,7 @@ export interface ResourceModel {
   id: string;
   name: string;
   summary: string;
+  description?: string;
   iconUrl?: string;
   author?: string;
   downloadCount: number;

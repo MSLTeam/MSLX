@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -148,8 +148,61 @@ namespace MSLX.Daemon.Services.ResourceServices
 
         public async Task<Resource> GetResourceAsync(string id)
         {
-            // TODO: 资源详情
-            throw new NotImplementedException();
+            string token = await GetApiKeyAsync();
+            if (string.IsNullOrEmpty(token)) return null;
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.curseforge.com/v1/mods/{id}");
+            request.Headers.Add("x-api-key", token);
+            request.Headers.Add("Accept", "application/json");
+
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var json = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+
+            if (doc.RootElement.TryGetProperty("data", out var element))
+            {
+                string authorName = "Unknown";
+                if (element.TryGetProperty("authors", out var authorsArray) && authorsArray.ValueKind == JsonValueKind.Array && authorsArray.GetArrayLength() > 0)
+                {
+                    authorName = authorsArray[0].GetProperty("name").GetString() ?? "Unknown";
+                }
+
+                // Fetch description
+                string description = "";
+                using var descRequest = new HttpRequestMessage(HttpMethod.Get, $"https://api.curseforge.com/v1/mods/{id}/description");
+                descRequest.Headers.Add("x-api-key", token);
+                descRequest.Headers.Add("Accept", "application/json");
+                var descResponse = await _httpClient.SendAsync(descRequest);
+                if (descResponse.IsSuccessStatusCode)
+                {
+                    var descJson = await descResponse.Content.ReadAsStringAsync();
+                    using var descDoc = JsonDocument.Parse(descJson);
+                    if (descDoc.RootElement.TryGetProperty("data", out var descData) && descData.ValueKind == JsonValueKind.String)
+                    {
+                        description = descData.GetString();
+                    }
+                }
+
+                return new Resource
+                {
+                    Id = element.GetProperty("id").GetInt32().ToString(),
+                    Name = element.GetProperty("name").GetString(),
+                    Summary = element.GetProperty("summary").GetString(),
+                    Description = description,
+                    IconUrl = element.TryGetProperty("logo", out var logoProp) && logoProp.ValueKind == JsonValueKind.Object && logoProp.TryGetProperty("thumbnailUrl", out var thumbProp) ? thumbProp.GetString() : null,
+                    Author = authorName,
+                    Provider = ResourceProviderType.CurseForge,
+                    DownloadCount = element.GetProperty("downloadCount").GetInt64(),
+                    UpdatedAt = element.GetProperty("dateModified").GetDateTime()
+                };
+            }
+
+            return null;
         }
 
         public async Task<IEnumerable<ResourceVersion>> GetVersionsAsync(string id, string gameVersion = null, string loader = null)

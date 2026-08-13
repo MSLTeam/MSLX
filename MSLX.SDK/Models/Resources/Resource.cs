@@ -12,6 +12,7 @@ namespace MSLX.SDK.Models.Resources
         public string Name { get; set; }
 
         public string Summary { get; set; }
+        public string Description { get; set; }
         public string IconUrl { get; set; }
         public string Author { get; set; }
         public long DownloadCount { get; set; }

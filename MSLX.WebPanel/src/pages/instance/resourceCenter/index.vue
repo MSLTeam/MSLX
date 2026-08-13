@@ -1,9 +1,12 @@
 <script lang="ts" setup>
 import { ref, reactive, onMounted } from 'vue';
 import { SearchIcon } from 'tdesign-icons-vue-next';
-import { searchResources, getResourceVersions } from '@/api/resourceCenter';
+import { searchResources, getResourceVersions, getResourceDetail } from '@/api/resourceCenter';
 import type { ResourceModel, ResourceVersionModel } from '@/api/model/resourceCenter';
 import { getServerCoreGameVersion } from '@/api/mslapi/serverCore';
+import { MdPreview, type Themes } from 'md-editor-v3';
+import 'md-editor-v3/lib/preview.css';
+import { useSettingStore } from '@/store';
 
 const typeOptions = [
   { label: 'Mod', value: 0 },
@@ -238,6 +241,36 @@ const openDownloadModal = async (item: ResourceModel) => {
 const doDownload = (url: string) => {
   window.open(url, '_blank');
 };
+
+// 详情 Modal
+const detailVisible = ref(false);
+const detailLoading = ref(false);
+const currentDetail = ref<ResourceModel | null>(null);
+
+const openDetailModal = async (item: ResourceModel) => {
+  detailVisible.value = true;
+  detailLoading.value = true;
+  currentDetail.value = null;
+  try {
+    const res = await getResourceDetail(item.provider, item.id);
+    if (res) {
+      currentDetail.value = res;
+    }
+  } catch (error) {
+    console.error('Failed to fetch resource details', error);
+  } finally {
+    detailLoading.value = false;
+  }
+};
+
+// Markdown 主题跟随系统
+const settingStore = useSettingStore();
+const isDark = computed(() => settingStore.displayMode === 'dark');
+const mdTheme = ref(isDark.value ? 'dark' : 'light');
+import { watch } from 'vue';
+watch(isDark, (val) => {
+  mdTheme.value = val ? 'dark' : 'light';
+});
 </script>
 
 <template>
@@ -353,7 +386,10 @@ const doDownload = (url: string) => {
                 <div class="text-xs text-[var(--td-text-color-secondary)]">
                   下载量: {{ formatNumber(item.downloadCount) }}
                 </div>
-                <t-button size="small" theme="primary" @click="openDownloadModal(item)">下载</t-button>
+                <div class="flex gap-2">
+                  <t-button size="small" theme="default" @click="openDetailModal(item)">详情</t-button>
+                  <t-button size="small" theme="primary" @click="openDownloadModal(item)">下载</t-button>
+                </div>
               </div>
             </div>
           </div>
@@ -436,7 +472,135 @@ const doDownload = (url: string) => {
         />
       </div>
     </t-dialog>
+
+    <!-- 详情弹窗 -->
+    <t-dialog
+      v-model:visible="detailVisible"
+      header="资源详情"
+      width="800px"
+      :footer="false"
+      placement="center"
+    >
+      <div class="flex flex-col gap-4">
+        <div v-if="detailLoading" class="flex justify-center items-center h-48">
+          <t-loading text="加载详情中..." />
+        </div>
+        <div v-else-if="currentDetail">
+          <div class="flex items-center gap-4 mb-4">
+            <t-avatar
+              :image="currentDetail.iconUrl"
+              class="shadow-sm border border-[var(--td-component-border)] !bg-[var(--td-bg-color-secondarycontainer)] !rounded-xl"
+              shape="round"
+              size="64px"
+            >
+              <template #icon>
+                <span class="text-[var(--td-text-color-secondary)]">{{ currentDetail.name.charAt(0) }}</span>
+              </template>
+            </t-avatar>
+            <div>
+              <h3 class="text-xl font-bold tracking-tight text-[var(--td-text-color-primary)] m-0">
+                {{ currentDetail.name }}
+              </h3>
+              <p class="text-sm text-[var(--td-text-color-secondary)] mt-1 mb-0">{{ currentDetail.summary }}</p>
+            </div>
+          </div>
+          
+          <!-- Markdown 渲染 -->
+          <div class="border-t border-[var(--td-component-border)] pt-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
+            <md-preview
+              v-if="currentDetail.description"
+              :model-value="currentDetail.description"
+              :theme="mdTheme as Themes"
+              class="custom-md-preview bg-transparent text-left !p-0"
+            />
+            <div v-else class="text-[var(--td-text-color-secondary)] text-center my-8">
+              该资源暂无详细描述。
+            </div>
+          </div>
+        </div>
+        <div v-else class="text-center text-[var(--td-text-color-secondary)] h-32 flex items-center justify-center">
+          加载失败
+        </div>
+      </div>
+    </t-dialog>
   </div>
 </template>
 
-<style scoped></style>
+<style scoped lang="less">
+@reference "@/style/tailwind/index.css";
+
+.list-item-anim {
+  opacity: 0;
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* === 自定义滚动条样式 === */
+.custom-scrollbar {
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    @apply bg-zinc-300 dark:bg-zinc-600 rounded-full;
+  }
+}
+
+/* === Markdown 组件样式 === */
+
+:deep(.custom-md-preview) {
+  --md-bk-color: transparent !important;
+  --md-color: inherit !important;
+  text-align: left !important;
+}
+
+:deep(.md-editor-preview a) {
+  color: var(--color-primary);
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+:deep(.md-editor-preview code:not([class*="language-"])) {
+  color: var(--color-primary);
+  background-color: color-mix(in srgb, var(--color-primary), transparent 90%);
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+:deep(.md-editor-preview blockquote){
+  background: none;
+}
+
+:deep(.md-editor div.default-theme) {
+  --md-theme-quote-border: 4px solid var(--color-primary);
+}
+
+:deep(.md-editor-preview) {
+  --md-color: inherit !important;
+}
+
+:deep(.md-editor-preview table tr:nth-child(2n)){
+  background-color: transparent;
+}
+
+:deep(.md-editor-preview table tr:nth-child(n)){
+  background-color: transparent;
+}
+
+:deep(.md-editor-preview img) {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 16px 0;
+}
+</style>

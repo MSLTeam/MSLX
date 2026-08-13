@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using MSLX.SDK.IServices;
 using MSLX.SDK.Models.Resources;
 
@@ -20,6 +20,14 @@ namespace MSLX.Daemon.Controllers.ResourceControllers
         {
             var results = await _unifiedResourceService.SearchAsync(filter);
             return Ok(results);
+        }
+
+        [HttpGet("{providerType}/{id}")]
+        public async Task<IActionResult> GetResource(ResourceProviderType providerType, string id)
+        {
+            var resource = await _unifiedResourceService.GetResourceAsync(id, providerType);
+            if (resource == null) return NotFound();
+            return Ok(resource);
         }
 
         [HttpGet("{providerType}/{id}/versions")]

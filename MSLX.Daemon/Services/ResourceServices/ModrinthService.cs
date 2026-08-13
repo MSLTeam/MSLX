@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
@@ -120,7 +120,37 @@ namespace MSLX.Daemon.Services.ResourceServices
 
         public async Task<Resource> GetResourceAsync(string id)
         {
-            throw new NotImplementedException();
+            using var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.modrinth.com/v2/project/{id}");
+            request.Headers.Add("User-Agent", "MSLTeam/MSLX");
+
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var json = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+            var element = doc.RootElement;
+
+            DateTime updatedAt = DateTime.MinValue;
+            if (element.TryGetProperty("updated", out var updatedProp) && updatedProp.ValueKind == JsonValueKind.String)
+            {
+                updatedAt = updatedProp.GetDateTime();
+            }
+
+            return new Resource
+            {
+                Id = element.GetProperty("id").GetString(),
+                Name = element.GetProperty("title").GetString(),
+                Summary = element.GetProperty("description").GetString(),
+                Description = element.TryGetProperty("body", out var bodyProp) && bodyProp.ValueKind == JsonValueKind.String ? bodyProp.GetString() : "",
+                IconUrl = element.TryGetProperty("icon_url", out var iconProp) && iconProp.ValueKind == JsonValueKind.String ? iconProp.GetString() : null,
+                Author = "Unknown",
+                Provider = ResourceProviderType.Modrinth,
+                DownloadCount = element.GetProperty("downloads").GetInt64(),
+                UpdatedAt = updatedAt
+            };
         }
 
         public async Task<IEnumerable<ResourceVersion>> GetVersionsAsync(string id, string gameVersion = null, string loader = null)
