@@ -21,10 +21,13 @@ namespace MSLX.Desktop.Views;
 
 public partial class HomePage : UserControl
 {
+    private static DateTime? _lastNoticeRefreshTime;
+
     public HomePage()
     {
         InitializeComponent();
         this.Initialized += HomePage_Initialized;
+        this.Loaded += HomePage_Loaded;
         this.StartBtn.Click += StartBtn_Click;
         this.GithubBtn.Click += GithubBtn_Click;
         this.DocsBtn.Click += DocsBtn_Click;
@@ -33,9 +36,7 @@ public partial class HomePage : UserControl
 
     private async void HomePage_Initialized(object? sender, EventArgs e)
     {
-        InitLocalInfo();
         _ = FetchHitokotoAsync();
-        _ = LoadNoticeAsync();
         _ = LoadSystemStatusAsync();
         _ = LoadInstanceCountAsync();
 
@@ -43,6 +44,16 @@ public partial class HomePage : UserControl
         Console.WriteLine("设备ID: " + PlatformHelper.GetDeviceID());
         Debug.WriteLine(ConfigStore.Version);
         await UpdateService.UpdateDesktopApp();
+    }
+
+    private void HomePage_Loaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        var now = DateTime.Now;
+        if (_lastNoticeRefreshTime == null || (now - _lastNoticeRefreshTime.Value).TotalHours > 24)
+        {
+            _lastNoticeRefreshTime = now;
+            _ = LoadNoticeAsync();
+        }
     }
 
     private void InitLocalInfo()
