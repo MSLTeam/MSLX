@@ -304,6 +304,27 @@ namespace MSLX.Daemon.Services.ResourceServices
                         }
                     }
 
+                    var dependencies = new List<ResourceDependency>();
+                    if (element.TryGetProperty("dependencies", out var depsArray))
+                    {
+                        foreach (var dep in depsArray.EnumerateArray())
+                        {
+                            var modId = dep.GetProperty("modId").GetInt32().ToString();
+                            var relType = dep.GetProperty("relationType").GetInt32();
+                            DependencyType depType = DependencyType.Required;
+                            if (relType == 2) depType = DependencyType.Optional;
+                            else if (relType == 5) depType = DependencyType.Incompatible;
+                            else if (relType == 1 || relType == 6) depType = DependencyType.Embedded;
+
+                            dependencies.Add(new ResourceDependency
+                            {
+                                ProjectId = modId,
+                                Type = depType,
+                                Provider = ResourceProviderType.CurseForge
+                            });
+                        }
+                    }
+
                     var rv = new ResourceVersion
                     {
                         Id = fileId.ToString(),
@@ -314,7 +335,8 @@ namespace MSLX.Daemon.Services.ResourceServices
                         FileSizeBytes = element.GetProperty("fileLength").GetInt64(),
                         GameVersions = gvs,
                         Loaders = lds,
-                        Environment = isServer ? 1 : 0
+                        Environment = isServer ? 1 : 0,
+                        Dependencies = dependencies
                     };
 
                     tempDict[fileId] = rv;
@@ -371,6 +393,27 @@ namespace MSLX.Daemon.Services.ResourceServices
                                     }
                                 }
 
+                                var dependencies = new List<ResourceDependency>();
+                                if (element.TryGetProperty("dependencies", out var depsArray))
+                                {
+                                    foreach (var dep in depsArray.EnumerateArray())
+                                    {
+                                        var modId = dep.GetProperty("modId").GetInt32().ToString();
+                                        var relType = dep.GetProperty("relationType").GetInt32();
+                                        DependencyType depType = DependencyType.Required;
+                                        if (relType == 2) depType = DependencyType.Optional;
+                                        else if (relType == 5) depType = DependencyType.Incompatible;
+                                        else if (relType == 1 || relType == 6) depType = DependencyType.Embedded;
+
+                                        dependencies.Add(new ResourceDependency
+                                        {
+                                            ProjectId = modId,
+                                            Type = depType,
+                                            Provider = ResourceProviderType.CurseForge
+                                        });
+                                    }
+                                }
+
                                 var rv = new ResourceVersion
                                 {
                                     Id = fileId.ToString(),
@@ -381,7 +424,8 @@ namespace MSLX.Daemon.Services.ResourceServices
                                     FileSizeBytes = element.GetProperty("fileLength").GetInt64(),
                                     GameVersions = gvs,
                                     Loaders = lds,
-                                    Environment = 1
+                                    Environment = 1,
+                                    Dependencies = dependencies
                                 };
 
                                 results.Add(rv);

@@ -7,6 +7,9 @@ import { getServerCoreGameVersion } from '@/api/mslapi/serverCore';
 import { MdPreview, type Themes } from 'md-editor-v3';
 import 'md-editor-v3/lib/preview.css';
 import { useSettingStore } from '@/store';
+import DependencyGuideModal from './components/DependencyGuideModal.vue';
+import { useInstanceListStore } from '@/store/modules/instance';
+import NodeSwitcher from '@/components/node-switcher/index.vue';
 
 const typeOptions = [
   { label: 'Mod', value: 0 },
@@ -135,9 +138,13 @@ const formatNumber = (num: number) => {
   return num.toString();
 };
 
+const instanceStore = useInstanceListStore();
+const selectedInstanceId = ref<number | null>(null);
+
 onMounted(() => {
   loadVanillaVersions();
   handleSearch();
+  instanceStore.refreshInstanceList();
 });
 
 // 版本下载
@@ -238,8 +245,12 @@ const openDownloadModal = async (item: ResourceModel) => {
   await fetchAllVersionsForModal();
 };
 
-const doDownload = (url: string) => {
-  window.open(url, '_blank');
+const dependencyVisible = ref(false);
+const currentVersion = ref<ResourceVersionModel | null>(null);
+
+const doDownload = (row: ResourceVersionModel) => {
+  currentVersion.value = row;
+  dependencyVisible.value = true;
 };
 
 // 详情 Modal
@@ -283,6 +294,17 @@ watch(isDark, (val) => {
         <p class="text-sm text-[var(--td-text-color-secondary)] m-0">搜索并下载服务端插件、Mod 和其他资源包</p>
       </div>
       <div class="flex flex-wrap items-center sm:justify-end gap-3">
+        <node-switcher />
+        <t-select
+          v-if="filter.type === 0 || filter.type === 5"
+          v-model="selectedInstanceId"
+          :options="instanceStore.instanceList"
+          :keys="{ label: 'name', value: 'id' }"
+          placeholder="直装到目标实例 (可选)"
+          clearable
+          filterable
+          style="width: 200px"
+        />
         <t-select
           v-model="filter.provider"
           :options="providerOptions"
@@ -315,9 +337,9 @@ watch(isDark, (val) => {
           style="width: 120px"
           @change="handleSearch"
         />
-        <t-input v-model="filter.query" placeholder="搜索资源..." clearable @enter="handleSearch" style="width: 200px">
+        <t-input v-model="filter.query" placeholder="搜索资源..." clearable style="width: 200px" @enter="handleSearch">
           <template #suffixIcon>
-            <search-icon @click="handleSearch" style="cursor: pointer" />
+            <search-icon style="cursor: pointer" @click="handleSearch" />
           </template>
         </t-input>
         <t-button theme="primary" @click="handleSearch">搜索</t-button>
@@ -418,7 +440,17 @@ watch(isDark, (val) => {
       width="800px"
       :footer="false"
     >
-      <div class="mb-4 flex gap-4">
+      <div class="mb-4 flex gap-4 flex-wrap">
+        <t-select
+          v-if="filter.type === 0 || filter.type === 5"
+          v-model="selectedInstanceId"
+          :options="instanceStore.instanceList"
+          :keys="{ label: 'name', value: 'id' }"
+          placeholder="直装到目标实例 (可选)"
+          clearable
+          filterable
+          style="width: 200px"
+        />
         <t-select
           v-model="modalFilter.gameVersion"
           :options="modalVersionOptions"
@@ -460,15 +492,15 @@ watch(isDark, (val) => {
           </div>
         </template>
         <template #op="{ row }">
-          <t-button size="small" theme="primary" @click="doDownload(row.downloadUrl)">下载</t-button>
+          <t-button size="small" theme="primary" @click="doDownload(row)">下载</t-button>
         </template>
       </t-table>
       <div class="mt-4 flex justify-end">
         <t-pagination
           v-model="versionPagination.current"
-          v-model:pageSize="versionPagination.pageSize"
+          v-model:page-size="versionPagination.pageSize"
           :total="filteredVersionList.length"
-          :pageSizeOptions="[10, 20, 50]"
+          :page-size-options="[10, 20, 50]"
         />
       </div>
     </t-dialog>
@@ -504,7 +536,7 @@ watch(isDark, (val) => {
               <p class="text-sm text-[var(--td-text-color-secondary)] mt-1 mb-0">{{ currentDetail.summary }}</p>
             </div>
           </div>
-          
+
           <!-- Markdown 渲染 -->
           <div class="border-t border-[var(--td-component-border)] pt-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
             <md-preview
@@ -523,6 +555,14 @@ watch(isDark, (val) => {
         </div>
       </div>
     </t-dialog>
+
+    <dependency-guide-modal
+      v-model:visible="dependencyVisible"
+      :version="currentVersion"
+      :main-resource="currentItem"
+      :instance-id="selectedInstanceId"
+      :resource-type="filter.type"
+    />
   </div>
 </template>
 
