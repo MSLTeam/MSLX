@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Utils.ConfigUtils;
 using System.IO.Compression; 
 using System.Text.Json;  
@@ -73,7 +73,7 @@ public class PluginsAndModsController : ControllerBase
                             bool isRequiredByActive = activeMods.Any(m => m != info && m.Dependencies.Contains(info.ModId));
                             if (!isRequiredByActive)
                             {
-                                // 安全移除 (确认为纯客户端模组)
+                                // 确认为纯客户端模组
                                 activeMods.Remove(info);
                                 changed = true;
                             }
@@ -240,7 +240,7 @@ public class PluginsAndModsController : ControllerBase
                     info.ModId = modIdMatch.Groups[1].Value.ToLower();
                 }
 
-                // 先检查是否有全量显式的客户端标签 (注意排除注释行 #clientSideOnly=true)
+                // 先检查是否有全量显式的客户端标签 (排除注释行 #clientSideOnly=true)
                 if (Regex.IsMatch(content, @"(?m)^\s*clientSideOnly\s*=\s*true", RegexOptions.IgnoreCase))
                 {
                     info.IsClientOnly = true;

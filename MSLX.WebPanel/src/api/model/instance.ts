@@ -5,6 +5,7 @@ export interface CreateInstanceQucikModeModel {
   core: string;
   packageFileKey: string;
   packageLocalPath: string;
+  packageUrl?: string;
   coreFileKey: string;
   coreUrl: string;
   coreSha256: string;

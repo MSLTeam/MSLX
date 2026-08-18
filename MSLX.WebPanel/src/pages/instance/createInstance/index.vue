@@ -8,8 +8,18 @@ import BedrockMode from '@/pages/instance/createInstance/components/BedrockMode.
 import NodeSwitcher from '@/components/node-switcher/index.vue';
 
 import { useNodeStore } from '@/store';
+import { useRoute } from 'vue-router';
+import { watch } from 'vue';
 
-const value = ref(1);
+const route = useRoute();
+const value = ref(route.query.mode ? Number(route.query.mode) : 1);
+
+watch(() => route.query.mode, (newMode) => {
+  if (newMode) {
+    value.value = Number(newMode);
+  }
+});
+
 const nodeStore = useNodeStore();
 
 const handleNodeChange = () => {};

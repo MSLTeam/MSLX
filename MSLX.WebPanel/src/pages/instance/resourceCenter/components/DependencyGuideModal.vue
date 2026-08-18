@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { ref, watch, computed, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { getResourceDetail, getResourceVersions, type ResourceVersionModel, type ResourceModel, type ResourceDependencyModel } from '@/api/resourceCenter';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { addOfflineDownloadTask, getOfflineDownloadTaskStatus, getPluginsOrModsList } from '@/api/files';
@@ -22,15 +23,43 @@ const dialogVisible = computed({
 const loading = ref(false);
 const resolvedDependencies = ref<any[]>([]);
 const installedFiles = ref<string[]>([]);
+const router = useRouter();
 
 const downloadMode = ref<'browser' | 'instance'>('browser');
-const isSupportInstance = computed(() => props.resourceType === 0 || props.resourceType === 5);
+const isSupportInstance = computed(() => {
+  if (props.resourceType === 4) {
+    if (props.mainResource?.provider === 1 && props.version?.environment !== 1) {
+      return false;
+    }
+    return true;
+  }
+  return props.resourceType === 0 || props.resourceType === 5;
+});
 
-watch([() => props.instanceId, () => props.resourceType], () => {
-  if (props.instanceId && isSupportInstance.value) {
-    downloadMode.value = 'instance';
-  } else {
-    downloadMode.value = 'browser';
+const isInstanceRadioDisabled = computed(() => {
+  if (props.resourceType === 4) return !isSupportInstance.value;
+  return !props.instanceId || !isSupportInstance.value;
+});
+
+const instanceRadioLabel = computed(() => {
+  if (props.resourceType === 4) {
+    if (props.mainResource?.provider === 1 && props.version?.environment !== 1) {
+      return '仅支持CF服务端包部署';
+    }
+    return '部署为新实例';
+  }
+  return isSupportInstance.value ? '直装到服务端实例' : '该类型不支持直装';
+});
+
+watch([() => props.instanceId, () => props.resourceType, () => props.visible, isSupportInstance], () => {
+  if (props.visible) {
+    if (props.resourceType === 4) {
+      downloadMode.value = isSupportInstance.value ? 'instance' : 'browser';
+    } else if (props.instanceId && isSupportInstance.value) {
+      downloadMode.value = 'instance';
+    } else {
+      downloadMode.value = 'browser';
+    }
   }
 }, { immediate: true });
 
@@ -147,7 +176,7 @@ watch(() => props.visible, (val) => {
 });
 
 const singleDownload = async (url: string, filename: string) => {
-  if (downloadMode.value === 'instance' && props.instanceId && isSupportInstance.value) {
+  if (downloadMode.value === 'instance' && props.instanceId && isSupportInstance.value && props.resourceType !== 4) {
     try {
       const targetFolder = props.resourceType === 5 ? 'plugins' : 'mods';
       await addOfflineDownloadTask(props.instanceId, targetFolder, url, filename);
@@ -172,6 +201,24 @@ const handleDownloadAll = async () => {
       }
     }
     emit('download-complete');
+    dialogVisible.value = false;
+    return;
+  }
+
+  // 部署为新实例模式
+  if (downloadMode.value === 'instance' && props.resourceType === 4 && isSupportInstance.value) {
+    const format = props.mainResource?.provider === 0 ? 'mrpack' : 'zip';
+    router.push({
+      path: '/instance/create',
+      query: {
+        mode: 2,
+        packageUrl: props.version?.downloadUrl,
+        packageName: props.mainResource?.name,
+        packageFormat: format,
+        gameVersion: props.version?.gameVersions?.[0],
+        loader: props.version?.loaders?.[0],
+      }
+    });
     dialogVisible.value = false;
     return;
   }
@@ -278,8 +325,8 @@ const handleDownloadAll = async () => {
           <span class="font-bold text-[var(--td-text-color-primary)]">下载方式</span>
           <t-radio-group v-model="downloadMode" variant="default-filled">
             <t-radio-button value="browser">本地浏览器下载</t-radio-button>
-            <t-radio-button value="instance" :disabled="!props.instanceId || !isSupportInstance">
-              {{ isSupportInstance ? '直装到服务端实例' : '该类型不支持直装' }}
+            <t-radio-button value="instance" :disabled="isInstanceRadioDisabled">
+              {{ instanceRadioLabel }}
             </t-radio-button>
           </t-radio-group>
         </div>
@@ -319,12 +366,12 @@ const handleDownloadAll = async () => {
 
         <div class="flex justify-between items-center mt-4 pt-4 border-t border-[var(--td-component-border)]">
           <div class="text-sm text-[var(--td-text-color-secondary)]">
-            <span v-if="downloadMode === 'instance' && !props.instanceId && isSupportInstance" class="text-[var(--td-error-color)]">请先在页面右上角选择目标实例</span>
+            <span v-if="downloadMode === 'instance' && props.resourceType !== 4 && !props.instanceId && isSupportInstance" class="text-[var(--td-error-color)]">请先在页面右上角选择目标实例</span>
           </div>
           <div class="flex gap-2">
             <t-button theme="default" @click="dialogVisible = false">取消</t-button>
             <t-button theme="primary" @click="handleDownloadAll">
-              {{ downloadMode === 'browser' ? '下载' : '直装' }}
+              {{ downloadMode === 'browser' ? '下载' : (props.resourceType === 4 ? '部署' : '直装') }}
               ({{ (resolvedDependencies.filter(d => d.type === 0 && d.selectedVersion && !d.alreadyInstalled).length) + 1 }}个文件)
             </t-button>
           </div>

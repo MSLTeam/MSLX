@@ -15,10 +15,13 @@ import { postCreateInstanceQuickMode, postCancelCreateInstance } from '@/api/ins
 import { deleteUpload, checkPackageJarList } from '@/api/files';
 import { CreateInstanceQucikModeModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
+import { useRoute } from 'vue-router';
 import { useInstanceListStore } from '@/store/modules/instance';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { parseMcVersion, getRecommendedJava } from './javaRecommendation';
 import DockerImageSelector from '@/components/docker-image-selector/index.vue';
+
+const route = useRoute();
 
 const { isUploading, uploadProgress, uploadedFileName, uploadedFileSize, startUpload, removeUploadData } =
   useFileUpload();
@@ -136,9 +139,30 @@ const fetchJavaVersions = async (force: boolean = false) => {
   }
 };
 
+const initFromQuery = () => {
+  if (route.query.packageUrl) {
+    packageSourceType.value = 'remoteUrl';
+    formData.value.packageUrl = route.query.packageUrl as string;
+    if (route.query.packageName) {
+      formData.value.name = route.query.packageName as string;
+    }
+    if (route.query.packageFormat) {
+      packageFormat.value = route.query.packageFormat as any;
+    }
+    if (route.query.gameVersion && route.query.loader) {
+      autoSelectCoreFromQuery(route.query.gameVersion as string, route.query.loader as string);
+    }
+  }
+};
+
 onMounted(() => {
   fetchJavaVersions();
+  initFromQuery();
 });
+
+watch(() => route.query, () => {
+  initFromQuery();
+}, { deep: true });
 
 // 表单
 const formData = ref(<CreateInstanceQucikModeModel>{
@@ -151,6 +175,7 @@ const formData = ref(<CreateInstanceQucikModeModel>{
   coreFileKey: '', // 这里不给手动上传核心
   packageFileKey: '', // 整合包 Zip 文件的 Key
   packageLocalPath: '', // 整合包本地绝对路径
+  packageUrl: '', // 远程下载链接
   minM: 2048,
   maxM: 6144,
   args: '',
@@ -313,8 +338,16 @@ const FORM_RULES = computed<FormRules>(() => {
     ],
     packageLocalPath: [
       {
-        validator: (val) => packageSourceType.value === 'upload' || !!val,
+        validator: (val) => packageSourceType.value !== 'localPath' || !!val,
         message: '请输入本机绝对路径',
+        type: 'error',
+        trigger: 'blur',
+      },
+    ],
+    packageUrl: [
+      {
+        validator: (val) => packageSourceType.value !== 'remoteUrl' || !!val,
+        message: '请输入远程下载链接',
         type: 'error',
         trigger: 'blur',
       },
@@ -358,7 +391,7 @@ const FORM_RULES = computed<FormRules>(() => {
 
 const stepValidationFields = [
   ['name', 'path'],
-  ['packageFileKey', 'packageLocalPath'],
+  ['packageFileKey', 'packageLocalPath', 'packageUrl'],
   ['core', 'coreUrl', 'coreFileKey'],
   ['java'],
   ['minM', 'maxM', 'args'],
@@ -380,16 +413,21 @@ const nextStep = async () => {
         MessagePlugin.warning('请等待上传或分析完成');
         return;
       }
-    } else {
+    } else if (packageSourceType.value === 'localPath') {
       if (!formData.value.packageLocalPath) {
-        MessagePlugin.warning('请输入服务端整合包的绝对路径');
+        MessagePlugin.warning('请输入整合包绝对路径');
         return;
       }
       if (isCheckingPackage.value) {
-        MessagePlugin.warning('正在分析中，请稍候');
+        MessagePlugin.warning('正在分析整合包，请稍后');
         return;
       }
       await analyzePackage('', formData.value.packageLocalPath);
+    } else if (packageSourceType.value === 'remoteUrl') {
+      if (!formData.value.packageUrl) {
+        MessagePlugin.warning('请输入远程下载链接');
+        return;
+      }
     }
   }
 
@@ -544,6 +582,39 @@ const autoSelectMrpackCore = async (metadata: Record<string, any> | undefined) =
   }
 };
 
+// 从路由参数自动选择核心 (远程下载)
+const autoSelectCoreFromQuery = async (gameVersion: string, loader: string) => {
+  let coreName = loader.toLowerCase();
+  if (coreName.includes('fabric')) coreName = 'fabric';
+  else if (coreName.includes('quilt')) coreName = 'quilt';
+  else if (coreName.includes('neo')) coreName = 'neoforge';
+  else if (coreName.includes('forge')) coreName = 'forge';
+  else if (coreName.includes('vanilla') || coreName.includes('minecraft')) coreName = 'vanilla';
+  else return false;
+
+  try {
+    const versionInfo = await getServerCoreGameVersion(coreName);
+    if (!versionInfo?.versions?.includes(gameVersion)) {
+      throw new Error(`${coreName} 不支持 Minecraft ${gameVersion}`);
+    }
+
+    const downloadInfo = await getServerCoreDownloadInfo(coreName, gameVersion, 'latest');
+    if (!downloadInfo?.url) throw new Error('MSL API 未返回核心下载地址');
+
+    formData.value.core = `${coreName}-${gameVersion}.jar`;
+    formData.value.coreUrl = downloadInfo.url;
+    formData.value.coreSha256 = downloadInfo.sha256 || '';
+    formData.value.coreFileKey = '';
+    onlineGameVersion.value = gameVersion;
+    downloadType.value = 'online';
+    MessagePlugin.success(`已根据远程链接参数自动选择 ${coreName} ${gameVersion} 服务端核心`);
+    return true;
+  } catch (error: any) {
+    console.warn('远程参数核心自动选择失败，将保留手动选择:', error);
+    return false;
+  }
+};
+
 // 分析包内的核心和是否存在mslx pack metadata
 const analyzePackage = async (key: string, localPath?: string) => {
   isCheckingPackage.value = true;
@@ -636,9 +707,16 @@ const onSubmit = async () => {
     args: formData.value.args || null,
   };
 
+  if (packageSourceType.value === 'upload') {
+    apiData.packageLocalPath = null;
+    apiData.packageUrl = null;
+  }
   if (packageSourceType.value === 'localPath') {
     apiData.packageFileKey = null;
-  } else {
+    apiData.packageUrl = null;
+  }
+  if (packageSourceType.value === 'remoteUrl') {
+    apiData.packageFileKey = null;
     apiData.packageLocalPath = null;
   }
   if (detectedJars.value.length > 0) {
@@ -735,6 +813,7 @@ const goToHome = () => {
     coreFileKey: '',
     packageFileKey: '',
     packageLocalPath: '',
+    packageUrl: '',
     minM: 2048,
     maxM: 6144,
     args: '',
@@ -818,6 +897,7 @@ const goToHome = () => {
                 <t-radio-group v-model="packageSourceType" variant="default-filled">
                   <t-radio-button value="upload">本地上传</t-radio-button>
                   <t-radio-button value="localPath">守护进程本机路径</t-radio-button>
+                  <t-radio-button value="remoteUrl">远程下载</t-radio-button>
                 </t-radio-group>
               </t-form-item>
 
@@ -895,7 +975,7 @@ const goToHome = () => {
               </t-form-item>
 
               <t-form-item
-                v-else
+                v-if="packageSourceType === 'localPath'"
                 label="本机绝对路径"
                 name="packageLocalPath"
                 class="!mb-0"
@@ -916,6 +996,28 @@ const goToHome = () => {
                     <template #icon><folder-open-icon /></template>
                     浏览
                   </t-button>
+                </div>
+              </t-form-item>
+
+              <t-form-item
+                v-if="packageSourceType === 'remoteUrl'"
+                label="远程下载链接"
+                name="packageUrl"
+                class="!mb-0"
+                help="将通过守护进程后台自动下载该整合包并完成构建"
+              >
+                <div class="flex flex-col gap-2 w-full sm:w-[32rem]">
+                  <t-input
+                    v-model="formData.packageUrl"
+                    placeholder="请输入整合包 (.zip 或 .mrpack) 直链"
+                    class="!font-mono !w-full"
+                    :readonly="!!route.query.packageUrl"
+                  />
+                  <div class="text-xs text-[var(--td-text-color-secondary)] flex gap-2 items-center">
+                    <span>包类型标记:</span>
+                    <t-tag v-if="packageFormat" theme="primary" variant="light" size="small">{{ packageFormat }}</t-tag>
+                    <span v-else>未知</span>
+                  </div>
                 </div>
               </t-form-item>
             </div>
