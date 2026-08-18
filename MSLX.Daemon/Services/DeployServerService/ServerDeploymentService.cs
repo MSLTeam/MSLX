@@ -1,4 +1,4 @@
-﻿using CliWrap;
+using CliWrap;
 using CliWrap.EventStream;
 using Downloader;
 using MSLX.Daemon.Utils;
@@ -52,8 +52,27 @@ public class ServerDeploymentService
         {
             string packageFileKey = Guid.NewGuid().ToString("N");
             string savePath = Path.Combine(IConfigBase.GetAppDataPath(), "Temp", "Uploads", packageFileKey + ".tmp");
-            bool success =
-                await DownloadAndValidateAsync(packageFileUrl, savePath, $"服务端压缩包文件", packageFileSha256, report, ct);
+            
+            string? mirrorUrl = MSLX.Daemon.Utils.DownloadMirrorHelper.GetMirrorUrl(packageFileUrl);
+            bool success = false;
+            
+            if (mirrorUrl != null)
+            {
+                success = await DownloadAndValidateAsync(mirrorUrl, savePath, $"服务端压缩包 (镜像)", packageFileSha256, report, ct);
+                if (!success)
+                {
+                    if (File.Exists(savePath))
+                    {
+                        try { File.Delete(savePath); } catch { }
+                    }
+                }
+            }
+
+            if (!success)
+            {
+                success = await DownloadAndValidateAsync(packageFileUrl, savePath, $"服务端压缩包 (官方)", packageFileSha256, report, ct);
+            }
+
             if (!success) throw new Exception("服务端压缩文件下载失败！");
             return packageFileKey;
         }

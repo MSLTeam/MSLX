@@ -103,16 +103,48 @@ public class OfflineDownloadController : ControllerBase
             string savePath = checkTarget.FullPath;
 
             var downloader = new ParallelDownloader(maxSimultaneousFiles: 1);
+            
+            string originalUrl = request.Url;
+            string? mirrorUrl = MSLX.Daemon.Utils.DownloadMirrorHelper.GetMirrorUrl(originalUrl);
+            
+            bool success = false;
+            string errorMessage = "";
 
-            var (success, errorMessage) = await downloader.DownloadFileAsync(
-                url: request.Url,
-                savePath: savePath,
-                onProgress: (progress, speed) =>
+            if (mirrorUrl != null)
+            {
+                UpdateStatus(cacheKey, "processing", 0, $"正在使用镜像源加速下载...");
+                (success, errorMessage) = await downloader.DownloadFileAsync(
+                    url: mirrorUrl,
+                    savePath: savePath,
+                    onProgress: (progress, speed) =>
+                    {
+                        UpdateStatus(cacheKey, "processing", (int)progress, $"[镜像加速] 下载中... 速度: {speed}");
+                    },
+                    progressIntervalMs: 1000
+                );
+
+                if (!success)
                 {
-                    UpdateStatus(cacheKey, "processing", (int)progress, $"下载中... 速度: {speed}");
-                },
-                progressIntervalMs: 1000
-            );
+                    UpdateStatus(cacheKey, "processing", 0, $"镜像源失败，回退官方源...");
+                    if (System.IO.File.Exists(savePath))
+                    {
+                        try { System.IO.File.Delete(savePath); } catch { }
+                    }
+                }
+            }
+
+            if (!success)
+            {
+                (success, errorMessage) = await downloader.DownloadFileAsync(
+                    url: originalUrl,
+                    savePath: savePath,
+                    onProgress: (progress, speed) =>
+                    {
+                        UpdateStatus(cacheKey, "processing", (int)progress, $"下载中... 速度: {speed}");
+                    },
+                    progressIntervalMs: 1000
+                );
+            }
 
             if (success)
             {
