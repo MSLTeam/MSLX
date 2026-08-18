@@ -68,7 +68,7 @@ public class ServerDeploymentService
                 }
             }
 
-            if (!success)
+            if (!success && !ct.IsCancellationRequested)
             {
                 success = await DownloadAndValidateAsync(packageFileUrl, savePath, $"服务端压缩包 (官方)", packageFileSha256, report, ct);
             }
