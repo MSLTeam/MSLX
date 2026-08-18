@@ -1,4 +1,4 @@
-using System.Dynamic;
+﻿using System.Dynamic;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -18,7 +18,7 @@ public class FileUtils
     }
 
     /// <summary>
-    /// 校验文件哈希。mrpack 索引通常提供 SHA-512 或 SHA-1，现有 SHA-256 校验也复用此实现。
+    /// 校验文件哈希
     /// </summary>
     public static async Task<bool> ValidateFileHashAsync(string filePath, string? expectedHash,
         HashAlgorithmName algorithm)

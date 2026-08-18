@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Utils.ConfigUtils;
 using System.IO.Compression; 
 using System.Text.Json;  
@@ -118,12 +118,21 @@ public class PluginsAndModsController : ControllerBase
         {
             using var archive = ZipFile.OpenRead(filePath);
 
-            //  Fabric (fabric.mod.json) 
+            // 常见的纯客户端模组ID（如果某个模组强依赖这些，那它必然也是纯客户端模组）
+            var knownClientApiIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "iris", "sodium", "modmenu", "indium", "rubidium", "oculus", "embeddium", 
+                "optifabric", "sodium-extra", "cullleaves", "optifine"
+            };
+
+            // Fabric (fabric.mod.json) 
             var fabricEntry = archive.GetEntry("fabric.mod.json");
             if (fabricEntry != null)
             {
                 using var stream = fabricEntry.Open();
                 using var doc = JsonDocument.Parse(stream);
+                
+                // 直接声明为客户端环境
                 if (doc.RootElement.TryGetProperty("environment", out var envElement))
                 {
                     string? env = envElement.GetString();
@@ -132,55 +141,103 @@ public class PluginsAndModsController : ControllerBase
                         return true;
                     }
                 }
+
+                // 检查硬依赖项
+                if (doc.RootElement.TryGetProperty("depends", out var dependsElement) && dependsElement.ValueKind == JsonValueKind.Object)
+                {
+                    foreach (var dep in dependsElement.EnumerateObject())
+                    {
+                        if (knownClientApiIds.Contains(dep.Name)) return true;
+                    }
+                }
             }
 
-            //  Forge/NeoForge (META-INF/mods.toml 或 META-INF/neoforge.mods.toml)
-            var tomlEntry = archive.GetEntry("META-INF/mods.toml") ?? archive.GetEntry("META-INF/neoforge.mods.toml");
+            // Quilt (quilt.mod.json) 应该用的不多 但是还是写上吧
+            var quiltEntry = archive.GetEntry("quilt.mod.json");
+            if (quiltEntry != null)
+            {
+                using var stream = quiltEntry.Open();
+                using var doc = JsonDocument.Parse(stream);
+                
+                if (doc.RootElement.TryGetProperty("quilt_loader", out var quiltLoader))
+                {
+                    if (quiltLoader.TryGetProperty("metadata", out var metadata) &&
+                        metadata.TryGetProperty("environment", out var envElement))
+                    {
+                        string? env = envElement.GetString();
+                        if ("client".Equals(env, StringComparison.OrdinalIgnoreCase) || 
+                            "client_only".Equals(env, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return true;
+                        }
+                    }
 
+                    if (quiltLoader.TryGetProperty("depends", out var dependsElement) && dependsElement.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var dep in dependsElement.EnumerateArray())
+                        {
+                            if (dep.ValueKind == JsonValueKind.String && knownClientApiIds.Contains(dep.GetString() ?? "")) return true;
+                            if (dep.ValueKind == JsonValueKind.Object && dep.TryGetProperty("id", out var idElement) && knownClientApiIds.Contains(idElement.GetString() ?? "")) return true;
+                        }
+                    }
+                }
+            }
+
+            // Forge/NeoForge (META-INF/mods.toml 或 META-INF/neoforge.mods.toml)
+            var tomlEntry = archive.GetEntry("META-INF/mods.toml") ?? archive.GetEntry("META-INF/neoforge.mods.toml");
             if (tomlEntry != null)
             {
                 using var stream = tomlEntry.Open();
                 using var reader = new StreamReader(stream);
                 string content = reader.ReadToEnd();
 
-                // 正则表达式拆分内容
-                var blocks = Regex.Matches(content, @"(?ms)^\[\[.*?\]\](.*?)(?=^\[\[|\z)");
+                // 先检查是否有全量显式的客户端标签 (部分旧版模组使用)
+                if (content.Contains("clientSideOnly=true", StringComparison.OrdinalIgnoreCase) || 
+                    content.Contains("clientSideOnly = true", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
 
-                string? minecraftSide = null;
-                string? firstFoundSide = null;
+                // 提取所有 dependencies 块
+                var blocks = Regex.Matches(content, @"(?ms)^\[\[dependencies\..*?\]\]\s*(.*?)(?=^\[\[|\z)");
+
+                bool foundEngineDependency = false;
+                bool isEngineClientOnly = false;
 
                 foreach (Match block in blocks)
                 {
                     string blockBody = block.Groups[1].Value;
 
-                    // 在块内匹配 modId 和 side
-                    // 必须匹配行首的 key，避免匹配到 description 或其他字符串中的内容
                     var modIdMatch = Regex.Match(blockBody, @"^\s*modId\s*=\s*[""'](.*?)[""']", RegexOptions.Multiline | RegexOptions.IgnoreCase);
-                    var sideMatch = Regex.Match(blockBody, @"^\s*side\s*=\s*[""'](.*?)[""']", RegexOptions.Multiline | RegexOptions.IgnoreCase);
-
-                    if (sideMatch.Success)
+                    if (modIdMatch.Success)
                     {
-                        string currentSide = sideMatch.Groups[1].Value;
+                        string modId = modIdMatch.Groups[1].Value.ToLower();
 
-                        // 记录遇到的第一个 side（回退逻辑）
-                        if (firstFoundSide == null)
+                        // 仅当依赖是核心时，其 side 才有效
+                        if (modId == "minecraft" || modId == "forge" || modId == "neoforge")
                         {
-                            firstFoundSide = currentSide;
-                        }
+                            foundEngineDependency = true;
 
-                        // 如果当前块的 modId 是 minecraft，则将其作为最高优先级并跳出
-                        if (modIdMatch.Success && string.Equals(modIdMatch.Groups[1].Value, "minecraft", StringComparison.OrdinalIgnoreCase))
-                        {
-                            minecraftSide = currentSide;
-                            break;
+                            var sideMatch = Regex.Match(blockBody, @"^\s*side\s*=\s*[""'](.*?)[""']", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+                            
+                            // 如果核心依赖项没有注明 side，则默认为 BOTH（双端）
+                            string side = sideMatch.Success ? sideMatch.Groups[1].Value.ToUpper() : "BOTH";
+
+                            if (side == "CLIENT")
+                            {
+                                isEngineClientOnly = true;
+                            }
+                            else
+                            {
+                                // 如果任何一个核心引擎依赖是 BOTH 或 SERVER，那不是纯客户端模组
+                                isEngineClientOnly = false;
+                                break;
+                            }
                         }
                     }
                 }
 
-                // 优先使用 minecraft 的 side，如果没有，则使用找到的第一个 side
-                string? finalSide = minecraftSide ?? firstFoundSide;
-
-                if (finalSide != null && string.Equals(finalSide, "CLIENT", StringComparison.OrdinalIgnoreCase))
+                if (foundEngineDependency && isEngineClientOnly)
                 {
                     return true;
                 }
