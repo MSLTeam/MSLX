@@ -16,7 +16,7 @@ import { HostDriveItem, HostFileItem } from '@/api/model/files';
 const props = defineProps({
   visible: { type: Boolean, default: false },
   defaultPath: { type: String, default: '' },
-  searchPattern: { type: String, default: '*.zip' },
+  searchPattern: { type: String, default: '*.zip;*.mrpack' },
 });
 
 const emit = defineEmits(['update:visible', 'select']);

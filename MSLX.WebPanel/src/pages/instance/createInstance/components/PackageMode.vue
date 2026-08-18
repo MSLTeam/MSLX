@@ -9,6 +9,7 @@ import { FolderOpenIcon } from 'tdesign-icons-vue-next';
 import ServerCoreSelector from './ServerCoreSelector.vue';
 import HostFileSelector from './HostFileSelector.vue';
 import { getJavaVersionList } from '@/api/mslapi/java';
+import { getServerCoreDownloadInfo, getServerCoreGameVersion } from '@/api/mslapi/serverCore';
 import { getLocalJavaList } from '@/api/localJava';
 import { postCreateInstanceQuickMode, postCancelCreateInstance } from '@/api/instance';
 import { deleteUpload, checkPackageJarList } from '@/api/files';
@@ -52,6 +53,7 @@ const showCoreSelector = ref(false);
 const detectedJars = ref<string[]>([]);
 const isCheckingPackage = ref(false);
 const detectedRoot = ref('');
+const packageFormat = ref<'zip' | 'mrpack' | ''>('');
 
 // Input DOM 引用
 const uploadInputRef = ref<HTMLInputElement | null>(null);
@@ -447,6 +449,7 @@ const onFileChange = async (event: Event) => {
   formData.value.core = '';
   detectedJars.value = [];
   detectedRoot.value = '';
+  packageFormat.value = '';
 
   const file = input.files[0];
 
@@ -497,6 +500,50 @@ const applyMetadata = () => {
   MessagePlugin.success('已自动应用实例部署配置');
 };
 
+// 从mrpack整合包获取核心来源
+const getMrpackCoreName = (dependencies: Record<string, unknown> | undefined) => {
+  if (!dependencies) return null;
+  const dependencyNames = new Set(Object.keys(dependencies).map((key) => key.toLowerCase()));
+
+  if (dependencyNames.has('fabric-loader')) return 'fabric';
+  if (dependencyNames.has('quilt-loader')) return 'quilt';
+  if (dependencyNames.has('neoforge')) return 'neoforge';
+  if (dependencyNames.has('forge')) return 'forge';
+  if (dependencyNames.has('minecraft')) return 'vanilla';
+  return null;
+};
+
+const autoSelectMrpackCore = async (metadata: Record<string, any> | undefined) => {
+  if (packageFormat.value !== 'mrpack') return false;
+
+  const dependencies = metadata?.dependencies as Record<string, unknown> | undefined;
+  const coreName = getMrpackCoreName(dependencies);
+  const minecraftVersion = dependencies?.minecraft ? String(dependencies.minecraft) : '';
+  if (!coreName || !minecraftVersion) return false;
+
+  try {
+    const versionInfo = await getServerCoreGameVersion(coreName);
+    if (!versionInfo?.versions?.includes(minecraftVersion)) {
+      throw new Error(`${coreName} 不支持 Minecraft ${minecraftVersion}`);
+    }
+
+    const downloadInfo = await getServerCoreDownloadInfo(coreName, minecraftVersion, 'latest');
+    if (!downloadInfo?.url) throw new Error('MSL API 未返回核心下载地址');
+
+    formData.value.core = `${coreName}-${minecraftVersion}.jar`;
+    formData.value.coreUrl = downloadInfo.url;
+    formData.value.coreSha256 = downloadInfo.sha256 || '';
+    formData.value.coreFileKey = '';
+    onlineGameVersion.value = minecraftVersion;
+    downloadType.value = 'online';
+    MessagePlugin.success(`已根据 mrpack 依赖自动选择 ${coreName} ${minecraftVersion} 服务端核心`);
+    return true;
+  } catch (error: any) {
+    console.warn('mrpack 核心自动选择失败，将保留手动选择:', error);
+    return false;
+  }
+};
+
 // 分析包内的核心和是否存在mslx pack metadata
 const analyzePackage = async (key: string, localPath?: string) => {
   isCheckingPackage.value = true;
@@ -505,17 +552,22 @@ const analyzePackage = async (key: string, localPath?: string) => {
 
     detectedJars.value = res.jars || [];
     detectedRoot.value = res.detectedRoot || '';
+    packageFormat.value = res.format === 'mrpack' ? 'mrpack' : 'zip';
 
-    if (res.metadata) {
+    if (res.metadata?.config) {
       packMetadataRef.value = res.metadata;
       showMetadataDialog.value = true;
     }
 
-    if (res.count === 1 && res.jars.length > 0) {
-      formData.value.core = res.jars[0];
-      MessagePlugin.success(`自动识别到服务端核心: ${res.jars[0]}`);
-    } else if (res.count > 1) {
-      MessagePlugin.info(`检测到 ${res.count} 个服务端核心，请在下一步选择`);
+    if (detectedJars.value.length === 0 && (await autoSelectMrpackCore(res.metadata))) {
+      return;
+    }
+
+    if (detectedJars.value.length === 1) {
+      formData.value.core = detectedJars.value[0];
+      MessagePlugin.success(`自动识别到服务端核心: ${detectedJars.value[0]}`);
+    } else if (detectedJars.value.length > 1) {
+      MessagePlugin.info(`检测到 ${detectedJars.value.length} 个服务端核心，请在下一步选择`);
     } else {
       MessagePlugin.warning('未检测到服务端核心，请在下一步手动配置');
     }
@@ -532,6 +584,7 @@ const removeUploadedFile = async () => {
     await removeUploadData();
     formData.value.packageFileKey = '';
     detectedJars.value = [];
+    packageFormat.value = '';
     formData.value.core = '';
     MessagePlugin.success('文件已移除');
   }
@@ -687,6 +740,7 @@ const goToHome = () => {
     args: '',
   };
   detectedJars.value = [];
+  packageFormat.value = '';
   downloadType.value = 'online';
   javaType.value = 'online';
   onlineGameVersion.value = '';
@@ -756,7 +810,7 @@ const goToHome = () => {
             <div v-show="currentStep === 1" class="list-item-anim flex-1 pt-1">
               <t-alert theme="info" class="!mb-6 !rounded-xl">
                 <template #message
-                  >请上传包含服务端文件的 <b>.zip</b> 压缩包，或直接填写守护进程本机上的绝对路径。</template
+                  >请上传包含服务端文件的 <b>.zip</b> 或 <b>.mrpack</b> 压缩包，或直接填写守护进程本机上的绝对路径。</template
                 >
               </t-alert>
 
@@ -774,7 +828,7 @@ const goToHome = () => {
                 class="!mb-0"
               >
                 <div class="w-full sm:w-[32rem]">
-                  <input ref="uploadInputRef" accept=".zip" type="file" style="display: none" @change="onFileChange" />
+                  <input ref="uploadInputRef" accept=".zip,.mrpack" type="file" style="display: none" @change="onFileChange" />
 
                   <t-button
                     v-if="!isUploading && !formData.packageFileKey"
@@ -820,7 +874,7 @@ const goToHome = () => {
                             ? `发现 ${detectedJars.length} 个服务端核心文件`
                             : '未发现服务端核心文件'
                         }}
-                        {{ detectedRoot ? `| 根目录: /${detectedRoot}` : '' }}
+                        {{ packageFormat === 'mrpack' ? '| Modrinth 服务端包' : detectedRoot ? `| 根目录: /${detectedRoot}` : '' }}
                       </div>
                     </div>
                     <div class="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -850,7 +904,7 @@ const goToHome = () => {
                 <div class="flex items-center gap-2 w-full sm:w-[32rem]">
                   <t-input
                     v-model="formData.packageLocalPath"
-                    placeholder="例如: /data/mc/modpack.zip"
+                    placeholder="例如: /data/mc/modpack.zip 或 modpack.mrpack"
                     class="!font-mono !flex-1"
                     @change="
                       (val) => {
@@ -1306,7 +1360,7 @@ const goToHome = () => {
                         {{ packageSourceType === 'upload' ? uploadedFileName : formData.packageLocalPath }}
                       </span>
                       <t-tag theme="primary" variant="light" size="small" class="!rounded">
-                        {{ packageSourceType === 'upload' ? 'ZIP' : '本机路径' }}
+                        {{ packageSourceType === 'upload' ? (packageFormat === 'mrpack' ? 'MRPACK' : 'ZIP') : '本机路径' }}
                       </t-tag>
                     </div>
                     <div v-if="packageSourceType === 'upload'" class="text-[11px] text-zinc-500 mt-1">
@@ -1574,7 +1628,7 @@ const goToHome = () => {
       <p class="text-sm text-[var(--td-text-color-secondary)]">该整合包包含原本的服务端配置参数 (例如内存、Java版本和启动参数)。是否要自动应用这些配置？</p>
     </t-dialog>
 
-    <host-file-selector v-model:visible="showHostFileSelector" search-pattern="*.zip" @select="onHostFileSelected" />
+    <host-file-selector v-model:visible="showHostFileSelector" search-pattern="*.zip;*.mrpack" @select="onHostFileSelected" />
     <server-core-selector v-model:visible="showCoreSelector" @confirm="onCoreSelected" />
   </div>
 </template>

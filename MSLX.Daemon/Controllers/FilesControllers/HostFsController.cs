@@ -14,9 +14,9 @@ public class HostFsController : ControllerBase
     /// 获取宿主机本地文件列表
     /// </summary>
     /// <param name="path">绝对路径，留空则为程序运行目录</param>
-    /// <param name="searchPattern">文件搜索规则，默认只找 zip</param>
+    /// <param name="searchPattern">文件搜索规则，多个模式使用分号分隔</param>
     [HttpGet("root")]
-    public IActionResult GetHostFilesList([FromQuery] string? path = "", [FromQuery] string searchPattern = "*.zip")
+    public IActionResult GetHostFilesList([FromQuery] string? path = "", [FromQuery] string searchPattern = "*.zip;*.mrpack")
     {
         try
         {
@@ -57,7 +57,12 @@ public class HostFsController : ControllerBase
             }
 
             // 遍历文件
-            var files = directoryInfo.GetFiles(searchPattern);
+            var patterns = searchPattern.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .DefaultIfEmpty("*.zip")
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+            var files = patterns.SelectMany(pattern => directoryInfo.GetFiles(pattern))
+                .GroupBy(file => file.FullName, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First());
             foreach (var file in files)
             {
                 if ((file.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden || 

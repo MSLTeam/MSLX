@@ -10,6 +10,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Formats.Tar;
 using System.IO.Compression;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -22,7 +23,14 @@ public class ServerDeploymentService
 {
     private readonly ILogger<ServerDeploymentService> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
-    private readonly ParallelDownloader _parallelDownloader = new ParallelDownloader(maxSimultaneousFiles: 3);
+
+    // mrpack 安装的下载器配置
+    private readonly ParallelDownloader _mrpackDownloader =
+        new ParallelDownloader(maxSimultaneousFiles: 8, maxTryAgainOnFailure: 2,
+            inactivityTimeoutSeconds: 30); // 源站 8并发
+    private readonly ParallelDownloader _mrpackMirrorDownloader =
+        new ParallelDownloader(maxSimultaneousFiles: 4, maxTryAgainOnFailure: 2,
+            inactivityTimeoutSeconds: 30); // 镜像站 4并发
 
     // 定义进度回调委托
     public delegate Task ReportProgress(string message, double? progress, bool isError = false, Exception? ex = null);
@@ -60,7 +68,7 @@ public class ServerDeploymentService
     /// 处理整合包解压与目录调整
     /// </summary>
     public async Task DeployPackageAsync(string serverId, string? packageFileKey, string? packageLocalPath,
-    string targetDir, ReportProgress report)
+    string targetDir, ReportProgress report, CancellationToken ct = default)
     {
         if (string.IsNullOrEmpty(packageFileKey) && string.IsNullOrEmpty(packageLocalPath)) return;
 
@@ -78,6 +86,16 @@ public class ServerDeploymentService
         {
             _logger.LogInformation("开始解压整合包: {Path}", sourceFilePath);
             await report("准备解压服务端整合包...", 1);
+
+            // 判断是否mr包，分流处理
+            using (var probeArchive = ZipFile.Open(sourceFilePath, ZipArchiveMode.Read, Encoding.UTF8))
+            {
+                if (IsMrpackArchive(probeArchive))
+                {
+                    await DeployMrpackAsync(sourceFilePath, targetDir, report, ct);
+                    return;
+                }
+            }
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             Encoding gbkEncoding = Encoding.GetEncoding("GBK");
@@ -214,6 +232,519 @@ public class ServerDeploymentService
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// 判断压缩包是否为 Modrinth mrpack
+    /// </summary>
+    public static bool IsMrpackArchive(ZipArchive archive) =>
+        archive.GetEntry("modrinth.index.json") != null;
+
+    /// <summary>
+    /// 提供一些mrpack内元数据
+    /// </summary>
+    public JObject? InspectMrpackArchive(ZipArchive archive)
+    {
+        if (!IsMrpackArchive(archive)) return null;
+
+        var indexEntry = archive.GetEntry("modrinth.index.json")!;
+        JObject index;
+        using (var reader = new StreamReader(indexEntry.Open(), Encoding.UTF8))
+        {
+            index = JObject.Parse(reader.ReadToEnd());
+        }
+
+        var overridesJars = archive.Entries
+            .Where(e => !string.IsNullOrEmpty(e.Name) &&
+                        e.FullName.StartsWith("overrides/", StringComparison.OrdinalIgnoreCase) &&
+                        e.FullName.Substring("overrides/".Length).IndexOf('/') < 0 &&
+                        e.FullName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase))
+            .Select(e => e.FullName.Substring("overrides/".Length).Replace('\\', '/'));
+
+        var serverOverridesJars = archive.Entries
+            .Where(e => !string.IsNullOrEmpty(e.Name) &&
+                        e.FullName.StartsWith("server-overrides/", StringComparison.OrdinalIgnoreCase) &&
+                        e.FullName.Substring("server-overrides/".Length).IndexOf('/') < 0 &&
+                        e.FullName.EndsWith(".jar", StringComparison.OrdinalIgnoreCase))
+            .Select(e => e.FullName.Substring("server-overrides/".Length).Replace('\\', '/'));
+
+        var jars = overridesJars.Concat(serverOverridesJars).Distinct().ToList();
+
+        var metadata = new JObject
+        {
+            ["formatVersion"] = index["formatVersion"],
+            ["name"] = index["name"],
+            ["versionId"] = index["versionId"],
+            ["versionNumber"] = index["versionNumber"],
+            ["dependencies"] = index["dependencies"]
+        };
+
+        return new JObject
+        {
+            ["count"] = jars.Count,
+            ["jars"] = JArray.FromObject(jars),
+            ["detectedRoot"] = string.Empty,
+            ["metadata"] = metadata,
+            ["format"] = "mrpack"
+        };
+    }
+
+    /// <summary>
+    /// 部署mrpack
+    /// </summary>
+    private async Task DeployMrpackAsync(string sourceFilePath, string targetDir, ReportProgress report,
+        CancellationToken ct)
+    {
+        string stagingDir = Path.Combine(targetDir, $".mslx-mrpack-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(stagingDir);
+
+        try
+        {
+            using var archive = ZipFile.Open(sourceFilePath, ZipArchiveMode.Read, Encoding.UTF8);
+            var indexEntry = archive.GetEntry("modrinth.index.json")
+                              ?? throw new InvalidDataException("mrpack 缺少 modrinth.index.json");
+            JObject index;
+            using (var reader = new StreamReader(indexEntry.Open(), Encoding.UTF8))
+            {
+                index = JObject.Parse(reader.ReadToEnd());
+            }
+
+            var files = (index["files"] as JArray) ?? throw new InvalidDataException("mrpack 索引缺少 files");
+            var downloadableFiles = files.Where(item =>
+                    !string.Equals(item["env"]?["server"]?.ToString(), "unsupported",
+                        StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            
+            var overrides = archive.Entries.Where(e => !string.IsNullOrEmpty(e.Name) && 
+                e.FullName.StartsWith("overrides/", StringComparison.OrdinalIgnoreCase)).ToList();
+            var serverOverrides = archive.Entries.Where(e => !string.IsNullOrEmpty(e.Name) && 
+                e.FullName.StartsWith("server-overrides/", StringComparison.OrdinalIgnoreCase)).ToList();
+            var overrideEntries = overrides.Concat(serverOverrides).ToList();
+            int downloadTotal = downloadableFiles.Count;
+            int downloadCompleted = 0;
+            var downloadProgress = new double[downloadTotal];
+            var downloadedFlags = new bool[downloadTotal];
+            var downloadErrors = new Exception?[downloadTotal];
+            object downloadProgressLock = new();
+            var downloadReportSemaphore = new SemaphoreSlim(1, 1);
+            double lastReportedDownloadProgress = 0;
+
+            async Task ReportDownloadProgressAsync(string message, double progress, bool allowEqual = false)
+            {
+                await downloadReportSemaphore.WaitAsync();
+                try
+                {
+                    if (progress < lastReportedDownloadProgress ||
+                        (!allowEqual && progress == lastReportedDownloadProgress)) return;
+                    lastReportedDownloadProgress = progress;
+                    await report(message, progress);
+                }
+                catch
+                {
+                    // 单个下载进度通知失败不中断下载任务
+                }
+                finally
+                {
+                    downloadReportSemaphore.Release();
+                }
+            }
+
+            await report(
+                $"正在安装 mrpack 服务端文件（最多 10 轮镜像源/官方源交错下载，共 {downloadTotal} 个，覆盖提取 {overrideEntries.Count} 个）...",
+                0);
+
+            List<string> GetMrpackDownloadUrls(JToken file) =>
+                (file["downloads"] as JArray)?.Values<string>()
+                    .Where(url => !string.IsNullOrWhiteSpace(url))
+                    .Select(url => url!)
+                    .ToList() ?? new List<string>();
+
+            string? GetMrpackMirrorUrl(string url)
+            {
+                const string cdnPrefix = "https://cdn.modrinth.com/data/";
+                if (!url.StartsWith(cdnPrefix, StringComparison.OrdinalIgnoreCase)) return null;
+                return "https://v2.mirrors.mslmc.cn/resources/modrinth/" + url[cdnPrefix.Length..];
+            }
+
+            async Task<bool> DownloadMrpackFileAsync(JToken file, int fileIndex,
+                IReadOnlyList<string> urls, ParallelDownloader downloader, string sourceName,
+                int sourceAttemptIndex, CancellationToken phaseCt)
+            {
+                phaseCt.ThrowIfCancellationRequested();
+                string relativePath = file["path"]?.ToString() ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(relativePath))
+                    throw new InvalidDataException("mrpack 文件条目缺少 path");
+
+                var (safe, destination, message) = FileUtils.GetSafePath(stagingDir, relativePath);
+                if (!safe) throw new IOException(message);
+
+                if (urls.Count == 0) throw new InvalidDataException($"mrpack 文件无可用下载地址: {relativePath}");
+
+                string? expectedHash = file["hashes"]?["sha512"]?.ToString();
+                HashAlgorithmName algorithm = HashAlgorithmName.SHA512;
+                if (string.IsNullOrWhiteSpace(expectedHash))
+                {
+                    expectedHash = file["hashes"]?["sha1"]?.ToString();
+                    algorithm = HashAlgorithmName.SHA1;
+                }
+
+                if (string.IsNullOrWhiteSpace(expectedHash))
+                    throw new InvalidDataException($"mrpack 文件缺少 sha512/sha1 校验值: {relativePath}");
+
+                string? parent = Path.GetDirectoryName(destination);
+                if (!string.IsNullOrEmpty(parent)) Directory.CreateDirectory(parent);
+
+                string url = urls[sourceAttemptIndex % urls.Count];
+                Exception? lastError = null;
+                bool downloaded = false;
+                phaseCt.ThrowIfCancellationRequested();
+                try
+                {
+                    using var timeoutCts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
+                    using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(phaseCt, timeoutCts.Token);
+
+                    int? parallelCountOverride = null;
+                    bool? parallelDownloadOverride = null;
+                    long fileSize = file["fileSize"]?.Value<long>() ?? 0;
+                    if (fileSize > 0 && fileSize <= 3L * 1024 * 1024)
+                    {
+                        parallelCountOverride = 1;
+                        parallelDownloadOverride = false;
+                    }
+                    else if (fileSize > 3L * 1024 * 1024 && fileSize < 15L * 1024 * 1024)
+                    {
+                        parallelCountOverride = 2;
+                        parallelDownloadOverride = true;
+                    }
+                    else if (fileSize >= 15L * 1024 * 1024)
+                    {
+                        parallelCountOverride = 3;
+                        parallelDownloadOverride = true;
+                    }
+
+                    var result = await downloader.DownloadFileAsync(
+                        url,
+                        destination,
+                        (percentage, speed) =>
+                        {
+                            double aggregateProgress;
+                            lock (downloadProgressLock)
+                            {
+                                downloadProgress[fileIndex] = Math.Max(downloadProgress[fileIndex],
+                                    Math.Clamp(percentage, 0, 100) / 100.0);
+                                aggregateProgress = downloadProgress.Sum();
+                            }
+
+                            double progress = GetMrpackDownloadProgress(aggregateProgress, downloadTotal);
+                            int completedFiles = Volatile.Read(ref downloadCompleted);
+                            
+                            string sizeStr = "未知大小";
+                            long fs = file["fileSize"]?.Value<long>() ?? 0;
+                            if (fs > 0)
+                            {
+                                double downBytes = fs * (percentage / 100.0);
+                                string[] sizes = { "B", "KB", "MB", "GB" };
+                                int order = 0;
+                                double totalLen = fs;
+                                double downLen = downBytes;
+                                while (totalLen >= 1024 && order < sizes.Length - 1)
+                                {
+                                    order++;
+                                    totalLen /= 1024;
+                                    downLen /= 1024;
+                                }
+                                sizeStr = $"{downLen:0.##}/{totalLen:0.##} {sizes[order]}";
+                            }
+
+                            _ = ReportDownloadProgressAsync(
+                                $"[{completedFiles}/{downloadTotal}] {relativePath} ({sizeStr}) {Math.Round(percentage, 2)}% ({speed})", progress);
+                        },
+                        cancellationToken: linkedCts.Token,
+                        parallelCountOverride: parallelCountOverride,
+                        parallelDownloadOverride: parallelDownloadOverride);
+                    if (!result.Success)
+                    {
+                        phaseCt.ThrowIfCancellationRequested();
+                        lastError = new IOException(result.ErrorMessage);
+                        try { File.Delete(destination); } catch { }
+                    }
+                    else
+                    {
+                        downloaded = await FileUtils.ValidateFileHashAsync(destination, expectedHash, algorithm);
+                        if (!downloaded)
+                        {
+                            lastError = new InvalidDataException($"文件校验失败: {relativePath}");
+                            try { File.Delete(destination); } catch { }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    phaseCt.ThrowIfCancellationRequested();
+                    lastError = ex;
+                    try { File.Delete(destination); } catch { }
+                }
+
+                phaseCt.ThrowIfCancellationRequested();
+                if (!downloaded)
+                {
+                    lock (downloadProgressLock)
+                    {
+                        downloadProgress[fileIndex] = 0;
+                        downloadErrors[fileIndex] = lastError;
+                    }
+                    return false;
+                }
+
+                lock (downloadProgressLock)
+                {
+                    downloadProgress[fileIndex] = 1;
+                    downloadedFlags[fileIndex] = true;
+                    downloadErrors[fileIndex] = null;
+                }
+
+                int current = Interlocked.Increment(ref downloadCompleted);
+                await ReportDownloadProgressAsync($"已下载 mrpack 文件（已完成文件 {current}/{downloadTotal}）",
+                    GetMrpackDownloadProgress(current, downloadTotal), true);
+                return true;
+            }
+
+            const int maxDownloadRounds = 10;
+            for (int round = 1; round <= maxDownloadRounds; round++)
+            {
+                ct.ThrowIfCancellationRequested();
+                bool useMirror = round % 2 == 1;
+                string sourceName = useMirror ? "镜像源" : "官方源";
+                var roundCandidates = downloadableFiles
+                    .Select((file, index) =>
+                    {
+                        var officialUrls = GetMrpackDownloadUrls(file);
+                        var urls = useMirror
+                            ? officialUrls.Select(GetMrpackMirrorUrl)
+                                .Where(url => !string.IsNullOrWhiteSpace(url))
+                                .Select(url => url!)
+                                .ToList()
+                            : officialUrls;
+                        return (file, index, urls);
+                    })
+                    .Where(item => !downloadedFlags[item.index] && item.urls.Count > 0)
+                    .ToList();
+
+                int remainingBeforeRound = downloadTotal - Volatile.Read(ref downloadCompleted);
+                if (remainingBeforeRound == 0) break;
+
+                await report(
+                    $"mrpack 下载第 {round}/{maxDownloadRounds} 轮：{sourceName}，待补漏 {remainingBeforeRound} 个，本轮可尝试 {roundCandidates.Count} 个...",
+                    null);
+
+                int sourceAttemptIndex = (round - 1) / 2;
+                ParallelDownloader roundDownloader = useMirror
+                    ? _mrpackMirrorDownloader
+                    : _mrpackDownloader;
+                await Task.WhenAll(roundCandidates.Select(item =>
+                    DownloadMrpackFileAsync(item.file, item.index, item.urls,
+                        roundDownloader, sourceName, sourceAttemptIndex, ct)));
+
+                int remainingAfterRound = downloadTotal - Volatile.Read(ref downloadCompleted);
+                if (remainingAfterRound == 0) break;
+
+                if (round < maxDownloadRounds)
+                {
+                    string nextSource = useMirror ? "官方源" : "镜像源";
+                    await report(
+                        $"mrpack 第 {round}/{maxDownloadRounds} 轮完成，剩余 {remainingAfterRound} 个文件，等待 3 秒后切换到{nextSource}...",
+                        null);
+                    await Task.Delay(TimeSpan.FromSeconds(3), ct);
+                }
+            }
+
+            var failedFiles = downloadableFiles
+                .Select((file, index) => (file, index))
+                .Where(item => !downloadedFlags[item.index])
+                .ToList();
+            if (failedFiles.Count > 0)
+            {
+                var firstFailed = failedFiles[0];
+                string relativePath = firstFailed.file["path"]?.ToString() ?? "未知文件";
+                throw new InvalidDataException(
+                    $"mrpack 经过 {maxDownloadRounds} 轮镜像源/官方源交错下载后仍有 {failedFiles.Count} 个文件失败，首个失败文件: {relativePath}",
+                    downloadErrors[firstFailed.index]);
+            }
+
+            await ReportDownloadProgressAsync($"索引文件下载完成，开始提取覆盖文件 ({overrideEntries.Count} 个)...",
+                85.0, true);
+
+            int extracted = 0;
+            DateTime lastReportExtract = DateTime.MinValue;
+            foreach (var entry in overrideEntries)
+            {
+                ct.ThrowIfCancellationRequested();
+                string relativePath = entry.FullName.StartsWith("server-overrides/", StringComparison.OrdinalIgnoreCase)
+                    ? entry.FullName.Substring("server-overrides/".Length)
+                    : entry.FullName.Substring("overrides/".Length);
+                relativePath = relativePath.Replace('\\', '/');
+
+                var (safe, destination, message) = FileUtils.GetSafePath(stagingDir, relativePath);
+                if (!safe) throw new IOException(message);
+                string? parent = Path.GetDirectoryName(destination);
+                if (!string.IsNullOrEmpty(parent)) Directory.CreateDirectory(parent);
+                entry.ExtractToFile(destination, true);
+                extracted++;
+
+                if ((DateTime.UtcNow - lastReportExtract).TotalMilliseconds >= 500 || extracted == overrideEntries.Count)
+                {
+                    lastReportExtract = DateTime.UtcNow;
+                    await report($"正在提取覆盖文件 [{extracted}/{overrideEntries.Count}]",
+                        GetMrpackProcessingProgress(extracted, overrideEntries.Count, 85.0, 7.45));
+                }
+            }
+
+            string[] filesToMove = Directory.GetFiles(stagingDir, "*", SearchOption.AllDirectories);
+            await report($"正在写入 mrpack 服务端文件 (0/{filesToMove.Length})...", 92.45);
+            int moved = 0;
+            DateTime lastReportMove = DateTime.MinValue;
+            foreach (string file in filesToMove)
+            {
+                ct.ThrowIfCancellationRequested();
+                string relative = Path.GetRelativePath(stagingDir, file);
+                var (safe, destination, message) = FileUtils.GetSafePath(targetDir, relative);
+                if (!safe) throw new IOException(message);
+                string? parent = Path.GetDirectoryName(destination);
+                if (!string.IsNullOrEmpty(parent)) Directory.CreateDirectory(parent);
+                File.Move(file, destination, true);
+                moved++;
+                
+                if ((DateTime.UtcNow - lastReportMove).TotalMilliseconds >= 500 || moved == filesToMove.Length)
+                {
+                    lastReportMove = DateTime.UtcNow;
+                    await report($"正在写入文件 [{moved}/{filesToMove.Length}]",
+                        GetMrpackProcessingProgress(moved, filesToMove.Length, 92.45, 7.45));
+                }
+            }
+
+            // 处理 missing_mods_checker.json 补全模组
+            string missingModsConfig = Path.Combine(targetDir, "config", "missing_mods_checker.json");
+            if (!File.Exists(missingModsConfig)) missingModsConfig = Path.Combine(targetDir, "overrides", "config", "missing_mods_checker.json");
+            
+            if (File.Exists(missingModsConfig))
+            {
+                try
+                {
+                    await report("检测到 missing_mods_checker.json，正在补全缺失的独占模组...", 99.9);
+                    var missingModsContent = await File.ReadAllTextAsync(missingModsConfig, ct);
+                    var missingModsArray = JArray.Parse(missingModsContent);
+                    int missingCount = missingModsArray.Count;
+                    int missingCompleted = 0;
+                    
+                    var missingDownloadTasks = missingModsArray.Select(async missingMod =>
+                    {
+                        try
+                        {
+                            string url = missingMod["url"]?.ToString() ?? "";
+                            string pattern = missingMod["pattern"]?.ToString() ?? "";
+                            string destFolder = missingMod["destination"]?.ToString() ?? "mods";
+                            
+                            if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(pattern)) return;
+                            
+                            var parts = url.TrimEnd('/').Split('/');
+                            if (parts.Length > 0 && int.TryParse(parts.Last(), out int fileId))
+                            {
+                                string strFileId = fileId.ToString();
+                                if (strFileId.Length >= 4)
+                                {
+                                    string part1 = strFileId.Substring(0, strFileId.Length - 3);
+                                    string part2 = strFileId.Substring(strFileId.Length - 3);
+                                    string officialUrl = $"https://edge.forgecdn.net/files/{part1}/{part2}/{pattern}";
+                                    string mirrorUrl = $"https://v2.mirrors.mslmc.cn/resources/curseforge/{part1}/{part2}/{pattern}";
+                                    
+                                    string relativeDest = Path.Combine(destFolder, pattern);
+                                    var (safe, destPath, msg) = FileUtils.GetSafePath(targetDir, relativeDest);
+                                    if (!safe)
+                                    {
+                                        _logger.LogWarning("补全模组路径不安全，已跳过: {RelativeDest}", relativeDest);
+                                        return;
+                                    }
+                                    
+                                    if (File.Exists(destPath)) return;
+                                    
+                                    string? parentDir = Path.GetDirectoryName(destPath);
+                                    if (!string.IsNullOrEmpty(parentDir)) Directory.CreateDirectory(parentDir);
+                                    
+                                    bool downloaded = false;
+                                    int maxRounds = 10;
+                                    for (int round = 1; round <= maxRounds; round++)
+                                    {
+                                        ct.ThrowIfCancellationRequested();
+                                        bool useMirror = (round % 2 == 1);
+                                        string downloadUrl = useMirror ? mirrorUrl : officialUrl;
+                                        ParallelDownloader currentDownloader = useMirror ? _mrpackMirrorDownloader : _mrpackDownloader;
+                                        
+                                        int capturedCompleted = Volatile.Read(ref missingCompleted);
+                                        var result = await currentDownloader.DownloadFileAsync(
+                                            downloadUrl, destPath, (percentage, speed) =>
+                                            {
+                                                string progressMsg = $"[{capturedCompleted}/{missingCount}] {pattern} {Math.Round(percentage, 2)}% ({speed})";
+                                                _ = report(progressMsg, 99.9);
+                                            }, 1000, ct);
+                                            
+                                        if (result.Success)
+                                        {
+                                            downloaded = true;
+                                            break;
+                                        }
+                                        
+                                        await Task.Delay(TimeSpan.FromSeconds(2), ct);
+                                    }
+                                    
+                                    if (!downloaded)
+                                    {
+                                        throw new Exception($"尝试 {maxRounds} 轮下载后仍然失败");
+                                    }
+                                    
+                                    int completed = Interlocked.Increment(ref missingCompleted);
+                                    await report($"补全模组 ({completed}/{missingCount}): {pattern}", 99.9);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning(ex, "补全缺失模组失败: {Pattern}", missingMod["pattern"]?.ToString());
+                        }
+                    });
+                    
+                    await Task.WhenAll(missingDownloadTasks);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "处理 missing_mods_checker.json 失败");
+                }
+            }
+
+            await report("mrpack 服务端包安装完成。", 99.9);
+        }
+        finally
+        {
+            try
+            {
+                if (Directory.Exists(stagingDir)) Directory.Delete(stagingDir, true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "清理 mrpack 临时目录失败: {Path}", stagingDir);
+            }
+        }
+    }
+
+    private static double GetMrpackDownloadProgress(double completed, int total)
+    {
+        if (total <= 0) return 85.0;
+        return Math.Min(85.0, Math.Clamp(completed, 0, total) * 85.0 / total);
+    }
+
+    private static double GetMrpackProcessingProgress(int completed, int total, double start, double range)
+    {
+        if (total <= 0) return Math.Min(99.9, start + range);
+        return Math.Min(99.9, start + Math.Clamp(completed, 0, total) * range / total);
     }
 
     /// <summary>
@@ -650,13 +1181,13 @@ public class ServerDeploymentService
         if (!string.IsNullOrEmpty(request.packageUrl))
         {
             string tmpKey = await DownloadPackageAsync(serverId, request.packageUrl, request.packageSha256, report, ct);
-            await DeployPackageAsync(serverId, tmpKey, null, serverDir, report);
+            await DeployPackageAsync(serverId, tmpKey, null, serverDir, report, ct);
             await ChmodBedrockServerAsync(serverId, serverDir, report);
         }
 
         if (!string.IsNullOrEmpty(request.packageFileKey) || !string.IsNullOrEmpty(request.packageLocalPath))
         {
-            await DeployPackageAsync(serverId, request.packageFileKey, request.packageLocalPath, serverDir, report);
+            await DeployPackageAsync(serverId, request.packageFileKey, request.packageLocalPath, serverDir, report, ct);
         }
 
         if (!string.IsNullOrEmpty(request.core) && request.core != "none")
@@ -825,7 +1356,7 @@ public class ServerDeploymentService
 
     // 辅助方法
     public async Task<bool> DownloadAndValidateAsync(string? url, string savePath, string itemName, string? sha256,
-        ReportProgress report, CancellationToken? ct)
+        ReportProgress report, CancellationToken? ct, HashAlgorithmName? hashAlgorithm = null)
     {
         if (string.IsNullOrEmpty(url)) return false;
 
@@ -891,7 +1422,8 @@ public class ServerDeploymentService
             }
             else
             {
-                if (!string.IsNullOrEmpty(sha256) && !await FileUtils.ValidateFileSha256Async(savePath, sha256))
+                if (!string.IsNullOrEmpty(sha256) &&
+                    !await FileUtils.ValidateFileHashAsync(savePath, sha256, hashAlgorithm ?? HashAlgorithmName.SHA256))
                 {
                     await report($"{itemName} 校验失败！", -1, true);
                     try
