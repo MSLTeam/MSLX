@@ -1,6 +1,6 @@
 {
   "name": "mslx-webpanel",
-  "version": "1.6.0",
+  "version": "1.6.0.1",
   "scripts": {
     "dev": "node sync-version.js && vite --mode development",
     "dev:linux": "node sync-version.js && vite --mode development",
