@@ -1,5 +1,6 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Microsoft.AspNetCore.Hosting.Server;
 using MSLX.SDK.Models;
+using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Utils.ConfigUtils
 {
@@ -110,7 +111,15 @@ namespace MSLX.Daemon.Utils.ConfigUtils
                     {
                         try
                         {
-                            Directory.Delete(basePath, true);
+                            // Windows 系统尝试移动到回收站，其他系统直接删除
+                            if (OperatingSystem.IsWindows())
+                            {
+                                FileUtils.MoveToRecycleBin(basePath);
+                            }
+                            else
+                            {
+                                Directory.Delete(basePath, true);
+                            }
                         }
                         catch { }
                     }

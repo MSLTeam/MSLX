@@ -143,38 +143,33 @@ public class ServerCreationService : BackgroundService
         Directory.CreateDirectory(server.Base);
         _logger.LogInformation("服务器 {ServerId} 基础目录已配置。", serverId);
 
-        // 追踪是否使用了默认路径（用于清理）
-        bool usingDefaultPath = string.IsNullOrWhiteSpace(request.path);
-
         // 清理已创建的服务器配置和目录
-        void CleanupFailedDeployment(bool forceCleanup = false)
+        void CleanupFailedDeployment()
         {
             // 检查是否需要清理文件
-            bool shouldCleanupFiles = forceCleanup || _taskTracker.ShouldCleanupFiles(serverIdStr);
+            bool shouldCleanupFiles = _taskTracker.ShouldCleanupFiles(serverIdStr);
             
             try
             {
-                IConfigBase.ServerList.DeleteServer((uint)serverId, true);
+                IConfigBase.ServerList.DeleteServer((uint)serverId, false);
             }
             catch (Exception cleanupEx)
             {
                 _logger.LogWarning(cleanupEx, "清理时删除服务器配置失败: {ServerId}", serverId);
             }
 
-            if (shouldCleanupFiles && usingDefaultPath && Directory.Exists(server.Base))
+            if (shouldCleanupFiles && Directory.Exists(server.Base))
             {
                 try
                 {
                     // Windows 系统尝试移动到回收站，其他系统直接删除
                     if (OperatingSystem.IsWindows())
                     {
-                        MoveToRecycleBin(server.Base);
-                        _logger.LogInformation("已将目录移动到回收站: {Path}", server.Base);
+                        FileUtils.MoveToRecycleBin(server.Base);
                     }
                     else
                     {
                         Directory.Delete(server.Base, true);
-                        _logger.LogInformation("已删除目录: {Path}", server.Base);
                     }
                 }
                 catch (Exception cleanupEx)
@@ -286,7 +281,7 @@ public class ServerCreationService : BackgroundService
         {
             // TaskCanceledException 来自 Downloader 库的网络层（连接中断/超时），不是用户取消
             _logger.LogWarning(ex, "下载过程中连接中断: ServerId {ServerId}", serverId);
-            CleanupFailedDeployment(forceCleanup: true); // 网络错误强制清理
+            CleanupFailedDeployment(); // 网络错误强制清理
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -299,12 +294,12 @@ public class ServerCreationService : BackgroundService
         {
             // ct 未被触发但出现了 OperationCanceledException → 网络层中断通过 report() 传播
             _logger.LogWarning(ex, "下载过程中连接中断: ServerId {ServerId}", serverId);
-            CleanupFailedDeployment(forceCleanup: true);
+            CleanupFailedDeployment();
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "部署失败，正在清理: ServerId {ServerId}", serverId);
-            CleanupFailedDeployment(forceCleanup: true);
+            CleanupFailedDeployment();
         }
     }
 
@@ -335,23 +330,5 @@ public class ServerCreationService : BackgroundService
         var status = new CacheableStatus { Message = message, Progress = progress ?? 0 };
         _memoryCache.Set(serverId, status, TimeSpan.FromMinutes(10));
         await _hubContext.Clients.Group(serverId).SendAsync("StatusUpdate", serverId, message, progress);
-    }
-
-    /// <summary>
-    /// Windows 系统将文件夹移动到回收站
-    /// </summary>
-    private static void MoveToRecycleBin(string path)
-    {
-        if (!OperatingSystem.IsWindows())
-        {
-            throw new PlatformNotSupportedException("回收站功能仅支持 Windows 系统");
-        }
-
-        // 使用 FileSystem.DeleteDirectory 并设置 RecycleOption.SendToRecycleBin
-        Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(
-            path,
-            Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
-            Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin
-        );
     }
 }

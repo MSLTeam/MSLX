@@ -50,6 +50,7 @@ public class CreationTaskTracker
     /// </summary>
     public bool ShouldCleanupFiles(string serverId)
     {
-        return _cleanupPreferences.TryGetValue(serverId, out var cleanup) && cleanup;
+        _cleanupPreferences.TryGetValue(serverId, out var cleanup);
+        return cleanup;
     }
 }

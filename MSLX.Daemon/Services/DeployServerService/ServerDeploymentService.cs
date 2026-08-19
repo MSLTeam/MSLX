@@ -994,6 +994,7 @@ public class ServerDeploymentService
         if (!string.IsNullOrEmpty(downloadUrl))
         {
             bool success = await DownloadAndValidateAsync(downloadUrl, destPath, "服务端核心", sha256, report, ct);
+            if (ct.HasValue && ct.Value.IsCancellationRequested) return;
             if (!success) throw new Exception("Core download failed");
             await report("核心下载完成。", 99.9);
         }
