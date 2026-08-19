@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
 import { MessagePlugin } from 'tdesign-vue-next';
+import { useTaskStore } from '@/store';
 import { startDecompress, getDeompressStatus } from '@/api/files';
 
 const props = defineProps<{
@@ -75,6 +76,7 @@ const handleStart = async () => {
     if (res && res.taskId) {
       taskId.value = res.taskId;
       pollTimer = window.setInterval(pollStatus, 1000);
+      useTaskStore().fetchTasks();
     } else {
       throw new Error('未能获取任务ID');
     }
@@ -113,7 +115,7 @@ const pollStatus = async () => {
 
 const handleClose = () => {
   if (isProcessing.value && progress.value < 100) {
-    MessagePlugin.warning('解压正在后台进行中');
+    MessagePlugin.warning('任务已转入后台，可随时在右上角任务中心查看');
   }
   stopPolling();
   isVisible.value = false;
@@ -165,6 +167,12 @@ const handleClose = () => {
       <div class="flex justify-end gap-3 mt-2" v-if="!isProcessing">
         <t-button variant="outline" class="!rounded-lg hover:!bg-zinc-100 dark:hover:!bg-zinc-800" @click="handleClose">取消</t-button>
         <t-button theme="primary" class="!rounded-lg shadow-sm" @click="handleStart">开始解压</t-button>
+      </div>
+
+      <div class="flex justify-center mt-2 w-full" v-if="isProcessing">
+        <t-button variant="outline" size="small" class="!rounded-lg" @click="handleClose">
+          转入后台运行
+        </t-button>
       </div>
 
     </div>

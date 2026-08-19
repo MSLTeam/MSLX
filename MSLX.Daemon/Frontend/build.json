@@ -1,6 +1,6 @@
 {
-  "version": "1.5.10.2",
-  "buildTime": "2026-08-12 00:18:03",
+  "version": "1.6.0",
+  "buildTime": "2026-08-19 14:03:27",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -77,10 +77,154 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "c2087ad6fb7d3e5dc9818aa7041a744650dddb2e",
-  "commitMsg": "chore(ci): 打包dmg时等待更新日志",
-  "commitAuthor": "CoZooo",
+  "commitId": "0ac4dcaa8a9fea319e5cadd0724961ae7c415e5c",
+  "commitMsg": "fix(webpanel): 修复后台任务api定义错误问题",
+  "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "0ac4dcaa8a9fea319e5cadd0724961ae7c415e5c",
+      "commitTime": "2026-08-19 14:02:57 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复后台任务api定义错误问题"
+    },
+    {
+      "commitId": "12db15708deea60ab10c81444aa37ca64a501f75",
+      "commitTime": "2026-08-19 13:51:05 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(desktop & daemon & webpanel): 控制台新增RCON通讯模式"
+    },
+    {
+      "commitId": "96231d3ee7c755b48d54625cef988e3f18edb9f1",
+      "commitTime": "2026-08-19 12:14:09 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & sdk): 插件支持调用后台任务池"
+    },
+    {
+      "commitId": "55c8b3153af5ca07e893d171527028eee8e0dc1c",
+      "commitTime": "2026-08-19 11:57:06 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(daemon & webpanel): 打包服务端功能集成到后台任务"
+    },
+    {
+      "commitId": "8bf476f4f3eee943db91be772ab6582b9c445d32",
+      "commitTime": "2026-08-19 11:37:38 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & webpanel): 新增后台任务管理功能"
+    },
+    {
+      "commitId": "80ee95392df8dd2221738f07d634a6e322564387",
+      "commitTime": "2026-08-18 23:51:19 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复部署服务端取消异常的问题"
+    },
+    {
+      "commitId": "838ed0e8030f445aac1bc7192f7670dcc8870cea",
+      "commitTime": "2026-08-18 23:43:49 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon): 资源中心下载资源优先镜像站 #70"
+    },
+    {
+      "commitId": "de42b4d18094983baaa2a13a7f9ac6234c8d58fa",
+      "commitTime": "2026-08-18 23:27:51 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 资源中心整合包新增一键部署跳转支持"
+    },
+    {
+      "commitId": "68d6167aa6e6b065f8f289ef61b3fc28f39609a2",
+      "commitTime": "2026-08-18 22:41:59 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(daemon): 优化检测客户端模组的逻辑"
+    },
+    {
+      "commitId": "3489059dcbaed15f2063e3e6f96851934a5ad2cf",
+      "commitTime": "2026-08-18 22:28:35 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 资源中心模组下载新增联动下载前置模组的功能"
+    },
+    {
+      "commitId": "d0c76104f9527f8bff2d24d296ac49aecb66e84c",
+      "commitTime": "2026-08-18 13:27:14 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(daemon): 优化纯客户端模组的检测逻辑"
+    },
+    {
+      "commitId": "d5a8e574c04bd14f593aa2435c59e5a0dd58218d",
+      "commitTime": "2026-08-18 10:21:59 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge branch 'dev' of https://github.com/MSLTeam/MSLX into dev"
+    },
+    {
+      "commitId": "4f6986a8f7e9cb63fac97eab35d9c67c17f839f1",
+      "commitTime": "2026-08-18 10:21:26 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 新增mrpack的安装支持 #70"
+    },
+    {
+      "commitId": "dd19b34221d2731b74e5260213ecced945a14fc1",
+      "commitTime": "2026-08-17 18:30:02 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复仪表盘页面插件插槽动画不正确的问题"
+    },
+    {
+      "commitId": "6fa322e3959e18ca0680d81247ee136592a34194",
+      "commitTime": "2026-08-13 21:45:06 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "fix(desktop): 修复上次优化导致的一个小问题"
+    },
+    {
+      "commitId": "a0da324b68fe97916bd83640d328c503b5a09732",
+      "commitTime": "2026-08-13 21:44:15 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "perf(desktop): 优化HomePage公告和小控件刷新逻辑"
+    },
+    {
+      "commitId": "b60bcea6130fc6843520c30705456915ede53645",
+      "commitTime": "2026-08-13 20:11:43 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(ci): 修复构建工作流构建前端失败"
+    },
+    {
+      "commitId": "dd7b7c745629b548f8d424194eb0bceb923695d2",
+      "commitTime": "2026-08-13 16:50:56 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 新增资源详情信息查看 #70"
+    },
+    {
+      "commitId": "0e2c3561e5a04aa99d6c258090fe069ef6377caa",
+      "commitTime": "2026-08-13 16:31:57 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
+    },
+    {
+      "commitId": "71b0546afcf5ee49b857852eaafb53f4b8152b0a",
+      "commitTime": "2026-08-13 16:31:24 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 实现 Modrinth 和 Curseforge 的资源搜索聚合服务 #70"
+    },
+    {
+      "commitId": "5830cf7b94915362c4375cb4ba1b7ce8d11c1152",
+      "commitTime": "2026-08-13 16:02:02 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "ci(webpanel): scripts 改用 pnpm"
+    },
+    {
+      "commitId": "1edbf9661ba56afece36f84e0fc3fa8f3e9265a8",
+      "commitTime": "2026-08-12 18:28:37 +0800",
+      "commitAuthor": "CoZooo",
+      "commitMsg": "chore(app): 修改允许外部访问图标"
+    },
+    {
+      "commitId": "06eedba20e36a2242bdc31ccbdb2509d20064e7d",
+      "commitTime": "2026-08-12 00:21:14 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #225 from MSLTeam/dev"
+    },
+    {
+      "commitId": "9e8b65acca6b5736e0308e0dd6d13b8609fb9a5d",
+      "commitTime": "2026-08-12 00:18:43 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel & desktop): 更新到v1.5.10.2-hotfix版本"
+    },
     {
       "commitId": "c2087ad6fb7d3e5dc9818aa7041a744650dddb2e",
       "commitTime": "2026-08-12 00:09:51 +0800",
@@ -236,150 +380,6 @@
       "commitTime": "2026-08-10 17:01:55 +0800",
       "commitAuthor": "CoZooo",
       "commitMsg": "feat(app): 完善NetSparkle更新逻辑及UI"
-    },
-    {
-      "commitId": "0cc33cb71b8e639b3f13b5a497a40665c9119af0",
-      "commitTime": "2026-08-10 12:38:43 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "feat(app): macOS App接入NetSparkle更新模块"
-    },
-    {
-      "commitId": "235bca8779a22f3185af3e38b2435b3e017d6af2",
-      "commitTime": "2026-08-10 12:10:26 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "chore(app): 禁用App的原Desktop更新"
-    },
-    {
-      "commitId": "17affb9b7d38accae3acdabce66920814c4ebfa5",
-      "commitTime": "2026-08-10 11:53:28 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "fix(app): 修复点击Dock图标无法打开窗口的问题"
-    },
-    {
-      "commitId": "d466203f5b181638db0cf845fb7be5197face4cd",
-      "commitTime": "2026-08-10 11:31:45 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "fix(app): 修复符号链接相关问题"
-    },
-    {
-      "commitId": "3d808fcac2f1bc51bc03ebd617c74183791ed3ef",
-      "commitTime": "2026-08-10 11:07:01 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "fix(desktop): 修复快捷打开管理面板时进入登录页的问题"
-    },
-    {
-      "commitId": "ea9716d796b2f9b13f4ca4559adc128dfa4335c0",
-      "commitTime": "2026-08-10 10:50:31 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "chore(app): 在启动App时停止Homebrew Services"
-    },
-    {
-      "commitId": "21d541a66d4b8bff780de865f3020e919d14ebad",
-      "commitTime": "2026-08-10 02:23:41 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "feat(app): 后台持久化运行"
-    },
-    {
-      "commitId": "4b0929252b0f14c31ecf00172352787af82dfbb0",
-      "commitTime": "2026-08-10 01:36:01 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "feat(desktop): 支持快捷打开管理面板"
-    },
-    {
-      "commitId": "247bb3bea9d0cea785d1d2cdea60fa9372f5b49e",
-      "commitTime": "2026-08-10 00:46:19 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "fix(app): App模式下隐藏检查Daemon更新按钮"
-    },
-    {
-      "commitId": "37514e30f050975f48c93840cfc4e5ca54a4fc05",
-      "commitTime": "2026-08-10 00:42:42 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "feat(app): App模式下支持选择是否允许外部访问"
-    },
-    {
-      "commitId": "180c1e469c5741c8c161cd11bd42e765466860ce",
-      "commitTime": "2026-08-10 00:41:52 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "chore(app): App下禁止关闭本地访问"
-    },
-    {
-      "commitId": "ab1ed23a2c8a79701d142d6e1ad1c1fc9c5409e2",
-      "commitTime": "2026-08-10 00:09:51 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "refactor(app): 将Daemon内置在App中"
-    },
-    {
-      "commitId": "7362434d5ee8354964e58d9d4bd29c8699ff46df",
-      "commitTime": "2026-08-09 22:30:00 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #216 from CoZooo/dev"
-    },
-    {
-      "commitId": "74b17c737fc761be55e269f3d8fe8f315a1654b5",
-      "commitTime": "2026-08-09 21:32:56 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "fix(ci): 修复签名Library Validation问题"
-    },
-    {
-      "commitId": "5bbbca9db357dcff6335aa6718aa422c5fdeddf7",
-      "commitTime": "2026-08-09 20:15:17 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "chore(ci): 为 macOS Desktop 和 Daemon 添加签名与公证"
-    },
-    {
-      "commitId": "1827ebe47850b4368d13080223230d28f7526cc8",
-      "commitTime": "2026-08-09 11:54:27 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "docs(readme): 修复Stars图不能正常显示"
-    },
-    {
-      "commitId": "173ea0e64bdfc168670fb2e7738664f301db12a3",
-      "commitTime": "2026-08-09 11:44:24 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "refactor(desktop): Mode l从 MSLX.SDK 直接继承"
-    },
-    {
-      "commitId": "a950f5e438b0a26ccff5b58f543684806731cd99",
-      "commitTime": "2026-08-09 11:08:46 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复创建服务端的SignalR断开连接异常导致崩溃的问题"
-    },
-    {
-      "commitId": "117d31b8bb5939b6d28eec22f2b99b7a97313e37",
-      "commitTime": "2026-08-08 17:38:10 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复MCDR模式在Docker下无法正常提交创建的问题"
-    },
-    {
-      "commitId": "71e7db69d18ccd84d5b7ac7ffc95e5de5590251b",
-      "commitTime": "2026-08-08 13:33:18 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #214 from MSLTeam/dev"
-    },
-    {
-      "commitId": "449f85ad5152de3525b7f94b58b9e7ddd36f5f26",
-      "commitTime": "2026-08-08 13:32:18 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel): 更新到v1.5.9版本"
-    },
-    {
-      "commitId": "fa7fc69bbcd30f8fdb7f1af147f86ca88cdf1101",
-      "commitTime": "2026-08-08 13:30:10 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复解压整合包可能存在解压文件位置路径错误的问题 & 新增解压进度显示"
-    },
-    {
-      "commitId": "18059b741f54cd8d32546576fbba87276c46de20",
-      "commitTime": "2026-08-08 12:14:42 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): Docker镜像新增检查更新和更新功能"
-    },
-    {
-      "commitId": "2201a88f33f08c9a7c493aff7057e4e276c6449f",
-      "commitTime": "2026-08-08 11:54:30 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): MCDR模式创建服务端适配Docker容器部署"
     }
   ]
 }

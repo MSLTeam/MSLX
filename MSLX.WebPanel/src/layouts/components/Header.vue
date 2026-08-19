@@ -8,6 +8,8 @@ import { prefix } from '@/config/global';
 import type { MenuRoute } from '@/types/interface';
 
 import MenuContent from './MenuContent.vue';
+import TaskDrawer from './TaskDrawer.vue';
+import { useTaskStore } from '@/store';
 import CustomLogo from '@/assets/logo.png';
 
 const userStore = useUserStore();
@@ -54,6 +56,14 @@ const toggleSettingPanel = () => {
 
 const active = computed(() => getActive());
 const mobileMenuVisible = ref(false);
+const taskDrawerVisible = ref(false);
+const taskStore = useTaskStore();
+
+// Init task store fetching on load if token exists
+import { onMounted } from 'vue';
+onMounted(() => {
+  taskStore.fetchTasks();
+});
 
 const layoutCls = computed(() => [`${prefix}-header-layout`]);
 
@@ -179,7 +189,7 @@ const handleAvatarClick = () => {
 
       <template #operations>
         <div class="flex items-center gap-1 sm:gap-2">
-          <div class="hidden lg:flex items-center gap-1 sm:gap-2">
+          <div class="hidden lg:flex items-center gap-2 sm:gap-4">
             <t-dropdown trigger="click" :min-column-width="120">
               <template #dropdown>
                 <t-dropdown-menu>
@@ -281,7 +291,15 @@ const handleAvatarClick = () => {
             </template>
           </t-popup>
 
-          <div class="hidden lg:flex items-center">
+          <div class="hidden lg:flex items-center gap-2 sm:gap-4">
+            <t-tooltip placement="bottom" content="后台任务">
+              <t-badge :count="taskStore.runningCount" dot>
+                <t-button theme="default" shape="square" variant="text" class="header-btn" @click="taskDrawerVisible = true">
+                  <t-icon name="task" class="text-[20px]" />
+                </t-button>
+              </t-badge>
+            </t-tooltip>
+
             <t-tooltip placement="bottom" content="系统设置">
               <t-button theme="default" shape="square" variant="text" class="header-btn" @click="toggleSettingPanel">
                 <t-icon name="setting" class="text-[20px]" />
@@ -300,6 +318,11 @@ const handleAvatarClick = () => {
                   <t-dropdown-item class="operations-dropdown-item mt-1" @click="navToCNB">
                     <t-icon name="git-branch" class="text-lg mr-2"></t-icon>
                     <span>CNB 仓库</span>
+                  </t-dropdown-item>
+                  <t-dropdown-item class="operations-dropdown-item mt-1" @click="taskDrawerVisible = true">
+                    <t-icon name="task" class="text-lg mr-2"></t-icon>
+                    <span>后台任务</span>
+                    <t-badge v-if="taskStore.runningCount > 0" dot class="ml-auto"></t-badge>
                   </t-dropdown-item>
                   <t-dropdown-item class="operations-dropdown-item mt-1" @click="navToHelper">
                     <t-icon name="help-circle" class="text-lg mr-2"></t-icon>
@@ -320,6 +343,7 @@ const handleAvatarClick = () => {
       </template>
     </t-head-menu>
   </div>
+  <task-drawer v-model:visible="taskDrawerVisible" />
 </template>
 
 <style lang="less" scoped>

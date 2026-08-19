@@ -20,11 +20,13 @@ public class InstanceExportController : ControllerBase
 {
     private readonly IMemoryCache _memoryCache;
     private readonly IJavaScannerService _javaScannerService;
+    private readonly BackgroundTaskManager _taskManager;
 
-    public InstanceExportController(IMemoryCache memoryCache, IJavaScannerService javaScannerService)
+    public InstanceExportController(IMemoryCache memoryCache, IJavaScannerService javaScannerService, BackgroundTaskManager taskManager)
     {
         _memoryCache = memoryCache;
         _javaScannerService = javaScannerService;
+        _taskManager = taskManager;
     }
 
     [HttpPost("{id}/export")]
@@ -40,12 +42,13 @@ public class InstanceExportController : ControllerBase
         var mslxPacksDir = Path.Combine(server.Base, "mslx-packs");
         if (!Directory.Exists(mslxPacksDir)) Directory.CreateDirectory(mslxPacksDir);
 
-        var taskId = Guid.NewGuid().ToString("N");
         var timestamp = DateTime.Now.ToString("yyyy-MMdd-HHmm");
         var safeName = string.Join("_", server.Name.Split(Path.GetInvalidFileNameChars()));
         var exportPath = Path.Combine(mslxPacksDir, $"mslx-pack-{safeName}-{timestamp}.zip");
         
-        _memoryCache.Set($"ExportTask_{taskId}", "Processing", TimeSpan.FromHours(1));
+        var userId = User?.FindFirst("UserId")?.Value ?? "";
+        var (taskItem, cancellationToken) = _taskManager.CreateTask(userId, id, MSLX.SDK.Models.Files.TaskType.Export, $"打包服务端 {server.Name}", Path.GetFileName(exportPath));
+        var taskId = taskItem.Id;
 
         Task.Run(() =>
         {
@@ -54,13 +57,25 @@ public class InstanceExportController : ControllerBase
                 using var archive = ZipFile.Open(exportPath, ZipArchiveMode.Create, System.Text.Encoding.GetEncoding("GBK"));
                 var baseUri = new Uri(server.Base.TrimEnd('\\', '/') + "/");
 
-                foreach (var file in Directory.GetFiles(server.Base, "*", SearchOption.AllDirectories))
+                var allFiles = Directory.GetFiles(server.Base, "*", SearchOption.AllDirectories);
+                int totalFiles = allFiles.Length;
+                int processedFiles = 0;
+
+                foreach (var file in allFiles)
                 {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        throw new OperationCanceledException("用户取消了打包任务");
+                    }
+
                     var relativePath = Uri.UnescapeDataString(baseUri.MakeRelativeUri(new Uri(file)).ToString());
                     
                     // Exclude mslx-packs folder
                     if (relativePath.StartsWith("mslx-packs/", StringComparison.OrdinalIgnoreCase))
+                    {
+                        processedFiles++;
                         continue;
+                    }
                     
                     // Check if file is in any excluded directory
                     bool isExcluded = false;
@@ -81,6 +96,9 @@ public class InstanceExportController : ControllerBase
                     {
                         archive.CreateEntryFromFile(file, relativePath);
                     }
+                    
+                    processedFiles++;
+                    _taskManager.UpdateProgress(taskId, (int)((processedFiles * 100.0) / totalFiles), $"正在打包 {Path.GetFileName(file)}");
                 }
 
                 // Add metadata
@@ -165,11 +183,23 @@ public class InstanceExportController : ControllerBase
 
                 writer.Write(JsonConvert.SerializeObject(customMetadata, Formatting.Indented));
                 
-                _memoryCache.Set($"ExportTask_{taskId}", "Completed:" + exportPath, TimeSpan.FromHours(1));
+                _taskManager.SetSuccess(taskId, "打包完成！");
+            }
+            catch (OperationCanceledException)
+            {
+                if (System.IO.File.Exists(exportPath))
+                {
+                    System.IO.File.Delete(exportPath);
+                }
+                // Cancellation 状态由取消任务来处理
             }
             catch (Exception ex)
             {
-                _memoryCache.Set($"ExportTask_{taskId}", "Error:" + ex.Message, TimeSpan.FromHours(1));
+                if (System.IO.File.Exists(exportPath))
+                {
+                    System.IO.File.Delete(exportPath);
+                }
+                _taskManager.SetFailed(taskId, ex.Message);
             }
         });
 

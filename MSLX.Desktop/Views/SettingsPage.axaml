@@ -230,7 +230,7 @@
                             <Separator Name="FirewallSettingSeparator" Opacity="0.1" Margin="15,0"/>
 
                             <Grid Name="ExternalAccessSettingRow" IsVisible="False" Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
-                                <icons:MaterialIcon Kind="RemoteDesktop" Classes="SettingIcon"/>
+                                <icons:MaterialIcon Kind="Earth" Classes="SettingIcon"/>
                                 <StackPanel Grid.Column="1" Margin="15,0">
                                     <TextBlock Text="允许外部访问" Classes="SettingTitle"/>
                                     <TextBlock Text="允许局域网或其他设备访问内置 Daemon，修改后需重启" Classes="SettingDesc" Foreground="OrangeRed"/>

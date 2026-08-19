@@ -8,6 +8,7 @@ import BedrockAutoUpdater from './MoreComponents/BedrockAutoUpdater.vue';
 import { getInstanceInfo, exportInstancePack } from '@/api/instance';
 import { InstanceInfoModel } from '@/api/model/instance';
 import PluginSlot from '@/components/PluginSlot.vue';
+import { useTaskStore } from '@/store';
 
 const route = useRoute();
 const instanceId = computed(() => parseInt(route.params.serverId as string));
@@ -223,6 +224,7 @@ const confirmCropAndUpload = async () => {
 // 基岩版更新相关
 const instanceInfo = ref<InstanceInfoModel | null>(null);
 const showBedrockUpdater = ref(false);
+const taskStore = useTaskStore();
 const fetchInstanceInfo = async () => {
   try {
     instanceInfo.value = await getInstanceInfo(instanceId.value);
@@ -265,8 +267,9 @@ const handleExport = async () => {
   isExporting.value = true;
   try {
     const res = await exportInstancePack(instanceId.value, excludes);
-    MessagePlugin.success(`导出任务已提交 (任务ID: ${res.taskId})，请稍后到实例文件夹下的 mslx-packs 目录中查看生成的整合包。`);
+    MessagePlugin.success(`导出任务已提交，您可以在顶部栏“后台任务”中查看打包进度！`);
     showExportDialog.value = false;
+    taskStore.fetchTasks();
   } catch (e: any) {
     MessagePlugin.error('导出失败: ' + e.message);
   } finally {

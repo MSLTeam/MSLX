@@ -209,7 +209,7 @@ public class ServerCreationService : BackgroundService
             {
                 string tempPackageFileKey = await _deploymentService.DownloadPackageAsync(serverIdStr, request.packageUrl, request.packageSha256, progressReporter, ct);
                 ct.ThrowIfCancellationRequested();
-                await _deploymentService.DeployPackageAsync(serverIdStr, tempPackageFileKey, null, server.Base, progressReporter);
+                await _deploymentService.DeployPackageAsync(serverIdStr, tempPackageFileKey, null, server.Base, progressReporter, ct);
                 await _deploymentService.ChmodBedrockServerAsync(serverIdStr, server.Base, progressReporter);
             }
 
@@ -218,7 +218,7 @@ public class ServerCreationService : BackgroundService
             // 部署整合包
             if (!string.IsNullOrEmpty(request.packageFileKey) || !string.IsNullOrEmpty(request.packageLocalPath))
             {
-                await _deploymentService.DeployPackageAsync(serverIdStr, request.packageFileKey, request.packageLocalPath, server.Base, progressReporter);
+                await _deploymentService.DeployPackageAsync(serverIdStr, request.packageFileKey, request.packageLocalPath, server.Base, progressReporter, ct);
             }
 
             ct.ThrowIfCancellationRequested();

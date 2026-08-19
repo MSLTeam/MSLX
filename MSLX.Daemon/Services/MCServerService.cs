@@ -1,4 +1,4 @@
-﻿using CliWrap;
+using CliWrap;
 using CliWrap.Buffered;
 using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
@@ -480,6 +480,49 @@ public class MCServerService : IMCServerService
                     _activeServers.TryRemove(instanceId, out _);
                     return;
                 }
+            }
+
+            // 自动配置RCON
+            if (serverInfo.RconMode == "mc")
+            {
+                try
+                {
+                    string propsPath = Utils.ServerPropertiesPathUtils.ResolveFullPath(serverInfo);
+                    bool enableRcon = false;
+                    bool hasRconPort = false;
+                    bool hasRconPassword = false;
+                    
+                    if (File.Exists(propsPath))
+                    {
+                        var lines = File.ReadAllLines(propsPath).ToList();
+                        bool changed = false;
+                        for (int i = 0; i < lines.Count; i++)
+                        {
+                            if (lines[i].StartsWith("enable-rcon="))
+                            {
+                                enableRcon = true;
+                                if (lines[i] != "enable-rcon=true") { lines[i] = "enable-rcon=true"; changed = true; }
+                            }
+                            else if (lines[i].StartsWith("rcon.port="))
+                            {
+                                hasRconPort = true;
+                                if (lines[i].Trim() == "rcon.port=") { lines[i] = $"rcon.port={new Random().Next(10000, 60000)}"; changed = true; }
+                            }
+                            else if (lines[i].StartsWith("rcon.password="))
+                            {
+                                hasRconPassword = true;
+                                if (lines[i].Trim() == "rcon.password=") { lines[i] = $"rcon.password={Guid.NewGuid().ToString("N").Substring(0, 8)}"; changed = true; }
+                            }
+                        }
+                        
+                        if (!enableRcon) { lines.Add("enable-rcon=true"); changed = true; }
+                        if (!hasRconPort) { lines.Add($"rcon.port={new Random().Next(10000, 60000)}"); changed = true; }
+                        if (!hasRconPassword) { lines.Add($"rcon.password={Guid.NewGuid().ToString("N").Substring(0, 8)}"); changed = true; }
+                        
+                        if (changed) File.WriteAllLines(propsPath, lines);
+                    }
+                }
+                catch { }
             }
 
             // 检查核心文件是否存在
@@ -1032,16 +1075,9 @@ public class MCServerService : IMCServerService
                                     if (isMcServer)
                                     {
                                         // MC服务器：发送 stop / 自定义 命令
-                                        if (string.IsNullOrEmpty(server?.StopCommand ?? ""))
-                                        {
-                                            context.Process.StandardInput.WriteLine("stop");
-                                        }
-                                        else
-                                        {
-                                            context.Process.StandardInput.WriteLine(server?.StopCommand ?? "stop");
-                                        }
-
-                                        context.Process.StandardInput.Flush();
+                                        string stopCmd = string.IsNullOrEmpty(server?.StopCommand) ? "stop" : server.StopCommand;
+                                        RecordLog(instanceId, context, $">>> [MSLX-Daemon] 准备执行停止指令...");
+                                        SendCommand(instanceId, stopCmd, true);
                                     }
                                     else
                                     {
@@ -1053,8 +1089,9 @@ public class MCServerService : IMCServerService
                                         }
                                         else
                                         {
-                                            context.Process.StandardInput.WriteLine(server?.StopCommand ?? "stop");
-                                            context.Process.StandardInput.Flush();
+                                            string stopCmd = server?.StopCommand ?? "stop";
+                                            RecordLog(instanceId, context, $">>> [MSLX-Daemon] 准备执行停止指令...");
+                                            SendCommand(instanceId, stopCmd, true);
                                         }
 
                                         // 关闭输入流
@@ -1275,9 +1312,75 @@ public class MCServerService : IMCServerService
 
                 if (context.Process != null && !context.Process.HasExited)
                 {
-                    context.Process.StandardInput.WriteLine(command);
-                    context.Process.StandardInput.Flush();
-                    if (repeatCommandToLog) RecordLog(instanceId, context, $"[MSLX-Daemon] 已发送命令: {command}");
+                    bool sentViaRcon = false;
+                    var serverInfo = IConfigBase.ServerList.GetServer(instanceId);
+                    if (serverInfo != null)
+                    {
+                        if (serverInfo.RconMode == "mc")
+                        {
+                            try
+                            {
+                                string propsPath = Utils.ServerPropertiesPathUtils.ResolveFullPath(serverInfo);
+                                if (File.Exists(propsPath))
+                                {
+                                    var lines = File.ReadAllLines(propsPath);
+                                    bool rconEnabled = false;
+                                    int rconPort = 25575;
+                                    string rconPassword = "";
+                                    foreach (var line in lines)
+                                    {
+                                        if (line.StartsWith("enable-rcon=")) rconEnabled = line.EndsWith("true", StringComparison.OrdinalIgnoreCase);
+                                        if (line.StartsWith("rcon.port=")) int.TryParse(line.Substring(10), out rconPort);
+                                        if (line.StartsWith("rcon.password=")) rconPassword = line.Substring(14);
+                                    }
+                                    
+                                    if (rconEnabled && !string.IsNullOrEmpty(rconPassword))
+                                    {
+                                        using var rcon = new Utils.MinecraftRconClient("127.0.0.1", rconPort, rconPassword);
+                                        if (rcon.ConnectAsync().GetAwaiter().GetResult())
+                                        {
+                                            string response = rcon.SendCommandAsync(command).GetAwaiter().GetResult();
+                                            sentViaRcon = true;
+                                            if (!string.IsNullOrWhiteSpace(response))
+                                            {
+                                                RecordLog(instanceId, context, $">>> [RCON] {response}");
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            catch { }
+                        }
+                        else if (!string.IsNullOrEmpty(serverInfo.RconMode) && serverInfo.RconMode.Contains(":"))
+                        {
+                            try
+                            {
+                                var parts = serverInfo.RconMode.Split(':', 2);
+                                if (parts.Length == 2 && int.TryParse(parts[0], out int rconPort))
+                                {
+                                    string rconPassword = parts[1];
+                                    using var rcon = new Utils.MinecraftRconClient("127.0.0.1", rconPort, rconPassword);
+                                    if (rcon.ConnectAsync().GetAwaiter().GetResult())
+                                    {
+                                        string response = rcon.SendCommandAsync(command).GetAwaiter().GetResult();
+                                        sentViaRcon = true;
+                                        if (!string.IsNullOrWhiteSpace(response))
+                                        {
+                                            RecordLog(instanceId, context, $">>> [RCON] {response}");
+                                        }
+                                    }
+                                }
+                            }
+                            catch { }
+                        }
+                    }
+
+                    if (!sentViaRcon)
+                    {
+                        context.Process.StandardInput.WriteLine(command);
+                        context.Process.StandardInput.Flush();
+                    }
+                    if (repeatCommandToLog) RecordLog(instanceId, context, $"[MSLX-Daemon] 已发送命令{(sentViaRcon ? "(RCON)" : "")}: {command}");
                     return true;
                 }
             }
@@ -1322,8 +1425,7 @@ public class MCServerService : IMCServerService
                 {
                     try
                     {
-                        context.Process.StandardInput.WriteLine("stop");
-                        context.Process.StandardInput.Flush();
+                        SendCommand(kvp.Key, "stop");
                         context.Process.WaitForExit(5000);
                     }
                     catch

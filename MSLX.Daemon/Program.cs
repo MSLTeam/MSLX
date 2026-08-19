@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
@@ -17,6 +17,7 @@ using MSLX.SDK.Models;
 using Serilog;
 using Serilog.Sinks.SystemConsole.Themes;
 using System.Reflection;
+using MSLX.Daemon.Services.ResourceServices;
 
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
@@ -212,6 +213,8 @@ builder.Services.AddSingleton<IMCServerService,MCServerService>();
 builder.Services.AddSingleton<IDockerService,DockerService>();
 builder.Services.AddSingleton<SystemMonitor>();
 builder.Services.AddSingleton<CreationTaskTracker>();
+builder.Services.AddSingleton<BackgroundTaskManager>();
+builder.Services.AddSingleton<IBackgroundTaskManager>(sp => sp.GetRequiredService<BackgroundTaskManager>());
 // 插件的一些服务
 var pluginManager = new PluginManager();
 builder.Services.AddSingleton(pluginManager);
@@ -232,6 +235,10 @@ builder.Services.AddScoped<IPythonScannerService,PythonScannerService>();
 builder.Services.AddTransient<NeoForgeInstallerService>();
 builder.Services.AddTransient<ServerDeploymentService>();
 
+// 资源下载相关服务注册
+builder.Services.AddHttpClient<IResourceProvider, CurseForgeService>();
+builder.Services.AddHttpClient<IResourceProvider, ModrinthService>();
+builder.Services.AddTransient<IUnifiedResourceService, UnifiedResourceService>();
 
 // 配置真实IP回传协议
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
@@ -332,7 +339,8 @@ MSLX.SDK.MSLX.Initialize(
     new DaemonConfigProvider(),
     new DaemonLoggerProvider(loggerFactory),
     new DaemonDownloadProvider(),
-    new DaemonHttpProvider()
+    new DaemonHttpProvider(),
+    app.Services.GetRequiredService<IBackgroundTaskManager>()
 );
 
 // 插件初始化方法

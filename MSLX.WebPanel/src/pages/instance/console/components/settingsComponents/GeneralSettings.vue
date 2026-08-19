@@ -154,6 +154,7 @@ const formData = ref<UpdateInstanceModel>({
   dockerExtraHosts: '',
   expireTime: undefined,
   bindFrpId: '',
+  rconMode: 'off',
 });
 
 // --- 内存单位转换 ---
@@ -542,6 +543,24 @@ watch([backupLocationType, customBackupPath], ([type, customVal]) => {
   }
 });
 
+
+// --- RCON 逻辑 ---
+const rconSelectType = ref('off');
+const customRcon = ref("");
+const rconOptions = [
+  { label: '关闭', value: 'off' },
+  { label: 'MC模式', value: 'mc' },
+  { label: '自定义通讯', value: 'custom' },
+];
+
+watch([rconSelectType, customRcon], ([type, val]) => {
+  if (type === 'custom') {
+    formData.value.rconMode = val;
+  } else {
+    formData.value.rconMode = type;
+  }
+});
+
 // --- 外置登录逻辑 ---
 const authSelectType = ref('');
 const customAuthUrl = ref('');
@@ -794,6 +813,17 @@ const initData = async () => {
     } else {
       backupLocationType.value = 'custom';
       customBackupPath.value = bPath;
+    }
+
+    // 解析 RCON
+    const rm = res.rconMode;
+    if (!rm || rm === 'off') {
+      rconSelectType.value = 'off';
+    } else if (rm === 'mc') {
+      rconSelectType.value = 'mc';
+    } else {
+      rconSelectType.value = 'custom';
+      customRcon.value = rm;
     }
 
     // 解析外置登录
@@ -1889,6 +1919,25 @@ onUnmounted(() => {
           <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
           <h2 class="text-base font-bold text-[var(--td-text-color-primary)] m-0">高级设置</h2>
         </div>
+        <div
+          class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+        >
+          <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+            <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">RCON 通讯模式</div>
+            <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+              指令发送模式。如果遇到无法在控制台输入指令，可以尝试启用 RCON。
+            </div>
+          </div>
+          <div class="w-full md:w-[340px] shrink-0 flex flex-col gap-2">
+            <t-select v-model="rconSelectType" :options="rconOptions" class="w-full" />
+            <t-input
+              v-if="rconSelectType === 'custom'"
+              v-model="customRcon"
+              placeholder="例如: 25575:password"
+              class="w-full"
+            />
+          </div>
+        </div>
 
         <div
           class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
@@ -1904,6 +1953,7 @@ onUnmounted(() => {
           </div>
         </div>
 
+
         <div
           class="flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
         >
@@ -1918,6 +1968,7 @@ onUnmounted(() => {
           </div>
         </div>
 
+
         <div
           class="flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
         >
@@ -1931,6 +1982,7 @@ onUnmounted(() => {
             <t-switch v-model="formData.monitorPlayers" size="large" />
           </div>
         </div>
+
 
         <div
           class="flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
@@ -1961,6 +2013,7 @@ onUnmounted(() => {
           </div>
         </div>
 
+
         <div
           class="flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
         >
@@ -1975,6 +2028,7 @@ onUnmounted(() => {
           </div>
         </div>
 
+
         <div
           class="flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
         >
@@ -1988,6 +2042,7 @@ onUnmounted(() => {
             <t-switch v-model="formData.ignoreEula" size="large" />
           </div>
         </div>
+
 
         <div
           class="flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
