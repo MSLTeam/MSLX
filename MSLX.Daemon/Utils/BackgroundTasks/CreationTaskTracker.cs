@@ -8,6 +8,7 @@ namespace MSLX.Daemon.Utils.BackgroundTasks;
 public class CreationTaskTracker
 {
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _activeTasks = new();
+    private readonly ConcurrentDictionary<string, bool> _cleanupPreferences = new();
 
     /// <summary>
     /// 注册一个正在执行的任务
@@ -25,18 +26,30 @@ public class CreationTaskTracker
     public void Unregister(string serverId)
     {
         _activeTasks.TryRemove(serverId, out _);
+        _cleanupPreferences.TryRemove(serverId, out _);
     }
 
     /// <summary>
     /// 尝试取消指定任务
     /// </summary>
-    public bool TryCancel(string serverId)
+    /// <param name="serverId">服务器ID</param>
+    /// <param name="cleanupFiles">是否清理文件</param>
+    public bool TryCancel(string serverId, bool cleanupFiles = false)
     {
         if (_activeTasks.TryGetValue(serverId, out var cts))
         {
+            _cleanupPreferences[serverId] = cleanupFiles;
             cts.Cancel();
             return true;
         }
         return false;
+    }
+    
+    /// <summary>
+    /// 获取取消时是否需要清理文件
+    /// </summary>
+    public bool ShouldCleanupFiles(string serverId)
+    {
+        return _cleanupPreferences.TryGetValue(serverId, out var cleanup) && cleanup;
     }
 }
