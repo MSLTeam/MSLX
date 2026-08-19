@@ -7,8 +7,6 @@ using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.Daemon.Utils.BackgroundTasks;
 using MSLX.SDK.Models;
 using MSLX.SDK.Models.Tasks;
-using System.Runtime.InteropServices;
-using Microsoft.VisualBasic.FileIO;
 
 namespace MSLX.Daemon.Services.DeployServerService;
 
@@ -144,10 +142,10 @@ public class ServerCreationService : BackgroundService
         _logger.LogInformation("服务器 {ServerId} 基础目录已配置。", serverId);
 
         // 清理已创建的服务器配置和目录
-        void CleanupFailedDeployment()
+        void CleanupFailedDeployment(bool forceCleanup = false)
         {
-            // 检查是否需要清理文件
-            bool shouldCleanupFiles = _taskTracker.ShouldCleanupFiles(serverIdStr);
+            // 检查是否需要清理文件（强制清理或用户主动选择清理）
+            bool shouldCleanupFiles = forceCleanup || _taskTracker.ShouldCleanupFiles(serverIdStr);
             
             try
             {
@@ -281,25 +279,25 @@ public class ServerCreationService : BackgroundService
         {
             // TaskCanceledException 来自 Downloader 库的网络层（连接中断/超时），不是用户取消
             _logger.LogWarning(ex, "下载过程中连接中断: ServerId {ServerId}", serverId);
-            CleanupFailedDeployment(); // 网络错误强制清理
+            CleanupFailedDeployment(forceCleanup: true); // 网络错误强制清理
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             // 仅当 ct 确实被触发时才是用户主动取消
             _logger.LogInformation("任务已取消，正在清理: ServerId {ServerId}", serverId);
-            CleanupFailedDeployment(); // 用户取消根据用户选择决定
+            CleanupFailedDeployment(forceCleanup: false); // 用户取消根据用户选择决定
             await UpdateStatusAsync(serverIdStr, "部署任务已被用户取消。", -1, true);
         }
         catch (OperationCanceledException ex)
         {
             // ct 未被触发但出现了 OperationCanceledException → 网络层中断通过 report() 传播
             _logger.LogWarning(ex, "下载过程中连接中断: ServerId {ServerId}", serverId);
-            CleanupFailedDeployment();
+            CleanupFailedDeployment(forceCleanup: true);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "部署失败，正在清理: ServerId {ServerId}", serverId);
-            CleanupFailedDeployment();
+            CleanupFailedDeployment(forceCleanup: true);
         }
     }
 

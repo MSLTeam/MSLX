@@ -101,17 +101,6 @@ public partial class InstanceListPage : UserControl
         var server = InstanceModel.Current.ServerList.FirstOrDefault(s => s.ID == serverId);
         if (server != null)
         {
-            bool confirmDelete = false;
-            await DialogService.DialogManager.CreateDialog()
-                            .WithTitle("删除服务器")
-                            .WithContent($"您确定要删除服务器 {server.Name} 吗？此操作不可撤销！")
-                            .WithActionButton("删除", _ => confirmDelete = true, true, ["Danger","Flat"])
-                            .WithActionButton("取消", _ => confirmDelete = false, true)
-                            .TryShowAsync();
-            if (!confirmDelete)
-            {
-                return;
-            }
             if (server.Status != 0)
             {
                 DialogService.ToastManager.CreateToast()
@@ -122,19 +111,28 @@ public partial class InstanceListPage : UserControl
                             .Queue();
                 return;
             }
-            bool deleteFiles = false;
-            await DialogService.DialogManager.CreateDialog()
-                .WithTitle("清理相关文件")
-                .WithContent($"是否清理服务器 {server.Name} 的相关文件？此操作会将实例文件夹以及其中的所有文件一并删除（Windows系统会移动到回收站）。")
-                .WithActionButton("清理", _ => deleteFiles = true, true, ["Danger", "Flat"])
-                .WithActionButton("保留", _ => deleteFiles = false, true)
-                .TryShowAsync();
+
+            var tcs = new TaskCompletionSource<bool?>();
+            DialogService.DialogManager.CreateDialog()
+                .WithTitle("删除服务器")
+                .WithContent($"您确定要删除服务器 \"{server.Name}\" 吗？此操作不可撤销！\n\n• 删除实例及文件：删除实例配置并清理实例文件夹（Windows系统将移至回收站）\n• 仅移除实例配置：仅从列表中移除，保留实例文件夹中的文件\n• 取消：不执行任何删除操作")
+                .WithActionButton("删除实例及文件", _ => tcs.TrySetResult(true), true, ["Danger", "Flat"])
+                .WithActionButton("仅移除实例配置", _ => tcs.TrySetResult(false), true)
+                .WithActionButton("取消", _ => tcs.TrySetResult(null), true)
+                .OnDismissed(_ => tcs.TrySetResult(null))
+                .TryShow();
+
+            var deleteFiles = await tcs.Task;
+            if (deleteFiles == null)
+            {
+                return;
+            }
 
             if (instancePages.TryGetValue(serverId, out SukiSideMenuItem? value) && SideMenuHelper.Current?.SideMenu.Items.Contains(value) == true)
             {
                 SideMenuHelper.Current?.NavigateRemove(value);
             }
-            await DaemonAPIService.PostApiAsync("/api/instance/delete", null, HttpService.PostContentType.Json, new { id = serverId, deleteFiles });
+            await DaemonAPIService.PostApiAsync("/api/instance/delete", null, HttpService.PostContentType.Json, new { id = serverId, deleteFiles = deleteFiles.Value });
             await LoadServersList();
             DialogService.ToastManager.CreateToast()
                             .OfType(Avalonia.Controls.Notifications.NotificationType.Information)

@@ -33,23 +33,70 @@ export async function postCancelCreateInstance(serverId:string, cleanupFiles:boo
 }
 
 // 带确认对话框的取消创建
-export async function cancelCreationWithConfirm(serverId: string) {
-  const { DialogPlugin, MessagePlugin } = await import('tdesign-vue-next');
-  
-  const cleanupFiles = await new Promise<boolean>((resolve) => {
-    const dialog = DialogPlugin.confirm({
+export async function cancelCreationWithConfirm(serverId: string): Promise<boolean> {
+  const { DialogPlugin, MessagePlugin, Checkbox } = await import('tdesign-vue-next');
+  const { h, ref } = await import('vue');
+
+  const cleanupFiles = ref(false);
+
+  const confirmed = await new Promise<boolean>((resolve) => {
+    const dialog = DialogPlugin({
       header: '取消部署',
-      body: '是否同时清理已下载的实例文件？',
-      confirmBtn: '清理文件',
-      cancelBtn: '仅取消部署',
       theme: 'warning',
-      onConfirm: () => { resolve(true); dialog.destroy(); },
-      onCancel: () => { resolve(false); dialog.destroy(); },
+      confirmBtn: {
+        content: '确认取消',
+        theme: 'primary',
+      },
+      cancelBtn: {
+        content: '继续部署',
+        theme: 'default',
+      },
+      body: () =>
+        h('div', { style: 'display: flex; flex-direction: column; gap: 12px; padding: 4px 0;' }, [
+          h('p', { style: 'margin: 0; font-size: 14px; color: var(--td-text-color-primary);' }, '确定要取消当前服务器实例的部署任务吗？'),
+          h(
+            Checkbox,
+            {
+              checked: cleanupFiles.value,
+              'onUpdate:checked': (val: boolean) => {
+                cleanupFiles.value = val;
+              },
+              onChange: (val: boolean) => {
+                cleanupFiles.value = val;
+              },
+            },
+            () =>
+              h(
+                'span',
+                {
+                  style: 'color: var(--td-error-color, #e34d59); font-size: 13px;',
+                },
+                '同时清理已下载的实例文件 (删除实例文件夹及文件)',
+              ),
+          ),
+        ]),
+      onConfirm: () => {
+        dialog.destroy();
+        resolve(true);
+      },
+      onCancel: () => {
+        dialog.destroy();
+        resolve(false);
+      },
+      onClose: () => {
+        dialog.destroy();
+        resolve(false);
+      },
     });
   });
-  
-  await postCancelCreateInstance(serverId, cleanupFiles);
-  MessagePlugin.success(cleanupFiles ? '已取消部署并清理文件' : '已取消部署，文件已保留');
+
+  if (!confirmed) {
+    return false; // 用户放弃取消或关闭了弹窗
+  }
+
+  await postCancelCreateInstance(serverId, cleanupFiles.value);
+  MessagePlugin.success(cleanupFiles.value ? '已取消部署并清理文件' : '已取消部署，文件已保留');
+  return true;
 }
 
 export async function postDeleteInstance(id:number,deleteFiles:boolean = false) {

@@ -470,14 +470,14 @@ const removeUploadedFile = async () => {
 // 提交 & SignalR 状态
 const isCanceling = ref(false);
 const handleCancelCreation = async () => {
-  if (!createdServerId.value) return;
+  if (!createdServerId.value || isCanceling.value) return;
   try {
-    isCanceling.value = true;
-    await cancelCreationWithConfirm(createdServerId.value.toString());
-  } catch (error) {
+    const cancelled = await cancelCreationWithConfirm(createdServerId.value.toString());
+    if (cancelled) {
+      isCanceling.value = true;
+    }
+  } catch (error: any) {
     MessagePlugin.error('取消失败: ' + error.message);
-  } finally {
-    isCanceling.value = false;
   }
 };
 
