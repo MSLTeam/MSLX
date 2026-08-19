@@ -32,6 +32,7 @@ const isSubmitting = ref(false);
 
 const isCreating = ref(false);
 const isSuccess = ref(false);
+const isFailed = ref(false);
 const progress = ref(0);
 const statusMessages = ref<{ time: string; message: string; progress: number | null }[]>([]);
 const hubConnection = ref<HubConnection | null>(null);
@@ -522,6 +523,7 @@ const onSubmit = async () => {
 
     createdServerId.value = serverId.toString();
     isCreating.value = true;
+    isFailed.value = false;
     currentStep.value = 6;
 
     await startSignalRConnection(createdServerId.value);
@@ -572,6 +574,7 @@ const startSignalRConnection = async (serverId: string) => {
       hubConnection.value?.stop();
       isCreating.value = false;
       isSuccess.value = true;
+      isFailed.value = false;
       currentStep.value = 7;
       isSubmitting.value = false;
       instanceListstore.refreshInstanceList();
@@ -579,8 +582,8 @@ const startSignalRConnection = async (serverId: string) => {
       MessagePlugin.error(message || '创建过程中发生未知错误');
       hubConnection.value?.stop();
       isCreating.value = false;
+      isFailed.value = true;
       isSubmitting.value = false;
-      currentStep.value = 0;
     }
   });
 
@@ -595,8 +598,8 @@ const startSignalRConnection = async (serverId: string) => {
       addLog(`SignalR 连接失败: ${err.message}`, -1);
       MessagePlugin.error('无法连接到实时进度服务');
       isCreating.value = false;
+      isFailed.value = true;
       isSubmitting.value = false;
-      currentStep.value = 0;
     }
   }
 };
@@ -608,6 +611,8 @@ onUnmounted(() => {
 
 const goToHome = () => {
   isSuccess.value = false;
+  isFailed.value = false;
+  isCreating.value = false;
   currentStep.value = 0;
   formData.value = {
     ...formData.value,
@@ -699,7 +704,7 @@ watch([onlineGameVersion, () => formData.value.core], () => updateJavaSelectionB
       </div>
 
       <div class="flex-1 min-w-0 flex flex-col relative">
-        <div v-if="!isCreating && !isSuccess" class="h-full flex flex-col">
+        <div v-if="!isCreating && !isSuccess && !isFailed" class="h-full flex flex-col">
           <t-form
             ref="formRef"
             :data="formData"
@@ -1443,16 +1448,21 @@ watch([onlineGameVersion, () => formData.value.core], () => updateJavaSelectionB
           </t-form>
         </div>
 
-        <div v-if="isCreating" class="h-full flex flex-col items-center justify-center py-8 list-item-anim">
+        <div v-if="isCreating || isFailed" class="h-full flex flex-col items-center justify-center py-8 list-item-anim">
           <div class="text-lg font-bold text-[var(--td-text-color-primary)] mb-2 tracking-tight">
-            正在创建 MCDR 实例 ({{ createdServerId }})
+            {{ isFailed ? `MCDR 实例部署已中止 / 失败 (${createdServerId})` : `正在创建 MCDR 实例 (${createdServerId})` }}
           </div>
           <p class="text-sm text-[var(--td-text-color-secondary)] mb-6">
-            请勿关闭此页面，安装 MCDR 与下载核心可能需要几分钟...
+            {{ isFailed ? '任务已结束，您可以查看下方日志详情或点击按钮重新配置' : '请勿关闭此页面，安装 MCDR 与下载核心可能需要几分钟...' }}
           </p>
 
           <div class="w-full max-w-lg !my-6">
-            <t-progress theme="plump" :percentage="progress" :label="`${progress.toFixed(0)}%`" />
+            <t-progress
+              theme="plump"
+              :status="isFailed ? 'error' : 'active'"
+              :percentage="progress"
+              :label="`${progress.toFixed(0)}%`"
+            />
           </div>
 
           <div
@@ -1461,14 +1471,18 @@ watch([onlineGameVersion, () => formData.value.core], () => updateJavaSelectionB
             <div ref="logContainerRef" class="flex-1 overflow-y-auto custom-scrollbar pr-2">
               <div v-for="(log, index) in statusMessages" :key="index" class="text-xs font-mono mb-2 leading-relaxed">
                 <span class="text-[var(--td-text-color-secondary)] mr-2">[{{ log.time }}]</span>
-                <span class="text-[var(--td-text-color-primary)] font-medium">{{ log.message }}</span>
+                <span :class="log.progress === -1 ? 'text-red-500 font-semibold' : 'text-[var(--td-text-color-primary)] font-medium'">{{ log.message }}</span>
               </div>
             </div>
           </div>
-          <div class="mt-6 flex justify-center w-full">
-            <t-button theme="danger" variant="outline" @click="handleCancelCreation" :loading="isCanceling"
+          <div class="mt-6 flex justify-center w-full gap-3">
+            <t-button v-if="isCreating" theme="danger" variant="outline" @click="handleCancelCreation" :loading="isCanceling"
               >取消部署</t-button
             >
+            <template v-if="isFailed">
+              <t-button theme="primary" @click="goToHome">重试 / 重新配置</t-button>
+              <t-button theme="default" @click="changeUrl('/instance/list')">返回服务端列表</t-button>
+            </template>
           </div>
         </div>
 
