@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
@@ -213,6 +213,7 @@ builder.Services.AddSingleton<IMCServerService,MCServerService>();
 builder.Services.AddSingleton<IDockerService,DockerService>();
 builder.Services.AddSingleton<SystemMonitor>();
 builder.Services.AddSingleton<CreationTaskTracker>();
+builder.Services.AddSingleton<BackgroundTaskManager>();
 // 插件的一些服务
 var pluginManager = new PluginManager();
 builder.Services.AddSingleton(pluginManager);

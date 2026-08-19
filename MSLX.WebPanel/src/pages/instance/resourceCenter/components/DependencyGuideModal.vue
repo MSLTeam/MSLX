@@ -3,6 +3,7 @@ import { ref, watch, computed, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { getResourceDetail, getResourceVersions, type ResourceVersionModel, type ResourceModel, type ResourceDependencyModel } from '@/api/resourceCenter';
 import { MessagePlugin } from 'tdesign-vue-next';
+import { useTaskStore } from '@/store';
 import { addOfflineDownloadTask, getOfflineDownloadTaskStatus, getPluginsOrModsList } from '@/api/files';
 
 const props = defineProps<{
@@ -257,6 +258,11 @@ const handleDownloadAll = async () => {
       addQueueItem(dep.name, dep.selectedVersion.downloadUrl, dep.selectedVersion.filename);
     }
   }
+
+  setTimeout(() => {
+    useTaskStore().fetchTasks();
+    useTaskStore().startPolling();
+  }, 500);
 
   // 启动轮询
   cleanupPolling();
