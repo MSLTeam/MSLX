@@ -370,7 +370,7 @@ onUnmounted(async () => {
         </p>
       </div>
 
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6">
         <div
           v-for="(item, index) in nodes"
           :key="item.nodeId"
@@ -476,8 +476,8 @@ onUnmounted(async () => {
             </div>
           </div>
 
-          <div class="flex items-center justify-between mt-4 gap-2">
-            <div class="flex items-center gap-1.5">
+          <div class="flex flex-wrap items-center justify-between mt-4 gap-2">
+            <div class="flex items-center gap-1.5 shrink-0">
               <span v-if="nodeVersions[item.nodeId]"
                 :class="[
                   'text-[10px] px-1.5 py-0.5 rounded-md shrink-0 border font-mono',
@@ -489,22 +489,22 @@ onUnmounted(async () => {
               >
                 {{ nodeVersions[item.nodeId] }}
               </span>
-              <t-button variant="text" size="small" @click="handleShowDetails(item)">
+              <t-button variant="text" size="small" class="!px-1.5" @click="handleShowDetails(item)">
                 <template #icon><info-circle-icon /></template>
                 详细
               </t-button>
             </div>
-            <div class="flex gap-2">
+            <div class="flex items-center gap-1.5 flex-wrap ml-auto">
               <t-button v-if="nodeVersions[item.nodeId] && nodeVersions[item.nodeId] !== masterVersion"
-                        variant="outline" theme="primary" size="small" @click="handleUpdateNode(item.nodeId, item.nodeUrl, item.nodeName)">
+                        variant="outline" theme="primary" size="small" class="!px-2" @click="handleUpdateNode(item.nodeId, item.nodeUrl, item.nodeName)">
                 <template #icon><cloud-upload-icon /></template>
                 升级
               </t-button>
-              <t-button variant="outline" size="small" @click="handleEditNode(item)">
+              <t-button variant="outline" size="small" class="!px-2" @click="handleEditNode(item)">
                 <template #icon><edit-icon /></template>
                 编辑
               </t-button>
-              <t-button theme="danger" variant="outline" size="small" @click="handleUnlink(item)">
+              <t-button theme="danger" variant="outline" size="small" class="!px-2" @click="handleUnlink(item)">
                 <template #icon><delete-icon /></template>
                 解除
               </t-button>
