@@ -34,6 +34,8 @@ const getTaskTypeLabel = (type: number) => {
       return '下载';
     case 3:
       return '打包';
+    case 4:
+      return '插件';
     default:
       return '任务';
   }

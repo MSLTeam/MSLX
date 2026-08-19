@@ -1,11 +1,10 @@
 using System.Collections.Concurrent;
 using MSLX.SDK.Models.Files;
-using MSLX.Daemon.Utils.ConfigUtils;
-using Microsoft.Extensions.Logging;
+using MSLX.SDK.IServices;
 
 namespace MSLX.Daemon.Services;
 
-public class BackgroundTaskManager
+public class BackgroundTaskManager : IBackgroundTaskManager
 {
     private readonly ConcurrentDictionary<string, BackgroundTaskItem> _tasks = new();
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _ctsMap = new();

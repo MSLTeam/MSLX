@@ -214,6 +214,7 @@ builder.Services.AddSingleton<IDockerService,DockerService>();
 builder.Services.AddSingleton<SystemMonitor>();
 builder.Services.AddSingleton<CreationTaskTracker>();
 builder.Services.AddSingleton<BackgroundTaskManager>();
+builder.Services.AddSingleton<IBackgroundTaskManager>(sp => sp.GetRequiredService<BackgroundTaskManager>());
 // 插件的一些服务
 var pluginManager = new PluginManager();
 builder.Services.AddSingleton(pluginManager);
@@ -338,7 +339,8 @@ MSLX.SDK.MSLX.Initialize(
     new DaemonConfigProvider(),
     new DaemonLoggerProvider(loggerFactory),
     new DaemonDownloadProvider(),
-    new DaemonHttpProvider()
+    new DaemonHttpProvider(),
+    app.Services.GetRequiredService<IBackgroundTaskManager>()
 );
 
 // 插件初始化方法
