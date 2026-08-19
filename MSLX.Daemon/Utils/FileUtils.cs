@@ -120,6 +120,24 @@ public class FileUtils
             _ => new UTF8Encoding(false) 
         };
     }
+
+    /// <summary>
+    /// Windows 系统将文件夹移动到回收站
+    /// </summary>
+    public static void MoveToRecycleBin(string path)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            throw new PlatformNotSupportedException("回收站功能仅支持 Windows 系统");
+        }
+
+        // 使用 FileSystem.DeleteDirectory 并设置 RecycleOption.SendToRecycleBin
+        Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(
+            path,
+            Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
+            Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin
+        );
+    }
 }
 
 // 读取服务器配置文件

@@ -73,6 +73,7 @@ public class ServerDeploymentService
                 success = await DownloadAndValidateAsync(packageFileUrl, savePath, $"服务端压缩包 (官方)", packageFileSha256, report, ct);
             }
 
+            ct.ThrowIfCancellationRequested();
             if (!success) throw new Exception("服务端压缩文件下载失败！");
             return packageFileKey;
         }
@@ -844,6 +845,7 @@ public class ServerDeploymentService
 
         // 下载
         bool success = await DownloadAndValidateAsync(url, savePath, $"Java {javaVersion}", sha256, report, ct);
+        ct?.ThrowIfCancellationRequested();
         if (!success) throw new Exception("Java download failed");
 
         // 解压
@@ -994,6 +996,7 @@ public class ServerDeploymentService
         if (!string.IsNullOrEmpty(downloadUrl))
         {
             bool success = await DownloadAndValidateAsync(downloadUrl, destPath, "服务端核心", sha256, report, ct);
+            ct?.ThrowIfCancellationRequested();
             if (!success) throw new Exception("Core download failed");
             await report("核心下载完成。", 99.9);
         }
@@ -1051,6 +1054,7 @@ public class ServerDeploymentService
 
             bool success = await DownloadAndValidateAsync(downUrl, Path.Combine(path, filename), $"{version} 原版服务端",
                 sha256Exp, report, ct);
+            ct?.ThrowIfCancellationRequested();
             if (!success) throw new Exception("下载原版服务端依赖失败");
             await report("原版服务端依赖下载成功。", 99.9);
         }

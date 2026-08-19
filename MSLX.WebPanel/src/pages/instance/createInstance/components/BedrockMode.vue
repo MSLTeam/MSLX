@@ -5,7 +5,7 @@ import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signal
 import { useUserStore } from '@/store';
 import { getHubUrl } from '@/utils/hub';
 
-import { postCreateInstanceQuickMode, postCancelCreateInstance } from '@/api/instance';
+import { postCreateInstanceQuickMode, cancelCreationWithConfirm } from '@/api/instance';
 import { CreateInstanceQucikModeModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
 import { useInstanceListStore } from '@/store/modules/instance';
@@ -41,6 +41,7 @@ const currentStep = ref(0);
 const isSubmitting = ref(false);
 const isCreating = ref(false);
 const isSuccess = ref(false);
+const isFailed = ref(false);
 const progress = ref(0);
 const statusMessages = ref<{ time: string; message: string; progress: number | null }[]>([]);
 const hubConnection = ref<HubConnection | null>(null);
@@ -223,15 +224,14 @@ const nextStep = async () => {
 // 提交 & SignalR 状态
 const isCanceling = ref(false);
 const handleCancelCreation = async () => {
-  if (!createdServerId.value) return;
+  if (!createdServerId.value || isCanceling.value) return;
   try {
-    isCanceling.value = true;
-    await postCancelCreateInstance(createdServerId.value.toString());
-    MessagePlugin.success('已发送取消指令');
-  } catch (error) {
-    MessagePlugin.error('取消失败: ' +error.message);
-  } finally {
-    isCanceling.value = false;
+    const cancelled = await cancelCreationWithConfirm(createdServerId.value.toString());
+    if (cancelled) {
+      isCanceling.value = true;
+    }
+  } catch (error: any) {
+    MessagePlugin.error('取消失败: ' + error.message);
   }
 };
 
@@ -275,6 +275,7 @@ const onSubmit = async () => {
 
     createdServerId.value = serverId.toString();
     isCreating.value = true;
+    isFailed.value = false;
     currentStep.value = 4;
 
     await startSignalRConnection(createdServerId.value);
@@ -324,6 +325,7 @@ const startSignalRConnection = async (serverId: string) => {
       hubConnection.value?.stop();
       isCreating.value = false;
       isSuccess.value = true;
+      isFailed.value = false;
       currentStep.value = 5;
       isSubmitting.value = false;
       instanceListstore.refreshInstanceList();
@@ -331,8 +333,8 @@ const startSignalRConnection = async (serverId: string) => {
       MessagePlugin.error(message || '创建过程中发生未知错误');
       hubConnection.value?.stop();
       isCreating.value = false;
+      isFailed.value = true;
       isSubmitting.value = false;
-      currentStep.value = 0;
     }
   });
 
@@ -346,8 +348,8 @@ const startSignalRConnection = async (serverId: string) => {
       addLog(`SignalR 连接失败: ${err.message}`, -1);
       MessagePlugin.error('无法连接到实时进度服务');
       isCreating.value = false;
+      isFailed.value = true;
       isSubmitting.value = false;
-      currentStep.value = 0;
     }
   }
 };
@@ -358,6 +360,8 @@ onUnmounted(() => {
 
 const goToHome = () => {
   isSuccess.value = false;
+  isFailed.value = false;
+  isCreating.value = false;
   currentStep.value = 0;
   portMappings.value = [
     { containerPort: '19132', hostPort: '19132' ,protocol:'udp' },
@@ -407,7 +411,7 @@ const goToHome = () => {
       </div>
 
       <div class="flex-1 min-w-0 flex flex-col relative">
-        <div v-if="!isCreating && !isSuccess" class="h-full flex flex-col">
+        <div v-if="!isCreating && !isSuccess && !isFailed" class="h-full flex flex-col">
           <t-form
             ref="formRef"
             :data="formData"
@@ -657,16 +661,21 @@ const goToHome = () => {
           </t-form>
         </div>
 
-        <div v-if="isCreating" class="h-full flex flex-col items-center justify-center py-8 list-item-anim">
+        <div v-if="isCreating || isFailed" class="h-full flex flex-col items-center justify-center py-8 list-item-anim">
           <div class="text-lg font-bold text-[var(--td-text-color-primary)] mb-2 tracking-tight">
-            正在创建实例 ({{ createdServerId }})
+            {{ isFailed ? `基岩版实例部署已中止 / 失败 (${createdServerId})` : `正在创建实例 (${createdServerId})` }}
           </div>
           <p class="text-sm text-[var(--td-text-color-secondary)] mb-6">
-            请勿关闭此页面，下载与创建过程可能需要几分钟...
+            {{ isFailed ? '任务已结束，您可以查看下方日志详情或点击按钮重新配置' : '请勿关闭此页面，下载与创建过程可能需要几分钟...' }}
           </p>
 
           <div class="w-full max-w-lg !my-6">
-            <t-progress theme="plump" :percentage="progress" :label="`${progress.toFixed(2)}%`" />
+            <t-progress
+              theme="plump"
+              :status="isFailed ? 'error' : 'active'"
+              :percentage="progress"
+              :label="`${progress.toFixed(2)}%`"
+            />
           </div>
 
           <div
@@ -675,12 +684,16 @@ const goToHome = () => {
             <div ref="logContainerRef" class="flex-1 overflow-y-auto custom-scrollbar pr-2">
               <div v-for="(log, index) in statusMessages" :key="index" class="text-xs font-mono mb-2 leading-relaxed">
                 <span class="text-[var(--td-text-color-secondary)] mr-2">[{{ log.time }}]</span>
-                <span class="text-[var(--td-text-color-primary)] font-medium">{{ log.message }}</span>
+                <span :class="log.progress === -1 ? 'text-red-500 font-semibold' : 'text-[var(--td-text-color-primary)] font-medium'">{{ log.message }}</span>
               </div>
             </div>
           </div>
-          <div class="mt-6 flex justify-center w-full">
-            <t-button theme="danger" variant="outline" @click="handleCancelCreation" :loading="isCanceling">取消部署</t-button>
+          <div class="mt-6 flex justify-center w-full gap-3">
+            <t-button v-if="isCreating" theme="danger" variant="outline" @click="handleCancelCreation" :loading="isCanceling">取消部署</t-button>
+            <template v-if="isFailed">
+              <t-button theme="primary" @click="goToHome">重试 / 重新配置</t-button>
+              <t-button theme="default" @click="changeUrl('/instance/list')">返回服务端列表</t-button>
+            </template>
           </div>
         </div>
 

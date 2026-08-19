@@ -1,6 +1,6 @@
 {
-  "version": "1.6.0",
-  "buildTime": "2026-08-19 14:03:27",
+  "version": "1.6.0.1",
+  "buildTime": "2026-08-19 23:04:16",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -77,10 +77,64 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "0ac4dcaa8a9fea319e5cadd0724961ae7c415e5c",
-  "commitMsg": "fix(webpanel): 修复后台任务api定义错误问题",
+  "commitId": "cf2712f41d248cb7afbdb3d6a2ea1a74ac8fdcb5",
+  "commitMsg": "perf(webpanel): 优化节点管理页面卡片布局",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "cf2712f41d248cb7afbdb3d6a2ea1a74ac8fdcb5",
+      "commitTime": "2026-08-19 23:03:33 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(webpanel): 优化节点管理页面卡片布局"
+    },
+    {
+      "commitId": "645c36cae1880dcd318ded84d7c02d4523283726",
+      "commitTime": "2026-08-19 23:01:48 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(webpanel): 优化创建服务端失败的显示"
+    },
+    {
+      "commitId": "efe54929ef67329da21fad0bbee6327522e735b7",
+      "commitTime": "2026-08-19 22:55:20 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "perf(daemon & webpanel & desktop): 优化取消部署服务端的操作体验"
+    },
+    {
+      "commitId": "4e6a02cfb2710e17d955f497ed2c5a56a2e6ab5f",
+      "commitTime": "2026-08-19 18:22:22 +0800",
+      "commitAuthor": "Weheal",
+      "commitMsg": "Merge pull request #233 from Waheal/dev"
+    },
+    {
+      "commitId": "68ebb196778e5aeff205765793507dba437cb5e2",
+      "commitTime": "2026-08-19 18:19:22 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "fix(desktop): 修复desktop版取消部署对话框失效的bug"
+    },
+    {
+      "commitId": "bd47ff8fcd57d6e3241f25c40fa70ce83ce14e75",
+      "commitTime": "2026-08-19 17:55:52 +0800",
+      "commitAuthor": "Waheal",
+      "commitMsg": "fix(daemon): 修复取消部署时并不会将文件安全删除的bug"
+    },
+    {
+      "commitId": "5d2fc7d411d039ae7dbddf90038560ce4c72b310",
+      "commitTime": "2026-08-19 17:05:58 +0800",
+      "commitAuthor": "小Q",
+      "commitMsg": "feat: 取消部署时询问是否清理文件"
+    },
+    {
+      "commitId": "18b4ebe3d1639fe5be4e638da338a386d9cd0135",
+      "commitTime": "2026-08-19 14:25:16 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #231 from MSLTeam/dev"
+    },
+    {
+      "commitId": "42c92d867af3a7bb89284084e2ddcb2f4ae70ed7",
+      "commitTime": "2026-08-19 14:03:47 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel & desktop): 更新到v1.6.0版本"
+    },
     {
       "commitId": "0ac4dcaa8a9fea319e5cadd0724961ae7c415e5c",
       "commitTime": "2026-08-19 14:02:57 +0800",
@@ -326,60 +380,6 @@
       "commitTime": "2026-08-11 01:36:33 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "feat(desktop): 优化 macOS 下的 Desktop 顶部控制栏与菜单"
-    },
-    {
-      "commitId": "a245a82d3a59d54cb0c836a31c05a59fa88a9103",
-      "commitTime": "2026-08-11 00:29:03 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(ci): 修复SDK构建工作流"
-    },
-    {
-      "commitId": "1b058cc8c724868ed71c49a0f2d3f52671318c4b",
-      "commitTime": "2026-08-11 00:24:31 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(desktop): 新增 Native Menu"
-    },
-    {
-      "commitId": "6c99cd87fe0f64719f4aa5345f3d0d4db3401a09",
-      "commitTime": "2026-08-11 00:16:20 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(ci): 移除工作流的版本绑定"
-    },
-    {
-      "commitId": "9259cd9161942235b80b587bf5c3a6d9be435ce4",
-      "commitTime": "2026-08-11 00:11:15 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #217 from CoZooo/dev"
-    },
-    {
-      "commitId": "e85100e02fdc78069cbaaa2e1077af2f9db33588",
-      "commitTime": "2026-08-11 00:07:32 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(sdk): 丢了引用版本号文件"
-    },
-    {
-      "commitId": "e22e59768503fb623cb7c1403169378d2a2653bb",
-      "commitTime": "2026-08-11 00:05:51 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge branch 'dev' into dev"
-    },
-    {
-      "commitId": "68acbfd157ba2aa21d220c8ba8681b9d314e41ba",
-      "commitTime": "2026-08-10 23:38:24 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(ci): 统一项目版本号管理入口"
-    },
-    {
-      "commitId": "434d5d30c0075eda27e02b8c4dc0fbc66f3d7aba",
-      "commitTime": "2026-08-10 21:44:15 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "chore(app): App模式下部分设置项调整"
-    },
-    {
-      "commitId": "7a3641a26eff10a79f8f621c0a7ac2928fe09345",
-      "commitTime": "2026-08-10 17:01:55 +0800",
-      "commitAuthor": "CoZooo",
-      "commitMsg": "feat(app): 完善NetSparkle更新逻辑及UI"
     }
   ]
 }

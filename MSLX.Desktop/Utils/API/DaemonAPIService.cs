@@ -251,8 +251,9 @@ namespace MSLX.Desktop.Utils.API
         /// 取消服务器实例创建任务
         /// </summary>
         /// <param name="serverId">要取消的服务器ID</param>
+        /// <param name="cleanupFiles">是否清理已部署的文件</param>
         /// <returns>成功标志、消息</returns>
-        public static async Task<(bool Success, string? Message)> CancelServerCreationAsync(string serverId)
+        public static async Task<(bool Success, string? Message)> CancelServerCreationAsync(string serverId, bool cleanupFiles = false)
         {
             try
             {
@@ -260,7 +261,7 @@ namespace MSLX.Desktop.Utils.API
                     "/api/instance/cancelCreation",
                     null,
                     HttpService.PostContentType.Json,
-                    new { serverId }
+                    new { serverId, cleanupFiles }
                 );
 
                 if (response.IsSuccess && !string.IsNullOrEmpty(response.Content))

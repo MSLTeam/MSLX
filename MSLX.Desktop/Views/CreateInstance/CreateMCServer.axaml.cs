@@ -978,20 +978,42 @@ public partial class CreateMCServer : UserControl
     {
         if (_isCancelling || string.IsNullOrEmpty(_createdServerId)) return;
 
+        // 显示确认对话框
+        var tcs = new TaskCompletionSource<bool?>();
+        DialogService.DialogManager.CreateDialog()
+            .WithTitle("取消部署")
+            .WithContent("是否确认取消当前部署任务？\n• 清理文件：取消部署并删除实例文件夹及已下载文件\n• 仅取消部署：取消部署并保留已下载的文件\n• 继续部署：放弃本次操作，继续部署")
+            .WithActionButton("清理文件", _ => tcs.TrySetResult(true), true, ["Danger", "Flat"])
+            .WithActionButton("仅取消部署", _ => tcs.TrySetResult(false), true)
+            .WithActionButton("继续部署", _ => tcs.TrySetResult(null), true)
+            .OnDismissed(_ => tcs.TrySetResult(null))
+            .TryShow();
+
+        var cleanupFiles = await tcs.Task;
+        if (cleanupFiles == null)
+        {
+            // 用户选择继续部署或关闭了对话框，放弃取消操作
+            return;
+        }
+
         _isCancelling = true;
         BtnCancelCreation.IsEnabled = false;
         BtnCancelCreation.Content = "正在取消...";
         AddLog("正在发送取消请求...");
 
-        var result = await DaemonAPIService.CancelServerCreationAsync(_createdServerId);
-        if (!result.Success)
+        var (Success, Message) = await DaemonAPIService.CancelServerCreationAsync(_createdServerId, cleanupFiles.Value);
+        if (!Success)
         {
-            AddLog($"取消请求失败: {result.Message}");
+            AddLog($"取消请求失败: {Message}");
             _isCancelling = false;
             BtnCancelCreation.IsEnabled = true;
             BtnCancelCreation.Content = "取消部署";
         }
-        // 成功时不重置状态，等待 SignalR 推送取消完成的消息（progress == -1）
+        else
+        {
+            AddLog(cleanupFiles.Value ? "已发送取消请求（清理文件）" : "已发送取消请求（保留文件）");
+        }
+        // 成功时不重置状态,等待 SignalR 推送取消完成的消息(progress == -1)
     }
 
     private async Task DisposeSignalR()
