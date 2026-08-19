@@ -102,6 +102,7 @@ export interface UpdateInstanceModel {
   regionPath?: string;
   expireTime?: string;
   bindFrpId?: string;
+  rconMode?: string;
 
   // ====== Docker 配置字段 ======
   dockerImage: string;
@@ -162,6 +163,7 @@ export interface InstanceSettingsModel {
   regionPath?: string;
   expireTime?: string;
   bindFrpId?: string;
+  rconMode?: string;
   // ====== Docker 配置字段 ======
   dockerImage: string;
   dockerWorkingDir: string;
