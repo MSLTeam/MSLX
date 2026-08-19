@@ -229,17 +229,17 @@ export async function getHostDrivesList() {
 
 // 后台任务管理
 export async function getUserTasks(instanceId?: number) {
-  return await request.get<any[]>({ url: '/api/tasks', params: { instanceId }, requestOptions: { requestToSlaveNode: true } });
+  return await request.get<any[]>({ url: '/api/tasks', params: { instanceId } });
 }
 
 export async function cancelUserTask(taskId: string) {
-  return await request.post({ url: `/api/tasks/${taskId}/cancel`, requestOptions: { requestToSlaveNode: true } });
+  return await request.post({ url: `/api/tasks/${taskId}/cancel` });
 }
 
 export async function deleteUserTask(taskId: string) {
-  return await request.delete({ url: `/api/tasks/${taskId}`, requestOptions: { requestToSlaveNode: true } });
+  return await request.delete({ url: `/api/tasks/${taskId}` });
 }
 
 export async function clearFinishedUserTasks() {
-  return await request.post({ url: '/api/tasks/clear-finished', requestOptions: { requestToSlaveNode: true } });
+  return await request.post({ url: '/api/tasks/clear-finished' });
 }
