@@ -105,7 +105,7 @@ public partial class InstanceListPage : UserControl
             await DialogService.DialogManager.CreateDialog()
                             .WithTitle("删除服务器")
                             .WithContent($"您确定要删除服务器 {server.Name} 吗？此操作不可撤销！")
-                            .WithActionButton("删除", _ => confirmDelete = true, true)
+                            .WithActionButton("删除", _ => confirmDelete = true, true, ["Danger","Flat"])
                             .WithActionButton("取消", _ => confirmDelete = false, true)
                             .TryShowAsync();
             if (!confirmDelete)
@@ -122,11 +122,19 @@ public partial class InstanceListPage : UserControl
                             .Queue();
                 return;
             }
+            bool deleteFiles = false;
+            await DialogService.DialogManager.CreateDialog()
+                .WithTitle("清理相关文件")
+                .WithContent($"是否清理服务器 {server.Name} 的相关文件？此操作会将实例文件夹以及其中的所有文件一并删除（Windows系统会移动到回收站）。")
+                .WithActionButton("清理", _ => deleteFiles = true, true, ["Danger", "Flat"])
+                .WithActionButton("保留", _ => deleteFiles = false, true)
+                .TryShowAsync();
+
             if (instancePages.TryGetValue(serverId, out SukiSideMenuItem? value) && SideMenuHelper.Current?.SideMenu.Items.Contains(value) == true)
             {
                 SideMenuHelper.Current?.NavigateRemove(value);
             }
-            await DaemonAPIService.PostApiAsync("/api/instance/delete", null, HttpService.PostContentType.Json, new { id = serverId });
+            await DaemonAPIService.PostApiAsync("/api/instance/delete", null, HttpService.PostContentType.Json, new { id = serverId, deleteFiles });
             await LoadServersList();
             DialogService.ToastManager.CreateToast()
                             .OfType(Avalonia.Controls.Notifications.NotificationType.Information)

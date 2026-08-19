@@ -5,7 +5,7 @@ import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signal
 import { useUserStore } from '@/store';
 import { getHubUrl } from '@/utils/hub';
 
-import { postCreateInstanceQuickMode, postCancelCreateInstance } from '@/api/instance';
+import { postCreateInstanceQuickMode, cancelCreationWithConfirm } from '@/api/instance';
 import { CreateInstanceQucikModeModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
 import { useInstanceListStore } from '@/store/modules/instance';
@@ -226,10 +226,9 @@ const handleCancelCreation = async () => {
   if (!createdServerId.value) return;
   try {
     isCanceling.value = true;
-    await postCancelCreateInstance(createdServerId.value.toString());
-    MessagePlugin.success('已发送取消指令');
+    await cancelCreationWithConfirm(createdServerId.value.toString());
   } catch (error) {
-    MessagePlugin.error('取消失败: ' +error.message);
+    MessagePlugin.error('取消失败: ' + error.message);
   } finally {
     isCanceling.value = false;
   }

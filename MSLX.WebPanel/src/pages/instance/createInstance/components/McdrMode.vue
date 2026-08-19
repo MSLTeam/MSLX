@@ -10,7 +10,7 @@ import DockerImageSelector from '@/components/docker-image-selector/index.vue';
 import { getJavaVersionList } from '@/api/mslapi/java';
 import { getLocalJavaList } from '@/api/localJava';
 import { getPythonList } from '@/api/localPython';
-import { postCreateInstanceQuickMode, postCancelCreateInstance } from '@/api/instance';
+import { postCreateInstanceQuickMode, cancelCreationWithConfirm } from '@/api/instance';
 import { deleteUpload } from '@/api/files';
 import { CreateInstanceQucikModeModel, PythonInfoModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
@@ -473,8 +473,7 @@ const handleCancelCreation = async () => {
   if (!createdServerId.value) return;
   try {
     isCanceling.value = true;
-    await postCancelCreateInstance(createdServerId.value.toString());
-    MessagePlugin.success('已发送取消指令');
+    await cancelCreationWithConfirm(createdServerId.value.toString());
   } catch (error) {
     MessagePlugin.error('取消失败: ' + error.message);
   } finally {

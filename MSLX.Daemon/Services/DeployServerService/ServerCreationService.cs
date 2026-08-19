@@ -7,6 +7,8 @@ using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.Daemon.Utils.BackgroundTasks;
 using MSLX.SDK.Models;
 using MSLX.SDK.Models.Tasks;
+using System.Runtime.InteropServices;
+using Microsoft.VisualBasic.FileIO;
 
 namespace MSLX.Daemon.Services.DeployServerService;
 
@@ -141,32 +143,43 @@ public class ServerCreationService : BackgroundService
         Directory.CreateDirectory(server.Base);
         _logger.LogInformation("服务器 {ServerId} 基础目录已配置。", serverId);
 
-        // 追踪是否使用了默认路径（用于清理）
-        bool usingDefaultPath = string.IsNullOrWhiteSpace(request.path);
-
         // 清理已创建的服务器配置和目录
         void CleanupFailedDeployment()
         {
+            // 检查是否需要清理文件
+            bool shouldCleanupFiles = _taskTracker.ShouldCleanupFiles(serverIdStr);
+            
             try
             {
-                IConfigBase.ServerList.DeleteServer((uint)serverId, true);
+                IConfigBase.ServerList.DeleteServer((uint)serverId, false);
             }
             catch (Exception cleanupEx)
             {
                 _logger.LogWarning(cleanupEx, "清理时删除服务器配置失败: {ServerId}", serverId);
             }
 
-            if (usingDefaultPath)
+            if (shouldCleanupFiles && Directory.Exists(server.Base))
             {
                 try
                 {
-                    if (Directory.Exists(server.Base))
+                    // Windows 系统尝试移动到回收站，其他系统直接删除
+                    if (OperatingSystem.IsWindows())
+                    {
+                        FileUtils.MoveToRecycleBin(server.Base);
+                    }
+                    else
+                    {
                         Directory.Delete(server.Base, true);
+                    }
                 }
                 catch (Exception cleanupEx)
                 {
                     _logger.LogWarning(cleanupEx, "清理时删除目录失败: {Path}", server.Base);
                 }
+            }
+            else if (!shouldCleanupFiles)
+            {
+                _logger.LogInformation("用户选择保留文件，跳过目录清理: {Path}", server.Base);
             }
         }
 
@@ -268,13 +281,13 @@ public class ServerCreationService : BackgroundService
         {
             // TaskCanceledException 来自 Downloader 库的网络层（连接中断/超时），不是用户取消
             _logger.LogWarning(ex, "下载过程中连接中断: ServerId {ServerId}", serverId);
-            CleanupFailedDeployment();
+            CleanupFailedDeployment(); // 网络错误强制清理
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             // 仅当 ct 确实被触发时才是用户主动取消
             _logger.LogInformation("任务已取消，正在清理: ServerId {ServerId}", serverId);
-            CleanupFailedDeployment();
+            CleanupFailedDeployment(); // 用户取消根据用户选择决定
             await UpdateStatusAsync(serverIdStr, "部署任务已被用户取消。", -1, true);
         }
         catch (OperationCanceledException ex)

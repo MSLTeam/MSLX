@@ -78,7 +78,7 @@ public class CreateInstanceController : ControllerBase
     [HttpPost("cancelCreation")]
     public IActionResult CancelCreation([FromBody] CancelCreationRequest request)
     {
-        bool cancelled = _taskTracker.TryCancel(request.ServerId);
+        bool cancelled = _taskTracker.TryCancel(request.ServerId, request.CleanupFiles);
 
         var response = new ApiResponse<object>
         {

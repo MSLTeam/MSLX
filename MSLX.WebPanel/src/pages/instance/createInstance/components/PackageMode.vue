@@ -11,7 +11,7 @@ import HostFileSelector from './HostFileSelector.vue';
 import { getJavaVersionList } from '@/api/mslapi/java';
 import { getServerCoreDownloadInfo, getServerCoreGameVersion } from '@/api/mslapi/serverCore';
 import { getLocalJavaList } from '@/api/localJava';
-import { postCreateInstanceQuickMode, postCancelCreateInstance } from '@/api/instance';
+import { postCreateInstanceQuickMode, cancelCreationWithConfirm } from '@/api/instance';
 import { deleteUpload, checkPackageJarList } from '@/api/files';
 import { CreateInstanceQucikModeModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
@@ -675,8 +675,7 @@ const handleCancelCreation = async () => {
   if (!createdServerId.value) return;
   try {
     isCanceling.value = true;
-    await postCancelCreateInstance(createdServerId.value.toString());
-    MessagePlugin.success('已发送取消指令');
+    await cancelCreationWithConfirm(createdServerId.value.toString());
   } catch (error) {
     MessagePlugin.error('取消失败: ' + error.message);
   } finally {

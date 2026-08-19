@@ -22,13 +22,34 @@ export async function postCreateInstanceQuickMode(data:CreateInstanceQucikModeMo
   });
 }
 
-export async function postCancelCreateInstance(serverId:string) {
+export async function postCancelCreateInstance(serverId:string, cleanupFiles:boolean = false) {
   return await request.post({
     url: '/api/instance/cancelCreation',
     data: {
-      serverId
+      serverId,
+      cleanupFiles
     }
   });
+}
+
+// 带确认对话框的取消创建
+export async function cancelCreationWithConfirm(serverId: string) {
+  const { DialogPlugin, MessagePlugin } = await import('tdesign-vue-next');
+  
+  const cleanupFiles = await new Promise<boolean>((resolve) => {
+    const dialog = DialogPlugin.confirm({
+      header: '取消部署',
+      body: '是否同时清理已下载的实例文件？',
+      confirmBtn: '清理文件',
+      cancelBtn: '仅取消部署',
+      theme: 'warning',
+      onConfirm: () => { resolve(true); dialog.destroy(); },
+      onCancel: () => { resolve(false); dialog.destroy(); },
+    });
+  });
+  
+  await postCancelCreateInstance(serverId, cleanupFiles);
+  MessagePlugin.success(cleanupFiles ? '已取消部署并清理文件' : '已取消部署，文件已保留');
 }
 
 export async function postDeleteInstance(id:number,deleteFiles:boolean = false) {
