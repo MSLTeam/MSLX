@@ -76,7 +76,7 @@ const handleClearFinished = async () => {
           运行中: <span class="text-[var(--color-primary)] font-bold">{{ taskStore.runningCount }}</span>
         </span>
         <div class="flex-1 flex justify-end items-center gap-2">
-          <node-switcher width="130px" />
+          <node-switcher width="130px" @change="() => taskStore.fetchTasks()" />
           <t-button variant="text" theme="primary" size="small" @click="handleClearFinished" class="px-1">
             清空已结束
           </t-button>

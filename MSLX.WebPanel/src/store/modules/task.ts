@@ -8,12 +8,13 @@ export const useTaskStore = defineStore('backgroundTask', () => {
   const tasks = ref<any[]>([]);
   let pollTimer: number | null = null;
   const isPolling = ref(false);
+  const nodeStore = useNodeStore();
 
   const runningCount = computed(() => {
     return tasks.value.filter(t => t.state === 0 || t.state === 1).length; // 0: Pending, 1: Running
   });
 
-  watch(() => useNodeStore().activeNodeId, () => {
+  watch(() => nodeStore.activeNodeId, () => {
     tasks.value = [];
     stopPolling();
     fetchTasks();
