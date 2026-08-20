@@ -340,7 +340,8 @@ MSLX.SDK.MSLX.Initialize(
     new DaemonConfigProvider(),
     new DaemonLoggerProvider(loggerFactory),
     new DaemonDownloadProvider(),
-    new DaemonHttpProvider()
+    new DaemonHttpProvider(),
+    app.Services.GetRequiredService<IBackgroundTaskManager>()
 );
 
 // 插件初始化方法
@@ -465,6 +466,7 @@ app.MapHub<FrpConsoleHub>("/api/hubs/frpLogsHub");
 app.MapHub<InstanceConsoleHub>("/api/hubs/instanceControlHub");
 app.MapHub<SystemMonitorHub>("/api/hubs/system");
 app.MapHub<DaemonUpdateHub>("/api/hubs/daemonUpdate");
+app.MapHub<AiChatHub>("/api/hubs/aiChatHub");
 app.MapControllers();
 
 
