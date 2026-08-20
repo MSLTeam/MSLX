@@ -231,11 +231,11 @@ const startPollingPing = async () => {
 
   const checkStatus = async () => {
     try {
-      await request.get({ 
-        url: '/api/ping', 
+      await request.get({
+        url: '/api/ping',
         baseURL: props.targetNodeUrl || undefined,
         headers: props.targetNodeId && props.targetNodeId !== 'local' ? { 'x-node-id': props.targetNodeId } : {},
-        timeout: 3000 
+        timeout: 3000,
       });
       return true;
     } catch {
@@ -399,18 +399,16 @@ onUnmounted(() => {
           <template #message>
             <strong>Linux 用户提示：</strong>
             <ul class="m-0 mt-1 pl-4 leading-relaxed opacity-90 space-y-1">
+              <li>若启用 <strong>Systemd</strong> 托管，请确保服务名称为 <code>mslx</code>，否则无法自动重启服务。</li>
               <li>
-                如使用一键脚本部署，推荐优先参考
-                <t-link
+                如果更新完成后仍然是旧版本，请尝试手动重启服务或手动更新！<t-link
                   theme="primary"
                   href="https://mslx.mslmc.cn/docs/install/linux/"
                   target="_blank"
                   class="align-baseline font-bold"
                   >官方文档</t-link
-                >。
+                >
               </li>
-              <li>若启用 <strong>Systemd</strong> 托管，请确保服务名称为 <code>mslx</code>，否则无法自动重启。</li>
-              <li>如果更新完成后仍然是旧版本，请尝试手动重启服务或手动更新！</li>
             </ul>
           </template>
         </t-alert>
