@@ -19,24 +19,42 @@ public class CreateInstanceController : ControllerBase
     private readonly IBackgroundTaskQueue<CreateServerTask> _taskQueue;
     private readonly IMCServerService _mcServerService;
     private readonly CreationTaskTracker _taskTracker;
+    private readonly BackgroundTaskManager _taskManager;
 
-    public CreateInstanceController(IBackgroundTaskQueue<CreateServerTask> taskQueue, IMCServerService mcServerService, CreationTaskTracker taskTracker)
+    public CreateInstanceController(
+        IBackgroundTaskQueue<CreateServerTask> taskQueue, 
+        IMCServerService mcServerService, 
+        CreationTaskTracker taskTracker,
+        BackgroundTaskManager taskManager)
     {
         _taskQueue = taskQueue;
         _mcServerService = mcServerService;
         _taskTracker = taskTracker;
+        _taskManager = taskManager;
     }
 
     [HttpPost("createServer")]
     public async Task<IActionResult> CreateServer([FromBody] CreateServerRequest request)
     {
         var serverId = IConfigBase.ServerList.GenerateServerId();
+        var userId = User?.FindFirst("UserId")?.Value ?? "";
+
+        // 创建全局后台任务
+        var (bgTask, _) = _taskManager.CreateTask(
+            userId, 
+            serverId, 
+            MSLX.SDK.Models.Files.TaskType.CreateServer, 
+            $"创建实例 {request.name}", 
+            request.core ?? request.name
+        );
 
         // 创建一个任务对象
         var task = new CreateServerTask
         {
             ServerId = serverId.ToString(), 
-            Request = request
+            Request = request,
+            BackgroundTaskId = bgTask.Id,
+            UserId = userId
         };
         
         await _taskQueue.QueueTaskAsync(task); // 添加任务到后台队列

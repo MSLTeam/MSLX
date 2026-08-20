@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using MSLX.SDK.Models.Files;
 using MSLX.SDK.IServices;
+using MSLX.Daemon.Utils.BackgroundTasks;
 
 namespace MSLX.Daemon.Services;
 
@@ -9,11 +10,13 @@ public class BackgroundTaskManager : IBackgroundTaskManager
     private readonly ConcurrentDictionary<string, BackgroundTaskItem> _tasks = new();
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _ctsMap = new();
     private readonly ILogger<BackgroundTaskManager> _logger;
+    private readonly CreationTaskTracker _taskTracker;
     private readonly Timer _cleanupTimer;
 
-    public BackgroundTaskManager(ILogger<BackgroundTaskManager> logger)
+    public BackgroundTaskManager(ILogger<BackgroundTaskManager> logger, CreationTaskTracker taskTracker)
     {
         _logger = logger;
+        _taskTracker = taskTracker;
         _cleanupTimer = new Timer(CleanupExpiredTasks, null, TimeSpan.FromMinutes(10), TimeSpan.FromHours(1));
     }
 
@@ -92,6 +95,12 @@ public class BackgroundTaskManager : IBackgroundTaskManager
                     cts.Cancel();
                     cts.Dispose();
                 }
+
+                if (task.Type == TaskType.CreateServer && task.InstanceId > 0)
+                {
+                    _taskTracker.TryCancel(task.InstanceId.ToString(), false);
+                }
+
                 return true;
             }
         }

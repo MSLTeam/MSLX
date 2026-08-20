@@ -8,7 +8,9 @@ public enum TaskType
     Decompress,
     Download,
     Export,
-    Plugin
+    Plugin,
+    CreateServer,
+    UpdateServer
 }
 
 public enum TaskState

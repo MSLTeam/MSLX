@@ -6,6 +6,7 @@ using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.Daemon.Utils.BackgroundTasks;
 using MSLX.SDK.Models;
+using MSLX.SDK.Models.Files;
 using MSLX.SDK.Models.Tasks;
 
 namespace MSLX.Daemon.Services.DeployServerService;
@@ -18,6 +19,7 @@ public class ServerCreationService : BackgroundService
     private readonly IMemoryCache _memoryCache;
     private readonly ServerDeploymentService _deploymentService;
     private readonly CreationTaskTracker _taskTracker;
+    private readonly BackgroundTaskManager _taskManager;
 
     public ServerCreationService(
         ILogger<ServerCreationService> logger,
@@ -25,7 +27,8 @@ public class ServerCreationService : BackgroundService
         IHubContext<CreationProgressHub> hubContext,
         IMemoryCache memoryCache,
         ServerDeploymentService deploymentService,
-        CreationTaskTracker taskTracker)
+        CreationTaskTracker taskTracker,
+        BackgroundTaskManager taskManager)
     {
         _logger = logger;
         _taskQueue = taskQueue;
@@ -33,6 +36,7 @@ public class ServerCreationService : BackgroundService
         _memoryCache = memoryCache;
         _deploymentService = deploymentService;
         _taskTracker = taskTracker;
+        _taskManager = taskManager;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -82,13 +86,14 @@ public class ServerCreationService : BackgroundService
         string serverIdStr = task.ServerId;
         int serverId = int.Parse(task.ServerId);
         var request = task.Request;
+        string bgTaskId = task.BackgroundTaskId;
 
         _logger.LogInformation("开始处理任务: ServerId {ServerId}", serverId);
 
         // 汇报进度适配器
         ServerDeploymentService.ReportProgress progressReporter = async (msg, prog, isErr, ex) =>
         {
-            await UpdateStatusAsync(serverIdStr, msg, prog, isErr, ex);
+            await UpdateStatusAsync(serverIdStr, msg, prog, isErr, ex, bgTaskId);
         };
 
         await progressReporter("创建任务已开始，正在初始化...", 0);
@@ -281,24 +286,28 @@ public class ServerCreationService : BackgroundService
             // TaskCanceledException 来自 Downloader 库的网络层（连接中断/超时），不是用户取消
             _logger.LogWarning(ex, "下载过程中连接中断: ServerId {ServerId}", serverId);
             CleanupFailedDeployment();
+            if (!string.IsNullOrEmpty(bgTaskId)) _taskManager.SetFailed(bgTaskId, "下载过程中连接中断");
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             // 仅当 ct 确实被触发时才是用户主动取消
             _logger.LogInformation("任务已取消，正在清理: ServerId {ServerId}", serverId);
             CleanupFailedDeployment();
-            await UpdateStatusAsync(serverIdStr, "部署任务已被用户取消。", -1, true);
+            await UpdateStatusAsync(serverIdStr, "部署任务已被用户取消。", -1, true, null, bgTaskId);
+            if (!string.IsNullOrEmpty(bgTaskId)) _taskManager.UpdateProgress(bgTaskId, 100, "部署任务已被用户取消。", TaskState.Canceled);
         }
         catch (OperationCanceledException ex)
         {
             // ct 未被触发但出现了 OperationCanceledException → 网络层中断通过 report() 传播
             _logger.LogWarning(ex, "下载过程中连接中断: ServerId {ServerId}", serverId);
             CleanupFailedDeployment();
+            if (!string.IsNullOrEmpty(bgTaskId)) _taskManager.SetFailed(bgTaskId, "下载过程中连接中断");
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "部署失败，正在清理: ServerId {ServerId}", serverId);
             CleanupFailedDeployment();
+            if (!string.IsNullOrEmpty(bgTaskId)) _taskManager.SetFailed(bgTaskId, ex.Message);
         }
     }
 
@@ -317,9 +326,9 @@ public class ServerCreationService : BackgroundService
     }
 
     /// <summary>
-    /// 依然保留这个私有方法，用于处理SignalR和缓存
+    /// 状态更新：处理SignalR和缓存
     /// </summary>
-    private async Task UpdateStatusAsync(string serverId, string message, double? progress, bool isError = false, Exception? exception = null)
+    private async Task UpdateStatusAsync(string serverId, string message, double? progress, bool isError = false, Exception? exception = null, string bgTaskId = "")
     {
         if (isError || exception != null)
             _logger.LogError(exception, "[{ServerId}] Error: {Message}", serverId, message);
@@ -329,5 +338,21 @@ public class ServerCreationService : BackgroundService
         var status = new CacheableStatus { Message = message, Progress = progress ?? 0 };
         _memoryCache.Set(serverId, status, TimeSpan.FromMinutes(10));
         await _hubContext.Clients.Group(serverId).SendAsync("StatusUpdate", serverId, message, progress);
+
+        if (!string.IsNullOrEmpty(bgTaskId))
+        {
+            if (isError || exception != null)
+            {
+                _taskManager.SetFailed(bgTaskId, message);
+            }
+            else if (progress >= 100)
+            {
+                _taskManager.SetSuccess(bgTaskId, message);
+            }
+            else
+            {
+                _taskManager.UpdateProgress(bgTaskId, (int)Math.Max(0, progress ?? 0), message);
+            }
+        }
     }
 }

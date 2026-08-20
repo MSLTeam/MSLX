@@ -10,7 +10,7 @@ import {
 } from 'tdesign-vue-next';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { getHubUrl } from '@/utils/hub';
-import { useUserStore, useTunnelsStore } from '@/store';
+import { useUserStore, useTunnelsStore, useTaskStore } from '@/store';
 import { LockOnIcon, LockOffIcon } from 'tdesign-icons-vue-next';
 
 // API
@@ -927,6 +927,7 @@ const onSubmit = async () => {
     const needListen = (res as any).data?.needListen ?? (res as any).needListen;
 
     if (needListen) {
+      useTaskStore().fetchTasks();
       startSignalRListening();
     } else {
       MessagePlugin.success('配置已保存');
