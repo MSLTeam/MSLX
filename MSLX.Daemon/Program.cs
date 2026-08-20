@@ -215,6 +215,7 @@ builder.Services.AddSingleton<SystemMonitor>();
 builder.Services.AddSingleton<CreationTaskTracker>();
 builder.Services.AddSingleton<BackgroundTaskManager>();
 builder.Services.AddSingleton<IBackgroundTaskManager>(sp => sp.GetRequiredService<BackgroundTaskManager>());
+builder.Services.AddSingleton<AiService>();
 // 插件的一些服务
 var pluginManager = new PluginManager();
 builder.Services.AddSingleton(pluginManager);
@@ -465,6 +466,7 @@ app.MapHub<FrpConsoleHub>("/api/hubs/frpLogsHub");
 app.MapHub<InstanceConsoleHub>("/api/hubs/instanceControlHub");
 app.MapHub<SystemMonitorHub>("/api/hubs/system");
 app.MapHub<DaemonUpdateHub>("/api/hubs/daemonUpdate");
+app.MapHub<AiChatHub>("/api/hubs/aiChatHub");
 app.MapControllers();
 
 
