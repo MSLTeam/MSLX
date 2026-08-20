@@ -1,4 +1,4 @@
-using System.Dynamic;
+﻿using System.Dynamic;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -14,19 +14,33 @@ public class FileUtils
     /// <returns>如果是 null/空 则跳过校验返回 true；匹配返回 true；否则 false</returns>
     public static async Task<bool> ValidateFileSha256Async(string filePath, string? expectedHash)
     {
+        return await ValidateFileHashAsync(filePath, expectedHash, HashAlgorithmName.SHA256);
+    }
+
+    /// <summary>
+    /// 校验文件哈希
+    /// </summary>
+    public static async Task<bool> ValidateFileHashAsync(string filePath, string? expectedHash,
+        HashAlgorithmName algorithm)
+    {
         if (string.IsNullOrWhiteSpace(expectedHash)) return true;
-        
         if (!File.Exists(filePath)) return false;
 
         try
         {
-            using var sha256 = SHA256.Create();
-            using var stream = File.OpenRead(filePath);
-            byte[] hashBytes = await sha256.ComputeHashAsync(stream);
+            using HashAlgorithm hash = algorithm.Name switch
+            {
+                nameof(HashAlgorithmName.SHA1) => SHA1.Create(),
+                nameof(HashAlgorithmName.SHA256) => SHA256.Create(),
+                nameof(HashAlgorithmName.SHA512) => SHA512.Create(),
+                _ => throw new CryptographicException($"不支持的哈希算法: {algorithm.Name}")
+            };
+            await using var stream = File.OpenRead(filePath);
+            byte[] hashBytes = await hash.ComputeHashAsync(stream);
             string actualHash = Convert.ToHexString(hashBytes);
             return actualHash.Equals(expectedHash, StringComparison.OrdinalIgnoreCase);
         }
-        catch (Exception)
+        catch
         {
             return false;
         }
@@ -105,6 +119,24 @@ public class FileUtils
             "utf-8-bom" => new UTF8Encoding(true),
             _ => new UTF8Encoding(false) 
         };
+    }
+
+    /// <summary>
+    /// Windows 系统将文件夹移动到回收站
+    /// </summary>
+    public static void MoveToRecycleBin(string path)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            throw new PlatformNotSupportedException("回收站功能仅支持 Windows 系统");
+        }
+
+        // 使用 FileSystem.DeleteDirectory 并设置 RecycleOption.SendToRecycleBin
+        Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(
+            path,
+            Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs,
+            Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin
+        );
     }
 }
 

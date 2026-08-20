@@ -12,6 +12,16 @@ namespace MSLX.SDK.Models.Tasks;
         public string ServerId { get; set; }
 
         /// <summary>
+        /// 关联的后台任务ID
+        /// </summary>
+        public string BackgroundTaskId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 提交任务的用户ID
+        /// </summary>
+        public string UserId { get; set; } = string.Empty;
+
+        /// <summary>
         /// 客户端发来的原始请求数据
         /// </summary>
         public CreateServerRequest Request { get; set; }

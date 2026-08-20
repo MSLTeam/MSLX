@@ -474,6 +474,22 @@
           <!-- 高级设置 -->
           <suki:GroupBox Header="高级设置">
             <StackPanel Spacing="12" Margin="4">
+              <!-- RCON 通讯模式 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="RCON 通讯模式" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="指令发送模式。如果遇到无法在控制台输入指令，可以尝试启用 RCON。" FontSize="12" Opacity="0.6" TextWrapping="Wrap" Margin="0,2,0,0"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Spacing="6">
+                  <ComboBox x:Name="RconModeCombo" HorizontalAlignment="Stretch" SelectionChanged="OnRconModeSelectionChanged">
+                    <ComboBoxItem Content="关闭" Tag="off"/>
+                    <ComboBoxItem Content="MC模式" Tag="mc"/>
+                    <ComboBoxItem Content="自定义通讯 (端口:密码)" Tag="custom"/>
+                  </ComboBox>
+                  <TextBox x:Name="CustomRconBox" IsVisible="False" PlaceholderText="例如: 25575:password"/>
+                </StackPanel>
+              </Grid>
+
               <!-- 停止指令 -->
               <Grid ColumnDefinitions="*,340">
                 <StackPanel Grid.Column="0" VerticalAlignment="Center">

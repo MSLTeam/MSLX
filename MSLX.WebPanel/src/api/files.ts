@@ -225,3 +225,21 @@ export async function getHostDrivesList() {
     url: '/api/files/drives',
   });
 }
+
+
+// 后台任务管理
+export async function getUserTasks(instanceId?: number) {
+  return await request.get<any[]>({ url: '/api/tasks', params: { instanceId } });
+}
+
+export async function cancelUserTask(taskId: string) {
+  return await request.post({ url: `/api/tasks/${taskId}/cancel` });
+}
+
+export async function deleteUserTask(taskId: string) {
+  return await request.delete({ url: `/api/tasks/${taskId}` });
+}
+
+export async function clearFinishedUserTasks() {
+  return await request.post({ url: '/api/tasks/clear-finished' });
+}

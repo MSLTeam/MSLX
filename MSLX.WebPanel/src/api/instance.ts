@@ -13,22 +13,96 @@ import {
   UserCacheItem,
   WhitelistItem,
 } from '@/api/model/instance';
-import { useUserStore } from '@/store';
+import { useUserStore, useTaskStore } from '@/store';
 
 export async function postCreateInstanceQuickMode(data:CreateInstanceQucikModeModel){
-  return await request.post({
+  const res = await request.post<{ serverId: number }>({
     url: '/api/instance/createServer',
     data: data,
   });
+  try {
+    useTaskStore().fetchTasks();
+  } catch {
+    /* empty */
+  }
+  return res;
 }
 
-export async function postCancelCreateInstance(serverId:string) {
+export async function postCancelCreateInstance(serverId:string, cleanupFiles:boolean = false) {
   return await request.post({
     url: '/api/instance/cancelCreation',
     data: {
-      serverId
+      serverId,
+      cleanupFiles
     }
   });
+}
+
+// 带确认对话框的取消创建
+export async function cancelCreationWithConfirm(serverId: string): Promise<boolean> {
+  const { DialogPlugin, MessagePlugin, Checkbox } = await import('tdesign-vue-next');
+  const { h, ref } = await import('vue');
+
+  const cleanupFiles = ref(false);
+
+  const confirmed = await new Promise<boolean>((resolve) => {
+    const dialog = DialogPlugin({
+      header: '取消部署',
+      theme: 'warning',
+      confirmBtn: {
+        content: '确认取消',
+        theme: 'primary',
+      },
+      cancelBtn: {
+        content: '继续部署',
+        theme: 'default',
+      },
+      body: () =>
+        h('div', { style: 'display: flex; flex-direction: column; gap: 12px; padding: 4px 0;' }, [
+          h('p', { style: 'margin: 0; font-size: 14px; color: var(--td-text-color-primary);' }, '确定要取消当前服务器实例的部署任务吗？'),
+          h(
+            Checkbox,
+            {
+              checked: cleanupFiles.value,
+              'onUpdate:checked': (val: boolean) => {
+                cleanupFiles.value = val;
+              },
+              onChange: (val: boolean) => {
+                cleanupFiles.value = val;
+              },
+            },
+            () =>
+              h(
+                'span',
+                {
+                  style: 'color: var(--td-error-color, #e34d59); font-size: 13px;',
+                },
+                '同时清理已下载的实例文件 (删除实例文件夹及文件)',
+              ),
+          ),
+        ]),
+      onConfirm: () => {
+        dialog.destroy();
+        resolve(true);
+      },
+      onCancel: () => {
+        dialog.destroy();
+        resolve(false);
+      },
+      onClose: () => {
+        dialog.destroy();
+        resolve(false);
+      },
+    });
+  });
+
+  if (!confirmed) {
+    return false; // 用户放弃取消或关闭了弹窗
+  }
+
+  await postCancelCreateInstance(serverId, cleanupFiles.value);
+  MessagePlugin.success(cleanupFiles.value ? '已取消部署并清理文件' : '已取消部署，文件已保留');
+  return true;
 }
 
 export async function postDeleteInstance(id:number,deleteFiles:boolean = false) {
