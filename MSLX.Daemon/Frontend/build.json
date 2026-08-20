@@ -1,6 +1,6 @@
 {
-  "version": "1.6.0.1",
-  "buildTime": "2026-08-19 23:04:16",
+  "version": "1.6.1",
+  "buildTime": "2026-08-20 20:09:29",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -77,10 +77,46 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "cf2712f41d248cb7afbdb3d6a2ea1a74ac8fdcb5",
-  "commitMsg": "perf(webpanel): 优化节点管理页面卡片布局",
+  "commitId": "110be37309670ccde9f8ff0af4ba076ef11914df",
+  "commitMsg": "feat(webpanel & daemon): 创建服务端 & 更新服务端的任务同步到后台任务管理",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "110be37309670ccde9f8ff0af4ba076ef11914df",
+      "commitTime": "2026-08-20 20:07:36 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 创建服务端 & 更新服务端的任务同步到后台任务管理"
+    },
+    {
+      "commitId": "6d75c3f4b0072f845e961bd219bafc97af23f996",
+      "commitTime": "2026-08-20 18:15:09 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复后台任务列表切换不生效的问题"
+    },
+    {
+      "commitId": "936c05b87e363d17d29ed10714c481f919f8c5c5",
+      "commitTime": "2026-08-20 18:08:18 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 修复资源中心切换节点后未正常刷新目标节点实例列表的问题"
+    },
+    {
+      "commitId": "e386407a6093ae40ed7c578ae9d6df73d2408f9d",
+      "commitTime": "2026-08-20 18:04:02 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复服务端实例资源下载失败后文件可能异常删除的问题"
+    },
+    {
+      "commitId": "fb21bd2b6b22d4258559bac5d0105f789bbeae53",
+      "commitTime": "2026-08-19 23:05:55 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #234 from MSLTeam/dev"
+    },
+    {
+      "commitId": "1236adeceda4e57d7df07fc2fbc2726bb13a677a",
+      "commitTime": "2026-08-19 23:04:29 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(desktop & daemon & webpanel): 更新到v1.6.0.1版本"
+    },
     {
       "commitId": "cf2712f41d248cb7afbdb3d6a2ea1a74ac8fdcb5",
       "commitTime": "2026-08-19 23:03:33 +0800",
@@ -344,42 +380,6 @@
       "commitTime": "2026-08-11 16:02:46 +0800",
       "commitAuthor": "luluxiaoyu",
       "commitMsg": "bumpver(daemon & webpanel & desktop): 更新到v1.5.10版本"
-    },
-    {
-      "commitId": "5e40fd7f40a615e4620664b3d92375d3d2d3426f",
-      "commitTime": "2026-08-11 15:58:56 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "Merge remote-tracking branch 'origin/dev' into dev"
-    },
-    {
-      "commitId": "91ae150e31ca1515d5a5569792b92ed6438a946f",
-      "commitTime": "2026-08-11 15:57:51 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "chore(proj): 项目解决方案引用版本号维护文件"
-    },
-    {
-      "commitId": "4731a60f31b39eaefcbdcfafa6b24a21aa33df39",
-      "commitTime": "2026-08-11 15:53:36 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(desktop): 完善服务端实例设置组件"
-    },
-    {
-      "commitId": "8d6be0072718f07466bb8ffe57b383024b863cba",
-      "commitTime": "2026-08-11 10:35:27 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(daemon & webpanel): 全局管理员APIKey账户新增头像信息 & 前端禁止修改用户信息"
-    },
-    {
-      "commitId": "bd11e6ef5f3bfb74f5fc686e11fff93b7198757b",
-      "commitTime": "2026-08-11 10:24:55 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(desktop): macos下顶部菜单使用原生红绿灯"
-    },
-    {
-      "commitId": "92420618445a7caf0ad434bf7e347eb586769c1b",
-      "commitTime": "2026-08-11 01:36:33 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(desktop): 优化 macOS 下的 Desktop 顶部控制栏与菜单"
     }
   ]
 }

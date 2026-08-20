@@ -13,13 +13,19 @@ import {
   UserCacheItem,
   WhitelistItem,
 } from '@/api/model/instance';
-import { useUserStore } from '@/store';
+import { useUserStore, useTaskStore } from '@/store';
 
 export async function postCreateInstanceQuickMode(data:CreateInstanceQucikModeModel){
-  return await request.post({
+  const res = await request.post<{ serverId: number }>({
     url: '/api/instance/createServer',
     data: data,
   });
+  try {
+    useTaskStore().fetchTasks();
+  } catch {
+    /* empty */
+  }
+  return res;
 }
 
 export async function postCancelCreateInstance(serverId:string, cleanupFiles:boolean = false) {

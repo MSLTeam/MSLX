@@ -1,12 +1,12 @@
 <script lang="ts" setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed, watch } from 'vue';
 import { SearchIcon } from 'tdesign-icons-vue-next';
 import { searchResources, getResourceVersions, getResourceDetail } from '@/api/resourceCenter';
 import type { ResourceModel, ResourceVersionModel } from '@/api/model/resourceCenter';
 import { getServerCoreGameVersion } from '@/api/mslapi/serverCore';
 import { MdPreview, type Themes } from 'md-editor-v3';
 import 'md-editor-v3/lib/preview.css';
-import { useSettingStore } from '@/store';
+import { useSettingStore, useNodeStore } from '@/store';
 import DependencyGuideModal from './components/DependencyGuideModal.vue';
 import { useInstanceListStore } from '@/store/modules/instance';
 import NodeSwitcher from '@/components/node-switcher/index.vue';
@@ -138,8 +138,22 @@ const formatNumber = (num: number) => {
   return num.toString();
 };
 
+const nodeStore = useNodeStore();
 const instanceStore = useInstanceListStore();
 const selectedInstanceId = ref<number | null>(null);
+
+const handleNodeChange = (_val?: string) => {
+  selectedInstanceId.value = null;
+  instanceStore.refreshInstanceList();
+};
+
+watch(
+  () => nodeStore.activeNodeId,
+  () => {
+    selectedInstanceId.value = null;
+    instanceStore.refreshInstanceList();
+  },
+);
 
 onMounted(() => {
   loadVanillaVersions();
@@ -172,8 +186,6 @@ const versionPagination = reactive({
   current: 1,
   pageSize: 10,
 });
-
-import { computed } from 'vue';
 
 const filteredVersionList = computed(() => {
   let list = allVersionList.value;
@@ -278,7 +290,6 @@ const openDetailModal = async (item: ResourceModel) => {
 const settingStore = useSettingStore();
 const isDark = computed(() => settingStore.displayMode === 'dark');
 const mdTheme = ref(isDark.value ? 'dark' : 'light');
-import { watch } from 'vue';
 watch(isDark, (val) => {
   mdTheme.value = val ? 'dark' : 'light';
 });
@@ -294,7 +305,7 @@ watch(isDark, (val) => {
         <p class="text-sm text-[var(--td-text-color-secondary)] m-0">搜索并下载服务端插件、Mod 和其他资源包</p>
       </div>
       <div class="flex flex-wrap items-center sm:justify-end gap-3">
-        <node-switcher />
+        <node-switcher @change="handleNodeChange" />
         <t-select
           v-if="filter.type === 0 || filter.type === 5"
           v-model="selectedInstanceId"

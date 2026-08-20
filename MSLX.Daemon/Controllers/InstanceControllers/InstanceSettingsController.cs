@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
@@ -17,12 +17,16 @@ public class InstanceSettingsController : ControllerBase
 {
     private readonly IMCServerService _mcServerService;
     private readonly IBackgroundTaskQueue<UpdateServerTask> _updateQueue;
+    private readonly BackgroundTaskManager _taskManager;
 
-    public InstanceSettingsController(IMCServerService mcServerService,
-        IBackgroundTaskQueue<UpdateServerTask> updateQueue)
+    public InstanceSettingsController(
+        IMCServerService mcServerService,
+        IBackgroundTaskQueue<UpdateServerTask> updateQueue,
+        BackgroundTaskManager taskManager)
     {
         _mcServerService = mcServerService;
         _updateQueue = updateQueue;
+        _taskManager = taskManager;
     }
 
     [HttpGet("general/{id}")]
@@ -87,8 +91,22 @@ public class InstanceSettingsController : ControllerBase
                 });
             }
             
+            var userId = User?.FindFirst("UserId")?.Value ?? "";
+            var (bgTask, _) = _taskManager.CreateTask(
+                userId, 
+                id, 
+                MSLX.SDK.Models.Files.TaskType.UpdateServer, 
+                $"更新实例 {server.Name}", 
+                request.Core ?? server.Core
+            );
+
             // 丢后台
-            await _updateQueue.QueueTaskAsync(new UpdateServerTask { Request = request });
+            await _updateQueue.QueueTaskAsync(new UpdateServerTask 
+            { 
+                Request = request,
+                BackgroundTaskId = bgTask.Id,
+                UserId = userId
+            });
             return Ok(new ApiResponse<object>
             {
                 Code = 200,
