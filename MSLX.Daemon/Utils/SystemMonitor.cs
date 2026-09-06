@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
@@ -17,6 +17,15 @@ public class SystemMonitor
     // Linux CPU 计算缓存
     private long _prevTotalTicks = 0;
     private long _prevIdleTicks = 0;
+
+    // macOS 资源缓存与 P/Invoke 状态
+    private static double _macTotalMemMb = 0;
+    private static IntPtr _macHostPort = IntPtr.Zero;
+    private ulong _prevMacUserTicks = 0;
+    private ulong _prevMacSysTicks = 0;
+    private ulong _prevMacIdleTicks = 0;
+    private ulong _prevMacNiceTicks = 0;
+    private ulong _prevMacTotalTicks = 0;
 
     public SystemMonitor()
     {
@@ -110,50 +119,78 @@ public class SystemMonitor
         return (FixCpu(cpu), FixMem(total), FixMem(total - avail));
     }
 
-    // --- MacOS 实现 (Bash Cmd) ---
+    // --- MacOS 实现 (Darwin Mach P/Invoke，0 子进程调用) ---
     private (double, double, double) GetMacMetrics()
     {
         double cpu = 0, totalMem = 0, usedMem = 0;
         try
         {
-            // 获取总内存 (sysctl)
-            string totalMemStr = RunBash("sysctl -n hw.memsize");
-            if (long.TryParse(totalMemStr, out long totalBytes))
+            // 物理总内存
+            if (_macTotalMemMb <= 0)
             {
-                totalMem = totalBytes / 1024.0 / 1024.0; // 转换为 MB
+                ulong memsize = 0;
+                nuint size = (nuint)sizeof(ulong);
+                if (sysctlbyname("hw.memsize", out memsize, ref size, IntPtr.Zero, 0) == 0 && memsize > 0)
+                {
+                    _macTotalMemMb = memsize / 1024.0 / 1024.0; // 转换为 MB
+                }
+                else
+                {
+                    var gcInfo = GC.GetGCMemoryInfo();
+                    _macTotalMemMb = gcInfo.TotalAvailableMemoryBytes / 1024.0 / 1024.0;
+                }
+            }
+            totalMem = _macTotalMemMb;
+
+            IntPtr hostPort = GetMacHostPort();
+
+            // 内存详情
+            var vmStats = new VmStatistics64();
+            int vmCount = Marshal.SizeOf<VmStatistics64>() / sizeof(int);
+
+            if (host_statistics64(hostPort, HOST_VM_INFO64, ref vmStats, ref vmCount) == 0)
+            {
+                // 可用页面 = free + speculative + inactive (缓存计入可用)
+                ulong freePages = vmStats.free_count;
+                ulong speculativePages = vmStats.speculative_count;
+                ulong inactivePages = vmStats.inactive_count;
+                ulong availablePages = freePages + speculativePages + inactivePages;
+
+                int pageSize = Environment.SystemPageSize > 0 ? Environment.SystemPageSize : 4096;
+                double availableMemMb = (availablePages * (double)pageSize) / 1024.0 / 1024.0;
+                usedMem = Math.Max(0, totalMem - availableMemMb);
             }
 
-            // 获取内存详情 (vm_stat)
-            string vmStat = RunBash("vm_stat");
-            
-            // 提取关键指标
-            var freeMatch = Regex.Match(vmStat, @"Pages free:\s+(\d+)\.");
-            var speculativeMatch = Regex.Match(vmStat, @"Pages speculative:\s+(\d+)\."); 
-            var inactiveMatch = Regex.Match(vmStat, @"Pages inactive:\s+(\d+)\."); // 这是文件缓存
+            // CPU 使用率
+            var cpuLoad = new HostCpuLoadInfo();
+            int cpuCount = Marshal.SizeOf<HostCpuLoadInfo>() / sizeof(int);
 
-            long pagesFree = 0;
-            if (freeMatch.Success) pagesFree += long.Parse(freeMatch.Groups[1].Value);
-            if (speculativeMatch.Success) pagesFree += long.Parse(speculativeMatch.Groups[1].Value);
-            
-            // 把 Inactive (缓存) 也算作“可用内存”，不计入“已用”
-            if (inactiveMatch.Success) pagesFree += long.Parse(inactiveMatch.Groups[1].Value);
-
-            // Mac 页大小通常是 4096 字节
-            // 可用内存 (MB)
-            double availableMemMb = (pagesFree * 4096) / 1024.0 / 1024.0;
-            
-            // 已用内存 = 总内存 - 可用内存
-            // 这样算出来的数值就约等于 Activity Monitor 里的 "内存已用" (App + 联动 + 被压缩)
-            usedMem = totalMem - availableMemMb;
-
-            // 获取 CPU (top)
-            string topOutput = RunBash("top -l 1 -n 0 | grep \"CPU usage\"");
-            var idleMatch = Regex.Match(topOutput, @"(\d+\.\d+)%\s+idle");
-            
-            if (idleMatch.Success)
+            if (host_statistics(hostPort, HOST_CPU_LOAD_INFO, ref cpuLoad, ref cpuCount) == 0)
             {
-                double idlePercent = double.Parse(idleMatch.Groups[1].Value);
-                cpu = 100.0 - idlePercent;
+                ulong user = cpuLoad.user;
+                ulong sys = cpuLoad.system;
+                ulong idle = cpuLoad.idle;
+                ulong nice = cpuLoad.nice;
+
+                if (_prevMacTotalTicks > 0)
+                {
+                    ulong dUser = user >= _prevMacUserTicks ? user - _prevMacUserTicks : 0;
+                    ulong dSys = sys >= _prevMacSysTicks ? sys - _prevMacSysTicks : 0;
+                    ulong dIdle = idle >= _prevMacIdleTicks ? idle - _prevMacIdleTicks : 0;
+                    ulong dNice = nice >= _prevMacNiceTicks ? nice - _prevMacNiceTicks : 0;
+                    ulong totalTicks = dUser + dSys + dIdle + dNice;
+
+                    if (totalTicks > 0)
+                    {
+                        cpu = ((double)(totalTicks - dIdle) / totalTicks) * 100.0;
+                    }
+                }
+
+                _prevMacUserTicks = user;
+                _prevMacSysTicks = sys;
+                _prevMacIdleTicks = idle;
+                _prevMacNiceTicks = nice;
+                _prevMacTotalTicks = user + sys + idle + nice;
             }
         }
         catch { }
@@ -165,22 +202,75 @@ public class SystemMonitor
         return (Math.Round(cpu, 1), Math.Round(totalMem, 1), Math.Round(usedMem, 1));
     }
 
-    private string RunBash(string cmd)
+    private static IntPtr GetMacHostPort()
     {
-        try
+        if (_macHostPort == IntPtr.Zero)
         {
-            using var p = new Process();
-            p.StartInfo = new ProcessStartInfo
+            try
             {
-                FileName = "/bin/bash", Arguments = $"-c \"{cmd}\"",
-                RedirectStandardOutput = true, UseShellExecute = false, CreateNoWindow = true
-            };
-            p.Start();
-            string r = p.StandardOutput.ReadToEnd();
-            p.WaitForExit();
-            return r;
+                _macHostPort = mach_host_self();
+            }
+            catch
+            {
+                _macHostPort = IntPtr.Zero;
+            }
         }
-        catch { return ""; }
+        return _macHostPort;
+    }
+
+    // --- Darwin / Mach P/Invoke 声明 ---
+    private const int HOST_CPU_LOAD_INFO = 3;
+    private const int HOST_VM_INFO64 = 4;
+    private const string SystemLibrary = "/usr/lib/libSystem.dylib";
+
+    [DllImport(SystemLibrary)]
+    private static extern IntPtr mach_host_self();
+
+    [DllImport(SystemLibrary)]
+    private static extern int host_statistics(IntPtr host_priv, int flavor, ref HostCpuLoadInfo host_info_out, ref int host_info_outCnt);
+
+    [DllImport(SystemLibrary)]
+    private static extern int host_statistics64(IntPtr host_priv, int flavor, ref VmStatistics64 host_info_out, ref int host_info_outCnt);
+
+    [DllImport(SystemLibrary, CharSet = CharSet.Ansi)]
+    private static extern int sysctlbyname(string name, out ulong oldp, ref nuint oldlenp, IntPtr newp, nuint newlen);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct HostCpuLoadInfo
+    {
+        public uint user;
+        public uint system;
+        public uint idle;
+        public uint nice;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct VmStatistics64
+    {
+        public uint free_count;
+        public uint active_count;
+        public uint inactive_count;
+        public uint wire_count;
+        public ulong zero_fill_count;
+        public ulong reactivations;
+        public ulong pageins;
+        public ulong pageouts;
+        public ulong faults;
+        public ulong cow_faults;
+        public ulong lookups;
+        public ulong hits;
+        public ulong purges;
+        public uint purgeable_count;
+        public uint speculative_count;
+        public ulong decompressions;
+        public ulong compressions;
+        public ulong swapins;
+        public ulong swapouts;
+        public uint compressor_page_count;
+        public uint throttled_count;
+        public uint external_page_count;
+        public uint internal_page_count;
+        public ulong total_uncompressed_pages_in_compressor;
     }
 
     private double FixCpu(double v) => Math.Round(Math.Max(0, Math.Min(100, v)), 1);

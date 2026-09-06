@@ -11,6 +11,7 @@ export interface UploadPackageCheckJarResponse {
   jars: string[];
   detectedRoot: string;
   metadata?: Record<string, any>;
+  format?: 'zip' | 'mrpack' | string;
 }
 
 export interface FilesListModel{

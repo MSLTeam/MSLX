@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.Daemon.Services.DeployServerService;
 using MSLX.SDK.Models;
 using MSLX.SDK.Models.Files;
 using Newtonsoft.Json.Linq;
@@ -17,10 +18,12 @@ public class UploadController : ControllerBase
 {
     private readonly string _tempPath;
     private readonly IMemoryCache _memoryCache;
+    private readonly ServerDeploymentService _deploymentService;
 
-    public UploadController(IMemoryCache memoryCache)
+    public UploadController(IMemoryCache memoryCache, ServerDeploymentService deploymentService)
     {
         _memoryCache = memoryCache;
+        _deploymentService = deploymentService;
         // 临时文件存放目录
         _tempPath = Path.Combine(IConfigBase.GetAppDataPath(), "Temp", "Uploads");
         if (!Directory.Exists(_tempPath)) Directory.CreateDirectory(_tempPath);
@@ -236,6 +239,17 @@ public class UploadController : ControllerBase
         try
         {
             using var archive = ZipFile.Open(finalPath, ZipArchiveMode.Read, System.Text.Encoding.GetEncoding("GBK"));
+
+            var mrpackData = _deploymentService.InspectMrpackArchive(archive);
+            if (mrpackData != null)
+            {
+                return Ok(new ApiResponse<JObject>
+                {
+                    Code = 200,
+                    Message = "解析成功",
+                    Data = mrpackData
+                });
+            }
             
             // 获取所有 Entry 的顶层路径片段
             var topLevelSegments = archive.Entries
@@ -366,7 +380,8 @@ public class UploadController : ControllerBase
                     ["count"] = jarFiles.Count,
                     ["jars"] = JToken.FromObject(jarFiles),
                     ["detectedRoot"] = basePrefix,
-                    ["metadata"] = metadata
+                    ["metadata"] = metadata,
+                    ["format"] = "zip"
                 }
             });
         }

@@ -68,7 +68,7 @@ public class CreateServerRequest : IValidatableObject
     [RegularExpression(@"^[a-fA-F0-9]{64}$", ErrorMessage = "coreSha256 必须是有效的 64 位十六进制 SHA-256 字符串")]
     public string? packageSha256 { get; set; }
     
-    [RegularExpression(@"^.+\.[zZ][iI][pP]$", ErrorMessage = "本机绝对路径必须是 .zip 格式的压缩包")]
+    [RegularExpression(@"^.+\.(?:[zZ][iI][pP]|[mM][rR][pP][aA][cC][kK])$", ErrorMessage = "本机绝对路径必须是 .zip 或 .mrpack 格式的压缩包")]
     public string? packageLocalPath { get; set; }
     
     // 本地上传压缩包文件（可以同时传服务端jar下载）

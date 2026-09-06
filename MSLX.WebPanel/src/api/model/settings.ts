@@ -1,5 +1,6 @@
 export interface SettingsModel {
   allowNormalUserChangeUserName: boolean;
+  allowNormalUserEditFrpConfig: boolean;
   fireWallBanLocalAddr: boolean;
   openWebConsoleOnLaunch: boolean;
   neoForgeInstallerMirrors: string;

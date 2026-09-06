@@ -118,7 +118,7 @@ const transform: AxiosTransform = {
     const requestToSlaveNode = reqOptions.requestToSlaveNode;
 
     // 判断是否是子节点支持处理的接口 （这些接口会导向到子节点）
-    let isSlaveRoute = /^(?:\/api)?\/(?:instance|files|frp|java|python|docker)\//.test(config.url || '') || config.url === '/api/static/images/upload';
+    let isSlaveRoute = /^(?:\/api)?\/(?:instance|files|frp|java|python|docker|tasks)(?:\/|$)/.test(config.url || '') || config.url === '/api/static/images/upload';
 
     if (requestToSlaveNode === true) {
       isSlaveRoute = true;

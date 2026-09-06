@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using MSLX.Daemon.Services;
+using MSLX.SDK.Models.Files;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.Models;
-using MSLX.SDK.Models.Files;
 
 namespace MSLX.Daemon.Controllers.FilesControllers;
 
@@ -12,10 +13,12 @@ namespace MSLX.Daemon.Controllers.FilesControllers;
 public class OfflineDownloadController : ControllerBase
 {
     private readonly IMemoryCache _cache;
+    private readonly BackgroundTaskManager _taskManager;
 
-    public OfflineDownloadController(IMemoryCache memoryCache)
+    public OfflineDownloadController(IMemoryCache memoryCache, BackgroundTaskManager taskManager)
     {
         _cache = memoryCache;
+        _taskManager = taskManager;
     }
 
     // 提交离线下载任务
@@ -32,15 +35,16 @@ public class OfflineDownloadController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.Url))
             return BadRequest(new ApiResponse<object> { Code = 400, Message = "下载地址不能为空" });
 
-        // 任务ID
-        string taskId = Guid.NewGuid().ToString("N");
-        string cacheKey = $"Task_Download_{taskId}";
+        var userId = User?.FindFirst("UserId")?.Value ?? "";
+        string dlFileName = request.FileName ?? "未命名文件";
+        var (task, ct) = _taskManager.CreateTask(userId, id, TaskType.Download, $"下载: {dlFileName}", dlFileName);
+        string taskId = task.Id;
 
         // 初始化状态
-        UpdateStatus(cacheKey, "pending", 0, "任务已排队，准备开始下载...");
+        UpdateStatus($"Task_Download_{taskId}", "pending", 0, "任务已排队，准备开始下载...");
 
         // 下崽
-        _ = Task.Run(() => PerformDownloadTask(id, request, cacheKey));
+        _ = Task.Run(() => PerformDownloadTask(id, request, taskId, ct), ct);
 
         return Ok(new ApiResponse<object>
         {
@@ -67,14 +71,14 @@ public class OfflineDownloadController : ControllerBase
     }
 
     // 下崽
-    private async Task PerformDownloadTask(uint instanceId, OfflineDownloadRequest request, string cacheKey)
+    private async Task PerformDownloadTask(uint instanceId, OfflineDownloadRequest request, string taskId, CancellationToken ct)
     {
         try
         {
             var server = IConfigBase.ServerList.GetServer(instanceId);
             if (server == null) throw new Exception("实例不存在");
 
-            UpdateStatus(cacheKey, "processing", 0, "正在解析下载地址...");
+            UpdateStatus2(taskId, $"Task_Download_{taskId}", "processing", 0, "正在解析下载地址...");
 
             string fileName = request.FileName;
             if (string.IsNullOrWhiteSpace(fileName))
@@ -103,20 +107,54 @@ public class OfflineDownloadController : ControllerBase
             string savePath = checkTarget.FullPath;
 
             var downloader = new ParallelDownloader(maxSimultaneousFiles: 1);
+            
+            string originalUrl = request.Url;
+            string? mirrorUrl = MSLX.Daemon.Utils.DownloadMirrorHelper.GetMirrorUrl(originalUrl);
+            
+            bool success = false;
+            string errorMessage = "";
 
-            var (success, errorMessage) = await downloader.DownloadFileAsync(
-                url: request.Url,
-                savePath: savePath,
-                onProgress: (progress, speed) =>
+            if (mirrorUrl != null)
+            {
+                UpdateStatus2(taskId, $"Task_Download_{taskId}", "processing", 0, $"正在使用镜像源加速下载...");
+                (success, errorMessage) = await downloader.DownloadFileAsync(
+                    url: mirrorUrl,
+                    savePath: savePath,
+                    onProgress: (progress, speed) =>
+                    {
+                        UpdateStatus2(taskId, $"Task_Download_{taskId}", "processing", (int)progress, $"[镜像加速] 下载中... 速度: {speed}");
+                    },
+                    progressIntervalMs: 1000,
+                    cancellationToken: ct
+                );
+
+                if (!success)
                 {
-                    UpdateStatus(cacheKey, "processing", (int)progress, $"下载中... 速度: {speed}");
-                },
-                progressIntervalMs: 1000
-            );
+                    UpdateStatus2(taskId, $"Task_Download_{taskId}", "processing", 0, $"镜像源失败，回退官方源...");
+                    if (System.IO.File.Exists(savePath))
+                    {
+                        try { System.IO.File.Delete(savePath); } catch { }
+                    }
+                }
+            }
+
+            if (!success)
+            {
+                (success, errorMessage) = await downloader.DownloadFileAsync(
+                    url: originalUrl,
+                    savePath: savePath,
+                    onProgress: (progress, speed) =>
+                    {
+                        UpdateStatus2(taskId, $"Task_Download_{taskId}", "processing", (int)progress, $"下载中... 速度: {speed}");
+                    },
+                    progressIntervalMs: 1000,
+                    cancellationToken: ct
+                );
+            }
 
             if (success)
             {
-                UpdateStatus(cacheKey, "success", 100, "下载完成");
+                UpdateStatus2(taskId, $"Task_Download_{taskId}", "success", 100, "下载完成");
             }
             else
             {
@@ -131,12 +169,12 @@ public class OfflineDownloadController : ControllerBase
                     }
                 }
 
-                UpdateStatus(cacheKey, "error", 0, $"下载失败: {errorMessage}");
+                UpdateStatus2(taskId, $"Task_Download_{taskId}", "error", 0, $"下载失败: {errorMessage}");
             }
         }
         catch (Exception ex)
         {
-            UpdateStatus(cacheKey, "error", 0, $"任务执行异常: {ex.Message}");
+            UpdateStatus2(taskId, $"Task_Download_{taskId}", "error", 0, $"任务执行异常: {ex.Message}");
         }
     }
 
@@ -148,5 +186,13 @@ public class OfflineDownloadController : ControllerBase
             Progress = progress,
             Message = msg
         }, TimeSpan.FromMinutes(30));
+    }
+
+    private void UpdateStatus2(string taskId, string cacheKey, string status, int progress, string msg)
+    {
+        UpdateStatus(cacheKey, status, progress, msg);
+        if (status == "success") _taskManager.SetSuccess(taskId, msg);
+        else if (status == "error") _taskManager.SetFailed(taskId, msg);
+        else _taskManager.UpdateProgress(taskId, progress, msg, TaskState.Running);
     }
 }

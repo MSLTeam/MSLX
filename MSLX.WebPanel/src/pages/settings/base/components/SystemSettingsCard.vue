@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { ServerIcon, ControlPlatformIcon, BookIcon, LinkIcon, CloudDownloadIcon } from 'tdesign-icons-vue-next';
+import {
+  ServerIcon,
+  ControlPlatformIcon,
+  BookIcon,
+  LinkIcon,
+  CloudDownloadIcon,
+  RefreshIcon,
+} from 'tdesign-icons-vue-next';
 import { getSettings, updateSettings } from '@/api/settings';
 import type { SettingsModel } from '@/api/model/settings';
 import { changeUrl } from '@/router';
@@ -17,6 +24,7 @@ const submitLoading = ref(false);
 
 const sysData = reactive<SettingsModel>({
   allowNormalUserChangeUserName: true,
+  allowNormalUserEditFrpConfig: true,
   fireWallBanLocalAddr: false,
   openWebConsoleOnLaunch: true,
   neoForgeInstallerMirrors: 'MSL Mirrors',
@@ -137,27 +145,6 @@ onMounted(() => {
             <t-switch v-model="sysData.openWebConsoleOnLaunch" />
           </t-form-item>
 
-          <t-form-item label="允许普通用户改名">
-            <template #help>
-              <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block"
-                >关闭后，除了全局管理员外，普通用户将无法在个人中心擅自变更自己的登录用户名。</span
-              >
-            </template>
-            <div class="flex items-center gap-3">
-              <t-switch v-model="sysData.allowNormalUserChangeUserName" />
-              <span
-                class="text-[11px] font-extrabold px-2 py-0.5 rounded-md transition-colors"
-                :class="
-                  sysData.allowNormalUserChangeUserName
-                    ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20'
-                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border border-zinc-200 dark:border-zinc-700'
-                "
-              >
-                {{ sysData.allowNormalUserChangeUserName ? '已开启' : '已关闭' }}
-              </span>
-            </div>
-          </t-form-item>
-
           <t-form-item label="安装镜像源">
             <template #help>
               <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block"
@@ -187,6 +174,31 @@ onMounted(() => {
                 {{ sysData.downloadThreadCount }}
               </span>
             </div>
+          </t-form-item>
+
+          <div class="flex items-center gap-3 mt-8 mb-6">
+            <span class="text-xs font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest"
+              >普通用户设置</span
+            >
+            <div class="h-px bg-zinc-200/60 dark:bg-zinc-700/60 flex-1"></div>
+          </div>
+
+          <t-form-item label="允许普通用户改名">
+            <template #help>
+              <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block"
+                >关闭后，除了全局管理员外，普通用户将无法在个人中心擅自变更自己的登录用户名。</span
+              >
+            </template>
+            <t-switch v-model="sysData.allowNormalUserChangeUserName" />
+          </t-form-item>
+
+          <t-form-item label="允许修改隧道配置">
+            <template #help>
+              <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block"
+                >关闭后，除了全局管理员外，普通用户将无法修改自己拥有权限的 FRP 隧道配置文件。</span
+              >
+            </template>
+            <t-switch v-model="sysData.allowNormalUserEditFrpConfig" />
           </t-form-item>
 
           <template v-if="!isInternalNetwork()">

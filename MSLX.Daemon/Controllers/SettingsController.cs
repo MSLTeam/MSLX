@@ -27,6 +27,7 @@ public class SettingsController : ControllerBase
                 Data = new
                 {
                     AllowNormalUserChangeUserName = IConfigBase.Config.ReadConfig()["allowNormalUserChangeUserName"] ?? true,
+                    AllowNormalUserEditFrpConfig = IConfigBase.Config.ReadConfig()["allowNormalUserEditFrpConfig"] ?? true,
                     FireWallBanLocalAddr = isEmbeddedDaemon ? false : config["fireWallBanLocalAddr"] ?? false,
                     OpenWebConsoleOnLaunch = config["openWebConsoleOnLaunch"] ?? true,
                     NeoForgeInstallerMirrors =
@@ -50,6 +51,7 @@ public class SettingsController : ControllerBase
         bool isEmbeddedDaemon = IsEmbeddedDaemon();
 
         IConfigBase.Config.WriteConfigKey("allowNormalUserChangeUserName", request.AllowNormalUserChangeUserName);
+        IConfigBase.Config.WriteConfigKey("allowNormalUserEditFrpConfig", request.AllowNormalUserEditFrpConfig);
         if (!isEmbeddedDaemon)
         {
             IConfigBase.Config.WriteConfigKey("fireWallBanLocalAddr", request.FireWallBanLocalAddr);

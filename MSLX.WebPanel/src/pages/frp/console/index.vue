@@ -118,7 +118,7 @@ const openConfigFile = async () => {
     MessagePlugin.close(msg);
   } catch (err: any) {
     MessagePlugin.close(msg);
-    MessagePlugin.error('读取配置文件失败: ' + err.message);
+    MessagePlugin.error(err.message || '读取配置文件失败');
     terminalRef.value?.writeln(`\x1b[1;31m[Error] 读取配置文件失败: ${err.message}\x1b[0m`);
   }
 };
@@ -135,7 +135,7 @@ const handleSaveConfig = async (newContent: string) => {
 
     terminalRef.value?.writeln('\x1b[1;32m[System] 配置文件已更新，请重启服务以生效。\x1b[0m');
   } catch (err: any) {
-    MessagePlugin.error('保存失败');
+    MessagePlugin.error(err.message || '保存失败');
     terminalRef.value?.writeln(`\x1b[1;31m[Error] 保存失败: ${err.message}\x1b[0m`);
   } finally {
     isSaving.value = false;

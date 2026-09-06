@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { useUserStore } from '@/store';
+import { usePluginUIStore, useUserStore } from '@/store';
 
 import Banner from './components/Banner.vue';
 import InfoCard from './components/InfoCard.vue';
@@ -10,6 +10,7 @@ import { changeUrl } from '@/router';
 import PluginSlot from '@/components/PluginSlot.vue';
 
 const userStore = useUserStore();
+const pluginUIStore = usePluginUIStore();
 
 // 核心状态
 const isOldBrowser = ref(false);
@@ -73,13 +74,22 @@ const isDefaultUser = computed(() => {
   return userStore.userInfo?.username === 'mslx';
 });
 
-// 动态计算瀑布流动画延迟
-const getDelay = (baseIndex: number) => {
+const pluginCount = computed(() => {
+  return pluginUIStore.extensions['dashboard-index-after-system-status']?.length || 0;
+});
+
+// 计算实际基础秒数
+const getDelaySeconds = (baseIndex: number) => {
   let offset = 0;
   if (browserWarning.value) offset += 1;
   if (isDefaultUser.value) offset += 1;
   if (isNotSecure.value) offset += 1;
-  return `${(baseIndex + offset) * 0.05}s`;
+  // 如果 systemStatus 未渲染，后续组件需要少偏移 1 步
+  return (baseIndex + offset) * 0.05;
+};
+
+const getDelay = (baseIndex: number) => {
+  return `${getDelaySeconds(baseIndex).toFixed(2)}s`;
 };
 </script>
 
@@ -143,8 +153,15 @@ const getDelay = (baseIndex: number) => {
     <info-card class="list-item-anim" :style="{ animationDelay: getDelay(1) }" />
     <system-status v-if="userStore.isAdmin" class="list-item-anim" :style="{ animationDelay: getDelay(2) }" />
     <!--插件扩展区域 dashboard-index-after-system-status -->
-    <plugin-slot class="list-item-anim" name="dashboard-index-after-system-status" />
-    <announcement class="list-item-anim" :style="{ animationDelay: getDelay(3) }" />
+    <plugin-slot
+      name="dashboard-index-after-system-status"
+      animate
+      :base-delay="getDelaySeconds(userStore.isAdmin ? 3 : 2)"
+    />
+    <announcement
+      class="list-item-anim"
+      :style="{ animationDelay: getDelay((userStore.isAdmin ? 3 : 2) + pluginCount) }"
+    />
   </div>
 </template>
 

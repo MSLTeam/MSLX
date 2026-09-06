@@ -120,18 +120,32 @@ jobs:
           echo "SIGNING_IDENTITY=$SIGNING_IDENTITY" >> "$GITHUB_ENV"
           rm -f "$CERTIFICATE_PATH"
 
-      - name: 发布 macOS 独立运行包 (生成 .app)
+      - name: 发布 macOS App 组件
         run: |
+          set -euo pipefail
+
           DESKTOP_PUBLISH_DIR="./publish_desktop_temp"
           DAEMON_PUBLISH_DIR="./publish_daemon_temp"
+          RUNTIME_PUBLISH_DIR="./publish_dotnet_runtime_temp"
           DIST_DIR="./dist"
-          mkdir -p $DIST_DIR
+          mkdir -p "$DIST_DIR"
+
+          DOTNET_RUNTIME_VERSION=$(dotnet --list-runtimes | awk '$1 == "Microsoft.AspNetCore.App" { print $2 }' | tail -n 1)
+          if [[ -z "$DOTNET_RUNTIME_VERSION" ]]; then
+            echo "::error::无法确定 ASP.NET Core Runtime 版本"
+            exit 1
+          fi
+
+          echo "共享 .NET Runtime 版本: $DOTNET_RUNTIME_VERSION"
+          echo "DOTNET_RUNTIME_VERSION=$DOTNET_RUNTIME_VERSION" >> "$GITHUB_ENV"
           
           dotnet publish ./MSLX.Desktop/MSLX.Desktop.csproj \
             -c Release \
             -r ${{ matrix.rid }} \
-            --self-contained true \
+            --self-contained false \
             -p:PublishSingleFile=true \
+            -p:AppHostDotNetSearch=AppRelative \
+            -p:AppHostRelativeDotNet=../Resources/dotnet \
             -p:DebugType=None \
             -p:DebugSymbols=false \
             -o "$DESKTOP_PUBLISH_DIR" \
@@ -142,18 +156,31 @@ jobs:
           dotnet publish ./MSLX.Daemon/MSLX.Daemon.csproj \
             -c Release \
             -r ${{ matrix.rid }} \
-            --self-contained true \
+            --self-contained false \
             -p:PublishSingleFile=true \
+            -p:AppHostDotNetSearch=AppRelative \
+            -p:AppHostRelativeDotNet=../Resources/dotnet \
             -p:DebugType=None \
             -p:DebugSymbols=false \
             -o "$DAEMON_PUBLISH_DIR" \
             -p:IncludeNativeLibrariesForSelfExtract=true
+
+          curl -fsSL https://dot.net/v1/dotnet-install.sh -o "$RUNNER_TEMP/dotnet-install.sh"
+          bash "$RUNNER_TEMP/dotnet-install.sh" \
+            --runtime aspnetcore \
+            --version "$DOTNET_RUNTIME_VERSION" \
+            --architecture "${{ matrix.arch }}" \
+            --os osx \
+            --install-dir "$RUNTIME_PUBLISH_DIR" \
+            --no-path
 
       - name: 安装 create-dmg 工具
         run: brew install create-dmg
 
       - name: 生成 .dmg 安装包
         run: |
+          set -euo pipefail
+
           BASE_NAME="MSLX-Desktop_${{ env.VERSION_NAME }}_${{ matrix.rid }}"
           DIST_DIR="./dist"
           
@@ -162,20 +189,61 @@ jobs:
           APP_DIR="dmg_build/$APP_NAME"
           
           mkdir -p "$APP_DIR/Contents/MacOS"
-          mkdir -p "$APP_DIR/Contents/Resources"
+          mkdir -p "$APP_DIR/Contents/Frameworks"
+          mkdir -p "$APP_DIR/Contents/Resources/dotnet"
           
-          # 1. 将同架构 Desktop 与 Daemon 放入 Contents/MacOS
+          # 1. MacOS 目录只放置可执行文件
           cp "./publish_desktop_temp/${{ matrix.bin }}" "$APP_DIR/Contents/MacOS/"
           cp "./publish_daemon_temp/MSLX-Daemon" "$APP_DIR/Contents/MacOS/"
           chmod +x "$APP_DIR/Contents/MacOS/${{ matrix.bin }}"
           chmod +x "$APP_DIR/Contents/MacOS/MSLX-Daemon"
+
+          # 2. Desktop 与 Daemon 共用一套私有 .NET / ASP.NET Core Runtime
+          DOTNET_ROOT="$APP_DIR/Contents/Resources/dotnet"
+          NETCORE_SHARED_ROOT="$DOTNET_ROOT/shared"
+          NETCORE_RUNTIME_DIR="$NETCORE_SHARED_ROOT/Microsoft.NETCore.App/$DOTNET_RUNTIME_VERSION"
+          ASPNETCORE_RUNTIME_DIR="$NETCORE_SHARED_ROOT/Microsoft.AspNetCore.App/$DOTNET_RUNTIME_VERSION"
+          HOSTFXR_DIR="$DOTNET_ROOT/host/fxr/$DOTNET_RUNTIME_VERSION"
+
+          cp -R "./publish_dotnet_runtime_temp/host" "$DOTNET_ROOT/"
+          cp -R "./publish_dotnet_runtime_temp/shared" "$DOTNET_ROOT/"
+          mkdir -p "$APP_DIR/Contents/Resources/Licenses/dotnet"
+          cp "./publish_dotnet_runtime_temp/LICENSE.txt" "$APP_DIR/Contents/Resources/Licenses/dotnet/"
+          cp "./publish_dotnet_runtime_temp/ThirdPartyNotices.txt" "$APP_DIR/Contents/Resources/Licenses/dotnet/"
+
+          test -f "$HOSTFXR_DIR/libhostfxr.dylib"
+          test -d "$NETCORE_RUNTIME_DIR"
+          test -d "$ASPNETCORE_RUNTIME_DIR"
+          test -x "$NETCORE_RUNTIME_DIR/createdump"
+
+          # 原生库放入 Frameworks，Resources 中保留 .NET 所需的目录和相对符号链接。
+          mv "$HOSTFXR_DIR/libhostfxr.dylib" "$APP_DIR/Contents/Frameworks/libhostfxr.dylib"
+          ln -s ../../../../../Frameworks/libhostfxr.dylib "$HOSTFXR_DIR/libhostfxr.dylib"
+          for RUNTIME_LIBRARY in "$NETCORE_RUNTIME_DIR"/*.dylib; do
+            LIBRARY_NAME=$(basename "$RUNTIME_LIBRARY")
+            test ! -e "$APP_DIR/Contents/Frameworks/$LIBRARY_NAME"
+            mv "$RUNTIME_LIBRARY" "$APP_DIR/Contents/Frameworks/$LIBRARY_NAME"
+            ln -s "../../../../../Frameworks/$LIBRARY_NAME" "$RUNTIME_LIBRARY"
+          done
+
+          # createdump 是运行时辅助可执行程序，放入 MacOS 并保留 .NET 的标准探测路径。
+          mv "$NETCORE_RUNTIME_DIR/createdump" "$APP_DIR/Contents/MacOS/createdump"
+          ln -s ../../../../../MacOS/createdump "$NETCORE_RUNTIME_DIR/createdump"
+          chmod +x "$APP_DIR/Contents/MacOS/createdump"
+
+          test -L "$HOSTFXR_DIR/libhostfxr.dylib"
+          test -d "$NETCORE_SHARED_ROOT/Microsoft.NETCore.App/$DOTNET_RUNTIME_VERSION"
+          test -d "$NETCORE_SHARED_ROOT/Microsoft.AspNetCore.App/$DOTNET_RUNTIME_VERSION"
+          test -x "$APP_DIR/Contents/MacOS/createdump"
+          test "$(find "$APP_DIR/Contents/MacOS" -mindepth 1 -maxdepth 1 -type f | wc -l | tr -d ' ')" = "3"
+          test -z "$(find "$APP_DIR/Contents/MacOS" -mindepth 1 -maxdepth 1 -type f ! -perm -111 -print -quit)"
           
-          # 2. 拷贝图标文件及设置本地化资源目录
+          # 3. 拷贝图标文件及设置本地化资源目录
           cp ./MSLX.Desktop/Assets/icon.icns "$APP_DIR/Contents/Resources/icon.icns"
           mkdir -p "$APP_DIR/Contents/Resources/zh_CN.lproj"
           mkdir -p "$APP_DIR/Contents/Resources/zh-Hans.lproj"
           
-          # 3. 写入标准的 Info.plist 文件
+          # 4. 写入标准的 Info.plist 文件
           cat <<EOF > "$APP_DIR/Contents/Info.plist"
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -212,9 +280,34 @@ jobs:
 
           echo "开始签名 $APP_NAME..."
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # 先签共享运行时中的原生动态库，再签辅助程序、应用可执行文件和外层 App。
           while IFS= read -r -d '' FILE_PATH; do
             if file "$FILE_PATH" | grep -q 'Mach-O'; then
-              echo "签名: $FILE_PATH"
+              echo "签名运行时: $FILE_PATH"
+              codesign \
+                --force \
+                --timestamp \
+                --options runtime \
+                --keychain "$KEYCHAIN_PATH" \
+                --sign "$SIGNING_IDENTITY" \
+                "$FILE_PATH"
+            fi
+          done < <(find "$APP_DIR/Contents/Frameworks" -type f -print0)
+
+          codesign \
+            --force \
+            --timestamp \
+            --options runtime \
+            --keychain "$KEYCHAIN_PATH" \
+            --sign "$SIGNING_IDENTITY" \
+            "$APP_DIR/Contents/MacOS/createdump"
+
+          for FILE_PATH in \
+            "$APP_DIR/Contents/MacOS/${{ matrix.bin }}" \
+            "$APP_DIR/Contents/MacOS/MSLX-Daemon"; do
+            if file "$FILE_PATH" | grep -q 'Mach-O'; then
+              echo "签名可执行文件: $FILE_PATH"
               codesign \
                 --force \
                 --timestamp \
@@ -224,7 +317,7 @@ jobs:
                 --sign "$SIGNING_IDENTITY" \
                 "$FILE_PATH"
             fi
-          done < <(find "$APP_DIR/Contents/MacOS" -type f -print0)
+          done
 
           codesign \
             --force \
@@ -291,56 +384,27 @@ jobs:
             --key "$API_KEY_PATH" \
             --key-id "$APPLE_API_KEY_ID" \
             --issuer "$APPLE_API_ISSUER_ID" \
+            --wait \
             --output-format json > "$NOTARY_RESULT_PATH"
           SUBMIT_EXIT=$?
           set -e
 
           cat "$NOTARY_RESULT_PATH"
           SUBMISSION_ID=$(jq -r '.id // empty' "$NOTARY_RESULT_PATH" 2>/dev/null || true)
+          SUBMISSION_STATUS=$(jq -r '.status // empty' "$NOTARY_RESULT_PATH" 2>/dev/null || true)
 
-          if [[ "$SUBMIT_EXIT" -ne 0 || -z "$SUBMISSION_ID" ]]; then
-            echo "::error::Apple 公证提交失败，未获取到 Submission ID"
+          if [[ "$SUBMIT_EXIT" -ne 0 || -z "$SUBMISSION_ID" || "$SUBMISSION_STATUS" != "Accepted" ]]; then
+            if [[ -n "$SUBMISSION_ID" ]]; then
+              xcrun notarytool log "$SUBMISSION_ID" \
+                --key "$API_KEY_PATH" \
+                --key-id "$APPLE_API_KEY_ID" \
+                --issuer "$APPLE_API_ISSUER_ID" || true
+            fi
+            echo "::error::Apple 公证失败，Submission ID: ${SUBMISSION_ID:-unknown}，状态: ${SUBMISSION_STATUS:-unknown}"
             exit 1
           fi
 
-          echo "::notice title=Apple 公证已提交::Submission ID: $SUBMISSION_ID"
-
-          while true; do
-            set +e
-            xcrun notarytool info "$SUBMISSION_ID" \
-              --key "$API_KEY_PATH" \
-              --key-id "$APPLE_API_KEY_ID" \
-              --issuer "$APPLE_API_ISSUER_ID" \
-              --output-format json > "$NOTARY_RESULT_PATH"
-            INFO_EXIT=$?
-            set -e
-
-            cat "$NOTARY_RESULT_PATH"
-            SUBMISSION_STATUS=$(jq -r '.status // empty' "$NOTARY_RESULT_PATH" 2>/dev/null || true)
-
-            case "$SUBMISSION_STATUS" in
-              Accepted)
-                echo "Apple 公证已通过，Submission ID: $SUBMISSION_ID"
-                break
-                ;;
-              Invalid|Rejected)
-                xcrun notarytool log "$SUBMISSION_ID" \
-                  --key "$API_KEY_PATH" \
-                  --key-id "$APPLE_API_KEY_ID" \
-                  --issuer "$APPLE_API_ISSUER_ID" || true
-                echo "::error::Apple 公证失败，Submission ID: ${SUBMISSION_ID}，状态: $SUBMISSION_STATUS"
-                exit 1
-                ;;
-              *)
-                if [[ "$INFO_EXIT" -ne 0 ]]; then
-                  echo "Apple 公证状态查询失败，将继续重试，Submission ID: $SUBMISSION_ID"
-                else
-                  echo "Apple 公证仍在处理中，Submission ID: ${SUBMISSION_ID}，状态: ${SUBMISSION_STATUS:-unknown}"
-                fi
-                sleep 60
-                ;;
-            esac
-          done
+          echo "Apple 公证已通过，Submission ID: $SUBMISSION_ID"
 
           xcrun stapler staple "${{ env.ASSET_PATH }}"
           xcrun stapler validate "${{ env.ASSET_PATH }}"

@@ -70,6 +70,9 @@ public class UpdateServerRequest : IValidatableObject
 
     [RegularExpression(@"^([0-9]{8})(,[0-9]{8})*$", ErrorMessage = "绑定的 FRP ID 格式不正确，必须为 8 位数字，多个 ID 请用逗号分隔")]
     public string? BindFrpId { get; set; }
+    
+    [RegularExpression(@"^(off|mc|(6553[0-5]|655[0-2]\d|65[0-4]\d{2}|6[0-4]\d{3}|[1-5]\d{4}|[1-9]\d{0,3}):.+)$", ErrorMessage = "RconMode 必须为 'off'、'mc' 或 '合法的端口号:密码' 格式")]
+    public string RconMode { get; set; } = "off";
 
     // ====== Docker 相关配置参数 ======
     public string DockerImage { get; set; } = "MSLX://DockerImage/Java/25";

@@ -56,7 +56,7 @@ const handleRefreshPage = () => {
             >
             目录，启动时自动加载。</span
           >
-          <span v-else>浏览官方插件市场，发现更多功能，一键下载至本地 (需要重启生效哦) 。</span>
+          <span v-else>浏览官方插件市场，发现更多功能，一键下载至本地安装 。</span>
         </div>
       </div>
 

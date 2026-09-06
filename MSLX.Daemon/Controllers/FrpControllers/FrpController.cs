@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
@@ -162,13 +162,18 @@ public class FrpController : ControllerBase
                 serverAddr = addrObj.ToString()!;
             }
 
-            // MSLFrp特有的域名字段
+            // MSLFrp特有的域名字段与IP字段
             string? remoteDomain = null;
+            string? remoteIp = null;
             if (model.TryGetValue("metadatas", out var metaObj) && metaObj is TomlTable metaTable)
             {
                 if (metaTable.TryGetValue("mslFrpRemoteDomain", out var domainObj))
                 {
-                    remoteDomain = domainObj.ToString();
+                    remoteDomain = domainObj?.ToString();
+                }
+                if (metaTable.TryGetValue("mslFrpRemoteIp", out var ipObj))
+                {
+                    remoteIp = ipObj?.ToString();
                 }
             }
 
@@ -191,6 +196,7 @@ public class FrpController : ControllerBase
                     
                     // 构造地址
                     string mainHost = !string.IsNullOrEmpty(remoteDomain) ? remoteDomain : serverAddr;
+                    string backupHost = !string.IsNullOrEmpty(remoteIp) ? remoteIp : serverAddr;
                     
                     var detail = new ProxyDetail
                     {
@@ -198,7 +204,7 @@ public class FrpController : ControllerBase
                         Type = type,
                         LocalAddress = $"{localIp}:{localPort}",
                         RemoteAddressMain = type != "xtcp" ? $"{mainHost}:{remotePort}" : $"{mainHost}",
-                        RemoteAddressBackup = type != "xtcp" ? $"{serverAddr}:{remotePort}" : $"{serverAddr}"
+                        RemoteAddressBackup = type != "xtcp" ? $"{backupHost}:{remotePort}" : $"{serverAddr}"
                     };
 
                     response.Proxies.Add(detail);

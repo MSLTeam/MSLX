@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onUnmounted, ref, watch } from 'vue';
 import { MessagePlugin } from 'tdesign-vue-next';
+import { useTaskStore } from '@/store';
 import { CheckCircleFilledIcon, ErrorCircleFilledIcon } from 'tdesign-icons-vue-next';
 import { addOfflineDownloadTask, getOfflineDownloadTaskStatus } from '@/api/files';
 
@@ -83,6 +84,7 @@ const handleStart = async () => {
 
     if (taskId) {
       pollProgress(taskId);
+      useTaskStore().fetchTasks();
     } else {
       throw new Error('未获取到任务ID');
     }
@@ -120,7 +122,7 @@ const pollProgress = (taskId: string) => {
 
 const handleClose = () => {
   if (status.value === 'processing') {
-    MessagePlugin.warning('后台任务仍在进行中，关闭窗口不会取消任务');
+    MessagePlugin.warning('任务已转入后台，可随时在右上角任务中心查看');
   }
   stopPolling();
   emit('update:visible', false);
@@ -180,6 +182,12 @@ onUnmounted(() => stopPolling());
           :percentage="progress"
           :status="status === 'error' ? 'error' : status === 'success' ? 'success' : 'active'"
         />
+      </div>
+
+      <div class="flex justify-center mt-2 w-full" v-if="status === 'processing'">
+        <t-button variant="outline" size="small" class="!rounded-lg" @click="handleClose">
+          转入后台运行
+        </t-button>
       </div>
     </div>
   </t-dialog>

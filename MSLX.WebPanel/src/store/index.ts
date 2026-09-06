@@ -15,5 +15,7 @@ export * from './modules/frp';
 export * from './modules/user';
 export * from './modules/pluginUI';
 export * from './modules/node';
+export * from './modules/task';
 
 export default store;
+

@@ -65,6 +65,7 @@ public partial class InstanceSettingsTab : UserControl
         FileEncodingCombo.SelectedIndex = 0;
         BackupLocationCombo.SelectedIndex = 0;
         AuthSelectCombo.SelectedIndex = 0;
+        RconModeCombo.SelectedIndex = 0;
 
         // 内嵌版本库选择器回调绑定
         InlineCoreSelector.OnCoreSelected += (url, sha256, filename, coreName) =>
@@ -286,6 +287,24 @@ public partial class InstanceSettingsTab : UserControl
             SelectComboByTag(AuthSelectCombo, "custom");
             CustomAuthUrlBox.IsVisible = true;
             CustomAuthUrlBox.Text = s.YggdrasilApiAddr;
+        }
+
+        // RCON 通讯模式
+        if (string.IsNullOrEmpty(s.RconMode) || s.RconMode == "off")
+        {
+            SelectComboByTag(RconModeCombo, "off");
+            CustomRconBox.IsVisible = false;
+        }
+        else if (s.RconMode == "mc")
+        {
+            SelectComboByTag(RconModeCombo, "mc");
+            CustomRconBox.IsVisible = false;
+        }
+        else
+        {
+            SelectComboByTag(RconModeCombo, "custom");
+            CustomRconBox.IsVisible = true;
+            CustomRconBox.Text = s.RconMode;
         }
 
         // 编码
@@ -598,6 +617,10 @@ public partial class InstanceSettingsTab : UserControl
         string backupLocTag = GetSelectedComboTag(BackupLocationCombo) ?? "MSLX://Backup/Instance";
         string backupPathVal = backupLocTag == "custom" ? (CustomBackupPathBox.Text ?? "") : backupLocTag;
 
+        // RCON 通讯模式
+        string rconTag = GetSelectedComboTag(RconModeCombo) ?? "off";
+        string rconModeVal = rconTag == "custom" ? (CustomRconBox.Text ?? "") : rconTag;
+
         DateTime? expireTime = ExpireTimePicker.SelectedDate;
 
         var req = new UpdateServerRequest
@@ -632,6 +655,7 @@ public partial class InstanceSettingsTab : UserControl
             WorldPath = NormalizeRelativeInstancePath(WorldPathBox.Text, "world"),
             RegionPath = NormalizeRelativeInstancePath(RegionPathBox.Text, "region"),
             BindFrpId = bindFrpIdVal,
+            RconMode = rconModeVal,
             DockerImage = dockerImg,
             DockerWorkingDir = workingDir,
             DockerVolumes = string.IsNullOrEmpty(dockerVolumesVal) ? null : dockerVolumesVal,
@@ -791,6 +815,12 @@ public partial class InstanceSettingsTab : UserControl
     {
         string tag = GetSelectedComboTag(AuthSelectCombo) ?? "none";
         CustomAuthUrlBox.IsVisible = tag == "custom";
+    }
+
+    private void OnRconModeSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        string tag = GetSelectedComboTag(RconModeCombo) ?? "off";
+        CustomRconBox.IsVisible = tag == "custom";
     }
 
     private void OnAutoRestartToggleCheckedChanged(object? sender, RoutedEventArgs e)

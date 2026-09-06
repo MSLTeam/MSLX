@@ -188,6 +188,27 @@ namespace MSLX.Daemon.Services.ResourceServices
                         env = 1; // Server
                     }
 
+                    var dependencies = new List<ResourceDependency>();
+                    if (element.TryGetProperty("dependencies", out var depsArray))
+                    {
+                        foreach (var dep in depsArray.EnumerateArray())
+                        {
+                            var depTypeStr = dep.GetProperty("dependency_type").GetString();
+                            DependencyType depType = DependencyType.Required;
+                            if (depTypeStr == "optional") depType = DependencyType.Optional;
+                            else if (depTypeStr == "incompatible") depType = DependencyType.Incompatible;
+                            else if (depTypeStr == "embedded") depType = DependencyType.Embedded;
+
+                            dependencies.Add(new ResourceDependency
+                            {
+                                ProjectId = dep.TryGetProperty("project_id", out var pid) && pid.ValueKind == JsonValueKind.String ? pid.GetString() : null,
+                                VersionId = dep.TryGetProperty("version_id", out var vid) && vid.ValueKind == JsonValueKind.String ? vid.GetString() : null,
+                                Type = depType,
+                                Provider = ResourceProviderType.Modrinth
+                            });
+                        }
+                    }
+
                     results.Add(new ResourceVersion
                     {
                         Id = element.GetProperty("id").GetString(),
@@ -198,7 +219,8 @@ namespace MSLX.Daemon.Services.ResourceServices
                         FileSizeBytes = file.GetProperty("size").GetInt64(),
                         Environment = env,
                         GameVersions = element.GetProperty("game_versions").EnumerateArray().Select(x => x.GetString()).ToList(),
-                        Loaders = element.GetProperty("loaders").EnumerateArray().Select(x => x.GetString()).ToList()
+                        Loaders = element.GetProperty("loaders").EnumerateArray().Select(x => x.GetString()).ToList(),
+                        Dependencies = dependencies
                     });
                 }
             }

@@ -1,7 +1,9 @@
-﻿using System.IO.Compression;
+using System.IO.Compression;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
+using MSLX.Daemon.Services;
+using MSLX.SDK.Models.Files;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.Models;
@@ -14,10 +16,12 @@ namespace MSLX.Daemon.Controllers.FilesControllers;
 public class CompressController: ControllerBase
 {
     private readonly IMemoryCache _cache;
+    private readonly BackgroundTaskManager _taskManager;
     
-    public CompressController(IMemoryCache memoryCache)
+    public CompressController(IMemoryCache memoryCache, BackgroundTaskManager taskManager)
     {
         _cache = memoryCache;
+        _taskManager = taskManager;
     }
 
     #region 压缩
@@ -32,15 +36,14 @@ public class CompressController: ControllerBase
         var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
 
-        // 生成唯一任务ID
-        string taskId = Guid.NewGuid().ToString("N");
-        string cacheKey = $"Task_Compress_{taskId}";
+        var userId = User?.FindFirst("UserId")?.Value ?? "";
+        var (task, ct) = _taskManager.CreateTask(userId, id, TaskType.Compress, $"压缩: {request.TargetName}", request.TargetName);
+        string taskId = task.Id;
 
-        // 初始化状态
-        _cache.Set(cacheKey, new TaskStatusResponse { Status = "pending", Message = "准备开始..." }, TimeSpan.FromMinutes(30));
+        // 向下兼容旧接口
+        _cache.Set($"Task_Compress_{taskId}", new TaskStatusResponse { Status = "pending", Message = "准备开始..." }, TimeSpan.FromMinutes(30));
 
-        // 启动后台线程
-        _ = Task.Run(() => PerformCompressionTask(id, request, cacheKey));
+        _ = Task.Run(() => PerformCompressionTask(id, request, taskId, ct), ct);
         
         return Ok(new ApiResponse<object>
         {
@@ -66,14 +69,14 @@ public class CompressController: ControllerBase
     }
 
     // 压缩逻辑
-    private void PerformCompressionTask(uint instanceId, CompressRequest request, string cacheKey)
+    private void PerformCompressionTask(uint instanceId, CompressRequest request, string taskId, CancellationToken ct)
     {
         try
         {
             var server = IConfigBase.ServerList.GetServer(instanceId);
             if(server == null) throw new Exception("实例不存在");
             // 更新状态
-            UpdateStatus(cacheKey, "processing", 0, "正在扫描文件...");
+            UpdateStatus2(taskId, $"Task_Compress_{taskId}", "processing", 0, "正在扫描文件...");
 
             // 确定目标压缩包路径
             string relativeDir = request.CurrentPath ?? "";
@@ -128,6 +131,7 @@ public class CompressController: ControllerBase
             {
                 foreach (var kvp in filesToCompress)
                 {
+                    ct.ThrowIfCancellationRequested();
                     string filePath = kvp.Key;
                     string entryName = kvp.Value;
 
@@ -136,7 +140,7 @@ public class CompressController: ControllerBase
                     if (current % 5 == 0 || current == total)
                     {
                         int percent = (int)((double)current / total * 100);
-                        UpdateStatus(cacheKey, "processing", percent, $"正在压缩: {entryName}");
+                        UpdateStatus2(taskId, $"Task_Compress_{taskId}", "processing", percent, $"正在压缩: {entryName}");
                     }
 
                     // 写入 Zip Entry
@@ -145,11 +149,11 @@ public class CompressController: ControllerBase
             }
 
             // 完成
-            UpdateStatus(cacheKey, "success", 100, "压缩完成");
+            UpdateStatus2(taskId, $"Task_Compress_{taskId}", "success", 100, "压缩完成");
         }
         catch (Exception ex)
         {
-            UpdateStatus(cacheKey, "error", 0, $"压缩失败: {ex.Message}");
+            UpdateStatus2(taskId, $"Task_Compress_{taskId}", "error", 0, $"压缩失败: {ex.Message}");
         }
     }
 
@@ -161,6 +165,14 @@ public class CompressController: ControllerBase
             Progress = progress, 
             Message = msg 
         }, TimeSpan.FromMinutes(30));
+    }
+
+    private void UpdateStatus2(string taskId, string cacheKey, string status, int progress, string msg)
+    {
+        UpdateStatus(cacheKey, status, progress, msg);
+        if (status == "success") _taskManager.SetSuccess(taskId, msg);
+        else if (status == "error") _taskManager.SetFailed(taskId, msg);
+        else _taskManager.UpdateProgress(taskId, progress, msg, TaskState.Running);
     }
 
     #endregion
@@ -177,15 +189,14 @@ public class CompressController: ControllerBase
         var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
 
-        // 生成任务ID
-        string taskId = Guid.NewGuid().ToString("N");
-        string cacheKey = $"Task_Decompress_{taskId}";
+        var userId = User?.FindFirst("UserId")?.Value ?? "";
+        var (task, ct) = _taskManager.CreateTask(userId, id, TaskType.Decompress, $"解压: {request.FileName}", request.FileName);
+        string taskId = task.Id;
 
-        // 初始化状态
-        _cache.Set(cacheKey, new TaskStatusResponse { Status = "pending", Message = "正在准备解压..." }, TimeSpan.FromMinutes(30));
+        // 向下兼容
+        _cache.Set($"Task_Decompress_{taskId}", new TaskStatusResponse { Status = "pending", Message = "正在准备解压..." }, TimeSpan.FromMinutes(30));
 
-        // 启动后台线程
-        _ = Task.Run(() => PerformDecompressionTask(id, request, cacheKey));
+        _ = Task.Run(() => PerformDecompressionTask(id, request, taskId, ct), ct);
 
         return Ok(new ApiResponse<object>
         {
@@ -211,14 +222,14 @@ public class CompressController: ControllerBase
     }
 
     // 核心解压逻辑
-    private void PerformDecompressionTask(uint instanceId, DecompressRequest request, string cacheKey)
+    private void PerformDecompressionTask(uint instanceId, DecompressRequest request, string taskId, CancellationToken ct)
     {
         try
         {
             var server = IConfigBase.ServerList.GetServer(instanceId);
             if(server == null) throw new Exception("实例不存在");
 
-            UpdateStatus(cacheKey, "processing", 0, "正在分析文件...");
+            UpdateStatus2(taskId, $"Task_Compress_{taskId}", "processing", 0, "正在分析文件...");
 
             // 绝对路径
             string relativeDir = request.CurrentPath ?? "";
@@ -262,6 +273,7 @@ public class CompressController: ControllerBase
 
                 foreach (var entry in archive.Entries)
                 {
+                    ct.ThrowIfCancellationRequested();
                     current++;
 
                     // 进度防抖
@@ -271,7 +283,7 @@ public class CompressController: ControllerBase
                         if (percent != lastReportedPercent)
                         {
                             lastReportedPercent = percent;
-                            UpdateStatus(cacheKey, "processing", percent, $"正在解压: {entry.Name}");
+                            UpdateStatus2(taskId, $"Task_Compress_{taskId}", "processing", percent, $"正在解压: {entry.Name}");
                         }
                     }
 
@@ -316,11 +328,11 @@ public class CompressController: ControllerBase
                 }
             }
 
-            UpdateStatus(cacheKey, "success", 100, "解压完成");
+            UpdateStatus2(taskId, $"Task_Compress_{taskId}", "success", 100, "解压完成");
         }
         catch (Exception ex)
         {
-            UpdateStatus(cacheKey, "error", 0, $"解压失败: {ex.Message}");
+            UpdateStatus2(taskId, $"Task_Compress_{taskId}", "error", 0, $"解压失败: {ex.Message}");
         }
     }
 

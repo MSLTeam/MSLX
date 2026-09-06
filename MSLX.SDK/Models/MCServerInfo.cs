@@ -1,4 +1,4 @@
-﻿
+
 using System.Text;
 
 namespace MSLX.SDK.Models;
@@ -39,6 +39,8 @@ public class McServerInfo
         public string RegionPath { get; set; } = "region";
         public string? BindFrpId { get; set; }
 
+        public string RconMode { get; set; } = "off";
+        
         // ====== Docker 字段 ======
         public string DockerImage { get; set; } = "MSLX://DockerImage/Java/25";
         public string DockerWorkingDir { get; set; } = "/mslx-data";

@@ -23,5 +23,7 @@ namespace MSLX.SDK.Models.Resources
 
         [Range(0, 1, ErrorMessage = "Environment 必须为 0 (客户端包) 或 1 (服务端包)")]
         public int Environment { get; set; } // 0 = Client, 1 = Server
+        
+        public List<ResourceDependency> Dependencies { get; set; } = new List<ResourceDependency>();
     }
 }

@@ -9,15 +9,19 @@ import { FolderOpenIcon } from 'tdesign-icons-vue-next';
 import ServerCoreSelector from './ServerCoreSelector.vue';
 import HostFileSelector from './HostFileSelector.vue';
 import { getJavaVersionList } from '@/api/mslapi/java';
+import { getServerCoreDownloadInfo, getServerCoreGameVersion } from '@/api/mslapi/serverCore';
 import { getLocalJavaList } from '@/api/localJava';
-import { postCreateInstanceQuickMode, postCancelCreateInstance } from '@/api/instance';
+import { postCreateInstanceQuickMode, cancelCreationWithConfirm } from '@/api/instance';
 import { deleteUpload, checkPackageJarList } from '@/api/files';
 import { CreateInstanceQucikModeModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
+import { useRoute } from 'vue-router';
 import { useInstanceListStore } from '@/store/modules/instance';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { parseMcVersion, getRecommendedJava } from './javaRecommendation';
 import DockerImageSelector from '@/components/docker-image-selector/index.vue';
+
+const route = useRoute();
 
 const { isUploading, uploadProgress, uploadedFileName, uploadedFileSize, startUpload, removeUploadData } =
   useFileUpload();
@@ -35,6 +39,7 @@ const showHostFileSelector = ref(false);
 
 const isCreating = ref(false);
 const isSuccess = ref(false);
+const isFailed = ref(false);
 const progress = ref(0); // SignalR 创建进度
 const statusMessages = ref<{ time: string; message: string; progress: number | null }[]>([]);
 const hubConnection = ref<HubConnection | null>(null);
@@ -52,6 +57,7 @@ const showCoreSelector = ref(false);
 const detectedJars = ref<string[]>([]);
 const isCheckingPackage = ref(false);
 const detectedRoot = ref('');
+const packageFormat = ref<'zip' | 'mrpack' | ''>('');
 
 // Input DOM 引用
 const uploadInputRef = ref<HTMLInputElement | null>(null);
@@ -134,9 +140,30 @@ const fetchJavaVersions = async (force: boolean = false) => {
   }
 };
 
+const initFromQuery = () => {
+  if (route.query.packageUrl) {
+    packageSourceType.value = 'remoteUrl';
+    formData.value.packageUrl = route.query.packageUrl as string;
+    if (route.query.packageName) {
+      formData.value.name = route.query.packageName as string;
+    }
+    if (route.query.packageFormat) {
+      packageFormat.value = route.query.packageFormat as any;
+    }
+    if (route.query.gameVersion && route.query.loader) {
+      autoSelectCoreFromQuery(route.query.gameVersion as string, route.query.loader as string);
+    }
+  }
+};
+
 onMounted(() => {
   fetchJavaVersions();
+  initFromQuery();
 });
+
+watch(() => route.query, () => {
+  initFromQuery();
+}, { deep: true });
 
 // 表单
 const formData = ref(<CreateInstanceQucikModeModel>{
@@ -149,6 +176,7 @@ const formData = ref(<CreateInstanceQucikModeModel>{
   coreFileKey: '', // 这里不给手动上传核心
   packageFileKey: '', // 整合包 Zip 文件的 Key
   packageLocalPath: '', // 整合包本地绝对路径
+  packageUrl: '', // 远程下载链接
   minM: 2048,
   maxM: 6144,
   args: '',
@@ -311,8 +339,16 @@ const FORM_RULES = computed<FormRules>(() => {
     ],
     packageLocalPath: [
       {
-        validator: (val) => packageSourceType.value === 'upload' || !!val,
+        validator: (val) => packageSourceType.value !== 'localPath' || !!val,
         message: '请输入本机绝对路径',
+        type: 'error',
+        trigger: 'blur',
+      },
+    ],
+    packageUrl: [
+      {
+        validator: (val) => packageSourceType.value !== 'remoteUrl' || !!val,
+        message: '请输入远程下载链接',
         type: 'error',
         trigger: 'blur',
       },
@@ -356,7 +392,7 @@ const FORM_RULES = computed<FormRules>(() => {
 
 const stepValidationFields = [
   ['name', 'path'],
-  ['packageFileKey', 'packageLocalPath'],
+  ['packageFileKey', 'packageLocalPath', 'packageUrl'],
   ['core', 'coreUrl', 'coreFileKey'],
   ['java'],
   ['minM', 'maxM', 'args'],
@@ -378,16 +414,21 @@ const nextStep = async () => {
         MessagePlugin.warning('请等待上传或分析完成');
         return;
       }
-    } else {
+    } else if (packageSourceType.value === 'localPath') {
       if (!formData.value.packageLocalPath) {
-        MessagePlugin.warning('请输入服务端整合包的绝对路径');
+        MessagePlugin.warning('请输入整合包绝对路径');
         return;
       }
       if (isCheckingPackage.value) {
-        MessagePlugin.warning('正在分析中，请稍候');
+        MessagePlugin.warning('正在分析整合包，请稍后');
         return;
       }
       await analyzePackage('', formData.value.packageLocalPath);
+    } else if (packageSourceType.value === 'remoteUrl') {
+      if (!formData.value.packageUrl) {
+        MessagePlugin.warning('请输入远程下载链接');
+        return;
+      }
     }
   }
 
@@ -447,6 +488,7 @@ const onFileChange = async (event: Event) => {
   formData.value.core = '';
   detectedJars.value = [];
   detectedRoot.value = '';
+  packageFormat.value = '';
 
   const file = input.files[0];
 
@@ -497,6 +539,83 @@ const applyMetadata = () => {
   MessagePlugin.success('已自动应用实例部署配置');
 };
 
+// 从mrpack整合包获取核心来源
+const getMrpackCoreName = (dependencies: Record<string, unknown> | undefined) => {
+  if (!dependencies) return null;
+  const dependencyNames = new Set(Object.keys(dependencies).map((key) => key.toLowerCase()));
+
+  if (dependencyNames.has('fabric-loader')) return 'fabric';
+  if (dependencyNames.has('quilt-loader')) return 'quilt';
+  if (dependencyNames.has('neoforge')) return 'neoforge';
+  if (dependencyNames.has('forge')) return 'forge';
+  if (dependencyNames.has('minecraft')) return 'vanilla';
+  return null;
+};
+
+const autoSelectMrpackCore = async (metadata: Record<string, any> | undefined) => {
+  if (packageFormat.value !== 'mrpack') return false;
+
+  const dependencies = metadata?.dependencies as Record<string, unknown> | undefined;
+  const coreName = getMrpackCoreName(dependencies);
+  const minecraftVersion = dependencies?.minecraft ? String(dependencies.minecraft) : '';
+  if (!coreName || !minecraftVersion) return false;
+
+  try {
+    const versionInfo = await getServerCoreGameVersion(coreName);
+    if (!versionInfo?.versions?.includes(minecraftVersion)) {
+      throw new Error(`${coreName} 不支持 Minecraft ${minecraftVersion}`);
+    }
+
+    const downloadInfo = await getServerCoreDownloadInfo(coreName, minecraftVersion, 'latest');
+    if (!downloadInfo?.url) throw new Error('MSL API 未返回核心下载地址');
+
+    formData.value.core = `${coreName}-${minecraftVersion}.jar`;
+    formData.value.coreUrl = downloadInfo.url;
+    formData.value.coreSha256 = downloadInfo.sha256 || '';
+    formData.value.coreFileKey = '';
+    onlineGameVersion.value = minecraftVersion;
+    downloadType.value = 'online';
+    MessagePlugin.success(`已根据 mrpack 依赖自动选择 ${coreName} ${minecraftVersion} 服务端核心`);
+    return true;
+  } catch (error: any) {
+    console.warn('mrpack 核心自动选择失败，将保留手动选择:', error);
+    return false;
+  }
+};
+
+// 从路由参数自动选择核心 (远程下载)
+const autoSelectCoreFromQuery = async (gameVersion: string, loader: string) => {
+  let coreName = loader.toLowerCase();
+  if (coreName.includes('fabric')) coreName = 'fabric';
+  else if (coreName.includes('quilt')) coreName = 'quilt';
+  else if (coreName.includes('neo')) coreName = 'neoforge';
+  else if (coreName.includes('forge')) coreName = 'forge';
+  else if (coreName.includes('vanilla') || coreName.includes('minecraft')) coreName = 'vanilla';
+  else return false;
+
+  try {
+    const versionInfo = await getServerCoreGameVersion(coreName);
+    if (!versionInfo?.versions?.includes(gameVersion)) {
+      throw new Error(`${coreName} 不支持 Minecraft ${gameVersion}`);
+    }
+
+    const downloadInfo = await getServerCoreDownloadInfo(coreName, gameVersion, 'latest');
+    if (!downloadInfo?.url) throw new Error('MSL API 未返回核心下载地址');
+
+    formData.value.core = `${coreName}-${gameVersion}.jar`;
+    formData.value.coreUrl = downloadInfo.url;
+    formData.value.coreSha256 = downloadInfo.sha256 || '';
+    formData.value.coreFileKey = '';
+    onlineGameVersion.value = gameVersion;
+    downloadType.value = 'online';
+    MessagePlugin.success(`已根据远程链接参数自动选择 ${coreName} ${gameVersion} 服务端核心`);
+    return true;
+  } catch (error: any) {
+    console.warn('远程参数核心自动选择失败，将保留手动选择:', error);
+    return false;
+  }
+};
+
 // 分析包内的核心和是否存在mslx pack metadata
 const analyzePackage = async (key: string, localPath?: string) => {
   isCheckingPackage.value = true;
@@ -505,17 +624,22 @@ const analyzePackage = async (key: string, localPath?: string) => {
 
     detectedJars.value = res.jars || [];
     detectedRoot.value = res.detectedRoot || '';
+    packageFormat.value = res.format === 'mrpack' ? 'mrpack' : 'zip';
 
-    if (res.metadata) {
+    if (res.metadata?.config) {
       packMetadataRef.value = res.metadata;
       showMetadataDialog.value = true;
     }
 
-    if (res.count === 1 && res.jars.length > 0) {
-      formData.value.core = res.jars[0];
-      MessagePlugin.success(`自动识别到服务端核心: ${res.jars[0]}`);
-    } else if (res.count > 1) {
-      MessagePlugin.info(`检测到 ${res.count} 个服务端核心，请在下一步选择`);
+    if (detectedJars.value.length === 0 && (await autoSelectMrpackCore(res.metadata))) {
+      return;
+    }
+
+    if (detectedJars.value.length === 1) {
+      formData.value.core = detectedJars.value[0];
+      MessagePlugin.success(`自动识别到服务端核心: ${detectedJars.value[0]}`);
+    } else if (detectedJars.value.length > 1) {
+      MessagePlugin.info(`检测到 ${detectedJars.value.length} 个服务端核心，请在下一步选择`);
     } else {
       MessagePlugin.warning('未检测到服务端核心，请在下一步手动配置');
     }
@@ -532,6 +656,7 @@ const removeUploadedFile = async () => {
     await removeUploadData();
     formData.value.packageFileKey = '';
     detectedJars.value = [];
+    packageFormat.value = '';
     formData.value.core = '';
     MessagePlugin.success('文件已移除');
   }
@@ -548,15 +673,14 @@ const onCoreSelected = (data: { core: string; version: string; url: string; sha2
 
 const isCanceling = ref(false);
 const handleCancelCreation = async () => {
-  if (!createdServerId.value) return;
+  if (!createdServerId.value || isCanceling.value) return;
   try {
-    isCanceling.value = true;
-    await postCancelCreateInstance(createdServerId.value.toString());
-    MessagePlugin.success('已发送取消指令');
-  } catch (error) {
+    const cancelled = await cancelCreationWithConfirm(createdServerId.value.toString());
+    if (cancelled) {
+      isCanceling.value = true;
+    }
+  } catch (error: any) {
     MessagePlugin.error('取消失败: ' + error.message);
-  } finally {
-    isCanceling.value = false;
   }
 };
 
@@ -583,9 +707,16 @@ const onSubmit = async () => {
     args: formData.value.args || null,
   };
 
+  if (packageSourceType.value === 'upload') {
+    apiData.packageLocalPath = null;
+    apiData.packageUrl = null;
+  }
   if (packageSourceType.value === 'localPath') {
     apiData.packageFileKey = null;
-  } else {
+    apiData.packageUrl = null;
+  }
+  if (packageSourceType.value === 'remoteUrl') {
+    apiData.packageFileKey = null;
     apiData.packageLocalPath = null;
   }
   if (detectedJars.value.length > 0) {
@@ -608,6 +739,7 @@ const onSubmit = async () => {
 
     createdServerId.value = serverId.toString();
     isCreating.value = true;
+    isFailed.value = false;
     currentStep.value = 6;
 
     await startSignalRConnection(createdServerId.value);
@@ -645,6 +777,7 @@ const startSignalRConnection = async (serverId: string) => {
       hubConnection.value?.stop();
       isCreating.value = false;
       isSuccess.value = true;
+      isFailed.value = false;
       currentStep.value = 7;
       isSubmitting.value = false;
       instanceListStore.refreshInstanceList();
@@ -652,8 +785,8 @@ const startSignalRConnection = async (serverId: string) => {
       MessagePlugin.error(message || '错误');
       hubConnection.value?.stop();
       isCreating.value = false;
+      isFailed.value = true;
       isSubmitting.value = false;
-      currentStep.value = 0;
     }
   });
 
@@ -671,6 +804,8 @@ onUnmounted(() => {
 
 const goToHome = () => {
   isSuccess.value = false;
+  isFailed.value = false;
+  isCreating.value = false;
   currentStep.value = 0;
   formData.value = {
     name: '新建整合包服务器',
@@ -682,11 +817,13 @@ const goToHome = () => {
     coreFileKey: '',
     packageFileKey: '',
     packageLocalPath: '',
+    packageUrl: '',
     minM: 2048,
     maxM: 6144,
     args: '',
   };
   detectedJars.value = [];
+  packageFormat.value = '';
   downloadType.value = 'online';
   javaType.value = 'online';
   onlineGameVersion.value = '';
@@ -722,7 +859,7 @@ const goToHome = () => {
       </div>
 
       <div class="flex-1 min-w-0 flex flex-col relative">
-        <div v-if="!isCreating && !isSuccess" class="h-full flex flex-col">
+        <div v-if="!isCreating && !isSuccess && !isFailed" class="h-full flex flex-col">
           <t-form
             ref="formRef"
             :data="formData"
@@ -756,7 +893,7 @@ const goToHome = () => {
             <div v-show="currentStep === 1" class="list-item-anim flex-1 pt-1">
               <t-alert theme="info" class="!mb-6 !rounded-xl">
                 <template #message
-                  >请上传包含服务端文件的 <b>.zip</b> 压缩包，或直接填写守护进程本机上的绝对路径。</template
+                  >请上传包含服务端文件的 <b>.zip</b> 或 <b>.mrpack</b> 压缩包，或直接填写守护进程本机上的绝对路径。</template
                 >
               </t-alert>
 
@@ -764,6 +901,7 @@ const goToHome = () => {
                 <t-radio-group v-model="packageSourceType" variant="default-filled">
                   <t-radio-button value="upload">本地上传</t-radio-button>
                   <t-radio-button value="localPath">守护进程本机路径</t-radio-button>
+                  <t-radio-button value="remoteUrl">远程下载</t-radio-button>
                 </t-radio-group>
               </t-form-item>
 
@@ -774,7 +912,7 @@ const goToHome = () => {
                 class="!mb-0"
               >
                 <div class="w-full sm:w-[32rem]">
-                  <input ref="uploadInputRef" accept=".zip" type="file" style="display: none" @change="onFileChange" />
+                  <input ref="uploadInputRef" accept=".zip,.mrpack" type="file" style="display: none" @change="onFileChange" />
 
                   <t-button
                     v-if="!isUploading && !formData.packageFileKey"
@@ -820,7 +958,7 @@ const goToHome = () => {
                             ? `发现 ${detectedJars.length} 个服务端核心文件`
                             : '未发现服务端核心文件'
                         }}
-                        {{ detectedRoot ? `| 根目录: /${detectedRoot}` : '' }}
+                        {{ packageFormat === 'mrpack' ? '| Modrinth 服务端包' : detectedRoot ? `| 根目录: /${detectedRoot}` : '' }}
                       </div>
                     </div>
                     <div class="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -841,7 +979,7 @@ const goToHome = () => {
               </t-form-item>
 
               <t-form-item
-                v-else
+                v-if="packageSourceType === 'localPath'"
                 label="本机绝对路径"
                 name="packageLocalPath"
                 class="!mb-0"
@@ -850,7 +988,7 @@ const goToHome = () => {
                 <div class="flex items-center gap-2 w-full sm:w-[32rem]">
                   <t-input
                     v-model="formData.packageLocalPath"
-                    placeholder="例如: /data/mc/modpack.zip"
+                    placeholder="例如: /data/mc/modpack.zip 或 modpack.mrpack"
                     class="!font-mono !flex-1"
                     @change="
                       (val) => {
@@ -862,6 +1000,28 @@ const goToHome = () => {
                     <template #icon><folder-open-icon /></template>
                     浏览
                   </t-button>
+                </div>
+              </t-form-item>
+
+              <t-form-item
+                v-if="packageSourceType === 'remoteUrl'"
+                label="远程下载链接"
+                name="packageUrl"
+                class="!mb-0"
+                help="将通过守护进程后台自动下载该整合包并完成构建"
+              >
+                <div class="flex flex-col gap-2 w-full sm:w-[32rem]">
+                  <t-input
+                    v-model="formData.packageUrl"
+                    placeholder="请输入整合包 (.zip 或 .mrpack) 直链"
+                    class="!font-mono !w-full"
+                    :readonly="!!route.query.packageUrl"
+                  />
+                  <div class="text-xs text-[var(--td-text-color-secondary)] flex gap-2 items-center">
+                    <span>包类型标记:</span>
+                    <t-tag v-if="packageFormat" theme="primary" variant="light" size="small">{{ packageFormat }}</t-tag>
+                    <span v-else>未知</span>
+                  </div>
                 </div>
               </t-form-item>
             </div>
@@ -1306,7 +1466,7 @@ const goToHome = () => {
                         {{ packageSourceType === 'upload' ? uploadedFileName : formData.packageLocalPath }}
                       </span>
                       <t-tag theme="primary" variant="light" size="small" class="!rounded">
-                        {{ packageSourceType === 'upload' ? 'ZIP' : '本机路径' }}
+                        {{ packageSourceType === 'upload' ? (packageFormat === 'mrpack' ? 'MRPACK' : 'ZIP') : '本机路径' }}
                       </t-tag>
                     </div>
                     <div v-if="packageSourceType === 'upload'" class="text-[11px] text-zinc-500 mt-1">
@@ -1498,14 +1658,21 @@ const goToHome = () => {
           </t-form>
         </div>
 
-        <div v-if="isCreating" class="h-full flex flex-col items-center justify-center py-8 list-item-anim">
+        <div v-if="isCreating || isFailed" class="h-full flex flex-col items-center justify-center py-8 list-item-anim">
           <div class="text-lg font-bold text-[var(--td-text-color-primary)] mb-2 tracking-tight">
-            正在创建整合包实例 ({{ createdServerId }})
+            {{ isFailed ? `整合包实例部署已中止 / 失败 (${createdServerId})` : `正在创建整合包实例 (${createdServerId})` }}
           </div>
-          <p class="text-sm text-[var(--td-text-color-secondary)] mb-6">正在解压文件并配置环境...</p>
+          <p class="text-sm text-[var(--td-text-color-secondary)] mb-6">
+            {{ isFailed ? '任务已结束，您可以查看下方日志详情或点击按钮重新配置' : '正在解压文件并配置环境，请耐心等待...' }}
+          </p>
 
           <div class="w-full max-w-lg !my-6">
-            <t-progress theme="plump" :percentage="progress" :label="`${progress.toFixed(0)}%`" />
+            <t-progress
+              theme="plump"
+              :status="isFailed ? 'error' : 'active'"
+              :percentage="progress"
+              :label="`${progress.toFixed(0)}%`"
+            />
           </div>
 
           <div
@@ -1514,14 +1681,18 @@ const goToHome = () => {
             <div ref="logContainerRef" class="flex-1 overflow-y-auto custom-scrollbar pr-2">
               <div v-for="(log, index) in statusMessages" :key="index" class="text-xs font-mono mb-2 leading-relaxed">
                 <span class="text-[var(--td-text-color-secondary)] mr-2">[{{ log.time }}]</span>
-                <span class="text-[var(--td-text-color-primary)] font-medium">{{ log.message }}</span>
+                <span :class="log.progress === -1 ? 'text-red-500 font-semibold' : 'text-[var(--td-text-color-primary)] font-medium'">{{ log.message }}</span>
               </div>
             </div>
           </div>
-          <div class="mt-6 flex justify-center w-full">
-            <t-button theme="danger" variant="outline" @click="handleCancelCreation" :loading="isCanceling"
+          <div class="mt-6 flex justify-center w-full gap-3">
+            <t-button theme="danger" variant="outline" v-if="isCreating" @click="handleCancelCreation" :loading="isCanceling"
               >取消部署</t-button
             >
+            <template v-if="isFailed">
+              <t-button theme="primary" @click="goToHome">重试 / 重新配置</t-button>
+              <t-button theme="default" @click="changeUrl('/instance/list')">返回服务端列表</t-button>
+            </template>
           </div>
         </div>
 
@@ -1574,7 +1745,7 @@ const goToHome = () => {
       <p class="text-sm text-[var(--td-text-color-secondary)]">该整合包包含原本的服务端配置参数 (例如内存、Java版本和启动参数)。是否要自动应用这些配置？</p>
     </t-dialog>
 
-    <host-file-selector v-model:visible="showHostFileSelector" search-pattern="*.zip" @select="onHostFileSelected" />
+    <host-file-selector v-model:visible="showHostFileSelector" search-pattern="*.zip;*.mrpack" @select="onHostFileSelected" />
     <server-core-selector v-model:visible="showCoreSelector" @confirm="onCoreSelected" />
   </div>
 </template>

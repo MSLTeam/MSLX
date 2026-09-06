@@ -178,56 +178,27 @@ jobs:
             --key "$API_KEY_PATH" \
             --key-id "$APPLE_API_KEY_ID" \
             --issuer "$APPLE_API_ISSUER_ID" \
+            --wait \
             --output-format json > "$NOTARY_RESULT_PATH"
           SUBMIT_EXIT=$?
           set -e
 
           cat "$NOTARY_RESULT_PATH"
           SUBMISSION_ID=$(jq -r '.id // empty' "$NOTARY_RESULT_PATH" 2>/dev/null || true)
+          SUBMISSION_STATUS=$(jq -r '.status // empty' "$NOTARY_RESULT_PATH" 2>/dev/null || true)
 
-          if [[ "$SUBMIT_EXIT" -ne 0 || -z "$SUBMISSION_ID" ]]; then
-            echo "::error::Apple 公证提交失败，未获取到 Submission ID"
+          if [[ "$SUBMIT_EXIT" -ne 0 || -z "$SUBMISSION_ID" || "$SUBMISSION_STATUS" != "Accepted" ]]; then
+            if [[ -n "$SUBMISSION_ID" ]]; then
+              xcrun notarytool log "$SUBMISSION_ID" \
+                --key "$API_KEY_PATH" \
+                --key-id "$APPLE_API_KEY_ID" \
+                --issuer "$APPLE_API_ISSUER_ID" || true
+            fi
+            echo "::error::Apple 公证失败，Submission ID: ${SUBMISSION_ID:-unknown}，状态: ${SUBMISSION_STATUS:-unknown}"
             exit 1
           fi
 
-          echo "::notice title=Apple 公证已提交::Submission ID: $SUBMISSION_ID"
-
-          while true; do
-            set +e
-            xcrun notarytool info "$SUBMISSION_ID" \
-              --key "$API_KEY_PATH" \
-              --key-id "$APPLE_API_KEY_ID" \
-              --issuer "$APPLE_API_ISSUER_ID" \
-              --output-format json > "$NOTARY_RESULT_PATH"
-            INFO_EXIT=$?
-            set -e
-
-            cat "$NOTARY_RESULT_PATH"
-            SUBMISSION_STATUS=$(jq -r '.status // empty' "$NOTARY_RESULT_PATH" 2>/dev/null || true)
-
-            case "$SUBMISSION_STATUS" in
-              Accepted)
-                echo "Apple 公证已通过，Submission ID: $SUBMISSION_ID"
-                break
-                ;;
-              Invalid|Rejected)
-                xcrun notarytool log "$SUBMISSION_ID" \
-                  --key "$API_KEY_PATH" \
-                  --key-id "$APPLE_API_KEY_ID" \
-                  --issuer "$APPLE_API_ISSUER_ID" || true
-                echo "::error::Apple 公证失败，Submission ID: ${SUBMISSION_ID}，状态: $SUBMISSION_STATUS"
-                exit 1
-                ;;
-              *)
-                if [[ "$INFO_EXIT" -ne 0 ]]; then
-                  echo "Apple 公证状态查询失败，将继续重试，Submission ID: $SUBMISSION_ID"
-                else
-                  echo "Apple 公证仍在处理中，Submission ID: ${SUBMISSION_ID}，状态: ${SUBMISSION_STATUS:-unknown}"
-                fi
-                sleep 60
-                ;;
-            esac
-          done
+          echo "Apple 公证已通过，Submission ID: $SUBMISSION_ID"
 
       - name: 清理 macOS 签名凭据
         if: always() && matrix.os == 'osx'

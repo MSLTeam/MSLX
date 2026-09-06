@@ -1,4 +1,4 @@
-﻿using Downloader;
+using Downloader;
 using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Services.DeployServerService;
@@ -15,17 +15,20 @@ public class ServerUpdateService : BackgroundService
     private readonly IBackgroundTaskQueue<UpdateServerTask> _taskQueue;
     private readonly IHubContext<UpdateProgressHub> _hubContext;
     private readonly ServerDeploymentService _deployer; 
+    private readonly BackgroundTaskManager _taskManager;
 
     public ServerUpdateService(
         ILogger<ServerUpdateService> logger,
         IBackgroundTaskQueue<UpdateServerTask> taskQueue,
         IHubContext<UpdateProgressHub> hubContext,
-        ServerDeploymentService deployer)
+        ServerDeploymentService deployer,
+        BackgroundTaskManager taskManager)
     {
         _logger = logger;
         _taskQueue = taskQueue;
         _hubContext = hubContext;
         _deployer = deployer;
+        _taskManager = taskManager;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -50,6 +53,11 @@ public class ServerUpdateService : BackgroundService
 
                     if (task != null)
                     {
+                        if (!string.IsNullOrEmpty(task.BackgroundTaskId))
+                        {
+                            _taskManager.SetFailed(task.BackgroundTaskId, ex.Message);
+                        }
+
                         await _hubContext.Clients.Group(task.ServerId)
                             .SendAsync("UpdateStatus", "系统内部错误", -1, true);
                     }
@@ -70,12 +78,29 @@ public class ServerUpdateService : BackgroundService
     {
         var req = task.Request;
         string sid = task.ServerId;
+        string bgTaskId = task.BackgroundTaskId;
 
         // 定义回调
         ServerDeploymentService.ReportProgress report = async (msg, progress, isErr, ex) =>
         {
              await _hubContext.Clients.Group(sid).SendAsync("UpdateStatus", msg, progress, isErr);
-             if(isErr && ex != null) _logger.LogError(ex, msg);
+             if (isErr && ex != null) _logger.LogError(ex, msg);
+
+             if (!string.IsNullOrEmpty(bgTaskId))
+             {
+                 if (isErr || ex != null)
+                 {
+                     _taskManager.SetFailed(bgTaskId, msg);
+                 }
+                 else if (progress >= 100)
+                 {
+                     _taskManager.SetSuccess(bgTaskId, msg);
+                 }
+                 else
+                 {
+                     _taskManager.UpdateProgress(bgTaskId, (int)Math.Max(0, progress ?? 0), msg);
+                 }
+             }
         };
 
         await report("正在准备更新...", 0);
@@ -114,6 +139,7 @@ public class ServerUpdateService : BackgroundService
             server.FileEncoding = req.FileEncoding;
             server.ExpireTime = req.ExpireTime;
             server.BindFrpId = req.BindFrpId;
+            server.RconMode = req.RconMode;
             // docker的一堆配置
             server.DockerImage = req.DockerImage;
             server.DockerWorkingDir = req.DockerWorkingDir;

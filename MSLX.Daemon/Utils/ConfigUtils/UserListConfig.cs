@@ -1,4 +1,4 @@
-﻿using MSLX.SDK.Models;
+using MSLX.SDK.Models;
 using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Utils.ConfigUtils;
@@ -65,9 +65,11 @@ public class UserListConfig : IDisposable
             var isWildcard = rawHost == "*" || rawHost == "0.0.0.0" || rawHost == "[::]" || rawHost == "+";
             var targetHost = isWildcard ? "localhost" : rawHost;
             var suffix = isInitialize ? "/login?initialize=true" : string.Empty;
-            var url = $"http://{targetHost}:{port}{suffix}";
+            var enableSsl = (bool?)config["enableSsl"] ?? false;
+            var protocol = enableSsl ? "https" : "http";
+            var url = $"{protocol}://{targetHost}:{port}{suffix}";
 
-            Console.WriteLine($"[WebConsole] 自动检测到监听地址为 {rawHost}，正在通过 {targetHost} 打开控制台...");
+            Console.WriteLine($"[WebConsole] 自动检测到监听地址为 {rawHost}，正在通过 {url} 打开控制台...");
             PlatFormServices.OpenBrowser(url);
         }
     }

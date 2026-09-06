@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
@@ -14,9 +14,7 @@ public class FileContentController : ControllerBase
     [HttpGet("instance/{id}/content")]
     public async Task<IActionResult> GetFileContent(uint id, [FromQuery] string path)
     {
-        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
-            return NotFound(ApiResponseService.NotFound());
-        
+        var userId = User?.FindFirst("UserId")?.Value ?? "";
         string basePath;
         Encoding encoding;
 
@@ -28,6 +26,9 @@ public class FileContentController : ControllerBase
         }
         else
         {
+            if (!IConfigBase.UserList.HasResourcePermission(userId, "server", (int)id))
+                return NotFound(ApiResponseService.NotFound());
+
             // 正常服务端文件
             var server = IConfigBase.ServerList.GetServer(id);
             if (server == null)
@@ -41,6 +42,29 @@ public class FileContentController : ControllerBase
         var check = FileUtils.GetSafePath(basePath, path);
         if (!check.IsSafe)
             return BadRequest(new ApiResponse<object> { Code = 403, Message = check.Message });
+
+        if (id == 0)
+        {
+            // 校验用户是否拥有对应 frp 隧道的权限
+            var relative = Path.GetRelativePath(basePath, check.FullPath);
+            var segments = relative.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length == 0 || !int.TryParse(segments[0], out int frpId) ||
+                !IConfigBase.UserList.HasResourcePermission(userId, "frp", frpId))
+            {
+                return NotFound(ApiResponseService.NotFound());
+            }
+
+            var currentUser = IConfigBase.UserList.GetUserById(userId);
+            bool isAdmin = currentUser?.Role == "admin" || userId == "system-admin";
+            if (!isAdmin && !((bool?)IConfigBase.Config.ReadConfig()["allowNormalUserEditFrpConfig"] ?? true))
+            {
+                return BadRequest(new ApiResponse<object>
+                {
+                    Code = 400,
+                    Message = "管理员已禁止普通用户修改隧道配置"
+                });
+            }
+        }
 
         string targetPath = check.FullPath;
 
@@ -197,15 +221,12 @@ public class FileContentController : ControllerBase
     [HttpPost("instance/{id}/content")]
     public async Task<IActionResult> SaveFileContent(uint id, [FromBody] SaveFileRequest request)
     {
-        if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
-            return NotFound(ApiResponseService.NotFound());
-        
         if (string.IsNullOrWhiteSpace(request.Path))
         {
             return BadRequest(new ApiResponse<object> { Code = 400, Message = "文件路径不能为空" });
         }
 
-
+        var userId = User?.FindFirst("UserId")?.Value ?? "";
         string basePath;
         Encoding encoding;
 
@@ -218,6 +239,9 @@ public class FileContentController : ControllerBase
         }
         else
         {
+            if (!IConfigBase.UserList.HasResourcePermission(userId, "server", (int)id))
+                return NotFound(ApiResponseService.NotFound());
+
             var server = IConfigBase.ServerList.GetServer(id);
             if (server == null)
             {
@@ -233,6 +257,29 @@ public class FileContentController : ControllerBase
         if (!check.IsSafe)
         {
             return BadRequest(new ApiResponse<object> { Code = 403, Message = check.Message });
+        }
+
+        if (id == 0)
+        {
+            // 校验用户是否拥有对应 frp 隧道的权限
+            var relative = Path.GetRelativePath(basePath, check.FullPath);
+            var segments = relative.Split(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }, StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length == 0 || !int.TryParse(segments[0], out int frpId) ||
+                !IConfigBase.UserList.HasResourcePermission(userId, "frp", frpId))
+            {
+                return NotFound(ApiResponseService.NotFound());
+            }
+
+            var currentUser = IConfigBase.UserList.GetUserById(userId);
+            bool isAdmin = currentUser?.Role == "admin" || userId == "system-admin";
+            if (!isAdmin && !((bool?)IConfigBase.Config.ReadConfig()["allowNormalUserEditFrpConfig"] ?? true))
+            {
+                return BadRequest(new ApiResponse<object>
+                {
+                    Code = 400,
+                    Message = "管理员已禁止普通用户修改隧道配置"
+                });
+            }
         }
 
         string targetPath = check.FullPath;
