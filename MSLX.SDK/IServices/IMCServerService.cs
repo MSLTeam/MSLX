@@ -1,4 +1,4 @@
-﻿namespace MSLX.SDK.IServices;
+namespace MSLX.SDK.IServices;
 
 public interface IMCServerService
 {
@@ -67,4 +67,24 @@ public interface IMCServerService
     TimeSpan GetServerUptime(uint instanceId);
 
     bool StartBackupServer(uint instanceId);
+
+    /// <summary>
+    /// 发送原始 PTY 输入字节流
+    /// </summary>
+    bool SendPtyInput(uint instanceId, byte[] data);
+
+    /// <summary>
+    /// 调整 PTY 伪终端行列尺寸
+    /// </summary>
+    bool ResizePty(uint instanceId, int cols, int rows);
+
+    /// <summary>
+    /// 获取服务器是否运行在 PTY 伪终端模式下
+    /// </summary>
+    bool IsServerPtyMode(uint instanceId);
+
+    /// <summary>
+    /// 获取 PTY 历史缓冲数据块
+    /// </summary>
+    List<string> GetPtyHistory(uint instanceId);
 }

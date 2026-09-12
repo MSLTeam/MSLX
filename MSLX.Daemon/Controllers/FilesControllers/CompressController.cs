@@ -1,9 +1,6 @@
-using System.IO.Compression;
-using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using MSLX.Daemon.Services;
-using MSLX.SDK.Models.Files;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.Models;
@@ -13,15 +10,24 @@ namespace MSLX.Daemon.Controllers.FilesControllers;
 
 [ApiController]
 [Route("api/files")]
-public class CompressController: ControllerBase
+public class CompressController : ControllerBase
 {
     private readonly IMemoryCache _cache;
     private readonly BackgroundTaskManager _taskManager;
-    
-    public CompressController(IMemoryCache memoryCache, BackgroundTaskManager taskManager)
+    private readonly ArchiveService _archiveService;
+
+    private static readonly string[] ArchiveExtensions =
+    [
+        ".tar.gz", ".tar.xz", ".tar.bz2", ".tar.zst",
+        ".tgz", ".txz", ".tbz2",
+        ".zip", ".jar", ".tar", ".7z", ".rar", ".gz", ".xz", ".bz2"
+    ];
+
+    public CompressController(IMemoryCache memoryCache, BackgroundTaskManager taskManager, ArchiveService archiveService)
     {
         _cache = memoryCache;
         _taskManager = taskManager;
+        _archiveService = archiveService;
     }
 
     #region 压缩
@@ -32,7 +38,7 @@ public class CompressController: ControllerBase
     {
         if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
             return NotFound(ApiResponseService.NotFound());
-        
+
         var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
 
@@ -44,7 +50,7 @@ public class CompressController: ControllerBase
         _cache.Set($"Task_Compress_{taskId}", new TaskStatusResponse { Status = "pending", Message = "准备开始..." }, TimeSpan.FromMinutes(30));
 
         _ = Task.Run(() => PerformCompressionTask(id, request, taskId, ct), ct);
-        
+
         return Ok(new ApiResponse<object>
         {
             Code = 200,
@@ -69,84 +75,68 @@ public class CompressController: ControllerBase
     }
 
     // 压缩逻辑
-    private void PerformCompressionTask(uint instanceId, CompressRequest request, string taskId, CancellationToken ct)
+    private async Task PerformCompressionTask(uint instanceId, CompressRequest request, string taskId, CancellationToken ct)
     {
         try
         {
             var server = IConfigBase.ServerList.GetServer(instanceId);
-            if(server == null) throw new Exception("实例不存在");
-            // 更新状态
+            if (server == null) throw new Exception("实例不存在");
+
             UpdateStatus2(taskId, $"Task_Compress_{taskId}", "processing", 0, "正在扫描文件...");
 
             // 确定目标压缩包路径
             string relativeDir = request.CurrentPath ?? "";
-            string targetZipName = request.TargetName.EndsWith(".zip") ? request.TargetName : request.TargetName + ".zip";
-            
+            string targetName = request.TargetName.Trim();
+            if (!HasArchiveExtension(targetName))
+            {
+                targetName += ".zip";
+            }
+
             // 安全检查目标路径
-            var checkTarget = FileUtils.GetSafePath(server.Base, Path.Combine(relativeDir, targetZipName));
+            var checkTarget = FileUtils.GetSafePath(server.Base, Path.Combine(relativeDir, targetName));
             if (!checkTarget.IsSafe) throw new Exception("非法目标路径");
-            
-            string zipFilePath = checkTarget.FullPath;
-            if (System.IO.File.Exists(zipFilePath)) System.IO.File.Delete(zipFilePath); // 覆盖旧的
+
+            string targetFilePath = checkTarget.FullPath;
 
             // 递归收集所有要压缩的文件
-            var filesToCompress = new Dictionary<string, string>(); // <绝对路径, Zip内相对路径>
-            
+            var filesToCompress = new Dictionary<string, string>(); // <绝对路径, 归档内相对路径>
+
             foreach (var itemRelativePath in request.Sources)
             {
-                // 拼接完整路径
                 string fullRelativePath = Path.Combine(relativeDir, itemRelativePath);
                 var checkSrc = FileUtils.GetSafePath(server.Base, fullRelativePath);
-                
+
                 if (!checkSrc.IsSafe) continue; // 跳过非法文件
                 string sourcePath = checkSrc.FullPath;
 
                 if (Directory.Exists(sourcePath))
                 {
-                    // 是文件夹：递归添加
                     var allFiles = Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories);
+                    string parentDir = Path.GetDirectoryName(sourcePath)!;
                     foreach (var file in allFiles)
                     {
-                        string parentDir = Path.GetDirectoryName(sourcePath)!;
                         string entryName = Path.GetRelativePath(parentDir, file);
                         filesToCompress[file] = entryName;
                     }
                 }
                 else if (System.IO.File.Exists(sourcePath))
                 {
-                    // 是文件：直接添加
                     filesToCompress[sourcePath] = Path.GetFileName(sourcePath);
                 }
             }
 
             if (filesToCompress.Count == 0) throw new Exception("没有找到有效的文件可压缩");
 
-            // 开始压缩
-            int total = filesToCompress.Count;
-            int current = 0;
-
-            // 使用 UTF-8 编码
-            using (var zipToOpen = new FileStream(zipFilePath, FileMode.Create))
-            using (var archive = new System.IO.Compression.ZipArchive(zipToOpen, System.IO.Compression.ZipArchiveMode.Create, true, System.Text.Encoding.UTF8))
-            {
-                foreach (var kvp in filesToCompress)
+            // 委托给 ArchiveService 处理压缩
+            await _archiveService.CompressAsync(
+                filesToCompress,
+                targetFilePath,
+                request.Password,
+                ct,
+                (percent, msg) =>
                 {
-                    ct.ThrowIfCancellationRequested();
-                    string filePath = kvp.Key;
-                    string entryName = kvp.Value;
-
-                    // 更新进度
-                    current++;
-                    if (current % 5 == 0 || current == total)
-                    {
-                        int percent = (int)((double)current / total * 100);
-                        UpdateStatus2(taskId, $"Task_Compress_{taskId}", "processing", percent, $"正在压缩: {entryName}");
-                    }
-
-                    // 写入 Zip Entry
-                    archive.CreateEntryFromFile(filePath, entryName);
-                }
-            }
+                    UpdateStatus2(taskId, $"Task_Compress_{taskId}", "processing", percent, msg);
+                });
 
             // 完成
             UpdateStatus2(taskId, $"Task_Compress_{taskId}", "success", 100, "压缩完成");
@@ -155,24 +145,6 @@ public class CompressController: ControllerBase
         {
             UpdateStatus2(taskId, $"Task_Compress_{taskId}", "error", 0, $"压缩失败: {ex.Message}");
         }
-    }
-
-    private void UpdateStatus(string key, string status, int progress, string msg)
-    {
-        _cache.Set(key, new TaskStatusResponse 
-        { 
-            Status = status, 
-            Progress = progress, 
-            Message = msg 
-        }, TimeSpan.FromMinutes(30));
-    }
-
-    private void UpdateStatus2(string taskId, string cacheKey, string status, int progress, string msg)
-    {
-        UpdateStatus(cacheKey, status, progress, msg);
-        if (status == "success") _taskManager.SetSuccess(taskId, msg);
-        else if (status == "error") _taskManager.SetFailed(taskId, msg);
-        else _taskManager.UpdateProgress(taskId, progress, msg, TaskState.Running);
     }
 
     #endregion
@@ -185,7 +157,7 @@ public class CompressController: ControllerBase
     {
         if (!IConfigBase.UserList.HasResourcePermission(User?.FindFirst("UserId")?.Value ?? "", "server", (int)id))
             return NotFound(ApiResponseService.NotFound());
-        
+
         var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
 
@@ -222,21 +194,21 @@ public class CompressController: ControllerBase
     }
 
     // 核心解压逻辑
-    private void PerformDecompressionTask(uint instanceId, DecompressRequest request, string taskId, CancellationToken ct)
+    private async Task PerformDecompressionTask(uint instanceId, DecompressRequest request, string taskId, CancellationToken ct)
     {
         try
         {
             var server = IConfigBase.ServerList.GetServer(instanceId);
-            if(server == null) throw new Exception("实例不存在");
+            if (server == null) throw new Exception("实例不存在");
 
-            UpdateStatus2(taskId, $"Task_Compress_{taskId}", "processing", 0, "正在分析文件...");
+            UpdateStatus2(taskId, $"Task_Decompress_{taskId}", "processing", 0, "正在分析文件...");
 
             // 绝对路径
             string relativeDir = request.CurrentPath ?? "";
             string zipRelativePath = Path.Combine(relativeDir, request.FileName);
-            
+
             var checkZip = FileUtils.GetSafePath(server.Base, zipRelativePath);
-            if (!checkZip.IsSafe || !System.IO.File.Exists(checkZip.FullPath)) 
+            if (!checkZip.IsSafe || !System.IO.File.Exists(checkZip.FullPath))
                 throw new Exception("压缩包文件不存在或路径非法");
 
             string zipFullPath = checkZip.FullPath;
@@ -246,10 +218,10 @@ public class CompressController: ControllerBase
 
             if (request.CreateSubFolder)
             {
-                // 如果要求解压到子文件夹，则创建一个同名文件夹
-                string folderName = Path.GetFileNameWithoutExtension(zipFullPath);
+                // 如果要求解压到子文件夹，正确剥离复合后缀并创建同名文件夹
+                string folderName = StripArchiveExtension(Path.GetFileName(zipFullPath));
                 extractRootPath = Path.Combine(extractRootPath, folderName);
-                
+
                 // 再次安全检查
                 if (!FileUtils.GetSafePath(server.Base, Path.GetRelativePath(server.Base, extractRootPath)).IsSafe)
                     throw new Exception("生成的子目录路径非法");
@@ -260,120 +232,70 @@ public class CompressController: ControllerBase
                 }
             }
 
-            // 确定编码
-            Encoding encoding = GetEncoding(request.Encoding, zipFullPath);
-            
-            // 开始解压
-            using (var fs = System.IO.File.OpenRead(zipFullPath))
-            using (var archive = new ZipArchive(fs, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: encoding))
-            {
-                int total = archive.Entries.Count;
-                int current = 0;
-                int lastReportedPercent = -1;
-
-                foreach (var entry in archive.Entries)
+            // 委托给 ArchiveService 处理解压
+            await _archiveService.DecompressAsync(
+                zipFullPath,
+                extractRootPath,
+                request.Encoding,
+                request.Password,
+                ct,
+                onProgress: (percent, msg) =>
                 {
-                    ct.ThrowIfCancellationRequested();
-                    current++;
+                    int reportedPercent = percent >= 0 ? percent : 50;
+                    UpdateStatus2(taskId, $"Task_Decompress_{taskId}", "processing", reportedPercent, msg);
+                },
+                isPathSafe: dest => FileUtils.GetSafePath(server.Base, Path.GetRelativePath(server.Base, dest)).IsSafe
+            );
 
-                    // 进度防抖
-                    if (total > 0)
-                    {
-                        int percent = (int)((double)current / total * 100);
-                        if (percent != lastReportedPercent)
-                        {
-                            lastReportedPercent = percent;
-                            UpdateStatus2(taskId, $"Task_Compress_{taskId}", "processing", percent, $"正在解压: {entry.Name}");
-                        }
-                    }
-
-                    // 组合最终目标路径 = 解压根目录 + Zip内路径
-                    string normalizedPath = entry.FullName
-    .Replace('\\', Path.DirectorySeparatorChar)
-    .Replace('/', Path.DirectorySeparatorChar);
-
-                    string destinationPath = Path.GetFullPath(Path.Combine(extractRootPath, normalizedPath));
-
-                    // Zip Slip 防御：跳过包含 ".." 的恶意路径
-                    if (!destinationPath.StartsWith(Path.GetFullPath(extractRootPath), StringComparison.OrdinalIgnoreCase))
-                    {
-                        continue;
-                    }
-
-                    // 最终安全检查
-                    if (!FileUtils.GetSafePath(server.Base, Path.GetRelativePath(server.Base, destinationPath)).IsSafe)
-                    {
-                        continue;
-                    }
-
-                    // 处理逻辑
-                    if (string.IsNullOrEmpty(entry.Name) || normalizedPath.EndsWith(Path.DirectorySeparatorChar.ToString()))
-                    {
-                        // 是目录
-                        if (!Directory.Exists(destinationPath)) Directory.CreateDirectory(destinationPath);
-                    }
-                    else
-                    {
-                        // 是文件
-                        // 确保父文件夹存在
-                        string? parentDir = Path.GetDirectoryName(destinationPath);
-                        if (!string.IsNullOrEmpty(parentDir) && !Directory.Exists(parentDir))
-                        {
-                            Directory.CreateDirectory(parentDir);
-                        }
-
-                        // 写入文件 (覆盖旧文件)
-                        entry.ExtractToFile(destinationPath, overwrite: true);
-                    }
-                }
-            }
-
-            UpdateStatus2(taskId, $"Task_Compress_{taskId}", "success", 100, "解压完成");
+            UpdateStatus2(taskId, $"Task_Decompress_{taskId}", "success", 100, "解压完成");
         }
         catch (Exception ex)
         {
-            UpdateStatus2(taskId, $"Task_Compress_{taskId}", "error", 0, $"解压失败: {ex.Message}");
+            string errorMsg = ex.Message.StartsWith("解压失败") ? ex.Message : $"解压失败: {ex.Message}";
+            UpdateStatus2(taskId, $"Task_Decompress_{taskId}", "error", 0, errorMsg);
         }
     }
 
-    // 获取编码
-    private Encoding GetEncoding(string userChoice, string zipPath)
+    #endregion
+
+    #region 状态与辅助
+
+    private void UpdateStatus(string key, string status, int progress, string msg)
     {
-        // 用户强制指定
-        if (!string.IsNullOrEmpty(userChoice) && userChoice.ToLower() != "auto")
+        _cache.Set(key, new TaskStatusResponse
         {
-            try 
-            {
-                return Encoding.GetEncoding(userChoice);
-            }
-            catch 
-            {
-                // 忽略错误，回退到 Auto
-            }
-        }
-
-        // 自动检测逻辑
-        var utf8 = Encoding.UTF8;
-        try
-        {
-            using (var fs = System.IO.File.OpenRead(zipPath))
-            using (var archive = new ZipArchive(fs, ZipArchiveMode.Read, leaveOpen: true, entryNameEncoding: utf8))
-            {
-                foreach (var entry in archive.Entries)
-                {
-                    // 检查乱码特征
-                    if (entry.FullName.Contains('\uFFFD')) 
-                    {
-                        return Encoding.GetEncoding("GBK");
-                    }
-                }
-            }
-            return utf8;
-        }
-        catch
-        {
-            return Encoding.GetEncoding("GBK");
-        }
+            Status = status,
+            Progress = progress,
+            Message = msg
+        }, TimeSpan.FromMinutes(30));
     }
+
+    private void UpdateStatus2(string taskId, string cacheKey, string status, int progress, string msg)
+    {
+        UpdateStatus(cacheKey, status, progress, msg);
+        if (status == "success") _taskManager.SetSuccess(taskId, msg);
+        else if (status == "error") _taskManager.SetFailed(taskId, msg);
+        else _taskManager.UpdateProgress(taskId, progress, msg, TaskState.Running);
+    }
+
+    private static bool HasArchiveExtension(string filename)
+    {
+        string lower = filename.ToLowerInvariant();
+        return ArchiveExtensions.Any(ext => lower.EndsWith(ext));
+    }
+
+    private static string StripArchiveExtension(string filename)
+    {
+        string lower = filename.ToLowerInvariant();
+        foreach (var ext in ArchiveExtensions)
+        {
+            if (lower.EndsWith(ext))
+            {
+                return filename.Substring(0, filename.Length - ext.Length);
+            }
+        }
+        return Path.GetFileNameWithoutExtension(filename);
+    }
+
     #endregion
 }

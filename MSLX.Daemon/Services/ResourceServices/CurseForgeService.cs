@@ -73,7 +73,8 @@ namespace MSLX.Daemon.Services.ResourceServices
             }
 
             // 构建 CurseForge 查询 URL 
-            var urlBuilder = new StringBuilder("https://api.curseforge.com/v1/mods/search?gameId=432"); // 432 = Minecraft
+            var baseUrl = filter.UseMirror ? "https://mod.mcimirror.top/curseforge/v1/mods/search?gameId=432" : "https://api.curseforge.com/v1/mods/search?gameId=432";
+            var urlBuilder = new StringBuilder(baseUrl);
             
             if (filter.Type.HasValue && ClassIdMap.TryGetValue(filter.Type.Value, out int classId))
             {
@@ -109,6 +110,8 @@ namespace MSLX.Daemon.Services.ResourceServices
             using var doc = JsonDocument.Parse(json);
             
             var results = new List<Resource>();
+            var modIds = new List<int>();
+
             if (doc.RootElement.TryGetProperty("data", out var dataArray))
             {
                 foreach (var element in dataArray.EnumerateArray())
@@ -119,9 +122,12 @@ namespace MSLX.Daemon.Services.ResourceServices
                         authorName = authorsArray[0].GetProperty("name").GetString() ?? "Unknown";
                     }
 
+                    int modId = element.GetProperty("id").GetInt32();
+                    modIds.Add(modId);
+
                     results.Add(new Resource
                     {
-                        Id = element.GetProperty("id").GetInt32().ToString(),
+                        Id = modId.ToString(),
                         Name = element.GetProperty("name").GetString(),
                         Summary = element.GetProperty("summary").GetString(),
                         IconUrl = element.TryGetProperty("logo", out var logoProp) && logoProp.ValueKind == JsonValueKind.Object && logoProp.TryGetProperty("thumbnailUrl", out var thumbProp) ? thumbProp.GetString() : null,
@@ -139,6 +145,19 @@ namespace MSLX.Daemon.Services.ResourceServices
                 totalCount = totalCountProp.GetInt64();
             }
 
+            if (filter.UseMirror && results.Count > 0)
+            {
+                var translations = await McimTranslationHelper.TranslateCurseForgeBatchAsync(_httpClient, modIds);
+                foreach (var res in results)
+                {
+                    if (int.TryParse(res.Id, out int idVal) && translations.TryGetValue(idVal, out var translatedStr))
+                    {
+                        res.TranslatedSummary = translatedStr;
+                        res.Summary = translatedStr;
+                    }
+                }
+            }
+
             return new ResourceSearchResult
             {
                 Items = results,
@@ -146,12 +165,13 @@ namespace MSLX.Daemon.Services.ResourceServices
             };
         }
 
-        public async Task<Resource> GetResourceAsync(string id)
+        public async Task<Resource> GetResourceAsync(string id, bool useMirror = true)
         {
             string token = await GetApiKeyAsync();
             if (string.IsNullOrEmpty(token)) return null;
 
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.curseforge.com/v1/mods/{id}");
+            var baseUrl = useMirror ? $"https://mod.mcimirror.top/curseforge/v1/mods/{id}" : $"https://api.curseforge.com/v1/mods/{id}";
+            using var request = new HttpRequestMessage(HttpMethod.Get, baseUrl);
             request.Headers.Add("x-api-key", token);
             request.Headers.Add("Accept", "application/json");
 
@@ -174,7 +194,8 @@ namespace MSLX.Daemon.Services.ResourceServices
 
                 // Fetch description
                 string description = "";
-                using var descRequest = new HttpRequestMessage(HttpMethod.Get, $"https://api.curseforge.com/v1/mods/{id}/description");
+                var descUrl = useMirror ? $"https://mod.mcimirror.top/curseforge/v1/mods/{id}/description" : $"https://api.curseforge.com/v1/mods/{id}/description";
+                using var descRequest = new HttpRequestMessage(HttpMethod.Get, descUrl);
                 descRequest.Headers.Add("x-api-key", token);
                 descRequest.Headers.Add("Accept", "application/json");
                 var descResponse = await _httpClient.SendAsync(descRequest);
@@ -188,7 +209,7 @@ namespace MSLX.Daemon.Services.ResourceServices
                     }
                 }
 
-                return new Resource
+                var resource = new Resource
                 {
                     Id = element.GetProperty("id").GetInt32().ToString(),
                     Name = element.GetProperty("name").GetString(),
@@ -200,17 +221,30 @@ namespace MSLX.Daemon.Services.ResourceServices
                     DownloadCount = element.GetProperty("downloadCount").GetInt64(),
                     UpdatedAt = element.GetProperty("dateModified").GetDateTime()
                 };
+
+                if (useMirror && int.TryParse(resource.Id, out int modIdVal))
+                {
+                    var translatedStr = await McimTranslationHelper.TranslateCurseForgeSingleAsync(_httpClient, modIdVal);
+                    if (!string.IsNullOrEmpty(translatedStr))
+                    {
+                        resource.TranslatedSummary = translatedStr;
+                        resource.Summary = translatedStr;
+                    }
+                }
+
+                return resource;
             }
 
             return null;
         }
 
-        public async Task<IEnumerable<ResourceVersion>> GetVersionsAsync(string id, string gameVersion = null, string loader = null)
+        public async Task<IEnumerable<ResourceVersion>> GetVersionsAsync(string id, string gameVersion = null, string loader = null, bool useMirror = true)
         {
             string token = await GetApiKeyAsync();
             if (string.IsNullOrEmpty(token)) return Enumerable.Empty<ResourceVersion>();
 
-            var urlBuilder = new StringBuilder($"https://api.curseforge.com/v1/mods/{id}/files?pageSize=200&");
+            var baseUrl = useMirror ? $"https://mod.mcimirror.top/curseforge/v1/mods/{id}/files?pageSize=200&" : $"https://api.curseforge.com/v1/mods/{id}/files?pageSize=200&";
+            var urlBuilder = new StringBuilder(baseUrl);
             
             if (!string.IsNullOrEmpty(gameVersion))
             {

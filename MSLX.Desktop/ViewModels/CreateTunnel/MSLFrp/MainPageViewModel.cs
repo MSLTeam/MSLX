@@ -75,6 +75,7 @@ namespace MSLX.Desktop.ViewModels.CreateTunnel.MSLFrp
                 Status = string.Empty,
                 UdpSupport = false,
                 KcpSupport = false,
+                WssSupport = false,
                 HttpSupport = false,
                 AllowUserGroup=0,
                 Bandwidth = 0,

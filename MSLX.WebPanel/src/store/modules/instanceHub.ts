@@ -29,6 +29,17 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
   const playerLeftHandlers = new Set<(_name: string) => void>();
   const playerListClearedHandlers = new Set<() => void>();
 
+  // PTY 终端会话管理
+  const ptyDataHandlers = new Set<(_chunk: string) => void>();
+  const ptyStatusHandlers = new Set<(_status: { isPty: boolean; isRunning: boolean }) => void>();
+
+
+  // 系统生命周期/控制台消息通知
+  const systemMessageHandlers = new Set<(_msg: string) => void>();
+
+  const emitSystemMsg = (msg: string) => {
+    systemMessageHandlers.forEach((handler) => handler(msg));
+  };
 
   // 随时更新最大内存，无需重连
   const setMaxMemory = (mb: number) => {
@@ -108,10 +119,18 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
         }
       });
 
-      newConnection.onreconnecting(() => logHandlers.forEach(h => h('\x1b[1;31m[System] 连接中断，尝试重连...\x1b[0m')));
+      newConnection.on('ReceivePtyData', (chunk: string) => {
+        ptyDataHandlers.forEach((handler) => handler(chunk));
+      });
+
+      newConnection.on('PtyStatus', (status: { isPty: boolean; isRunning: boolean }) => {
+        ptyStatusHandlers.forEach((handler) => handler(status));
+      });
+
+      newConnection.onreconnecting(() => emitSystemMsg('\x1b[1;31m[System] 连接中断，尝试重连...\x1b[0m'));
 
       newConnection.onreconnected(async () => {
-        logHandlers.forEach(h => h('\x1b[1;32m[System] 网络恢复，重新加入会话...\x1b[0m'));
+        emitSystemMsg('\x1b[1;32m[System] 网络恢复，重新加入会话...\x1b[0m');
         try { await newConnection.invoke('JoinGroup', serverId); } catch (e) { console.error(e); }
       });
 
@@ -120,10 +139,10 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
         await newConnection.invoke('JoinGroup', serverId);
         connection.value = newConnection;
         isConnected.value = true;
-        logHandlers.forEach(h => h('\x1b[1;32m[System] 已连接到实例控制服务\x1b[0m'));
+        emitSystemMsg('\x1b[1;32m[System] 已连接到实例控制服务\x1b[0m');
       } catch (err: any) {
         isConnected.value = false;
-        logHandlers.forEach(h => h(`\x1b[1;31m[Error] 连接失败: ${err.message}\x1b[0m`));
+        emitSystemMsg(`\x1b[1;31m[Error] 连接失败: ${err.message}\x1b[0m`);
         currentServerId.value = null;
         connection.value = null;
       }
@@ -169,9 +188,14 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
     return () => logHandlers.delete(handler);
   };
 
+  const onSystemMessage = (handler: (_msg: string) => void) => {
+    systemMessageHandlers.add(handler);
+    return () => systemMessageHandlers.delete(handler);
+  };
+
   const onEula = (handler: () => void) => {
     eulaHandlers.add(handler);
-    return () => logHandlers.delete(handler);
+    return () => eulaHandlers.delete(handler);
   };
 
   const onCommandResult = (handler: (_success: boolean, _msg: string) => void) => {
@@ -195,6 +219,61 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
     return () => playerListClearedHandlers.delete(handler);
   };
 
+  const joinPtyGroup = async (cols: number, rows: number) => {
+    if (!connection.value || connection.value.state !== 'Connected' || !currentServerId.value) return;
+    try {
+      await connection.value.invoke('JoinPtyGroup', currentServerId.value, cols, rows);
+    } catch (e) {
+      console.error('[PTY] JoinPtyGroup failed:', e);
+    }
+  };
+
+  const leavePtyGroup = async () => {
+    if (!connection.value || connection.value.state !== 'Connected' || !currentServerId.value) return;
+    try {
+      await connection.value.invoke('LeavePtyGroup', currentServerId.value);
+    } catch (e) {
+      console.error('[PTY] LeavePtyGroup failed:', e);
+    }
+  };
+
+  const sendPtyInput = async (data: string) => {
+    if (!connection.value || connection.value.state !== 'Connected' || !currentServerId.value) return;
+    try {
+      await connection.value.invoke('SendPtyInput', currentServerId.value, data);
+    } catch (e) {
+      console.error('[PTY] SendPtyInput failed:', e);
+    }
+  };
+
+  const resizePty = async (cols: number, rows: number) => {
+    if (!connection.value || connection.value.state !== 'Connected' || !currentServerId.value) return;
+    try {
+      await connection.value.invoke('ResizePty', currentServerId.value, cols, rows);
+    } catch (e) {
+      console.error('[PTY] ResizePty failed:', e);
+    }
+  };
+
+  const getPtyStatus = async () => {
+    if (!connection.value || connection.value.state !== 'Connected' || !currentServerId.value) return;
+    try {
+      await connection.value.invoke('GetPtyStatus', currentServerId.value);
+    } catch (e) {
+      console.error('[PTY] GetPtyStatus failed:', e);
+    }
+  };
+
+  const onPtyData = (handler: (_chunk: string) => void) => {
+    ptyDataHandlers.add(handler);
+    return () => ptyDataHandlers.delete(handler);
+  };
+
+  const onPtyStatus = (handler: (_status: { isPty: boolean; isRunning: boolean }) => void) => {
+    ptyStatusHandlers.add(handler);
+    return () => ptyStatusHandlers.delete(handler);
+  };
+
   return {
     isConnected,
     stats,
@@ -204,10 +283,18 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
     setMaxMemory,
     sendCommand,
     onLog,
+    onSystemMessage,
     onEula,
     onCommandResult,
     onPlayerJoined,
     onPlayerLeft,
     onPlayerListCleared,
+    joinPtyGroup,
+    leavePtyGroup,
+    sendPtyInput,
+    resizePty,
+    getPtyStatus,
+    onPtyData,
+    onPtyStatus,
   };
 });

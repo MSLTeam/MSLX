@@ -223,6 +223,7 @@ public partial class InstanceSettingsTab : UserControl
         ArgsBox.Text = s.Args;
         StopCommandBox.Text = s.StopCommand;
         AllowOriginASCIIColorsToggle.IsChecked = s.AllowOriginASCIIColors;
+        EnablePtyToggle.IsChecked = s.EnablePty;
         MonitorPlayersToggle.IsChecked = s.MonitorPlayers;
         AutoRestartToggle.IsChecked = s.AutoRestart;
         ForceAutoRestartToggle.IsChecked = s.ForceAutoRestart;
@@ -640,6 +641,7 @@ public partial class InstanceSettingsTab : UserControl
             BackupDelay = (int)(BackupDelayBox.Value ?? 10),
             BackupPath = backupPathVal,
             AllowOriginASCIIColors = AllowOriginASCIIColorsToggle.IsChecked ?? true,
+            EnablePty = EnablePtyToggle.IsChecked ?? false,
             MonitorPlayers = MonitorPlayersToggle.IsChecked ?? true,
             AutoRestart = AutoRestartToggle.IsChecked ?? false,
             ForceAutoRestart = ForceAutoRestartToggle.IsChecked ?? true,

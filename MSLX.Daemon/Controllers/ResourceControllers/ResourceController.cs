@@ -23,17 +23,17 @@ namespace MSLX.Daemon.Controllers.ResourceControllers
         }
 
         [HttpGet("{providerType}/{id}")]
-        public async Task<IActionResult> GetResource(ResourceProviderType providerType, string id)
+        public async Task<IActionResult> GetResource(ResourceProviderType providerType, string id, [FromQuery] bool useMirror = true)
         {
-            var resource = await _unifiedResourceService.GetResourceAsync(id, providerType);
+            var resource = await _unifiedResourceService.GetResourceAsync(id, providerType, useMirror);
             if (resource == null) return NotFound();
             return Ok(resource);
         }
 
         [HttpGet("{providerType}/{id}/versions")]
-        public async Task<IActionResult> GetVersions(ResourceProviderType providerType, string id, [FromQuery] string gameVersion = null, [FromQuery] string loader = null)
+        public async Task<IActionResult> GetVersions(ResourceProviderType providerType, string id, [FromQuery] string gameVersion = null, [FromQuery] string loader = null, [FromQuery] bool useMirror = true)
         {
-            var versions = await _unifiedResourceService.GetVersionsAsync(id, providerType, gameVersion, loader);
+            var versions = await _unifiedResourceService.GetVersionsAsync(id, providerType, gameVersion, loader, useMirror);
             return Ok(versions);
         }
     }

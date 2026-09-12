@@ -134,6 +134,7 @@ public class InstanceSettingsController : ControllerBase
             server.YggdrasilApiAddr = request.YggdrasilApiAddr;
             server.RunOnStartup = request.RunOnStartup;
             server.AllowOriginASCIIColors = request.AllowOriginASCIIColors;
+            server.EnablePty = request.EnablePty;
             server.AutoRestart = request.AutoRestart;
             server.IgnoreEula = request.IgnoreEula;
             server.ForceJvmUTF8 = request.ForceJvmUTF8;

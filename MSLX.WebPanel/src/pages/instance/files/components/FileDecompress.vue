@@ -20,11 +20,19 @@ const isVisible = computed({
 
 const encoding = ref('auto');
 const createSubFolder = ref(true);
+const hasPassword = ref(false);
+const password = ref('');
 const isProcessing = ref(false);
 const progress = ref(0);
 const statusMessage = ref('');
 const taskId = ref('');
 let pollTimer: number | null = null;
+
+// Tar 不支持密码
+const isTarArchive = computed(() => {
+  const lower = (props.fileName || '').toLowerCase();
+  return /\.(tar|tar\.gz|tgz|tar\.xz|txz|tar\.bz2|tbz2|tar\.zst)$/i.test(lower);
+});
 
 const encodingOptions = [
   { label: '自动检测 (推荐)', value: 'auto' },
@@ -35,6 +43,8 @@ const encodingOptions = [
 const resetState = () => {
   encoding.value = 'auto';
   createSubFolder.value = true;
+  hasPassword.value = false;
+  password.value = '';
   isProcessing.value = false;
   progress.value = 0;
   statusMessage.value = '';
@@ -59,20 +69,26 @@ const stopPolling = () => {
 const handleStart = async () => {
   if (isProcessing.value) return;
 
+  if (hasPassword.value && !password.value) {
+    MessagePlugin.warning('请填写解压密码');
+    return;
+  }
+
   try {
     isProcessing.value = true;
     statusMessage.value = '正在提交任务...';
 
-    // 拦截器已处理 .data，直接获取响应体
+    const finalPassword = hasPassword.value ? password.value : undefined;
+
     const res: any = await startDecompress(
       props.instanceId,
       props.fileName,
       props.currentPath,
       encoding.value,
-      createSubFolder.value
+      createSubFolder.value,
+      finalPassword
     );
 
-    // 修正：小写 taskId，直接访问
     if (res && res.taskId) {
       taskId.value = res.taskId;
       pollTimer = window.setInterval(pollStatus, 1000);
@@ -89,7 +105,6 @@ const handleStart = async () => {
 const pollStatus = async () => {
   if (!taskId.value) return;
   try {
-    // 拦截器已处理，直接获取对象
     const res: any = await getDeompressStatus(taskId.value);
 
     progress.value = res.progress || 0;
@@ -149,6 +164,26 @@ const handleClose = () => {
           <span class="text-xs text-[var(--td-text-color-secondary)]">推荐开启，防止文件散乱在当前目录</span>
         </div>
         <t-switch v-model="createSubFolder" size="large" class="shrink-0" />
+      </div>
+      
+      <div class="flex justify-between items-center py-1" v-if="!isProcessing && !isTarArchive">
+        <div class="flex flex-col gap-1 pr-4">
+          <span class="text-sm font-medium text-[var(--td-text-color-primary)]">该文件有密码</span>
+          <span class="text-xs text-[var(--td-text-color-secondary)]">开启后输入密码以解密压缩包</span>
+        </div>
+        <t-switch v-model="hasPassword" size="large" class="shrink-0" />
+      </div>
+
+      <div class="flex flex-col gap-2" v-if="!isProcessing && !isTarArchive && hasPassword">
+        <span class="text-sm font-medium text-[var(--td-text-color-primary)]">解压密码</span>
+        <t-input
+          v-model="password"
+          type="password"
+          placeholder="请输入解压密码"
+          class="!rounded-lg shadow-sm"
+          clearable
+          @enter="handleStart"
+        />
       </div>
 
       <div class="py-2" v-if="isProcessing">

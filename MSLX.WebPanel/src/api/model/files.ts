@@ -22,6 +22,11 @@ export interface FilesListModel{
   permission: string;
 }
 
+export interface FilesListResponse {
+  total: number;
+  items: FilesListModel[];
+}
+
 export interface PluginsAndModsListModel{
   totalCount: number;
   activeCount: number;

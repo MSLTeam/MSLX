@@ -53,6 +53,7 @@ export interface InstanceInfoModel {
   java: string;
   args: string;
   core: string;
+  enablePty?: boolean;
   minM: number;
   maxM: number;
   status: number;
@@ -89,6 +90,7 @@ export interface UpdateInstanceModel {
   autoRestart?: boolean;
   forceAutoRestart?: boolean;
   allowOriginASCIIColors?: boolean;
+  enablePty?: boolean;
   ignoreEula?: boolean;
   forceJvmUTF8?: boolean;
   runOnStartup?: boolean;
@@ -149,6 +151,7 @@ export interface InstanceSettingsModel {
   backupPath?: string;
   autoRestart?: boolean;
   allowOriginASCIIColors?: boolean;
+  enablePty?: boolean;
   forceAutoRestart?: boolean;
   ignoreEula?: boolean;
   forceJvmUTF8?: boolean;

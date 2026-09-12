@@ -129,6 +129,7 @@ public class ServerUpdateService : BackgroundService
             server.StopCommand = req.StopCommand;
             server.MonitorPlayers = req.MonitorPlayers;
             server.AllowOriginASCIIColors = req.AllowOriginASCIIColors;
+            server.EnablePty = req.EnablePty;
             server.YggdrasilApiAddr = req.YggdrasilApiAddr;
             server.RunOnStartup = req.RunOnStartup;
             server.AutoRestart = req.AutoRestart;

@@ -51,7 +51,10 @@
 		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
 		<PackageReference Include="System.Management" Version="10.0.10" />
 		<PackageReference Include="System.Text.Encoding.CodePages" Version="10.0.10" NoWarn="NU1510" />
+		<PackageReference Include="SharpCompress" Version="0.50.4" />
+		<PackageReference Include="SharpZipLib" Version="1.4.2" />
 		<PackageReference Include="Tomlyn" Version="2.10.1" />
+		<PackageReference Include="Porta.Pty" Version="2.2.2" />
 	</ItemGroup>
 
 	<ItemGroup>

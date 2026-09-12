@@ -8,8 +8,8 @@ namespace MSLX.SDK.IServices
     {
         Task<ResourceSearchResult> SearchAsync(ResourceSearchFilter filter);
         
-        Task<Resource> GetResourceAsync(string id, ResourceProviderType providerType);
+        Task<Resource> GetResourceAsync(string id, ResourceProviderType providerType, bool useMirror = true);
         
-        Task<IEnumerable<ResourceVersion>> GetVersionsAsync(string id, ResourceProviderType providerType, string gameVersion = null, string loader = null);
+        Task<IEnumerable<ResourceVersion>> GetVersionsAsync(string id, ResourceProviderType providerType, string gameVersion = null, string loader = null, bool useMirror = true);
     }
 }

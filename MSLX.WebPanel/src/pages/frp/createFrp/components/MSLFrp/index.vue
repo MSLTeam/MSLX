@@ -51,6 +51,8 @@ interface Tunnel {
   today_traffic: number;
   total_traffic: number;
   ban: string;
+  protocol?: string;
+  use_kcp?: number;
 }
 
 interface NodeInfo {
@@ -193,7 +195,10 @@ async function initDashboardData() {
     });
 
     if (tunnelRes.code === 200) {
-      tunnels.value = tunnelRes.data;
+      tunnels.value = (tunnelRes.data || []).map((item: any) => ({
+        ...item,
+        protocol: item.protocol || (item.use_kcp === 1 ? 'kcp' : 'tcp'),
+      }));
       if (tunnels.value.length > 0) {
         selectedTunnelId.value = tunnels.value[0].id;
       }
@@ -514,7 +519,23 @@ async function handleDeleteTunnel() {
                     {{ nodesMap[tunnel.node_id] || `Node ${tunnel.node_id}` }}
                   </div>
                 </div>
-                <div class="shrink-0 flex-center">
+                <div class="shrink-0 flex items-center">
+                  <t-tag
+                    v-if="tunnel.protocol === 'wss'"
+                    theme="success"
+                    variant="outline"
+                    size="small"
+                    class="!rounded !font-bold !px-1.5 !mr-1.5"
+                    >WSS</t-tag
+                  >
+                  <t-tag
+                    v-else-if="tunnel.protocol === 'kcp'"
+                    theme="primary"
+                    variant="outline"
+                    size="small"
+                    class="!rounded !font-bold !px-1.5 !mr-1.5"
+                    >KCP</t-tag
+                  >
                   <t-tag
                     v-if="tunnel.status === 1"
                     theme="success"
@@ -609,9 +630,27 @@ async function handleDeleteTunnel() {
                     class="text-[11px] font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest mb-1.5"
                     >协议类型</span
                   >
-                  <span class="text-sm font-bold text-[var(--color-primary)] uppercase tracking-wide">{{
-                    currentTunnel.type
-                  }}</span>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-sm font-bold text-[var(--color-primary)] uppercase tracking-wide">{{
+                      currentTunnel.type
+                    }}</span>
+                    <t-tag
+                      v-if="currentTunnel.protocol === 'wss'"
+                      size="small"
+                      theme="success"
+                      variant="light-outline"
+                      class="!font-bold !px-1.5"
+                      >WSS</t-tag
+                    >
+                    <t-tag
+                      v-else-if="currentTunnel.protocol === 'kcp'"
+                      size="small"
+                      theme="primary"
+                      variant="light-outline"
+                      class="!font-bold !px-1.5"
+                      >KCP</t-tag
+                    >
+                  </div>
                 </div>
 
                 <div

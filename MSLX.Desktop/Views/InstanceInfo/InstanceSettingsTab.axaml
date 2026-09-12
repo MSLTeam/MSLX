@@ -508,6 +508,15 @@
                 <ToggleSwitch Grid.Column="1" x:Name="AllowOriginASCIIColorsToggle" HorizontalAlignment="Right"/>
               </Grid>
 
+              <!-- PTY 伪终端模式 -->
+              <Grid ColumnDefinitions="*,340">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                  <TextBlock Text="PTY 伪终端模式" FontWeight="Medium" FontSize="14"/>
+                  <TextBlock Text="开启后通过系统伪终端拉起，原生支持 Tab 补全与全功能控制台交互 (重启生效)" FontSize="12" Opacity="0.6" Margin="0,2,0,0"/>
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" x:Name="EnablePtyToggle" HorizontalAlignment="Right"/>
+              </Grid>
+
               <!-- 玩家监控 -->
               <Grid ColumnDefinitions="*,340">
                 <StackPanel Grid.Column="0" VerticalAlignment="Center">

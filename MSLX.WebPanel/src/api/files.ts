@@ -1,6 +1,8 @@
 import { request } from '@/utils/request';
+import { TOKEN_NAME, BASE_URL_NAME } from '@/config/global';
 import {
   FilesListModel,
+  FilesListResponse,
   HostDriveItem,
   HostFsResponse,
   PluginsAndModsListModel,
@@ -61,11 +63,21 @@ export async function checkPackageJarList(uploadId: string, localPath?: string) 
   });
 }
 
+export interface FileListParams {
+  path?: string;
+  page?: number;
+  pageSize?: number;
+  search?: string;
+  sort?: string;
+  order?: 'asc' | 'desc';
+}
+
 // 文件管理系统
-export async function getInstanceFilesList(instanceId: number,path: string = ''){
-  return await request.get<FilesListModel[]>({
+export async function getInstanceFilesList(instanceId: number, params?: FileListParams | string) {
+  const queryParams = typeof params === 'string' ? { path: params } : (params || {});
+  return await request.get<FilesListResponse | FilesListModel[]>({
     url: `/api/files/instance/${instanceId}/lists`,
-    params: { path }
+    params: queryParams,
   });
 }
 
@@ -119,10 +131,56 @@ export function downloadFileStream(instanceId: number, path: string) {
   });
 }
 
-export function startCompress(instanceId: number, sources: string[], targetName: string, currentPath: string) {
+export function getVideoStreamUrl(instanceId: number, path: string): string {
+  const token = localStorage.getItem(TOKEN_NAME);
+  const baseUrl = localStorage.getItem(BASE_URL_NAME);
+  const activeNodeId = localStorage.getItem('ACTIVE_NODE_ID');
+  const activeNodeUrl = localStorage.getItem('ACTIVE_NODE_URL');
+
+  let finalBase = baseUrl || window.location.origin;
+  if (activeNodeUrl && activeNodeId !== 'local') {
+    finalBase = activeNodeUrl;
+  }
+
+  const url = new URL(`/api/files/instance/${instanceId}/download`, finalBase);
+  url.searchParams.append('path', path);
+  url.searchParams.append('inline', 'true');
+  if (token) {
+    url.searchParams.append('x-user-token', token);
+  }
+  if (activeNodeId && activeNodeId !== 'local') {
+    url.searchParams.append('x-node-id', activeNodeId);
+  }
+  return url.toString();
+}
+
+export function getFileThumbnailUrl(instanceId: number, path: string, size = 256): string {
+  const token = localStorage.getItem(TOKEN_NAME);
+  const baseUrl = localStorage.getItem(BASE_URL_NAME);
+  const activeNodeId = localStorage.getItem('ACTIVE_NODE_ID');
+  const activeNodeUrl = localStorage.getItem('ACTIVE_NODE_URL');
+
+  let finalBase = baseUrl || window.location.origin;
+  if (activeNodeUrl && activeNodeId !== 'local') {
+    finalBase = activeNodeUrl;
+  }
+
+  const url = new URL(`/api/files/instance/${instanceId}/thumbnail`, finalBase);
+  url.searchParams.append('path', path);
+  url.searchParams.append('size', size.toString());
+  if (token) {
+    url.searchParams.append('x-user-token', token);
+  }
+  if (activeNodeId && activeNodeId !== 'local') {
+    url.searchParams.append('x-node-id', activeNodeId);
+  }
+  return url.toString();
+}
+
+export function startCompress(instanceId: number, sources: string[], targetName: string, currentPath: string, password?: string) {
   return request.post({
     url: `/api/files/instance/${instanceId}/compress`,
-    data: { sources, targetName, currentPath }
+    data: { sources, targetName, currentPath, password: password || undefined }
   });
 }
 
@@ -132,10 +190,10 @@ export function getCompressStatus(taskId: string) {
   });
 }
 
-export function startDecompress(instanceId: number, fileName: string, currentPath: string,encoding = 'utf-8',createSubFolder: boolean =  true) {
+export function startDecompress(instanceId: number, fileName: string, currentPath: string, encoding = 'utf-8', createSubFolder: boolean = true, password?: string) {
   return request.post({
     url: `/api/files/instance/${instanceId}/decompress`,
-    data: {  fileName, currentPath,encoding,createSubFolder }
+    data: { fileName, currentPath, encoding, createSubFolder, password: password || undefined }
   });
 }
 

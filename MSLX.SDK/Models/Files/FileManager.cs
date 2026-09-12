@@ -11,6 +11,12 @@ public class FileItem
     public string Permission { get; set; } = ""; 
 }
 
+public class PagedFilesResult
+{
+    public int Total { get; set; }
+    public List<FileItem> Items { get; set; } = new();
+}
+
 public class SaveFileRequest
 {
     [Required(ErrorMessage = "文件路径 (Path) 不能为空")]
@@ -53,10 +59,12 @@ public class CompressRequest
     public List<string> Sources { get; set; } = new(); 
 
     [Required(ErrorMessage = "目标文件名 (TargetName) 不能为空")]
-    [RegularExpression(@"^[\w\-. ]+\.(zip|tar\.gz)$", ErrorMessage = "目标文件名格式错误或不支持该后缀")]
+    [RegularExpression(@"^(?i)[\w\-. ]+\.(zip|tar|tar\.gz|tgz|tar\.bz2|tbz2|tar\.xz|txz|7z)$", ErrorMessage = "目标文件名格式错误或不支持该后缀")]
     public string TargetName { get; set; } = string.Empty; 
 
     public string CurrentPath { get; set; } = string.Empty;
+
+    public string? Password { get; set; }
 }
 
 public class DecompressRequest
@@ -70,6 +78,8 @@ public class DecompressRequest
     public string Encoding { get; set; } = "auto";
 
     public bool CreateSubFolder { get; set; } = false;
+
+    public string? Password { get; set; }
 }
 
 public class ChmodRequest

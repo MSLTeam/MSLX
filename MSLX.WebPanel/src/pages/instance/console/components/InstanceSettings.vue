@@ -25,6 +25,11 @@ const open = () => {
   visible.value = true;
 };
 
+const emits = defineEmits<{
+  (e: 'success'): void;
+  (e: 'saved'): void;
+}>();
+
 defineExpose({ open });
 </script>
 
@@ -63,7 +68,7 @@ defineExpose({ open });
       <div class="flex-1 min-w-0 h-full flex flex-col relative bg-white/40 dark:bg-zinc-900/20">
         <div class="flex-1 overflow-y-auto custom-scrollbar p-4 pb-20 md:p-0 md:pl-8 md:pb-12 md:pr-2">
 
-          <div v-if="currentTab === 0" class="tab-panel-anim"><general-settings /></div>
+          <div v-if="currentTab === 0" class="tab-panel-anim"><general-settings @success="emits('success')" @saved="emits('saved')" /></div>
           <div v-if="currentTab === 1" class="tab-panel-anim"><mods-plugins-manager /></div>
           <div v-if="currentTab === 2" class="tab-panel-anim"><server-properties :instance-id="21" /></div>
           <div v-if="currentTab === 3" class="tab-panel-anim"><cron-tasks /></div>

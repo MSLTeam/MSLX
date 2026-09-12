@@ -15,6 +15,8 @@ namespace MSLX.Desktop.Models
             public required int LocalPort { get; set; }
             public required int RemotePort { get; set; }
             public required string Node { get; set; }
+            public string Protocol { get; set; } = "tcp";
+            public bool HasAcceleration => !string.IsNullOrEmpty(Protocol) && !Protocol.Equals("tcp", StringComparison.OrdinalIgnoreCase);
         }
 
         public class Node
@@ -26,6 +28,7 @@ namespace MSLX.Desktop.Models
             public required bool HttpSupport { get; set; }
             public required bool UdpSupport { get; set; }
             public required bool KcpSupport { get; set; }
+            public required bool WssSupport { get; set; }
             public required int MaxOpenPort { get; set; }
             public required int MinOpenPort { get; set; }
             public required bool NeedRealName { get; set; }

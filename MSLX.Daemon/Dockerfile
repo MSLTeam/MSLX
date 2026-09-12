@@ -1,4 +1,4 @@
-﻿# 此阶段用于在快速模式(默认为调试配置)下从 VS 运行时
+# 此阶段用于在快速模式(默认为调试配置)下从 VS 运行时
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 USER root
 
@@ -32,6 +32,7 @@ RUN apt-get update && \
     fontconfig \
     acl \
     tzdata \
+    p7zip-full \
     openjdk-17-jre-headless \
     openjdk-21-jre-headless \
     # python + pip + 换源 + mcdr

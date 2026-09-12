@@ -188,6 +188,7 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddSingleton<MSLX.Daemon.Services.ResourceServices.ModDictionaryService>();
 
 // 跨域请求配置
 builder.Services.AddCors(options =>
@@ -216,6 +217,7 @@ builder.Services.AddSingleton<CreationTaskTracker>();
 builder.Services.AddSingleton<BackgroundTaskManager>();
 builder.Services.AddSingleton<IBackgroundTaskManager>(sp => sp.GetRequiredService<BackgroundTaskManager>());
 builder.Services.AddSingleton<AiService>();
+builder.Services.AddSingleton<ArchiveService>();
 // 插件的一些服务
 var pluginManager = new PluginManager();
 builder.Services.AddSingleton(pluginManager);

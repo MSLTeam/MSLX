@@ -36,6 +36,7 @@
 		<PackageReference Include="NetSparkleUpdater.UI.Avalonia" Version="4.0.0-preview20260505001" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 		<PackageReference Include="Tmds.DBus.Protocol" Version="0.94.2" />
+		<PackageReference Include="Iciclecreek.Avalonia.Terminal" Version="4.0.2" />
 	</ItemGroup>
 
 	<ItemGroup>

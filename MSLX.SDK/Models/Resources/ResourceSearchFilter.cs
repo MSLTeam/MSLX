@@ -30,5 +30,7 @@ namespace MSLX.SDK.Models.Resources
 
         [Range(1, 100, ErrorMessage = "Limit 必须在 1 到 100 之间")]
         public int Limit { get; set; } = 20;
+
+        public bool UseMirror { get; set; } = true;
     }
 }

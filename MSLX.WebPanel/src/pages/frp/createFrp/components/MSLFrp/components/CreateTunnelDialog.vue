@@ -16,6 +16,7 @@ interface NodeInfo {
   udp_support: number;
   http_support: number;
   kcp_support: number;
+  wss_support?: number;
   need_real_name: number;
   bandwidth: number;
   allow_user_group: number;
@@ -43,6 +44,7 @@ const form = reactive({
   name: '',
   remarks: '无',
   bindDomain: '',
+  protocol: 'tcp',
   use_kcp: false,
   extra_config: '',
 });
@@ -66,6 +68,12 @@ const generateRandomData = () => {
   if (selectedNode.value) {
     const { min_open_port, max_open_port } = selectedNode.value;
     form.remotePort = (Math.floor(Math.random() * (max_open_port - min_open_port + 1)) + min_open_port).toString();
+    if (form.protocol === 'kcp' && selectedNode.value.kcp_support !== 1) {
+      form.protocol = 'tcp';
+    }
+    if (form.protocol === 'wss' && selectedNode.value.wss_support !== 1) {
+      form.protocol = 'tcp';
+    }
   }
   form.name = generateRandomString(8);
 };
@@ -123,7 +131,8 @@ const handleConfirm = async () => {
         name: form.name,
         remarks: form.remarks,
         bind_domain: form.bindDomain,
-        use_kcp: selectedNode.value?.kcp_support === 1 ? form.use_kcp : false,
+        protocol: form.protocol,
+        use_kcp: form.protocol === 'kcp',
         extra_config: form.extra_config || null,
       },
     });
@@ -192,6 +201,8 @@ onMounted(() => {
           <div class="w-full flex flex-col gap-2.5">
             <div class="flex gap-2 flex-wrap">
               <t-tag size="small" variant="outline" theme="primary">{{ selectedNode.bandwidth }}Mbps</t-tag>
+              <t-tag v-if="selectedNode.kcp_support === 1" size="small" variant="outline" theme="primary">KCP</t-tag>
+              <t-tag v-if="selectedNode.wss_support === 1" size="small" variant="outline" theme="success">WSS</t-tag>
               <t-tag size="small" :theme="selectedNode.need_real_name ? 'success' : 'warning'">
                 {{ selectedNode.need_real_name ? '需要实名认证' : '无需实名认证' }}
               </t-tag>
@@ -212,6 +223,19 @@ onMounted(() => {
             <t-option v-if="selectedNode?.http_support" label="HTTP" value="http" />
             <t-option v-if="selectedNode?.http_support" label="HTTPS" value="https" />
           </t-select>
+        </t-form-item>
+
+        <t-form-item label="加速协议">
+          <div class="flex flex-col gap-1 w-full text-left">
+            <t-radio-group v-model="form.protocol" variant="default-filled">
+              <t-radio-button value="tcp">TCP (默认)</t-radio-button>
+              <t-radio-button value="kcp" :disabled="selectedNode?.kcp_support !== 1">KCP 加速</t-radio-button>
+              <t-radio-button value="wss" :disabled="selectedNode?.wss_support !== 1">WSS 加速</t-radio-button>
+            </t-radio-group>
+            <span class="text-xs text-zinc-400 dark:text-zinc-500 leading-normal">
+              如果不明白请勿修改，若无法连接，请切换回tcp。
+            </span>
+          </div>
         </t-form-item>
 
         <t-row :gutter="[16, 20]">

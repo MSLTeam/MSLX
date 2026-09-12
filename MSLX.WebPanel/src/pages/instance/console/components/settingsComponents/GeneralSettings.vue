@@ -34,6 +34,11 @@ const instanceId = computed(() => {
   return parseInt(idStr);
 });
 
+const emits = defineEmits<{
+  (_e: 'success'): void;
+  (_e: 'saved'): void;
+}>();
+
 const formRef = ref<FormInstanceFunctions | null>(null);
 const loading = ref(false);
 const submitting = ref(false);
@@ -932,7 +937,9 @@ const onSubmit = async () => {
     } else {
       MessagePlugin.success('配置已保存');
       submitting.value = false;
-      initData();
+      await initData();
+      emits('success');
+      emits('saved');
     }
   } catch (e: any) {
     MessagePlugin.error(e.message || '保存失败');
@@ -1966,6 +1973,20 @@ onUnmounted(() => {
           </div>
           <div class="w-full md:w-[340px] shrink-0 flex md:justify-end items-center">
             <t-switch v-model="formData.allowOriginASCIIColors" size="large" />
+          </div>
+        </div>
+
+        <div
+          class="flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/20 transition-colors rounded-xl"
+        >
+          <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0 min-w-[200px]">
+            <div class="text-sm font-medium text-[var(--td-text-color-primary)] leading-snug">仿真终端模式 (测试)</div>
+            <div class="text-xs text-[var(--td-text-color-secondary)] mt-1 leading-relaxed">
+              开启后，实例将通过操作系统伪终端（ConPTY / POSIX PTY）启动，原生支持 Tab 命令自动补全、Ctrl+C 中断与全功能控制台交互。<br />保存后重启实例生效。本功能为测试功能，如遇到问题，请在 Github Issues 反馈 ～
+            </div>
+          </div>
+          <div class="w-full md:w-[340px] shrink-0 flex md:justify-end items-center">
+            <t-switch v-model="formData.enablePty" size="large" />
           </div>
         </div>
 

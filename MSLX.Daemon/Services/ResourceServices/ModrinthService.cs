@@ -37,7 +37,8 @@ namespace MSLX.Daemon.Services.ResourceServices
 
         public async Task<ResourceSearchResult> SearchAsync(ResourceSearchFilter filter)
         {
-            var urlBuilder = new StringBuilder("https://api.modrinth.com/v2/search?");
+            var baseUrl = filter.UseMirror ? "https://mod.mcimirror.top/modrinth/v2/search?" : "https://api.modrinth.com/v2/search?";
+            var urlBuilder = new StringBuilder(baseUrl);
             
             if (!string.IsNullOrEmpty(filter.Query))
             {
@@ -73,8 +74,12 @@ namespace MSLX.Daemon.Services.ResourceServices
                 urlBuilder.Append($"facets=[{string.Join(",", facets)}]&");
             }
 
-            // 如果为空字符串查询，默认根据热度排序
-            urlBuilder.Append("index=downloads&");
+            if (string.IsNullOrEmpty(filter.Query))
+            {
+                // 如果为空字符串查询，默认根据热度排序
+                urlBuilder.Append("index=downloads&");
+            }
+            
             urlBuilder.Append($"offset={filter.Offset}&limit={filter.Limit}");
 
             using var request = new HttpRequestMessage(HttpMethod.Get, urlBuilder.ToString());
@@ -87,13 +92,18 @@ namespace MSLX.Daemon.Services.ResourceServices
             using var doc = JsonDocument.Parse(json);
             
             var results = new List<Resource>();
+            var projectIds = new List<string>();
+
             if (doc.RootElement.TryGetProperty("hits", out var hitsArray))
             {
                 foreach (var element in hitsArray.EnumerateArray())
                 {
+                    var id = element.GetProperty("project_id").GetString();
+                    projectIds.Add(id);
+
                     results.Add(new Resource
                     {
-                        Id = element.GetProperty("project_id").GetString(),
+                        Id = id,
                         Name = element.GetProperty("title").GetString(),
                         Summary = element.GetProperty("description").GetString(),
                         IconUrl = element.TryGetProperty("icon_url", out var iconProp) && iconProp.ValueKind == JsonValueKind.String ? iconProp.GetString() : null,
@@ -111,6 +121,19 @@ namespace MSLX.Daemon.Services.ResourceServices
                 totalHits = totalProp.GetInt64();
             }
 
+            if (filter.UseMirror && results.Count > 0)
+            {
+                var translations = await McimTranslationHelper.TranslateModrinthBatchAsync(_httpClient, projectIds);
+                foreach (var res in results)
+                {
+                    if (translations.TryGetValue(res.Id, out var translatedStr))
+                    {
+                        res.TranslatedSummary = translatedStr;
+                        res.Summary = translatedStr; // Replace default summary with translated one for UI mapping
+                    }
+                }
+            }
+
             return new ResourceSearchResult
             {
                 Items = results,
@@ -118,9 +141,10 @@ namespace MSLX.Daemon.Services.ResourceServices
             };
         }
 
-        public async Task<Resource> GetResourceAsync(string id)
+        public async Task<Resource> GetResourceAsync(string id, bool useMirror = true)
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.modrinth.com/v2/project/{id}");
+            var baseUrl = useMirror ? $"https://mod.mcimirror.top/modrinth/v2/project/{id}" : $"https://api.modrinth.com/v2/project/{id}";
+            using var request = new HttpRequestMessage(HttpMethod.Get, baseUrl);
             request.Headers.Add("User-Agent", "MSLTeam/MSLX");
 
             var response = await _httpClient.SendAsync(request);
@@ -139,7 +163,7 @@ namespace MSLX.Daemon.Services.ResourceServices
                 updatedAt = updatedProp.GetDateTime();
             }
 
-            return new Resource
+            var resource = new Resource
             {
                 Id = element.GetProperty("id").GetString(),
                 Name = element.GetProperty("title").GetString(),
@@ -151,11 +175,24 @@ namespace MSLX.Daemon.Services.ResourceServices
                 DownloadCount = element.GetProperty("downloads").GetInt64(),
                 UpdatedAt = updatedAt
             };
+
+            if (useMirror)
+            {
+                var translatedStr = await McimTranslationHelper.TranslateModrinthSingleAsync(_httpClient, resource.Id);
+                if (!string.IsNullOrEmpty(translatedStr))
+                {
+                    resource.TranslatedSummary = translatedStr;
+                    resource.Summary = translatedStr;
+                }
+            }
+
+            return resource;
         }
 
-        public async Task<IEnumerable<ResourceVersion>> GetVersionsAsync(string id, string gameVersion = null, string loader = null)
+        public async Task<IEnumerable<ResourceVersion>> GetVersionsAsync(string id, string gameVersion = null, string loader = null, bool useMirror = true)
         {
-            var urlBuilder = new StringBuilder($"https://api.modrinth.com/v2/project/{id}/version?");
+            var baseUrl = useMirror ? $"https://mod.mcimirror.top/modrinth/v2/project/{id}/version?" : $"https://api.modrinth.com/v2/project/{id}/version?";
+            var urlBuilder = new StringBuilder(baseUrl);
             
             if (!string.IsNullOrEmpty(gameVersion))
             {

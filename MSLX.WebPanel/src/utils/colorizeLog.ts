@@ -33,11 +33,53 @@ const colorizeServerLog = (log: string, mode: number = -1): string => {
   log = log.replace(/\b(IPv4 supported|IPv6 supported)\b/g, (match) => c.cyan(match));
 
   // 启动器/系统前缀处理
-  if (log.startsWith('[System]')) log = log.replace(/^\[System]/, `[${c.blue.bold('System')}]`);
-  if (log.includes('[MSLX]')) log = log.replace(/\[MSLX]/g, `[${c.magenta.bold('MSLX')}]`);
-  if (log.includes('[MSLX-Backup]')) log = log.replace(/\[MSLX-Backup]/g, `[${c.magenta.bold('MSLX-Backup')}]`);
-  if (log.includes('[MSLX-Daemon]')) log = log.replace(/\[MSLX-Daemon]/g, `[${c.magenta.bold('MSLX-Daemon')}]`);
-  if (log.startsWith('>>>')) log = log.replace(/^>>>/, c.red.bold('>>>'));
+  if (log.startsWith('[System]')) log = log.replace(/^\[System\]/, `[${c.blue.bold('System')}]`);
+  if (log.includes('[MSLX-Backup]')) log = log.replace(/\[MSLX-Backup\]/g, `[${c.yellow.bold('MSLX-Backup')}]`);
+  if (log.includes('[MSLX-Daemon]')) log = log.replace(/\[MSLX-Daemon\]/g, `[${c.blue.bold('MSLX-Daemon')}]`);
+  if (log.includes('[MSLX-MCServer]')) log = log.replace(/\[MSLX-MCServer\]/g, `[${c.cyan.bold('MSLX-MCServer')}]`);
+  if (log.includes('[MSLX]')) log = log.replace(/\[MSLX\]/g, `[${c.cyan.bold('MSLX')}]`);
+  if (log.includes('[RCON]')) log = log.replace(/\[RCON\]/g, `[${c.green.bold('RCON')}]`);
+
+  // >>> 前缀根据语义染色（默认品牌青色，警告黄色，错误红色）
+  if (log.startsWith('>>>')) {
+    if (/\b(error|failed|exception|失败|错误|无效|❌)\b/i.test(log)) {
+      log = log.replace(/^>>>/, c.red.bold('>>>'));
+    } else if (/\b(warn|warning|警告|⚠️)\b/i.test(log)) {
+      log = log.replace(/^>>>/, c.yellow.bold('>>>'));
+    } else {
+      log = log.replace(/^>>>/, c.cyan.bold('>>>'));
+    }
+  }
+
+  // 针对 MSLX / System 体系的生命周期与状态关键词染色
+  if (log.includes('[MSLX') || log.includes('[System]') || log.startsWith('>>>')) {
+    // 启动成功
+    log = log.replace(
+      /(服务器进程已通过 PTY 启动|服务器进程已启动|启动成功)/g,
+      (match) => c.green.bold(match),
+    );
+    // 关停/停止
+    log = log.replace(
+      /(服务器已停止|服务器进程已停止|停止处理完成|已强制结束[^\s,，。]*)/g,
+      (match) => c.yellow.bold(match),
+    );
+    // 进行中动作
+    log = log.replace(
+      /(正在初始化服务|正在启动服务端实例|正在执行重启|正在处理下载[^\s,，。]*)/g,
+      (match) => c.cyan(match),
+    );
+    log = log.replace(
+      /(准备执行停止指令|已发送关闭指令[^\s,，。]*|正在等待[^\s,，。]*|正在备份[^\s,，。]*)/g,
+      (match) => c.yellow(match),
+    );
+    // 状态标签
+    log = log.replace(/\(用户操作\)/g, c.yellow('(用户操作)'));
+    log = log.replace(/\(正常关闭\)/g, c.green('(正常关闭)'));
+    log = log.replace(/\(异常退出\)/g, c.red.bold('(异常退出)'));
+    // PID 与退出码
+    log = log.replace(/\bPID:\s*(\d+)/g, (_, pid) => `PID: ${c.cyan(pid)}`);
+    log = log.replace(/退出代码:\s*(\d+)/g, (_, code) => `退出代码: ${code === '0' ? c.green(code) : c.red.bold(code)}`);
+  }
 
   // === 简约染色 ===
   if (mode === 1) {

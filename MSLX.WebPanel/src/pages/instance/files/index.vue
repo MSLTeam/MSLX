@@ -12,6 +12,7 @@ import {
   FileAddIcon,
   FileIcon,
   FileImageIcon,
+  ImageIcon,
   FilePasteIcon,
   FileZipIcon,
   FolderIcon,
@@ -28,6 +29,9 @@ import {
   FilterIcon,
   EditIcon,
   FolderAddIcon,
+  VideoIcon,
+  ViewListIcon,
+  ViewModuleIcon,
 } from 'tdesign-icons-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import {
@@ -35,6 +39,7 @@ import {
   createDirectory,
   deleteFiles,
   downloadFileStream,
+  getVideoStreamUrl,
   getFileContent,
   getInstanceFilesList,
   moveFiles,
@@ -45,10 +50,12 @@ import type { FilesListModel } from '@/api/model/files';
 import FileEditor from './components/FileEditor.vue';
 import FileUploader from './components/FileUploader.vue';
 import ImagePreview from './components/ImagePreview.vue';
+import VideoPreview from './components/VideoPreview.vue';
 import FileCompressor from './components/FileCompressor.vue';
 import FileDecompress from './components/FileDecompress.vue';
 import FilePermission from './components/FilePermission.vue';
 import FileOfflineDownloader from './components/FileOfflineDownloader.vue';
+import FileGridView from './components/FileGridView.vue';
 import { changeUrl } from '@/router';
 import { useUserStore } from '@/store';
 
@@ -62,6 +69,14 @@ const loading = ref(false);
 const fileList = ref<FilesListModel[]>([]);
 const currentPath = ref('');
 const selectedRowKeys = ref<string[]>([]);
+const currentPage = ref(1);
+const pageSize = ref(50);
+const totalCount = ref(0);
+const viewMode = ref<'list' | 'grid'>((localStorage.getItem('mslx_file_view_mode') as 'list' | 'grid') || 'list');
+const setViewMode = (mode: 'list' | 'grid') => {
+  viewMode.value = mode;
+  localStorage.setItem('mslx_file_view_mode', mode);
+};
 const isFileDragOver = ref(false);
 const fileDragCounter = ref(0);
 const droppedUploadItems = ref<Array<{ file: File; path: string }>>([]);
@@ -73,6 +88,7 @@ const isMobile = computed(() => screenWidth.value < 768);
 // 各类弹窗状态
 const showEditor = ref(false);
 const showImagePreview = ref(false);
+const showVideoPreview = ref(false);
 const showCreateDialog = ref(false);
 const showRenameDialog = ref(false);
 const showBatchUploader = ref(false);
@@ -91,6 +107,7 @@ const editorSaveSuccess = ref(0);
 const editorDirty = ref(false);
 const previewFileName = ref('');
 const previewUrl = ref('');
+const videoPreviewUrl = ref('');
 const newFileName = ref('');
 const renameNewName = ref('');
 const renameTargetObj = ref<{ name: string; fullPath: string } | null>(null);
@@ -108,9 +125,14 @@ const isImage = (name: string) => {
   return ['png', 'jpg', 'jpeg', 'gif', 'ico', 'webp', 'bmp', 'svg'].includes(ext || '');
 };
 
-const isArchive = (name: string) => {
+const isVideo = (name: string) => {
   const ext = name.split('.').pop()?.toLowerCase();
-  return ['zip', 'jar'].includes(ext || '');
+  return ['mp4', 'webm', 'ogg', 'mov', 'mkv', 'flv', 'avi', 'm4v', 'ts', '3gp'].includes(ext || '');
+};
+
+const isArchive = (name: string) => {
+  const lower = name.toLowerCase();
+  return /\.(zip|jar|rar|7z|tar|tar\.gz|tgz|tar\.xz|txz|tar\.bz2|tbz2|tar\.zst|gz|xz|bz2)$/i.test(lower);
 };
 
 const getFileIcon = (row: FilesListModel) => {
@@ -126,7 +148,8 @@ const getFileIcon = (row: FilesListModel) => {
   const ext = row.name.split('.').pop()?.toLowerCase();
   if (['png', 'jpg', 'jpeg', 'gif', 'ico', 'webp'].includes(ext || ''))
     return { icon: FileImageIcon, color: 'var(--td-success-color)' };
-  if (['jar', 'zip', 'rar', '7z', 'tar', 'gz'].includes(ext || '')) return { icon: FileZipIcon, color: '#722ed1' };
+  if (isVideo(row.name)) return { icon: VideoIcon, color: '#0052d9' };
+  if (isArchive(row.name)) return { icon: FileZipIcon, color: '#722ed1' };
   if (['yml', 'yaml', 'json', 'properties', 'toml', 'xml', 'conf', 'sh', 'bat', 'cmd'].includes(ext || ''))
     return { icon: CodeIcon, color: 'var(--td-warning-color)' };
   if (['log', 'txt', 'md', 'lock'].includes(ext || '')) return { icon: FilePasteIcon, color: 'var(--td-gray-color-6)' };
@@ -200,8 +223,31 @@ const fetchData = async (targetPath = currentPath.value) => {
   loading.value = true;
   selectedRowKeys.value = [];
   try {
-    const res = await getInstanceFilesList(instanceId.value, targetPath);
-    fileList.value = res || [];
+    const res = await getInstanceFilesList(instanceId.value, {
+      path: targetPath,
+      page: currentPage.value,
+      pageSize: pageSize.value,
+      search: searchKey.value.trim() || undefined,
+      sort: sortType.value,
+    });
+
+    if (Array.isArray(res)) {
+      fileList.value = res || [];
+      totalCount.value = res.length;
+    } else if (res && Array.isArray((res as any).items)) {
+      fileList.value = (res as any).items || [];
+      totalCount.value = (res as any).total ?? (res as any).items.length;
+      const maxPage = Math.max(1, Math.ceil(totalCount.value / pageSize.value));
+      if (currentPage.value > maxPage) {
+        currentPage.value = maxPage;
+        await fetchData(targetPath);
+        return;
+      }
+    } else {
+      fileList.value = [];
+      totalCount.value = 0;
+    }
+
     currentPath.value = targetPath;
   } catch (error) {
     console.error(`请求路径 [${targetPath}] 失败:`, error);
@@ -232,11 +278,22 @@ const openPreview = async (fileName: string) => {
   }
 };
 
+const openVideoPreview = (fileName: string) => {
+  const fullPath = currentPath.value ? `${currentPath.value}/${fileName}` : fileName;
+  videoPreviewUrl.value = getVideoStreamUrl(instanceId.value, fullPath);
+  previewFileName.value = fileName;
+  showVideoPreview.value = true;
+};
+
 const openEditor = async (fileName: string, isNewFile = false) => {
   if (isNewFile) {
     editorFileName.value = fileName;
     editorContent.value = '';
     showEditor.value = true;
+    return;
+  }
+  if (isVideo(fileName)) {
+    openVideoPreview(fileName);
     return;
   }
   if (isImage(fileName)) {
@@ -364,6 +421,8 @@ const handleRowClick = (row: any) => {
     const separator = currentPath.value === '' ? '' : '/';
     const targetPath = `${currentPath.value}${separator}${row.name}`;
     router.push({ query: { ...route.query, path: targetPath || undefined } });
+  } else if (isVideo(row.name)) {
+    openVideoPreview(row.name);
   } else if (isImage(row.name)) {
     openPreview(row.name);
   } else {
@@ -639,34 +698,38 @@ const sortOptions = [
 
 // --- 计算属性 ---
 const filteredFileList = computed(() => {
-  let list = [...fileList.value]; // 浅拷贝
+  return fileList.value;
+});
 
-  // 搜索过滤
-  if (searchKey.value) {
-    const key = searchKey.value.toLowerCase();
-    list = list.filter((item) => item.name.toLowerCase().includes(key));
-  }
+const paginationConfig = computed(() => ({
+  current: currentPage.value,
+  pageSize: pageSize.value,
+  total: totalCount.value,
+  pageSizeOptions: [20, 50, 100],
+  layout: isMobile.value ? 'total, prev, pager, next' : 'total, size, prev, pager, next, jumper',
+  maxPageBtnNum: isMobile.value ? 3 : 5,
+  size: 'small' as const,
+}));
 
-  // 排序逻辑
-  list.sort((a, b) => {
-    // 文件夹置顶优先级最高
-    if (a.type === 'folder' && b.type !== 'folder') return -1;
-    if (a.type !== 'folder' && b.type === 'folder') return 1;
+const handlePageChange = (pageInfo: { current: number; pageSize: number }) => {
+  currentPage.value = pageInfo.current;
+  pageSize.value = pageInfo.pageSize;
+  selectedRowKeys.value = [];
+  fetchData();
+};
 
-    // 具体排序规则
-    switch (sortType.value) {
-      case 'name':
-        return a.name.localeCompare(b.name, 'zh-CN', { numeric: true });
-      case 'time':
-        return new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime();
-      case 'size':
-        return b.size - a.size;
-      default:
-        return 0;
-    }
-  });
+let searchDebounceTimer: any = null;
+watch(searchKey, () => {
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(() => {
+    currentPage.value = 1;
+    fetchData();
+  }, 300);
+});
 
-  return list;
+watch(sortType, () => {
+  currentPage.value = 1;
+  fetchData();
 });
 
 // —————— 生命周期 ——————
@@ -681,6 +744,7 @@ watch(
     if (targetPath === currentPath.value && fileList.value.length > 0) return;
 
     try {
+      currentPage.value = 1;
       searchKey.value = '';
       await fetchData(targetPath);
     } catch (err: any) {
@@ -733,6 +797,8 @@ onBeforeRouteLeave((to, _from, next) => {
 watch(instanceId, async () => {
   if (route.name !== 'InstanceFiles') return;
   currentPath.value = '';
+  currentPage.value = 1;
+  searchKey.value = '';
   selectedRowKeys.value = [];
   try {
     await fetchData();
@@ -745,6 +811,10 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = null;
+  }
   window.removeEventListener('resize', handleResize);
 });
 </script>
@@ -777,6 +847,7 @@ onUnmounted(() => {
             placeholder="搜索文件..."
             class="!rounded-lg shadow-sm"
             :style="{ width: isMobile ? '120px' : '200px' }"
+            clearable
           >
             <template #prefix-icon><search-icon class="text-zinc-400" /></template>
           </t-input>
@@ -790,6 +861,20 @@ onUnmounted(() => {
           >
             <template #prefixIcon><filter-icon class="text-zinc-400" /></template>
           </t-select>
+
+          <t-radio-group
+            :value="viewMode"
+            variant="default-filled"
+            class="!rounded-lg overflow-hidden shrink-0 shadow-sm"
+            @change="(val: any) => setViewMode(val)"
+          >
+            <t-radio-button value="list">
+              <template #default><view-list-icon /></template>
+            </t-radio-button>
+            <t-radio-button value="grid">
+              <template #default><view-module-icon /></template>
+            </t-radio-button>
+          </t-radio-group>
 
           <t-button
             variant="outline"
@@ -839,15 +924,52 @@ onUnmounted(() => {
         @dragleave.prevent="handleFileDragLeave"
         @drop.prevent="handleFileDrop"
       >
+        <!-- 大图标网格视图 -->
+        <div v-if="viewMode === 'grid'" class="flex flex-col flex-1 h-full overflow-y-auto">
+          <file-grid-view
+            v-model:selected-row-keys="selectedRowKeys"
+            :file-list="filteredFileList"
+            :instance-id="instanceId"
+            :current-path="currentPath"
+            :is-mobile="isMobile"
+            :has-permission-support="hasPermissionSupport"
+            :loading="loading"
+            @row-click="handleRowClick"
+            @open-editor="openEditor"
+            @open-preview="openPreview"
+            @open-video-preview="openVideoPreview"
+            @download="handleDownload"
+            @rename="handleOpenRename"
+            @delete="handleDelete"
+            @compress="handleCompress"
+            @decompress="handleOpenDecompress"
+            @permission="handleOpenPermission"
+          />
+          <div
+            v-if="totalCount > 0"
+            class="p-3 border-t border-zinc-200/60 dark:border-zinc-800 flex justify-end shrink-0"
+          >
+            <t-pagination
+              v-bind="paginationConfig"
+              @change="handlePageChange"
+            />
+          </div>
+        </div>
+
+        <!-- 列表视图 -->
         <t-table
+          v-else
           v-model:selected-row-keys="selectedRowKeys"
           :data="filteredFileList"
           :columns="columns as any"
           :row-key="'name'"
           :loading="loading"
           :hover="true"
+          :pagination="paginationConfig"
+          :disable-data-page="true"
           size="medium"
           class="custom-table"
+          @page-change="handlePageChange"
         >
           <template #name="{ row }">
             <div class="flex items-center py-1.5 cursor-pointer group" @click.stop="handleRowClick(row)">
@@ -906,11 +1028,12 @@ onUnmounted(() => {
                     <t-dropdown-item
                       v-if="!(row.type === 'folder' || isArchive(row.name))"
                       value="edit"
-                      @click="isImage(row.name) ? openPreview(row.name) : openEditor(row.name)"
+                      @click="isVideo(row.name) ? openVideoPreview(row.name) : isImage(row.name) ? openPreview(row.name) : openEditor(row.name)"
                     >
-                      <image-icon v-if="isImage(row.name)" class="mr-2" />
+                      <video-icon v-if="isVideo(row.name)" class="mr-2" />
+                      <image-icon v-else-if="isImage(row.name)" class="mr-2" />
                       <edit-icon v-else class="mr-2" />
-                      <span>{{ isImage(row.name) ? '预览' : '编辑' }}</span>
+                      <span>{{ isVideo(row.name) || isImage(row.name) ? '预览' : '编辑' }}</span>
                     </t-dropdown-item>
 
                     <t-dropdown-item v-if="hasPermissionSupport" value="permission" @click="handleOpenPermission(row)">
@@ -1093,6 +1216,7 @@ onUnmounted(() => {
       @success="handleUploadSuccess"
     />
     <image-preview v-model:visible="showImagePreview" :file-name="previewFileName" :image-blob-url="previewUrl" />
+    <video-preview v-model:visible="showVideoPreview" :file-name="previewFileName" :video-url="videoPreviewUrl" />
     <file-compressor
       v-model:visible="showCompressor"
       :instance-id="instanceId"

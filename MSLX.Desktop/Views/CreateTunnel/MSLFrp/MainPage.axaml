@@ -117,6 +117,10 @@
                       <Run Text="节点："/>
                       <Run Text="{Binding SelectedTunnel.Node}"/>
                     </TextBlock>
+                    <TextBlock IsVisible="{Binding SelectedTunnel.HasAcceleration}">
+                      <Run Text="加速协议："/>
+                      <Run Text="{Binding SelectedTunnel.Protocol}"/>
+                    </TextBlock>
                     <Button Content="使用该隧道" Height="50" Classes="Flat"
                             FontSize="18" Click="UseTunnel_Click"/>
                   </StackPanel>
@@ -201,6 +205,11 @@
 												<TextBlock Text="KCP" FontSize="11" Foreground="#673AB7" FontWeight="SemiBold"/>
 											</Border>
 
+											<!-- WSS 支持 -->
+											<Border CornerRadius="4" Padding="5,1" Background="#15009688" IsVisible="{Binding WssSupport}">
+												<TextBlock Text="WSS" FontSize="11" Foreground="#009688" FontWeight="SemiBold"/>
+											</Border>
+
 											<!-- HTTP 支持 -->
 											<Border CornerRadius="4" Padding="5,1" Background="#154CAF50" IsVisible="{Binding HttpSupport}">
 												<TextBlock Text="HTTP" FontSize="11" Foreground="#4CAF50" FontWeight="SemiBold"/>
@@ -269,9 +278,14 @@
                       <NumericUpDown x:Name="CreateRemotePortBox" MinWidth="150"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Spacing="5">
-                      <TextBlock VerticalAlignment="Center" Text="使用KCP协议传输："/>
-                      <ToggleSwitch x:Name="CreateKcpToggle"/>
+                      <TextBlock VerticalAlignment="Center" Text="加速协议："/>
+                      <ComboBox x:Name="CreateProtocolCombo" MinWidth="150" SelectedIndex="0">
+                        <ComboBoxItem>tcp</ComboBoxItem>
+                        <ComboBoxItem IsEnabled="{Binding SelectedNode.KcpSupport}">kcp</ComboBoxItem>
+                        <ComboBoxItem IsEnabled="{Binding SelectedNode.WssSupport}">wss</ComboBoxItem>
+                      </ComboBox>
                     </StackPanel>
+                    <TextBlock Text="如果不明白请勿修改，若无法连接，请切换回tcp。" FontSize="11" Foreground="Gray"/>
                     <Button Content="创建隧道" Height="50" Classes="Flat"
                             FontSize="18" Click="CreateTunnel_Click"/>
                   </StackPanel>

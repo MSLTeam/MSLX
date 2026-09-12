@@ -63,7 +63,16 @@ const filter = reactive({
   category: '',
   offset: 0,
   limit: 24,
+  useMirror: localStorage.getItem('mslx_use_mirror') !== 'false',
 });
+
+watch(
+  () => filter.useMirror,
+  (val) => {
+    localStorage.setItem('mslx_use_mirror', String(val));
+    handleSearch();
+  }
+);
 
 const pagination = reactive({
   current: 1,
@@ -221,7 +230,7 @@ const fetchAllVersionsForModal = async () => {
   versionLoading.value = true;
   allVersionList.value = [];
   try {
-    const versions = await getResourceVersions(currentItem.value.provider, currentItem.value.id, '', '');
+    const versions = await getResourceVersions(currentItem.value.provider, currentItem.value.id, '', '', filter.useMirror);
     allVersionList.value = versions || [];
 
     const gvs = new Set<string>();
@@ -275,7 +284,7 @@ const openDetailModal = async (item: ResourceModel) => {
   detailLoading.value = true;
   currentDetail.value = null;
   try {
-    const res = await getResourceDetail(item.provider, item.id);
+    const res = await getResourceDetail(item.provider, item.id, filter.useMirror);
     if (res) {
       currentDetail.value = res;
     }
@@ -303,6 +312,12 @@ watch(isDark, (val) => {
       <div class="flex flex-col gap-1 items-start shrink-0 min-w-0">
         <h2 class="text-lg font-bold tracking-tight text-[var(--td-text-color-primary)] m-0">资源中心</h2>
         <p class="text-sm text-[var(--td-text-color-secondary)] m-0">搜索并下载服务端插件、Mod 和其他资源包</p>
+        <div class="flex items-center gap-2 mt-1">
+          <t-switch v-model="filter.useMirror" size="small" />
+          <span class="text-xs text-[var(--td-text-color-secondary)]">
+            使用 <a href="https://www.mcimirror.top/" target="_blank" class="text-[var(--td-brand-color)] hover:underline">MCIM 镜像源</a> 获取中文翻译和加速
+          </span>
+        </div>
       </div>
       <div class="flex flex-wrap items-center sm:justify-end gap-3">
         <node-switcher @change="handleNodeChange" />

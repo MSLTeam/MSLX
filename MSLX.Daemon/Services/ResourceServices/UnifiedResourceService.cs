@@ -10,14 +10,21 @@ namespace MSLX.Daemon.Services.ResourceServices
     public class UnifiedResourceService : IUnifiedResourceService
     {
         private readonly IEnumerable<IResourceProvider> _providers;
+        private readonly ModDictionaryService _modDictionary;
 
-        public UnifiedResourceService(IEnumerable<IResourceProvider> providers)
+        public UnifiedResourceService(IEnumerable<IResourceProvider> providers, ModDictionaryService modDictionary)
         {
             _providers = providers;
+            _modDictionary = modDictionary;
         }
 
         public async Task<ResourceSearchResult> SearchAsync(ResourceSearchFilter filter)
         {
+            // 中译英（本地词库）
+            if (!string.IsNullOrWhiteSpace(filter.Query))
+            {
+                filter.Query = _modDictionary.TranslateChineseQueryToEnglish(filter.Query);
+            }
             var activeProviders = _providers.Where(p => 
             {
                 if (filter.Provider != null && filter.Provider != p.ProviderType) return false;
@@ -53,12 +60,36 @@ namespace MSLX.Daemon.Services.ResourceServices
             }
             
             var results = await Task.WhenAll(tasks);
-            var merged = results.SelectMany(r => r.Items).ToList();
+            var merged = new List<Resource>();
+            if (results.Length > 0)
+            {
+                int maxCount = results.Max(r => r.Items.Count());
+                for (int i = 0; i < maxCount; i++)
+                {
+                    foreach (var result in results)
+                    {
+                        var list = result.Items as List<Resource> ?? result.Items.ToList();
+                        if (i < list.Count)
+                        {
+                            merged.Add(list[i]);
+                        }
+                    }
+                }
+            }
             long totalCount = results.Sum(r => r.TotalCount);
+
+            foreach (var item in merged)
+            {
+                var cnName = _modDictionary.GetChineseName(item.Name);
+                if (!string.IsNullOrEmpty(cnName))
+                {
+                    item.Name = cnName;
+                }
+            }
 
             return new ResourceSearchResult
             {
-                Items = merged.OrderBy(r => r.Name).ThenByDescending(r => r.DownloadCount).ToList(),
+                Items = merged,
                 TotalCount = totalCount
             };
         }
@@ -76,24 +107,24 @@ namespace MSLX.Daemon.Services.ResourceServices
             }
         }
 
-        public async Task<Resource> GetResourceAsync(string id, ResourceProviderType providerType)
+        public async Task<Resource> GetResourceAsync(string id, ResourceProviderType providerType, bool useMirror = true)
         {
             var provider = _providers.FirstOrDefault(p => p.ProviderType == providerType);
             if (provider == null)
             {
                 throw new NotSupportedException($"提供商 {providerType} 不存在.");
             }
-            return await provider.GetResourceAsync(id);
+            return await provider.GetResourceAsync(id, useMirror);
         }
 
-        public async Task<IEnumerable<ResourceVersion>> GetVersionsAsync(string id, ResourceProviderType providerType, string gameVersion = null, string loader = null)
+        public async Task<IEnumerable<ResourceVersion>> GetVersionsAsync(string id, ResourceProviderType providerType, string gameVersion = null, string loader = null, bool useMirror = true)
         {
             var provider = _providers.FirstOrDefault(p => p.ProviderType == providerType);
             if (provider == null)
             {
                 throw new NotSupportedException($"提供商 {providerType} 不存在.");
             }
-            return await provider.GetVersionsAsync(id, gameVersion, loader);
+            return await provider.GetVersionsAsync(id, gameVersion, loader, useMirror);
         }
     }
 }

@@ -43,6 +43,20 @@ public partial class MainPage : UserControl
         _vm = (MainPageViewModel)DataContext!;
         FatherControl = fatherControl;
         _userInfo = userInfo;
+        _vm.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(MainPageViewModel.SelectedNode) && _vm.SelectedNode != null)
+            {
+                if (CreateProtocolCombo.SelectedIndex == 1 && !_vm.SelectedNode.KcpSupport)
+                {
+                    CreateProtocolCombo.SelectedIndex = 0;
+                }
+                else if (CreateProtocolCombo.SelectedIndex == 2 && !_vm.SelectedNode.WssSupport)
+                {
+                    CreateProtocolCombo.SelectedIndex = 0;
+                }
+            }
+        };
         Initialized += OnInitialized;
     }
 
@@ -119,6 +133,7 @@ public partial class MainPage : UserControl
                     HttpSupport = (nodeItem["http_support"]?.Value<int>() ?? 0) == 1,
                     UdpSupport = (nodeItem["udp_support"]?.Value<int>() ?? 0) == 1,
                     KcpSupport = (nodeItem["kcp_support"]?.Value<int>() ?? 0) == 1,
+                    WssSupport = (nodeItem["wss_support"]?.Value<int>() ?? 0) == 1,
                     MaxOpenPort = nodeItem["max_open_port"]?.Value<int>() ?? 0,
                     MinOpenPort = nodeItem["min_open_port"]?.Value<int>() ?? 0,
                     NeedRealName = (nodeItem["need_real_name"]?.Value<int>() ?? 0) == 1,
@@ -174,6 +189,8 @@ public partial class MainPage : UserControl
             {
                 int nodeId = tunnel["node_id"]?.Value<int>() ?? 0;
                 string nodeName = _nodeMap.ContainsKey(nodeId) ? _nodeMap[nodeId] : "未知节点";
+                string protocol = tunnel["protocol"]?.Value<string>()
+                    ?? ((tunnel["use_kcp"]?.Value<int>() ?? 0) == 1 ? "kcp" : "tcp");
                 _vm.Tunnels.Add(new Tunnel
                 {
                     Id = tunnel["id"]?.Value<int>() ?? 0,
@@ -182,7 +199,8 @@ public partial class MainPage : UserControl
                     Status = (tunnel["status"]?.Value<int>() ?? 0) == 0 ? "隧道未启动" : "隧道已在线",
                     LocalPort = tunnel["local_port"]?.Value<int>() ?? 0,
                     RemotePort = tunnel["remote_port"]?.Value<int>() ?? 0,
-                    Node = nodeName
+                    Node = nodeName,
+                    Protocol = protocol.ToUpper()
                 });
             }
 
@@ -350,10 +368,22 @@ public partial class MainPage : UserControl
             int typeIndex = CreateTypeCombo.SelectedIndex;
             string type = typeIndex == 0 ? "tcp" : typeIndex == 1 ? "udp" : typeIndex == 2 ? "http" : "https";
 
+            int protocolIndex = CreateProtocolCombo.SelectedIndex;
+            string protocol = protocolIndex == 1 ? "kcp" : protocolIndex == 2 ? "wss" : "tcp";
+
+            if (protocol == "kcp" && !_vm.SelectedNode.KcpSupport)
+            {
+                protocol = "tcp";
+            }
+            else if (protocol == "wss" && !_vm.SelectedNode.WssSupport)
+            {
+                protocol = "tcp";
+            }
+
             var response = await MSLUserService.PostAsync(
                 "/frp/addTunnel",
                 HttpService.PostContentType.Json,
-                new Dictionary<string, string>
+                new Dictionary<string, object>
                 {
                     ["name"] = CreateNameBox.Text ?? string.Empty,
                     ["local_ip"] = CreateLocalIpBox.Text ?? "127.0.0.1",
@@ -362,7 +392,8 @@ public partial class MainPage : UserControl
                     ["id"] = _vm.SelectedNode.Id.ToString(),
                     ["type"] = type,
                     ["remarks"] = $"Create By MSLX {Assembly.GetExecutingAssembly().GetName().Version}",
-                    ["use_kcp"] = CreateKcpToggle.IsChecked == true ? "true" : "false"
+                    ["protocol"] = protocol,
+                    ["use_kcp"] = protocol == "kcp"
                 }
             );
             JObject json = JObject.Parse(response?.Content ?? string.Empty);

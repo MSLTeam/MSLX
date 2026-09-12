@@ -2,46 +2,158 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:terminal="using:Iciclecreek.Terminal"
              xmlns:local="clr-namespace:MSLX.Desktop.Views.InstanceInfo"
-             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="400"
+             xmlns:micon="clr-namespace:Material.Icons.Avalonia;assembly=Material.Icons.Avalonia"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="500"
              x:Class="MSLX.Desktop.Views.InstanceInfo.InstanceConsoleTab">
 
-  <Grid RowDefinitions="*,Auto" Margin="0,4,0,0">
+  <!-- 统一控制台毛玻璃窗口容器 (根据白昼/黑夜主题自适应为白毛玻璃或黑毛玻璃) -->
+  <Border x:Name="ConsoleContainer"
+          Background="#99141418"
+          CornerRadius="10"
+          BorderThickness="1"
+          BorderBrush="#25ffffff"
+          ClipToBounds="True"
+          BoxShadow="0 4 24 0 #20000000"
+          Margin="0,2,0,0">
+    <Grid RowDefinitions="38,*">
 
-    <!-- 日志输出区 -->
-    <Border Grid.Row="0"
-            BorderThickness="1"
-            CornerRadius="4">
-      <ScrollViewer x:Name="LogScroll"
-                    HorizontalScrollBarVisibility="Auto"
-                    VerticalScrollBarVisibility="Auto">
-        <ItemsControl x:Name="LogList">
-           <ItemsControl.ItemsPanel>
-            <ItemsPanelTemplate>
+      <!-- 顶栏 Window Header (毛玻璃高光微透层) -->
+      <Border x:Name="HeaderBorder"
+              Grid.Row="0"
+              Background="#1affffff"
+              BorderThickness="0,0,0,1"
+              BorderBrush="#15ffffff"
+              Padding="12,0">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <!-- macOS 红黄绿圆点 + 标题 + PTY状态标签 -->
+          <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Ellipse Width="10" Height="10" Fill="#ff5f56"/>
+              <Ellipse Width="10" Height="10" Fill="#ffbd2e"/>
+              <Ellipse Width="10" Height="10" Fill="#27c93f"/>
+            </StackPanel>
+            <TextBlock x:Name="ConsoleTitleText"
+                       Text="MSLX 交互终端"
+                       FontSize="12"
+                       FontWeight="Medium"
+                       FontFamily="Cascadia Code, Consolas, Maple Mono, Menlo, monospace"
+                       Foreground="#e4e4e7"
+                       VerticalAlignment="Center"/>
+            <Border x:Name="PtyBadge"
+                    Background="#3306b6d4"
+                    CornerRadius="4"
+                    Padding="6,2"
+                    VerticalAlignment="Center">
+              <TextBlock x:Name="PtyBadgeText"
+                         Text="PTY 伪终端"
+                         FontSize="10"
+                         FontWeight="Bold"
+                         Foreground="#22d3ee"/>
+            </Border>
+            <TextBlock x:Name="PtyHintText"
+                       Text="(可在「设置」中开启 PTY 伪终端模式)"
+                       FontSize="11"
+                       Foreground="#a1a1aa"
+                       VerticalAlignment="Center"
+                       IsVisible="False"/>
+          </StackPanel>
+
+          <!-- 模式切换胶囊 (终端 / 日志视图) -->
+          <Border x:Name="ModeTrackBorder"
+                  Grid.Column="2"
+                  Background="#33000000"
+                  CornerRadius="6"
+                  Padding="2"
+                  VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="2">
+              <Button x:Name="PtyModeButton"
+                      Padding="10,4"
+                      CornerRadius="4"
+                      BorderThickness="0"
+                      Background="#40ffffff"
+                      Click="OnPtyModeClick">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                  <micon:MaterialIcon x:Name="PtyIcon" Kind="ConsoleLine" Width="13" Height="13" Foreground="#ffffff" VerticalAlignment="Center"/>
+                  <TextBlock x:Name="PtyText" Text="终端" FontSize="11" FontWeight="Medium" Foreground="#ffffff" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+              <Button x:Name="LogModeButton"
+                      Padding="10,4"
+                      CornerRadius="4"
+                      BorderThickness="0"
+                      Background="Transparent"
+                      Click="OnLogModeClick">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                  <micon:MaterialIcon x:Name="LogIcon" Kind="TextBoxOutline" Width="13" Height="13" Foreground="#a1a1aa" VerticalAlignment="Center"/>
+                  <TextBlock x:Name="LogText" Text="日志视图" FontSize="11" Foreground="#a1a1aa" VerticalAlignment="Center"/>
+                </StackPanel>
+              </Button>
+            </StackPanel>
+          </Border>
+        </Grid>
+      </Border>
+
+      <!-- 主内容区域：行 1 -->
+      <!-- 模式 1：PTY 交互终端 -->
+      <Grid Grid.Row="1" x:Name="PtyViewPanel" IsVisible="False" Background="Transparent">
+        <terminal:TerminalControl x:Name="Terminal"
+                                  HorizontalAlignment="Stretch"
+                                  VerticalAlignment="Stretch"
+                                  Background="Transparent"
+                                  Foreground="#f4f4f5"
+                                  CursorColor="#22d3ee"
+                                  CursorBlink="False"
+                                  UseSkiaRenderer="False"
+                                  CursorStyle="Block"
+                                  FontFamily="Cascadia Code, Consolas, Maple Mono, Menlo, monospace"
+                                  FontSize="13"
+                                  Margin="6,4"
+                                  BufferSize="5000"/>
+      </Grid>
+
+      <!-- 模式 2：标准日志输出区 -->
+      <Grid Grid.Row="1" x:Name="LogViewPanel" RowDefinitions="*,Auto" IsVisible="True" Margin="8,6,8,8">
+        <ScrollViewer Grid.Row="0"
+                      x:Name="LogScroll"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto">
+          <ItemsControl x:Name="LogList">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
                 <VirtualizingStackPanel />
-            </ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate>
-            <DataTemplate x:DataType="local:LogEntry">
-              <TextBlock Text="{Binding Text}"
-                         Foreground="{Binding Color}"
-                         TextWrapping="NoWrap"
-                         Margin="4,1"/>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
-      </ScrollViewer>
-    </Border>
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="local:LogEntry">
+                <TextBlock Text="{Binding Text}"
+                           Foreground="{Binding Color}"
+                           FontFamily="Cascadia Code, Consolas, Maple Mono, Menlo, monospace"
+                           FontSize="12"
+                           TextWrapping="NoWrap"
+                           Margin="2,1"/>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
 
-    <!-- 指令输入区 -->
-    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,6,0,0">
-      <TextBox x:Name="CmdInput"
-               PlaceholderText="输入指令，回车发送..."
-               KeyDown="OnCmdInputKeyDown"/>
-      <Button Grid.Column="1"
-              Content="发送"
-              Click="OnSendCmdClick"/>
+        <!-- 指令输入区 -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,Auto" Margin="0,6,0,0">
+          <TextBox x:Name="CmdInput"
+                   PlaceholderText="输入指令，回车发送..."
+                   Background="#33000000"
+                   Foreground="#f4f4f5"
+                   BorderBrush="#25ffffff"
+                   CornerRadius="6"
+                   KeyDown="OnCmdInputKeyDown"/>
+          <Button Grid.Column="1"
+                  Content="发送"
+                  Margin="6,0,0,0"
+                  Click="OnSendCmdClick"/>
+        </Grid>
+      </Grid>
+
     </Grid>
-
-  </Grid>
+  </Border>
 </UserControl>

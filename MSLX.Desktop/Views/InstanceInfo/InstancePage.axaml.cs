@@ -43,10 +43,14 @@ public partial class InstancePage : UserControl
         // 1. 将发送指令的能力注入控制台 Tab
         ConsoleTab.SendCommandHandler = async cmd =>
             await _signalR.SendCommandAsync(_instanceId, cmd);
+        ConsoleTab.InitPty(_signalR, _instanceId);
 
         // 2. 将设置保存结果回调注入设置 Tab
-        SettingsTab.OnSaveResult = (msg, ok) =>
+        SettingsTab.OnSaveResult = async (msg, ok) =>
+        {
             ConsoleTab.AppendLog($"[设置] {msg}", ok ? LogLevel.Info : LogLevel.Error);
+            if (ok) await RefreshInfoAsync();
+        };
 
         // 3. 加载实例基本信息
         await RefreshInfoAsync();
@@ -80,6 +84,8 @@ public partial class InstancePage : UserControl
 
         _isRunning = info.Status != 0;
         UpdateControlState();
+        ConsoleTab.SetInstanceName(info.Name, _instanceId);
+        ConsoleTab.SetPtyConfigured(info.EnablePty);
     }
 
     #region SignalR 连接

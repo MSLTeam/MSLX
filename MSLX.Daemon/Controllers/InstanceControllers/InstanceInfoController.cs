@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
@@ -137,6 +137,7 @@ public class InstanceInfoController : ControllerBase
                     minM = server.MinM,
                     maxM = server.MaxM,
                     core = server.Core,
+                    enablePty = server.EnablePty,
                     status = serverStatus,
                     statusText = serverStatusText,
                     uptime = _mcServerService.GetServerUptime(id),

@@ -8,12 +8,14 @@ export interface ResourceSearchFilter {
   provider?: number;
   offset?: number;
   limit: number;
+  useMirror?: boolean;
 }
 
 export interface ResourceModel {
   id: string;
   name: string;
   summary: string;
+  translatedSummary?: string;
   description?: string;
   iconUrl?: string;
   author?: string;
