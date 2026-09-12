@@ -601,7 +601,7 @@ public class MCServerService : IMCServerService
             // 是否docker模式
             if (serverInfo.Java == "docker-java" || serverInfo.Java == "docker-custom")
             {
-                exec = "docker";
+                exec = OperatingSystem.IsWindows() ? "docker.exe" : "docker";
                 var sb = new StringBuilder();
 
                 // 基础运行参数
