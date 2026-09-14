@@ -160,8 +160,7 @@ namespace MSLX.Daemon.Hubs
                 return;
             }
 
-            byte[] bytes = System.Text.Encoding.UTF8.GetBytes(data);
-            bool success = _mcServerService.SendPtyInput(instanceId, bytes);
+            bool success = _mcServerService.SendPtyInput(instanceId, data);
             if (!success)
             {
                 // 如果未在 PTY 模式且按下了回车，兼容性降级为普通命令行发送

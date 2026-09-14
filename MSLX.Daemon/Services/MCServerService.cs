@@ -61,6 +61,10 @@ public class MCServerService : IMCServerService
         // Docker监控相关
         public bool IsDocker { get; set; }
         public double CpuBaseLimitPercentage { get; set; } = 0;
+
+        // 实例输入输出编码
+        public Encoding InputEncoding { get; set; } = Encoding.UTF8;
+        public Encoding OutputEncoding { get; set; } = Encoding.UTF8;
     }
 
     private readonly ConcurrentDictionary<uint, ServerContext> _activeServers = new(); // 存储运行中实例的状态数据
@@ -601,7 +605,7 @@ public class MCServerService : IMCServerService
             // 是否docker模式
             if (serverInfo.Java == "docker-java" || serverInfo.Java == "docker-custom")
             {
-                exec = "docker";
+                exec = OperatingSystem.IsWindows() ? "docker.exe" : "docker";
                 var sb = new StringBuilder();
 
                 // 基础运行参数
@@ -780,9 +784,15 @@ public class MCServerService : IMCServerService
                     ? " -Dterminal.ansi=true"
                     : (serverInfo.AllowOriginASCIIColors ? " -Dterminal.jline=false -Dterminal.ansi=true" : "");
 
+                string jvmUtf8 = serverInfo.ForceJvmUTF8
+                    ? (OperatingSystem.IsWindows()
+                        ? " -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8"
+                        : " -Dfile.encoding=UTF-8")
+                    : "";
+
                 // 主机直接启动
                 args =
-                    $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{(serverInfo.ForceJvmUTF8 ? " -Dfile.encoding=UTF-8" : "")}{terminalColorAndJline} -jar {serverInfo.Core} nogui";
+                    $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{jvmUtf8}{terminalColorAndJline} -jar {serverInfo.Core} nogui";
                 exec = serverInfo.Java;
 
                 // 处理自定义模式参数
@@ -812,7 +822,7 @@ public class MCServerService : IMCServerService
                 if (serverInfo.Core.Contains("@libraries"))
                 {
                     args =
-                        $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{(serverInfo.ForceJvmUTF8 ? " -Dfile.encoding=UTF-8" : "")}{terminalColorAndJline} {serverInfo.Core} nogui";
+                        $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{jvmUtf8}{terminalColorAndJline} {serverInfo.Core} nogui";
                 }
             }
 
@@ -930,6 +940,8 @@ public class MCServerService : IMCServerService
 
             // 处理玩家监听
             context.MonitorPlayers = serverInfo.MonitorPlayers;
+            context.InputEncoding = inputEncoding;
+            context.OutputEncoding = outputEncoding;
             
             // Docker模式保存性能监视基准参数
             context.IsDocker = serverInfo.Java == "docker-java" || serverInfo.Java == "docker-custom";
@@ -1030,7 +1042,7 @@ public class MCServerService : IMCServerService
                     {
                         byte[] buffer = new byte[4096];
                         char[] chars = new char[4096];
-                        var decoder = Encoding.UTF8.GetDecoder();
+                        var decoder = context.OutputEncoding.GetDecoder();
                         var lineSb = new StringBuilder();
                         try
                         {
@@ -1576,7 +1588,7 @@ public class MCServerService : IMCServerService
                     {
                         if (context.IsPtyMode && context.PtyConnection != null)
                         {
-                            WritePtyCommandClean(context.PtyConnection, command);
+                            WritePtyCommandClean(context.PtyConnection, command, context.InputEncoding);
                         }
                         else if (context.Process != null)
                         {
@@ -1600,8 +1612,9 @@ public class MCServerService : IMCServerService
     /// <summary>
     /// 向 PTY 伪终端安全写入命令
     /// </summary>
-    private static void WritePtyCommandClean(IPtyConnection pty, string command)
+    private static void WritePtyCommandClean(IPtyConnection pty, string command, Encoding? encoding = null)
     {
+        encoding ??= Encoding.UTF8;
         var lines = command.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
         bool isWindows = OperatingSystem.IsWindows();
 
@@ -1623,7 +1636,7 @@ public class MCServerService : IMCServerService
                 payload = "\x05\x15" + line + "\n";
             }
 
-            byte[] ptyBytes = Encoding.UTF8.GetBytes(payload);
+            byte[] ptyBytes = encoding.GetBytes(payload);
             pty.WriterStream.Write(ptyBytes, 0, ptyBytes.Length);
         }
         pty.WriterStream.Flush();
@@ -1641,6 +1654,19 @@ public class MCServerService : IMCServerService
             process.StandardInput.WriteLine(line);
         }
         process.StandardInput.Flush();
+    }
+
+    /// <summary>
+    /// 发送原始 PTY 输入文本（自动按实例配置的输入编码转码）
+    /// </summary>
+    public bool SendPtyInput(uint instanceId, string data)
+    {
+        if (_activeServers.TryGetValue(instanceId, out var context))
+        {
+            byte[] bytes = context.InputEncoding.GetBytes(data);
+            return SendPtyInput(instanceId, bytes);
+        }
+        return false;
     }
 
     /// <summary>
@@ -1668,7 +1694,7 @@ public class MCServerService : IMCServerService
             {
                 try
                 {
-                    string str = Encoding.UTF8.GetString(data);
+                    string str = context.InputEncoding.GetString(data);
                     if (str.Contains('\r') || str.Contains('\n'))
                     {
                         var lines = str.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
