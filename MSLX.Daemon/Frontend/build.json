@@ -1,6 +1,6 @@
 {
-  "version": "1.6.3.1",
-  "buildTime": "2026-09-12 15:44:02",
+  "version": "1.6.3.2",
+  "buildTime": "2026-09-14 10:56:44",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -78,10 +78,34 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "aca53717113b9eb73edd72b071976aaf145826ee",
-  "commitMsg": "fix(webpanel): 修复浅色模式下选中终端日志颜色可读性过差的问题",
+  "commitId": "7871a5aeb1d72f67e184d29c3b243df3086e28b1",
+  "commitMsg": "fix(daemon): 修复Windows下PTY终端中文输入输出可能出现的乱码问题",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "7871a5aeb1d72f67e184d29c3b243df3086e28b1",
+      "commitTime": "2026-09-14 10:36:44 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复Windows下PTY终端中文输入输出可能出现的乱码问题"
+    },
+    {
+      "commitId": "fef0cab9a5b99564cd4816a202bbb3da36bc1165",
+      "commitTime": "2026-09-12 16:18:51 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复Windows下开启Docker后仿真终端不能正常使用的问题"
+    },
+    {
+      "commitId": "06250d00301c2bb3c9f5ef465b1057150041e3b0",
+      "commitTime": "2026-09-12 15:50:04 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #246 from MSLTeam/dev"
+    },
+    {
+      "commitId": "7859caa49b6f1fe2862c746bdae663f8ba34c79a",
+      "commitTime": "2026-09-12 15:44:09 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel & desktop): 更新到 v1.6.3.1-hotfix 版本"
+    },
     {
       "commitId": "aca53717113b9eb73edd72b071976aaf145826ee",
       "commitTime": "2026-09-12 15:43:18 +0800",
@@ -357,30 +381,6 @@
       "commitTime": "2026-08-19 18:19:22 +0800",
       "commitAuthor": "Waheal",
       "commitMsg": "fix(desktop): 修复desktop版取消部署对话框失效的bug"
-    },
-    {
-      "commitId": "bd47ff8fcd57d6e3241f25c40fa70ce83ce14e75",
-      "commitTime": "2026-08-19 17:55:52 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "fix(daemon): 修复取消部署时并不会将文件安全删除的bug"
-    },
-    {
-      "commitId": "5d2fc7d411d039ae7dbddf90038560ce4c72b310",
-      "commitTime": "2026-08-19 17:05:58 +0800",
-      "commitAuthor": "小Q",
-      "commitMsg": "feat: 取消部署时询问是否清理文件"
-    },
-    {
-      "commitId": "18b4ebe3d1639fe5be4e638da338a386d9cd0135",
-      "commitTime": "2026-08-19 14:25:16 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #231 from MSLTeam/dev"
-    },
-    {
-      "commitId": "42c92d867af3a7bb89284084e2ddcb2f4ae70ed7",
-      "commitTime": "2026-08-19 14:03:47 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel & desktop): 更新到v1.6.0版本"
     }
   ]
 }
