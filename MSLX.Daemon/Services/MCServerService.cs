@@ -784,9 +784,9 @@ public class MCServerService : IMCServerService
                     ? " -Dterminal.ansi=true"
                     : (serverInfo.AllowOriginASCIIColors ? " -Dterminal.jline=false -Dterminal.ansi=true" : "");
 
-                string jvmUtf8 = serverInfo.ForceJvmUTF8
+                string jvmUtf8 = (serverInfo.ForceJvmUTF8 || serverInfo.EnablePty)
                     ? (OperatingSystem.IsWindows()
-                        ? " -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8"
+                        ? " -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 -Dsun.stdin.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 -Dstdin.encoding=UTF-8"
                         : " -Dfile.encoding=UTF-8")
                     : "";
 
@@ -997,14 +997,43 @@ public class MCServerService : IMCServerService
                         initRows = prefSize.rows;
                     }
 
+                    string ptyApp = exec;
+                    string[] ptyArgs = SplitCommandLineArgs(args);
+                    bool verbatim = false;
+
+                    if (OperatingSystem.IsWindows() && !context.IsDocker)
+                    {
+                        if (ptyApp.Equals("cmd.exe", StringComparison.OrdinalIgnoreCase) ||
+                            ptyApp.EndsWith("\\cmd.exe", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (args != null && !args.Contains("chcp 65001"))
+                            {
+                                string cleanArgs = args.TrimStart();
+                                if (cleanArgs.StartsWith("/c", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    cleanArgs = cleanArgs.Substring(2).TrimStart();
+                                }
+                                ptyArgs = new[] { "/c", $"chcp 65001 >nul && {cleanArgs}" };
+                                verbatim = true;
+                            }
+                        }
+                        else
+                        {
+                            ptyApp = "cmd.exe";
+                            ptyArgs = new[] { "/c", $"chcp 65001 >nul && \"{exec}\" {args}" };
+                            verbatim = true;
+                        }
+                    }
+
                     var ptyOptions = new PtyOptions
                     {
                         Name = $"MSLX-{instanceId}",
                         Cols = initCols,
                         Rows = initRows,
                         Cwd = serverInfo.Base,
-                        App = exec,
-                        CommandLine = SplitCommandLineArgs(args),
+                        App = ptyApp,
+                        CommandLine = ptyArgs,
+                        VerbatimCommandLine = verbatim,
                         Environment = envDict
                     };
 
@@ -1042,7 +1071,7 @@ public class MCServerService : IMCServerService
                     {
                         byte[] buffer = new byte[4096];
                         char[] chars = new char[4096];
-                        var decoder = context.OutputEncoding.GetDecoder();
+                        var decoder = Encoding.UTF8.GetDecoder();
                         var lineSb = new StringBuilder();
                         try
                         {
@@ -1588,7 +1617,7 @@ public class MCServerService : IMCServerService
                     {
                         if (context.IsPtyMode && context.PtyConnection != null)
                         {
-                            WritePtyCommandClean(context.PtyConnection, command, context.InputEncoding);
+                            WritePtyCommandClean(context.PtyConnection, command);
                         }
                         else if (context.Process != null)
                         {
@@ -1663,7 +1692,7 @@ public class MCServerService : IMCServerService
     {
         if (_activeServers.TryGetValue(instanceId, out var context))
         {
-            byte[] bytes = context.InputEncoding.GetBytes(data);
+            byte[] bytes = Encoding.UTF8.GetBytes(data);
             return SendPtyInput(instanceId, bytes);
         }
         return false;
@@ -1694,7 +1723,7 @@ public class MCServerService : IMCServerService
             {
                 try
                 {
-                    string str = context.InputEncoding.GetString(data);
+                    string str = Encoding.UTF8.GetString(data);
                     if (str.Contains('\r') || str.Contains('\n'))
                     {
                         var lines = str.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
