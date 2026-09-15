@@ -74,7 +74,7 @@ public class MCServerService : IMCServerService
 
     // 匹配玩家进入/离开的正则表达式
     private static readonly Regex PlayerJoinedRegex =
-        new Regex(@"\]:\s*(?<player>.+?)\[.*?\]\slogged\sin\swith\sentity\sid", RegexOptions.Compiled);
+        new Regex(@"\]:\s*(?<player>.+?)\[(?<ip>.*?)\]\slogged\sin\swith\sentity\sid", RegexOptions.Compiled);
 
     private static readonly Regex PlayerLeftRegex =
         new Regex(@"\]:\s*(?<player>.+?)\slost\sconnection:", RegexOptions.Compiled);
@@ -2146,9 +2146,32 @@ public class MCServerService : IMCServerService
         if (joinMatch.Success)
         {
             string playerName = joinMatch.Groups["player"].Value.Trim();
+            string? playerIp = null;
+            var rawIp = joinMatch.Groups["ip"].Value.Trim();
+            if (!string.IsNullOrEmpty(rawIp))
+            {
+                if (rawIp.StartsWith("/")) rawIp = rawIp.TrimStart('/');
+                int colonIdx = rawIp.LastIndexOf(':');
+                if (colonIdx > 0) rawIp = rawIp.Substring(0, colonIdx);
+                playerIp = rawIp;
+            }
+
             if (context.OnlinePlayers.TryAdd(playerName, true))
             {
                 _hubContext.Clients.Group(instanceId.ToString()).SendAsync("PlayerJoined", instanceId, playerName);
+            }
+
+            try
+            {
+                var serverInfo = IConfigBase.ServerList.GetServer(instanceId);
+                if (serverInfo != null && !string.IsNullOrEmpty(serverInfo.Base))
+                {
+                    PlayerActivityTracker.RecordLogin(serverInfo.Base, playerName, playerIp);
+                }
+            }
+            catch
+            {
+                // 记录失败就算了 不管他
             }
 
             return;

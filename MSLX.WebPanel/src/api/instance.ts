@@ -9,6 +9,7 @@ import {
   InstanceListModel,
   InstanceSettingsModel,
   OpItem,
+  PlayerHistoryResponse,
   UpdateInstanceResponseModel,
   UserCacheItem,
   WhitelistItem,
@@ -232,7 +233,7 @@ export async function removeBannedIp(id: number, ip: string) {
 
 // 历史玩家
 export async function getHistoryPlayers(id: number) {
-  return await request.get<UserCacheItem[]>({ url: `/api/instance/players/history/${id}` });
+  return await request.get<PlayerHistoryResponse>({ url: `/api/instance/players/history/${id}` });
 }
 
 // 获取世界出生点
