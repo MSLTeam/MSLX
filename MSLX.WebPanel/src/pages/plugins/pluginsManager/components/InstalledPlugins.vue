@@ -470,7 +470,7 @@ onMounted(() => {
               <!-- 删除按钮 (安全气泡确认) -->
               <t-popconfirm
                 v-if="!item.status?.includes('下次重启删除')"
-                content="确认要在下次重启后彻底删除该插件及依赖吗？"
+                content="确认要彻底删除该插件吗？"
                 theme="danger"
                 placement="top-right"
                 @confirm="handleAction(item.id, 'delete')"
