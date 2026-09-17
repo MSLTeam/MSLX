@@ -1,4 +1,4 @@
-﻿using MSLX.SDK.Interfaces;
+using MSLX.SDK.Interfaces;
 using MSLX.Daemon.Utils.ConfigUtils;
 using Newtonsoft.Json.Linq;
 using MSLX.SDK.Models;
@@ -53,37 +53,37 @@ public class MainConfigBridge : IMainConfigBridge
 
 public class ServerConfigBridge : IServerConfigBridge
 {
-    public JArray ReadServerList() => IConfigBase.ServerList.ReadServerList();
-    public List<McServerInfo.ServerInfo> GetServerList() => IConfigBase.ServerList.GetServerList();
-    public void WriteServerList(JArray content) => IConfigBase.ServerList.WriteServerList(content);
-    public bool CreateServer(McServerInfo.ServerInfo server) => IConfigBase.ServerList.CreateServer(server);
-    public bool DeleteServer(uint serverId, bool deleteFiles = false) => IConfigBase.ServerList.DeleteServer(serverId, deleteFiles);
-    public bool UpdateServer(McServerInfo.ServerInfo updatedServer) => IConfigBase.ServerList.UpdateServer(updatedServer);
-    public McServerInfo.ServerInfo? GetServer(uint serverId) => IConfigBase.ServerList.GetServer(serverId);
-    public uint GenerateServerId() => IConfigBase.ServerList.GenerateServerId();
+    public JArray ReadServerList() => IConfigBase.ServerList?.ReadServerList() ?? new();
+    public List<McServerInfo.ServerInfo> GetServerList() => IConfigBase.ServerList?.GetServerList() ?? new();
+    public void WriteServerList(JArray content) => IConfigBase.ServerList?.WriteServerList(content);
+    public bool CreateServer(McServerInfo.ServerInfo server) => IConfigBase.ServerList?.CreateServer(server) ?? false;
+    public bool DeleteServer(uint serverId, bool deleteFiles = false) => IConfigBase.ServerList?.DeleteServer(serverId, deleteFiles) ?? false;
+    public bool UpdateServer(McServerInfo.ServerInfo updatedServer) => IConfigBase.ServerList?.UpdateServer(updatedServer) ?? false;
+    public McServerInfo.ServerInfo? GetServer(uint serverId) => IConfigBase.ServerList?.GetServer(serverId);
+    public uint GenerateServerId() => IConfigBase.ServerList?.GenerateServerId() ?? 0;
 }
 
 public class FrpConfigBridge : IFrpConfigBridge
 {
-    public JArray ReadFrpList() => IConfigBase.FrpList.ReadFrpList();
-    public List<JToken> GetFrpList() => IConfigBase.FrpList.GetFrpList();
-    public bool CreateFrpConfig(string name, string server, string configType, string config) => IConfigBase.FrpList.CreateFrpConfig(name, server, configType, config);
-    public bool DeleteFrpConfig(int id) => IConfigBase.FrpList.DeleteFrpConfig(id);
-    public bool UpdateFrpConfig(int id, string name, string server, string configType) => IConfigBase.FrpList.UpdateFrpConfig(id, name, server, configType);
-    public JObject? GetFrpConfig(int id) => IConfigBase.FrpList.GetFrpConfig(id);
-    public bool IsFrpIdValid(int id) => IConfigBase.FrpList.IsFrpIdValid(id);
-    public int GenerateFrpId() => IConfigBase.FrpList.GenerateFrpId();
+    public JArray ReadFrpList() => IConfigBase.FrpList?.ReadFrpList() ?? new();
+    public List<JToken> GetFrpList() => IConfigBase.FrpList?.GetFrpList() ?? new();
+    public bool CreateFrpConfig(string name, string server, string configType, string config) => IConfigBase.FrpList?.CreateFrpConfig(name, server, configType, config) ?? false;
+    public bool DeleteFrpConfig(int id) => IConfigBase.FrpList?.DeleteFrpConfig(id) ?? false;
+    public bool UpdateFrpConfig(int id, string name, string server, string configType) => IConfigBase.FrpList?.UpdateFrpConfig(id, name, server, configType) ?? false;
+    public JObject? GetFrpConfig(int id) => IConfigBase.FrpList?.GetFrpConfig(id);
+    public bool IsFrpIdValid(int id) => IConfigBase.FrpList?.IsFrpIdValid(id) ?? false;
+    public int GenerateFrpId() => IConfigBase.FrpList?.GenerateFrpId() ?? 0;
 }
 
 public class TaskConfigBridge : ITaskConfigBridge
 {
-    public List<ScheduleTask> GetTaskList() => IConfigBase.TaskList.GetTaskList();
-    public List<ScheduleTask> GetTasksByInstanceId(uint instanceId) => IConfigBase.TaskList.GetTasksByInstanceId(instanceId);
-    public bool CreateTask(ScheduleTask task) => IConfigBase.TaskList.CreateTask(task);
-    public bool DeleteTask(string taskId) => IConfigBase.TaskList.DeleteTask(taskId);
-    public bool UpdateTask(ScheduleTask updatedTask) => IConfigBase.TaskList.UpdateTask(updatedTask);
-    public void UpdateLastRunTime(string taskId, DateTime runTime) => IConfigBase.TaskList.UpdateLastRunTime(taskId, runTime);
-    public ScheduleTask? GetTask(string taskId) => IConfigBase.TaskList.GetTask(taskId);
+    public List<ScheduleTask> GetTaskList() => IConfigBase.TaskList?.GetTaskList() ?? new();
+    public List<ScheduleTask> GetTasksByInstanceId(uint instanceId) => IConfigBase.TaskList?.GetTasksByInstanceId(instanceId) ?? new();
+    public bool CreateTask(ScheduleTask task) => IConfigBase.TaskList?.CreateTask(task) ?? false;
+    public bool DeleteTask(string taskId) => IConfigBase.TaskList?.DeleteTask(taskId) ?? false;
+    public bool UpdateTask(ScheduleTask updatedTask) => IConfigBase.TaskList?.UpdateTask(updatedTask) ?? false;
+    public void UpdateLastRunTime(string taskId, DateTime runTime) => IConfigBase.TaskList?.UpdateLastRunTime(taskId, runTime);
+    public ScheduleTask? GetTask(string taskId) => IConfigBase.TaskList?.GetTask(taskId);
 }
 
 public class UserConfigBridge : IUserConfigBridge

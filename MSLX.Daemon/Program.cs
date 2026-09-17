@@ -349,15 +349,6 @@ MSLX.SDK.MSLX.Initialize(
     app.Services.GetRequiredService<IMSLXEvents>()
 );
 
-// 插件初始化方法
-if (Directory.Exists(pluginsPath))
-{
-    foreach (var dllPath in Directory.GetFiles(pluginsPath, "*.dll"))
-    {
-        pluginManager.LoadPlugin(dllPath);
-    }
-}
-
 IConfigBase.Initialize(loggerFactory);
 
 logger.LogInformation("\n  __  __   ____    _      __  __\n |  \\/  | / ___|  | |     \\ \\/ /\n | |\\/| | \\___ \\  | |      \\  / \n | |  | |  ___) | | |___   /  \\ \n |_|  |_| |____/  |_____| /_/\\_\\\n                                ");
@@ -380,6 +371,15 @@ if (isSlaveStartup)
 else
 {
     logger.LogInformation("当前运行模式: 主控模式");
+}
+
+// 插件初始化方法
+if (Directory.Exists(pluginsPath))
+{
+    foreach (var dllPath in Directory.GetFiles(pluginsPath, "*.dll"))
+    {
+        pluginManager.LoadPlugin(dllPath);
+    }
 }
 
 app.UseForwardedHeaders();
@@ -488,28 +488,10 @@ lifetime.ApplicationStarted.Register(() =>
     logger.LogInformation("MSLX 守护进程服务已就绪！欢迎使用~");
     var pluginManager = app.Services.GetRequiredService<PluginManager>();
 
-    // 调用插件的初始化方法
-    int successCount = 0;
-    foreach (var plugin in pluginManager.Plugins)
-    {
-        try
-        {
-            plugin.Metadata.OnLoad();
-
-            logger.LogInformation($"[MSLX Plugin] 插件已成功加载: {plugin.Metadata.Name}");
-            successCount++;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError($"[MSLX Plugin] 插件 {plugin.Metadata.Name} 启动失败 (OnLoad 异常): {ex.Message}");
-        }
-    }
-
     if (pluginManager.Plugins.Count > 0)
     {
-        logger.LogInformation($"[MSLX Plugin] 插件加载完毕，共 {successCount}/{pluginManager.Plugins.Count} 个插件成功运行。");
+        logger.LogInformation($"[MSLX Plugin] 插件已就绪，共 {pluginManager.Plugins.Count} 个插件正在运行。");
     }
-
 });
 // 关闭事件
 lifetime.ApplicationStopping.Register(() =>
