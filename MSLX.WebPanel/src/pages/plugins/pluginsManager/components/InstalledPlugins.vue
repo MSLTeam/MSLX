@@ -6,10 +6,9 @@ import {
   HomeIcon,
   ExtensionIcon,
   StoreIcon,
-  PlayCircleIcon,
-  StopCircleIcon,
   DeleteIcon,
   RocketFilledIcon,
+  UploadIcon,
 } from 'tdesign-icons-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 
@@ -36,7 +35,7 @@ const plugins = ref<PluginListModel[]>([]);
 const availableUpdates = ref<Record<string, MarketPluginVersionModel & { appId: string }>>({});
 const updateState = reactive({ isUpdating: false, targetId: '', progress: 0, message: '', timer: null as any });
 
-const emit = defineEmits(['go-market']);
+const emit = defineEmits(['go-market', 'upload-plugin']);
 
 async function getList() {
   try {
@@ -289,11 +288,17 @@ onMounted(() => {
       v-else-if="plugins.length === 0"
       class="flex flex-col items-center justify-center py-24 design-card bg-white/40 dark:bg-zinc-800/40 rounded-2xl border-2 border-dashed border-[var(--td-component-border)]"
     >
-      <result title="暂无已安装的插件" tip="当前系统目录暂无扩展，前往插件市场发现更多功能" type="404">
-        <t-button theme="primary" size="large" class="mt-2 !rounded-xl" @click="emit('go-market')">
-          <template #icon><store-icon /></template>
-          前往插件市场
-        </t-button>
+      <result title="暂无已安装的插件" tip="当前系统目录暂无扩展，前往插件市场或上传本地插件" type="404">
+        <div class="flex items-center gap-3 mt-2">
+          <t-button theme="primary" size="large" class="!rounded-xl" @click="emit('go-market')">
+            <template #icon><store-icon /></template>
+            前往插件市场
+          </t-button>
+          <t-button theme="default" variant="outline" size="large" class="!rounded-xl" @click="emit('upload-plugin')">
+            <template #icon><upload-icon /></template>
+            上传本地插件
+          </t-button>
+        </div>
       </result>
     </div>
 
