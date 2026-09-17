@@ -141,7 +141,7 @@ const handleDropdownClick = async (dropdownItem: any, playerName: string) => {
         <span v-if="status === 2" class="text-xs font-medium text-[var(--td-text-color-secondary)]">({{ onlinePlayers.length }})</span>
       </div>
 
-      <t-button size="small" variant="text" theme="primary" class="!rounded-md hover:!bg-[var(--color-primary)]/10 transition-colors" @click="showManager = true" :disabled="status === 0">
+      <t-button size="small" variant="text" theme="primary" class="!rounded-md hover:!bg-[var(--color-primary)]/10 transition-colors" @click="showManager = true">
         <template #icon><setting-icon /></template>管理
       </t-button>
     </div>

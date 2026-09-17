@@ -74,6 +74,11 @@ public interface IMCServerService
     bool SendPtyInput(uint instanceId, byte[] data);
 
     /// <summary>
+    /// 发送原始 PTY 输入文本（自动按实例配置的输入编码转码）
+    /// </summary>
+    bool SendPtyInput(uint instanceId, string data);
+
+    /// <summary>
     /// 调整 PTY 伪终端行列尺寸
     /// </summary>
     bool ResizePty(uint instanceId, int cols, int rows);

@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.Events;
+using MSLX.SDK.Interfaces;
 using MSLX.SDK.Models;
 using MSLX.SDK.Models.Instance;
 
@@ -10,6 +12,12 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
 [ApiController]
 public class BackupManagerController : ControllerBase
 {
+    private readonly IMSLXEvents _events;
+
+    public BackupManagerController(IMSLXEvents events)
+    {
+        _events = events;
+    }
     #region 辅助方法封装
     private string GetBackupDirectory(McServerInfo.ServerInfo server)
     {
@@ -177,6 +185,15 @@ public class BackupManagerController : ControllerBase
 
             // 删除
             System.IO.File.Delete(fullPath);
+
+            _events.PublishBackupDeleted(new BackupDeletedEventArgs
+            {
+                InstanceId = request.Id,
+                BackupFilePath = fullPath,
+                BackupFileName = request.FileName,
+                IsAutoRoll = false,
+                Timestamp = DateTime.Now
+            });
 
             return Ok(new ApiResponse<object>
             {

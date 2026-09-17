@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace MSLX.SDK.Models.Instance;
@@ -77,6 +77,66 @@ public class UserCacheItem
 
     [JsonPropertyName("expiresOn")]
     public string ExpiresOn { get; set; } = string.Empty;
+
+    [JsonPropertyName("lastLoginTime")]
+    public string? LastLoginTime { get; set; }
+
+    [JsonPropertyName("lastIp")]
+    public string? LastIp { get; set; }
+
+    [JsonPropertyName("loginCount")]
+    public int? LoginCount { get; set; }
+}
+
+public class PlayerActivityItem
+{
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = string.Empty;
+
+    [JsonPropertyName("uuid")]
+    public string? Uuid { get; set; }
+
+    [JsonPropertyName("lastLoginTime")]
+    public string LastLoginTime { get; set; } = string.Empty;
+
+    [JsonPropertyName("lastIp")]
+    public string? LastIp { get; set; }
+
+    [JsonPropertyName("loginCount")]
+    public int LoginCount { get; set; } = 1;
+}
+
+public class PlayerActivityData
+{
+    [JsonPropertyName("players")]
+    public Dictionary<string, PlayerActivityItem> Players { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    [JsonPropertyName("dailyActive")]
+    public Dictionary<string, HashSet<string>> DailyActive { get; set; } = new();
+
+    [JsonPropertyName("hourlyActive")]
+    public Dictionary<string, HashSet<string>> HourlyActive { get; set; } = new();
+}
+
+public class DailyActiveStat
+{
+    [JsonPropertyName("date")]
+    public string Date { get; set; } = string.Empty;
+
+    [JsonPropertyName("count")]
+    public int Count { get; set; }
+}
+
+public class PlayerHistoryResponse
+{
+    [JsonPropertyName("players")]
+    public List<UserCacheItem> Players { get; set; } = new();
+
+    [JsonPropertyName("chartData")]
+    public List<DailyActiveStat> ChartData { get; set; } = new();
+
+    [JsonPropertyName("rangeStats")]
+    public Dictionary<string, List<DailyActiveStat>> RangeStats { get; set; } = new();
 }
 
 // ==================== 请求 DTO 校验模型 ====================

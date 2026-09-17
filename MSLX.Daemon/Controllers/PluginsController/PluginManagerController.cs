@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
@@ -25,6 +26,167 @@ public class PluginManagerController : ControllerBase
         _logger = logger;
         _pluginManager = pluginManager;
     }
+
+    #region 插件本地上传与热重载
+
+    [HttpPost("upload")]
+    [Authorize(Roles = "admin")]
+    public async Task<IActionResult> UploadLocalPlugin([FromBody] UploadPluginRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.FileId))
+        {
+            return BadRequest(new ApiResponse<object> { Code = 400, Message = "文件 ID 不能为空" });
+        }
+
+        var tempPath = Path.Combine(IConfigBase.GetAppDataPath(), "Temp", "Uploads", request.FileId + ".tmp");
+        if (!System.IO.File.Exists(tempPath))
+        {
+            return NotFound(new ApiResponse<object> { Code = 404, Message = "未找到已上传的临时文件，可能已过期" });
+        }
+
+        try
+        {
+            // 预解析插件元数据并验证合法性
+            var metadata = _pluginManager.GetPluginMetadata(tempPath);
+            if (metadata == null || string.IsNullOrWhiteSpace(metadata.Id))
+            {
+                try { System.IO.File.Delete(tempPath); } catch { }
+                return BadRequest(new ApiResponse<object> { Code = 400, Message = "上传的文件不是有效的 MSLX 插件，无法读取插件元数据或未实现 IPlugin 接口" });
+            }
+
+            var pluginId = metadata.Id;
+            var pluginsPath = Path.Combine(IConfigBase.GetAppDataPath(), "Plugins");
+            if (!Directory.Exists(pluginsPath))
+            {
+                Directory.CreateDirectory(pluginsPath);
+            }
+
+            // 检测是否存在同 ID 插件
+            string? existingDllPath = null;
+            var loadedPlugin = _pluginManager.Plugins.FirstOrDefault(p =>
+                p.Metadata.Id.Equals(pluginId, StringComparison.OrdinalIgnoreCase));
+            if (loadedPlugin != null)
+            {
+                existingDllPath = loadedPlugin.DllPath;
+            }
+            else
+            {
+                // 在磁盘上查找
+                var allDlls = Directory.GetFiles(pluginsPath, "*.dll");
+                foreach (var dll in allDlls)
+                {
+                    var fileMeta = _pluginManager.GetPluginMetadata(dll);
+                    if (fileMeta != null && fileMeta.Id.Equals(pluginId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        existingDllPath = dll;
+                        break;
+                    }
+                }
+            }
+
+            string targetDllPath;
+            if (!string.IsNullOrEmpty(existingDllPath))
+            {
+                _logger.LogInformation($"[MSLX Plugin] 上传插件检测到已有同 ID 插件 [{pluginId}]，准备覆盖更新: {existingDllPath}");
+                _pluginManager.UnloadPlugin(existingDllPath);
+
+                await Task.Delay(500);
+
+                if (System.IO.File.Exists(existingDllPath))
+                {
+                    try
+                    {
+                        System.IO.File.Delete(existingDllPath);
+                    }
+                    catch
+                    {
+                        string backupName = existingDllPath + ".old_" + Guid.NewGuid().ToString("N");
+                        System.IO.File.Move(existingDllPath, backupName);
+                    }
+                }
+
+                // 清理可能的 PDB 调试文件
+                string pdbPath = Path.ChangeExtension(existingDllPath, ".pdb");
+                if (System.IO.File.Exists(pdbPath))
+                {
+                    try { System.IO.File.Delete(pdbPath); } catch { }
+                }
+
+                targetDllPath = existingDllPath;
+            }
+            else
+            {
+                // 全新插件
+                string safeFileName;
+                if (!string.IsNullOrWhiteSpace(request.FileName) && request.FileName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                {
+                    safeFileName = Path.GetFileName(request.FileName);
+                }
+                else
+                {
+                    safeFileName = (pluginId.Split('-')
+                        .Select(w => w.Equals("mslx", StringComparison.OrdinalIgnoreCase) ? "MSLX" : char.ToUpper(w[0]) + w.Substring(1))
+                        .Aggregate((a, b) => a + "." + b)) + ".dll";
+                }
+                safeFileName = Regex.Replace(safeFileName, @"[^a-zA-Z0-9_\-\.]", "");
+                targetDllPath = Path.Combine(pluginsPath, safeFileName);
+            }
+
+            // 移动至目标插件位置
+            if (System.IO.File.Exists(targetDllPath))
+            {
+                System.IO.File.Delete(targetDllPath);
+            }
+            System.IO.File.Move(tempPath, targetDllPath);
+
+            // 热加载
+            bool loadResult = _pluginManager.LoadPlugin(targetDllPath);
+            if (loadResult)
+            {
+                _logger.LogInformation($"[MSLX Plugin] 本地插件 [{metadata.Name}] v{metadata.Version} ({pluginId}) 上传并热加载成功！");
+                return Ok(new ApiResponse<object>
+                {
+                    Code = 200,
+                    Message = $"插件 [{metadata.Name}] v{metadata.Version} 上传并热重载成功！",
+                    Data = new
+                    {
+                        id = metadata.Id,
+                        name = metadata.Name,
+                        version = metadata.Version
+                    }
+                });
+            }
+            else
+            {
+                _logger.LogWarning($"[MSLX Plugin] 插件 [{metadata.Name}] 文件已写入但热加载失败");
+                return Ok(new ApiResponse<object>
+                {
+                    Code = 200,
+                    Message = $"插件文件已写入，但在热加载时失败，请查看控制台日志",
+                    Data = new
+                    {
+                        id = metadata.Id,
+                        name = metadata.Name,
+                        version = metadata.Version
+                    }
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"[MSLX Plugin] 处理本地插件上传异常: {ex.Message}");
+            return StatusCode(500, new ApiResponse<object> { Code = 500, Message = $"处理插件上传失败: {ex.Message}" });
+        }
+        finally
+        {
+            if (System.IO.File.Exists(tempPath))
+            {
+                try { System.IO.File.Delete(tempPath); } catch { }
+            }
+        }
+    }
+
+    #endregion
 
     #region 插件安装(下载)
 

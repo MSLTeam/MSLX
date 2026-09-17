@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { BookFilledIcon, AppIcon, StoreIcon, RefreshIcon, SearchIcon } from 'tdesign-icons-vue-next';
+import { BookFilledIcon, AppIcon, StoreIcon, RefreshIcon, SearchIcon, UploadIcon } from 'tdesign-icons-vue-next';
+import { MessagePlugin } from 'tdesign-vue-next';
 import { changeUrl } from '@/router';
 import { DOC_URLS } from '@/api/docs';
+import { postUploadLocalPlugin } from '@/api/plugins';
 
 import InstalledPlugins from './components/InstalledPlugins.vue';
 import PluginMarket from './components/PluginMarket.vue';
+import FileUploader from '@/pages/instance/files/components/FileUploader.vue';
 import { pluginStateChanged } from '@/utils/pluginManager';
 
 const activeTab = ref('installed');
 const searchKeyword = ref('');
+const showUploadDialog = ref(false);
 
 const installedRef = ref<InstanceType<typeof InstalledPlugins> | null>(null);
 const marketRef = ref<InstanceType<typeof PluginMarket> | null>(null);
@@ -24,6 +28,16 @@ const triggerSearch = () => {
 
 const handleRefreshPage = () => {
   window.location.reload();
+};
+
+const handlePluginUpload = async (uploadId: string, task: any) => {
+  await postUploadLocalPlugin(uploadId, task.file?.name || task.name);
+};
+
+const onUploadSuccess = () => {
+  MessagePlugin.success('本地插件上传并热重载成功！');
+  triggerRefresh();
+  pluginStateChanged.value = true;
 };
 </script>
 
@@ -54,7 +68,7 @@ const handleRefreshPage = () => {
               class="bg-blue-100/60 dark:bg-blue-800/60 px-1.5 py-0.5 rounded text-xs mx-1 font-mono font-bold text-blue-600 dark:text-blue-300"
               >DaemonData/Plugins</code
             >
-            目录，启动时自动加载。</span
+            目录，支持热插拔与即时重载。</span
           >
           <span v-else>浏览官方插件市场，发现更多功能，一键下载至本地安装 。</span>
         </div>
@@ -81,6 +95,17 @@ const handleRefreshPage = () => {
           刷新列表
         </t-button>
 
+        <t-button
+          v-if="activeTab === 'installed'"
+          theme="primary"
+          variant="base"
+          class="!rounded-xl"
+          @click="showUploadDialog = true"
+        >
+          <template #icon><upload-icon /></template>
+          上传插件
+        </t-button>
+
         <div v-if="activeTab === 'market'" class="w-full sm:w-auto">
           <t-input
             v-model="searchKeyword"
@@ -103,10 +128,24 @@ const handleRefreshPage = () => {
 
     <transition name="fade" mode="out-in">
       <keep-alive>
-        <installed-plugins v-if="activeTab === 'installed'" ref="installedRef" @go-market="activeTab = 'market'" />
+        <installed-plugins
+          v-if="activeTab === 'installed'"
+          ref="installedRef"
+          @go-market="activeTab = 'market'"
+          @upload-plugin="showUploadDialog = true"
+        />
         <plugin-market v-else-if="activeTab === 'market'" ref="marketRef" />
       </keep-alive>
     </transition>
+
+    <file-uploader
+      v-model:visible="showUploadDialog"
+      title="上传本地插件"
+      accept=".dll"
+      :allow-folder="false"
+      :custom-upload-handler="handlePluginUpload"
+      @success="onUploadSuccess"
+    />
   </div>
 </template>
 

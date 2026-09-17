@@ -1,6 +1,6 @@
 {
-  "version": "1.6.3.1",
-  "buildTime": "2026-09-12 15:44:02",
+  "version": "1.6.4",
+  "buildTime": "2026-09-17 17:07:11",
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-css": "^6.3.1",
@@ -78,10 +78,124 @@
     "vite-svg-loader": "^5.1.0",
     "vue-tsc": "^2.0.26"
   },
-  "commitId": "aca53717113b9eb73edd72b071976aaf145826ee",
-  "commitMsg": "fix(webpanel): 修复浅色模式下选中终端日志颜色可读性过差的问题",
+  "commitId": "b2e7f1f33f509a8f6d4311735e4dd310b75402b9",
+  "commitMsg": "fix(daemon): 调整插件加载时序",
   "commitAuthor": "luluxiaoyu",
   "history": [
+    {
+      "commitId": "b2e7f1f33f509a8f6d4311735e4dd310b75402b9",
+      "commitTime": "2026-09-17 12:04:27 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 调整插件加载时序"
+    },
+    {
+      "commitId": "a4749a4e0de938778648f065c5304ee7bdc98f93",
+      "commitTime": "2026-09-17 11:22:41 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(daemon & sdk): 为插件提供事件系统与生命周期钩子"
+    },
+    {
+      "commitId": "7303c239aa8b3a7cbdc1add5c2f9385e87042a5a",
+      "commitTime": "2026-09-17 10:37:30 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 新增本地上传插件功能"
+    },
+    {
+      "commitId": "21313202e835c9cffd53e2028a25d690e912a851",
+      "commitTime": "2026-09-17 10:32:24 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 通用上传组件新增传入标题/可接受文件类型的支持"
+    },
+    {
+      "commitId": "1f6330943ea4e62a24609ac58bcd1ef1756c3198",
+      "commitTime": "2026-09-17 10:24:06 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "remove(backend & webpanel): 移除插件中心对于重启加载的相关老逻辑"
+    },
+    {
+      "commitId": "be29708bc00eefb0a43e1ef3d2bf2bd636ee8dcd",
+      "commitTime": "2026-09-16 17:52:09 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 允许插件调用 @/hooks/useFileUpload 进行文件上传逻辑复用"
+    },
+    {
+      "commitId": "e09509cbef28e656b62c4622d64fa407cb07d765",
+      "commitTime": "2026-09-16 17:34:32 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(webpanel): 插件中心遗留的历史文案错误"
+    },
+    {
+      "commitId": "075d7ff00447bd06ae80762e60732d3454f077db",
+      "commitTime": "2026-09-15 16:17:52 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel): 新增插件插槽 instance-settings-tab 位于实例设置弹窗的新选项卡"
+    },
+    {
+      "commitId": "227522f93f115e394ffe8dfc6bf6e83ea6399dd4",
+      "commitTime": "2026-09-15 11:29:24 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "feat(webpanel & daemon): 增强MC玩家管理功能，支持记录玩家IP，上次登录时间，支持查询玩家活跃图标（DAU）#168"
+    },
+    {
+      "commitId": "fd2edf1afea747d2d96d3780f5d5c49cd93a7c5f",
+      "commitTime": "2026-09-14 14:40:03 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "ci: 修复Homebrew不能正常推送更新的问题（新版要求trust后才能使用第三方源）"
+    },
+    {
+      "commitId": "6e283331eb7d23300a0407d6e2a96eef898ec8ab",
+      "commitTime": "2026-09-14 11:49:24 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #251 from MSLTeam/dev"
+    },
+    {
+      "commitId": "587743a75f064035e804f11a5b661772fd1c9d38",
+      "commitTime": "2026-09-14 11:48:33 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新到 v1.6.3.3-hotfix 版本"
+    },
+    {
+      "commitId": "f217510872d7cb2f2307c8b19280d3304e937a93",
+      "commitTime": "2026-09-14 11:34:15 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复部分服务端在Windows的PTY终端下仍中文乱码的问题 #248"
+    },
+    {
+      "commitId": "26c5b9df0e7230153781627c1a2ebc7f7e3feb1b",
+      "commitTime": "2026-09-14 10:59:17 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #249 from MSLTeam/dev"
+    },
+    {
+      "commitId": "d3d171a996ac8fa63929118b81b01b800e2215ba",
+      "commitTime": "2026-09-14 10:57:20 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel): 更新到 v1.6.3.2-hotfix 版本"
+    },
+    {
+      "commitId": "7871a5aeb1d72f67e184d29c3b243df3086e28b1",
+      "commitTime": "2026-09-14 10:36:44 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复Windows下PTY终端中文输入输出可能出现的乱码问题"
+    },
+    {
+      "commitId": "fef0cab9a5b99564cd4816a202bbb3da36bc1165",
+      "commitTime": "2026-09-12 16:18:51 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "fix(daemon): 修复Windows下开启Docker后仿真终端不能正常使用的问题"
+    },
+    {
+      "commitId": "06250d00301c2bb3c9f5ef465b1057150041e3b0",
+      "commitTime": "2026-09-12 15:50:04 +0800",
+      "commitAuthor": "小宇",
+      "commitMsg": "Merge pull request #246 from MSLTeam/dev"
+    },
+    {
+      "commitId": "7859caa49b6f1fe2862c746bdae663f8ba34c79a",
+      "commitTime": "2026-09-12 15:44:09 +0800",
+      "commitAuthor": "luluxiaoyu",
+      "commitMsg": "bumpver(daemon & webpanel & desktop): 更新到 v1.6.3.1-hotfix 版本"
+    },
     {
       "commitId": "aca53717113b9eb73edd72b071976aaf145826ee",
       "commitTime": "2026-09-12 15:43:18 +0800",
@@ -267,120 +381,6 @@
       "commitTime": "2026-08-25 14:52:28 +0800",
       "commitAuthor": "CoZooo",
       "commitMsg": "perf(ci): 优化macOS App打包"
-    },
-    {
-      "commitId": "70cfa388bd4c3fc2840f28b49818862aaaf09c4f",
-      "commitTime": "2026-08-20 20:55:33 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 优化Linux下更新弹窗信息"
-    },
-    {
-      "commitId": "31d30c1deff43e1c26c44995dfd93b99cb0dd142",
-      "commitTime": "2026-08-20 20:51:00 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 初始化登录弹窗新增防误触功能"
-    },
-    {
-      "commitId": "dabc47cab9af1a83ddebd0a246499c7d8db0fadc",
-      "commitTime": "2026-08-20 20:13:31 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #236 from MSLTeam/dev"
-    },
-    {
-      "commitId": "0551c57a639271988a0830c23fdf70085c3c0052",
-      "commitTime": "2026-08-20 20:10:07 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(desktop & daemon & webpanel): 更新到v1.6.1版本"
-    },
-    {
-      "commitId": "110be37309670ccde9f8ff0af4ba076ef11914df",
-      "commitTime": "2026-08-20 20:07:36 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "feat(webpanel & daemon): 创建服务端 & 更新服务端的任务同步到后台任务管理"
-    },
-    {
-      "commitId": "6d75c3f4b0072f845e961bd219bafc97af23f996",
-      "commitTime": "2026-08-20 18:15:09 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复后台任务列表切换不生效的问题"
-    },
-    {
-      "commitId": "936c05b87e363d17d29ed10714c481f919f8c5c5",
-      "commitTime": "2026-08-20 18:08:18 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(webpanel): 修复资源中心切换节点后未正常刷新目标节点实例列表的问题"
-    },
-    {
-      "commitId": "e386407a6093ae40ed7c578ae9d6df73d2408f9d",
-      "commitTime": "2026-08-20 18:04:02 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "fix(daemon): 修复服务端实例资源下载失败后文件可能异常删除的问题"
-    },
-    {
-      "commitId": "fb21bd2b6b22d4258559bac5d0105f789bbeae53",
-      "commitTime": "2026-08-19 23:05:55 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #234 from MSLTeam/dev"
-    },
-    {
-      "commitId": "1236adeceda4e57d7df07fc2fbc2726bb13a677a",
-      "commitTime": "2026-08-19 23:04:29 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(desktop & daemon & webpanel): 更新到v1.6.0.1版本"
-    },
-    {
-      "commitId": "cf2712f41d248cb7afbdb3d6a2ea1a74ac8fdcb5",
-      "commitTime": "2026-08-19 23:03:33 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 优化节点管理页面卡片布局"
-    },
-    {
-      "commitId": "645c36cae1880dcd318ded84d7c02d4523283726",
-      "commitTime": "2026-08-19 23:01:48 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(webpanel): 优化创建服务端失败的显示"
-    },
-    {
-      "commitId": "efe54929ef67329da21fad0bbee6327522e735b7",
-      "commitTime": "2026-08-19 22:55:20 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "perf(daemon & webpanel & desktop): 优化取消部署服务端的操作体验"
-    },
-    {
-      "commitId": "4e6a02cfb2710e17d955f497ed2c5a56a2e6ab5f",
-      "commitTime": "2026-08-19 18:22:22 +0800",
-      "commitAuthor": "Weheal",
-      "commitMsg": "Merge pull request #233 from Waheal/dev"
-    },
-    {
-      "commitId": "68ebb196778e5aeff205765793507dba437cb5e2",
-      "commitTime": "2026-08-19 18:19:22 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "fix(desktop): 修复desktop版取消部署对话框失效的bug"
-    },
-    {
-      "commitId": "bd47ff8fcd57d6e3241f25c40fa70ce83ce14e75",
-      "commitTime": "2026-08-19 17:55:52 +0800",
-      "commitAuthor": "Waheal",
-      "commitMsg": "fix(daemon): 修复取消部署时并不会将文件安全删除的bug"
-    },
-    {
-      "commitId": "5d2fc7d411d039ae7dbddf90038560ce4c72b310",
-      "commitTime": "2026-08-19 17:05:58 +0800",
-      "commitAuthor": "小Q",
-      "commitMsg": "feat: 取消部署时询问是否清理文件"
-    },
-    {
-      "commitId": "18b4ebe3d1639fe5be4e638da338a386d9cd0135",
-      "commitTime": "2026-08-19 14:25:16 +0800",
-      "commitAuthor": "小宇",
-      "commitMsg": "Merge pull request #231 from MSLTeam/dev"
-    },
-    {
-      "commitId": "42c92d867af3a7bb89284084e2ddcb2f4ae70ed7",
-      "commitTime": "2026-08-19 14:03:47 +0800",
-      "commitAuthor": "luluxiaoyu",
-      "commitMsg": "bumpver(daemon & webpanel & desktop): 更新到v1.6.0版本"
     }
   ]
 }

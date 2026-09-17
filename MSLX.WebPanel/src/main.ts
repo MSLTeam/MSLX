@@ -15,6 +15,7 @@ import '@/style/index.less';
 import './permission';
 import App from './App.vue';
 import { request } from '@/utils/request';
+import { useFileUpload } from '@/hooks/useFileUpload';
 
 // 映射出去给插件用的东西
 (window as any).Vue = Vue;
@@ -23,6 +24,7 @@ import { request } from '@/utils/request';
 (window as any).TDesign = TDesign;
 (window as any).mslxRequest = request;
 (window as any).MSLX_Stores = MSLXStores;
+(window as any).useFileUpload = useFileUpload;
 
 const app = createApp(App);
 

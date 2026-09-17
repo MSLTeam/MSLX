@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.Events;
+using MSLX.SDK.Interfaces;
 using MSLX.SDK.IServices;
 using MSLX.SDK.Models;
 using Newtonsoft.Json.Linq;
@@ -23,6 +25,7 @@ public class MCServerService : IMCServerService
     private readonly IHubContext<InstanceConsoleHub> _hubContext;
     private readonly IHostApplicationLifetime _appLifetime;
     private readonly IFrpProcessService _frpService;
+    private readonly IMSLXEvents _events;
 
     // 短时间内崩溃重启限制
     private readonly ConcurrentDictionary<uint, List<DateTime>> _crashHistory = new();
@@ -61,6 +64,10 @@ public class MCServerService : IMCServerService
         // Docker监控相关
         public bool IsDocker { get; set; }
         public double CpuBaseLimitPercentage { get; set; } = 0;
+
+        // 实例输入输出编码
+        public Encoding InputEncoding { get; set; } = Encoding.UTF8;
+        public Encoding OutputEncoding { get; set; } = Encoding.UTF8;
     }
 
     private readonly ConcurrentDictionary<uint, ServerContext> _activeServers = new(); // 存储运行中实例的状态数据
@@ -70,7 +77,7 @@ public class MCServerService : IMCServerService
 
     // 匹配玩家进入/离开的正则表达式
     private static readonly Regex PlayerJoinedRegex =
-        new Regex(@"\]:\s*(?<player>.+?)\[.*?\]\slogged\sin\swith\sentity\sid", RegexOptions.Compiled);
+        new Regex(@"\]:\s*(?<player>.+?)\[(?<ip>.*?)\]\slogged\sin\swith\sentity\sid", RegexOptions.Compiled);
 
     private static readonly Regex PlayerLeftRegex =
         new Regex(@"\]:\s*(?<player>.+?)\slost\sconnection:", RegexOptions.Compiled);
@@ -81,12 +88,14 @@ public class MCServerService : IMCServerService
         ILogger<IMCServerService> logger,
         IHubContext<InstanceConsoleHub> hubContext,
         IHostApplicationLifetime appLifetime,
-        IFrpProcessService frpService)
+        IFrpProcessService frpService,
+        IMSLXEvents events)
     {
         _logger = logger;
         _hubContext = hubContext;
         _appLifetime = appLifetime;
         _frpService = frpService;
+        _events = events;
 
         _appLifetime.ApplicationStopping.Register(StopAllServers);
         _appLifetime.ApplicationStarted.Register(OnAppStarted);
@@ -211,7 +220,7 @@ public class MCServerService : IMCServerService
         _activeServers[instanceId] = context;
 
         // 后台任务启动服务器
-        _ = Task.Run(async () => await InternalStartServerAsync(instanceId, context, serverInfo, skipEulaCheck));
+        _ = Task.Run(async () => await InternalStartServerAsync(instanceId, context, serverInfo, skipEulaCheck, isAutoRestart));
 
         return (true, "正在启动服务器...");
     }
@@ -451,10 +460,26 @@ public class MCServerService : IMCServerService
     /// 异步启动服务器
     /// </summary>
     private async Task InternalStartServerAsync(uint instanceId, ServerContext context,
-        McServerInfo.ServerInfo serverInfo, bool skipEulaCheck)
+        McServerInfo.ServerInfo serverInfo, bool skipEulaCheck, bool isAutoRestart = false)
     {
         try
         {
+            var startingArgs = new ServerStartingEventArgs
+            {
+                InstanceId = instanceId,
+                ServerInfo = serverInfo,
+                IsAutoRestart = isAutoRestart,
+                Timestamp = DateTime.Now
+            };
+            _events.PublishServerStarting(startingArgs);
+            if (startingArgs.Cancel)
+            {
+                RecordLog(instanceId, context, $">>> [MSLX] 启动已被插件取消: {startingArgs.CancelReason ?? "无"}");
+                _logger.LogInformation($"实例 [{instanceId}] 启动已被插件取消: {startingArgs.CancelReason ?? "无"}");
+                _activeServers.TryRemove(instanceId, out _);
+                return;
+            }
+
             if (serverInfo.ExpireTime.HasValue && serverInfo.ExpireTime.Value <= DateTime.Now)
             {
                 RecordLog(instanceId, context, $">>> [MSLX] ❌ 启动失败：当前服务端实例已于 {serverInfo.ExpireTime.Value:yyyy-MM-dd HH:mm:ss} 过期。");
@@ -601,7 +626,7 @@ public class MCServerService : IMCServerService
             // 是否docker模式
             if (serverInfo.Java == "docker-java" || serverInfo.Java == "docker-custom")
             {
-                exec = "docker";
+                exec = OperatingSystem.IsWindows() ? "docker.exe" : "docker";
                 var sb = new StringBuilder();
 
                 // 基础运行参数
@@ -780,9 +805,15 @@ public class MCServerService : IMCServerService
                     ? " -Dterminal.ansi=true"
                     : (serverInfo.AllowOriginASCIIColors ? " -Dterminal.jline=false -Dterminal.ansi=true" : "");
 
+                string jvmUtf8 = (serverInfo.ForceJvmUTF8 || serverInfo.EnablePty)
+                    ? (OperatingSystem.IsWindows()
+                        ? " -Dfile.encoding=UTF-8 -Dsun.stdout.encoding=UTF-8 -Dsun.stderr.encoding=UTF-8 -Dsun.stdin.encoding=UTF-8 -Dstdout.encoding=UTF-8 -Dstderr.encoding=UTF-8 -Dstdin.encoding=UTF-8"
+                        : " -Dfile.encoding=UTF-8")
+                    : "";
+
                 // 主机直接启动
                 args =
-                    $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{(serverInfo.ForceJvmUTF8 ? " -Dfile.encoding=UTF-8" : "")}{terminalColorAndJline} -jar {serverInfo.Core} nogui";
+                    $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{jvmUtf8}{terminalColorAndJline} -jar {serverInfo.Core} nogui";
                 exec = serverInfo.Java;
 
                 // 处理自定义模式参数
@@ -812,7 +843,7 @@ public class MCServerService : IMCServerService
                 if (serverInfo.Core.Contains("@libraries"))
                 {
                     args =
-                        $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{(serverInfo.ForceJvmUTF8 ? " -Dfile.encoding=UTF-8" : "")}{terminalColorAndJline} {serverInfo.Core} nogui";
+                        $"{authJvm} -Xms{serverInfo.MinM}M -Xmx{serverInfo.MaxM}M {serverInfo.Args}{jvmUtf8}{terminalColorAndJline} {serverInfo.Core} nogui";
                 }
             }
 
@@ -930,6 +961,8 @@ public class MCServerService : IMCServerService
 
             // 处理玩家监听
             context.MonitorPlayers = serverInfo.MonitorPlayers;
+            context.InputEncoding = inputEncoding;
+            context.OutputEncoding = outputEncoding;
             
             // Docker模式保存性能监视基准参数
             context.IsDocker = serverInfo.Java == "docker-java" || serverInfo.Java == "docker-custom";
@@ -985,14 +1018,43 @@ public class MCServerService : IMCServerService
                         initRows = prefSize.rows;
                     }
 
+                    string ptyApp = exec;
+                    string[] ptyArgs = SplitCommandLineArgs(args);
+                    bool verbatim = false;
+
+                    if (OperatingSystem.IsWindows() && !context.IsDocker)
+                    {
+                        if (ptyApp.Equals("cmd.exe", StringComparison.OrdinalIgnoreCase) ||
+                            ptyApp.EndsWith("\\cmd.exe", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (args != null && !args.Contains("chcp 65001"))
+                            {
+                                string cleanArgs = args.TrimStart();
+                                if (cleanArgs.StartsWith("/c", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    cleanArgs = cleanArgs.Substring(2).TrimStart();
+                                }
+                                ptyArgs = new[] { "/c", $"chcp 65001 >nul && {cleanArgs}" };
+                                verbatim = true;
+                            }
+                        }
+                        else
+                        {
+                            ptyApp = "cmd.exe";
+                            ptyArgs = new[] { "/c", $"chcp 65001 >nul && \"{exec}\" {args}" };
+                            verbatim = true;
+                        }
+                    }
+
                     var ptyOptions = new PtyOptions
                     {
                         Name = $"MSLX-{instanceId}",
                         Cols = initCols,
                         Rows = initRows,
                         Cwd = serverInfo.Base,
-                        App = exec,
-                        CommandLine = SplitCommandLineArgs(args),
+                        App = ptyApp,
+                        CommandLine = ptyArgs,
+                        VerbatimCommandLine = verbatim,
                         Environment = envDict
                     };
 
@@ -1113,6 +1175,14 @@ public class MCServerService : IMCServerService
 
             if (started)
             {
+                int pid = context.IsPtyMode && context.PtyConnection != null ? context.PtyConnection.Pid : (context.Process?.Id ?? 0);
+                _events.PublishServerStarted(new ServerStartedEventArgs
+                {
+                    InstanceId = instanceId,
+                    ServerInfo = serverInfo,
+                    ProcessId = pid,
+                    Timestamp = DateTime.Now
+                });
 
                 // 联动启动隧道
                 if (!string.IsNullOrWhiteSpace(serverInfo.BindFrpId))
@@ -1242,6 +1312,15 @@ public class MCServerService : IMCServerService
                                 }
                                 else
                                 {
+                                    string stopCmdForEvent = string.IsNullOrEmpty(server?.StopCommand) ? "stop" : server.StopCommand;
+                                    _events.PublishServerStopping(new ServerStoppingEventArgs
+                                    {
+                                        InstanceId = instanceId,
+                                        ServerInfo = server,
+                                        StopCommand = stopCmdForEvent,
+                                        Timestamp = DateTime.Now
+                                    });
+
                                     // 判定是否是传统MC服务器或者是开启了docker-java包装的MC服务器
                                     bool isMcServer = server != null && server.Java != "none" && server.Java != "docker-custom";
 
@@ -1494,6 +1573,20 @@ public class MCServerService : IMCServerService
     {
         if (_activeServers.TryGetValue(instanceId, out var context))
         {
+            var cmdArgs = new ServerCommandExecutingEventArgs
+            {
+                InstanceId = instanceId,
+                Command = command,
+                SentViaRcon = false,
+                Timestamp = DateTime.Now
+            };
+            _events.PublishServerCommandExecuting(cmdArgs);
+            if (cmdArgs.Cancel)
+            {
+                _logger.LogInformation($"[MSLX] 实例 {instanceId} 的命令 [{command}] 已被插件拦截取消。");
+                return false;
+            }
+
             try
             {
                 lock (context.StateLock)
@@ -1600,8 +1693,9 @@ public class MCServerService : IMCServerService
     /// <summary>
     /// 向 PTY 伪终端安全写入命令
     /// </summary>
-    private static void WritePtyCommandClean(IPtyConnection pty, string command)
+    private static void WritePtyCommandClean(IPtyConnection pty, string command, Encoding? encoding = null)
     {
+        encoding ??= Encoding.UTF8;
         var lines = command.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
         bool isWindows = OperatingSystem.IsWindows();
 
@@ -1623,7 +1717,7 @@ public class MCServerService : IMCServerService
                 payload = "\x05\x15" + line + "\n";
             }
 
-            byte[] ptyBytes = Encoding.UTF8.GetBytes(payload);
+            byte[] ptyBytes = encoding.GetBytes(payload);
             pty.WriterStream.Write(ptyBytes, 0, ptyBytes.Length);
         }
         pty.WriterStream.Flush();
@@ -1641,6 +1735,19 @@ public class MCServerService : IMCServerService
             process.StandardInput.WriteLine(line);
         }
         process.StandardInput.Flush();
+    }
+
+    /// <summary>
+    /// 发送原始 PTY 输入文本（自动按实例配置的输入编码转码）
+    /// </summary>
+    public bool SendPtyInput(uint instanceId, string data)
+    {
+        if (_activeServers.TryGetValue(instanceId, out var context))
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes(data);
+            return SendPtyInput(instanceId, bytes);
+        }
+        return false;
     }
 
     /// <summary>
@@ -1926,6 +2033,34 @@ public class MCServerService : IMCServerService
         }
         RecordLog(instanceId, context, exitMsg);
 
+        var serverInfoForExitEvent = IConfigBase.ServerList.GetServer(instanceId);
+        TimeSpan uptime = TimeSpan.Zero;
+        if (context.Process != null)
+        {
+            try { uptime = DateTime.Now - context.Process.StartTime; } catch { }
+        }
+
+        _events.PublishServerStopped(new ServerStoppedEventArgs
+        {
+            InstanceId = instanceId,
+            ServerInfo = serverInfoForExitEvent,
+            ExitCode = exitCode,
+            Uptime = uptime,
+            Timestamp = DateTime.Now
+        });
+
+        if (!context.IsStopping && exitCode != 0)
+        {
+            _events.PublishServerCrashed(new ServerCrashedEventArgs
+            {
+                InstanceId = instanceId,
+                ServerInfo = serverInfoForExitEvent,
+                ExitCode = exitCode,
+                CrashMessage = exitMsg,
+                Timestamp = DateTime.Now
+            });
+        }
+
         _logger.LogInformation($"MC 服务器 [{instanceId}] 停止处理完成 (Code: {exitCode})");
 
         // 用户主动停止，不触发崩溃自启
@@ -2071,6 +2206,14 @@ public class MCServerService : IMCServerService
         // 通过 SignalR 推送日志
         _hubContext.Clients.Group(instanceId.ToString()).SendAsync("ReceiveLog", data);
 
+        _events.PublishServerLogReceived(new ServerLogEventArgs
+        {
+            InstanceId = instanceId,
+            LogLine = data,
+            IsStdErr = false,
+            Timestamp = DateTime.Now
+        });
+
         ParsePlayerActivity(instanceId, context, data);
     }
 
@@ -2091,9 +2234,32 @@ public class MCServerService : IMCServerService
         if (joinMatch.Success)
         {
             string playerName = joinMatch.Groups["player"].Value.Trim();
+            string? playerIp = null;
+            var rawIp = joinMatch.Groups["ip"].Value.Trim();
+            if (!string.IsNullOrEmpty(rawIp))
+            {
+                if (rawIp.StartsWith("/")) rawIp = rawIp.TrimStart('/');
+                int colonIdx = rawIp.LastIndexOf(':');
+                if (colonIdx > 0) rawIp = rawIp.Substring(0, colonIdx);
+                playerIp = rawIp;
+            }
+
             if (context.OnlinePlayers.TryAdd(playerName, true))
             {
                 _hubContext.Clients.Group(instanceId.ToString()).SendAsync("PlayerJoined", instanceId, playerName);
+            }
+
+            try
+            {
+                var serverInfo = IConfigBase.ServerList.GetServer(instanceId);
+                if (serverInfo != null && !string.IsNullOrEmpty(serverInfo.Base))
+                {
+                    PlayerActivityTracker.RecordLogin(serverInfo.Base, playerName, playerIp);
+                }
+            }
+            catch
+            {
+                // 记录失败就算了 不管他
             }
 
             return;
@@ -2248,11 +2414,43 @@ public class MCServerService : IMCServerService
         }
 
         bool isBedrock = false;
+        DateTime backupStartTime = DateTime.Now;
+        McServerInfo.ServerInfo? server = null;
         try
         {
             context.IsBackuping = true;
-            var server = IConfigBase.ServerList.GetServer(instanceId);
+            server = IConfigBase.ServerList.GetServer(instanceId);
             if (server == null) return;
+
+            // 计算备份保存路径
+            string backupDir = Path.Combine(server.Base, "mslx-backups"); // 默认是存档内
+            if (server.BackupPath != "MSLX://Backup/Instance")
+            {
+                if (server.BackupPath == "MSLX://Backup/Data")
+                {
+                    backupDir = Path.Combine(IConfigBase.GetAppDataPath(), "Backups",
+                        $"Backups_{server.Name}_{instanceId}");
+                }
+                else if (!string.IsNullOrEmpty(server.BackupPath))
+                {
+                    backupDir = Path.Combine(server.BackupPath);
+                }
+            }
+
+            var backupStartingArgs = new BackupStartingEventArgs
+            {
+                InstanceId = instanceId,
+                ServerInfo = server,
+                BackupDirectory = backupDir,
+                Timestamp = backupStartTime
+            };
+            _events.PublishBackupStarting(backupStartingArgs);
+            if (backupStartingArgs.Cancel)
+            {
+                RecordLog(instanceId, context, $"[MSLX-Backup] 备份已被插件取消: {backupStartingArgs.CancelReason ?? "无"}");
+                _logger.LogInformation($"实例 [{instanceId}] 备份已被插件取消: {backupStartingArgs.CancelReason ?? "无"}");
+                return;
+            }
 
             // 拦截基岩版逻辑
             if (File.Exists(Path.Combine(server.Base, "bedrock_server")) ||
@@ -2329,6 +2527,14 @@ public class MCServerService : IMCServerService
             if (foldersToCompress.Count == 0)
             {
                 _logger.LogWarning("未找到任何世界存档文件夹（包括主世界、下界、末地），备份失败！");
+                _events.PublishBackupFailed(new BackupFailedEventArgs
+                {
+                    InstanceId = instanceId,
+                    ServerInfo = server,
+                    ErrorMessage = "未找到任何世界存档文件夹（包括主世界、下界、末地），备份失败！",
+                    Timestamp = DateTime.Now
+                });
+
                 if (IsServerRunning(instanceId))
                 {
                     if (isBedrock)
@@ -2354,21 +2560,6 @@ public class MCServerService : IMCServerService
                 }
 
                 return;
-            }
-
-            // 拼接备份的目标保存位置
-            string backupDir = Path.Combine(server.Base, "mslx-backups"); // 默认是存档内
-            if (server.BackupPath != "MSLX://Backup/Instance")
-            {
-                if (server.BackupPath == "MSLX://Backup/Data")
-                {
-                    backupDir = Path.Combine(IConfigBase.GetAppDataPath(), "Backups",
-                        $"Backups_{server.Name}_{instanceId}");
-                }
-                else if (!string.IsNullOrEmpty(server.BackupPath))
-                {
-                    backupDir = Path.Combine(server.BackupPath);
-                }
             }
 
             string backupPath = Path.Combine(backupDir, $"mslx-backup_{DateTime.Now.ToString("yyyyMMdd_HHmmss")}.zip");
@@ -2397,6 +2588,14 @@ public class MCServerService : IMCServerService
                         try
                         {
                             fileToDelete.Delete();
+                            _events.PublishBackupDeleted(new BackupDeletedEventArgs
+                            {
+                                InstanceId = instanceId,
+                                BackupFilePath = fileToDelete.FullName,
+                                BackupFileName = fileToDelete.Name,
+                                IsAutoRoll = true,
+                                Timestamp = DateTime.Now
+                            });
                             RecordLog(instanceId, context, $"[MSLX-Backup] 已删除旧备份：{fileToDelete.Name}");
                         }
                         catch (Exception ex)
@@ -2520,10 +2719,47 @@ public class MCServerService : IMCServerService
 
             RecordLog(instanceId, context, $"[MSLX-Backup] 存档备份成功！已保存至：{backupPath}");
             _logger.LogInformation($"[MSLX-Backup] 存档备份成功！已保存至：{backupPath}");
+
+            try
+            {
+                FileInfo backupFileInfo = new FileInfo(backupPath);
+                long fileSize = backupFileInfo.Exists ? backupFileInfo.Length : 0;
+                string fmtSize = fileSize switch
+                {
+                    >= 1073741824 => $"{fileSize / (1024.0 * 1024.0 * 1024.0):F2} GB",
+                    >= 1048576 => $"{fileSize / (1024.0 * 1024.0):F2} MB",
+                    >= 1024 => $"{fileSize / 1024.0:F2} KB",
+                    _ => $"{fileSize} Bytes"
+                };
+
+                _events.PublishBackupCompleted(new BackupCompletedEventArgs
+                {
+                    InstanceId = instanceId,
+                    ServerInfo = server,
+                    BackupFilePath = backupPath,
+                    BackupFileName = backupFileInfo.Name,
+                    FileSizeBytes = fileSize,
+                    FormattedSize = fmtSize,
+                    Duration = DateTime.Now - backupStartTime,
+                    Timestamp = DateTime.Now
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"[MSLX-Backup] 发布 BackupCompleted 事件失败: {ex.Message}");
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError($"备份服务器失败 {instanceId}, {ex.Message}");
+            _events.PublishBackupFailed(new BackupFailedEventArgs
+            {
+                InstanceId = instanceId,
+                ServerInfo = server,
+                ErrorMessage = ex.Message,
+                Exception = ex,
+                Timestamp = DateTime.Now
+            });
         }
         finally
         {

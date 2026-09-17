@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Services.PluginsService;
 using MSLX.SDK.Models;
@@ -31,9 +31,7 @@ public class PluginListController : ControllerBase
             processedPaths.Add(dllPath);
 
             var status = "已启用";
-            if (System.IO.File.Exists(dllPath + ".delete")) status = "下次重启删除";
-            else if (System.IO.File.Exists(dllPath + ".new")) status = "下次重启更新";
-            else if (System.IO.File.Exists(dllPath + ".disabled")) status = "下次重启禁用";
+            if (System.IO.File.Exists(dllPath + ".delete")) status = "待删除";
             
             var iconPath = p.Metadata.Icon switch
             {
@@ -73,9 +71,9 @@ public class PluginListController : ControllerBase
                 bool hasNewMarker = System.IO.File.Exists(dllFile + ".new");
                 
                 string status = "未加载";
-                if (hasDeleteMarker) status = "下次重启删除(未加载)";
+                if (hasDeleteMarker) status = "待删除";
                 else if (hasDisabledMarker) status = "已禁用";
-                else if (hasNewMarker) status = "下次重启安装";
+                else if (hasNewMarker) status = "待安装";
 
                 processedPaths.Add(dllFile);
                 resultList.Add(CreateUnloadedPluginObj(dllFile, status, "未知"));
@@ -88,7 +86,7 @@ public class PluginListController : ControllerBase
                 if (!processedPaths.Contains(baseDllPath))
                 {
                     processedPaths.Add(baseDllPath);
-                    resultList.Add(CreateUnloadedPluginObj(baseDllPath, "已禁用(缺失核心)", "未知"));
+                    resultList.Add(CreateUnloadedPluginObj(baseDllPath, "已禁用", "未知"));
                 }
             }
             foreach (var newFile in Directory.GetFiles(pluginsPath, "*.dll.new"))
@@ -97,7 +95,7 @@ public class PluginListController : ControllerBase
                 if (!processedPaths.Contains(baseDllPath))
                 {
                     processedPaths.Add(baseDllPath);
-                    resultList.Add(CreateUnloadedPluginObj(baseDllPath, "下次重启安装", "待读取"));
+                    resultList.Add(CreateUnloadedPluginObj(baseDllPath, "待安装", "待读取"));
                 }
             }
         }

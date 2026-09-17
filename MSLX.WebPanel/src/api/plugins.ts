@@ -34,6 +34,13 @@ export async function getInstallPluginStatus(taskId:string) {
   })
 }
 
+export async function postUploadLocalPlugin(fileId: string, fileName?: string) {
+  return await request.post({
+    url: '/api/plugins/upload',
+    data: { fileId, fileName },
+  });
+}
+
 // 插件市场
 export async function getMarketPluginList(params: { keyword?: string; page?: number; size?: number }) {
   return await request.get<MarketPluginPageModel>({
