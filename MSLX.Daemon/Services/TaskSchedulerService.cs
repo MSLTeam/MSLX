@@ -1,5 +1,7 @@
-﻿using Cronos;
+using Cronos;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.Events;
+using MSLX.SDK.Interfaces;
 using MSLX.SDK.IServices;
 using MSLX.SDK.Models.Instance;
 
@@ -9,14 +11,17 @@ namespace MSLX.Daemon.Services
     {
         private readonly ILogger<TaskSchedulerService> _logger;
         private readonly IMCServerService _mcService;
+        private readonly IMSLXEvents _events;
         private DateTime _lastCheckDateUtc = DateTime.MinValue.Date;
 
         public TaskSchedulerService(
             ILogger<TaskSchedulerService> logger,
-            IMCServerService mcService)
+            IMCServerService mcService,
+            IMSLXEvents events)
         {
             _logger = logger;
             _mcService = mcService;
+            _events = events;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -132,6 +137,21 @@ namespace MSLX.Daemon.Services
         {
             _logger.LogInformation($"正在执行定时任务: [{task.Name}] ({task.Type}) -> Instance: {task.InstanceId}");
 
+            var executingArgs = new TaskExecutingEventArgs
+            {
+                TaskId = task.ID,
+                TaskName = task.Name,
+                TaskType = task.Type,
+                InstanceId = task.InstanceId,
+                Timestamp = DateTime.Now
+            };
+            _events.PublishTaskExecuting(executingArgs);
+            if (executingArgs.Cancel)
+            {
+                _logger.LogInformation($"[MSLX-Scheduler] 任务 [{task.Name}] 已被插件拦截取消执行。");
+                return;
+            }
+
             try
             {
                 switch (task.Type.ToLower())
@@ -191,10 +211,30 @@ namespace MSLX.Daemon.Services
                         _logger.LogWarning($"未知的任务类型: {task.Type}");
                         break;
                 }
+
+                _events.PublishTaskExecuted(new TaskExecutedEventArgs
+                {
+                    TaskId = task.ID,
+                    TaskName = task.Name,
+                    TaskType = task.Type,
+                    InstanceId = task.InstanceId,
+                    Success = true,
+                    Timestamp = DateTime.Now
+                });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"任务 [{task.Name}] 执行失败");
+                _events.PublishTaskExecuted(new TaskExecutedEventArgs
+                {
+                    TaskId = task.ID,
+                    TaskName = task.Name,
+                    TaskType = task.Type,
+                    InstanceId = task.InstanceId,
+                    Success = false,
+                    ErrorMessage = ex.Message,
+                    Timestamp = DateTime.Now
+                });
             }
         }
 

@@ -1,8 +1,9 @@
-﻿using System.Reflection;
+using System.Reflection;
 using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using MSLX.SDK;
+using MSLX.SDK.Interfaces;
 using MSLX.Daemon.Utils.ConfigUtils;
 
 namespace MSLX.Daemon.Services.PluginsService;
@@ -218,6 +219,17 @@ public class PluginManager
 
             // 调用生命周期
             plugin.Metadata.OnUnload();
+            
+            // 自动清理该插件注册的所有事件监听器
+            try
+            {
+                var eventBus = _serviceProvider?.GetService<IMSLXEvents>();
+                eventBus?.UnregisterPlugin(plugin.Assembly);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"[MSLX Plugin] 注销插件事件监听器失败: {ex.Message}");
+            }
             
             // 尝试断开插件的所有SignalR连接
             try

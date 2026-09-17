@@ -18,6 +18,8 @@ using Serilog;
 using Serilog.Sinks.SystemConsole.Themes;
 using System.Reflection;
 using MSLX.Daemon.Services.ResourceServices;
+using MSLX.Daemon.Services.EventService;
+using MSLX.SDK.Interfaces;
 
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
@@ -217,6 +219,7 @@ builder.Services.AddSingleton<CreationTaskTracker>();
 builder.Services.AddSingleton<BackgroundTaskManager>();
 builder.Services.AddSingleton<IBackgroundTaskManager>(sp => sp.GetRequiredService<BackgroundTaskManager>());
 builder.Services.AddSingleton<ArchiveService>();
+builder.Services.AddSingleton<IMSLXEvents, MSLXEventBus>();
 // 插件的一些服务
 var pluginManager = new PluginManager();
 builder.Services.AddSingleton(pluginManager);
@@ -342,7 +345,8 @@ MSLX.SDK.MSLX.Initialize(
     new DaemonLoggerProvider(loggerFactory),
     new DaemonDownloadProvider(),
     new DaemonHttpProvider(),
-    app.Services.GetRequiredService<IBackgroundTaskManager>()
+    app.Services.GetRequiredService<IBackgroundTaskManager>(),
+    app.Services.GetRequiredService<IMSLXEvents>()
 );
 
 // 插件初始化方法

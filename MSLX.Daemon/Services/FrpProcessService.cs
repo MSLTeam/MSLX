@@ -1,4 +1,4 @@
-﻿using System.Collections.Concurrent;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Formats.Tar;
@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.Interfaces;
 using MSLX.SDK.IServices;
 using Newtonsoft.Json.Linq;
 
@@ -18,6 +19,7 @@ public class FrpProcessService : IFrpProcessService
     private readonly ILogger<IFrpProcessService> _logger;
     private readonly IHubContext<FrpConsoleHub> _hubContext; 
     private readonly IHostApplicationLifetime _appLifetime; 
+    private readonly IMSLXEvents _events;
 
     // 用户http请求的httpclient
     private static readonly HttpClient _apiClient = new() { Timeout = TimeSpan.FromSeconds(30) };
@@ -35,11 +37,12 @@ public class FrpProcessService : IFrpProcessService
     private readonly string _frpcExecutablePath;
     private readonly string _toolsDir;
 
-    public FrpProcessService(ILogger<IFrpProcessService> logger, IHubContext<FrpConsoleHub> hubContext, IHostApplicationLifetime appLifetime)
+    public FrpProcessService(ILogger<IFrpProcessService> logger, IHubContext<FrpConsoleHub> hubContext, IHostApplicationLifetime appLifetime, IMSLXEvents events)
     {
         _logger = logger;
         _hubContext = hubContext;
         _appLifetime = appLifetime;
+        _events = events;
         
         string baseDir = IConfigBase.GetAppDataPath();
         string exeName = PlatFormServices.GetOs() == "Windows" ? "frpc.exe" : "frpc";
@@ -147,6 +150,18 @@ public class FrpProcessService : IFrpProcessService
             process.OutputDataReceived += (sender, e) => RecordLog(id, context, e.Data);
             process.ErrorDataReceived += (sender, e) => RecordLog(id, context, e.Data);
             
+            string tunnelName = frpConfig["Name"]?.ToString() ?? id.ToString();
+            string? serviceName = frpConfig["Service"]?.ToString();
+
+            _events.PublishFrpStarting(new MSLX.SDK.Events.FrpStartingEventArgs
+            {
+                TunnelId = id,
+                TunnelName = tunnelName,
+                Service = serviceName,
+                ConfigType = configType,
+                Config = frpConfig
+            });
+
             RecordLog(id, context, "[MSLX] 正在启动 Frpc 进程...");
 
             // 启动
@@ -158,7 +173,27 @@ public class FrpProcessService : IFrpProcessService
                 
                 process.BeginOutputReadLine();
                 process.BeginErrorReadLine();
+
+                process.EnableRaisingEvents = true;
+                process.Exited += (s, ev) =>
+                {
+                    int exitCode = -1;
+                    try { exitCode = process.ExitCode; } catch { }
+                    _events.PublishFrpStopped(new MSLX.SDK.Events.FrpStoppedEventArgs
+                    {
+                        TunnelId = id,
+                        TunnelName = tunnelName,
+                        ExitCode = exitCode
+                    });
+                };
                 
+                _events.PublishFrpStarted(new MSLX.SDK.Events.FrpStartedEventArgs
+                {
+                    TunnelId = id,
+                    TunnelName = tunnelName,
+                    ProcessId = process.Id
+                });
+
                 _logger.LogInformation($"FRP 隧道 [{id}] 启动成功，PID: {process.Id}");
             }
             else
@@ -370,6 +405,14 @@ public class FrpProcessService : IFrpProcessService
     {
         if (_activeProcesses.TryRemove(id, out var context))
         {
+            var frpConfig = IConfigBase.FrpList.GetFrpConfig(id);
+            string tunnelName = frpConfig?["Name"]?.ToString() ?? id.ToString();
+            _events.PublishFrpStopping(new MSLX.SDK.Events.FrpStoppingEventArgs
+            {
+                TunnelId = id,
+                TunnelName = tunnelName
+            });
+
             try
             {
                 if (context.Process != null && !context.Process.HasExited)
@@ -469,6 +512,12 @@ public class FrpProcessService : IFrpProcessService
         context.Logs.Enqueue(data);
         while (context.Logs.Count > MaxLogLines) context.Logs.TryDequeue(out _);
         _hubContext.Clients.Group(frpId.ToString()).SendAsync("ReceiveLog", data);
+
+        _events.PublishFrpLogReceived(new MSLX.SDK.Events.FrpLogEventArgs
+        {
+            TunnelId = frpId,
+            LogLine = data
+        });
     }
     
     private string ConvertBytes(long bytes)
