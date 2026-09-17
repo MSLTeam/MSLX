@@ -9,7 +9,6 @@ import {
   PlayCircleIcon,
   StopCircleIcon,
   DeleteIcon,
-  RollbackIcon,
   RocketFilledIcon,
 } from 'tdesign-icons-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
@@ -90,7 +89,6 @@ const getStatusTheme = (status: string) => {
   if (status === '已启用') return 'success';
   if (status === '已禁用') return 'default';
   if (status === '加载失败') return 'danger';
-  if (status?.includes('下次重启')) return 'warning';
   return 'primary';
 };
 
@@ -415,11 +413,7 @@ onMounted(() => {
             <div class="flex items-center gap-2 pl-4 border-l border-zinc-200 dark:border-zinc-700/60 ml-auto md:ml-0">
               <!-- 更新按钮/进度条 -->
               <div
-                v-if="
-                  availableUpdates[item.id] &&
-                  availableUpdates[item.id].versionName !== item.version &&
-                  item.status !== '下次重启更新'
-                "
+                v-if="availableUpdates[item.id] && availableUpdates[item.id].versionName !== item.version"
                 class="mr-2 border-r border-dashed border-zinc-200 dark:border-zinc-700/60 pr-4"
               >
                 <!-- 正在更新时显示进度 -->
@@ -444,32 +438,17 @@ onMounted(() => {
                   更新
                 </t-button>
               </div>
-              <!-- 撤销操作 (有待处理任务才显示) -->
-              <t-button
-                v-if="item.status?.includes('下次重启')"
-                size="small"
-                theme="default"
-                variant="outline"
-                :disabled="actionLoading"
-                @click="handleAction(item.id, 'cancel')"
-              >
-                <template #icon><rollback-icon /></template>
-                撤销
-              </t-button>
 
-              <!-- 启用 / 禁用 (互斥显示，在无待处理任务时显示) -->
-              <template v-else>
-                <t-switch
-                  :value="item.status === '已启用'"
-                  :disabled="actionLoading"
-                  size="medium"
-                  @change="(val) => handleAction(item.id, val ? 'enable' : 'disable')"
-                />
-              </template>
+              <!-- 启用 / 禁用 开关 -->
+              <t-switch
+                :value="item.status === '已启用'"
+                :disabled="actionLoading"
+                size="medium"
+                @change="(val) => handleAction(item.id, val ? 'enable' : 'disable')"
+              />
 
               <!-- 删除按钮 (安全气泡确认) -->
               <t-popconfirm
-                v-if="!item.status?.includes('下次重启删除')"
                 content="确认要彻底删除该插件吗？"
                 theme="danger"
                 placement="top-right"

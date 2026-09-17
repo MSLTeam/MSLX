@@ -54,7 +54,7 @@ const handleRefreshPage = () => {
               class="bg-blue-100/60 dark:bg-blue-800/60 px-1.5 py-0.5 rounded text-xs mx-1 font-mono font-bold text-blue-600 dark:text-blue-300"
               >DaemonData/Plugins</code
             >
-            目录，启动时自动加载。</span
+            目录，支持热插拔与即时重载。</span
           >
           <span v-else>浏览官方插件市场，发现更多功能，一键下载至本地安装 。</span>
         </div>
