@@ -20,14 +20,19 @@ import { finishUpload, initUpload, saveUploadedFile, uploadChunk } from '@/api/f
 const props = withDefaults(
   defineProps<{
     visible: boolean;
-    instanceId: number;
-    currentPath: string;
+    instanceId?: number;
+    currentPath?: string;
     initialItems?: Array<{ file: File; path: string }>;
     existingTopLevelNames?: string[];
     allowFolder?: boolean;
+    title?: string;
+    accept?: string;
+    customUploadHandler?: (uploadId: string, task: UploadTask) => Promise<void>;
   }>(),
   {
     allowFolder: true,
+    title: '批量上传文件',
+    accept: '',
   },
 );
 
@@ -402,7 +407,11 @@ const uploadSingleFile = async (task: UploadTask) => {
     task.progress = 98;
 
     await finishUpload(uploadId, totalChunks);
-    await saveUploadedFile(props.instanceId, uploadId, task.path, props.currentPath);
+    if (props.customUploadHandler) {
+      await props.customUploadHandler(uploadId, task);
+    } else if (props.instanceId !== undefined && props.currentPath !== undefined) {
+      await saveUploadedFile(props.instanceId, uploadId, task.path, props.currentPath);
+    }
 
     task.status = 'success';
     task.progress = 100;
@@ -435,8 +444,8 @@ onUnmounted(() => tasks.value.forEach((t) => t.abortController?.abort()));
 </script>
 
 <template>
-  <t-dialog attach="body" :visible="visible" header="批量上传文件" width="650px" :footer="false" @close="handleClose">
-    <input ref="fileInputRef" type="file" multiple class="hidden" @change="onFileChange" />
+  <t-dialog attach="body" :visible="visible" :header="props.title" width="650px" :footer="false" @close="handleClose">
+    <input ref="fileInputRef" type="file" multiple class="hidden" :accept="props.accept" @change="onFileChange" />
     <input ref="folderInputRef" type="file" webkitdirectory class="hidden" @change="onFileChange" />
 
     <div class="flex flex-col gap-4 max-h-[60vh]">

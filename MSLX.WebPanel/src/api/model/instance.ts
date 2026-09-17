@@ -244,5 +244,19 @@ export interface BannedPlayerItem {
 export interface UserCacheItem {
   name: string;
   uuid: string;
-  expiresOn: string;
+  expiresOn?: string;
+  lastLoginTime?: string;
+  lastIp?: string;
+  loginCount?: number;
+}
+
+export interface DailyActiveStat {
+  date: string;
+  count: number;
+}
+
+export interface PlayerHistoryResponse {
+  players: UserCacheItem[];
+  chartData: DailyActiveStat[];
+  rangeStats?: Record<string, DailyActiveStat[]>;
 }

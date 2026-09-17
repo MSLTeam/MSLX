@@ -35,7 +35,7 @@ jobs:
         with:
           token: ${{ secrets.HOMEBREW_GITHUB_API_TOKEN }}
       - name: Tap repository
-        run: brew tap "${TAP_NAME}"
+        run: brew tap "${TAP_NAME}" && brew trust "${TAP_NAME}"
       - name: Detect latest version with livecheck
         id: livecheck
         shell: bash

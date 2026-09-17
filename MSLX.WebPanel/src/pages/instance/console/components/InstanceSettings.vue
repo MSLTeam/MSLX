@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import { useRoute } from 'vue-router';
 import { StoreIcon, SettingIcon, TimeIcon, Setting1Icon, BackupIcon, MoreIcon } from 'tdesign-icons-vue-next';
+import { usePluginUIStore } from '@/store';
 
 import GeneralSettings from './settingsComponents/GeneralSettings.vue';
 import ModsPluginsManager from './settingsComponents/ModsPluginsManager.vue';
@@ -9,10 +11,14 @@ import CronTasks from './settingsComponents/CronTasks.vue';
 import BackupManager from './settingsComponents/BackupManager.vue';
 import More from './settingsComponents/More.vue';
 
+const route = useRoute();
+const instanceId = computed(() => parseInt(route.params.serverId as string));
+const pluginUIStore = usePluginUIStore();
+
 const visible = ref(false);
 const currentTab = ref(0);
 
-const menuItems = [
+const defaultMenuItems = [
   { label: '实例设置', icon: SettingIcon },
   { label: '插件/模组', icon: StoreIcon },
   { label: '服务器属性', icon: Setting1Icon },
@@ -20,6 +26,16 @@ const menuItems = [
   { label: '备份管理', icon: BackupIcon },
   { label: '更多功能', icon: MoreIcon },
 ];
+
+const pluginTabs = computed(() => pluginUIStore.extensions['instance-settings-tab'] || []);
+
+const allMenuItems = computed(() => [
+  ...defaultMenuItems,
+  ...pluginTabs.value.map((ext: any) => ({
+    label: ext.label,
+    icon: ext.icon,
+  })),
+]);
 
 const open = () => {
   visible.value = true;
@@ -48,7 +64,7 @@ defineExpose({ open });
       <div class="flex flex-row md:flex-col w-full md:w-40 shrink-0 border-b md:border-b-0 md:border-r border-zinc-200/60 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-950/30 overflow-x-auto md:overflow-y-auto hide-scrollbar md:pt-3">
 
         <div
-          v-for="(item, index) in menuItems"
+          v-for="(item, index) in allMenuItems"
           :key="index"
           class="relative flex flex-col md:flex-row items-center justify-center md:justify-start flex-1 md:flex-none h-auto md:h-12 px-2 py-3 md:py-0 md:px-5 cursor-pointer text-xs md:text-sm transition-all duration-200 gap-1 md:gap-2.5 group"
           :class="currentTab === index ? 'text-[var(--color-primary)] font-bold bg-white/80 dark:bg-zinc-800/50 md:bg-transparent' : 'text-[var(--td-text-color-secondary)] hover:bg-zinc-200/50 dark:hover:bg-zinc-800/40'"
@@ -59,7 +75,17 @@ defineExpose({ open });
             class="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[3px] rounded-t-sm md:top-1/2 md:left-0 md:-translate-y-1/2 md:translate-x-0 md:w-1 md:h-6 md:rounded-r-sm md:rounded-tl-none bg-[var(--color-primary)] shadow-[0_0_8px_var(--color-primary)] opacity-80"
           ></div>
 
-          <component :is="item.icon" class="text-xl md:text-lg shrink-0 transition-transform duration-300" :class="currentTab === index ? 'scale-110' : 'group-hover:scale-110'" />
+          <component
+            :is="item.icon"
+            v-if="typeof item.icon === 'object' || typeof item.icon === 'function'"
+            class="text-xl md:text-lg shrink-0 transition-transform duration-300"
+            :class="currentTab === index ? 'scale-110' : 'group-hover:scale-110'"
+          />
+          <span
+            v-else
+            class="text-xl md:text-lg shrink-0 transition-transform duration-300"
+            :class="currentTab === index ? 'scale-110' : 'group-hover:scale-110'"
+          >{{ item.icon || '🧩' }}</span>
           <span class="whitespace-nowrap overflow-hidden text-ellipsis">{{ item.label }}</span>
         </div>
 
@@ -74,6 +100,22 @@ defineExpose({ open });
           <div v-if="currentTab === 3" class="tab-panel-anim"><cron-tasks /></div>
           <div v-if="currentTab === 4" class="tab-panel-anim"><backup-manager /></div>
           <div v-if="currentTab === 5" class="tab-panel-anim"><more /></div>
+
+          <!-- 插件扩展 Tab 区域: instance-settings-tab -->
+          <div
+            v-for="(ext, extIndex) in pluginTabs"
+            :key="'plugin-settings-tab-' + extIndex"
+          >
+            <div v-if="currentTab === defaultMenuItems.length + extIndex" class="tab-panel-anim">
+              <component
+                :is="ext.component"
+                :server-id="instanceId"
+                :instance-id="instanceId"
+                @success="emits('success')"
+                @saved="emits('saved')"
+              />
+            </div>
+          </div>
 
         </div>
       </div>

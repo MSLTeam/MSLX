@@ -1,4 +1,4 @@
-﻿using fNbt;
+using fNbt;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Services;
@@ -52,7 +52,7 @@ public class PlayerManagerController : ControllerBase
         }
     }
 
-    #region 历史玩家 (UserCache)
+    #region 历史玩家 (UserCache & PlayerActivity)
 
     [HttpGet("history/{id}")]
     public IActionResult GetHistoryPlayers(uint id)
@@ -62,8 +62,8 @@ public class PlayerManagerController : ControllerBase
         try
         {
             var basePath = GetServerBasePath(id);
-            var cache = ReadJsonFile<UserCacheItem>(Path.Combine(basePath, "usercache.json"));
-            return Success(cache);
+            var result = PlayerActivityTracker.GetHistoryData(basePath);
+            return Success(result);
         }
         catch (Exception e) { return Error(e.Message); }
     }
