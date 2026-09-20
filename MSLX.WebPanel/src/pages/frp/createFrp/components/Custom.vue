@@ -8,6 +8,7 @@ interface FormData {
   name: string;
   type: 'toml' | 'ini';
   content: string;
+  clientPath: string;
 }
 
 const formRef = ref(null);
@@ -16,6 +17,7 @@ const formData = reactive<FormData>({
   name: '',
   type: 'toml',
   content: '',
+  clientPath: '',
 });
 
 const rules: FormRules<FormData> = {
@@ -25,7 +27,7 @@ const rules: FormRules<FormData> = {
 
 const onSubmit: FormProps['onSubmit'] = async ({ validateResult }) => {
   if (validateResult === true) {
-    await createFrpTunnel(formData.name, formData.content, 'Custom', formData.type, false);
+    await createFrpTunnel(formData.name, formData.content, 'Custom', formData.type, false, formData.clientPath?.trim() || undefined);
   } else {
     MessagePlugin.warning('请检查表单填写');
   }
@@ -56,6 +58,10 @@ const handleConvertIniToToml = () => {
       <t-form ref="formRef" :data="formData" :rules="rules" label-align="top" @reset="onReset" @submit="onSubmit">
         <t-form-item label="隧道名称" name="name">
           <t-input v-model="formData.name" placeholder="请输入隧道名称" class="!w-full sm:!w-96" />
+        </t-form-item>
+
+        <t-form-item label="自定义 Frpc 路径 (可选)" name="clientPath" help="留空则使用内置默认客户端。如需使用 AutoTLS 等第三方客户端，可在此填写其专属 frpc 的绝对路径">
+          <t-input v-model="formData.clientPath" placeholder="例如：/usr/local/bin/frpc 或 C:\Tools\frpc.exe" class="!w-full sm:!w-96" />
         </t-form-item>
 
         <t-form-item label="配置类型" name="type">

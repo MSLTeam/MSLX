@@ -90,7 +90,16 @@ public class FrpProcessService : IFrpProcessService
         _ = Task.Run(async () => await InternalStartProcessAsync(id, context, frpConfig));
 
         // 返回数据
-        if (!File.Exists(_frpcExecutablePath))
+        string? clientPath = frpConfig["ClientPath"]?.ToString();
+        string configFolder = Path.Combine(IConfigBase.GetAppDataPath(), "Configs", "Frpc", id.ToString());
+        string exeName = PlatFormServices.GetOs() == "Windows" ? "frpc.exe" : "frpc";
+        string localFolderClient = Path.Combine(configFolder, exeName);
+
+        bool hasExecutable = (!string.IsNullOrWhiteSpace(clientPath) && File.Exists(clientPath)) 
+            || File.Exists(localFolderClient) 
+            || File.Exists(_frpcExecutablePath);
+
+        if (!hasExecutable)
         {
             return (true, "核心文件缺失，正在后台自动下载并启动，请留意日志窗口...");
         }
@@ -102,7 +111,49 @@ public class FrpProcessService : IFrpProcessService
     {
         try
         {
-            if (!File.Exists(_frpcExecutablePath)) 
+            // 配置文件
+            string configType = frpConfig["ConfigType"]?.ToString() ?? "ini";
+            string configFolder = Path.Combine(IConfigBase.GetAppDataPath(), "Configs", "Frpc", id.ToString());
+            string configFilePath = Path.Combine(configFolder, $"frpc.{configType}");
+        
+            if (!File.Exists(configFilePath))
+            {
+                RecordLog(id, context, $">>> [MSLX-FrpcService] 配置文件不存在: {configFilePath}");
+                _activeProcesses.TryRemove(id, out _);
+                return;
+            }
+
+            // frpc解析：自定义路径 -> 隧道专属目录下的frpc -> 默认frpc
+            string? customClient = frpConfig["ClientPath"]?.ToString();
+            string exeName = PlatFormServices.GetOs() == "Windows" ? "frpc.exe" : "frpc";
+            string localFolderClient = Path.Combine(configFolder, exeName);
+
+            string targetExecutable = _frpcExecutablePath;
+            bool isCustom = false;
+
+            if (!string.IsNullOrWhiteSpace(customClient))
+            {
+                if (File.Exists(customClient))
+                {
+                    targetExecutable = customClient;
+                    isCustom = true;
+                    RecordLog(id, context, $">>> [MSLX-FrpcService] 使用自定义 Frpc 客户端: {targetExecutable}");
+                }
+                else
+                {
+                    RecordLog(id, context, $">>> [MSLX-FrpcService] 错误：指定的自定义 Frpc 客户端不存在: {customClient}");
+                    _activeProcesses.TryRemove(id, out _);
+                    return;
+                }
+            }
+            else if (File.Exists(localFolderClient))
+            {
+                targetExecutable = localFolderClient;
+                isCustom = true;
+                RecordLog(id, context, $">>> [MSLX-FrpcService] 发现隧道专属 Frpc 客户端: {targetExecutable}");
+            }
+
+            if (!isCustom && !File.Exists(targetExecutable)) 
             {
                 RecordLog(id, context, ">>> [MSLX-FrpcService] 检测到 Frpc 核心文件缺失，准备开始自动下载...");
                 bool downloadSuccess = await DownloadFrpcAsync(id, context);
@@ -116,25 +167,13 @@ public class FrpProcessService : IFrpProcessService
                 RecordLog(id, context, ">>> [MSLX-FrpcService] 核心文件准备就绪，正在启动...");
             }
 
-            // 配置文件
-            string configType = frpConfig["ConfigType"]?.ToString() ?? "ini";
-            string configFolder = Path.Combine(IConfigBase.GetAppDataPath(), "Configs", "Frpc", id.ToString());
-            string configFilePath = Path.Combine(configFolder, $"frpc.{configType}");
-        
-            if (!File.Exists(configFilePath))
-            {
-                RecordLog(id, context, $">>> [MSLX-FrpcService] 配置文件不存在: {configFilePath}");
-                _activeProcesses.TryRemove(id, out _);
-                return;
-            }
-
             // 给个运行权限
-            ExecutePermission.GrantExecutePermission(_frpcExecutablePath);
+            ExecutePermission.GrantExecutePermission(targetExecutable);
 
             // 开始启动！
             var startInfo = new ProcessStartInfo
             {
-                FileName = _frpcExecutablePath,
+                FileName = targetExecutable,
                 Arguments = $"-c \"{configFilePath}\"",
                 RedirectStandardOutput = true, 
                 RedirectStandardError = true,

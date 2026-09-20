@@ -1,14 +1,15 @@
 import { request } from '@/utils/request';
 import { FrpListModel, TunnelInfoModel } from '@/api/model/frp';
 
-export async  function postCreateFrpTunnel(name:string,config:string,provider:string,format:string = 'toml'){
+export async function postCreateFrpTunnel(name: string, config: string, provider: string, format: string = 'toml', clientPath?: string) {
   return await request.post({
     url: '/api/frp/add',
-    data:{
+    data: {
       name,
       config,
       provider,
-      format
+      format,
+      clientPath
     }
   });
 }

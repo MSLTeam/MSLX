@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using MSLX.SDK.Models;
 using MSLX.SDK.Models.Instance; 
 
@@ -64,9 +64,9 @@ public interface IFrpConfigBridge
 {
     JArray ReadFrpList();
     List<JToken> GetFrpList();
-    bool CreateFrpConfig(string name, string server, string configType, string config);
+    bool CreateFrpConfig(string name, string server, string configType, string config, string? clientPath = null);
     bool DeleteFrpConfig(int id);
-    bool UpdateFrpConfig(int id, string name, string server, string configType);
+    bool UpdateFrpConfig(int id, string name, string server, string configType, string? clientPath = null);
     JObject? GetFrpConfig(int id);
     bool IsFrpIdValid(int id);
     int GenerateFrpId();

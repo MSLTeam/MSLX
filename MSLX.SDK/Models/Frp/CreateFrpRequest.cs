@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace MSLX.SDK.Models.Frp;
 
@@ -18,6 +18,8 @@ public class CreateFrpRequest
     [Required(ErrorMessage = "配置文件格式 (format) 不能为空")]
     [AllowedValues("toml", "ini","cmd", ErrorMessage = "配置文件格式 (format) 错误")]
     public string format { get; set; }
+    
+    public string? clientPath { get; set; }
 }
 
 public class DeleteFrpRequest
