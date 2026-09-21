@@ -1,0 +1,145 @@
+/* ================= 选项卡 (Tabs) 现代 Zinc 风格统一 ================= */
+
+/* 1. 基础重置：消除所有层级的默认多余背景、边框、外边距与内边距 */
+.t-tabs,
+.t-tabs__header,
+.t-tabs__nav,
+.t-tabs__nav-scroll,
+.t-tabs__nav-wrap,
+.t-tabs__content,
+.t-tab-panel {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.t-tabs__header {
+  @apply !p-0 !m-0;
+}
+
+/* ================= 卡片/分段模式 (Card / Segmented Tabs) ================= */
+
+/* 唯一的底槽容器：只作用于 nav-container，坚决避免外层 header + 内部 container 双重套娃 */
+.t-tabs__nav-container.t-tabs__nav--card,
+.t-tabs__nav-container:has(.t-tabs__nav--card) {
+  @apply !bg-zinc-100/80 dark:!bg-zinc-900/80 !rounded-[8px] !p-[2px] !border-none !shadow-inner !relative !inline-flex !items-center !gap-0 !m-0 !w-auto;
+  width: fit-content !important;
+  max-width: 100% !important;
+}
+
+.t-tabs__nav-scroll:has(.t-tabs__nav--card) {
+  @apply !overflow-visible;
+}
+
+.t-tabs__nav-wrap:has(.t-tabs__nav--card) {
+  @apply !gap-0.5 !items-center;
+}
+
+/* 彻底清除原生所有伪元素边框与下划线 */
+.t-tabs__nav-container.t-tabs__nav--card::after,
+.t-tabs__nav-container:has(.t-tabs__nav--card)::after,
+.t-tabs__nav-item.t-tabs__nav--card::after,
+.t-tabs__nav-item.t-tabs__nav--card::before {
+  display: none !important;
+}
+
+/* 卡片单项 (对标 radio.css 单选分段控制器) */
+.t-tabs__nav-item.t-tabs__nav--card {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  @apply !rounded-[6px] !z-10 transition-colors duration-200 !select-none !cursor-pointer !m-0 !border-none;
+}
+
+/* 尺寸适配 (紧凑轻盈，对齐 radio.css 视觉高度) */
+.t-tabs__nav-item.t-tabs__nav--card.t-size-s {
+  @apply !h-6 !px-2 !text-xs;
+}
+
+.t-tabs__nav-item.t-tabs__nav--card.t-size-m,
+.t-tabs__nav-item.t-tabs__nav--card:not(.t-size-s):not(.t-size-l) {
+  @apply !h-7 !px-2.5 !text-xs;
+}
+
+.t-tabs__nav-item.t-tabs__nav--card.t-size-l {
+  @apply !h-8.5 !px-3.5 !text-sm;
+}
+
+/* 内部内容居中与重置 */
+.t-tabs__nav-item.t-tabs__nav--card .t-tabs__nav-item-wrapper {
+  @apply !p-0 !m-0 !h-full !flex !items-center !justify-center !bg-transparent;
+}
+
+.t-tabs__nav-item.t-tabs__nav--card .t-tabs__nav-item-text-wrapper {
+  @apply !h-full !flex !items-center !justify-center !gap-1.5;
+}
+
+/* 未激活态 */
+.t-tabs__nav-item.t-tabs__nav--card:not(.t-is-active):not(.t-is-disabled) {
+  @apply !text-zinc-500 dark:!text-zinc-400 !font-medium hover:!text-zinc-800 dark:hover:!text-zinc-200;
+}
+
+/* 激活态 (对齐 radio.css：纯净白底 / 暗色 zinc-700，去除多余边框与内阴影干涉) */
+.t-tabs__nav-item.t-tabs__nav--card.t-is-active {
+  background-color: #ffffff !important;
+  @apply !text-zinc-900 dark:!text-zinc-100 !font-bold !shadow-sm !border-none;
+}
+
+html[theme-mode='dark'] .t-tabs__nav-item.t-tabs__nav--card.t-is-active,
+.dark .t-tabs__nav-item.t-tabs__nav--card.t-is-active {
+  background-color: #3f3f46 !important; /* zinc-700 */
+}
+
+/* ================= 常规下划线模式 (Line Tabs) ================= */
+
+/* 底部导轨线 */
+.t-tabs:not(.t-tabs--card) .t-tabs__nav-container::after {
+  background-color: color-mix(in srgb, var(--color-zinc-200), transparent 40%) !important;
+}
+
+html[theme-mode='dark'] .t-tabs:not(.t-tabs--card) .t-tabs__nav-container::after,
+.dark .t-tabs:not(.t-tabs--card) .t-tabs__nav-container::after {
+  background-color: color-mix(in srgb, var(--color-zinc-800), transparent 20%) !important;
+}
+
+/* 下划线项样式 */
+.t-tabs__nav-item:not(.t-tabs__nav--card) {
+  @apply !text-zinc-500 dark:!text-zinc-400 !font-medium hover:!text-zinc-900 dark:hover:!text-zinc-100 !transition-colors;
+}
+
+.t-tabs__nav-item:not(.t-tabs__nav--card) .t-tabs__nav-item-wrapper {
+  @apply !rounded-[6px] hover:!bg-zinc-100/60 dark:hover:!bg-zinc-800/40;
+}
+
+.t-tabs__nav-item:not(.t-tabs__nav--card).t-is-active {
+  @apply !text-[var(--color-primary)] !font-bold;
+}
+
+/* 指示条胶囊化 */
+.t-tabs__bar {
+  @apply !bg-[var(--color-primary)] !rounded-full;
+  height: 2px !important;
+}
+
+/* ================= 通用交互组件微调 ================= */
+
+/* 关闭/移除按钮 */
+.t-tabs__nav-item .remove-btn,
+.t-tabs__nav-item .t-icon-close {
+  @apply !text-zinc-400 hover:!text-zinc-600 dark:hover:!text-zinc-200 !rounded-full !transition-colors !ml-1 !text-xs;
+}
+
+/* 左右滚动/翻页操作按钮 */
+.t-tabs__btn,
+.t-tabs__scroll-btn {
+  @apply !bg-zinc-100/90 dark:!bg-zinc-900/90 !text-zinc-500 dark:!text-zinc-400 hover:!text-zinc-900 dark:hover:!text-zinc-100 !border-none !rounded-[6px] !transition-all;
+}
+
+.t-tabs__operations {
+  @apply !bg-transparent !border-none;
+}
+
+/* 禁用状态 */
+.t-tabs__nav-item.t-is-disabled {
+  @apply !opacity-40 !cursor-not-allowed pointer-events-none;
+}
