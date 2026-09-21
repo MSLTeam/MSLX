@@ -360,6 +360,31 @@ public class UploadController : ControllerBase
                 }
             }
 
+            // 扫描整合包根目录中的启动脚本
+            var scriptPriority = new[] { "start", "run", "launch", "server" };
+
+            var scripts = archive.Entries
+                .Select(e => new { NormalizedName = e.FullName.Replace('\\', '/') })
+                .Where(x =>
+                    !x.NormalizedName.EndsWith("/") &&
+                    (string.IsNullOrEmpty(basePrefix)
+                        ? !x.NormalizedName.Contains("/")
+                        : x.NormalizedName.StartsWith(basePrefix, StringComparison.OrdinalIgnoreCase) &&
+                          !x.NormalizedName.Substring(basePrefix.Length).Contains("/")))
+                .Select(x => string.IsNullOrEmpty(basePrefix)
+                    ? x.NormalizedName
+                    : x.NormalizedName.Substring(basePrefix.Length))
+                .Where(name =>
+                    name.EndsWith(".sh", StringComparison.OrdinalIgnoreCase) ||
+                    name.EndsWith(".bat", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(name =>
+                {
+                    var baseName = Path.GetFileNameWithoutExtension(name).ToLower();
+                    var idx = Array.IndexOf(scriptPriority, baseName);
+                    return idx >= 0 ? idx : scriptPriority.Length;
+                })
+                .ToList();
+
             var metadataEntry = archive.Entries.FirstOrDefault(e => 
                 e.FullName.Equals($"{basePrefix}mslx-pack-metadata.json", StringComparison.OrdinalIgnoreCase));
             
@@ -379,6 +404,7 @@ public class UploadController : ControllerBase
                 {
                     ["count"] = jarFiles.Count,
                     ["jars"] = JToken.FromObject(jarFiles),
+                    ["scripts"] = JToken.FromObject(scripts),
                     ["detectedRoot"] = basePrefix,
                     ["metadata"] = metadata,
                     ["format"] = "zip"

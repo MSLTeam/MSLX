@@ -58,6 +58,9 @@ const detectedJars = ref<string[]>([]);
 const isCheckingPackage = ref(false);
 const detectedRoot = ref('');
 const packageFormat = ref<'zip' | 'mrpack' | ''>('');
+const detectedScripts = ref<string[]>([]);
+const selectedScript = ref('');
+const useScriptMode = ref(false);
 
 // Input DOM 引用
 const uploadInputRef = ref<HTMLInputElement | null>(null);
@@ -356,6 +359,7 @@ const FORM_RULES = computed<FormRules>(() => {
     core: [
       {
         validator: (val) => {
+          if (useScriptMode.value || selectedScript.value) return true;
           if (detectedJars.value.length > 0) {
             if (!val) return { result: false, message: '请选择一个启动Jar', type: 'error' };
           } else {
@@ -433,7 +437,12 @@ const nextStep = async () => {
   }
 
   if (currentStep.value === 2) {
-    if (detectedJars.value.length > 0) {
+    if (useScriptMode.value) {
+      if (!selectedScript.value) {
+        MessagePlugin.warning('请选择一个启动脚本');
+        return;
+      }
+    } else if (detectedJars.value.length > 0) {
       if (!formData.value.core) {
         MessagePlugin.warning('请从列表中选择一个启动核心');
         return;
@@ -625,6 +634,9 @@ const analyzePackage = async (key: string, localPath?: string) => {
     detectedJars.value = res.jars || [];
     detectedRoot.value = res.detectedRoot || '';
     packageFormat.value = res.format === 'mrpack' ? 'mrpack' : 'zip';
+    detectedScripts.value = res.scripts || [];
+    selectedScript.value = '';
+    useScriptMode.value = false;
 
     if (res.metadata?.config) {
       packMetadataRef.value = res.metadata;
@@ -640,6 +652,8 @@ const analyzePackage = async (key: string, localPath?: string) => {
       MessagePlugin.success(`自动识别到服务端核心: ${detectedJars.value[0]}`);
     } else if (detectedJars.value.length > 1) {
       MessagePlugin.info(`检测到 ${detectedJars.value.length} 个服务端核心，请在下一步选择`);
+    } else if (detectedScripts.value.length > 0) {
+      MessagePlugin.info(`未检测到服务端核心，但发现 ${detectedScripts.value.length} 个启动脚本，可在下一步选择`);
     } else {
       MessagePlugin.warning('未检测到服务端核心，请在下一步手动配置');
     }
@@ -650,12 +664,43 @@ const analyzePackage = async (key: string, localPath?: string) => {
   }
 };
 
+// 监听脚本模式开关
+watch(useScriptMode, (val) => {
+  if (val) {
+    if (!selectedScript.value && detectedScripts.value.length > 0) {
+      selectedScript.value = detectedScripts.value[0];
+    }
+  } else {
+    selectedScript.value = '';
+  }
+});
+
+// 选中脚本后联动：切换为自定义模式
+watch(selectedScript, (script) => {
+  if (script) {
+    formData.value.core = 'none';
+    formData.value.args = `./${script}`;
+    formData.value.java = 'none';
+    formData.value.coreUrl = '';
+    formData.value.coreSha256 = '';
+    formData.value.coreFileKey = '';
+  } else if (!useScriptMode.value) {
+    // 取消选择，恢复到 jar 模式默认值
+    formData.value.core = detectedJars.value.length === 1 ? detectedJars.value[0] : '';
+    formData.value.args = '';
+    formData.value.java = '';
+  }
+});
+
 // 移除文件
 const removeUploadedFile = async () => {
   if (formData.value.packageFileKey) {
     await removeUploadData();
     formData.value.packageFileKey = '';
     detectedJars.value = [];
+    detectedScripts.value = [];
+    selectedScript.value = '';
+    useScriptMode.value = false;
     packageFormat.value = '';
     formData.value.core = '';
     MessagePlugin.success('文件已移除');
@@ -823,6 +868,9 @@ const goToHome = () => {
     args: '',
   };
   detectedJars.value = [];
+  detectedScripts.value = [];
+  selectedScript.value = '';
+  useScriptMode.value = false;
   packageFormat.value = '';
   downloadType.value = 'online';
   javaType.value = 'online';
@@ -1027,113 +1075,157 @@ const goToHome = () => {
             </div>
 
             <div v-show="currentStep === 2" class="list-item-anim flex-1 pt-1">
-              <div v-if="detectedJars.length > 0">
-                <t-alert
-                  theme="success"
-                  class="!mb-6 !rounded-xl !bg-[var(--color-success)]/10 !border-[var(--color-success)]/20"
-                >
-                  <template #message
-                    >我们在压缩包中发现了以下服务端核心文件，请选择哪一个作为<b>启动核心</b>。</template
+              <!-- 常规核心选择/下载 (当开启脚本模式时置灰锁定) -->
+              <div :class="{ 'opacity-40 pointer-events-none': useScriptMode }">
+                <div v-if="detectedJars.length > 0">
+                  <t-alert
+                    theme="success"
+                    class="!mb-6 !rounded-xl !bg-[var(--color-success)]/10 !border-[var(--color-success)]/20"
                   >
-                </t-alert>
+                    <template #message
+                      >我们在压缩包中发现了以下服务端核心文件，请选择哪一个作为<b>启动核心</b>。</template
+                    >
+                  </t-alert>
 
-                <t-form-item label="选择启动核心" name="core">
-                  <div class="w-full flex flex-col gap-4">
-                    <t-radio-group v-model="formData.core" class="flex flex-col gap-3 w-full items-start">
-                      <div v-for="jar in detectedJars" :key="jar" class="flex w-full items-center justify-start">
-                        <t-radio :value="jar" class="!font-mono !text-sm">{{ jar }}</t-radio>
-                      </div>
-                      <div class="flex w-full items-center justify-start mt-2">
-                         <t-radio value="custom_input" class="!font-mono !text-sm">自定义</t-radio>
-                      </div>
+                  <t-form-item label="选择启动核心" name="core">
+                    <div class="w-full flex flex-col gap-4">
+                      <t-radio-group v-model="formData.core" class="flex flex-col gap-3 w-full items-start">
+                        <div v-for="jar in detectedJars" :key="jar" class="flex w-full items-center justify-start">
+                          <t-radio :value="jar" class="!font-mono !text-sm">{{ jar }}</t-radio>
+                        </div>
+                        <div class="flex w-full items-center justify-start mt-2">
+                           <t-radio value="custom_input" class="!font-mono !text-sm">自定义</t-radio>
+                        </div>
+                      </t-radio-group>
+                      <t-input
+                        v-if="formData.core === 'custom_input' || (!detectedJars.includes(formData.core) && formData.core !== '')"
+                        v-model="formData.core"
+                        placeholder="输入自定义核心文件名，如 custom-server.jar"
+                        class="!w-full sm:!w-[28rem] mt-2"
+                      />
+                    </div>
+                  </t-form-item>
+                </div>
+
+                <div v-else>
+                  <t-alert theme="warning" class="!mb-6 !rounded-xl !bg-amber-500/10 !border-amber-500/20">
+                    <template #message>在上传的包中未发现服务端核心文件。请在此处下载一个或等待创建后手动补充。</template>
+                  </t-alert>
+
+                  <t-form-item label="补充服务端核心" class="!mb-5">
+                    <t-radio-group v-model="downloadType" variant="default-filled">
+                      <t-radio-button value="online">在线下载核心</t-radio-button>
+                      <t-radio-button disabled value="manual">自行上传(不支持)</t-radio-button>
                     </t-radio-group>
-                    <t-input
-                      v-if="formData.core === 'custom_input' || (!detectedJars.includes(formData.core) && formData.core !== '')"
-                      v-model="formData.core"
-                      placeholder="输入自定义核心文件名，如 custom-server.jar"
-                      class="!w-full sm:!w-[28rem] mt-2"
-                    />
+                  </t-form-item>
+
+                  <div class="w-full sm:w-[32rem]">
+                    <div v-if="downloadType === 'online'">
+                      <t-form-item label="选择服务端核心" name="coreUrl" class="!mb-0">
+                        <div class="w-full">
+                          <t-button
+                            variant="outline"
+                            class="!w-full !justify-start !pl-4 !h-10 !bg-transparent border-zinc-200 dark:border-zinc-700 hover:!border-[var(--color-primary)]"
+                            @click="showCoreSelector = true"
+                          >
+                            <template #icon><t-icon name="cloud-download" class="opacity-70" /></template>
+                            打开核心库
+                          </t-button>
+
+                          <div
+                            v-if="formData.core"
+                            class="flex items-center gap-3 mt-4 p-3 bg-transparent rounded-lg border border-[var(--color-primary)]/40 shadow-sm relative overflow-hidden group"
+                          >
+                            <div class="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)] opacity-80"></div>
+                            <t-icon
+                              name="check-circle-filled"
+                              class="text-[var(--color-primary)] text-xl shrink-0 ml-1"
+                            />
+                            <div class="flex-1 min-w-0">
+                              <div class="font-bold text-sm text-[var(--td-text-color-primary)] truncate">
+                                {{ formData.core }}
+                              </div>
+                              <div class="text-[11px] text-[var(--td-text-color-secondary)] truncate mt-0.5">
+                                将在创建时自动下载
+                              </div>
+                            </div>
+                            <t-button
+                              shape="circle"
+                              variant="text"
+                              theme="danger"
+                              class="shrink-0 hover:!bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                              @click="
+                                formData.core = '';
+                                formData.coreUrl = '';
+                              "
+                            >
+                              <t-icon name="close" />
+                            </t-button>
+                          </div>
+                        </div>
+                      </t-form-item>
+                    </div>
+
+                    <div v-if="downloadType === 'manual'" class="mt-2">
+                      <div class="text-sm text-[var(--td-text-color-secondary)] mb-4">
+                        请在整合包解压后手动放入核心，或在此处不填写等待创建后手动上传。您可以指定期望的核心文件名。
+                      </div>
+                      <t-form-item label="核心文件名 (可选)" class="!mb-4">
+                        <t-input v-model="formData.core" placeholder="例如: custom-server.jar" class="!w-full sm:!w-[28rem]" />
+                      </t-form-item>
+                      <t-alert
+                        theme="error"
+                        message="此模式下建议确保压缩包内包含核心，或者使用在线下载功能。"
+                        class="!rounded-xl"
+                      />
+                    </div>
                   </div>
-                </t-form-item>
+                </div>
               </div>
 
-              <div v-else>
-                <t-alert theme="warning" class="!mb-6 !rounded-xl !bg-amber-500/10 !border-amber-500/20">
-                  <template #message>在上传的包中未发现服务端核心文件。请在此处下载一个或等待创建后手动补充。</template>
-                </t-alert>
+              <!-- 启动脚本切换开关及配置区（仅当检测到脚本时展示） -->
+              <div v-if="detectedScripts.length > 0" class="mt-6 pt-5 border-t border-dashed border-zinc-200 dark:border-zinc-800 w-full sm:w-[32rem]">
+                <div class="flex items-center justify-between gap-4 p-3.5 bg-zinc-50/60 dark:bg-zinc-800/40 rounded-xl border border-zinc-200/80 dark:border-zinc-700/60 text-left">
+                  <div class="flex flex-col gap-0.5 text-left">
+                    <span class="text-sm font-bold text-[var(--td-text-color-primary)] text-left">使用整合包自带启动脚本</span>
+                    <span class="text-xs text-[var(--td-text-color-secondary)] text-left">开启后将以自定义模式启动指定的脚本</span>
+                  </div>
+                  <t-switch v-model="useScriptMode" size="large" class="shrink-0" />
+                </div>
 
-                <t-form-item label="补充服务端核心" class="!mb-5">
-                  <t-radio-group v-model="downloadType" variant="default-filled">
-                    <t-radio-button value="online">在线下载核心</t-radio-button>
-                    <t-radio-button disabled value="manual">自行上传(不支持)</t-radio-button>
-                  </t-radio-group>
-                </t-form-item>
-
-                <div class="w-full sm:w-[32rem]">
-                  <div v-if="downloadType === 'online'">
-                    <t-form-item label="选择服务端核心" name="coreUrl" class="!mb-0">
-                      <div class="w-full">
-                        <t-button
-                          variant="outline"
-                          class="!w-full !justify-start !pl-4 !h-10 !bg-transparent border-zinc-200 dark:border-zinc-700 hover:!border-[var(--color-primary)]"
-                          @click="showCoreSelector = true"
-                        >
-                          <template #icon><t-icon name="cloud-download" class="opacity-70" /></template>
-                          打开核心库
-                        </t-button>
-
-                        <div
-                          v-if="formData.core"
-                          class="flex items-center gap-3 mt-4 p-3 bg-transparent rounded-lg border border-[var(--color-primary)]/40 shadow-sm relative overflow-hidden group"
-                        >
-                          <div class="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)] opacity-80"></div>
-                          <t-icon
-                            name="check-circle-filled"
-                            class="text-[var(--color-primary)] text-xl shrink-0 ml-1"
-                          />
-                          <div class="flex-1 min-w-0">
-                            <div class="font-bold text-sm text-[var(--td-text-color-primary)] truncate">
-                              {{ formData.core }}
-                            </div>
-                            <div class="text-[11px] text-[var(--td-text-color-secondary)] truncate mt-0.5">
-                              将在创建时自动下载
-                            </div>
-                          </div>
-                          <t-button
-                            shape="circle"
-                            variant="text"
-                            theme="danger"
-                            class="shrink-0 hover:!bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                            @click="
-                              formData.core = '';
-                              formData.coreUrl = '';
-                            "
-                          >
-                            <t-icon name="close" />
-                          </t-button>
-                        </div>
+                <!-- 开关打开后展开脚本列表与警告提示 -->
+                <div v-if="useScriptMode" class="mt-4 flex flex-col gap-3 items-start w-full text-left">
+                  <t-alert theme="warning" class="!w-full !rounded-xl !bg-amber-500/10 !border-amber-500/20 text-left">
+                    <template #message>
+                      <div class="text-xs leading-relaxed text-left">
+                        <b>⚠️ 自定义模式说明：</b>使用启动脚本运行将跳过 Java 环境管理和内存参数自动配置，相关运行逻辑完全由脚本自身控制。
                       </div>
-                    </t-form-item>
-                  </div>
+                    </template>
+                  </t-alert>
 
-                  <div v-if="downloadType === 'manual'" class="mt-2">
-                    <div class="text-sm text-[var(--td-text-color-secondary)] mb-4">
-                      请在整合包解压后手动放入核心，或在此处不填写等待创建后手动上传。您可以指定期望的核心文件名。
-                    </div>
-                    <t-form-item label="核心文件名 (可选)" class="!mb-4">
-                      <t-input v-model="formData.core" placeholder="例如: custom-server.jar" class="!w-full sm:!w-[28rem]" />
-                    </t-form-item>
-                    <t-alert
-                      theme="error"
-                      message="此模式下建议确保压缩包内包含核心，或者使用在线下载功能。"
-                      class="!rounded-xl"
-                    />
-                  </div>
+                  <div class="text-xs font-bold text-[var(--td-text-color-secondary)] mt-1 text-left">选择要运行的脚本文件:</div>
+                  <t-radio-group v-model="selectedScript" class="flex flex-col gap-2.5 items-start w-full text-left">
+                    <t-radio v-for="s in detectedScripts" :key="s" :value="s" class="!text-sm text-left">
+                      <span class="inline-flex items-center gap-2 whitespace-nowrap">
+                        <span class="font-mono">{{ s }}</span>
+                        <t-tag theme="warning" variant="light" size="small">自定义模式</t-tag>
+                      </span>
+                    </t-radio>
+                  </t-radio-group>
                 </div>
               </div>
             </div>
 
             <div v-show="currentStep === 3" class="list-item-anim flex-1 pt-1">
+              <!-- 自定义脚本模式：无需配置 Java -->
+              <div v-if="useScriptMode && selectedScript">
+                <t-alert theme="success" class="!mb-6 !rounded-xl">
+                  <template #message>
+                    已选择启动脚本 <code class="font-mono font-bold">{{ selectedScript }}</code>，将以<b>自定义模式</b>运行，无需配置 Java 环境，直接进入下一步即可。
+                  </template>
+                </t-alert>
+              </div>
+              <div v-else>
               <t-alert
                 v-if="recommendedJavaVersion"
                 theme="success"
@@ -1300,10 +1392,11 @@ const goToHome = () => {
                   </div>
                 </div>
               </t-form-item>
+              </div>
             </div>
 
             <div v-show="currentStep === 4" class="list-item-anim flex-1 pt-1">
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-6 w-full sm:w-[40rem]">
+              <div v-if="!useScriptMode" class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-6 w-full sm:w-[40rem]">
                 <t-form-item label="最小内存" name="minM" class="!mb-0">
                   <div class="flex items-center gap-2 w-full">
                     <div class="flex-1">
@@ -1429,10 +1522,10 @@ const goToHome = () => {
                 </t-form-item>
               </div>
 
-              <t-form-item label="JVM 参数" name="args" class="!mt-8 w-full sm:w-[40rem]">
+              <t-form-item :label="useScriptMode ? '启动指令' : 'JVM 参数'" name="args" :class="useScriptMode ? 'w-full sm:w-[40rem]' : '!mt-8 w-full sm:w-[40rem]'">
                 <t-textarea
                   v-model="formData.args"
-                  placeholder="-XX:+UseG1GC"
+                  :placeholder="useScriptMode ? '例如: ./start.sh' : '-XX:+UseG1GC'"
                   :autosize="{ minRows: 3, maxRows: 6 }"
                   class="!font-mono !bg-transparent"
                 />
@@ -1479,35 +1572,46 @@ const goToHome = () => {
                   class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80"
                 >
                   <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-1.5 sm:mb-0 shrink-0"
-                    >启动核心 (Jar)</span
+                    >{{ useScriptMode ? '启动脚本' : '启动核心 (Jar)' }}</span
                   >
                   <div class="flex flex-col sm:items-end text-left sm:text-right">
                     <div class="flex items-center gap-2">
-                      <span
-                        class="text-sm font-bold text-[var(--td-text-color-primary)] truncate max-w-[200px] sm:max-w-[300px]"
-                        :title="formData.core"
-                        >{{ formData.core }}</span
-                      >
-                      <t-tag
-                        v-if="detectedJars.length > 0"
-                        theme="success"
-                        variant="light"
-                        size="small"
-                        class="!rounded"
-                        >整合包内核心</t-tag
-                      >
-                      <t-tag
-                        v-else-if="downloadType === 'online'"
-                        theme="primary"
-                        variant="light"
-                        size="small"
-                        class="!rounded"
-                        >在线下载</t-tag
-                      >
-                      <t-tag v-else theme="warning" variant="light" size="small" class="!rounded">手动配置</t-tag>
+                      <template v-if="useScriptMode">
+                        <span
+                          class="text-sm font-bold text-[var(--td-text-color-primary)] font-mono truncate max-w-[200px] sm:max-w-[300px]"
+                          :title="selectedScript"
+                          >{{ selectedScript }}</span
+                        >
+                        <t-tag theme="warning" variant="light" size="small" class="!rounded">自定义脚本</t-tag>
+                      </template>
+                      <template v-else>
+                        <span
+                          class="text-sm font-bold text-[var(--td-text-color-primary)] truncate max-w-[200px] sm:max-w-[300px]"
+                          :title="formData.core"
+                          >{{ formData.core }}</span
+                        >
+                        <t-tag
+                          v-if="detectedJars.length > 0"
+                          theme="success"
+                          variant="light"
+                          size="small"
+                          class="!rounded"
+                          >整合包内核心</t-tag
+                        >
+                        <t-tag
+                          v-else-if="downloadType === 'online'"
+                          theme="primary"
+                          variant="light"
+                          size="small"
+                          class="!rounded"
+                          >在线下载</t-tag
+                        >
+                        <t-tag v-else theme="warning" variant="light" size="small" class="!rounded">手动配置</t-tag>
+                      </template>
                     </div>
                     <div class="text-[11px] text-zinc-500 mt-1 truncate">
-                      <span v-if="detectedJars.length > 0">已从压缩包中选定启动文件</span>
+                      <span v-if="useScriptMode">使用整合包内置脚本启动</span>
+                      <span v-else-if="detectedJars.length > 0">已从压缩包中选定启动文件</span>
                       <span v-else-if="downloadType === 'online'"
                         >来源: MSL 镜像源 ({{ formData.coreUrl ? '已匹配' : '未匹配' }})</span
                       >
@@ -1523,49 +1627,56 @@ const goToHome = () => {
                   >
                   <div class="flex flex-col sm:items-end text-left sm:text-right">
                     <div class="flex items-center gap-2">
-                      <span v-if="javaType === 'online'" class="text-sm font-bold text-[var(--td-text-color-primary)]"
-                        >Java {{ selectedJavaVersion }}</span
-                      >
-                      <span
-                        v-else-if="javaType === 'docker' && dockerImageType === 'preset'"
-                        class="text-sm font-bold text-[var(--td-text-color-primary)]"
-                        >MSLX 容器运行时</span
-                      >
-                      <span
-                        v-else-if="javaType === 'docker' && dockerImageType === 'custom'"
-                        class="text-sm font-bold text-[var(--td-text-color-primary)]"
-                        >自建隔离镜像生态</span
-                      >
-                      <span
-                        v-else
-                        class="text-sm font-bold text-[var(--td-text-color-primary)] truncate max-w-[200px] sm:max-w-[300px]"
-                        :title="formData.java"
-                        >{{ formData.java }}</span
-                      >
+                      <template v-if="useScriptMode">
+                        <span class="text-sm font-bold text-[var(--td-text-color-primary)]">系统环境 (免 Java)</span>
+                        <t-tag theme="default" variant="light" size="small" class="!rounded">自定义模式</t-tag>
+                      </template>
+                      <template v-else>
+                        <span v-if="javaType === 'online'" class="text-sm font-bold text-[var(--td-text-color-primary)]"
+                          >Java {{ selectedJavaVersion }}</span
+                        >
+                        <span
+                          v-else-if="javaType === 'docker' && dockerImageType === 'preset'"
+                          class="text-sm font-bold text-[var(--td-text-color-primary)]"
+                          >MSLX 容器运行时</span
+                        >
+                        <span
+                          v-else-if="javaType === 'docker' && dockerImageType === 'custom'"
+                          class="text-sm font-bold text-[var(--td-text-color-primary)]"
+                          >自建隔离镜像生态</span
+                        >
+                        <span
+                          v-else
+                          class="text-sm font-bold text-[var(--td-text-color-primary)] truncate max-w-[200px] sm:max-w-[300px]"
+                          :title="formData.java"
+                          >{{ formData.java }}</span
+                        >
 
-                      <t-tag v-if="javaType === 'online'" theme="success" variant="light" size="small" class="!rounded"
-                        >自动安装</t-tag
-                      >
-                      <t-tag
-                        v-else-if="javaType === 'docker'"
-                        theme="warning"
-                        variant="light"
-                        size="small"
-                        class="!rounded"
-                        >沙盒隔离</t-tag
-                      >
-                      <t-tag
-                        v-else-if="javaType === 'local'"
-                        theme="primary"
-                        variant="light"
-                        size="small"
-                        class="!rounded"
-                        >本机环境</t-tag
-                      >
-                      <t-tag v-else theme="default" variant="light" size="small" class="!rounded">自定义</t-tag>
+                        <t-tag v-if="javaType === 'online'" theme="success" variant="light" size="small" class="!rounded"
+                          >自动安装</t-tag
+                        >
+                        <t-tag
+                          v-else-if="javaType === 'docker'"
+                          theme="warning"
+                          variant="light"
+                          size="small"
+                          class="!rounded"
+                          >沙盒隔离</t-tag
+                        >
+                        <t-tag
+                          v-else-if="javaType === 'local'"
+                          theme="primary"
+                          variant="light"
+                          size="small"
+                          class="!rounded"
+                          >本机环境</t-tag
+                        >
+                        <t-tag v-else theme="default" variant="light" size="small" class="!rounded">自定义</t-tag>
+                      </template>
                     </div>
                     <div class="text-[11px] text-zinc-500 mt-1 truncate max-w-[250px] sm:max-w-[350px]">
-                      <span v-if="javaType === 'online'">将自动从镜像源下载并解压 JDK</span>
+                      <span v-if="useScriptMode">由启动脚本直接运行，跳过 Java 环境管理</span>
+                      <span v-else-if="javaType === 'online'">将自动从镜像源下载并解压 JDK</span>
                       <span v-else-if="javaType === 'docker'"
                         >目标环境: {{ formData.dockerImage }} | 端口透传:
                         {{ formData.dockerPorts === '0' ? 'Host网络' : formData.dockerPorts }}</span
@@ -1576,6 +1687,7 @@ const goToHome = () => {
                 </div>
 
                 <div
+                  v-if="!useScriptMode"
                   class="flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-dashed border-zinc-200 dark:border-zinc-800/80"
                 >
                   <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-1.5 sm:mb-0 shrink-0"
@@ -1619,7 +1731,7 @@ const goToHome = () => {
 
                 <div v-if="formData.args" class="flex flex-col sm:flex-row sm:items-start justify-between py-4">
                   <span class="text-sm text-[var(--td-text-color-secondary)] font-bold mb-2 sm:mb-0 shrink-0 mt-1"
-                    >启动参数</span
+                    >{{ useScriptMode ? '启动指令' : '启动参数' }}</span
                   >
                   <div
                     class="text-xs font-mono text-[var(--td-text-color-secondary)] break-all leading-relaxed bg-zinc-50/50 dark:bg-zinc-800/30 p-2.5 rounded-lg border border-zinc-100 dark:border-zinc-800 text-left sm:text-right max-w-full sm:max-w-md"
