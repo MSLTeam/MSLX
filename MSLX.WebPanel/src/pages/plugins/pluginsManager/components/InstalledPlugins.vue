@@ -262,6 +262,11 @@ const requiresHigherSdk = (minSdk?: string) => {
   return compareVersion(minSdk, currentSystemVersion.value) > 0;
 };
 
+const formatChangelog = (changelog?: string) => {
+  if (!changelog) return '暂无更新日志说明。';
+  return changelog.replace(/\\n/g, '\n').trim();
+};
+
 defineExpose({ getList });
 
 onMounted(() => {
@@ -340,8 +345,12 @@ onMounted(() => {
               </t-tag>
               <t-tooltip
                 v-if="availableUpdates[item.id] && availableUpdates[item.id].versionName !== item.version"
-                :content="`${availableUpdates[item.id].changelog}`"
               >
+                <template #content>
+                  <div class="whitespace-pre-wrap">
+                    {{ formatChangelog(availableUpdates[item.id].changelog) }}
+                  </div>
+                </template>
                 <t-tag
                   size="small"
                   :theme="requiresHigherSdk(availableUpdates[item.id].minSdkVersion) ? 'danger' : 'primary'"
