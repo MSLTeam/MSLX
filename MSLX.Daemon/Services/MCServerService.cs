@@ -82,6 +82,9 @@ public class MCServerService : IMCServerService
     private static readonly Regex PlayerLeftRegex =
         new Regex(@"\]:\s*(?<player>.+?)\slost\sconnection:", RegexOptions.Compiled);
 
+    private static readonly Regex FakePlayerFilterRegex =
+        new Regex(@"\[.*\]|local", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
     private static readonly Regex AnsiColorRegex = new Regex(@"\x1B\[[0-9;]*[a-zA-Z]", RegexOptions.Compiled);
 
     public MCServerService(
@@ -2234,8 +2237,13 @@ public class MCServerService : IMCServerService
         if (joinMatch.Success)
         {
             string playerName = joinMatch.Groups["player"].Value.Trim();
-            string? playerIp = null;
             var rawIp = joinMatch.Groups["ip"].Value.Trim();
+
+            // 排除假人
+            if (FakePlayerFilterRegex.IsMatch(playerName) || FakePlayerFilterRegex.IsMatch(rawIp))
+                return;
+
+            string? playerIp = null;
             if (!string.IsNullOrEmpty(rawIp))
             {
                 if (rawIp.StartsWith("/")) rawIp = rawIp.TrimStart('/');
@@ -2270,6 +2278,9 @@ public class MCServerService : IMCServerService
         if (leftMatch.Success)
         {
             string playerName = leftMatch.Groups["player"].Value.Trim();
+            if (FakePlayerFilterRegex.IsMatch(playerName))
+                return;
+
             if (context.OnlinePlayers.TryRemove(playerName, out _))
             {
                 _hubContext.Clients.Group(instanceId.ToString()).SendAsync("PlayerLeft", instanceId, playerName);
