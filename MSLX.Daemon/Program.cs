@@ -215,6 +215,9 @@ builder.Services.AddSingleton<IFrpProcessService, FrpProcessService>();
 builder.Services.AddSingleton(typeof(IBackgroundTaskQueue<>), typeof(BackgroundTaskQueue<>));
 builder.Services.AddSingleton<InstanceStateStore>();
 builder.Services.AddSingleton<InstanceConsoleService>();
+builder.Services.AddSingleton<InstanceLauncherService>();
+builder.Services.AddSingleton<InstanceInputService>();
+
 builder.Services.AddSingleton<InstanceBackupService>();
 builder.Services.AddHostedService<InstanceMonitorWorker>();
 builder.Services.AddSingleton<IMCServerService, MCServerService>();
