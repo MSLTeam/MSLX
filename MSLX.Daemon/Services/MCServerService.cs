@@ -27,12 +27,10 @@ public class MCServerService : IMCServerService
     private readonly IFrpProcessService _frpService;
     private readonly IMSLXEvents _events;
     private readonly InstanceStateStore _stateStore;
+    private readonly InstanceConsoleService _console;
 
     // 短时间内崩溃重启限制（300 秒内最多崩溃 5 次，超过则熔断放弃自动重启）
     private readonly CrashRestartGuard _crashGuard = new(windowSeconds: 300, maxCount: 5);
-
-
-    private const int MaxLogLines = 1000;
 
     public MCServerService(
         ILogger<IMCServerService> logger,
@@ -40,7 +38,8 @@ public class MCServerService : IMCServerService
         IHostApplicationLifetime appLifetime,
         IFrpProcessService frpService,
         IMSLXEvents events,
-        InstanceStateStore stateStore)
+        InstanceStateStore stateStore,
+        InstanceConsoleService console)
     {
         _logger = logger;
         _hubContext = hubContext;
@@ -48,6 +47,7 @@ public class MCServerService : IMCServerService
         _frpService = frpService;
         _events = events;
         _stateStore = stateStore;
+        _console = console;
 
         _appLifetime.ApplicationStopping.Register(StopAllServers);
         _appLifetime.ApplicationStarted.Register(OnAppStarted);
@@ -1028,8 +1028,7 @@ public class MCServerService : IMCServerService
 
                                 int charCount = decoder.GetChars(buffer, 0, read, chars, 0, false);
                                 string rawChunk = new string(chars, 0, charCount);
-                                context.PtyHistory.Enqueue(rawChunk);
-                                while (context.PtyHistory.Count > 100) context.PtyHistory.TryDequeue(out _);
+                                _console.AppendPtyHistory(context, rawChunk);
                                 await _hubContext.Clients.Group("pty_" + instanceId).SendAsync("ReceivePtyData", rawChunk);
 
                                 for (int i = 0; i < charCount; i++)
@@ -1758,21 +1757,13 @@ public class MCServerService : IMCServerService
         }
         return false;
     }
-
-    /// <summary>
-    /// 辅助工具：解析命令行字符串为参数列表
-    /// </summary>
+    
     /// <summary>
     /// 获取服务器日志
     /// </summary>
     public List<string> GetLogs(uint instanceId)
     {
-        if (_stateStore.Get(instanceId) is { } context)
-        {
-            return context.Logs.ToList();
-        }
-
-        return new List<string>();
+        return _console.GetLogs(_stateStore.Get(instanceId));
     }
 
     /// <summary>
@@ -1780,12 +1771,7 @@ public class MCServerService : IMCServerService
     /// </summary>
     public List<string> GetPtyHistory(uint instanceId)
     {
-        if (_stateStore.Get(instanceId) is { } context)
-        {
-            return context.PtyHistory.ToList();
-        }
-
-        return new List<string>();
+        return _console.GetPtyHistory(_stateStore.Get(instanceId));
     }
 
     /// <summary>
@@ -2081,9 +2067,7 @@ public class MCServerService : IMCServerService
     {
         if (string.IsNullOrWhiteSpace(data)) return;
 
-        context.Logs.Enqueue(data);
-        while (context.Logs.Count > MaxLogLines)
-            context.Logs.TryDequeue(out _);
+        _console.AppendLog(context, data);
 
         // 通过 SignalR 推送日志
         _hubContext.Clients.Group(instanceId.ToString()).SendAsync("ReceiveLog", data);
