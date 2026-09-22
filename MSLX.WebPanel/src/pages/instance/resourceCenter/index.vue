@@ -82,6 +82,7 @@ const pagination = reactive({
 
 const resourceList = ref<ResourceModel[]>([]);
 const loading = ref(false);
+let searchRequestId = 0; // 用于丢弃过期响应，避免竞态条件
 
 const loadVanillaVersions = async () => {
   try {
@@ -106,6 +107,7 @@ const handleSearch = async () => {
   loading.value = true;
   filter.offset = (pagination.current - 1) * pagination.pageSize;
   filter.limit = pagination.pageSize;
+  const currentRequestId = ++searchRequestId; // 标记本次请求序号
 
   const searchPayload = {
     ...filter,
@@ -116,6 +118,7 @@ const handleSearch = async () => {
 
   try {
     const res = await searchResources(searchPayload);
+    if (currentRequestId !== searchRequestId) return; // 已有更新的请求，丢弃本次结果
     if (res && res.items) {
       resourceList.value = res.items;
       pagination.total = res.totalCount;
@@ -130,7 +133,9 @@ const handleSearch = async () => {
   } catch (error) {
     console.error('Search failed', error);
   } finally {
-    loading.value = false;
+    if (currentRequestId === searchRequestId) {
+      loading.value = false;
+    }
   }
 };
 
