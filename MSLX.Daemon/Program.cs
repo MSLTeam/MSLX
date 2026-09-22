@@ -216,11 +216,13 @@ builder.Services.AddSingleton(typeof(IBackgroundTaskQueue<>), typeof(BackgroundT
 builder.Services.AddSingleton<InstanceStateStore>();
 builder.Services.AddSingleton<InstanceConsoleService>();
 builder.Services.AddSingleton<InstanceLauncherService>();
-builder.Services.AddSingleton<InstanceInputService>();
+builder.Services.AddSingleton<IInstanceLifecycleService, InstanceLifecycleService>();
+builder.Services.AddSingleton<IInstanceConsoleService, InstanceInputService>();
+builder.Services.AddSingleton<IInstanceBackupService, InstanceBackupService>();
+builder.Services.AddSingleton<IMCServerService, LegacyMCServerServiceAdapter>();
 
-builder.Services.AddSingleton<InstanceBackupService>();
+
 builder.Services.AddHostedService<InstanceMonitorWorker>();
-builder.Services.AddSingleton<IMCServerService, MCServerService>();
 builder.Services.AddSingleton<IDockerService,DockerService>();
 builder.Services.AddSingleton<SystemMonitor>();
 builder.Services.AddSingleton<CreationTaskTracker>();

@@ -20,7 +20,7 @@ namespace MSLX.Daemon.Services.InstanceServices;
 /// 实例输入与命令服务：处理向服务器发送指令、PTY 输入输出、终端尺寸调整等。
 /// 剥离自原 MCServerService。
 /// </summary>
-public class InstanceInputService
+public class InstanceInputService : IInstanceConsoleService
 {
     private readonly ILogger<InstanceInputService> _logger;
     private readonly IMSLXEvents _events;
@@ -280,5 +280,16 @@ public class InstanceInputService
             return context.IsPtyMode && context.PtyConnection != null;
         }
         return false;
+    }
+
+    public List<string> GetLogs(uint instanceId)
+    {
+        return _console.GetLogs(_stateStore.Get(instanceId));
+    }
+
+
+    public List<string> GetPtyHistory(uint instanceId)
+    {
+        return _console.GetPtyHistory(_stateStore.Get(instanceId));
     }
 }

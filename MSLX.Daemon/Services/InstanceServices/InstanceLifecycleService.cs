@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
-using MSLX.Daemon.Services.InstanceServices;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.Events;
@@ -9,12 +8,12 @@ using MSLX.SDK.IServices;
 using System.Diagnostics;
 using System.Text;
 
-namespace MSLX.Daemon.Services;
+namespace MSLX.Daemon.Services.InstanceServices;
 
-public class MCServerService : IMCServerService
+public class InstanceLifecycleService : IInstanceLifecycleService
 {
 
-    private readonly ILogger<IMCServerService> _logger;
+    private readonly ILogger<IInstanceLifecycleService> _logger;
     private readonly IHubContext<InstanceConsoleHub> _hubContext;
     private readonly IHostApplicationLifetime _appLifetime;
     private readonly IFrpProcessService _frpService;
@@ -23,20 +22,20 @@ public class MCServerService : IMCServerService
     private readonly InstanceConsoleService _console;
     private readonly IServiceProvider _serviceProvider;
     private readonly InstanceLauncherService _launcher;
-    private readonly InstanceInputService _inputService;
+    private readonly MSLX.SDK.IServices.IInstanceConsoleService _instanceConsole;
 
     // 短时间内崩溃重启限制（300 秒内最多崩溃 5 次，超过则熔断放弃自动重启）
     private readonly CrashRestartGuard _crashGuard = new(windowSeconds: 300, maxCount: 5);
 
-    public MCServerService(
-        ILogger<IMCServerService> logger,
+    public InstanceLifecycleService(
+        ILogger<IInstanceLifecycleService> logger,
         IHubContext<InstanceConsoleHub> hubContext,
         IHostApplicationLifetime appLifetime,
         IFrpProcessService frpService,
         IMSLXEvents events,
         InstanceStateStore stateStore,
         InstanceConsoleService console,
-        IServiceProvider serviceProvider, InstanceLauncherService launcher, InstanceInputService inputService)
+        IServiceProvider serviceProvider, InstanceLauncherService launcher, MSLX.SDK.IServices.IInstanceConsoleService instanceConsole)
     {
         _logger = logger;
         _hubContext = hubContext;
@@ -47,7 +46,7 @@ public class MCServerService : IMCServerService
         _console = console;
         _serviceProvider = serviceProvider;
         _launcher = launcher;
-        _inputService = inputService;
+        _instanceConsole = instanceConsole;
 
         _appLifetime.ApplicationStopping.Register(StopAllServers);
         _appLifetime.ApplicationStarted.Register(OnAppStarted);
@@ -267,7 +266,7 @@ public class MCServerService : IMCServerService
                                         // MC服务器：发送 stop / 自定义 命令
                                         string stopCmd = string.IsNullOrEmpty(server?.StopCommand) ? "stop" : server.StopCommand;
                                         _console.RecordLog(instanceId, context, $">>> [MSLX-Daemon] 准备执行停止指令: {stopCmd}");
-                                        SendCommand(instanceId, stopCmd, true);
+                                        _instanceConsole.SendCommand(instanceId, stopCmd, true);
                                         _console.RecordLog(instanceId, context, "[MSLX] 已发送关闭指令，正在等待服务退出...");
                                     }
                                     else
@@ -291,7 +290,7 @@ public class MCServerService : IMCServerService
                                         {
                                             string stopCmd = server?.StopCommand ?? "stop";
                                             _console.RecordLog(instanceId, context, $">>> [MSLX-Daemon] 准备执行停止指令: {stopCmd}");
-                                            SendCommand(instanceId, stopCmd, true);
+                                            _instanceConsole.SendCommand(instanceId, stopCmd, true);
                                             _console.RecordLog(instanceId, context, "[MSLX] 已发送关闭指令，正在等待服务退出...");
                                         }
 
@@ -506,30 +505,15 @@ public class MCServerService : IMCServerService
 
     /// <summary>
     /// 向服务器发送命令
-
-    public bool SendCommand(uint instanceId, string command, bool repeatCommandToLog = false) => _inputService.SendCommand(instanceId, command, repeatCommandToLog);
-    public bool SendPtyInput(uint instanceId, string data) => _inputService.SendPtyInput(instanceId, data);
-    public bool SendPtyInput(uint instanceId, byte[] data) => _inputService.SendPtyInput(instanceId, data);
-    public bool ResizePty(uint instanceId, int cols, int rows) => _inputService.ResizePty(instanceId, cols, rows);
-    public bool IsServerPtyMode(uint instanceId) => _inputService.IsServerPtyMode(instanceId);
     /// <summary>
     /// 获取服务器日志
     /// </summary>
-    public List<string> GetLogs(uint instanceId)
-    {
-        return _console.GetLogs(_stateStore.Get(instanceId));
-    }
 
     /// <summary>
     /// 获取 PTY 历史缓冲数据块
     /// </summary>
-    public List<string> GetPtyHistory(uint instanceId)
-    {
-        return _console.GetPtyHistory(_stateStore.Get(instanceId));
-    }
 
     // —————— 备份相关（已委托给 InstanceBackupService） ——————
-    public bool StartBackupServer(uint instanceId) => _serviceProvider.GetRequiredService<InstanceBackupService>().StartBackupServer(instanceId);
 
     /// <summary>
     /// 停止所有服务器
@@ -549,7 +533,7 @@ public class MCServerService : IMCServerService
                 {
                     try
                     {
-                        SendCommand(kvp.Key, "stop");
+                        _instanceConsole.SendCommand(kvp.Key, "stop");
                         context.Process.WaitForExit(5000);
                     }
                     catch

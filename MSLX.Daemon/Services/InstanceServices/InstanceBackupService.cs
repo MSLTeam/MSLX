@@ -12,7 +12,7 @@ namespace MSLX.Daemon.Services.InstanceServices;
 /// 实例备份服务：世界存档的保存指令编排、压缩打包、滚动清理。
 /// 注册为 DI 单例。
 /// </summary>
-public class InstanceBackupService
+public class InstanceBackupService : IInstanceBackupService
 {
     private readonly ILogger<InstanceBackupService> _logger;
     private readonly IMSLXEvents _events;

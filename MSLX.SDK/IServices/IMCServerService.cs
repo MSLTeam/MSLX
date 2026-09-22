@@ -1,5 +1,7 @@
 namespace MSLX.SDK.IServices;
 
+// TODO: v1.8.0 版本彻底移除
+[Obsolete("该接口已废弃，请使用细分的 IInstanceLifecycleService, IInstanceConsoleService 或 IInstanceBackupService 代替。")]
 public interface IMCServerService
 {
     /// <summary>
