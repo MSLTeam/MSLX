@@ -58,6 +58,11 @@ function copyToBackend(sourcePath) {
 
     // 执行复制
     fs.cpSync(sourcePath, targetPath, { recursive: true, force: true });
+    
+    // 重新写入 .gitignore 保护规则
+    const gitignorePath = path.join(targetPath, '.gitignore');
+    fs.writeFileSync(gitignorePath, '*\n!.gitignore\n');
+    
     console.log(`Files copied to backend: ${targetPath}`);
   } catch (e) {
     console.error(`Copy failed: ${e.message}`);
