@@ -47,15 +47,18 @@ import {
   saveFileContent,
 } from '@/api/files';
 import type { FilesListModel } from '@/api/model/files';
-import FileEditor from './components/FileEditor.vue';
-import FileUploader from './components/FileUploader.vue';
-import ImagePreview from './components/ImagePreview.vue';
-import VideoPreview from './components/VideoPreview.vue';
-import FileCompressor from './components/FileCompressor.vue';
-import FileDecompress from './components/FileDecompress.vue';
-import FilePermission from './components/FilePermission.vue';
-import FileOfflineDownloader from './components/FileOfflineDownloader.vue';
-import FileGridView from './components/FileGridView.vue';
+import { defineAsyncComponent } from 'vue';
+
+const FileEditor = defineAsyncComponent(() => import('./components/FileEditor.vue'));
+const FileUploader = defineAsyncComponent(() => import('./components/FileUploader.vue'));
+const ImagePreview = defineAsyncComponent(() => import('./components/ImagePreview.vue'));
+const VideoPreview = defineAsyncComponent(() => import('./components/VideoPreview.vue'));
+const FileCompressor = defineAsyncComponent(() => import('./components/FileCompressor.vue'));
+const FileDecompress = defineAsyncComponent(() => import('./components/FileDecompress.vue'));
+const FilePermission = defineAsyncComponent(() => import('./components/FilePermission.vue'));
+const FileOfflineDownloader = defineAsyncComponent(() => import('./components/FileOfflineDownloader.vue'));
+const FileGridView = defineAsyncComponent(() => import('./components/FileGridView.vue'));
+
 import { changeUrl } from '@/router';
 import { useUserStore } from '@/store';
 
