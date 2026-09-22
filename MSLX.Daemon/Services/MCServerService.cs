@@ -12,8 +12,6 @@ using MSLX.SDK.Models;
 using Newtonsoft.Json.Linq;
 using Porta.Pty;
 using System.Diagnostics;
-using System.IO.Compression;
-using System.Management;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -21,6 +19,7 @@ namespace MSLX.Daemon.Services;
 
 public class MCServerService : IMCServerService
 {
+
     private readonly ILogger<IMCServerService> _logger;
     private readonly IHubContext<InstanceConsoleHub> _hubContext;
     private readonly IHostApplicationLifetime _appLifetime;
@@ -28,6 +27,7 @@ public class MCServerService : IMCServerService
     private readonly IMSLXEvents _events;
     private readonly InstanceStateStore _stateStore;
     private readonly InstanceConsoleService _console;
+    private readonly IServiceProvider _serviceProvider;
 
     // 短时间内崩溃重启限制（300 秒内最多崩溃 5 次，超过则熔断放弃自动重启）
     private readonly CrashRestartGuard _crashGuard = new(windowSeconds: 300, maxCount: 5);
@@ -39,7 +39,8 @@ public class MCServerService : IMCServerService
         IFrpProcessService frpService,
         IMSLXEvents events,
         InstanceStateStore stateStore,
-        InstanceConsoleService console)
+        InstanceConsoleService console,
+        IServiceProvider serviceProvider)
     {
         _logger = logger;
         _hubContext = hubContext;
@@ -48,6 +49,7 @@ public class MCServerService : IMCServerService
         _events = events;
         _stateStore = stateStore;
         _console = console;
+        _serviceProvider = serviceProvider;
 
         _appLifetime.ApplicationStopping.Register(StopAllServers);
         _appLifetime.ApplicationStarted.Register(OnAppStarted);
@@ -397,7 +399,7 @@ public class MCServerService : IMCServerService
             _events.PublishServerStarting(startingArgs);
             if (startingArgs.Cancel)
             {
-                RecordLog(instanceId, context, $">>> [MSLX] 启动已被插件取消: {startingArgs.CancelReason ?? "无"}");
+                _console.RecordLog(instanceId, context, $">>> [MSLX] 启动已被插件取消: {startingArgs.CancelReason ?? "无"}");
                 _logger.LogInformation($"实例 [{instanceId}] 启动已被插件取消: {startingArgs.CancelReason ?? "无"}");
                 _stateStore.Remove(instanceId);
                 return;
@@ -405,13 +407,13 @@ public class MCServerService : IMCServerService
 
             if (serverInfo.ExpireTime.HasValue && serverInfo.ExpireTime.Value <= DateTime.Now)
             {
-                RecordLog(instanceId, context, $">>> [MSLX] ❌ 启动失败：当前服务端实例已于 {serverInfo.ExpireTime.Value:yyyy-MM-dd HH:mm:ss} 过期。");
+                _console.RecordLog(instanceId, context, $">>> [MSLX] ❌ 启动失败：当前服务端实例已于 {serverInfo.ExpireTime.Value:yyyy-MM-dd HH:mm:ss} 过期。");
                 _logger.LogWarning($"实例 [{instanceId}] 启动失败，原因：已过期。");
                 _stateStore.Remove(instanceId);
                 return;
             }
 
-            RecordLog(instanceId, context, "[MSLX-Daemon] 正在初始化服务...");
+            _console.RecordLog(instanceId, context, "[MSLX-Daemon] 正在初始化服务...");
             // 检查Eula
             //if (serverInfo.Java != "none" && !serverInfo.IgnoreEula && !skipEulaCheck)
             if (!serverInfo.IgnoreEula && !skipEulaCheck)
@@ -436,7 +438,7 @@ public class MCServerService : IMCServerService
                 if (needAgree)
                 {
                     // 发送 EULA 未同意提示
-                    RecordLog(instanceId, context,
+                    _console.RecordLog(instanceId, context,
                         ">>> [MSLX] 检测到 EULA 协议尚未签署，服务器启动已停止，等待用户操作...");
                     _ = _hubContext.Clients.Group(instanceId.ToString()).SendAsync("RequireEULA");
                     _stateStore.Remove(instanceId);
@@ -493,7 +495,7 @@ public class MCServerService : IMCServerService
                 string coreFilePath = Path.Combine(serverInfo.Base, serverInfo.Core);
                 if (!File.Exists(coreFilePath))
                 {
-                    RecordLog(instanceId, context, $">>> [MSLX-MCServer] 核心文件不存在: {coreFilePath}");
+                    _console.RecordLog(instanceId, context, $">>> [MSLX-MCServer] 核心文件不存在: {coreFilePath}");
                     _stateStore.Remove(instanceId);
                     return;
                 }
@@ -505,7 +507,7 @@ public class MCServerService : IMCServerService
                 if (!File.Exists(serverInfo.Java) && serverInfo.Java != "java" && serverInfo.Java != "none" &&
                     !serverInfo.Java.StartsWith("MSLX://Java/"))
                 {
-                    RecordLog(instanceId, context, $">>> [MSLX-MCServer] Java 路径无效: {serverInfo.Java}");
+                    _console.RecordLog(instanceId, context, $">>> [MSLX-MCServer] Java 路径无效: {serverInfo.Java}");
                     _stateStore.Remove(instanceId);
                     return;
                 }
@@ -518,7 +520,7 @@ public class MCServerService : IMCServerService
                         PlatFormServices.GetOs() == "Windows" ? "java.exe" : "java");
                     if (!File.Exists(javaPath))
                     {
-                        RecordLog(instanceId, context, $">>> [MSLX-MCServer] Java 无效！请尝试重新设置 Java 环境！");
+                        _console.RecordLog(instanceId, context, $">>> [MSLX-MCServer] Java 无效！请尝试重新设置 Java 环境！");
                         _stateStore.Remove(instanceId);
                         return;
                     }
@@ -531,7 +533,7 @@ public class MCServerService : IMCServerService
             {
                 if (!await DownloadAuthlib(serverInfo.Base, instanceId, context))
                 {
-                    RecordLog(instanceId, context, $">>> [MSLX-MCServer] 外置登录库下载失败！将不启用外置登录......");
+                    _console.RecordLog(instanceId, context, $">>> [MSLX-MCServer] 外置登录库下载失败！将不启用外置登录......");
                 }
                 else
                 {
@@ -565,16 +567,16 @@ public class MCServerService : IMCServerService
                     if (!File.Exists("/var/run/docker.sock"))
                     {
                         _logger.LogError($"[MSLX-Daemonr] ❌ 容器化运行严重错误：未检测到 Docker 通信管道（/var/run/docker.sock）！");
-                        RecordLog(instanceId, context, $"[MSLX-Daemon] ❌ 错误：MSLX-Daemon 处于 Docker 容器中运行，但未挂载宿主机的 Sock 管道！");
-                        RecordLog(instanceId, context, $"[MSLX-Daemon] 💡 解决办法：请检查部署命令/Compose配置文件，确保挂载了以下路径：/var/run/docker.sock:/var/run/docker.sock");
-                        RecordLog(instanceId, context, $"[MSLX-Daemon] Docker部署MSLX文档: https://mslx.mslmc.cn/docs/install/docker/ ");
-                        RecordLog(instanceId, context, $"[MSLX-Daemon] MSLX运行Docker服务端文档: https://mslx.mslmc.cn/docs/server/docker/");
-                        RecordLog(instanceId, context, $"[MSLX-Daemon] (重点查看《MSLX已运行在Docker下，如何再部署Docker服务端实例？》)\n");
+                        _console.RecordLog(instanceId, context, $"[MSLX-Daemon] ❌ 错误：MSLX-Daemon 处于 Docker 容器中运行，但未挂载宿主机的 Sock 管道！");
+                        _console.RecordLog(instanceId, context, $"[MSLX-Daemon] 💡 解决办法：请检查部署命令/Compose配置文件，确保挂载了以下路径：/var/run/docker.sock:/var/run/docker.sock");
+                        _console.RecordLog(instanceId, context, $"[MSLX-Daemon] Docker部署MSLX文档: https://mslx.mslmc.cn/docs/install/docker/ ");
+                        _console.RecordLog(instanceId, context, $"[MSLX-Daemon] MSLX运行Docker服务端文档: https://mslx.mslmc.cn/docs/server/docker/");
+                        _console.RecordLog(instanceId, context, $"[MSLX-Daemon] (重点查看《MSLX已运行在Docker下，如何再部署Docker服务端实例？》)\n");
                         _stateStore.Remove(instanceId); 
-                        RecordLog(instanceId, context, $"[MSLX] 服务端启动已取消！");
+                        _console.RecordLog(instanceId, context, $"[MSLX] 服务端启动已取消！");
                         return;
                     }
-                    RecordLog(instanceId, context, "[MSLX-Daemon] 检测到当前 MSLX-Daemon 处于容器内，正在查询物理主机挂载路径...");
+                    _console.RecordLog(instanceId, context, "[MSLX-Daemon] 检测到当前 MSLX-Daemon 处于容器内，正在查询物理主机挂载路径...");
                     string? hostDataRoot = await GetHostPhysicalDataPathAsync(instanceId, context);
 
                     if (!string.IsNullOrWhiteSpace(hostDataRoot))
@@ -584,7 +586,7 @@ public class MCServerService : IMCServerService
                     }
                     else
                     {
-                        RecordLog(instanceId, context, "[MSLX-Daemon] 查询物理路径失败，将尝试使用原始路径。");
+                        _console.RecordLog(instanceId, context, "[MSLX-Daemon] 查询物理路径失败，将尝试使用原始路径。");
                     }
                 }
 
@@ -861,7 +863,7 @@ public class MCServerService : IMCServerService
                 }
                 else
                 {
-                    RecordLog(instanceId, context, e.Data);
+                    _console.RecordLog(instanceId, context, e.Data);
                 }
             };
 
@@ -878,11 +880,11 @@ public class MCServerService : IMCServerService
                 }
                 else
                 {
-                    RecordLog(instanceId, context, e.Data);
+                    _console.RecordLog(instanceId, context, e.Data);
                 }
             };
 
-            RecordLog(instanceId, context, "[MSLX-Daemon] 正在启动服务端实例...");
+            _console.RecordLog(instanceId, context, "[MSLX-Daemon] 正在启动服务端实例...");
 
             // 处理玩家监听
             context.MonitorPlayers = serverInfo.MonitorPlayers;
@@ -1038,7 +1040,7 @@ public class MCServerService : IMCServerService
                                     {
                                         string line = lineSb.ToString().TrimEnd('\r');
                                         lineSb.Clear();
-                                        RecordLog(instanceId, context, line);
+                                        _console.RecordLog(instanceId, context, line);
                                     }
                                     else
                                     {
@@ -1056,7 +1058,7 @@ public class MCServerService : IMCServerService
                         {
                             if (lineSb.Length > 0)
                             {
-                                RecordLog(instanceId, context, lineSb.ToString().TrimEnd('\r'));
+                                _console.RecordLog(instanceId, context, lineSb.ToString().TrimEnd('\r'));
                             }
                             lock (context.StateLock)
                             {
@@ -1068,13 +1070,13 @@ public class MCServerService : IMCServerService
                     });
 
                     _logger.LogInformation($"服务器 [{instanceId}] 以 PTY 模式启动成功，PID: {ptyConnection.Pid}");
-                    RecordLog(instanceId, context, $"[MSLX] 服务器进程已通过 PTY 启动，PID: {ptyConnection.Pid}");
+                    _console.RecordLog(instanceId, context, $"[MSLX] 服务器进程已通过 PTY 启动，PID: {ptyConnection.Pid}");
                     started = true;
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, $"[PTY] 启动 PTY 失败，将回退到标准流模式: {ex.Message}");
-                    RecordLog(instanceId, context, $">>> [MSLX] 启动 PTY 失败 ({ex.Message})，正在回退到标准流模式...");
+                    _console.RecordLog(instanceId, context, $">>> [MSLX] 启动 PTY 失败 ({ex.Message})，正在回退到标准流模式...");
                     context.IsPtyMode = false;
                     context.PtyConnection = null;
                 }
@@ -1092,7 +1094,7 @@ public class MCServerService : IMCServerService
                     process.BeginErrorReadLine();
 
                     _logger.LogInformation($"服务器 [{instanceId}] 启动成功，PID: {process.Id}");
-                    RecordLog(instanceId, context, $"[MSLX] 服务器进程已启动，PID: {process.Id}");
+                    _console.RecordLog(instanceId, context, $"[MSLX] 服务器进程已启动，PID: {process.Id}");
                     started = true;
                 }
             }
@@ -1116,11 +1118,11 @@ public class MCServerService : IMCServerService
                     {
                         if (int.TryParse(idStr.Trim(), out int frpId))
                         {
-                            RecordLog(instanceId, context, $"[MSLX-Daemon] 检测到联动绑定，正在后台启动隧道 [{frpId}]...");
+                            _console.RecordLog(instanceId, context, $"[MSLX-Daemon] 检测到联动绑定，正在后台启动隧道 [{frpId}]...");
                             var (frpSuccess, frpMsg) = _frpService.StartFrp(frpId);
                             if (!frpSuccess)
                             {
-                                RecordLog(instanceId, context, $">>> [MSLX-Daemon] ⚠️ 联动隧道 [{frpId}] 启动失败: {frpMsg}");
+                                _console.RecordLog(instanceId, context, $">>> [MSLX-Daemon] ⚠️ 联动隧道 [{frpId}] 启动失败: {frpMsg}");
                             }
                         }
                     }
@@ -1151,13 +1153,13 @@ public class MCServerService : IMCServerService
             }
             else
             {
-                RecordLog(instanceId, context, ">>> [MSLX-MCServer] 进程启动失败！");
+                _console.RecordLog(instanceId, context, ">>> [MSLX-MCServer] 进程启动失败！");
                 _stateStore.Remove(instanceId);
             }
         }
         catch (Exception ex)
         {
-            RecordLog(instanceId, context, $">>> [MSLX-MCServer] 启动流程发生未捕获异常: {ex.Message}");
+            _console.RecordLog(instanceId, context, $">>> [MSLX-MCServer] 启动流程发生未捕获异常: {ex.Message}");
             _logger.LogError(ex, $"MC 服务器 [{instanceId}] 启动异常");
             _stateStore.Remove(instanceId);
         }
@@ -1218,7 +1220,7 @@ public class MCServerService : IMCServerService
                                 if (isSchrodingerState)
                                 {
                                     // 没有StdIn 只能kill了
-                                    RecordLog(instanceId, context,
+                                    _console.RecordLog(instanceId, context,
                                         ">>> [MSLX-Daemon] 服务端处于特殊接管状态，无法发送安全停止命令，正在强制结束进程...");
 
                                     if (isDockerMode)
@@ -1252,9 +1254,9 @@ public class MCServerService : IMCServerService
                                     {
                                         // MC服务器：发送 stop / 自定义 命令
                                         string stopCmd = string.IsNullOrEmpty(server?.StopCommand) ? "stop" : server.StopCommand;
-                                        RecordLog(instanceId, context, $">>> [MSLX-Daemon] 准备执行停止指令: {stopCmd}");
+                                        _console.RecordLog(instanceId, context, $">>> [MSLX-Daemon] 准备执行停止指令: {stopCmd}");
                                         SendCommand(instanceId, stopCmd, true);
-                                        RecordLog(instanceId, context, "[MSLX] 已发送关闭指令，正在等待服务退出...");
+                                        _console.RecordLog(instanceId, context, "[MSLX] 已发送关闭指令，正在等待服务退出...");
                                     }
                                     else
                                     {
@@ -1262,7 +1264,7 @@ public class MCServerService : IMCServerService
                                         if (string.IsNullOrEmpty(server?.StopCommand ?? "") ||
                                             (server?.StopCommand ?? "") == "^c")
                                         {
-                                            RecordLog(instanceId, context, ">>> [MSLX-Daemon] 准备发送中断信号 (^C)...");
+                                            _console.RecordLog(instanceId, context, ">>> [MSLX-Daemon] 准备发送中断信号 (^C)...");
                                             if (context.IsPtyMode && context.PtyConnection != null)
                                             {
                                                 try { context.PtyConnection.WriterStream.Write(new byte[] { 0x03 }, 0, 1); } catch { }
@@ -1271,14 +1273,14 @@ public class MCServerService : IMCServerService
                                             {
                                                 ProcessHelper.SendCtrlC(context.Process);
                                             }
-                                            RecordLog(instanceId, context, "[MSLX] 已发送中断信号，正在等待服务退出...");
+                                            _console.RecordLog(instanceId, context, "[MSLX] 已发送中断信号，正在等待服务退出...");
                                         }
                                         else
                                         {
                                             string stopCmd = server?.StopCommand ?? "stop";
-                                            RecordLog(instanceId, context, $">>> [MSLX-Daemon] 准备执行停止指令: {stopCmd}");
+                                            _console.RecordLog(instanceId, context, $">>> [MSLX-Daemon] 准备执行停止指令: {stopCmd}");
                                             SendCommand(instanceId, stopCmd, true);
-                                            RecordLog(instanceId, context, "[MSLX] 已发送关闭指令，正在等待服务退出...");
+                                            _console.RecordLog(instanceId, context, "[MSLX] 已发送关闭指令，正在等待服务退出...");
                                         }
 
                                         // 关闭输入流
@@ -1305,7 +1307,7 @@ public class MCServerService : IMCServerService
                                         }
 
                                         context.Process.Kill(true);
-                                        RecordLog(instanceId, context, "[MSLX] 服务器超时，已强制结束进程树");
+                                        _console.RecordLog(instanceId, context, "[MSLX] 服务器超时，已强制结束进程树");
                                         _logger.LogWarning($"服务器实例 {instanceId} 关闭超时，已强制结束进程树");
                                     }
 
@@ -1339,7 +1341,7 @@ public class MCServerService : IMCServerService
                                 {
                                 }
 
-                                RecordLog(instanceId, context, $"[MSLX] 停止过程出错，已强制结束: {ex.Message}");
+                                _console.RecordLog(instanceId, context, $"[MSLX] 停止过程出错，已强制结束: {ex.Message}");
                                 _logger.LogWarning($"服务器实例 {instanceId} 停止过程出错，已强制结束: {ex.Message}");
 
                                 lock (context.StateLock)
@@ -1363,7 +1365,7 @@ public class MCServerService : IMCServerService
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"停止服务器 [{instanceId}] 时出错");
-                RecordLog(instanceId, context, $">>> [MSLX] 停止失败: {ex.Message}");
+                _console.RecordLog(instanceId, context, $">>> [MSLX] 停止失败: {ex.Message}");
             }
         }
 
@@ -1403,7 +1405,7 @@ public class MCServerService : IMCServerService
                 if (context.Process != null && !context.Process.HasExited)
                 {
                     context.Process.Kill(true);
-                    RecordLog(instanceId, context, "[MSLX] 已强制结束进程及其子进程");
+                    _console.RecordLog(instanceId, context, "[MSLX] 已强制结束进程及其子进程");
                     context.Process.WaitForExit(1000);
                 }
 
@@ -1433,7 +1435,7 @@ public class MCServerService : IMCServerService
             {
                 if (_stateStore.Get(instanceId) is { } context)
                 {
-                    RecordLog(instanceId, context, "[MSLX] 正在执行重启...");
+                    _console.RecordLog(instanceId, context, "[MSLX] 正在执行重启...");
                 }
 
                 // 调用 StopServer
@@ -1473,7 +1475,7 @@ public class MCServerService : IMCServerService
             {
                 if (_stateStore.Get(instanceId) is { } newContext)
                 {
-                    RecordLog(instanceId, newContext, "[MSLX] 正在重新启动实例...");
+                    _console.RecordLog(instanceId, newContext, "[MSLX] 正在重新启动实例...");
                 }
             }
 
@@ -1518,8 +1520,8 @@ public class MCServerService : IMCServerService
                     // 子进程溜出来情况的处理
                     if (!context.IsPtyMode && context.IsProcessExited && (!context.IsStdoutClosed || !context.IsStderrClosed))
                     {
-                        RecordLog(instanceId, context, ">>> [MSLX-Daemon] 当前服务端处于特殊的进程状态，已脱离MSLX的进程监控。");
-                        RecordLog(instanceId, context, ">>> [MSLX-Daemon] 因此目前无法向服务端发送指令，您可以重启后再尝试或在游戏内进行指令输入。");
+                        _console.RecordLog(instanceId, context, ">>> [MSLX-Daemon] 当前服务端处于特殊的进程状态，已脱离MSLX的进程监控。");
+                        _console.RecordLog(instanceId, context, ">>> [MSLX-Daemon] 因此目前无法向服务端发送指令，您可以重启后再尝试或在游戏内进行指令输入。");
                         return false;
                     }
                 }
@@ -1557,7 +1559,7 @@ public class MCServerService : IMCServerService
                                             sentViaRcon = true;
                                             if (!string.IsNullOrWhiteSpace(response))
                                             {
-                                                RecordLog(instanceId, context, $">>> [RCON] {response}");
+                                                _console.RecordLog(instanceId, context, $">>> [RCON] {response}");
                                             }
                                         }
                                     }
@@ -1580,7 +1582,7 @@ public class MCServerService : IMCServerService
                                         sentViaRcon = true;
                                         if (!string.IsNullOrWhiteSpace(response))
                                         {
-                                            RecordLog(instanceId, context, $">>> [RCON] {response}");
+                                            _console.RecordLog(instanceId, context, $">>> [RCON] {response}");
                                         }
                                     }
                                 }
@@ -1600,14 +1602,14 @@ public class MCServerService : IMCServerService
                             WriteStandardInputCommand(context.Process, command);
                         }
                     }
-                    if (repeatCommandToLog) RecordLog(instanceId, context, $"[MSLX-Daemon] 已发送命令{(sentViaRcon ? "(RCON)" : "")}: {command}");
+                    if (repeatCommandToLog) _console.RecordLog(instanceId, context, $"[MSLX-Daemon] 已发送命令{(sentViaRcon ? "(RCON)" : "")}: {command}");
                     return true;
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"向服务器 [{instanceId}] 发送命令时出错");
-                RecordLog(instanceId, context, $">>> [MSLX-MCServer] 发送命令失败: {ex.Message}");
+                _console.RecordLog(instanceId, context, $">>> [MSLX-MCServer] 发送命令失败: {ex.Message}");
             }
         }
 
@@ -1774,6 +1776,9 @@ public class MCServerService : IMCServerService
         return _console.GetPtyHistory(_stateStore.Get(instanceId));
     }
 
+    // —————— 备份相关（已委托给 InstanceBackupService） ——————
+    public bool StartBackupServer(uint instanceId) => _serviceProvider.GetRequiredService<InstanceBackupService>().StartBackupServer(instanceId);
+
     /// <summary>
     /// 停止所有服务器
     /// </summary>
@@ -1856,16 +1861,6 @@ public class MCServerService : IMCServerService
                 _logger.LogError(ex, "[AutoStart] 自启动流程发生异常");
             }
         });
-
-        // 启动实例监控
-        Task.Run(async () =>
-        {
-            await Task.Delay(2000);
-
-            // 启动资源监控循环
-            _logger.LogInformation("[Monitor] 正在启动服务器资源监控服务...");
-            await StartResourceMonitoring();
-        });
     }
 
     // 监听服务器退出 执行崩溃重启等内容
@@ -1883,7 +1878,7 @@ public class MCServerService : IMCServerService
                 {
                     if (int.TryParse(idStr.Trim(), out int frpId))
                     {
-                        RecordLog(instanceId, context, $"[MSLX-Daemon] 服务端实例已退出，正在联动同步关闭隧道 [{frpId}]...");
+                        _console.RecordLog(instanceId, context, $"[MSLX-Daemon] 服务端实例已退出，正在联动同步关闭隧道 [{frpId}]...");
                         _frpService.StopFrp(frpId);
                     }
                 }
@@ -1909,7 +1904,7 @@ public class MCServerService : IMCServerService
         {
             exitMsg += exitCode != 0 ? " (异常退出)" : " (正常关闭)";
         }
-        RecordLog(instanceId, context, exitMsg);
+        _console.RecordLog(instanceId, context, exitMsg);
 
         var serverInfoForExitEvent = IConfigBase.ServerList.GetServer(instanceId);
         TimeSpan uptime = TimeSpan.Zero;
@@ -1960,11 +1955,11 @@ public class MCServerService : IMCServerService
                     // 检查窗口内的崩溃次数是否超过阈值
                     if (attempts > _crashGuard.MaxCount)
                     {
-                        RecordLog(instanceId, context,
+                        _console.RecordLog(instanceId, context,
                             $">>> [MSLX] 严重错误：服务器在 {_crashGuard.WindowSeconds} 秒内已崩溃 {attempts} 次！");
-                        RecordLog(instanceId, context,
+                        _console.RecordLog(instanceId, context,
                             ">>> [MSLX] 为防止无限重启导致系统卡死，守护进程已放弃自动重启该实例。");
-                        RecordLog(instanceId, context,
+                        _console.RecordLog(instanceId, context,
                             ">>> [MSLX] 请检查服务器配置、Java环境或日志文件，修复问题后请手动启动。");
 
                         _logger.LogError($"实例 {instanceId} 触发重启熔断保护，停止重启。");
@@ -1973,7 +1968,7 @@ public class MCServerService : IMCServerService
                         return;
                     }
 
-                    RecordLog(instanceId, context,
+                    _console.RecordLog(instanceId, context,
                         $">>> [MSLX] 检测到异常退出，正在准备第 {attempts} 次尝试重启 (阈值: {_crashGuard.MaxCount}次/5分钟)...");
 
                     _stateStore.MarkRestarting(instanceId); // 标记重启中
@@ -2060,72 +2055,6 @@ public class MCServerService : IMCServerService
         return TimeSpan.Zero;
     }
 
-    /// <summary>
-    /// 记录日志
-    /// </summary>
-    private void RecordLog(uint instanceId, ServerContext context, string? data)
-    {
-        if (string.IsNullOrWhiteSpace(data)) return;
-
-        _console.AppendLog(context, data);
-
-        // 通过 SignalR 推送日志
-        _hubContext.Clients.Group(instanceId.ToString()).SendAsync("ReceiveLog", data);
-
-        _events.PublishServerLogReceived(new ServerLogEventArgs
-        {
-            InstanceId = instanceId,
-            LogLine = data,
-            IsStdErr = false,
-            Timestamp = DateTime.Now
-        });
-
-        ParsePlayerActivity(instanceId, context, data);
-    }
-
-    // 解析玩家进入/离开日志
-    private void ParsePlayerActivity(uint instanceId, ServerContext context, string logLine)
-    {
-        // 预检
-        if (!context.MonitorPlayers)
-            return;
-
-        var activity = PlayerActivityParser.Parse(logLine);
-
-        // 玩家加入
-        if (activity.Type == PlayerActivityType.Joined)
-        {
-            if (context.OnlinePlayers.TryAdd(activity.PlayerName, true))
-            {
-                _hubContext.Clients.Group(instanceId.ToString()).SendAsync("PlayerJoined", instanceId, activity.PlayerName);
-            }
-
-            try
-            {
-                var serverInfo = IConfigBase.ServerList.GetServer(instanceId);
-                if (serverInfo != null && !string.IsNullOrEmpty(serverInfo.Base))
-                {
-                    PlayerActivityTracker.RecordLogin(serverInfo.Base, activity.PlayerName, activity.PlayerIp);
-                }
-            }
-            catch
-            {
-                // 记录失败就算了 不管他
-            }
-
-            return;
-        }
-
-        // 玩家离开
-        if (activity.Type == PlayerActivityType.Left)
-        {
-            if (context.OnlinePlayers.TryRemove(activity.PlayerName, out _))
-            {
-                _hubContext.Clients.Group(instanceId.ToString()).SendAsync("PlayerLeft", instanceId, activity.PlayerName);
-            }
-        }
-    }
-
     // 安装Authlib-Injector
     private async Task<bool> DownloadAuthlib(string basePath, uint instanceId, ServerContext context)
     {
@@ -2178,7 +2107,7 @@ public class MCServerService : IMCServerService
                 if (!File.Exists(authlibPath) || !await FileUtils.ValidateFileSha256Async(authlibPath, sha256))
                 {
                     // 下载
-                    RecordLog(instanceId, context, $"[MSLX] 正在处理下载外置登录库依赖···");
+                    _console.RecordLog(instanceId, context, $"[MSLX] 正在处理下载外置登录库依赖···");
                     var downloader = new ParallelDownloader(parallelCount: 1);
                     var mirroredUrl = downloadUrl.Replace("authlib-injector.yushi.moe",
                         "authlib-injector.mirrors.mslmc.cn");
@@ -2189,7 +2118,7 @@ public class MCServerService : IMCServerService
                         // 进度回调
                         async (progress, speed) =>
                         {
-                            RecordLog(instanceId, context,
+                            _console.RecordLog(instanceId, context,
                                 $"正在下载 Authlib-Injector... 进度: {progress:0.00}% | 下载速度: {speed}");
                         }
                     );
@@ -2239,811 +2168,5 @@ public class MCServerService : IMCServerService
 
     #endregion
 
-    #region 备份实例
 
-    // —————— 备份相关 ——————
-    public bool StartBackupServer(uint instanceId)
-    {
-        if (_stateStore.Get(instanceId) is { } context)
-        {
-            _ = Task.Run(async () => await BackupServer(instanceId, context));
-            return true;
-        }
-
-        return false;
-    }
-
-    private async Task BackupServer(uint instanceId, ServerContext context)
-    {
-        if (context.IsBackuping)
-        {
-            _logger.LogWarning($"[Backup] 忽略备份请求，实例 {instanceId} 正在备份中。");
-            RecordLog(instanceId, context, "[MSLX-Backup] 正在备份中，请勿重复操作。");
-            return;
-        }
-
-        bool isBedrock = false;
-        DateTime backupStartTime = DateTime.Now;
-        McServerInfo.ServerInfo? server = null;
-        try
-        {
-            context.IsBackuping = true;
-            server = IConfigBase.ServerList.GetServer(instanceId);
-            if (server == null) return;
-
-            // 计算备份保存路径
-            string backupDir = Path.Combine(server.Base, "mslx-backups"); // 默认是存档内
-            if (server.BackupPath != "MSLX://Backup/Instance")
-            {
-                if (server.BackupPath == "MSLX://Backup/Data")
-                {
-                    backupDir = Path.Combine(IConfigBase.GetAppDataPath(), "Backups",
-                        $"Backups_{server.Name}_{instanceId}");
-                }
-                else if (!string.IsNullOrEmpty(server.BackupPath))
-                {
-                    backupDir = Path.Combine(server.BackupPath);
-                }
-            }
-
-            var backupStartingArgs = new BackupStartingEventArgs
-            {
-                InstanceId = instanceId,
-                ServerInfo = server,
-                BackupDirectory = backupDir,
-                Timestamp = backupStartTime
-            };
-            _events.PublishBackupStarting(backupStartingArgs);
-            if (backupStartingArgs.Cancel)
-            {
-                RecordLog(instanceId, context, $"[MSLX-Backup] 备份已被插件取消: {backupStartingArgs.CancelReason ?? "无"}");
-                _logger.LogInformation($"实例 [{instanceId}] 备份已被插件取消: {backupStartingArgs.CancelReason ?? "无"}");
-                return;
-            }
-
-            // 拦截基岩版逻辑
-            if (File.Exists(Path.Combine(server.Base, "bedrock_server")) ||
-                File.Exists(Path.Combine(server.Base, "bedrock_server.exe")))
-            {
-                isBedrock = true;
-            }
-
-            if (IsServerRunning(instanceId))
-            {
-                if (isBedrock)
-                {
-                    SendCommand(instanceId, "save hold");
-                    if (PlatFormServices.GetOs() == "Windows") // Windows下目前输入中文会乱码 暂时这么解决叭
-                    {
-                        SendCommand(instanceId,
-                            "tellraw @a {\"rawtext\":[{\"text\":\"[MSLX] Backup in progress ~\"}]}");
-                    }
-                    else
-                    {
-                        SendCommand(instanceId,
-                            "tellraw @a {\"rawtext\":[{\"text\":\"§e[§aMSLX§e] §b正在进行服务器存档备份，请勿关闭服务器哦，否则可能造成回档！备份期间不会影响正常游戏~\"}]}");
-                    }
-
-                    RecordLog(instanceId, context, "[MSLX-Backup] 正在备份基岩版服务器存档...");
-                    await Task.Delay(server.BackupDelay * 1000);
-                }
-                else
-                {
-                    SendCommand(instanceId, "save-off");
-                    await Task.Delay(1000);
-                    SendCommand(instanceId, "save-all");
-                    SendCommand(instanceId,
-                        "tellraw @a [{\"text\":\"[\",\"color\":\"yellow\"},{\"text\":\"MSLX\",\"color\":\"green\"},{\"text\":\"]\",\"color\":\"yellow\"},{\"text\":\"正在进行服务器存档备份，请勿关闭服务器哦，否则可能造成回档！备份期间不会影响正常游戏~\",\"color\":\"aqua\"}]");
-                    RecordLog(instanceId, context, "[MSLX-Backup] 正在备份服务器存档...");
-
-                    await Task.Delay(server.BackupDelay * 1000); // 等待延迟时间进行保存
-                }
-            }
-
-            // 获取需要备份的内容
-            string worldPath = isBedrock ? "worlds" : "world";
-            if (!isBedrock)
-            {
-                var serverPropertiesPath = ServerPropertiesPathUtils.ResolveFullPath(server);
-                if (File.Exists(serverPropertiesPath))
-                {
-                    try
-                    {
-                        dynamic config = ServerPropertiesLoader.Load(serverPropertiesPath,
-                            FileUtils.GetFileEncodingByString(server.FileEncoding));
-                        worldPath = config.level_name == "未知" ? "world" : config.level_name;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "读取 server.properties 的 level-name 失败，备份将使用默认 world 路径: {Path}", serverPropertiesPath);
-                    }
-                }
-            }
-
-            // 兼容插件端的文件夹分离模式
-            string fullWorldPath = Path.Combine(server.Base, worldPath);
-            string fullNetherPath = Path.Combine(server.Base, worldPath + "_nether");
-            string fullEndPath = Path.Combine(server.Base, worldPath + "_the_end");
-
-            // 备份列表
-            var foldersToCompress = new List<string>();
-
-            if (Directory.Exists(fullWorldPath)) foldersToCompress.Add(fullWorldPath);
-            if (Directory.Exists(fullNetherPath)) foldersToCompress.Add(fullNetherPath);
-            if (Directory.Exists(fullEndPath)) foldersToCompress.Add(fullEndPath);
-
-            // 确保有文件夹需要备份
-            if (foldersToCompress.Count == 0)
-            {
-                _logger.LogWarning("未找到任何世界存档文件夹（包括主世界、下界、末地），备份失败！");
-                _events.PublishBackupFailed(new BackupFailedEventArgs
-                {
-                    InstanceId = instanceId,
-                    ServerInfo = server,
-                    ErrorMessage = "未找到任何世界存档文件夹（包括主世界、下界、末地），备份失败！",
-                    Timestamp = DateTime.Now
-                });
-
-                if (IsServerRunning(instanceId))
-                {
-                    if (isBedrock)
-                    {
-                        SendCommand(instanceId, "save resume");
-                        if (PlatFormServices.GetOs() == "Windows")
-                        {
-                            SendCommand(instanceId,
-                                "tellraw @a {\"rawtext\":[{\"text\":\"[MSLX] Backup failed !\"}]}");
-                        }
-                        else
-                        {
-                            SendCommand(instanceId,
-                                "tellraw @a {\"rawtext\":[{\"text\":\"§e[§aMSLX§e] §c备份失败！未找到任何世界存档文件夹！\"}]}");
-                        }
-                    }
-                    else
-                    {
-                        SendCommand(instanceId, "save-on");
-                        SendCommand(instanceId,
-                            "tellraw @a [{\"text\":\"[\",\"color\":\"yellow\"},{\"text\":\"MSLX\",\"color\":\"green\"},{\"text\":\"]\",\"color\":\"yellow\"},{\"text\":\"备份失败！未找到任何世界存档文件夹！\",\"color\":\"red\"}]");
-                    }
-                }
-
-                return;
-            }
-
-            string backupPath = Path.Combine(backupDir, $"mslx-backup_{DateTime.Now.ToString("yyyyMMdd_HHmmss")}.zip");
-            if (!Directory.Exists(backupDir)) Directory.CreateDirectory(backupDir);
-
-            // 最大备份存档限制
-            int maxBackups = 20;
-            if (server.BackupMaxCount > 0) maxBackups = server.BackupMaxCount;
-
-            // 删除多余的备份
-            try
-            {
-                var backupFiles = Directory.GetFiles(backupDir, "mslx-backup_*.zip")
-                    .Select(path => new FileInfo(path))
-                    .OrderBy(fi => fi.Name) // 按文件名排序，文件名早的=时间旧的
-                    .ToList();
-
-                if (maxBackups >= 1 && backupFiles.Count >= maxBackups)
-                {
-                    int filesToDeleteCount = backupFiles.Count - maxBackups + 1;
-                    var filesToDelete = backupFiles.Take(filesToDeleteCount).ToList();
-
-                    // 遍历删除最旧的文件
-                    foreach (var fileToDelete in filesToDelete)
-                    {
-                        try
-                        {
-                            fileToDelete.Delete();
-                            _events.PublishBackupDeleted(new BackupDeletedEventArgs
-                            {
-                                InstanceId = instanceId,
-                                BackupFilePath = fileToDelete.FullName,
-                                BackupFileName = fileToDelete.Name,
-                                IsAutoRoll = true,
-                                Timestamp = DateTime.Now
-                            });
-                            RecordLog(instanceId, context, $"[MSLX-Backup] 已删除旧备份：{fileToDelete.Name}");
-                        }
-                        catch (Exception ex)
-                        {
-                            // 如果删除失败，仅发出警告，不中断整个备份过程
-                            RecordLog(instanceId, context, $"[MSLX-Backup] 删除旧备份 {fileToDelete.Name} 失败：{ex.Message}");
-                            _logger.LogWarning($"删除旧备份 {fileToDelete.Name} 失败：{ex.ToString()}");
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                _logger.LogError($"删除多余的备份失败 {instanceId}, {e.Message}");
-                RecordLog(instanceId, context, $"[MSLX-Backup] 删除多余的备份失败：{e.Message}");
-            }
-
-            // 开始压缩
-            RecordLog(instanceId, context, $"[MSLX-Backup] 正在压缩服务器存档...");
-            await using (FileStream zipToOpen = new FileStream(backupPath, FileMode.Create))
-            {
-                using (ZipArchive archive = new ZipArchive(zipToOpen, ZipArchiveMode.Create))
-                {
-                    foreach (var folderPath in foldersToCompress)
-                    {
-                        // 开始递归压缩
-                        await CompressFolder(server.Base, folderPath, archive);
-                    }
-                }
-            }
-
-            // 输出备份信息
-            if (IsServerRunning(instanceId))
-            {
-                try
-                {
-                    FileInfo backupFileInfo = new FileInfo(backupPath);
-                    string fileName = backupFileInfo.Name;
-                    long fileSizeInBytes = backupFileInfo.Length;
-                    string formattedSize;
-                    if (fileSizeInBytes > 1024 * 1024 * 1024)
-                    {
-                        formattedSize = $"{fileSizeInBytes / (1024.0 * 1024.0 * 1024.0):F2} GB";
-                    }
-                    else if (fileSizeInBytes > 1024 * 1024)
-                    {
-                        formattedSize = $"{fileSizeInBytes / (1024.0 * 1024.0):F2} MB";
-                    }
-                    else if (fileSizeInBytes > 1024)
-                    {
-                        formattedSize = $"{fileSizeInBytes / 1024.0:F2} KB";
-                    }
-                    else
-                    {
-                        formattedSize = $"{fileSizeInBytes} Bytes";
-                    }
-
-                    string tellrawMessage;
-
-                    if (isBedrock)
-                    {
-                        tellrawMessage =
-                            $"tellraw @a {{\"rawtext\":[{{\"text\":\"§e[§aMSLX§e]§b 服务器存档备份完成！\\n§7文件名: §f{fileName}\\n§7大小: §f{formattedSize}\"}}]}}";
-
-                        SendCommand(instanceId, "save resume");
-                    }
-                    else
-                    {
-                        tellrawMessage = $"tellraw @a [";
-                        tellrawMessage += "{\"text\":\"[\",\"color\":\"yellow\"},";
-                        tellrawMessage += "{\"text\":\"MSLX\",\"color\":\"green\"},";
-                        tellrawMessage += "{\"text\":\"]\",\"color\":\"yellow\"},";
-                        tellrawMessage += "{\"text\":\" 服务器存档备份完成！\\n\",\"color\":\"aqua\"},";
-                        tellrawMessage += $"{{\"text\":\"文件名: \",\"color\":\"gray\"}},";
-                        tellrawMessage += $"{{\"text\":\"{fileName}\",\"color\":\"white\"}},";
-                        tellrawMessage += $"{{\"text\":\"\\n大小: \",\"color\":\"gray\"}},";
-                        tellrawMessage += $"{{\"text\":\"{formattedSize}\",\"color\":\"white\"}}";
-                        tellrawMessage += "]";
-
-                        SendCommand(instanceId, "save-on");
-                    }
-
-                    if (PlatFormServices.GetOs() == "Windows" && isBedrock)
-                    {
-                        SendCommand(instanceId,
-                            "tellraw @a {\"rawtext\":[{\"text\":\"[MSLX] Backup finished !\"}]}");
-                    }
-                    else
-                    {
-                        SendCommand(instanceId, tellrawMessage);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    RecordLog(instanceId, context, "[MSL备份] 无法获取备份文件信息：" + ex.Message);
-                    _logger.LogWarning("无法获取备份文件信息：" + ex.ToString());
-
-                    // 异常
-                    if (isBedrock)
-                    {
-                        SendCommand(instanceId, "save resume");
-                        if (PlatFormServices.GetOs() == "Windows")
-                        {
-                            SendCommand(instanceId,
-                                "tellraw @a {\"rawtext\":[{\"text\":\"[MSLX] Backup finished !\"}]}");
-                        }
-                        else
-                        {
-                            SendCommand(instanceId,
-                                "tellraw @a {\"rawtext\":[{\"text\":\"§e[§aMSLX§e] §b服务器存档备份完成！\"}]}");
-                        }
-                    }
-                    else
-                    {
-                        SendCommand(instanceId, "save-on");
-                        SendCommand(instanceId,
-                            "tellraw @a [{\"text\":\"[\",\"color\":\"yellow\"},{\"text\":\"MSLX\",\"color\":\"green\"},{\"text\":\"]\",\"color\":\"yellow\"},{\"text\":\"服务器存档备份完成！\",\"color\":\"aqua\"}]");
-                    }
-                }
-            }
-
-            RecordLog(instanceId, context, $"[MSLX-Backup] 存档备份成功！已保存至：{backupPath}");
-            _logger.LogInformation($"[MSLX-Backup] 存档备份成功！已保存至：{backupPath}");
-
-            try
-            {
-                FileInfo backupFileInfo = new FileInfo(backupPath);
-                long fileSize = backupFileInfo.Exists ? backupFileInfo.Length : 0;
-                string fmtSize = fileSize switch
-                {
-                    >= 1073741824 => $"{fileSize / (1024.0 * 1024.0 * 1024.0):F2} GB",
-                    >= 1048576 => $"{fileSize / (1024.0 * 1024.0):F2} MB",
-                    >= 1024 => $"{fileSize / 1024.0:F2} KB",
-                    _ => $"{fileSize} Bytes"
-                };
-
-                _events.PublishBackupCompleted(new BackupCompletedEventArgs
-                {
-                    InstanceId = instanceId,
-                    ServerInfo = server,
-                    BackupFilePath = backupPath,
-                    BackupFileName = backupFileInfo.Name,
-                    FileSizeBytes = fileSize,
-                    FormattedSize = fmtSize,
-                    Duration = DateTime.Now - backupStartTime,
-                    Timestamp = DateTime.Now
-                });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning($"[MSLX-Backup] 发布 BackupCompleted 事件失败: {ex.Message}");
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"备份服务器失败 {instanceId}, {ex.Message}");
-            _events.PublishBackupFailed(new BackupFailedEventArgs
-            {
-                InstanceId = instanceId,
-                ServerInfo = server,
-                ErrorMessage = ex.Message,
-                Exception = ex,
-                Timestamp = DateTime.Now
-            });
-        }
-        finally
-        {
-            context.IsBackuping = false;
-            // 最后这里再执行一次 不知道有啥意义 留着吧 qwq
-            if (IsServerRunning(instanceId))
-            {
-                if (isBedrock)
-                {
-                    SendCommand(instanceId, "save resume");
-                }
-                else
-                {
-                    SendCommand(instanceId, "save-on");
-                }
-            }
-        }
-    }
-
-    // 递归压缩方法
-    private async Task CompressFolder(string rootPath, string currentPath, ZipArchive archive)
-    {
-        string[] files = Directory.GetFiles(currentPath);
-
-        foreach (string file in files)
-        {
-            // 排除 session.lock
-            if (Path.GetFileName(file).Equals("session.lock", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            // 计算相对路径 (作为压缩包内的文件名)
-            string entryName = Path.GetRelativePath(rootPath, file);
-
-            try
-            {
-                // 共享只读打开
-                await using (FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                {
-                    // 在压缩包中创建条目
-                    ZipArchiveEntry entry = archive.CreateEntry(entryName, CompressionLevel.Optimal);
-
-                    // 最后修改时间
-                    entry.LastWriteTime = File.GetLastWriteTime(file);
-
-                    // 文件流复制到压缩包条目流中
-                    using (Stream entryStream = entry.Open())
-                    {
-                        await fs.CopyToAsync(entryStream);
-                    }
-                }
-            }
-            catch (IOException ex)
-            {
-                throw new IOException($"无法以共享只读模式打开文件 '{entryName}'。服务器施加了排他锁。错误: {ex.Message}", ex);
-            }
-        }
-
-        // 递归处理子文件夹
-        string[] folders = Directory.GetDirectories(currentPath);
-        foreach (string folder in folders)
-        {
-            await CompressFolder(rootPath, folder, archive);
-        }
-    }
-
-    #endregion
-
-    #region 进程资源监控
-
-    // —————— 进程资源占用推送 ——————
-    private async Task StartResourceMonitoring()
-    {
-        var timer = new PeriodicTimer(TimeSpan.FromSeconds(3));
-        int processorCount = Environment.ProcessorCount;
-
-        while (await timer.WaitForNextTickAsync(_appLifetime.ApplicationStopping))
-        {
-            if (!_stateStore.HasAnyActive) continue;
-
-            // 批量查询Docker容器状态
-            var dockerInstanceIds = new List<uint>();
-            foreach (var kvp in _stateStore.ActiveEntries)
-            {
-                if (kvp.Value.IsDocker && !kvp.Value.IsInitializing)
-                {
-                    dockerInstanceIds.Add(kvp.Key);
-                }
-            }
-            
-            Dictionary<string, (double cpu, long memory)> dockerStatsMap = null!;
-            if (dockerInstanceIds.Count > 0)
-            {
-                dockerStatsMap = await GetBatchDockerStatsAsync(dockerInstanceIds);
-            }
-
-            // 遍历推送
-            foreach (var kvp in _stateStore.ActiveEntries)
-            {
-                var instanceId = kvp.Key;
-                var context = kvp.Value;
-
-                try
-                {
-                    if (context.IsDocker)
-                    {
-                        if (context.IsInitializing) continue;
-
-                        string containerName = $"mslx-container-{instanceId}";
-                        if (dockerStatsMap != null && dockerStatsMap.TryGetValue(containerName, out var stats))
-                        {
-                            await _hubContext.Clients.Group(instanceId.ToString()).SendAsync("ReceiveStatus",
-                                instanceId,
-                                Math.Round(stats.cpu, 2),
-                                stats.memory
-                            );
-                        }
-                        continue;
-                    }
-
-                    // 原生宿主机实例
-                    if (context.Process == null || context.Process.HasExited || context.IsInitializing)
-                    {
-                        context.MonitorProcess = null;
-                        continue;
-                    }
-
-                    // 确定监控目标
-                    if (context.MonitorProcess == null || context.MonitorProcess.HasExited)
-                    {
-                        context.MonitorProcess = context.Process;
-                    }
-
-                    // 针对Windows / Linux系统的查询子进程
-                    var name = context.MonitorProcess.ProcessName.ToLower();
-                    if (OperatingSystem.IsWindows())
-                    {
-                        bool needFindChild = false;
-
-                        if (name == "cmd" || name == "powershell" || name == "pwsh" || name == "conhost" ||
-                            name == "wt" || name == "python" || name == "python3" || name == "py")
-                        {
-                            needFindChild = true;
-                        }
-                        else if (name == "java" || name == "javaw")
-                        {
-                            try
-                            {
-                                string path = context.MonitorProcess.MainModule?.FileName?.ToLower() ?? "";
-                                if (path.Contains("javapath") || path.Contains("common files"))
-                                {
-                                    needFindChild = true;
-                                }
-                            }
-                            catch { }
-                        }
-
-                        if (needFindChild)
-                        {
-                            var child = GetChildJavaProcess(context.MonitorProcess.Id);
-                            if (child != null && child.Id != context.MonitorProcess.Id)
-                            {
-                                _logger.LogInformation($"[Monitor] 识别到 Wrapper 进程，切换监控目标: {context.MonitorProcess.Id} -> {child.Id}");
-                                context.MonitorProcess = child;
-                            }
-                        }
-                    }
-                    else if (OperatingSystem.IsLinux())
-                    {
-                        if (name == "bash" || name == "sh" || name == "dash" ||
-                            name.StartsWith("python") || name == "py")
-                        {
-                            var child = GetChildProcessLinux(context.MonitorProcess.Id);
-                            if (child != null && child.Id != context.MonitorProcess.Id)
-                            {
-                                _logger.LogInformation($"[Monitor] Linux: 识别到 Shell Wrapper 进程，切换监控目标: {context.MonitorProcess.Id} -> {child.Id}");
-                                context.MonitorProcess = child;
-                            }
-                        }
-                    }
-
-                    // 刷新状态
-                    var target = context.MonitorProcess;
-                    target.Refresh();
-
-                    if (target.HasExited) continue;
-
-                    // 获取内存
-                    long memoryUsage = OperatingSystem.IsWindows() ? target.PrivateMemorySize64 : target.WorkingSet64;
-
-                    // 计算 CPU
-                    double cpuUsage = 0;
-                    var currentTime = DateTime.UtcNow;
-                    var currentTotalProcessorTime = target.TotalProcessorTime;
-
-                    if (context.PreviousCpuCheckTime != DateTime.MinValue && context.LastMonitoredPid == target.Id)
-                    {
-                        double timePassedMs = (currentTime - context.PreviousCpuCheckTime).TotalMilliseconds;
-                        double cpuTimePassedMs = (currentTotalProcessorTime - context.PreviousTotalProcessorTime).TotalMilliseconds;
-
-                        if (timePassedMs > 0)
-                        {
-                            cpuUsage = (cpuTimePassedMs / timePassedMs) / processorCount * 100;
-                        }
-                    }
-
-                    context.PreviousCpuCheckTime = currentTime;
-                    context.PreviousTotalProcessorTime = currentTotalProcessorTime;
-                    context.LastMonitoredPid = target.Id;
-
-                    if (cpuUsage > 100) cpuUsage = 100;
-                    if (cpuUsage < 0) cpuUsage = 0;
-
-                    await _hubContext.Clients.Group(instanceId.ToString()).SendAsync("ReceiveStatus",
-                        instanceId,
-                        Math.Round(cpuUsage, 2),
-                        memoryUsage
-                    );
-                }
-                catch
-                {
-                    context.PreviousCpuCheckTime = DateTime.MinValue;
-                    context.MonitorProcess = null;
-                }
-            }
-        }
-    }
-    
-    /// <summary>
-    /// 批量获取所有活动 Docker 容器的 CPU 与内存指标 (按配置核心数折算，最高 100%)
-    /// </summary>
-    private async Task<Dictionary<string, (double cpu, long memory)>> GetBatchDockerStatsAsync(List<uint> dockerInstanceIds)
-    {
-        var statsMap = new Dictionary<string, (double cpu, long memory)>();
-        if (dockerInstanceIds == null || dockerInstanceIds.Count == 0) return statsMap;
-
-        try
-        {
-            var containerNames = dockerInstanceIds.Select(id => $"mslx-container-{id}").ToList();
-            var args = new List<string> { "stats", "--no-stream", "--format", "{{.Name}}|{{.CPUPerc}}|{{.MemUsage}}" };
-            args.AddRange(containerNames);
-
-            var result = await Cli.Wrap("docker")
-                .WithArguments(args)
-                .WithValidation(CommandResultValidation.None)
-                .ExecuteBufferedAsync();
-
-            if (result.ExitCode != 0 || string.IsNullOrWhiteSpace(result.StandardOutput))
-                return statsMap;
-
-            var lines = result.StandardOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            foreach (var line in lines)
-            {
-                // 输出格式: "mslx-container-1|150.35%|345.2MiB / 8GiB"
-                string[] parts = line.Split('|');
-                if (parts.Length < 3) continue;
-
-                string containerName = parts[0].Trim();
-
-                // 提取 instanceId
-                if (!uint.TryParse(containerName.Replace("mslx-container-", ""), out uint instanceId))
-                    continue;
-
-                // 解析原始占用
-                double rawCpu = 0;
-                string cpuStr = parts[1].Replace("%", "").Trim();
-                double.TryParse(cpuStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out rawCpu);
-
-                // 优先从内存 ServerContext 获取预计算好的 CPU 基准
-                double baseLimitPercentage = 0;
-                if (_stateStore.Get(instanceId) is { } context)
-                {
-                    baseLimitPercentage = context.CpuBaseLimitPercentage;
-                }
-
-                // 回退宿主机核心数
-                if (baseLimitPercentage <= 0)
-                {
-                    baseLimitPercentage = Environment.ProcessorCount * 100.0;
-                }
-
-                // 计算相对占用，封顶 100%
-                double normalizedCpu = (rawCpu / baseLimitPercentage) * 100.0;
-                if (normalizedCpu > 100.0) normalizedCpu = 100.0;
-                if (normalizedCpu < 0.0) normalizedCpu = 0.0;
-
-                // 解析内存
-                long memoryBytes = 0;
-                string memUsagePart = parts[2].Split('/')[0].Trim();
-                var match = Regex.Match(memUsagePart, @"(?<value>[\d\.]+)\s*(?<unit>[a-zA-Z]+)?");
-
-                if (match.Success)
-                {
-                    double val = double.Parse(match.Groups["value"].Value, System.Globalization.CultureInfo.InvariantCulture);
-                    string unit = match.Groups["unit"].Value.ToUpper();
-
-                    memoryBytes = unit switch
-                    {
-                        "GIB" or "GB" => (long)(val * 1024 * 1024 * 1024),
-                        "MIB" or "MB" => (long)(val * 1024 * 1024),
-                        "KIB" or "KB" => (long)(val * 1024),
-                        "B" => (long)val,
-                        _ => (long)(val * 1024 * 1024)
-                    };
-                }
-
-                statsMap[containerName] = (normalizedCpu, memoryBytes);
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning($"[Monitor] 批量提取 Docker 容器状态失败: {ex.Message}");
-        }
-
-        return statsMap;
-    }
-
-    /// <summary>
-    /// [Linux专用] 通过 pgrep 递归查找指定父进程启动的服务端子进程
-    /// 可穿透 shell / Python(MCDR) 等中间包装进程
-    /// </summary>
-    private Process? GetChildProcessLinux(int parentPid, int depth = 0)
-    {
-        if (!OperatingSystem.IsLinux()) return null;
-        if (depth > 8) return null; // 防御性深度限制，避免异常情况下无限递归
-
-        try
-        {
-            // 使用 pgrep 查找直接子进程
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = "pgrep",
-                Arguments = $"-P {parentPid}",
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using var process = Process.Start(startInfo);
-            if (process == null) return null;
-
-            string output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit(1000);
-
-            var lines = output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-            foreach (var line in lines)
-            {
-                if (int.TryParse(line.Trim(), out int childPid))
-                {
-                    try
-                    {
-                        var childProcess = Process.GetProcessById(childPid);
-                        var name = childProcess.ProcessName.ToLower();
-
-                        // 找到了目标服务端进程
-                        if (name.Contains("java") || name.Contains("bedrock") || name.Contains("server"))
-                        {
-                            return childProcess;
-                        }
-
-                        // 如果子进程依然是 shell / Python 包装器，递归往下挖
-                        if (name == "bash" || name == "sh" || name == "dash" ||
-                            name.StartsWith("python") || name == "py")
-                        {
-                            var grandChild = GetChildProcessLinux(childPid, depth + 1);
-                            if (grandChild != null) return grandChild;
-                        }
-                    }
-                    catch
-                    {
-                        // 进程可能瞬间退出了，忽略即可
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning($"Linux 查询子进程失败: {ex.Message}");
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// [Windows专用] 通过 WMI 递归查找指定父进程启动的服务端子进程 (Java/Bedrock)
-    /// 可穿透 cmd / Python(MCDR) / PowerShell 等中间包装进程
-    /// </summary>
-    private Process? GetChildJavaProcess(int parentPid, int depth = 0)
-    {
-        if (!OperatingSystem.IsWindows()) return null;
-        if (depth > 8) return null; // 防御性深度限制，避免异常情况下无限递归
-
-        try
-        {
-            // 使用 WMI 查询：查找所有 ParentProcessId 等于当前 PID 的进程
-            using var searcher = new ManagementObjectSearcher(
-                $"Select ProcessId, Name, CommandLine From Win32_Process Where ParentProcessId={parentPid}");
-
-            using var collection = searcher.Get();
-
-            foreach (var obj in collection)
-            {
-                var childPid = Convert.ToInt32(obj["ProcessId"]);
-                var name = obj["Name"]?.ToString()?.ToLower() ?? "";
-
-                //  Java 或 Bedrock 进程 —— 找到目标
-                if (name.Contains("java") || name.Contains("bedrock") || name.Contains("server"))
-                {
-                    try
-                    {
-                        return Process.GetProcessById(childPid);
-                    }
-                    catch
-                    {
-                        // 进程可能刚查到就退出了，忽略
-                    }
-                }
-
-                // 中间包装进程(cmd / Python(MCDR) / PowerShell 等)，继续向下递归
-                if (name.Contains("python") || name == "py.exe" || name == "cmd.exe" ||
-                    name.Contains("powershell") || name == "pwsh.exe" || name == "conhost.exe")
-                {
-                    var grandChild = GetChildJavaProcess(childPid, depth + 1);
-                    if (grandChild != null) return grandChild;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning($"WMI 查询子进程失败: {ex.Message}");
-        }
-
-        return null;
-    }
-
-    #endregion
 }
