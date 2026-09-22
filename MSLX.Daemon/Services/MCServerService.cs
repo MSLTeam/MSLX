@@ -27,10 +27,8 @@ public class MCServerService : IMCServerService
     private readonly IFrpProcessService _frpService;
     private readonly IMSLXEvents _events;
 
-    // 短时间内崩溃重启限制
-    private readonly ConcurrentDictionary<uint, List<DateTime>> _crashHistory = new();
-    private const int CrashCheckWindowSeconds = 300;
-    private const int MaxCrashCount = 5;
+    // 短时间内崩溃重启限制（300 秒内最多崩溃 5 次，超过则熔断放弃自动重启）
+    private readonly CrashRestartGuard _crashGuard = new(windowSeconds: 300, maxCount: 5);
 
     public class ServerContext
     {
@@ -74,18 +72,6 @@ public class MCServerService : IMCServerService
     private readonly ConcurrentDictionary<uint, bool> _restartingServers = new(); // 存储正在重启的实例ID
     private readonly ConcurrentDictionary<uint, (int cols, int rows)> _preferredTerminalSizes = new(); // 记录客户端首选终端尺寸
     private const int MaxLogLines = 1000;
-
-    // 匹配玩家进入/离开的正则表达式
-    private static readonly Regex PlayerJoinedRegex =
-        new Regex(@"\]:\s*(?<player>.+?)\[(?<ip>.*?)\]\slogged\sin\swith\sentity\sid", RegexOptions.Compiled);
-
-    private static readonly Regex PlayerLeftRegex =
-        new Regex(@"\]:\s*(?<player>.+?)\slost\sconnection:", RegexOptions.Compiled);
-
-    private static readonly Regex FakePlayerFilterRegex =
-        new Regex(@"\[.*\]|local", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-    private static readonly Regex AnsiColorRegex = new Regex(@"\x1B\[[0-9;]*[a-zA-Z]", RegexOptions.Compiled);
 
     public MCServerService(
         ILogger<IMCServerService> logger,
@@ -212,7 +198,7 @@ public class MCServerService : IMCServerService
 
         if (!isAutoRestart)
         {
-            _crashHistory.TryRemove(instanceId, out _);
+            _crashGuard.Reset(instanceId);
         }
 
         var serverInfo = IConfigBase.ServerList.GetServer(instanceId);
@@ -258,35 +244,6 @@ public class MCServerService : IMCServerService
 
         StartServer(instanseId, skipEulaCheck: true);
         return true;
-    }
-
-    /// <summary>
-    /// 获取 Encoding
-    /// </summary>
-    private Encoding GetEncoding(string? encodingName)
-    {
-        // 默认返回无 BOM 的 UTF-8
-        if (string.IsNullOrWhiteSpace(encodingName))
-            return new UTF8Encoding(false);
-
-        try
-        {
-            var name = encodingName.Trim().ToLower();
-
-            // 特殊处理 UTF-8，强制禁用 BOM
-            if (name == "utf-8" || name == "utf8")
-            {
-                return new UTF8Encoding(false);
-            }
-
-            return Encoding.GetEncoding(name);
-        }
-        catch (Exception)
-        {
-            _logger.LogWarning($"无法识别编码: {encodingName}，已回退到 UTF-8 (No BOM)");
-            // 回退使用无 BOM 的 UTF-8
-            return new UTF8Encoding(false);
-        }
     }
 
     /// <summary>
@@ -851,8 +808,10 @@ public class MCServerService : IMCServerService
             }
 
             // 处理编码
-            Encoding inputEncoding = GetEncoding(serverInfo.InputEncoding);
-            Encoding outputEncoding = GetEncoding(serverInfo.OutputEncoding);
+            Encoding inputEncoding = EncodingUtils.GetEncodingOrDefault(serverInfo.InputEncoding,
+                name => _logger.LogWarning($"无法识别编码: {name}，已回退到 UTF-8 (No BOM)"));
+            Encoding outputEncoding = EncodingUtils.GetEncodingOrDefault(serverInfo.OutputEncoding,
+                name => _logger.LogWarning($"无法识别编码: {name}，已回退到 UTF-8 (No BOM)"));
             _logger.LogInformation(
                 $"实例 {instanceId} 编码设置 - 输入: {inputEncoding.EncodingName}, 输出: {outputEncoding.EncodingName}，JVM强制UTF8：{serverInfo.ForceJvmUTF8}");
 
@@ -1022,7 +981,7 @@ public class MCServerService : IMCServerService
                     }
 
                     string ptyApp = exec;
-                    string[] ptyArgs = SplitCommandLineArgs(args);
+                    string[] ptyArgs = CommandLineUtils.SplitCommandLineArgs(args);
                     bool verbatim = false;
 
                     if (OperatingSystem.IsWindows() && !context.IsDocker)
@@ -1840,39 +1799,6 @@ public class MCServerService : IMCServerService
     /// <summary>
     /// 辅助工具：解析命令行字符串为参数列表
     /// </summary>
-    private static string[] SplitCommandLineArgs(string? commandLine)
-    {
-        if (string.IsNullOrWhiteSpace(commandLine)) return Array.Empty<string>();
-        var args = new List<string>();
-        var current = new StringBuilder();
-        bool inQuotes = false;
-        for (int i = 0; i < commandLine.Length; i++)
-        {
-            char c = commandLine[i];
-            if (c == '"')
-            {
-                inQuotes = !inQuotes;
-            }
-            else if (char.IsWhiteSpace(c) && !inQuotes)
-            {
-                if (current.Length > 0)
-                {
-                    args.Add(current.ToString());
-                    current.Clear();
-                }
-            }
-            else
-            {
-                current.Append(c);
-            }
-        }
-        if (current.Length > 0)
-        {
-            args.Add(current.ToString());
-        }
-        return args.ToArray();
-    }
-
     /// <summary>
     /// 获取服务器日志
     /// </summary>
@@ -2080,36 +2006,26 @@ public class MCServerService : IMCServerService
                 if (serverInfo != null && serverInfo.AutoRestart && (exitCode != 0 || serverInfo.ForceAutoRestart))
                 {
                     // 熔断检查
-                    var history = _crashHistory.GetOrAdd(instanceId, new List<DateTime>());
+                    int attempts = _crashGuard.RecordCrash(instanceId, DateTime.Now);
 
-                    // 加锁处理 List
-                    lock (history)
+                    // 检查窗口内的崩溃次数是否超过阈值
+                    if (attempts > _crashGuard.MaxCount)
                     {
-                        DateTime now = DateTime.Now;
-                        history.Add(now); // 记录本次崩溃时间
-
-                        // 清理超出时间窗口的旧记录
-                        history.RemoveAll(t => t < now.AddSeconds(-CrashCheckWindowSeconds));
-
-                        // 检查剩余的记录数量是否超过阈值
-                        if (history.Count > MaxCrashCount)
-                        {
-                            RecordLog(instanceId, context,
-                                $">>> [MSLX] 严重错误：服务器在 {CrashCheckWindowSeconds} 秒内已崩溃 {history.Count} 次！");
-                            RecordLog(instanceId, context,
-                                ">>> [MSLX] 为防止无限重启导致系统卡死，守护进程已放弃自动重启该实例。");
-                            RecordLog(instanceId, context,
-                                ">>> [MSLX] 请检查服务器配置、Java环境或日志文件，修复问题后请手动启动。");
-
-                            _logger.LogError($"实例 {instanceId} 触发重启熔断保护，停止重启。");
-
-                            // 没救了喵
-                            return;
-                        }
-
                         RecordLog(instanceId, context,
-                            $">>> [MSLX] 检测到异常退出，正在准备第 {history.Count} 次尝试重启 (阈值: {MaxCrashCount}次/5分钟)...");
+                            $">>> [MSLX] 严重错误：服务器在 {_crashGuard.WindowSeconds} 秒内已崩溃 {attempts} 次！");
+                        RecordLog(instanceId, context,
+                            ">>> [MSLX] 为防止无限重启导致系统卡死，守护进程已放弃自动重启该实例。");
+                        RecordLog(instanceId, context,
+                            ">>> [MSLX] 请检查服务器配置、Java环境或日志文件，修复问题后请手动启动。");
+
+                        _logger.LogError($"实例 {instanceId} 触发重启熔断保护，停止重启。");
+
+                        // 没救了喵
+                        return;
                     }
+
+                    RecordLog(instanceId, context,
+                        $">>> [MSLX] 检测到异常退出，正在准备第 {attempts} 次尝试重启 (阈值: {_crashGuard.MaxCount}次/5分钟)...");
 
                     _restartingServers.TryAdd(instanceId, true); // 标记重启中
 
@@ -2226,35 +2142,15 @@ public class MCServerService : IMCServerService
         // 预检
         if (!context.MonitorPlayers)
             return;
-        if (!logLine.Contains("logged in with entity id") && !logLine.Contains("lost connection:"))
-            return;
 
-        // 去掉ansi颜色代码
-        string cleanLog = AnsiColorRegex.Replace(logLine, "");
+        var activity = PlayerActivityParser.Parse(logLine);
 
-        // 匹配加入
-        var joinMatch = PlayerJoinedRegex.Match(cleanLog);
-        if (joinMatch.Success)
+        // 玩家加入
+        if (activity.Type == PlayerActivityType.Joined)
         {
-            string playerName = joinMatch.Groups["player"].Value.Trim();
-            var rawIp = joinMatch.Groups["ip"].Value.Trim();
-
-            // 排除假人
-            if (FakePlayerFilterRegex.IsMatch(playerName) || FakePlayerFilterRegex.IsMatch(rawIp))
-                return;
-
-            string? playerIp = null;
-            if (!string.IsNullOrEmpty(rawIp))
+            if (context.OnlinePlayers.TryAdd(activity.PlayerName, true))
             {
-                if (rawIp.StartsWith("/")) rawIp = rawIp.TrimStart('/');
-                int colonIdx = rawIp.LastIndexOf(':');
-                if (colonIdx > 0) rawIp = rawIp.Substring(0, colonIdx);
-                playerIp = rawIp;
-            }
-
-            if (context.OnlinePlayers.TryAdd(playerName, true))
-            {
-                _hubContext.Clients.Group(instanceId.ToString()).SendAsync("PlayerJoined", instanceId, playerName);
+                _hubContext.Clients.Group(instanceId.ToString()).SendAsync("PlayerJoined", instanceId, activity.PlayerName);
             }
 
             try
@@ -2262,7 +2158,7 @@ public class MCServerService : IMCServerService
                 var serverInfo = IConfigBase.ServerList.GetServer(instanceId);
                 if (serverInfo != null && !string.IsNullOrEmpty(serverInfo.Base))
                 {
-                    PlayerActivityTracker.RecordLogin(serverInfo.Base, playerName, playerIp);
+                    PlayerActivityTracker.RecordLogin(serverInfo.Base, activity.PlayerName, activity.PlayerIp);
                 }
             }
             catch
@@ -2273,17 +2169,12 @@ public class MCServerService : IMCServerService
             return;
         }
 
-        // 匹配离开
-        var leftMatch = PlayerLeftRegex.Match(cleanLog);
-        if (leftMatch.Success)
+        // 玩家离开
+        if (activity.Type == PlayerActivityType.Left)
         {
-            string playerName = leftMatch.Groups["player"].Value.Trim();
-            if (FakePlayerFilterRegex.IsMatch(playerName))
-                return;
-
-            if (context.OnlinePlayers.TryRemove(playerName, out _))
+            if (context.OnlinePlayers.TryRemove(activity.PlayerName, out _))
             {
-                _hubContext.Clients.Group(instanceId.ToString()).SendAsync("PlayerLeft", instanceId, playerName);
+                _hubContext.Clients.Group(instanceId.ToString()).SendAsync("PlayerLeft", instanceId, activity.PlayerName);
             }
         }
     }
