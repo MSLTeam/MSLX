@@ -1,10 +1,19 @@
+using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Services.InstanceServices;
+using MSLX.Tests.Fakes;
 
 namespace MSLX.Tests;
 
 public class InstanceConsoleServiceTests
 {
-    private readonly InstanceConsoleService _console = new();
+    private readonly FakeHubContext<InstanceConsoleHub> _hub = new();
+    private readonly FakeMSLXEvents _events = new();
+    private readonly InstanceConsoleService _console;
+
+    public InstanceConsoleServiceTests()
+    {
+        _console = new InstanceConsoleService(_hub, _events);
+    }
 
     [Fact]
     public void AppendLog_SingleLine_CanBeReadBack()
@@ -81,4 +90,89 @@ public class InstanceConsoleServiceTests
         Assert.True(logs.Count <= InstanceConsoleService.MaxLogLines);
         Assert.True(logs.Count > 0);
     }
+
+    #region RecordLog（缓冲 + 广播 + 玩家解析编排）
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void RecordLog_NullOrWhitespaceLine_IsIgnored(string? line)
+    {
+        var context = new ServerContext();
+
+        _console.RecordLog(1, context, line);
+
+        Assert.Empty(_console.GetLogs(context));
+        Assert.Empty(_events.PublishedLogs);
+        Assert.Empty(_hub.HubClients.GroupProxy.Sent);
+    }
+
+    [Fact]
+    public void RecordLog_NormalLine_AppendsPublishesAndBroadcasts()
+    {
+        var context = new ServerContext();
+
+        _console.RecordLog(1, context, "[12:00:00] Server started");
+
+        Assert.Equal(new[] { "[12:00:00] Server started" }, _console.GetLogs(context));
+        Assert.Single(_events.PublishedLogs);
+        Assert.Equal("[12:00:00] Server started", _events.PublishedLogs[0].LogLine);
+        Assert.Contains(_hub.HubClients.GroupProxy.Sent,
+            s => s.Method == "ReceiveLog" && (string?)s.Args[0] == "[12:00:00] Server started");
+    }
+
+    [Fact]
+    public void RecordLog_PlayerJoinLine_AddsPlayerAndBroadcasts()
+    {
+        var context = new ServerContext();
+        var line = "[12:00:00] [Server thread/INFO]: Steve[/127.0.0.1:25565] logged in with entity id 1";
+
+        _console.RecordLog(1, context, line);
+
+        Assert.True(context.OnlinePlayers.ContainsKey("Steve"));
+        Assert.Contains(_hub.HubClients.GroupProxy.Sent,
+            s => s.Method == "PlayerJoined" && (string?)s.Args[1] == "Steve");
+    }
+
+    [Fact]
+    public void RecordLog_PlayerLeftLine_RemovesPlayerAndBroadcasts()
+    {
+        var context = new ServerContext();
+        _console.RecordLog(1, context,
+            "[12:00:00] [Server thread/INFO]: Steve[/127.0.0.1:25565] logged in with entity id 1");
+
+        _console.RecordLog(1, context, "[12:05:00] [Server thread/INFO]: Steve lost connection: Disconnected");
+
+        Assert.False(context.OnlinePlayers.ContainsKey("Steve"));
+        Assert.Contains(_hub.HubClients.GroupProxy.Sent,
+            s => s.Method == "PlayerLeft" && (string?)s.Args[1] == "Steve");
+    }
+
+    [Fact]
+    public void RecordLog_FakePlayerJoinLine_DoesNotAddPlayer()
+    {
+        var context = new ServerContext();
+
+        _console.RecordLog(1, context,
+            "[12:00:00] [Server thread/INFO]: LocalBot[/127.0.0.1:25565] logged in with entity id 1");
+
+        Assert.Empty(context.OnlinePlayers);
+        Assert.DoesNotContain(_hub.HubClients.GroupProxy.Sent, s => s.Method == "PlayerJoined");
+    }
+
+    [Fact]
+    public void RecordLog_MonitorPlayersDisabled_SkipsPlayerParsingButStillLogs()
+    {
+        var context = new ServerContext { MonitorPlayers = false };
+
+        _console.RecordLog(1, context,
+            "[12:00:00] [Server thread/INFO]: Steve[/127.0.0.1:25565] logged in with entity id 1");
+
+        Assert.Single(_console.GetLogs(context)); // 日志照常记录
+        Assert.Empty(context.OnlinePlayers);      // 但不解析玩家
+        Assert.DoesNotContain(_hub.HubClients.GroupProxy.Sent, s => s.Method == "PlayerJoined");
+    }
+
+    #endregion
 }
