@@ -2,6 +2,7 @@ using CliWrap;
 using CliWrap.Buffered;
 using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
+using MSLX.Daemon.Services.InstanceServices;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.Events;
@@ -10,7 +11,6 @@ using MSLX.SDK.IServices;
 using MSLX.SDK.Models;
 using Newtonsoft.Json.Linq;
 using Porta.Pty;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Management;
@@ -26,51 +26,12 @@ public class MCServerService : IMCServerService
     private readonly IHostApplicationLifetime _appLifetime;
     private readonly IFrpProcessService _frpService;
     private readonly IMSLXEvents _events;
+    private readonly InstanceStateStore _stateStore;
 
     // 短时间内崩溃重启限制（300 秒内最多崩溃 5 次，超过则熔断放弃自动重启）
     private readonly CrashRestartGuard _crashGuard = new(windowSeconds: 300, maxCount: 5);
 
-    public class ServerContext
-    {
-        public Process? Process { get; set; }
-        public IPtyConnection? PtyConnection { get; set; }
-        public bool IsPtyMode { get; set; } = false;
-        public CancellationTokenSource? PtyReadCts { get; set; }
-        public ConcurrentQueue<string> Logs { get; set; } = new();
-        public ConcurrentQueue<string> PtyHistory { get; set; } = new();
-        public bool IsInitializing { get; set; } = false;
-        public volatile bool IsStopping = false;
-        public volatile bool IsBackuping = false;
-        public volatile bool MonitorPlayers = true;
-        public ConcurrentDictionary<string, bool> OnlinePlayers { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
-        // 用于计算资源使用率
-        public TimeSpan PreviousTotalProcessorTime { get; set; } = TimeSpan.Zero;
-        public DateTime PreviousCpuCheckTime { get; set; } = DateTime.MinValue;
-
-        public Process? MonitorProcess { get; set; } // win下监控的进程
-        public int LastMonitoredPid { get; set; } = -1;
-
-        // 用于子进程脱出的监控
-        public object StateLock = new object();
-        public volatile bool IsProcessExited = false;
-        public volatile bool IsStdoutClosed = false;
-        public volatile bool IsStderrClosed = false;
-        public volatile int FinalExitCode = 0;
-        public volatile bool HasTriggeredExit = false;
-        
-        // Docker监控相关
-        public bool IsDocker { get; set; }
-        public double CpuBaseLimitPercentage { get; set; } = 0;
-
-        // 实例输入输出编码
-        public Encoding InputEncoding { get; set; } = Encoding.UTF8;
-        public Encoding OutputEncoding { get; set; } = Encoding.UTF8;
-    }
-
-    private readonly ConcurrentDictionary<uint, ServerContext> _activeServers = new(); // 存储运行中实例的状态数据
-    private readonly ConcurrentDictionary<uint, bool> _restartingServers = new(); // 存储正在重启的实例ID
-    private readonly ConcurrentDictionary<uint, (int cols, int rows)> _preferredTerminalSizes = new(); // 记录客户端首选终端尺寸
     private const int MaxLogLines = 1000;
 
     public MCServerService(
@@ -78,13 +39,15 @@ public class MCServerService : IMCServerService
         IHubContext<InstanceConsoleHub> hubContext,
         IHostApplicationLifetime appLifetime,
         IFrpProcessService frpService,
-        IMSLXEvents events)
+        IMSLXEvents events,
+        InstanceStateStore stateStore)
     {
         _logger = logger;
         _hubContext = hubContext;
         _appLifetime = appLifetime;
         _frpService = frpService;
         _events = events;
+        _stateStore = stateStore;
 
         _appLifetime.ApplicationStopping.Register(StopAllServers);
         _appLifetime.ApplicationStarted.Register(OnAppStarted);
@@ -100,7 +63,7 @@ public class MCServerService : IMCServerService
     /// </summary>
     public bool IsServerRunning(uint instanceId)
     {
-        if (_activeServers.TryGetValue(instanceId, out var context))
+        if (_stateStore.Get(instanceId) is { } context)
         {
             if (context.IsInitializing) return true;
 
@@ -116,7 +79,7 @@ public class MCServerService : IMCServerService
                 }
             }
 
-            _activeServers.TryRemove(instanceId, out _);
+            _stateStore.Remove(instanceId);
         }
 
         return false;
@@ -128,12 +91,12 @@ public class MCServerService : IMCServerService
     /// </summary>
     public (int status, string description) GetServerStatus(uint instanceId)
     {
-        if (_restartingServers.ContainsKey(instanceId))
+        if (_stateStore.IsRestarting(instanceId))
         {
             return (4, "重启中");
         }
 
-        if (_activeServers.TryGetValue(instanceId, out var context))
+        if (_stateStore.Get(instanceId) is { } context)
         {
             if (context.IsStopping)
             {
@@ -169,7 +132,7 @@ public class MCServerService : IMCServerService
     /// </summary>
     public bool HasRunningServers()
     {
-        return !_activeServers.IsEmpty;
+        return _stateStore.HasAnyActive;
     }
 
 
@@ -178,7 +141,7 @@ public class MCServerService : IMCServerService
     /// </summary>
     public List<string> GetOnlinePlayers(uint instanceId)
     {
-        if (_activeServers.TryGetValue(instanceId, out var context))
+        if (_stateStore.Get(instanceId) is { } context)
         {
             return context.OnlinePlayers.Keys.ToList();
         }
@@ -206,7 +169,7 @@ public class MCServerService : IMCServerService
             return (false, "找不到指定的服务器配置");
 
         var context = new ServerContext { IsInitializing = true };
-        _activeServers[instanceId] = context;
+        _stateStore.Set(instanceId, context);
 
         // 后台任务启动服务器
         _ = Task.Run(async () => await InternalStartServerAsync(instanceId, context, serverInfo, skipEulaCheck, isAutoRestart));
@@ -436,7 +399,7 @@ public class MCServerService : IMCServerService
             {
                 RecordLog(instanceId, context, $">>> [MSLX] 启动已被插件取消: {startingArgs.CancelReason ?? "无"}");
                 _logger.LogInformation($"实例 [{instanceId}] 启动已被插件取消: {startingArgs.CancelReason ?? "无"}");
-                _activeServers.TryRemove(instanceId, out _);
+                _stateStore.Remove(instanceId);
                 return;
             }
 
@@ -444,7 +407,7 @@ public class MCServerService : IMCServerService
             {
                 RecordLog(instanceId, context, $">>> [MSLX] ❌ 启动失败：当前服务端实例已于 {serverInfo.ExpireTime.Value:yyyy-MM-dd HH:mm:ss} 过期。");
                 _logger.LogWarning($"实例 [{instanceId}] 启动失败，原因：已过期。");
-                _activeServers.TryRemove(instanceId, out _);
+                _stateStore.Remove(instanceId);
                 return;
             }
 
@@ -476,7 +439,7 @@ public class MCServerService : IMCServerService
                     RecordLog(instanceId, context,
                         ">>> [MSLX] 检测到 EULA 协议尚未签署，服务器启动已停止，等待用户操作...");
                     _ = _hubContext.Clients.Group(instanceId.ToString()).SendAsync("RequireEULA");
-                    _activeServers.TryRemove(instanceId, out _);
+                    _stateStore.Remove(instanceId);
                     return;
                 }
             }
@@ -531,7 +494,7 @@ public class MCServerService : IMCServerService
                 if (!File.Exists(coreFilePath))
                 {
                     RecordLog(instanceId, context, $">>> [MSLX-MCServer] 核心文件不存在: {coreFilePath}");
-                    _activeServers.TryRemove(instanceId, out _);
+                    _stateStore.Remove(instanceId);
                     return;
                 }
             }
@@ -543,7 +506,7 @@ public class MCServerService : IMCServerService
                     !serverInfo.Java.StartsWith("MSLX://Java/"))
                 {
                     RecordLog(instanceId, context, $">>> [MSLX-MCServer] Java 路径无效: {serverInfo.Java}");
-                    _activeServers.TryRemove(instanceId, out _);
+                    _stateStore.Remove(instanceId);
                     return;
                 }
 
@@ -556,7 +519,7 @@ public class MCServerService : IMCServerService
                     if (!File.Exists(javaPath))
                     {
                         RecordLog(instanceId, context, $">>> [MSLX-MCServer] Java 无效！请尝试重新设置 Java 环境！");
-                        _activeServers.TryRemove(instanceId, out _);
+                        _stateStore.Remove(instanceId);
                         return;
                     }
                 }
@@ -607,7 +570,7 @@ public class MCServerService : IMCServerService
                         RecordLog(instanceId, context, $"[MSLX-Daemon] Docker部署MSLX文档: https://mslx.mslmc.cn/docs/install/docker/ ");
                         RecordLog(instanceId, context, $"[MSLX-Daemon] MSLX运行Docker服务端文档: https://mslx.mslmc.cn/docs/server/docker/");
                         RecordLog(instanceId, context, $"[MSLX-Daemon] (重点查看《MSLX已运行在Docker下，如何再部署Docker服务端实例？》)\n");
-                        _activeServers.TryRemove(instanceId, out _); 
+                        _stateStore.Remove(instanceId); 
                         RecordLog(instanceId, context, $"[MSLX] 服务端启动已取消！");
                         return;
                     }
@@ -974,7 +937,7 @@ public class MCServerService : IMCServerService
 
                     int initCols = 120;
                     int initRows = 30;
-                    if (_preferredTerminalSizes.TryGetValue(instanceId, out var prefSize) && prefSize.cols > 0 && prefSize.rows > 0)
+                    if (_stateStore.TryGetPreferredTerminalSize(instanceId, out var prefSize) && prefSize.cols > 0 && prefSize.rows > 0)
                     {
                         initCols = prefSize.cols;
                         initRows = prefSize.rows;
@@ -1190,14 +1153,14 @@ public class MCServerService : IMCServerService
             else
             {
                 RecordLog(instanceId, context, ">>> [MSLX-MCServer] 进程启动失败！");
-                _activeServers.TryRemove(instanceId, out _);
+                _stateStore.Remove(instanceId);
             }
         }
         catch (Exception ex)
         {
             RecordLog(instanceId, context, $">>> [MSLX-MCServer] 启动流程发生未捕获异常: {ex.Message}");
             _logger.LogError(ex, $"MC 服务器 [{instanceId}] 启动异常");
-            _activeServers.TryRemove(instanceId, out _);
+            _stateStore.Remove(instanceId);
         }
     }
 
@@ -1206,7 +1169,7 @@ public class MCServerService : IMCServerService
     /// </summary>
     public bool StopServer(uint instanceId)
     {
-        if (_activeServers.TryGetValue(instanceId, out var context))
+        if (_stateStore.Get(instanceId) is { } context)
         {
             try
             {
@@ -1413,7 +1376,7 @@ public class MCServerService : IMCServerService
     /// </summary>
     public bool ForceKillServer(uint instanceId)
     {
-        if (_activeServers.TryGetValue(instanceId, out var context))
+        if (_stateStore.Get(instanceId) is { } context)
         {
             try
             {
@@ -1445,7 +1408,7 @@ public class MCServerService : IMCServerService
                     context.Process.WaitForExit(1000);
                 }
 
-                _activeServers.TryRemove(instanceId, out _);
+                _stateStore.Remove(instanceId);
                 return true;
             }
             catch (Exception ex)
@@ -1461,7 +1424,7 @@ public class MCServerService : IMCServerService
     /// </summary>
     public async Task<(bool success, string message)> RestartServer(uint instanceId)
     {
-        _restartingServers.TryAdd(instanceId, true);
+        _stateStore.MarkRestarting(instanceId);
         _logger.LogInformation($"正在准备重启服务端实例: {instanceId}");
 
         try
@@ -1469,7 +1432,7 @@ public class MCServerService : IMCServerService
             // 如果服务器正在运行，先执行停止流程
             if (IsServerRunning(instanceId))
             {
-                if (_activeServers.TryGetValue(instanceId, out var context))
+                if (_stateStore.Get(instanceId) is { } context)
                 {
                     RecordLog(instanceId, context, "[MSLX] 正在执行重启...");
                 }
@@ -1509,7 +1472,7 @@ public class MCServerService : IMCServerService
 
             if (result.success)
             {
-                if (_activeServers.TryGetValue(instanceId, out var newContext))
+                if (_stateStore.Get(instanceId) is { } newContext)
                 {
                     RecordLog(instanceId, newContext, "[MSLX] 正在重新启动实例...");
                 }
@@ -1524,7 +1487,7 @@ public class MCServerService : IMCServerService
         }
         finally
         {
-            _restartingServers.TryRemove(instanceId, out _);
+            _stateStore.ClearRestarting(instanceId);
         }
     }
 
@@ -1533,7 +1496,7 @@ public class MCServerService : IMCServerService
     /// </summary>
     public bool SendCommand(uint instanceId, string command, bool repeatCommandToLog = false)
     {
-        if (_activeServers.TryGetValue(instanceId, out var context))
+        if (_stateStore.Get(instanceId) is { } context)
         {
             var cmdArgs = new ServerCommandExecutingEventArgs
             {
@@ -1704,7 +1667,7 @@ public class MCServerService : IMCServerService
     /// </summary>
     public bool SendPtyInput(uint instanceId, string data)
     {
-        if (_activeServers.TryGetValue(instanceId, out var context))
+        if (_stateStore.Get(instanceId) is { } context)
         {
             byte[] bytes = Encoding.UTF8.GetBytes(data);
             return SendPtyInput(instanceId, bytes);
@@ -1717,7 +1680,7 @@ public class MCServerService : IMCServerService
     /// </summary>
     public bool SendPtyInput(uint instanceId, byte[] data)
     {
-        if (_activeServers.TryGetValue(instanceId, out var context))
+        if (_stateStore.Get(instanceId) is { } context)
         {
             if (context.IsPtyMode && context.PtyConnection != null)
             {
@@ -1762,10 +1725,10 @@ public class MCServerService : IMCServerService
     {
         if (cols > 0 && rows > 0)
         {
-            _preferredTerminalSizes[instanceId] = (cols, rows);
+            _stateStore.SetPreferredTerminalSize(instanceId, cols, rows);
         }
 
-        if (_activeServers.TryGetValue(instanceId, out var context))
+        if (_stateStore.Get(instanceId) is { } context)
         {
             if (context.IsPtyMode && context.PtyConnection != null)
             {
@@ -1789,7 +1752,7 @@ public class MCServerService : IMCServerService
     /// </summary>
     public bool IsServerPtyMode(uint instanceId)
     {
-        if (_activeServers.TryGetValue(instanceId, out var context))
+        if (_stateStore.Get(instanceId) is { } context)
         {
             return context.IsPtyMode && context.PtyConnection != null;
         }
@@ -1804,7 +1767,7 @@ public class MCServerService : IMCServerService
     /// </summary>
     public List<string> GetLogs(uint instanceId)
     {
-        if (_activeServers.TryGetValue(instanceId, out var context))
+        if (_stateStore.Get(instanceId) is { } context)
         {
             return context.Logs.ToList();
         }
@@ -1817,7 +1780,7 @@ public class MCServerService : IMCServerService
     /// </summary>
     public List<string> GetPtyHistory(uint instanceId)
     {
-        if (_activeServers.TryGetValue(instanceId, out var context))
+        if (_stateStore.Get(instanceId) is { } context)
         {
             return context.PtyHistory.ToList();
         }
@@ -1830,11 +1793,11 @@ public class MCServerService : IMCServerService
     /// </summary>
     public void StopAllServers()
     {
-        if (_activeServers.IsEmpty) return;
+        if (!_stateStore.HasAnyActive) return;
 
         _logger.LogInformation("正在停止所有 MC 服务器...");
 
-        foreach (var kvp in _activeServers)
+        foreach (var kvp in _stateStore.ActiveEntries)
         {
             try
             {
@@ -1858,7 +1821,7 @@ public class MCServerService : IMCServerService
             }
         }
 
-        _activeServers.Clear();
+        _stateStore.ClearAll();
     }
 
     // 启动的生命周期事件
@@ -1922,7 +1885,7 @@ public class MCServerService : IMCServerService
     // 监听服务器退出 执行崩溃重启等内容
     private void HandleServerExit(uint instanceId, ServerContext context, int exitCode)
     {
-        _activeServers.TryRemove(instanceId, out _);
+        _stateStore.Remove(instanceId);
 
         try
         {
@@ -2027,14 +1990,14 @@ public class MCServerService : IMCServerService
                     RecordLog(instanceId, context,
                         $">>> [MSLX] 检测到异常退出，正在准备第 {attempts} 次尝试重启 (阈值: {_crashGuard.MaxCount}次/5分钟)...");
 
-                    _restartingServers.TryAdd(instanceId, true); // 标记重启中
+                    _stateStore.MarkRestarting(instanceId); // 标记重启中
 
                     _ = Task.Run(async () =>
                     {
                         // 等5秒是好习惯
                         await Task.Delay(5000);
 
-                        _restartingServers.TryRemove(instanceId, out _); // 移除重启标记
+                        _stateStore.ClearRestarting(instanceId); // 移除重启标记
 
                         // 重新启动
                         var (success, msg) = StartServer(instanceId, true);
@@ -2093,7 +2056,7 @@ public class MCServerService : IMCServerService
     /// </summary>
     public TimeSpan GetServerUptime(uint instanceId)
     {
-        if (_activeServers.TryGetValue(instanceId, out var context))
+        if (_stateStore.Get(instanceId) is { } context)
         {
             if (context.Process != null && !context.IsInitializing && !context.Process.HasExited)
             {
@@ -2297,7 +2260,7 @@ public class MCServerService : IMCServerService
     // —————— 备份相关 ——————
     public bool StartBackupServer(uint instanceId)
     {
-        if (_activeServers.TryGetValue(instanceId, out var context))
+        if (_stateStore.Get(instanceId) is { } context)
         {
             _ = Task.Run(async () => await BackupServer(instanceId, context));
             return true;
@@ -2741,11 +2704,11 @@ public class MCServerService : IMCServerService
 
         while (await timer.WaitForNextTickAsync(_appLifetime.ApplicationStopping))
         {
-            if (_activeServers.IsEmpty) continue;
+            if (!_stateStore.HasAnyActive) continue;
 
             // 批量查询Docker容器状态
             var dockerInstanceIds = new List<uint>();
-            foreach (var kvp in _activeServers)
+            foreach (var kvp in _stateStore.ActiveEntries)
             {
                 if (kvp.Value.IsDocker && !kvp.Value.IsInitializing)
                 {
@@ -2760,7 +2723,7 @@ public class MCServerService : IMCServerService
             }
 
             // 遍历推送
-            foreach (var kvp in _activeServers)
+            foreach (var kvp in _stateStore.ActiveEntries)
             {
                 var instanceId = kvp.Key;
                 var context = kvp.Value;
@@ -2933,7 +2896,7 @@ public class MCServerService : IMCServerService
 
                 // 优先从内存 ServerContext 获取预计算好的 CPU 基准
                 double baseLimitPercentage = 0;
-                if (_activeServers.TryGetValue(instanceId, out var context))
+                if (_stateStore.Get(instanceId) is { } context)
                 {
                     baseLimitPercentage = context.CpuBaseLimitPercentage;
                 }

@@ -8,6 +8,7 @@ using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Middleware;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Services.DeployServerService;
+using MSLX.Daemon.Services.InstanceServices;
 using MSLX.Daemon.Services.PluginsService;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.BackgroundTasks;
@@ -212,6 +213,7 @@ builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationM
 // 注册单例服务
 builder.Services.AddSingleton<IFrpProcessService, FrpProcessService>();
 builder.Services.AddSingleton(typeof(IBackgroundTaskQueue<>), typeof(BackgroundTaskQueue<>));
+builder.Services.AddSingleton<InstanceStateStore>();
 builder.Services.AddSingleton<IMCServerService,MCServerService>();
 builder.Services.AddSingleton<IDockerService,DockerService>();
 builder.Services.AddSingleton<SystemMonitor>();
