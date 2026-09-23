@@ -18,20 +18,23 @@ public class InstanceBackupService : IInstanceBackupService
     private readonly IMSLXEvents _events;
     private readonly InstanceStateStore _stateStore;
     private readonly InstanceConsoleService _console;
-    private readonly IMCServerService _mcServer;
+    private readonly IInstanceLifecycleService _lifecycle;
+    private readonly IInstanceConsoleService _consoleService;
 
     public InstanceBackupService(
         ILogger<InstanceBackupService> logger,
         IMSLXEvents events,
         InstanceStateStore stateStore,
         InstanceConsoleService console,
-        IMCServerService mcServer)
+        IInstanceLifecycleService lifecycle,
+        IInstanceConsoleService consoleService)
     {
         _logger = logger;
         _events = events;
         _stateStore = stateStore;
         _console = console;
-        _mcServer = mcServer;
+        _lifecycle = lifecycle;
+        _consoleService = consoleService;
     }
 
 
@@ -59,7 +62,7 @@ public class InstanceBackupService : IInstanceBackupService
         DateTime backupStartTime = DateTime.Now;
         McServerInfo.ServerInfo? server = null;
 
-        var mc = _mcServer;
+        
         try
         {
             context.IsBackuping = true;
@@ -103,19 +106,19 @@ public class InstanceBackupService : IInstanceBackupService
                 isBedrock = true;
             }
 
-            if (mc.IsServerRunning(instanceId))
+            if (_lifecycle.IsServerRunning(instanceId))
             {
                 if (isBedrock)
                 {
-                    mc.SendCommand(instanceId, "save hold");
+                    _consoleService.SendCommand(instanceId, "save hold");
                     if (PlatFormServices.GetOs() == "Windows") // Windows下目前输入中文会乱码 暂时这么解决叭
                     {
-                        mc.SendCommand(instanceId,
+                        _consoleService.SendCommand(instanceId,
                             "tellraw @a {\"rawtext\":[{\"text\":\"[MSLX] Backup in progress ~\"}]}");
                     }
                     else
                     {
-                        mc.SendCommand(instanceId,
+                        _consoleService.SendCommand(instanceId,
                             "tellraw @a {\"rawtext\":[{\"text\":\"§e[§aMSLX§e] §b正在进行服务器存档备份，请勿关闭服务器哦，否则可能造成回档！备份期间不会影响正常游戏~\"}]}");
                     }
 
@@ -124,10 +127,10 @@ public class InstanceBackupService : IInstanceBackupService
                 }
                 else
                 {
-                    mc.SendCommand(instanceId, "save-off");
+                    _consoleService.SendCommand(instanceId, "save-off");
                     await Task.Delay(1000);
-                    mc.SendCommand(instanceId, "save-all");
-                    mc.SendCommand(instanceId,
+                    _consoleService.SendCommand(instanceId, "save-all");
+                    _consoleService.SendCommand(instanceId,
                         "tellraw @a [{\"text\":\"[\",\"color\":\"yellow\"},{\"text\":\"MSLX\",\"color\":\"green\"},{\"text\":\"]\",\"color\":\"yellow\"},{\"text\":\"正在进行服务器存档备份，请勿关闭服务器哦，否则可能造成回档！备份期间不会影响正常游戏~\",\"color\":\"aqua\"}]");
                     _console.RecordLog(instanceId, context, "[MSLX-Backup] 正在备份服务器存档...");
 
@@ -179,26 +182,26 @@ public class InstanceBackupService : IInstanceBackupService
                     Timestamp = DateTime.Now
                 });
 
-                if (mc.IsServerRunning(instanceId))
+                if (_lifecycle.IsServerRunning(instanceId))
                 {
                     if (isBedrock)
                     {
-                        mc.SendCommand(instanceId, "save resume");
+                        _consoleService.SendCommand(instanceId, "save resume");
                         if (PlatFormServices.GetOs() == "Windows")
                         {
-                            mc.SendCommand(instanceId,
+                            _consoleService.SendCommand(instanceId,
                                 "tellraw @a {\"rawtext\":[{\"text\":\"[MSLX] Backup failed !\"}]}");
                         }
                         else
                         {
-                            mc.SendCommand(instanceId,
+                            _consoleService.SendCommand(instanceId,
                                 "tellraw @a {\"rawtext\":[{\"text\":\"§e[§aMSLX§e] §c备份失败！未找到任何世界存档文件夹！\"}]}");
                         }
                     }
                     else
                     {
-                        mc.SendCommand(instanceId, "save-on");
-                        mc.SendCommand(instanceId,
+                        _consoleService.SendCommand(instanceId, "save-on");
+                        _consoleService.SendCommand(instanceId,
                             "tellraw @a [{\"text\":\"[\",\"color\":\"yellow\"},{\"text\":\"MSLX\",\"color\":\"green\"},{\"text\":\"]\",\"color\":\"yellow\"},{\"text\":\"备份失败！未找到任何世界存档文件夹！\",\"color\":\"red\"}]");
                     }
                 }
@@ -272,7 +275,7 @@ public class InstanceBackupService : IInstanceBackupService
             }
 
             // 输出备份信息
-            if (mc.IsServerRunning(instanceId))
+            if (_lifecycle.IsServerRunning(instanceId))
             {
                 try
                 {
@@ -304,7 +307,7 @@ public class InstanceBackupService : IInstanceBackupService
                         tellrawMessage =
                             $"tellraw @a {{\"rawtext\":[{{\"text\":\"§e[§aMSLX§e]§b 服务器存档备份完成！\\n§7文件名: §f{fileName}\\n§7大小: §f{formattedSize}\"}}]}}";
 
-                        mc.SendCommand(instanceId, "save resume");
+                        _consoleService.SendCommand(instanceId, "save resume");
                     }
                     else
                     {
@@ -319,17 +322,17 @@ public class InstanceBackupService : IInstanceBackupService
                         tellrawMessage += $"{{\"text\":\"{formattedSize}\",\"color\":\"white\"}}";
                         tellrawMessage += "]";
 
-                        mc.SendCommand(instanceId, "save-on");
+                        _consoleService.SendCommand(instanceId, "save-on");
                     }
 
                     if (PlatFormServices.GetOs() == "Windows" && isBedrock)
                     {
-                        mc.SendCommand(instanceId,
+                        _consoleService.SendCommand(instanceId,
                             "tellraw @a {\"rawtext\":[{\"text\":\"[MSLX] Backup finished !\"}]}");
                     }
                     else
                     {
-                        mc.SendCommand(instanceId, tellrawMessage);
+                        _consoleService.SendCommand(instanceId, tellrawMessage);
                     }
                 }
                 catch (Exception ex)
@@ -340,22 +343,22 @@ public class InstanceBackupService : IInstanceBackupService
                     // 异常
                     if (isBedrock)
                     {
-                        mc.SendCommand(instanceId, "save resume");
+                        _consoleService.SendCommand(instanceId, "save resume");
                         if (PlatFormServices.GetOs() == "Windows")
                         {
-                            mc.SendCommand(instanceId,
+                            _consoleService.SendCommand(instanceId,
                                 "tellraw @a {\"rawtext\":[{\"text\":\"[MSLX] Backup finished !\"}]}");
                         }
                         else
                         {
-                            mc.SendCommand(instanceId,
+                            _consoleService.SendCommand(instanceId,
                                 "tellraw @a {\"rawtext\":[{\"text\":\"§e[§aMSLX§e] §b服务器存档备份完成！\"}]}");
                         }
                     }
                     else
                     {
-                        mc.SendCommand(instanceId, "save-on");
-                        mc.SendCommand(instanceId,
+                        _consoleService.SendCommand(instanceId, "save-on");
+                        _consoleService.SendCommand(instanceId,
                             "tellraw @a [{\"text\":\"[\",\"color\":\"yellow\"},{\"text\":\"MSLX\",\"color\":\"green\"},{\"text\":\"]\",\"color\":\"yellow\"},{\"text\":\"服务器存档备份完成！\",\"color\":\"aqua\"}]");
                     }
                 }
@@ -409,15 +412,15 @@ public class InstanceBackupService : IInstanceBackupService
         {
             context.IsBackuping = false;
             // 兜底：无论备份成功或失败，都确保服务端恢复自动保存（save-on / save resume）
-            if (mc.IsServerRunning(instanceId))
+            if (_lifecycle.IsServerRunning(instanceId))
             {
                 if (isBedrock)
                 {
-                    mc.SendCommand(instanceId, "save resume");
+                    _consoleService.SendCommand(instanceId, "save resume");
                 }
                 else
                 {
-                    mc.SendCommand(instanceId, "save-on");
+                    _consoleService.SendCommand(instanceId, "save-on");
                 }
             }
         }

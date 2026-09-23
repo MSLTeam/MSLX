@@ -37,7 +37,7 @@ public class InstanceBackupFlowTests : IDisposable
             events,
             new InstanceStateStore(),
             console,
-            mc);
+            mc, mc);
         return (svc, mc, events, console);
     }
 

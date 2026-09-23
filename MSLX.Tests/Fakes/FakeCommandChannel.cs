@@ -3,7 +3,7 @@ using MSLX.SDK.IServices;
 namespace MSLX.Tests.Fakes;
 
 /// <summary>记录全部命令发送、可控制运行状态的假命令通道</summary>
-public class FakeCommandChannel : IMCServerService
+public class FakeCommandChannel : IInstanceLifecycleService, IInstanceConsoleService
 {
     public bool Running { get; set; } = true;
 
