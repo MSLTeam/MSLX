@@ -1,4 +1,4 @@
-﻿using Downloader;
+using Downloader;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Utils;
@@ -7,12 +7,23 @@ using Newtonsoft.Json.Linq;
 using System.Net;
 using MSLX.SDK.Models;
 
+using Microsoft.Extensions.Caching.Memory;
+
 namespace MSLX.Daemon.Controllers.AuthControllers;
 
 [ApiController]
 [Route("api/auth/oauth")]
 public class OAuthController : ControllerBase
 {
+    private readonly IMemoryCache _cache;
+    private const int MaxErrorLimit = 10;                
+    private readonly TimeSpan ErrorCountWindow = TimeSpan.FromMinutes(5);
+    private readonly TimeSpan BanDuration = TimeSpan.FromMinutes(60);
+
+    public OAuthController(IMemoryCache cache)
+    {
+        _cache = cache;
+    }
     public class OAuthCodeRequest
     {
         public string Code { get; set; }
@@ -89,6 +100,22 @@ public class OAuthController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] OAuthCodeRequest request)
     {
+        var remoteIp = HttpContext.Connection.RemoteIpAddress;
+        var clientIp = remoteIp?.ToString() ?? "127.0.0.1";
+        bool isLocalIp = remoteIp != null && IPAddress.IsLoopback(remoteIp);
+
+        string banKey = $"BAN_{clientIp}";
+        string countKey = $"ERR_COUNT_{clientIp}";
+
+        if (!isLocalIp && _cache.TryGetValue(banKey, out _))
+        {
+            return StatusCode(403, new ApiResponse<object>
+            {
+                Code = 403,
+                Message = $"您的 IP 已被暂时封禁，请于 {BanDuration.TotalMinutes} 分钟后再试。"
+            });
+        }
+
         try
         {
             uint uid = await GetOpenIDAsync(request.Code);
@@ -97,6 +124,16 @@ public class OAuthController : ControllerBase
             {
                 throw new Exception("此MSL账户未绑定任何此MSLX实例的任何账户");
             }
+
+            if (!isLocalIp) _cache.Remove(countKey);
+
+            // 成功登录后删除初始密码文件，防止凭据泄露
+            var defaultCredPath = Path.Combine(IConfigBase.GetAppDataPath(), "默认账户信息.txt");
+            if (System.IO.File.Exists(defaultCredPath))
+            {
+                try { System.IO.File.Delete(defaultCredPath); } catch { }
+            }
+
             IConfigBase.UserList.UpdateLastLoginTime(user.Username);
             string token = JwtUtils.GenerateToken(user);
 
@@ -121,12 +158,31 @@ public class OAuthController : ControllerBase
                 Data = resultData
             });
         }
-        catch (Exception e)
+        catch (Exception)
         {
-            return BadRequest(new ApiResponse<object>
+            if (!isLocalIp)
             {
-                Code = 400,
-                Message = e.Message,
+                _cache.TryGetValue(countKey, out int currentCount);
+                currentCount++;
+
+                if (currentCount >= MaxErrorLimit)
+                {
+                    _cache.Set(banKey, true, BanDuration);
+                    _cache.Remove(countKey);
+                    
+                    return StatusCode(403, new ApiResponse<object>
+                    {
+                        Code = 403,
+                        Message = $"错误次数过多，您的 IP 已被封禁 {BanDuration.TotalMinutes} 分钟。"
+                    });
+                }
+                _cache.Set(countKey, currentCount, ErrorCountWindow);
+            }
+
+            return StatusCode(401, new ApiResponse<object>
+            {
+                Code = 401,
+                Message = "OAuth 验证或登录失败",
             });
         }
     }

@@ -106,8 +106,23 @@ public class AdminUserController : ControllerBase
 
         if (request.Name != null) user.Name = request.Name;
         if (request.Avatar != null) user.Avatar = request.Avatar;
+        
         if (request.Role != null && request.Role != user.Role)
         {
+            if (request.Role != "admin" && request.Role != "user")
+            {
+                return BadRequest(new ApiResponse<object> { Code = 400, Message = "无效的角色" });
+            }
+
+            if (user.Role == "admin" && request.Role == "user")
+            {
+                var adminCount = IConfigBase.UserList.GetAllUsers().Count(u => u.Role == "admin");
+                if (adminCount <= 1)
+                {
+                    return BadRequest(new ApiResponse<object> { Code = 400, Message = "系统必须至少保留一名管理员" });
+                }
+            }
+
             user.Role = request.Role;
             requireTokenVersionBump = true;
         }
@@ -173,6 +188,16 @@ public class AdminUserController : ControllerBase
         if (currentUserId == id)
         {
             return BadRequest(new ApiResponse<object> { Code = 400, Message = "不能删除自己" });
+        }
+
+        var targetUser = IConfigBase.UserList.GetUserById(id);
+        if (targetUser != null && targetUser.Role == "admin")
+        {
+            var adminCount = IConfigBase.UserList.GetAllUsers().Count(u => u.Role == "admin");
+            if (adminCount <= 1)
+            {
+                return BadRequest(new ApiResponse<object> { Code = 400, Message = "不能删除系统最后一名管理员" });
+            }
         }
 
         if (IConfigBase.UserList.DeleteUser(id))

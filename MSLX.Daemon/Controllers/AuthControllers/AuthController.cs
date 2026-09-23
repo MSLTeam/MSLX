@@ -131,7 +131,7 @@ public class AuthController : ControllerBase
         // 拦截
         if (!isLocalIp && _cache.TryGetValue(banKey, out _))
         {
-            return Ok(new ApiResponse<object>
+            return StatusCode(403, new ApiResponse<object>
             {
                 Code = 403, 
                 Message = $"您的 IP 已被暂时封禁，请于 {BanDuration.TotalMinutes} 分钟后再试。"
@@ -152,7 +152,14 @@ public class AuthController : ControllerBase
 
             if (user == null)
             {
-                return Ok(new ApiResponse<object> { Code = 500, Message = "获取用户信息失败" });
+                return StatusCode(500, new ApiResponse<object> { Code = 500, Message = "获取用户信息失败" });
+            }
+
+            // 成功登录后删除初始密码文件，防止凭据泄露
+            var defaultCredPath = Path.Combine(IConfigBase.GetAppDataPath(), "默认账户信息.txt");
+            if (System.IO.File.Exists(defaultCredPath))
+            {
+                try { System.IO.File.Delete(defaultCredPath); } catch { }
             }
 
             string token = JwtUtils.GenerateToken(user);
@@ -191,7 +198,7 @@ public class AuthController : ControllerBase
                 _cache.Set(banKey, true, BanDuration);
                 _cache.Remove(countKey);
                 
-                return Ok(new ApiResponse<object>
+                return StatusCode(403, new ApiResponse<object>
                 {
                     Code = 403,
                     Message = $"密码错误次数过多，您的 IP 已被封禁 {BanDuration.TotalMinutes} 分钟。"
@@ -200,7 +207,7 @@ public class AuthController : ControllerBase
             _cache.Set(countKey, currentCount, ErrorCountWindow); // 还没到封禁次数 仅累加
         }
         
-        return Ok(new ApiResponse<object>
+        return StatusCode(401, new ApiResponse<object>
         {
             Code = 401,
             Message = "用户名或密码错误"
