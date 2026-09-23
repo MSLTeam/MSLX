@@ -145,7 +145,8 @@ jobs:
             -p:PublishSingleFile=true \
             -p:DebugType=None \
             -p:DebugSymbols=false \
-            -o "$PUBLISH_DIR"
+            -o "$PUBLISH_DIR" \
+            -p:IncludeNativeLibrariesForSelfExtract=true
 
           if [[ "${{ matrix.os }}" == "osx" && "${{ github.event_name }}" != "pull_request" ]]; then
             security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"

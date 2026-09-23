@@ -154,7 +154,8 @@ jobs:
             -p:DebugType=None \
             -p:DebugSymbols=false \
             -p:CopyContentFiles=false \
-            -o "$PUBLISH_DIR"
+            -o "$PUBLISH_DIR" \
+            -p:IncludeNativeLibrariesForSelfExtract=true
 
           BASE_NAME="MSLX-Daemon_${{ env.VERSION_NAME }}_${{ matrix.rid }}"
 
