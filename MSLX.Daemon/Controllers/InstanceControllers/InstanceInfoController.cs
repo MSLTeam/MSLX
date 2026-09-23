@@ -12,11 +12,11 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
 [ApiController]
 public class InstanceInfoController : ControllerBase
 {
-    private readonly IMCServerService _mcServerService;
+    private readonly IInstanceLifecycleService _lifecycleService;
     ILogger<InstanceInfoController> _logger;
-    public InstanceInfoController(IMCServerService mcServerService, ILogger<InstanceInfoController> logger)
+    public InstanceInfoController(IInstanceLifecycleService lifecycleService, ILogger<InstanceInfoController> logger)
     {
-        _mcServerService = mcServerService;
+        _lifecycleService = lifecycleService;
         _logger = logger;
     }
     
@@ -55,7 +55,7 @@ public class InstanceInfoController : ControllerBase
             .Select(item => 
             {
                 uint id = item["ID"]?.Value<uint>() ?? 0;
-                var (serverStatus, serverStatusText) = _mcServerService.GetServerStatus(id);
+                var (serverStatus, serverStatusText) = _lifecycleService.GetServerStatus(id);
                 string icon = "default";
 
                 if ((item["Core"]?.Value<string>() ?? "").Contains("neoforge"))
@@ -96,7 +96,7 @@ public class InstanceInfoController : ControllerBase
                     expireTime = item["ExpireTime"]?.Value<DateTime?>()?.ToString("yyyy-MM-dd HH:mm:ss"),
                     extra = new
                     {
-                        onlinePlayers = _mcServerService.GetOnlinePlayers(id).Count,
+                        onlinePlayers = _lifecycleService.GetOnlinePlayers(id).Count,
                     }
                 };
             })
@@ -120,7 +120,7 @@ public class InstanceInfoController : ControllerBase
         {
             McServerInfo.ServerInfo server =
                 IConfigBase.ServerList.GetServer(id) ?? throw new Exception("找不到指定的服务器");
-            var (serverStatus, serverStatusText) = _mcServerService.GetServerStatus(id);
+            var (serverStatus, serverStatusText) = _lifecycleService.GetServerStatus(id);
             var mcConfig = BuildMcConfig(server);
 
             return Ok(new ApiResponse<object>
@@ -140,9 +140,9 @@ public class InstanceInfoController : ControllerBase
                     enablePty = server.EnablePty,
                     status = serverStatus,
                     statusText = serverStatusText,
-                    uptime = _mcServerService.GetServerUptime(id),
+                    uptime = _lifecycleService.GetServerUptime(id),
                     monitorPlayers = server.MonitorPlayers,
-                    onlinePlayers = _mcServerService.GetOnlinePlayers(id).Count,
+                    onlinePlayers = _lifecycleService.GetOnlinePlayers(id).Count,
                     mcConfig
                 }
             });

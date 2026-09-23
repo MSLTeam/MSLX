@@ -10,17 +10,23 @@ namespace MSLX.Daemon.Services
     public class TaskSchedulerService : BackgroundService
     {
         private readonly ILogger<TaskSchedulerService> _logger;
-        private readonly IMCServerService _mcService;
+        private readonly IInstanceLifecycleService _lifecycleService;
+        private readonly IInstanceConsoleService _consoleService;
+        private readonly IInstanceBackupService _backupService;
         private readonly IMSLXEvents _events;
         private DateTime _lastCheckDateUtc = DateTime.MinValue.Date;
 
         public TaskSchedulerService(
             ILogger<TaskSchedulerService> logger,
-            IMCServerService mcService,
+            IInstanceLifecycleService lifecycleService,
+            IInstanceConsoleService consoleService,
+            IInstanceBackupService backupService,
             IMSLXEvents events)
         {
             _logger = logger;
-            _mcService = mcService;
+            _lifecycleService = lifecycleService;
+            _consoleService = consoleService;
+            _backupService = backupService;
             _events = events;
         }
 
@@ -88,11 +94,11 @@ namespace MSLX.Daemon.Services
 
                         if (server.ExpireTime.HasValue && server.ExpireTime.Value <= nowUtc)
                         {
-                            if (_mcService.IsServerRunning(instanceId))
+                            if (_lifecycleService.IsServerRunning(instanceId))
                             {
                                 _logger.LogWarning($"[MSLX-Guard] 检测到运行中的实例 [{server.Name} (ID: {instanceId})] 已过期，正在执行下线...");
-                                _mcService.SendCommand(instanceId, "say [MSLX] 该服务器租约已到期，系统即将关闭此实例。");
-                                _mcService.StopServer(instanceId);
+                                _consoleService.SendCommand(instanceId, "say [MSLX] 该服务器租约已到期，系统即将关闭此实例。");
+                                _lifecycleService.StopServer(instanceId);
                             }
                         }
                     }
@@ -157,15 +163,15 @@ namespace MSLX.Daemon.Services
                 switch (task.Type.ToLower())
                 {
                     case "command":
-                        _mcService.SendCommand(task.InstanceId, task.Payload);
+                        _consoleService.SendCommand(task.InstanceId, task.Payload);
                         break;
 
                     case "start":
-                        _mcService.StartServer(task.InstanceId);
+                        _lifecycleService.StartServer(task.InstanceId);
                         break;
 
                     case "stop":
-                        _mcService.StopServer(task.InstanceId);
+                        _lifecycleService.StopServer(task.InstanceId);
                         break;
 
                     case "restart":
@@ -173,11 +179,11 @@ namespace MSLX.Daemon.Services
                         break;
                     
                     case "backup":
-                        _mcService.StartBackupServer(task.InstanceId);
+                        _backupService.StartBackupServer(task.InstanceId);
                         break;
                     
                     case "shell":
-                        if (!task.RunWhenOffline && !_mcService.IsServerRunning(task.InstanceId))
+                        if (!task.RunWhenOffline && !_lifecycleService.IsServerRunning(task.InstanceId))
                         {
                             _logger.LogInformation($"任务 [{task.Name}] 取消执行：实例 {task.InstanceId} 处于离线状态，且配置为未运行时不执行。");
                             break;
@@ -241,26 +247,26 @@ namespace MSLX.Daemon.Services
         private async Task HandleRestartAsync(uint instanceId, string payload)
         {
             // 如果服务器没开，直接开
-            if (!_mcService.IsServerRunning(instanceId))
+            if (!_lifecycleService.IsServerRunning(instanceId))
             {
-                _mcService.StartServer(instanceId);
+                _lifecycleService.StartServer(instanceId);
                 return;
             }
 
             // 发送倒计时/提示信息
             if (!string.IsNullOrWhiteSpace(payload))
             {
-                _mcService.SendCommand(instanceId, $"say [计划任务] {payload}");
+                _consoleService.SendCommand(instanceId, $"say [计划任务] {payload}");
             }
-            _mcService.SendCommand(instanceId, "say 服务器即将执行计划重启...");
+            _consoleService.SendCommand(instanceId, "say 服务器即将执行计划重启...");
 
             // 执行停止
-            bool stopped = _mcService.StopServer(instanceId);
+            bool stopped = _lifecycleService.StopServer(instanceId);
             if (!stopped) return;
 
             // 等待进程完全退出
             int retry = 0;
-            while (_mcService.IsServerRunning(instanceId) && retry < 30)
+            while (_lifecycleService.IsServerRunning(instanceId) && retry < 30)
             {
                 await Task.Delay(1000);
                 retry++;
@@ -270,7 +276,7 @@ namespace MSLX.Daemon.Services
             await Task.Delay(2000);
 
             // 启动
-            _mcService.StartServer(instanceId);
+            _lifecycleService.StartServer(instanceId);
             _logger.LogInformation($"任务触发的重启已完成: Instance {instanceId}");
         }
     }

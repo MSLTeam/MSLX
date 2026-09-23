@@ -12,11 +12,15 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
 [ApiController]
 public class InstanceController : ControllerBase
 {
-    private readonly IMCServerService _mcServerService;
+    private readonly IInstanceLifecycleService _lifecycleService;
+    private readonly IInstanceConsoleService _consoleService;
+    private readonly IInstanceBackupService _backupService;
 
-    public InstanceController(IMCServerService mcServerService)
+    public InstanceController(IInstanceLifecycleService lifecycleService, IInstanceConsoleService consoleService, IInstanceBackupService backupService)
     {
-        _mcServerService = mcServerService;
+        _lifecycleService = lifecycleService;
+        _consoleService = consoleService;
+        _backupService = backupService;
     }
 
     [HttpPost("action")]
@@ -36,34 +40,34 @@ public class InstanceController : ControllerBase
         switch (requestAction)
         {
             case "start":
-                var (result, msg) = _mcServerService.StartServer(request.ID!.Value);
+                var (result, msg) = _lifecycleService.StartServer(request.ID!.Value);
 
                 return result
                     ? Ok(ApiResponseService.Success(msg))
                     : Ok(ApiResponseService.Error("服务器开启失败：" + msg));
             case "stop":
-                bool suc = _mcServerService.StopServer(request.ID!.Value);
+                bool suc = _lifecycleService.StopServer(request.ID!.Value);
                 return suc
                     ? Ok(ApiResponseService.Success("已发送停止服务器指令"))
                     : Ok(ApiResponseService.Error("服务器停止失败"));
             case "restart":
-                var (restartSuccess, restartMsg) = await _mcServerService.RestartServer(request.ID!.Value);
+                var (restartSuccess, restartMsg) = await _lifecycleService.RestartServer(request.ID!.Value);
                 return restartSuccess
                     ? Ok(ApiResponseService.Success(restartMsg))
                     : Ok(ApiResponseService.Error("服务器重启失败：" + restartMsg));
             case "forceExit":
-                bool sucFE = _mcServerService.ForceKillServer(request.ID!.Value);
+                bool sucFE = _lifecycleService.ForceKillServer(request.ID!.Value);
                 return sucFE
                     ? Ok(ApiResponseService.Success("已发送强制结束进程指令"))
                     : Ok(ApiResponseService.Error("实例强制结束失败"));
             case "agreeEula":
                 bool isAgree = bool.Parse(requestQuery);
-                bool ageula = await _mcServerService.AgreeEULA(request.ID!.Value, isAgree);
+                bool ageula = await _lifecycleService.AgreeEULA(request.ID!.Value, isAgree);
                 return ageula
                     ? Ok(ApiResponseService.Success("执行成功"))
                     : Ok(ApiResponseService.Error("执行失败"));
             case "backup":
-                bool backup = _mcServerService.StartBackupServer(request.ID!.Value);
+                bool backup = _backupService.StartBackupServer(request.ID!.Value);
                 return backup
                     ? Ok(ApiResponseService.Success("已开始备份···"))
                     : Ok(ApiResponseService.Error("服务器可能不在运行，启动备份失败！"));

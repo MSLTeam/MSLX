@@ -17,18 +17,18 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
 public class CreateInstanceController : ControllerBase
 {
     private readonly IBackgroundTaskQueue<CreateServerTask> _taskQueue;
-    private readonly IMCServerService _mcServerService;
+    private readonly IInstanceLifecycleService _lifecycleService;
     private readonly CreationTaskTracker _taskTracker;
     private readonly BackgroundTaskManager _taskManager;
 
     public CreateInstanceController(
         IBackgroundTaskQueue<CreateServerTask> taskQueue, 
-        IMCServerService mcServerService, 
+        IInstanceLifecycleService lifecycleService, 
         CreationTaskTracker taskTracker,
         BackgroundTaskManager taskManager)
     {
         _taskQueue = taskQueue;
-        _mcServerService = mcServerService;
+        _lifecycleService = lifecycleService;
         _taskTracker = taskTracker;
         _taskManager = taskManager;
     }
@@ -75,7 +75,7 @@ public class CreateInstanceController : ControllerBase
     [HttpPost("delete")]
     public IActionResult DeleteServer([FromBody] DeleteServerRequest request)
     {
-        if (_mcServerService.IsServerRunning(request.Id))
+        if (_lifecycleService.IsServerRunning(request.Id))
         {
             return BadRequest(new ApiResponse<object>
             {

@@ -19,17 +19,17 @@ public class AppInfoController : ControllerBase
 {
     private readonly IHubContext<DaemonUpdateHub> _updateHubContext;
     private readonly IHostApplicationLifetime _appLifetime;
-    private readonly IMCServerService _serverService;
+    private readonly IInstanceLifecycleService _lifecycleService;
 
     // 构造函数注入
     public AppInfoController(
         IHubContext<DaemonUpdateHub> updateHubContext,
         IHostApplicationLifetime appLifetime,
-        IMCServerService serverService)
+        IInstanceLifecycleService lifecycleService)
     {
         _updateHubContext = updateHubContext;
         _appLifetime = appLifetime;
-        _serverService = serverService;
+        _lifecycleService = lifecycleService;
     }
 
     [HttpGet("api/status")]
@@ -347,7 +347,7 @@ public class AppInfoController : ControllerBase
 
         /*
         // 运行状态预检
-        if (_serverService.HasRunningServers())
+        if (_lifecycleService.HasRunningServers())
         {
             return BadRequest(new ApiResponse<object>
             {
@@ -432,10 +432,10 @@ public class AppInfoController : ControllerBase
 
             if (autoRestart)
             {
-                if (_serverService.HasRunningServers())
+                if (_lifecycleService.HasRunningServers())
                 {
                     await SendUpdateProgressAsync(100, "0 KB/s", "preparing", "正在关闭运行中的实例...");
-                    _serverService.StopAllServers();
+                    _lifecycleService.StopAllServers();
                 }
 
                 await SendUpdateProgressAsync(100, "0 KB/s", "preparing", "准备重启守护进程...");
@@ -499,10 +499,10 @@ public class AppInfoController : ControllerBase
             "brew upgrade mslteam/tap/mslx-daemon",
             upgradeResult);
 
-        if (_serverService.HasRunningServers())
+        if (_lifecycleService.HasRunningServers())
         {
             await SendUpdateProgressAsync(90, "0 KB/s", "preparing", "正在关闭运行中的实例...");
-            _serverService.StopAllServers();
+            _lifecycleService.StopAllServers();
         }
 
         await SendUpdateProgressAsync(100, "0 KB/s", "restarting", "Homebrew 更新完成，正在重启服务...");

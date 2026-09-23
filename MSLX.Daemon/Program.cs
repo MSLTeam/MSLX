@@ -526,7 +526,7 @@ lifetime.ApplicationStopping.Register(() =>
 
 // 显示实例化服务
 app.Services.GetService<IFrpProcessService>();
-app.Services.GetService<IMCServerService>();
+app.Services.GetService<IInstanceLifecycleService>();
 
 logger.LogInformation("正在检查 MSLAPI V3 主服务连通性...");
 try

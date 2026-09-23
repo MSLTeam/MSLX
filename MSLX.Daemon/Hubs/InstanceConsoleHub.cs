@@ -10,11 +10,13 @@ namespace MSLX.Daemon.Hubs
     [Authorize]
     public class InstanceConsoleHub : Hub
     {
-        private readonly IMCServerService _mcServerService;
+        private readonly IInstanceConsoleService _consoleService;
+        private readonly IInstanceLifecycleService _lifecycleService;
 
-        public InstanceConsoleHub(IMCServerService mcServerService)
+        public InstanceConsoleHub(IInstanceConsoleService consoleService, IInstanceLifecycleService lifecycleService)
         {
-            _mcServerService = mcServerService;
+            _consoleService = consoleService;
+            _lifecycleService = lifecycleService;
         }
 
         /// <summary>
@@ -54,7 +56,7 @@ namespace MSLX.Daemon.Hubs
             await Groups.AddToGroupAsync(Context.ConnectionId, instanceId.ToString());
 
             // 获取历史日志
-            var historyLogs = _mcServerService.GetLogs(instanceId);
+            var historyLogs = _consoleService.GetLogs(instanceId);
 
             // 推送历史日志给当前客户端
             if (historyLogs.Any())
@@ -99,7 +101,7 @@ namespace MSLX.Daemon.Hubs
                 return;
             }
 
-            bool success = _mcServerService.SendCommand(instanceId, command, true);
+            bool success = _consoleService.SendCommand(instanceId, command, true);
             await Clients.Caller.SendAsync("CommandResult", new { success, message = success ? "命令已发送" : "发送失败，服务器可能未运行" });
         }
 
@@ -115,17 +117,17 @@ namespace MSLX.Daemon.Hubs
 
             await Groups.AddToGroupAsync(Context.ConnectionId, "pty_" + instanceId);
 
-            bool isPty = _mcServerService.IsServerPtyMode(instanceId);
-            bool isRunning = _mcServerService.IsServerRunning(instanceId);
+            bool isPty = _consoleService.IsServerPtyMode(instanceId);
+            bool isRunning = _lifecycleService.IsServerRunning(instanceId);
 
             // 先调整 PTY 伪终端至客户端当前真实尺寸（并记录首选尺寸）
             if (cols > 0 && rows > 0)
             {
-                _mcServerService.ResizePty(instanceId, cols, rows);
+                _consoleService.ResizePty(instanceId, cols, rows);
             }
 
             // 回放最近的 PTY 输出历史给刚加入的客户端
-            var ptyHistory = _mcServerService.GetPtyHistory(instanceId);
+            var ptyHistory = _consoleService.GetPtyHistory(instanceId);
             if (ptyHistory.Any())
             {
                 foreach (var chunk in ptyHistory)
@@ -160,16 +162,16 @@ namespace MSLX.Daemon.Hubs
                 return;
             }
 
-            bool success = _mcServerService.SendPtyInput(instanceId, data);
+            bool success = _consoleService.SendPtyInput(instanceId, data);
             if (!success)
             {
                 // 如果未在 PTY 模式且按下了回车，兼容性降级为普通命令行发送
-                if (!_mcServerService.IsServerPtyMode(instanceId) && (data.Contains('\r') || data.Contains('\n')))
+                if (!_consoleService.IsServerPtyMode(instanceId) && (data.Contains('\r') || data.Contains('\n')))
                 {
                     string clean = data.Trim('\r', '\n');
                     if (!string.IsNullOrWhiteSpace(clean))
                     {
-                        _mcServerService.SendCommand(instanceId, clean, true);
+                        _consoleService.SendCommand(instanceId, clean, true);
                     }
                 }
             }
@@ -181,7 +183,7 @@ namespace MSLX.Daemon.Hubs
         public void ResizePty(uint instanceId, int cols, int rows)
         {
             if (!HasPermission(instanceId) || cols <= 0 || rows <= 0) return;
-            _mcServerService.ResizePty(instanceId, cols, rows);
+            _consoleService.ResizePty(instanceId, cols, rows);
         }
 
         /// <summary>
@@ -190,8 +192,8 @@ namespace MSLX.Daemon.Hubs
         public async Task GetPtyStatus(uint instanceId)
         {
             if (!HasPermission(instanceId)) return;
-            bool isPty = _mcServerService.IsServerPtyMode(instanceId);
-            bool isRunning = _mcServerService.IsServerRunning(instanceId);
+            bool isPty = _consoleService.IsServerPtyMode(instanceId);
+            bool isRunning = _lifecycleService.IsServerRunning(instanceId);
             var server = IConfigBase.ServerList.GetServer(instanceId);
             bool enablePty = server?.EnablePty ?? false;
             await Clients.Caller.SendAsync("PtyStatus", new { isPty, isRunning, enablePty });
