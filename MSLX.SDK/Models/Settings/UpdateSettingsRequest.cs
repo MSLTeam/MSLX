@@ -42,6 +42,17 @@ public class UpdateSettingsRequest
     [Required(ErrorMessage = "下载线程数量 (downloadThreadCount) 不能为空")]
     [Range(1, 8, ErrorMessage = "下载线程数量 (downloadThreadCount) 必须在 1-8 之间")]
     public int DownloadThreadCount { get; set; } = 5;
+
+    [Required(ErrorMessage = "CDN/反代真实IP开关不能为空")]
+    public bool EnableCdnProxy { get; set; } = false;
+    
+    [Required(ErrorMessage = "客户端IP来源字段不能为空")]
+    [RegularExpression(@"^[a-zA-Z0-9-]+$", ErrorMessage = "IP来源字段只能包含字母、数字和连字符")]
+    [StringLength(64, ErrorMessage = "IP来源字段长度不能超过64个字符")]
+    public string CdnProxyIpHeader { get; set; } = "X-Forwarded-For";
+    
+    [StringLength(128, ErrorMessage = "CDN私密请求头验证密钥长度不能超过128个字符")]
+    public string? CdnProxySecretValue { get; set; } = "";
 }
 
 public class UpdateWebPanelStyleSettingsRequest

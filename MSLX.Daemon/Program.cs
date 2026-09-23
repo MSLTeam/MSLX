@@ -256,11 +256,20 @@ builder.Services.AddHttpClient<IResourceProvider, ModrinthService>();
 builder.Services.AddTransient<IUnifiedResourceService, UnifiedResourceService>();
 
 // 配置真实IP回传协议
+var enableCdnProxy = (bool?)IConfigBase.Config.ReadConfigKey("enableCdnProxy") ?? false;
+var cdnProxyIpHeader = IConfigBase.Config.ReadConfigKey("cdnProxyIpHeader")?.ToString() ?? "X-Forwarded-For";
+var cdnProxySecretValue = IConfigBase.Config.ReadConfigKey("cdnProxySecretValue")?.ToString();
+var cdnProxySecretHeader = "X-MSLX-CDN-Secret-Key"; // 固定请求头
+
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.KnownIPNetworks.Clear(); 
-    options.KnownProxies.Clear();
+    if (enableCdnProxy)
+    {
+        options.ForwardedForHeaderName = cdnProxyIpHeader;
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.KnownIPNetworks.Clear(); 
+        options.KnownProxies.Clear();
+    }
 });
 
 // 错误中间件
@@ -390,6 +399,24 @@ if (Directory.Exists(pluginsPath))
     {
         pluginManager.LoadPlugin(dllPath);
     }
+}
+
+// 注入 CDN 密钥验证中间件
+if (enableCdnProxy && !string.IsNullOrEmpty(cdnProxySecretValue))
+{
+    app.Use(async (context, next) =>
+    {
+        if (!context.Request.Headers.TryGetValue(cdnProxySecretHeader, out var extractedSecret) || 
+            extractedSecret != cdnProxySecretValue)
+        {
+            // 密钥不匹配或不存在，移除对应的头信息防止IP伪造
+            context.Request.Headers.Remove(cdnProxyIpHeader);
+            context.Request.Headers.Remove("X-Forwarded-For");
+            context.Request.Headers.Remove("X-Forwarded-Proto");
+            context.Request.Headers.Remove("X-Forwarded-Host");
+        }
+        await next();
+    });
 }
 
 app.UseForwardedHeaders();

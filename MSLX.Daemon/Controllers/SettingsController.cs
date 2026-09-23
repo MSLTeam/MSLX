@@ -39,6 +39,9 @@ public class SettingsController : ControllerBase
                     OAuthMSLClientID = config["oAuthMSLClientID"] ?? "",
                     OAuthMSLClientSecret = config["oAuthMSLClientSecret"] ?? "",
                     DownloadThreadCount = config["downloadThreadCount"] ?? 5,
+                    EnableCdnProxy = config["enableCdnProxy"] ?? false,
+                    CdnProxyIpHeader = config["cdnProxyIpHeader"] ?? "X-Forwarded-For",
+                    CdnProxySecretValue = config["cdnProxySecretValue"] ?? "",
                 }
             }
         );
@@ -70,6 +73,10 @@ public class SettingsController : ControllerBase
         IConfigBase.Config.WriteConfigKey("oAuthMSLClientID", request.OAuthMSLClientID);
         IConfigBase.Config.WriteConfigKey("oAuthMSLClientSecret", request.OAuthMSLClientSecret);
         IConfigBase.Config.WriteConfigKey("downloadThreadCount", request.DownloadThreadCount);
+        IConfigBase.Config.WriteConfigKey("enableCdnProxy", request.EnableCdnProxy);
+        IConfigBase.Config.WriteConfigKey("cdnProxyIpHeader", request.CdnProxyIpHeader ?? "X-Forwarded-For");
+        IConfigBase.Config.WriteConfigKey("cdnProxySecretValue", request.CdnProxySecretValue ?? "");
+        
         return Ok(new ApiResponse<object>
             {
                 Code = 200,

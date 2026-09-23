@@ -258,6 +258,43 @@
                             
                             <Separator Opacity="0.1" Margin="15,0"/>
 
+                            <!-- CDN / Proxy Settings -->
+                            <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                                <icons:MaterialIcon Kind="ShieldCheck" Classes="SettingIcon"/>
+                                <StackPanel Grid.Column="1" Margin="15,0">
+                                    <TextBlock Text="CDN/反代真实IP" Classes="SettingTitle"/>
+                                    <TextBlock Text="允许通过请求头提取真实 IP (修改后需重启)" Classes="SettingDesc" Foreground="OrangeRed"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="2" Name="SwitchCdnProxy" IsCheckedChanged="SwitchCdnProxy_OnIsCheckedChanged"/>
+                            </Grid>
+
+                            <Separator Name="CdnProxyIpHeaderSeparator" Opacity="0.1" Margin="15,0"/>
+
+                            <Grid Name="CdnProxyIpHeaderRow" Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                                <icons:MaterialIcon Kind="IpOutline" Classes="SettingIcon"/>
+                                <StackPanel Grid.Column="1" Margin="15,0">
+                                    <TextBlock Text="IP来源字段" Classes="SettingTitle"/>
+                                    <TextBlock Text="获取真实 IP 的请求头名称" Classes="SettingDesc"/>
+                                </StackPanel>
+                                <TextBox Grid.Column="2" Name="TxtCdnProxyIpHeader" PlaceholderText="X-Forwarded-For" Width="240"/>
+                            </Grid>
+
+                            <Separator Name="CdnProxySecretSeparator" Opacity="0.1" Margin="15,0"/>
+
+                            <Grid Name="CdnProxySecretRow" Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                                <icons:MaterialIcon Kind="Key" Classes="SettingIcon"/>
+                                <StackPanel Grid.Column="1" Margin="15,0">
+                                    <TextBlock Text="请求头验证密钥" Classes="SettingTitle"/>
+                                    <TextBlock Text="用于匹配 X-MSLX-CDN-Secret-Key 的值。强烈建议设置以防伪造 (清空即关闭校验)" Classes="SettingDesc"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="5">
+                                    <TextBox Name="TxtCdnProxySecretValue" PasswordChar="•" PlaceholderText="留空不进行校验" Width="200"/>
+                                    <Button Classes="Flat" Click="OnRandomCdnSecretClick" Content="随机"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Separator Opacity="0.1" Margin="15,0"/>
+
                             <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
                                 <icons:MaterialIcon Kind="RemoteDesktop" Classes="SettingIcon"/>
                                 <StackPanel Grid.Column="1" Margin="15,0">

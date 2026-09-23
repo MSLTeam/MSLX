@@ -11,6 +11,9 @@ export interface SettingsModel {
   oAuthMSLClientID: string;
   oAuthMSLClientSecret: string;
   downloadThreadCount: number;
+  enableCdnProxy?: boolean;
+  cdnProxyIpHeader?: string;
+  cdnProxySecretValue?: string;
 }
 
 export interface WebpanelSettingsModel {
