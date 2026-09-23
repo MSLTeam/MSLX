@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Caching.Memory;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using System.Net;
@@ -73,14 +73,32 @@ namespace MSLX.Daemon.Middleware
                     // 验证userid是否存在于本地
                     var userId = principal.FindFirst("UserId")?.Value;
                     
-                    if (!string.IsNullOrEmpty(userId) && IConfigBase.UserList.GetUserById(userId) != null)
+                    if (!string.IsNullOrEmpty(userId))
                     {
-                        context.User = principal;
-                        isAuthenticated = true;
-                    }
-                    else
-                    {
-                        authErrorMessage = "用户不存在或已被删除";
+                        var dbUser = IConfigBase.UserList.GetUserById(userId);
+                        if (dbUser != null)
+                        {
+                            var jti = principal.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)?.Value;
+                            var tokenVersionStr = principal.FindFirst("TokenVersion")?.Value;
+
+                            if (!string.IsNullOrEmpty(jti) && dbUser.RevokedTokens.TryGetValue(jti, out var exp) && exp > DateTime.UtcNow)
+                            {
+                                authErrorMessage = "该令牌已被注销，请重新登录";
+                            }
+                            else if (int.TryParse(tokenVersionStr, out int tokenVersion) && tokenVersion == dbUser.TokenVersion)
+                            {
+                                context.User = principal;
+                                isAuthenticated = true;
+                            }
+                            else
+                            {
+                                authErrorMessage = "登录状态已失效，请重新登录";
+                            }
+                        }
+                        else
+                        {
+                            authErrorMessage = "用户不存在或已被删除";
+                        }
                     }
                 }
                 else

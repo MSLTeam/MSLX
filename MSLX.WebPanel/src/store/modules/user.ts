@@ -157,6 +157,14 @@ export const useUserStore = defineStore('user', {
 
     // 登出
     async logout() {
+      if (this.token) {
+        try {
+          await request.post({ url: '/api/user/logout' });
+        } catch (e) {
+          console.error('Backend logout failed:', e);
+        }
+      }
+
       const permissionStore = usePermissionStore();
       await permissionStore.clearRoutes();
 

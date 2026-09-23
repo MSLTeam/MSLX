@@ -42,6 +42,7 @@ const userInfo = reactive<UserInfoModel>({
 
 const securityState = reactive({
   changePassword: false,
+  oldPassword: '',
   newPassword: '',
   confirmPassword: '',
 });
@@ -114,6 +115,10 @@ const onUserSubmit = async () => {
     return;
   }
   if (securityState.changePassword) {
+    if (!securityState.oldPassword) {
+      MessagePlugin.warning('请输入旧密码');
+      return;
+    }
     if (!securityState.newPassword) {
       MessagePlugin.warning('请输入新密码');
       return;
@@ -133,6 +138,7 @@ const onUserSubmit = async () => {
       username: userInfo.username,
       name: userInfo.name,
       avatar: userInfo.avatar,
+      oldPassword: isPasswordChanged ? securityState.oldPassword : undefined,
       password: isPasswordChanged ? securityState.newPassword : undefined,
       resetApiKey: false,
     };
@@ -140,6 +146,7 @@ const onUserSubmit = async () => {
     await updateSelfInfo(updateData);
 
     securityState.changePassword = false;
+    securityState.oldPassword = '';
     securityState.newPassword = '';
     securityState.confirmPassword = '';
     originalUsername.value = userInfo.username;
@@ -448,7 +455,13 @@ const handleAvatarClick = () => {
             v-if="securityState.changePassword"
             class="bg-zinc-50/50 dark:bg-zinc-800/30 p-4 rounded-xl border border-[var(--td-component-border)] mt-4 w-full"
           >
-            <t-form-item label="新密码" required-mark label-width="80">
+            <t-form-item label="旧密码" required-mark label-width="80">
+              <t-input v-model="securityState.oldPassword" type="password" placeholder="请输入旧密码">
+                <template #prefix-icon><lock-on-icon class="opacity-60 text-zinc-400" /></template>
+              </t-input>
+            </t-form-item>
+
+            <t-form-item label="新密码" required-mark label-width="80" class="mt-4">
               <t-input v-model="securityState.newPassword" type="password" placeholder="请输入新密码">
                 <template #prefix-icon><lock-on-icon class="opacity-60 text-zinc-400" /></template>
               </t-input>

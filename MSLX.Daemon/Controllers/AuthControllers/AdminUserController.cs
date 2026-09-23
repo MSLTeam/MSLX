@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
@@ -102,14 +102,21 @@ public class AdminUserController : ControllerBase
         var user = IConfigBase.UserList.GetUserById(id);
         if (user == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "用户不存在" });
 
+        bool requireTokenVersionBump = false;
+
         if (request.Name != null) user.Name = request.Name;
         if (request.Avatar != null) user.Avatar = request.Avatar;
-        if (request.Role != null) user.Role = request.Role;
+        if (request.Role != null && request.Role != user.Role)
+        {
+            user.Role = request.Role;
+            requireTokenVersionBump = true;
+        }
         
         // 清洗并更新资源列表
         if (request.Resources != null)
         {
             user.Resources = ValidateAndCleanResources(request.Resources);
+            requireTokenVersionBump = true;
         }
 
         if (!string.IsNullOrEmpty(request.Password))
@@ -135,6 +142,12 @@ public class AdminUserController : ControllerBase
             }
 
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+            requireTokenVersionBump = true;
+        }
+
+        if (requireTokenVersionBump)
+        {
+            user.TokenVersion++;
         }
 
         if (request.ResetApiKey)

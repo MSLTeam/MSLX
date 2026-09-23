@@ -13,6 +13,7 @@ export interface UpdateUserRequest {
   username?: string;
   name?: string;
   avatar?: string;
+  oldPassword?: string;
   password?: string;
   resetApiKey?: boolean;
   resources?: string[];
@@ -43,6 +44,7 @@ export interface CreateUserRequest {
 export interface UpdateUserRequest {
   name?: string;
   avatar?: string;
+  oldPassword?: string;
   password?: string; // 为空不修改
   role?: string;
   resetApiKey?: boolean;

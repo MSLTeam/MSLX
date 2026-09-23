@@ -20,6 +20,8 @@ public static class JwtUtils
                 new Claim("UserId", user.Id),
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Role, user.Role),
+                new Claim("TokenVersion", user.TokenVersion.ToString()),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
         foreach (var res in user.Resources)
