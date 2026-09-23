@@ -136,7 +136,6 @@ public class AdminUserController : ControllerBase
         if (request.Resources != null)
         {
             user.Resources = ValidateAndCleanResources(request.Resources);
-            requireTokenVersionBump = true;
         }
 
         if (!string.IsNullOrEmpty(request.Password))

@@ -24,11 +24,6 @@ public static class JwtUtils
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
-        foreach (var res in user.Resources)
-        {
-            claims.Add(new Claim("Resource", res));
-        }
-
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(claims),
