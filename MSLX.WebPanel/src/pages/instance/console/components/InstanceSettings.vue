@@ -142,7 +142,8 @@ defineExpose({ open });
 
 .tab-panel-anim {
   animation: fadeSlideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
-  will-change: transform, opacity;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 150px;
 }
 
 @keyframes fadeSlideUp {

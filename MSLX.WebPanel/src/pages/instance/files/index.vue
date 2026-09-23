@@ -1318,7 +1318,8 @@ onUnmounted(() => {
 
 :deep(.t-table tbody tr) {
   animation: tableRowSlideUp 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
-  will-change: transform, opacity;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 150px;
 }
 
 /* 首屏的 15 行应用错落延迟 */

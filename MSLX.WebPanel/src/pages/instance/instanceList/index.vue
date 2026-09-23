@@ -342,11 +342,18 @@ const handleConfirmDelete = async () => {
               <div class="flex items-center gap-4">
                 <div class="relative shrink-0">
                   <t-avatar
-                    :image="getImageUrl(item.icon, item.id)"
-                    class="shadow-sm border border-[var(--td-component-border)] !bg-[var(--td-bg-color-secondarycontainer)] !rounded-xl"
+                    class="shadow-sm border border-[var(--td-component-border)] !bg-[var(--td-bg-color-secondarycontainer)] !rounded-xl overflow-hidden"
                     shape="round"
                     size="56px"
-                  />
+                  >
+                    <img 
+                      :src="getImageUrl(item.icon, item.id)" 
+                      :fetchpriority="index < 4 ? 'high' : 'low'" 
+                      :loading="index < 4 ? 'eager' : 'lazy'" 
+                      alt="server icon"
+                      class="w-full h-full object-cover"
+                    />
+                  </t-avatar>
                   <span class="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5">
                     <span
                       v-if="item.status === 2"
@@ -489,7 +496,8 @@ const handleConfirmDelete = async () => {
 
 .list-item-anim {
   animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
-  will-change: transform, opacity;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 150px;
 }
 
 @keyframes slideUp {

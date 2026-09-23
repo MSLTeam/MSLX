@@ -517,7 +517,8 @@ onMounted(() => {
 
 .list-item-anim {
   animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
-  will-change: transform, opacity;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 150px;
 }
 
 @keyframes slideUp {
@@ -534,7 +535,8 @@ onMounted(() => {
 .list-anim-enter-active,
 .list-anim-leave-active {
   transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s;
-  will-change: transform, opacity;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 150px;
 }
 
 .list-anim-enter-from,

@@ -42,30 +42,46 @@ router.beforeEach(async (to, from, next) => {
           await permissionStore.initRoutes(roles);
         }
 
-        // 挂载插件
-        await loadAllPlugins();
+        const isKnownRoute = to.matched.length > 0;
 
-        // 补上404路由
-        addCatchAllRoute();
-
-        next({ ...to, replace: true });
+        if (isKnownRoute) {
+          // 挂载插件 (后台静默)
+          loadAllPlugins().then(() => {
+            // 补上404路由
+            addCatchAllRoute();
+          });
+          next();
+        } else {
+          // 未知路由（可能属于尚未加载的插件），阻塞等待
+          await loadAllPlugins();
+          addCatchAllRoute();
+          next({ ...to, replace: true });
+        }
       } else {
         next();
       }
     } else {
       try {
+        // userStore.getUserInfo 是初始化必须的，阻塞是合理的（但应该很快）
         await userStore.getUserInfo();
         const { roles } = userStore;
         await permissionStore.initRoutes(roles);
 
-        await loadAllPlugins();
+        const isKnownRoute = to.matched.length > 0;
 
-        addCatchAllRoute();
-
-        if (to.name && router.hasRoute(to.name)) {
+        if (isKnownRoute) {
+          loadAllPlugins().then(() => {
+            addCatchAllRoute();
+          });
           next();
         } else {
-          next({ ...to, replace: true });
+          await loadAllPlugins();
+          addCatchAllRoute();
+          if (to.name && router.hasRoute(to.name)) {
+            next();
+          } else {
+            next({ ...to, replace: true });
+          }
         }
       } catch (error) {
         MessagePlugin.error(error as string);

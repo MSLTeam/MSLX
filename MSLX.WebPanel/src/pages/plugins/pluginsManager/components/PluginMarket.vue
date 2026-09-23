@@ -398,7 +398,8 @@ onMounted(() => {
 @reference "@/style/tailwind/index.css";
 .list-item-anim {
   animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
-  will-change: transform, opacity;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 150px;
 }
 @keyframes slideUp {
   from {
