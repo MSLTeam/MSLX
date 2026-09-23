@@ -51,6 +51,11 @@ public class AdminUserController : ControllerBase
             return BadRequest(new ApiResponse<object> { Code = 400, Message = "用户名已存在" });
         }
 
+        if (request.Role != "admin" && request.Role != "user")
+        {
+            return BadRequest(new ApiResponse<object> { Code = 400, Message = "无效的角色" });
+        }
+
         if (request.Password.Length < 8 || request.Password.Length > 32)
         {
             return BadRequest(new ApiResponse<object> { Code = 400, Message = "密码长度必须在 8-32 位之间" });

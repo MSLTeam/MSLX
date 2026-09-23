@@ -83,9 +83,9 @@ public class UserController : ControllerBase
                 return BadRequest(new ApiResponse<object> { Code = 400, Message = "修改密码必须提供旧密码" });
             }
 
-            if (!BCrypt.Net.BCrypt.Verify(request.OldPassword, user.PasswordHash))
+            if (string.IsNullOrEmpty(user.PasswordHash) || !BCrypt.Net.BCrypt.Verify(request.OldPassword, user.PasswordHash))
             {
-                return BadRequest(new ApiResponse<object> { Code = 400, Message = "旧密码不正确" });
+                return BadRequest(new ApiResponse<object> { Code = 400, Message = "旧密码不正确或当前尚未设置密码" });
             }
 
             // 长度校验

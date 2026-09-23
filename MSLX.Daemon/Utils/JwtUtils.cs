@@ -64,6 +64,27 @@ public static class JwtUtils
         }
     }
 
+    /// <summary>
+    /// 验证令牌是否因登出被注销，或因修改密码/权限等事件版本过期
+    /// </summary>
+    public static string? GetTokenRejectionReason(ClaimsPrincipal principal, UserInfo user)
+    {
+        var jti = principal.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)?.Value;
+        var tokenVersionStr = principal.FindFirst("TokenVersion")?.Value;
+
+        if (!string.IsNullOrEmpty(jti) && user.RevokedTokens != null && user.RevokedTokens.TryGetValue(jti, out var exp) && exp > DateTime.UtcNow)
+        {
+            return "登录状态已失效，请重新登录";
+        }
+
+        if (int.TryParse(tokenVersionStr, out int tokenVersion) && tokenVersion == user.TokenVersion)
+        {
+            return null; // 有效
+        }
+
+        return "登录状态已失效，请重新登录";
+    }
+
     // 验证token合法性但过期的情况
     public static bool IsTokenExpiredButTrusted(string token)
     {

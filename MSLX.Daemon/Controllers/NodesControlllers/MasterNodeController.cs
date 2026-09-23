@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
@@ -202,6 +202,12 @@ namespace MSLX.Daemon.Controllers.NodesControlllers
                     var user = IConfigBase.UserList.GetUserById(userId);
                     if (user != null)
                     {
+                        var rejectionReason = JwtUtils.GetTokenRejectionReason(principal, user);
+                        if (rejectionReason != null)
+                        {
+                            return Unauthorized(new ApiResponse<object> { Code = 401, Message = rejectionReason });
+                        }
+
                         var nodeResources = new List<string>();
                         foreach (var res in user.Resources)
                         {

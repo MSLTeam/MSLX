@@ -78,21 +78,16 @@ namespace MSLX.Daemon.Middleware
                         var dbUser = IConfigBase.UserList.GetUserById(userId);
                         if (dbUser != null)
                         {
-                            var jti = principal.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)?.Value;
-                            var tokenVersionStr = principal.FindFirst("TokenVersion")?.Value;
-
-                            if (!string.IsNullOrEmpty(jti) && dbUser.RevokedTokens.TryGetValue(jti, out var exp) && exp > DateTime.UtcNow)
-                            {
-                                authErrorMessage = "该令牌已被注销，请重新登录";
-                            }
-                            else if (int.TryParse(tokenVersionStr, out int tokenVersion) && tokenVersion == dbUser.TokenVersion)
+                            var rejectionReason = JwtUtils.GetTokenRejectionReason(principal, dbUser);
+                            if (rejectionReason == null)
                             {
                                 context.User = principal;
                                 isAuthenticated = true;
                             }
                             else
                             {
-                                authErrorMessage = "登录状态已失效，请重新登录";
+                                authErrorMessage = rejectionReason;
+                                context.Items["isTokenValidButRejected"] = true;
                             }
                         }
                         else
@@ -233,12 +228,11 @@ namespace MSLX.Daemon.Middleware
             // 结果判定
             if (isAuthenticated)
             {
-                // 拦截一些API （这里后续可能还是需要开放，先拦着吧）
                 if (isSlaveMode)
                 {
-                    if (path.StartsWithSegments("/api/user") || path.StartsWithSegments("/api/settings"))
+                    if (path.StartsWithSegments("/api/user") || path.StartsWithSegments("/api/settings") || path.StartsWithSegments("/api/admin"))
                     {
-                        if (!path.StartsWithSegments("/api/node"))
+                        if (!path.StartsWithSegments("/api/node") && !path.StartsWithSegments("/api/user/logout"))
                         {
                             await HandleErrorAsync(context, 403, "当前为子节点模式，禁止直接修改全局配置和用户数据。");
                             return;
@@ -253,7 +247,9 @@ namespace MSLX.Daemon.Middleware
 
             // 验证token是否只是过期了
             bool isExpiredSafe = false;
-            if (!string.IsNullOrEmpty(token) && !isAuthenticated)
+            bool isTokenValidButRejected = context.Items["isTokenValidButRejected"] as bool? ?? false;
+
+            if (!string.IsNullOrEmpty(token) && !isAuthenticated && !isTokenValidButRejected)
             {
                 if (JwtUtils.IsTokenExpiredButTrusted(token))
                 {
@@ -263,7 +259,7 @@ namespace MSLX.Daemon.Middleware
             }
 
             // 不是本地IP & 签名错误的Token 计入封禁拦截
-            if (!isLocalIp && !isExpiredSafe)
+            if (!isLocalIp && !isExpiredSafe && !isTokenValidButRejected)
             {
                 await ProcessFailureAsync(clientIp, countKey, banKey);
             }
