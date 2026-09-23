@@ -25,6 +25,8 @@ const submitLoading = ref(false);
 const sysData = reactive<SettingsModel>({
   allowNormalUserChangeUserName: true,
   allowNormalUserEditFrpConfig: true,
+  allowNormalUserOfflineDownload: false,
+  enableSsrfProtection: true,
   fireWallBanLocalAddr: false,
   openWebConsoleOnLaunch: true,
   neoForgeInstallerMirrors: 'MSL Mirrors',
@@ -274,12 +276,30 @@ onMounted(() => {
             </t-form-item>
           </template>
 
+          <t-form-item label="允许离线下载">
+            <template #help>
+              <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block"
+                >开启后，普通用户（服主）可以使用离线下载功能下载任意链接到其服务器目录下。</span
+              >
+            </template>
+            <t-switch v-model="sysData.allowNormalUserOfflineDownload" />
+          </t-form-item>
+
           <div class="flex items-center gap-3 mt-8 mb-6">
             <span class="text-xs font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest"
               >网络与安全</span
             >
             <div class="h-px bg-zinc-200/60 dark:bg-zinc-700/60 flex-1"></div>
           </div>
+
+          <t-form-item label="离线下载 SSRF 保护">
+            <template #help>
+              <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block"
+                >开启后将拦截任何指向局域网、云服务元数据的离线下载请求，强烈建议开启以确保安全。仅在您使用代理且导致下载误判失败时，才可酌情关闭此选项。</span
+              >
+            </template>
+            <t-switch v-model="sysData.enableSsrfProtection" />
+          </t-form-item>
 
           <t-form-item v-if="!isEmbeddedDaemon" label="禁止本地访问">
             <template #help>

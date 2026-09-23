@@ -1,5 +1,6 @@
-﻿using Downloader;
+using Downloader;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.Utils;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Reflection;
@@ -48,7 +49,7 @@ namespace MSLX.Daemon.Utils
                 : null;
         }
 
-        private DownloadConfiguration CreateConfig(int? parallelCountOverride, bool? parallelDownloadOverride)
+        private DownloadConfiguration CreateConfig(int? parallelCountOverride, bool? parallelDownloadOverride, bool strictSsrfCheck)
         {
             int count = parallelCountOverride ??
                         (_parallelCount > 0 ? _parallelCount : GetConfiguredThreadCount());
@@ -60,7 +61,19 @@ namespace MSLX.Daemon.Utils
                 MaxTryAgainOnFailure = _maxTryAgainOnFailure,
                 EnableAutoResumeDownload = true,
                 DownloadFileExtension = ".download",
-                CustomHttpClientFactory = () => SharedHttpClient.Value,
+                CustomHttpClientFactory = () =>
+                {
+                    if (!strictSsrfCheck) return SharedHttpClient.Value;
+                    var handler = new SocketsHttpHandler
+                    {
+                        AllowAutoRedirect = false,
+                        AutomaticDecompression = DecompressionMethods.Deflate | DecompressionMethods.GZip,
+                    };
+                    var client = new HttpClient(handler, disposeHandler: true);
+                    client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("MSLX", PlatFormServices.GetFormattedVersion()));
+                    client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("Downloader", GetDownloaderVersion()));
+                    return client;
+                },
                 RequestConfiguration =
                 {
                     UserAgent = $"MSLX/{PlatFormServices.GetFormattedVersion()} Downloader/{GetDownloaderVersion()} (.NET/{Environment.Version})"
@@ -115,13 +128,14 @@ namespace MSLX.Daemon.Utils
             int progressIntervalMs = 1000,
             CancellationToken cancellationToken = default,
             int? parallelCountOverride = null,
-            bool? parallelDownloadOverride = null)
+            bool? parallelDownloadOverride = null,
+            bool strictSsrfCheck = false)
         {
             await _fileConcurrencySemaphore.WaitAsync(cancellationToken);
             try
             {
                 var downloader = new DownloadService(
-                    CreateConfig(parallelCountOverride, parallelDownloadOverride));
+                    CreateConfig(parallelCountOverride, parallelDownloadOverride, strictSsrfCheck));
                 DateTime lastReportTime = DateTime.MinValue;
                 long lastProgressTicks = DateTime.UtcNow.Ticks;
                 long lastReceivedBytes = -1;
@@ -189,6 +203,31 @@ namespace MSLX.Daemon.Utils
                 try
                 {
                     cancellationToken.ThrowIfCancellationRequested();
+                    
+                    if (strictSsrfCheck)
+                    {
+                        using var client = new HttpClient(new SocketsHttpHandler { AllowAutoRedirect = false });
+                        for (int i = 0; i < 5; i++)
+                        {
+                            var errMsg = UrlSecurityGuard.CheckUrlSafety(url);
+                            if (errMsg != null) throw new Exception(errMsg);
+
+                            using var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, url), HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                            int statusCode = (int)response.StatusCode;
+                            if (statusCode >= 300 && statusCode <= 399 && statusCode != 304 && response.Headers.Location != null)
+                            {
+                                Uri newUri = response.Headers.Location;
+                                if (!newUri.IsAbsoluteUri) newUri = new Uri(new Uri(url), newUri);
+                                url = newUri.ToString();
+                            }
+                            else
+                            {
+                                break;
+                            }
+                            if (i == 4) throw new Exception("重定向次数过多");
+                        }
+                    }
+
                     string dir = Path.GetDirectoryName(savePath);
                     if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
                     Console.WriteLine($"正在下载文件：{url}");

@@ -168,6 +168,8 @@ public partial class SettingsPage : UserControl
     {
         // Web Console
         SwitchWebConsole.IsChecked = _currentSettings.OpenWebConsoleOnLaunch;
+        SwitchAllowNormalUserOfflineDownload.IsChecked = _currentSettings.AllowNormalUserOfflineDownload;
+        SwitchEnableSsrfProtection.IsChecked = _currentSettings.EnableSsrfProtection;
 
         // Mirrors (通过 Tag 匹配)
         ComboMirrors.SelectedItem = null;
@@ -247,6 +249,8 @@ public partial class SettingsPage : UserControl
         try
         {
             _currentSettings.OpenWebConsoleOnLaunch = SwitchWebConsole.IsChecked ?? true;
+            _currentSettings.AllowNormalUserOfflineDownload = SwitchAllowNormalUserOfflineDownload.IsChecked ?? false;
+            _currentSettings.EnableSsrfProtection = SwitchEnableSsrfProtection.IsChecked ?? true;
 
             if (ComboMirrors.SelectedItem is ComboBoxItem selectedItem && selectedItem.Tag != null)
             {

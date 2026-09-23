@@ -177,6 +177,17 @@
                             <Separator Opacity="0.1" Margin="15,0"/>
 
                             <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                                <icons:MaterialIcon Kind="Download" Classes="SettingIcon"/>
+                                <StackPanel Grid.Column="1" Margin="15,0">
+                                    <TextBlock Text="允许离线下载" Classes="SettingTitle"/>
+                                    <TextBlock Text="允许普通用户使用离线下载功能下载任意链接到其服务器目录下" Classes="SettingDesc"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="2" Name="SwitchAllowNormalUserOfflineDownload"/>
+                            </Grid>
+
+                            <Separator Opacity="0.1" Margin="15,0"/>
+
+                            <Grid Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
                                 <icons:MaterialIcon Kind="ServerNetwork" Classes="SettingIcon"/>
                                 <StackPanel Grid.Column="1" Margin="15,0">
                                     <TextBlock Text="安装镜像源" Classes="SettingTitle"/>
@@ -228,6 +239,17 @@
                             </Grid>
 
                             <Separator Name="FirewallSettingSeparator" Opacity="0.1" Margin="15,0"/>
+
+                            <Grid Name="SsrfSettingRow" Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
+                                <icons:MaterialIcon Kind="Security" Classes="SettingIcon"/>
+                                <StackPanel Grid.Column="1" Margin="15,0">
+                                    <TextBlock Text="离线下载 SSRF 保护" Classes="SettingTitle"/>
+                                    <TextBlock Text="强烈建议开启。仅在您使用代理且导致下载误判失败时，才可酌情关闭此选项" Classes="SettingDesc" Foreground="OrangeRed"/>
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="2" Name="SwitchEnableSsrfProtection"/>
+                            </Grid>
+
+                            <Separator Name="SsrfSettingSeparator" Opacity="0.1" Margin="15,0"/>
 
                             <Grid Name="ExternalAccessSettingRow" IsVisible="False" Classes="SettingItem" ColumnDefinitions="Auto, *, Auto">
                                 <icons:MaterialIcon Kind="Earth" Classes="SettingIcon"/>

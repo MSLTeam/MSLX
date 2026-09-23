@@ -28,6 +28,8 @@ public class SettingsController : ControllerBase
                 {
                     AllowNormalUserChangeUserName = IConfigBase.Config.ReadConfig()["allowNormalUserChangeUserName"] ?? true,
                     AllowNormalUserEditFrpConfig = IConfigBase.Config.ReadConfig()["allowNormalUserEditFrpConfig"] ?? true,
+                    AllowNormalUserOfflineDownload = IConfigBase.Config.ReadConfig()["allowNormalUserOfflineDownload"] ?? false,
+                    EnableSsrfProtection = IConfigBase.Config.ReadConfig()["enableSsrfProtection"] ?? true,
                     FireWallBanLocalAddr = isEmbeddedDaemon ? false : config["fireWallBanLocalAddr"] ?? false,
                     OpenWebConsoleOnLaunch = config["openWebConsoleOnLaunch"] ?? true,
                     NeoForgeInstallerMirrors =
@@ -55,6 +57,8 @@ public class SettingsController : ControllerBase
 
         IConfigBase.Config.WriteConfigKey("allowNormalUserChangeUserName", request.AllowNormalUserChangeUserName);
         IConfigBase.Config.WriteConfigKey("allowNormalUserEditFrpConfig", request.AllowNormalUserEditFrpConfig);
+        IConfigBase.Config.WriteConfigKey("allowNormalUserOfflineDownload", request.AllowNormalUserOfflineDownload);
+        IConfigBase.Config.WriteConfigKey("enableSsrfProtection", request.EnableSsrfProtection);
         if (!isEmbeddedDaemon)
         {
             IConfigBase.Config.WriteConfigKey("fireWallBanLocalAddr", request.FireWallBanLocalAddr);

@@ -51,6 +51,8 @@ builder.Host.UseSerilog();
 var bootstrapLoggerFactory = LoggerFactory.Create(logging => logging.AddSerilog());
 IConfigBase.Initialize(bootstrapLoggerFactory);
 
+MSLX.SDK.Utils.UrlSecurityGuard.IsSsrfProtectionEnabled = () => (bool?)IConfigBase.Config.ReadConfig()["enableSsrfProtection"] ?? true;
+
 // 内置 Daemon 由 Desktop 管理监听策略，默认仅本机访问，也可显式开启外部访问。
 bool isEmbeddedDaemon = string.Equals(
     Environment.GetEnvironmentVariable("MSLX_EMBEDDED_DAEMON"),
