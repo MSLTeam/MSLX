@@ -337,7 +337,8 @@ watch(isDark, () => {
 /* === 阶梯滑入动画 === */
 .list-item-anim {
   animation: slideUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
-  will-change: transform, opacity;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 150px;
 }
 
 @keyframes slideUp {

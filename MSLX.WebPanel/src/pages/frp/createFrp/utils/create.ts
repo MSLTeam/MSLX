@@ -12,6 +12,7 @@ export async function createFrpTunnel(
   provider: string,
   format: string = 'toml',
   showCustomName = true,
+  clientPath?: string,
 ) {
   let finalName = name;
 
@@ -53,7 +54,7 @@ export async function createFrpTunnel(
       return;
     }
   }
-  await postCreateFrpTunnel(finalName, config, provider, format);
+  await postCreateFrpTunnel(finalName, config, provider, format, clientPath);
   MessagePlugin.success('添加成功');
   await tunnelsStore.getTunnels();
   changeUrl('/frp/list');

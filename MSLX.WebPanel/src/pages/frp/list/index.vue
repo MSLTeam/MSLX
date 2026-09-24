@@ -90,8 +90,8 @@ async function getList() {
   }
 }
 
-const handleCardClick = (item: FrpListModel) => {
-  changeUrl(`/frp/console/${item.id}`);
+const handleCardClick = (e: Event, item: FrpListModel, newTab = false) => {
+  changeUrl(`/frp/console/${item.id}`, newTab);
 };
 
 const handleDelete = (id: number) => {
@@ -140,7 +140,7 @@ onMounted(() => {
           <template #icon><rocket-icon /></template>
           自启动设置
         </t-button>
-        <t-button v-if="userStore.isAdmin" theme="primary" @click="changeUrl('/frp/create')">
+        <t-button v-if="userStore.isAdmin" theme="primary" @click="changeUrl('/frp/create')" @auxclick.prevent="changeUrl('/frp/create', true)">
           <template #icon><add-icon /></template>
           创建隧道
         </t-button>
@@ -166,7 +166,7 @@ onMounted(() => {
         class="flex flex-col items-center justify-center py-24 design-card bg-white/40 dark:bg-zinc-800/40 rounded-2xl border-2 border-dashed border-[var(--td-component-border)]"
       >
         <result title="暂无隧道" :tip="userStore.isAdmin ? '快去创建一个吧' : '管理员尚未为您分配隧道'" type="404">
-          <t-button v-if="userStore.isAdmin" theme="primary" @click="changeUrl('/frp/create')">立即创建</t-button>
+          <t-button v-if="userStore.isAdmin" theme="primary" @click="changeUrl('/frp/create')" @auxclick.prevent="changeUrl('/frp/create', true)">立即创建</t-button>
         </result>
       </div>
 
@@ -176,7 +176,8 @@ onMounted(() => {
           :key="item.id"
           :style="{ animationDelay: `${index * 0.05}s` }"
           class="list-item-anim design-card group flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm hover:shadow-md hover:border-[var(--color-primary)]/50 transition-all duration-300 p-5 gap-5 cursor-pointer"
-          @click="handleCardClick(item)"
+          @click="handleCardClick($event, item)"
+          @auxclick.prevent="handleCardClick($event, item, true)"
         >
           <div class="flex items-center justify-between gap-3">
             <div class="flex items-center gap-2.5 min-w-0">
@@ -308,7 +309,8 @@ onMounted(() => {
 /* 列表进场动画 */
 .list-item-anim {
   animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
-  will-change: transform, opacity;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 150px;
 }
 
 @keyframes slideUp {

@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Utils.ConfigUtils
 {
@@ -53,7 +53,7 @@ namespace MSLX.Daemon.Utils.ConfigUtils
             }
         }
 
-        public bool CreateFrpConfig(string name, string server, string configType, string config)
+        public bool CreateFrpConfig(string name, string server, string configType, string config, string? clientPath = null)
         {
             int id = StringServices.GetRandomNumber(10000000, 99999999);
             _frpListLock.EnterWriteLock();
@@ -81,6 +81,10 @@ namespace MSLX.Daemon.Utils.ConfigUtils
                     ["ConfigType"] = configType,
                     ["Service"] = server
                 };
+                if (!string.IsNullOrWhiteSpace(clientPath))
+                {
+                    newItem["ClientPath"] = clientPath;
+                }
                 _frpListCache.Add(newItem);
                 IConfigBase.SaveJson(_frpListPath, _frpListCache);
                 return true;
@@ -110,17 +114,24 @@ namespace MSLX.Daemon.Utils.ConfigUtils
             }
         }
 
-        public bool UpdateFrpConfig(int id, string name, string server, string configType)
+        public bool UpdateFrpConfig(int id, string name, string server, string configType, string? clientPath = null)
         {
             _frpListLock.EnterWriteLock();
             try
             {
-                var target = _frpListCache.FirstOrDefault(s => s["ID"]?.Value<int>() == id);
+                var target = _frpListCache.FirstOrDefault(s => s["ID"]?.Value<int>() == id) as JObject;
                 if (target == null) return false;
 
                 target["Name"] = name;
                 target["Service"] = server;
                 target["ConfigType"] = configType;
+                if (clientPath != null)
+                {
+                    if (string.IsNullOrWhiteSpace(clientPath))
+                        target.Remove("ClientPath");
+                    else
+                        target["ClientPath"] = clientPath;
+                }
                 IConfigBase.SaveJson(_frpListPath, _frpListCache);
                 return true;
             }

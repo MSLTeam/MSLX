@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
@@ -49,6 +49,11 @@ public class AdminUserController : ControllerBase
         if (IConfigBase.UserList.GetUserByUsername(request.Username) != null)
         {
             return BadRequest(new ApiResponse<object> { Code = 400, Message = "用户名已存在" });
+        }
+
+        if (request.Role != "admin" && request.Role != "user")
+        {
+            return BadRequest(new ApiResponse<object> { Code = 400, Message = "无效的角色" });
         }
 
         if (request.Password.Length < 8 || request.Password.Length > 32)
@@ -102,9 +107,30 @@ public class AdminUserController : ControllerBase
         var user = IConfigBase.UserList.GetUserById(id);
         if (user == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "用户不存在" });
 
+        bool requireTokenVersionBump = false;
+
         if (request.Name != null) user.Name = request.Name;
         if (request.Avatar != null) user.Avatar = request.Avatar;
-        if (request.Role != null) user.Role = request.Role;
+        
+        if (request.Role != null && request.Role != user.Role)
+        {
+            if (request.Role != "admin" && request.Role != "user")
+            {
+                return BadRequest(new ApiResponse<object> { Code = 400, Message = "无效的角色" });
+            }
+
+            if (user.Role == "admin" && request.Role == "user")
+            {
+                var adminCount = IConfigBase.UserList.GetAllUsers().Count(u => u.Role == "admin");
+                if (adminCount <= 1)
+                {
+                    return BadRequest(new ApiResponse<object> { Code = 400, Message = "系统必须至少保留一名管理员" });
+                }
+            }
+
+            user.Role = request.Role;
+            requireTokenVersionBump = true;
+        }
         
         // 清洗并更新资源列表
         if (request.Resources != null)
@@ -135,6 +161,12 @@ public class AdminUserController : ControllerBase
             }
 
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+            requireTokenVersionBump = true;
+        }
+
+        if (requireTokenVersionBump)
+        {
+            user.TokenVersion++;
         }
 
         if (request.ResetApiKey)
@@ -160,6 +192,16 @@ public class AdminUserController : ControllerBase
         if (currentUserId == id)
         {
             return BadRequest(new ApiResponse<object> { Code = 400, Message = "不能删除自己" });
+        }
+
+        var targetUser = IConfigBase.UserList.GetUserById(id);
+        if (targetUser != null && targetUser.Role == "admin")
+        {
+            var adminCount = IConfigBase.UserList.GetAllUsers().Count(u => u.Role == "admin");
+            if (adminCount <= 1)
+            {
+                return BadRequest(new ApiResponse<object> { Code = 400, Message = "不能删除系统最后一名管理员" });
+            }
         }
 
         if (IConfigBase.UserList.DeleteUser(id))

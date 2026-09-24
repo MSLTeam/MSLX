@@ -21,6 +21,7 @@ onMounted(() => {
       <div
         class="flex items-center justify-between p-3.5 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-200/80 dark:border-zinc-700/60 hover:border-zinc-300 dark:hover:border-zinc-500 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 transition-all group cursor-pointer"
         @click="changeUrl('/instance/list')"
+        @auxclick.prevent="changeUrl('/instance/list', true)"
       >
         <span class="flex items-center gap-2 text-[var(--td-text-color-secondary)] shrink-0 text-sm">
           <t-icon

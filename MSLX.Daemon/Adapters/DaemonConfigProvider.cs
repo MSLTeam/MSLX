@@ -67,9 +67,9 @@ public class FrpConfigBridge : IFrpConfigBridge
 {
     public JArray ReadFrpList() => IConfigBase.FrpList?.ReadFrpList() ?? new();
     public List<JToken> GetFrpList() => IConfigBase.FrpList?.GetFrpList() ?? new();
-    public bool CreateFrpConfig(string name, string server, string configType, string config) => IConfigBase.FrpList?.CreateFrpConfig(name, server, configType, config) ?? false;
+    public bool CreateFrpConfig(string name, string server, string configType, string config, string? clientPath = null) => IConfigBase.FrpList?.CreateFrpConfig(name, server, configType, config, clientPath) ?? false;
     public bool DeleteFrpConfig(int id) => IConfigBase.FrpList?.DeleteFrpConfig(id) ?? false;
-    public bool UpdateFrpConfig(int id, string name, string server, string configType) => IConfigBase.FrpList?.UpdateFrpConfig(id, name, server, configType) ?? false;
+    public bool UpdateFrpConfig(int id, string name, string server, string configType, string? clientPath = null) => IConfigBase.FrpList?.UpdateFrpConfig(id, name, server, configType, clientPath) ?? false;
     public JObject? GetFrpConfig(int id) => IConfigBase.FrpList?.GetFrpConfig(id);
     public bool IsFrpIdValid(int id) => IConfigBase.FrpList?.IsFrpIdValid(id) ?? false;
     public int GenerateFrpId() => IConfigBase.FrpList?.GenerateFrpId() ?? 0;

@@ -5,6 +5,7 @@ using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.Daemon.Utils.McdrConfig;
 using MSLX.SDK.Models;
+using MSLX.SDK.Models.Files;
 using MSLX.SDK.Models.Instance;
 using Newtonsoft.Json.Linq;
 using System;
@@ -122,7 +123,7 @@ public class ServerDeploymentService
 
             using (var archive = ZipFile.Open(sourceFilePath, ZipArchiveMode.Read, gbkEncoding))
             {
-                string fullTargetDir = Path.GetFullPath(targetDir);
+                string fullTargetDir = FileUtils.NormalizeDirectoryPath(targetDir);
 
                 // 过滤出所有需要解压的文件项
                 var entries = archive.Entries.Where(e => !string.IsNullOrEmpty(e.Name)).ToList();
@@ -139,25 +140,23 @@ public class ServerDeploymentService
                     string entryPath = entry.FullName;
                     if (string.IsNullOrWhiteSpace(entryPath)) continue;
 
-                    // 跨平台路径归一化
-                    string normalizedPath = entryPath
-                        .Replace('\\', Path.DirectorySeparatorChar)
-                        .Replace('/', Path.DirectorySeparatorChar);
-
-                    string destinationPath = Path.GetFullPath(Path.Combine(fullTargetDir, normalizedPath));
-
-                    // Zip Slip 防御
-                    if (!destinationPath.StartsWith(fullTargetDir, StringComparison.OrdinalIgnoreCase))
+                    if (!FileUtils.TryResolveExtractPath(fullTargetDir, entryPath, null, out string destinationPath, out var failureReason))
                     {
-                        throw new IOException($"检测到非法解压路径: {entry.FullName}");
+                        if (failureReason == ExtractPathFailureReason.PathTraversal ||
+                            failureReason == ExtractPathFailureReason.ForbiddenByPolicy)
+                        {
+                            throw new IOException($"检测到非法解压路径 (Zip Slip 攻击拦截): {entry.FullName}");
+                        }
+                        continue;
                     }
 
                     bool isDirectory = string.IsNullOrEmpty(entry.Name) ||
-                                       normalizedPath.EndsWith(Path.DirectorySeparatorChar.ToString());
+                                       entry.FullName.EndsWith('/') ||
+                                       entry.FullName.EndsWith('\\');
 
                     if (isDirectory)
                     {
-                        Directory.CreateDirectory(destinationPath);
+                        if (!Directory.Exists(destinationPath)) Directory.CreateDirectory(destinationPath);
                         continue;
                     }
 

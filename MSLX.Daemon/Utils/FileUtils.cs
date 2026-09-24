@@ -1,6 +1,7 @@
-﻿using System.Dynamic;
+using System.Dynamic;
 using System.Security.Cryptography;
 using System.Text;
+using MSLX.SDK.Models.Files;
 
 namespace MSLX.Daemon.Utils;
 
@@ -78,6 +79,88 @@ public class FileUtils
         catch (Exception ex)
         {
             return (false, string.Empty, $"路径解析错误: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// 规范化目录路径并确保带尾部分隔符，兼容普通目录与系统根目录（就像这样 "/" 或者 "C:\"）
+    /// </summary>
+    public static string NormalizeDirectoryPath(string path)
+    {
+        var fullPath = Path.GetFullPath(path);
+        return fullPath.EndsWith(Path.DirectorySeparatorChar) ||
+               fullPath.EndsWith(Path.AltDirectorySeparatorChar)
+            ? fullPath
+            : fullPath + Path.DirectorySeparatorChar;
+    }
+
+    /// <summary>
+    /// 解压安全路径校验与目标路径解析，防止 Zip Slip 穿透
+    /// </summary>
+    public static bool TryResolveExtractPath(
+        string normalizedExtractRoot,
+        string? entryKey,
+        Func<string, bool>? isPathSafe,
+        out string destinationPath)
+        => TryResolveExtractPath(normalizedExtractRoot, entryKey, isPathSafe, out destinationPath, out _);
+
+    /// <summary>
+    /// 解压安全路径校验与目标路径解析，防止 Zip Slip 穿透
+    /// </summary>
+    public static bool TryResolveExtractPath(
+        string normalizedExtractRoot,
+        string? entryKey,
+        Func<string, bool>? isPathSafe,
+        out string destinationPath,
+        out ExtractPathFailureReason failureReason)
+    {
+        destinationPath = string.Empty;
+        failureReason = ExtractPathFailureReason.None;
+
+        if (string.IsNullOrWhiteSpace(entryKey))
+        {
+            failureReason = ExtractPathFailureReason.EmptyOrWhitespace;
+            return false;
+        }
+
+        try
+        {
+            // 剥除前导分隔符，防止 Path.Combine 将其误判为绝对根路径
+            string cleanedKey = entryKey.TrimStart('/', '\\')
+                .Replace('\\', Path.DirectorySeparatorChar)
+                .Replace('/', Path.DirectorySeparatorChar);
+
+            if (string.IsNullOrWhiteSpace(cleanedKey))
+            {
+                failureReason = ExtractPathFailureReason.EmptyOrWhitespace;
+                return false;
+            }
+
+            destinationPath = Path.GetFullPath(Path.Combine(normalizedExtractRoot, cleanedKey));
+
+            var comparison = OperatingSystem.IsWindows()
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
+
+            // Zip Slip 防御：目标路径必须严格位于解压根目录内部
+            if (!destinationPath.StartsWith(normalizedExtractRoot, comparison))
+            {
+                failureReason = ExtractPathFailureReason.PathTraversal;
+                return false;
+            }
+
+            if (isPathSafe != null && !isPathSafe(destinationPath))
+            {
+                failureReason = ExtractPathFailureReason.ForbiddenByPolicy;
+                return false;
+            }
+
+            return true;
+        }
+        catch
+        {
+            failureReason = ExtractPathFailureReason.PathTraversal;
+            return false;
         }
     }
 

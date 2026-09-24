@@ -1,6 +1,8 @@
 using System.Text;
 using Microsoft.Extensions.Logging.Abstractions;
 using MSLX.Daemon.Services;
+using MSLX.Daemon.Utils;
+using MSLX.SDK.Models.Files;
 using Xunit;
 
 namespace MSLX.Tests;
@@ -122,6 +124,89 @@ public class ArchiveServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Decompress_ZipSlipPrefixBypassAttack_Prevented()
+    {
+        // 测试针对 /data/instances/1 时通过 ../1evil/x 试图利用前缀匹配不严穿透的场景
+        string maliciousZip = Path.Combine(_tempDir, "prefix_bypass.zip");
+        using (var fs = File.Create(maliciousZip))
+        using (var zip = new System.IO.Compression.ZipArchive(fs, System.IO.Compression.ZipArchiveMode.Create))
+        {
+            var validEntry = zip.CreateEntry("ok.txt");
+            using (var w = new StreamWriter(validEntry.Open()))
+            {
+                w.Write("ok");
+            }
+
+            var evilPrefixEntry = zip.CreateEntry("../inst1evil/evil.txt");
+            using (var w = new StreamWriter(evilPrefixEntry.Open()))
+            {
+                w.Write("evil_content");
+            }
+        }
+
+        string targetDir = Path.Combine(_tempDir, "inst1");
+        Directory.CreateDirectory(targetDir);
+
+        await _archiveService.DecompressAsync(maliciousZip, targetDir, "utf-8", CancellationToken.None);
+
+        Assert.True(File.Exists(Path.Combine(targetDir, "ok.txt")));
+        Assert.False(Directory.Exists(Path.Combine(_tempDir, "inst1evil")), "同前缀恶意目录不应被创建");
+        Assert.False(File.Exists(Path.Combine(_tempDir, "inst1evil", "evil.txt")), "同前缀恶意文件不应被写入");
+    }
+
+    [Fact]
+    public void FileUtils_NormalizeDirectoryPath_HandlesRootAndRegular()
+    {
+        string regular = Path.Combine(Path.GetTempPath(), "test_dir");
+        string normalizedRegular = FileUtils.NormalizeDirectoryPath(regular);
+        Assert.EndsWith(Path.DirectorySeparatorChar.ToString(), normalizedRegular);
+        Assert.False(normalizedRegular.EndsWith(new string(Path.DirectorySeparatorChar, 2)));
+
+        if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+        {
+            string root = FileUtils.NormalizeDirectoryPath("/");
+            Assert.Equal("/", root);
+        }
+    }
+
+    [Fact]
+    public void FileUtils_TryResolveExtractPath_PreventsZipSlip()
+    {
+        string root = FileUtils.NormalizeDirectoryPath(Path.Combine(_tempDir, "inst1"));
+
+        // 正常子文件
+        Assert.True(FileUtils.TryResolveExtractPath(root, "sub/file.txt", null, out string dest1, out var reason1));
+        Assert.Equal(ExtractPathFailureReason.None, reason1);
+        Assert.StartsWith(root, dest1);
+
+        // 经典 ../ 穿透
+        Assert.False(FileUtils.TryResolveExtractPath(root, "../evil.txt", null, out _, out var reason2));
+        Assert.Equal(ExtractPathFailureReason.PathTraversal, reason2);
+
+        // 邻近同前缀文件夹穿透 ../inst1evil/x
+        Assert.False(FileUtils.TryResolveExtractPath(root, "../inst1evil/evil.txt", null, out _, out var reason3));
+        Assert.Equal(ExtractPathFailureReason.PathTraversal, reason3);
+
+        // 策略拒绝
+        Assert.False(FileUtils.TryResolveExtractPath(root, "sub/denied.txt", path => false, out _, out var reason4));
+        Assert.Equal(ExtractPathFailureReason.ForbiddenByPolicy, reason4);
+
+        // 绝对路径穿透：前导斜杠被剔除后安全约束在沙箱根目录内
+        if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
+        {
+            Assert.True(FileUtils.TryResolveExtractPath(root, "/etc/passwd", null, out string destAbs, out var reason5));
+            Assert.Equal(ExtractPathFailureReason.None, reason5);
+            Assert.StartsWith(root, destAbs);
+        }
+
+        // 空条目
+        Assert.False(FileUtils.TryResolveExtractPath(root, "", null, out _, out var reason6));
+        Assert.Equal(ExtractPathFailureReason.EmptyOrWhitespace, reason6);
+        Assert.False(FileUtils.TryResolveExtractPath(root, "   ", null, out _, out var reason7));
+        Assert.Equal(ExtractPathFailureReason.EmptyOrWhitespace, reason7);
+    }
+
+    [Fact]
     public async Task CompressAndDecompress_EncryptedZip_Success()
     {
         string srcDir = Path.Combine(_tempDir, "enc_source");
@@ -183,5 +268,41 @@ public class ArchiveServiceTests : IDisposable
         {
             await _archiveService.CompressAsync(files, tarPath, "password123", CancellationToken.None);
         });
+    }
+
+    [Theory]
+    [InlineData("【新版】白露键鼠 Bongocat  - 标准模式_packed.zip", true)]
+    [InlineData("My Server (1).zip", true)]
+    [InlineData("[1.20.1] Fabric Server.zip", true)]
+    [InlineData("Forge+Fabric.tar.gz", true)]
+    [InlineData("archive.7z", true)]
+    [InlineData("archive.tar.bz2", true)]
+    [InlineData("../../evil.zip", false)]
+    [InlineData("dir/test.zip", false)]
+    [InlineData("dir\\test.zip", false)]
+    [InlineData("test:stream.zip", false)]
+    [InlineData("test*.zip", false)]
+    [InlineData("test?.zip", false)]
+    [InlineData("test<1>.zip", false)]
+    [InlineData("test|1.zip", false)]
+    [InlineData("test.exe", false)]
+    [InlineData("", false)]
+    public void CompressRequest_TargetName_Validation(string targetName, bool expectedValid)
+    {
+        var request = new CompressRequest
+        {
+            Sources = new List<string> { "test.txt" },
+            TargetName = targetName
+        };
+
+        var context = new System.ComponentModel.DataAnnotations.ValidationContext(request)
+        {
+            MemberName = nameof(CompressRequest.TargetName)
+        };
+        var results = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
+        bool isValid = System.ComponentModel.DataAnnotations.Validator.TryValidateProperty(
+            request.TargetName, context, results);
+
+        Assert.Equal(expectedValid, isValid);
     }
 }

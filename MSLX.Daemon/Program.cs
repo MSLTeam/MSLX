@@ -8,6 +8,7 @@ using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Middleware;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Services.DeployServerService;
+using MSLX.Daemon.Services.InstanceServices;
 using MSLX.Daemon.Services.PluginsService;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.BackgroundTasks;
@@ -49,6 +50,8 @@ builder.Host.UseSerilog();
 // 创建临时 Logger
 var bootstrapLoggerFactory = LoggerFactory.Create(logging => logging.AddSerilog());
 IConfigBase.Initialize(bootstrapLoggerFactory);
+
+MSLX.SDK.Utils.UrlSecurityGuard.IsSsrfProtectionEnabled = () => (bool?)IConfigBase.Config.ReadConfig()["enableSsrfProtection"] ?? true;
 
 // 内置 Daemon 由 Desktop 管理监听策略，默认仅本机访问，也可显式开启外部访问。
 bool isEmbeddedDaemon = string.Equals(
@@ -212,7 +215,16 @@ builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationM
 // 注册单例服务
 builder.Services.AddSingleton<IFrpProcessService, FrpProcessService>();
 builder.Services.AddSingleton(typeof(IBackgroundTaskQueue<>), typeof(BackgroundTaskQueue<>));
-builder.Services.AddSingleton<IMCServerService,MCServerService>();
+builder.Services.AddSingleton<InstanceStateStore>();
+builder.Services.AddSingleton<InstanceConsoleService>();
+builder.Services.AddSingleton<InstanceLauncherService>();
+builder.Services.AddSingleton<IInstanceLifecycleService, InstanceLifecycleService>();
+builder.Services.AddSingleton<IInstanceConsoleService, InstanceInputService>();
+builder.Services.AddSingleton<IInstanceBackupService, InstanceBackupService>();
+builder.Services.AddSingleton<IMCServerService, LegacyMCServerServiceAdapter>();
+
+
+builder.Services.AddHostedService<InstanceMonitorWorker>();
 builder.Services.AddSingleton<IDockerService,DockerService>();
 builder.Services.AddSingleton<SystemMonitor>();
 builder.Services.AddSingleton<CreationTaskTracker>();
@@ -246,11 +258,20 @@ builder.Services.AddHttpClient<IResourceProvider, ModrinthService>();
 builder.Services.AddTransient<IUnifiedResourceService, UnifiedResourceService>();
 
 // 配置真实IP回传协议
+var enableCdnProxy = (bool?)IConfigBase.Config.ReadConfigKey("enableCdnProxy") ?? false;
+var cdnProxyIpHeader = IConfigBase.Config.ReadConfigKey("cdnProxyIpHeader")?.ToString() ?? "X-Forwarded-For";
+var cdnProxySecretValue = IConfigBase.Config.ReadConfigKey("cdnProxySecretValue")?.ToString();
+var cdnProxySecretHeader = "X-MSLX-CDN-Secret-Key"; // 固定请求头
+
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.KnownIPNetworks.Clear(); 
-    options.KnownProxies.Clear();
+    if (enableCdnProxy)
+    {
+        options.ForwardedForHeaderName = cdnProxyIpHeader;
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.KnownIPNetworks.Clear(); 
+        options.KnownProxies.Clear();
+    }
 });
 
 // 错误中间件
@@ -380,6 +401,24 @@ if (Directory.Exists(pluginsPath))
     {
         pluginManager.LoadPlugin(dllPath);
     }
+}
+
+// 注入 CDN 密钥验证中间件
+if (enableCdnProxy && !string.IsNullOrEmpty(cdnProxySecretValue))
+{
+    app.Use(async (context, next) =>
+    {
+        if (!context.Request.Headers.TryGetValue(cdnProxySecretHeader, out var extractedSecret) || 
+            extractedSecret != cdnProxySecretValue)
+        {
+            // 密钥不匹配或不存在，移除对应的头信息防止IP伪造
+            context.Request.Headers.Remove(cdnProxyIpHeader);
+            context.Request.Headers.Remove("X-Forwarded-For");
+            context.Request.Headers.Remove("X-Forwarded-Proto");
+            context.Request.Headers.Remove("X-Forwarded-Host");
+        }
+        await next();
+    });
 }
 
 app.UseForwardedHeaders();
@@ -516,7 +555,7 @@ lifetime.ApplicationStopping.Register(() =>
 
 // 显示实例化服务
 app.Services.GetService<IFrpProcessService>();
-app.Services.GetService<IMCServerService>();
+app.Services.GetService<IInstanceLifecycleService>();
 
 logger.LogInformation("正在检查 MSLAPI V3 主服务连通性...");
 try

@@ -41,6 +41,15 @@ async function fetchAnnouncement() {
 onMounted(() => {
   fetchAnnouncement();
 });
+
+const handleMdClick = (e: MouseEvent) => {
+  const target = e.target as HTMLElement;
+  const a = target.closest('a');
+  if (a && a.href) {
+    e.preventDefault();
+    window.open(a.href, '_blank');
+  }
+};
 </script>
 
 <template>
@@ -53,7 +62,7 @@ onMounted(() => {
 
     <div class="p-5 sm:px-6 text-left w-full min-h-[150px]">
       <t-loading :loading="loading" text="加载中..." size="small" class="w-full">
-        <div class="w-full overflow-y-auto custom-scrollbar">
+        <div class="w-full overflow-y-auto custom-scrollbar" @click="handleMdClick">
           <md-preview
             editor-id="announcement-preview"
             :model-value="notice"
@@ -128,5 +137,4 @@ onMounted(() => {
 :deep(.md-editor-preview table tr:nth-child(n)){
   background-color: transparent;
 }
-
 </style>

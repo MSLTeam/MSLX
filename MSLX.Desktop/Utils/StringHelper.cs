@@ -3,6 +3,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Security.Cryptography;
 using Avalonia.Input.Platform;
 
 namespace MSLX.Desktop.Utils
@@ -22,13 +23,9 @@ namespace MSLX.Desktop.Utils
             }
 
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-            var randomChars = new char[length];
-            for (int i = 0; i < length; i++)
-            {
-                randomChars[i] = chars[(new Random()).Next(chars.Length)];
-            }
+            var randomString = RandomNumberGenerator.GetString(chars, length);
 
-            return (prefix ?? "") + new string(randomChars);
+            return (prefix ?? "") + randomString;
         }
 
         public static async void CopyToClipboard(string text)

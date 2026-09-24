@@ -24,7 +24,7 @@ public class CreateFrpController : ControllerBase
     public IActionResult CreateTunnel([FromBody] CreateFrpRequest request)
     {
         bool suc = IConfigBase.FrpList.CreateFrpConfig(request.name, request.provider, request.format,
-            request.config);
+            request.config, request.clientPath);
         var response = new ApiResponse<JObject>
         {
             Code = suc ? 200 : 500,

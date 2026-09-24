@@ -35,6 +35,14 @@ public class OfflineDownloadController : ControllerBase
         if (string.IsNullOrWhiteSpace(request.Url))
             return BadRequest(new ApiResponse<object> { Code = 400, Message = "下载地址不能为空" });
 
+        // 离线下载开关验证
+        var role = User?.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+        bool allowNormalUser = (bool?)IConfigBase.Config.ReadConfig()["allowNormalUserOfflineDownload"] ?? false;
+        if (role != "admin" && !allowNormalUser)
+        {
+            return StatusCode(403, new ApiResponse<object> { Code = 403, Message = "管理员已禁用普通用户的离线下载功能" });
+        }
+
         var userId = User?.FindFirst("UserId")?.Value ?? "";
         string dlFileName = request.FileName ?? "未命名文件";
         var (task, ct) = _taskManager.CreateTask(userId, id, TaskType.Download, $"下载: {dlFileName}", dlFileName);
@@ -125,7 +133,8 @@ public class OfflineDownloadController : ControllerBase
                         UpdateStatus2(taskId, $"Task_Download_{taskId}", "processing", (int)progress, $"[镜像加速] 下载中... 速度: {speed}");
                     },
                     progressIntervalMs: 1000,
-                    cancellationToken: ct
+                    cancellationToken: ct,
+                    strictSsrfCheck: true
                 );
 
                 if (!success)
@@ -148,7 +157,8 @@ public class OfflineDownloadController : ControllerBase
                         UpdateStatus2(taskId, $"Task_Download_{taskId}", "processing", (int)progress, $"下载中... 速度: {speed}");
                     },
                     progressIntervalMs: 1000,
-                    cancellationToken: ct
+                    cancellationToken: ct,
+                    strictSsrfCheck: true
                 );
             }
 

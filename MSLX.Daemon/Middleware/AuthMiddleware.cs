@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Caching.Memory;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using System.Net;
@@ -73,14 +73,27 @@ namespace MSLX.Daemon.Middleware
                     // 验证userid是否存在于本地
                     var userId = principal.FindFirst("UserId")?.Value;
                     
-                    if (!string.IsNullOrEmpty(userId) && IConfigBase.UserList.GetUserById(userId) != null)
+                    if (!string.IsNullOrEmpty(userId))
                     {
-                        context.User = principal;
-                        isAuthenticated = true;
-                    }
-                    else
-                    {
-                        authErrorMessage = "用户不存在或已被删除";
+                        var dbUser = IConfigBase.UserList.GetUserById(userId);
+                        if (dbUser != null)
+                        {
+                            var rejectionReason = JwtUtils.GetTokenRejectionReason(principal, dbUser);
+                            if (rejectionReason == null)
+                            {
+                                context.User = principal;
+                                isAuthenticated = true;
+                            }
+                            else
+                            {
+                                authErrorMessage = rejectionReason;
+                                context.Items["isTokenValidButRejected"] = true;
+                            }
+                        }
+                        else
+                        {
+                            authErrorMessage = "用户不存在或已被删除";
+                        }
                     }
                 }
                 else
@@ -215,12 +228,11 @@ namespace MSLX.Daemon.Middleware
             // 结果判定
             if (isAuthenticated)
             {
-                // 拦截一些API （这里后续可能还是需要开放，先拦着吧）
                 if (isSlaveMode)
                 {
-                    if (path.StartsWithSegments("/api/user") || path.StartsWithSegments("/api/settings"))
+                    if (path.StartsWithSegments("/api/user") || path.StartsWithSegments("/api/settings") || path.StartsWithSegments("/api/admin"))
                     {
-                        if (!path.StartsWithSegments("/api/node"))
+                        if (!path.StartsWithSegments("/api/node") && !path.StartsWithSegments("/api/user/logout"))
                         {
                             await HandleErrorAsync(context, 403, "当前为子节点模式，禁止直接修改全局配置和用户数据。");
                             return;
@@ -235,7 +247,9 @@ namespace MSLX.Daemon.Middleware
 
             // 验证token是否只是过期了
             bool isExpiredSafe = false;
-            if (!string.IsNullOrEmpty(token) && !isAuthenticated)
+            bool isTokenValidButRejected = context.Items["isTokenValidButRejected"] as bool? ?? false;
+
+            if (!string.IsNullOrEmpty(token) && !isAuthenticated && !isTokenValidButRejected)
             {
                 if (JwtUtils.IsTokenExpiredButTrusted(token))
                 {
@@ -245,7 +259,7 @@ namespace MSLX.Daemon.Middleware
             }
 
             // 不是本地IP & 签名错误的Token 计入封禁拦截
-            if (!isLocalIp && !isExpiredSafe)
+            if (!isLocalIp && !isExpiredSafe && !isTokenValidButRejected)
             {
                 await ProcessFailureAsync(clientIp, countKey, banKey);
             }

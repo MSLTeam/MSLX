@@ -1,6 +1,8 @@
 export interface SettingsModel {
   allowNormalUserChangeUserName: boolean;
   allowNormalUserEditFrpConfig: boolean;
+  allowNormalUserOfflineDownload: boolean;
+  enableSsrfProtection: boolean;
   fireWallBanLocalAddr: boolean;
   openWebConsoleOnLaunch: boolean;
   neoForgeInstallerMirrors: string;
@@ -11,6 +13,9 @@ export interface SettingsModel {
   oAuthMSLClientID: string;
   oAuthMSLClientSecret: string;
   downloadThreadCount: number;
+  enableCdnProxy?: boolean;
+  cdnProxyIpHeader?: string;
+  cdnProxySecretValue?: string;
 }
 
 export interface WebpanelSettingsModel {

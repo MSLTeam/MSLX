@@ -15,7 +15,7 @@ import { changeUrl } from '@/router';
 import { DOC_URLS } from '@/api/docs';
 import { copyText } from '@/utils/clipboard';
 import { useUpdateStore } from '@/store';
-import { isInternalNetwork } from '@/utils/tools';
+import { isInternalNetwork, generateRandomString } from '@/utils/tools';
 
 const updateStore = useUpdateStore();
 
@@ -25,6 +25,8 @@ const submitLoading = ref(false);
 const sysData = reactive<SettingsModel>({
   allowNormalUserChangeUserName: true,
   allowNormalUserEditFrpConfig: true,
+  allowNormalUserOfflineDownload: false,
+  enableSsrfProtection: true,
   fireWallBanLocalAddr: false,
   openWebConsoleOnLaunch: true,
   neoForgeInstallerMirrors: 'MSL Mirrors',
@@ -35,7 +37,12 @@ const sysData = reactive<SettingsModel>({
   oAuthMSLClientID: '',
   oAuthMSLClientSecret: '',
   downloadThreadCount: 5,
+  enableCdnProxy: false,
+  cdnProxyIpHeader: 'X-Forwarded-For',
+  cdnProxySecretValue: '',
 });
+
+
 
 const mirrorOptions = [
   { label: '官方源 (较慢)', value: 'Official' },
@@ -269,6 +276,15 @@ onMounted(() => {
             </t-form-item>
           </template>
 
+          <t-form-item label="允许离线下载">
+            <template #help>
+              <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block"
+                >开启后，普通用户（服主）可以使用离线下载功能下载任意链接到其服务器目录下。</span
+              >
+            </template>
+            <t-switch v-model="sysData.allowNormalUserOfflineDownload" />
+          </t-form-item>
+
           <div class="flex items-center gap-3 mt-8 mb-6">
             <span class="text-xs font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest"
               >网络与安全</span
@@ -276,25 +292,22 @@ onMounted(() => {
             <div class="h-px bg-zinc-200/60 dark:bg-zinc-700/60 flex-1"></div>
           </div>
 
+          <t-form-item label="离线下载 SSRF 保护">
+            <template #help>
+              <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block"
+                >开启后将拦截任何指向局域网、云服务元数据的离线下载请求，强烈建议开启以确保安全。仅在您使用代理且导致下载误判失败时，才可酌情关闭此选项。</span
+              >
+            </template>
+            <t-switch v-model="sysData.enableSsrfProtection" />
+          </t-form-item>
+
           <t-form-item v-if="!isEmbeddedDaemon" label="禁止本地访问">
             <template #help>
               <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block"
                 >开启后将禁止本地回环地址访问，增强安全性。</span
               >
             </template>
-            <div class="flex items-center gap-3">
-              <t-switch v-model="sysData.fireWallBanLocalAddr" />
-              <span
-                class="text-[11px] font-extrabold px-2 py-0.5 rounded-md transition-colors"
-                :class="
-                  sysData.fireWallBanLocalAddr
-                    ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20'
-                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border border-zinc-200 dark:border-zinc-700'
-                "
-              >
-                {{ sysData.fireWallBanLocalAddr ? '已开启' : '已关闭' }}
-              </span>
-            </div>
+            <t-switch v-model="sysData.fireWallBanLocalAddr" />
           </t-form-item>
 
           <t-form-item v-if="isEmbeddedDaemon" label="启用外部访问">
@@ -303,19 +316,7 @@ onMounted(() => {
                 >开启后，局域网内的其他设备可以通过当前端口访问网页控制台，修改后需重启 App 生效。</span
               >
             </template>
-            <div class="flex items-center gap-3">
-              <t-switch v-model="sysData.allowExternalAccess" />
-              <span
-                class="text-[11px] font-extrabold px-2 py-0.5 rounded-md transition-colors"
-                :class="
-                  sysData.allowExternalAccess
-                    ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20'
-                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border border-zinc-200 dark:border-zinc-700'
-                "
-              >
-                {{ sysData.allowExternalAccess ? '已开启' : '已关闭' }}
-              </span>
-            </div>
+            <t-switch v-model="sysData.allowExternalAccess" />
           </t-form-item>
 
           <t-form-item :label="isEmbeddedDaemon ? '监听端口' : '监听地址设置'">
@@ -350,6 +351,49 @@ onMounted(() => {
               </div>
             </div>
           </t-form-item>
+
+          <t-form-item label="CDN/反代真实IP">
+            <template #help>
+              <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block">
+                开启后允许通过指定的请求头提取客户端真实 IP。<br/>
+                建议配置下方的私密密钥，以防止恶意用户直接向服务器发送伪造的请求头。<span class="text-amber-500/90 dark:text-amber-500/80">修改此功能需重启 {{ isEmbeddedDaemon ? 'App' : '守护进程' }} 生效。</span>
+              </span>
+            </template>
+            <t-switch v-model="sysData.enableCdnProxy" />
+          </t-form-item>
+
+          <template v-if="sysData.enableCdnProxy">
+            <t-form-item label="IP来源字段">
+              <template #help>
+                <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block">
+                  获取真实 IP 的请求头名称。默认：X-Forwarded-For，部分 CDN 可能是 CF-Connecting-IP 或 X-Real-IP。
+                </span>
+              </template>
+              <t-input v-model="sysData.cdnProxyIpHeader" class="!w-full sm:!w-96" />
+            </t-form-item>
+
+            <t-form-item label="请求头验证密钥">
+              <template #help>
+                <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block">
+                  (可选但强烈建议) 安全防护：请在您的 CDN 回源规则或 Nginx 代理规则中强制添加请求头 <code>X-MSLX-CDN-Secret-Key</code>，值为此处的密钥。<br/>
+                  清空此密钥将不再校验请求头，存在被伪造 IP 的风险。
+                </span>
+              </template>
+              <t-input
+                v-model="sysData.cdnProxySecretValue"
+                type="password"
+                placeholder="清空此密钥以关闭安全校验"
+                class="!w-full sm:!w-96"
+              >
+                <template #suffix>
+                  <div class="flex items-center gap-1">
+                    <t-button variant="text" size="small" @click="sysData.cdnProxySecretValue = generateRandomString(32)">随机</t-button>
+                    <t-button variant="text" size="small" theme="danger" @click="sysData.cdnProxySecretValue = ''">清空</t-button>
+                  </div>
+                </template>
+              </t-input>
+            </t-form-item>
+          </template>
 
           <t-form-item label="远程访问">
             <t-button

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -24,15 +23,19 @@ namespace MSLX.Daemon.Services.ResourceServices
         {
             try
             {
-                var path = Path.Combine(Directory.GetCurrentDirectory(), "Resources", "MSLX_ModDictionary.json");
-                if (!File.Exists(path))
+                var assembly = typeof(ModDictionaryService).Assembly;
+                // 嵌入资源名格式：<默认命名空间>.<目录>.<文件名>
+                var resourceName = assembly.GetManifestResourceNames()
+                    .FirstOrDefault(n => n.EndsWith("MSLX_ModDictionary.json", StringComparison.OrdinalIgnoreCase));
+
+                if (resourceName == null)
                 {
-                    _logger.LogWarning($"[ModDictionaryService] Dictionary file not found at {path}");
+                    _logger.LogWarning("[ModDictionaryService] Embedded dictionary resource not found.");
                     return;
                 }
 
-                var json = File.ReadAllText(path);
-                var rawDict = JsonSerializer.Deserialize<Dictionary<string, string>>(json);
+                using var stream = assembly.GetManifestResourceStream(resourceName)!;
+                var rawDict = JsonSerializer.Deserialize<Dictionary<string, string>>(stream);
                 if (rawDict != null)
                 {
                     foreach (var kvp in rawDict)

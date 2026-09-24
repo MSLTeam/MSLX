@@ -15,16 +15,16 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
 [ApiController]
 public class InstanceSettingsController : ControllerBase
 {
-    private readonly IMCServerService _mcServerService;
+    private readonly IInstanceLifecycleService _lifecycleService;
     private readonly IBackgroundTaskQueue<UpdateServerTask> _updateQueue;
     private readonly BackgroundTaskManager _taskManager;
 
     public InstanceSettingsController(
-        IMCServerService mcServerService,
+        IInstanceLifecycleService lifecycleService,
         IBackgroundTaskQueue<UpdateServerTask> updateQueue,
         BackgroundTaskManager taskManager)
     {
-        _mcServerService = mcServerService;
+        _lifecycleService = lifecycleService;
         _updateQueue = updateQueue;
         _taskManager = taskManager;
     }
@@ -82,7 +82,7 @@ public class InstanceSettingsController : ControllerBase
 
         if (needsBackgroundProcessing)
         {
-            if (_mcServerService.IsServerRunning(id))
+            if (_lifecycleService.IsServerRunning(id))
             {
                 return BadRequest(new ApiResponse<object>
                 {

@@ -15,6 +15,8 @@ public class UserInfo
     public string? OAuthMSLOpenID { get; set; } // 关联的MSL OAuth OpenID
     public DateTime? LastLoginTime { get; set; }
     public List<string> Resources { get; set; } = new List<string>();
+    public int TokenVersion { get; set; } = 1;
+    public Dictionary<string, DateTime> RevokedTokens { get; set; } = new Dictionary<string, DateTime>();
 
     // 辅助方法：转换为 ClaimsPrincipal
     public ClaimsPrincipal ToPrincipal(string authType)
@@ -67,6 +69,7 @@ public class UpdateSelfRequest
     public string? Username { get; set; }
     public string? Name { get; set; } // 昵称
     public string? Avatar { get; set; } // 头像
+    public string? OldPassword { get; set; } // 旧密码
     public string? Password { get; set; } // 新密码 (可选，为空则不改)
     public bool ResetApiKey { get; set; } = false; // 是否重置 ApiKey
 }

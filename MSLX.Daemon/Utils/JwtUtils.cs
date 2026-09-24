@@ -20,12 +20,9 @@ public static class JwtUtils
                 new Claim("UserId", user.Id),
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Role, user.Role),
+                new Claim("TokenVersion", user.TokenVersion.ToString()),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
-
-        foreach (var res in user.Resources)
-        {
-            claims.Add(new Claim("Resource", res));
-        }
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {
@@ -60,6 +57,27 @@ public static class JwtUtils
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// 验证令牌是否因登出被注销，或因修改密码/权限等事件版本过期
+    /// </summary>
+    public static string? GetTokenRejectionReason(ClaimsPrincipal principal, UserInfo user)
+    {
+        var jti = principal.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)?.Value;
+        var tokenVersionStr = principal.FindFirst("TokenVersion")?.Value;
+
+        if (!string.IsNullOrEmpty(jti) && user.RevokedTokens != null && user.RevokedTokens.TryGetValue(jti, out var exp) && exp > DateTime.UtcNow)
+        {
+            return "登录状态已失效，请重新登录";
+        }
+
+        if (int.TryParse(tokenVersionStr, out int tokenVersion) && tokenVersion == user.TokenVersion)
+        {
+            return null; // 有效
+        }
+
+        return "登录状态已失效，请重新登录";
     }
 
     // 验证token合法性但过期的情况

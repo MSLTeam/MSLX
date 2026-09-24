@@ -44,7 +44,6 @@ namespace MSLX.Daemon.Utils.ConfigUtils
         {
             string apikey = StringServices.GenerateRandomString(64);
             _logger.LogInformation("正在初始化配置文件...");
-            _logger.LogInformation("您的默认 API Key 是: {ApiKey}", apikey);
 
             var defaultConfig = new JObject
             {
@@ -77,7 +76,6 @@ namespace MSLX.Daemon.Utils.ConfigUtils
                 {
                     string apikey = StringServices.GenerateRandomString(64);
                     config["apiKey"] = apikey;
-                    _logger.LogInformation("您的默认 API Key 是: {ApiKey}", apikey);
                     needWrite = true;
                 }
                 if (config["avatar"] == null)

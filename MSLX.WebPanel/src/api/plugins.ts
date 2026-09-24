@@ -8,9 +8,10 @@ import {
   PluginListModel,
 } from '@/api/model/plugins';
 
-export async function getPluginList(){
+export async function getPluginList(params?: { categoryId?: number }){
   return await request.get<PluginListModel[]>({
-    url: '/api/plugins/list'
+    url: '/api/plugins/list',
+    params
   });
 }
 
@@ -42,7 +43,13 @@ export async function postUploadLocalPlugin(fileId: string, fileName?: string) {
 }
 
 // 插件市场
-export async function getMarketPluginList(params: { keyword?: string; page?: number; size?: number }) {
+export async function getMarketCategories() {
+  return await request.get<import('@/api/model/plugins').PluginCategoryModel[]>({
+    url: 'https://mslx-plugins-api.mslmc.net/api/categories/list',
+  });
+}
+
+export async function getMarketPluginList(params: { keyword?: string; page?: number; size?: number; categoryId?: number }) {
   return await request.get<MarketPluginPageModel>({
     url: 'https://mslx-plugins-api.mslmc.net/api/plugins/list',
     params,

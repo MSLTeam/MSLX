@@ -19,7 +19,8 @@ namespace MSLX.Daemon.Controllers.InstanceControllers;
 [ApiController]
 public class PlayerManagerController : ControllerBase
 {
-    private readonly IMCServerService _mcServerService;
+    private readonly IInstanceLifecycleService _lifecycleService;
+    private readonly IInstanceConsoleService _consoleService;
 
     // MC的日期时间格式
     private readonly string _mcDateTimeFormat = "yyyy-MM-dd HH:mm:ss zzz";
@@ -31,9 +32,10 @@ public class PlayerManagerController : ControllerBase
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
-    public PlayerManagerController(IMCServerService mcServerService)
+    public PlayerManagerController(IInstanceLifecycleService lifecycleService, IInstanceConsoleService consoleService)
     {
-        _mcServerService = mcServerService;
+        _lifecycleService = lifecycleService;
+        _consoleService = consoleService;
     }
 
     [HttpGet("online/{id}")]
@@ -43,7 +45,7 @@ public class PlayerManagerController : ControllerBase
             return NotFound(ApiResponseService.NotFound());
         try
         {
-            var players = _mcServerService.GetOnlinePlayers(id);
+            var players = _lifecycleService.GetOnlinePlayers(id);
             return Success(players);
         }
         catch (Exception e)

@@ -99,23 +99,32 @@ export default defineConfig(async ({ mode:_mode }: ConfigEnv): Promise<UserConfi
               ) {
                 return 'mslx-core';
               }
-              if (id.includes('echarts') || id.includes('zrender')) return 'mslx-charts';
-              if (id.includes('prettier')) return 'mslx-formatter';
-              if (id.includes('md-editor-v3') || id.includes('codemirror')) return 'mslx-editor';
+              if (id.includes('echarts') || id.includes('zrender')) return 'mslx-libs-charts';
+              if (id.includes('prettier')) return 'mslx-libs-formatter';
+              if (id.includes('md-editor-v3') || id.includes('codemirror')) return 'mslx-libs-editor';
+              if (id.includes('artplayer')) return 'mslx-libs-artplayer';
               return 'mslx-libs';
             }
-            if (id.includes('src/')) return 'mslx-app-main';
           },
 
           assetFileNames: (assetInfo) => {
             const name = assetInfo.name || '';
-            return name.startsWith('mslx-')
-              ? 'assets/[ext]/[name].[hash].[ext]'
-              : 'assets/[ext]/mslx-[name].[hash].[ext]';
+            const extIndex = name.lastIndexOf('.');
+            const baseName = extIndex !== -1 ? name.slice(0, extIndex) : name;
+            const kebabName = baseName.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+            return kebabName.startsWith('mslx-')
+              ? `assets/[ext]/${kebabName}.[hash].[ext]`
+              : `assets/[ext]/mslx-${kebabName}.[hash].[ext]`;
           },
 
           entryFileNames: 'assets/js/mslx-entry.[hash].js',
-          chunkFileNames: 'assets/js/[name].[hash].js',
+          chunkFileNames: (chunkInfo) => {
+            const name = chunkInfo.name || '';
+            const kebabName = name.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+            return kebabName.startsWith('mslx-')
+              ? `assets/js/${kebabName}.[hash].js`
+              : `assets/js/mslx-${kebabName}.[hash].js`;
+          },
         },
       },
     },

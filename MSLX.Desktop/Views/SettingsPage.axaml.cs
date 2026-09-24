@@ -168,6 +168,8 @@ public partial class SettingsPage : UserControl
     {
         // Web Console
         SwitchWebConsole.IsChecked = _currentSettings.OpenWebConsoleOnLaunch;
+        SwitchAllowNormalUserOfflineDownload.IsChecked = _currentSettings.AllowNormalUserOfflineDownload;
+        SwitchEnableSsrfProtection.IsChecked = _currentSettings.EnableSsrfProtection;
 
         // Mirrors (通过 Tag 匹配)
         ComboMirrors.SelectedItem = null;
@@ -207,6 +209,30 @@ public partial class SettingsPage : UserControl
         // Download Thread Count
         SliderDownloadThreadCount.Value = _currentSettings.DownloadThreadCount;
         UpdateDownloadThreadUi(_currentSettings.DownloadThreadCount);
+
+        // CDN Proxy
+        SwitchCdnProxy.IsChecked = _currentSettings.EnableCdnProxy;
+        TxtCdnProxyIpHeader.Text = _currentSettings.CdnProxyIpHeader ?? "X-Forwarded-For";
+        TxtCdnProxySecretValue.Text = _currentSettings.CdnProxySecretValue ?? "";
+        UpdateCdnProxyUiVisibility(_currentSettings.EnableCdnProxy);
+    }
+
+    private void SwitchCdnProxy_OnIsCheckedChanged(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        UpdateCdnProxyUiVisibility(SwitchCdnProxy.IsChecked == true);
+    }
+
+    private void UpdateCdnProxyUiVisibility(bool isEnabled)
+    {
+        CdnProxyIpHeaderRow.IsVisible = isEnabled;
+        CdnProxyIpHeaderSeparator.IsVisible = isEnabled;
+        CdnProxySecretRow.IsVisible = isEnabled;
+        CdnProxySecretSeparator.IsVisible = isEnabled;
+    }
+
+    private void OnRandomCdnSecretClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        TxtCdnProxySecretValue.Text = StringHelper.GenerateRandomString(32);
     }
 
     private void UpdateDownloadThreadUi(int val)
@@ -223,6 +249,8 @@ public partial class SettingsPage : UserControl
         try
         {
             _currentSettings.OpenWebConsoleOnLaunch = SwitchWebConsole.IsChecked ?? true;
+            _currentSettings.AllowNormalUserOfflineDownload = SwitchAllowNormalUserOfflineDownload.IsChecked ?? false;
+            _currentSettings.EnableSsrfProtection = SwitchEnableSsrfProtection.IsChecked ?? true;
 
             if (ComboMirrors.SelectedItem is ComboBoxItem selectedItem && selectedItem.Tag != null)
             {
@@ -244,6 +272,11 @@ public partial class SettingsPage : UserControl
             }
             _currentSettings.ListenPort = (uint)(NumListenPort.Value ?? 1027);
             _currentSettings.DownloadThreadCount = (int)SliderDownloadThreadCount.Value;
+
+            // CDN Proxy
+            _currentSettings.EnableCdnProxy = SwitchCdnProxy.IsChecked ?? false;
+            _currentSettings.CdnProxyIpHeader = TxtCdnProxyIpHeader.Text ?? "X-Forwarded-For";
+            _currentSettings.CdnProxySecretValue = TxtCdnProxySecretValue.Text ?? "";
 
             // 提交数据
             var response = await DaemonAPIService.PostApiAsync(

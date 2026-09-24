@@ -10,6 +10,12 @@ public class UpdateSettingsRequest
     [Required(ErrorMessage = "系统设置-是否允许普通用户修改隧道配置文件 (allowNormalUserEditFrpConfig) 不能为空")]
     public Boolean AllowNormalUserEditFrpConfig { get; set; } = true;
 
+    [Required(ErrorMessage = "是否允许普通用户使用离线下载功能不能为空")]
+    public bool AllowNormalUserOfflineDownload { get; set; } = false;
+
+    [Required(ErrorMessage = "离线下载 SSRF 保护开关不能为空")]
+    public bool EnableSsrfProtection { get; set; } = true;
+
     [Required(ErrorMessage = "防火墙配置-是否允许本地回环地址访问 (fireWallBanLocalAddr) 不能为空")]
     public Boolean FireWallBanLocalAddr { get; set; }
 
@@ -42,6 +48,17 @@ public class UpdateSettingsRequest
     [Required(ErrorMessage = "下载线程数量 (downloadThreadCount) 不能为空")]
     [Range(1, 8, ErrorMessage = "下载线程数量 (downloadThreadCount) 必须在 1-8 之间")]
     public int DownloadThreadCount { get; set; } = 5;
+
+    [Required(ErrorMessage = "CDN/反代真实IP开关不能为空")]
+    public bool EnableCdnProxy { get; set; } = false;
+    
+    [Required(ErrorMessage = "客户端IP来源字段不能为空")]
+    [RegularExpression(@"^[a-zA-Z0-9-]+$", ErrorMessage = "IP来源字段只能包含字母、数字和连字符")]
+    [StringLength(64, ErrorMessage = "IP来源字段长度不能超过64个字符")]
+    public string CdnProxyIpHeader { get; set; } = "X-Forwarded-For";
+    
+    [StringLength(128, ErrorMessage = "CDN私密请求头验证密钥长度不能超过128个字符")]
+    public string? CdnProxySecretValue { get; set; } = "";
 }
 
 public class UpdateWebPanelStyleSettingsRequest

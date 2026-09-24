@@ -2,6 +2,8 @@ using System.IO.Compression;
 using System.Text;
 using CliWrap;
 using ICSharpCode.SharpZipLib.Zip;
+using MSLX.Daemon.Utils;
+using MSLX.SDK.Models.Files;
 using SharpCompress.Archives;
 using SharpCompress.Common;
 using SharpCompress.Readers;
@@ -52,8 +54,7 @@ public class ArchiveService
         var lowerName = Path.GetFileName(archiveFullPath).ToLowerInvariant();
 
         // 解压根路径
-        var normalizedExtractRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(extractRootPath))
-                                    + Path.DirectorySeparatorChar;
+        var normalizedExtractRoot = FileUtils.NormalizeDirectoryPath(extractRootPath);
 
         string passPrompt = string.IsNullOrEmpty(password) ? "无密码" : "带密码";
         _logger.LogInformation("开始解压文件: {Archive} 到 {Destination}, 编码: {Encoding}, {PassPrompt}",
@@ -194,22 +195,20 @@ public class ArchiveService
                 }
             }
 
-            if (string.IsNullOrEmpty(entry.Key)) continue;
-
-            string normalizedRelPath = entry.Key
-                .Replace('\\', Path.DirectorySeparatorChar)
-                .Replace('/', Path.DirectorySeparatorChar);
-
-            string destinationPath = Path.GetFullPath(Path.Combine(normalizedExtractRoot, normalizedRelPath));
-
-            // Zip Slip 防御
-            if (!destinationPath.StartsWith(normalizedExtractRoot, StringComparison.OrdinalIgnoreCase))
+            if (!FileUtils.TryResolveExtractPath(normalizedExtractRoot, entry.Key, isPathSafe, out string destinationPath, out var failureReason))
+            {
+                if (failureReason == ExtractPathFailureReason.PathTraversal)
+                {
+                    _logger.LogWarning("检测到潜在的 Zip Slip 路径穿越条目，已拦截并跳过: {Entry}", entry.Key);
+                }
+                else if (failureReason == ExtractPathFailureReason.ForbiddenByPolicy)
+                {
+                    _logger.LogWarning("压缩包条目超出允许的安全沙箱范围，已跳过: {Entry}", entry.Key);
+                }
                 continue;
+            }
 
-            if (isPathSafe != null && !isPathSafe(destinationPath))
-                continue;
-
-            if (entry.IsDirectory || normalizedRelPath.EndsWith(Path.DirectorySeparatorChar.ToString()))
+            if (entry.IsDirectory || entry.Key.EndsWith('/') || entry.Key.EndsWith('\\'))
             {
                 if (!Directory.Exists(destinationPath)) Directory.CreateDirectory(destinationPath);
             }
@@ -242,7 +241,7 @@ public class ArchiveService
         {
             ct.ThrowIfCancellationRequested();
             var entry = reader.Entry;
-            if (entry == null || string.IsNullOrEmpty(entry.Key)) continue;
+            if (entry == null) continue;
 
             count++;
             if (count % 5 == 0)
@@ -250,20 +249,20 @@ public class ArchiveService
                 onProgress?.Invoke(-1, $"正在解压: {entry.Key}");
             }
 
-            string normalizedRelPath = entry.Key
-                .Replace('\\', Path.DirectorySeparatorChar)
-                .Replace('/', Path.DirectorySeparatorChar);
-
-            string destinationPath = Path.GetFullPath(Path.Combine(normalizedExtractRoot, normalizedRelPath));
-
-            // Zip Slip 防御
-            if (!destinationPath.StartsWith(normalizedExtractRoot, StringComparison.OrdinalIgnoreCase))
+            if (!FileUtils.TryResolveExtractPath(normalizedExtractRoot, entry.Key, isPathSafe, out string destinationPath, out var failureReason))
+            {
+                if (failureReason == ExtractPathFailureReason.PathTraversal)
+                {
+                    _logger.LogWarning("检测到潜在的 Zip Slip 路径穿越条目，已拦截并跳过: {Entry}", entry.Key);
+                }
+                else if (failureReason == ExtractPathFailureReason.ForbiddenByPolicy)
+                {
+                    _logger.LogWarning("压缩包条目超出允许的安全沙箱范围，已跳过: {Entry}", entry.Key);
+                }
                 continue;
+            }
 
-            if (isPathSafe != null && !isPathSafe(destinationPath))
-                continue;
-
-            if (entry.IsDirectory || normalizedRelPath.EndsWith(Path.DirectorySeparatorChar.ToString()))
+            if (entry.IsDirectory || entry.Key.EndsWith('/') || entry.Key.EndsWith('\\'))
             {
                 if (!Directory.Exists(destinationPath)) Directory.CreateDirectory(destinationPath);
             }
@@ -310,19 +309,20 @@ public class ArchiveService
                 }
             }
 
-            string normalizedRelPath = entry.FullName
-                .Replace('\\', Path.DirectorySeparatorChar)
-                .Replace('/', Path.DirectorySeparatorChar);
-
-            string destinationPath = Path.GetFullPath(Path.Combine(normalizedExtractRoot, normalizedRelPath));
-
-            if (!destinationPath.StartsWith(normalizedExtractRoot, StringComparison.OrdinalIgnoreCase))
+            if (!FileUtils.TryResolveExtractPath(normalizedExtractRoot, entry.FullName, isPathSafe, out string destinationPath, out var failureReason))
+            {
+                if (failureReason == ExtractPathFailureReason.PathTraversal)
+                {
+                    _logger.LogWarning("检测到潜在的 Zip Slip 路径穿越条目，已拦截并跳过: {Entry}", entry.FullName);
+                }
+                else if (failureReason == ExtractPathFailureReason.ForbiddenByPolicy)
+                {
+                    _logger.LogWarning("压缩包条目超出允许的安全沙箱范围，已跳过: {Entry}", entry.FullName);
+                }
                 continue;
+            }
 
-            if (isPathSafe != null && !isPathSafe(destinationPath))
-                continue;
-
-            if (string.IsNullOrEmpty(entry.Name) || normalizedRelPath.EndsWith(Path.DirectorySeparatorChar.ToString()))
+            if (string.IsNullOrEmpty(entry.Name) || entry.FullName.EndsWith('/') || entry.FullName.EndsWith('\\'))
             {
                 if (!Directory.Exists(destinationPath)) Directory.CreateDirectory(destinationPath);
             }

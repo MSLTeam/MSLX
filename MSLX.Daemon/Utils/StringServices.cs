@@ -1,12 +1,11 @@
-using System;
 using System.Text;
+
+using System.Security.Cryptography;
 
 namespace MSLX.Daemon.Utils;
 
 public class StringServices
 {
-    private static readonly Random _random = new Random();
-
     /// <summary>
     /// 生成指定长度的随机字符串（可选前缀）
     /// </summary>
@@ -20,13 +19,9 @@ public class StringServices
         }
 
         const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-        var randomChars = new char[length];
-        for (int i = 0; i < length; i++)
-        {
-            randomChars[i] = chars[_random.Next(chars.Length)];
-        }
+        var randomString = RandomNumberGenerator.GetString(chars, length);
 
-        return (prefix ?? "") + new string(randomChars);
+        return (prefix ?? "") + randomString;
     }
 
     /// <summary>
@@ -38,7 +33,7 @@ public class StringServices
         {
             throw new ArgumentOutOfRangeException(nameof(start), "起始值不能大于结束值");
         }
-        return _random.Next(start, end + 1);
+        return RandomNumberGenerator.GetInt32(start, end + 1);
     }
 
     /// <summary>

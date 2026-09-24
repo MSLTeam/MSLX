@@ -47,15 +47,18 @@ import {
   saveFileContent,
 } from '@/api/files';
 import type { FilesListModel } from '@/api/model/files';
-import FileEditor from './components/FileEditor.vue';
-import FileUploader from './components/FileUploader.vue';
-import ImagePreview from './components/ImagePreview.vue';
-import VideoPreview from './components/VideoPreview.vue';
-import FileCompressor from './components/FileCompressor.vue';
-import FileDecompress from './components/FileDecompress.vue';
-import FilePermission from './components/FilePermission.vue';
-import FileOfflineDownloader from './components/FileOfflineDownloader.vue';
-import FileGridView from './components/FileGridView.vue';
+import { defineAsyncComponent } from 'vue';
+
+const FileEditor = defineAsyncComponent(() => import('./components/FileEditor.vue'));
+const FileUploader = defineAsyncComponent(() => import('./components/FileUploader.vue'));
+const ImagePreview = defineAsyncComponent(() => import('./components/ImagePreview.vue'));
+const VideoPreview = defineAsyncComponent(() => import('./components/VideoPreview.vue'));
+const FileCompressor = defineAsyncComponent(() => import('./components/FileCompressor.vue'));
+const FileDecompress = defineAsyncComponent(() => import('./components/FileDecompress.vue'));
+const FilePermission = defineAsyncComponent(() => import('./components/FilePermission.vue'));
+const FileOfflineDownloader = defineAsyncComponent(() => import('./components/FileOfflineDownloader.vue'));
+const FileGridView = defineAsyncComponent(() => import('./components/FileGridView.vue'));
+
 import { changeUrl } from '@/router';
 import { useUserStore } from '@/store';
 
@@ -416,11 +419,19 @@ const handleDelete = (row?: any) => {
   });
 };
 
-const handleRowClick = (row: any) => {
+const handleRowClick = (row: any, newTab = false) => {
   if (row.type === 'folder') {
     const separator = currentPath.value === '' ? '' : '/';
     const targetPath = `${currentPath.value}${separator}${row.name}`;
-    router.push({ query: { ...route.query, path: targetPath || undefined } });
+    if (newTab) {
+      const routeUrl = router.resolve({ query: { ...route.query, path: targetPath || undefined } }).href;
+      const win = window.open(routeUrl, '_blank');
+      if (win) {
+        win.focus();
+      }
+    } else {
+      router.push({ query: { ...route.query, path: targetPath || undefined } });
+    }
   } else if (isVideo(row.name)) {
     openVideoPreview(row.name);
   } else if (isImage(row.name)) {
@@ -881,6 +892,7 @@ onUnmounted(() => {
             size="medium"
             class="!rounded-lg !m-0"
             @click="changeUrl(`/instance/console/${instanceId}`)"
+            @auxclick.prevent="changeUrl(`/instance/console/${instanceId}`, true)"
           >
             <template #icon><rollback-icon /></template>
             <span v-if="!isMobile">控制台</span>
@@ -972,7 +984,7 @@ onUnmounted(() => {
           @page-change="handlePageChange"
         >
           <template #name="{ row }">
-            <div class="flex items-center py-1.5 cursor-pointer group" @click.stop="handleRowClick(row)">
+            <div class="flex items-center py-1.5 cursor-pointer group" @click.stop="handleRowClick(row)" @auxclick.prevent.stop="handleRowClick(row, true)">
               <component
                 :is="getFileIcon(row).icon"
                 class="text-xl mr-2 shrink-0 transition-transform group-hover:scale-110"
@@ -1315,7 +1327,8 @@ onUnmounted(() => {
 
 :deep(.t-table tbody tr) {
   animation: tableRowSlideUp 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
-  will-change: transform, opacity;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 150px;
 }
 
 /* 首屏的 15 行应用错落延迟 */

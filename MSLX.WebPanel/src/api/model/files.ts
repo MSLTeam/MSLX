@@ -9,6 +9,7 @@ export interface UploadFinishResponse {
 export interface UploadPackageCheckJarResponse {
   count: number;
   jars: string[];
+  scripts?: string[];
   detectedRoot: string;
   metadata?: Record<string, any>;
   format?: 'zip' | 'mrpack' | string;

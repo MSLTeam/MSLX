@@ -1,9 +1,11 @@
 export function generateRandomString(length: number): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
+  const randomArray = new Uint32Array(length);
+  window.crypto.getRandomValues(randomArray);
 
   for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
+    result += chars.charAt(randomArray[i] % chars.length);
   }
 
   return result;

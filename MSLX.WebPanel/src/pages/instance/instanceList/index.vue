@@ -91,7 +91,7 @@ const toggleBatchMode = () => {
 };
 
 // 实例卡片点击事件
-const handleCardClick = (item: InstanceListModel) => {
+const handleCardClick = (e: Event, item: InstanceListModel, newTab = false) => {
   if (isBatchMode.value) {
     // 选中卡片
     const index = selectedIds.value.indexOf(item.id);
@@ -101,7 +101,7 @@ const handleCardClick = (item: InstanceListModel) => {
       selectedIds.value.splice(index, 1);
     }
   } else {
-    changeUrl(`/instance/console/${item.id}`);
+    changeUrl(`/instance/console/${item.id}`, newTab);
   }
 };
 
@@ -267,7 +267,7 @@ const handleConfirmDelete = async () => {
             <template #icon><refresh-icon /></template>
             刷新列表
           </t-button>
-          <t-button v-if="userStore.isAdmin" theme="primary" @click="changeUrl('/instance/create')">
+          <t-button v-if="userStore.isAdmin" theme="primary" @click="changeUrl('/instance/create')" @auxclick.prevent="changeUrl('/instance/create', true)">
             <template #icon><add-icon /></template>
             添加服务端
           </t-button>
@@ -333,7 +333,8 @@ const handleConfirmDelete = async () => {
               :class="{
                 '!border-[var(--color-primary)] shadow-md': isBatchMode && selectedIds.includes(item.id),
               }"
-              @click="handleCardClick(item)"
+              @click="handleCardClick($event, item)"
+              @auxclick.prevent="handleCardClick($event, item, true)"
             >
               <div v-if="isBatchMode" class="absolute top-4 right-4 z-10 pointer-events-none">
                 <t-checkbox :checked="selectedIds.includes(item.id)" />
@@ -342,11 +343,18 @@ const handleConfirmDelete = async () => {
               <div class="flex items-center gap-4">
                 <div class="relative shrink-0">
                   <t-avatar
-                    :image="getImageUrl(item.icon, item.id)"
-                    class="shadow-sm border border-[var(--td-component-border)] !bg-[var(--td-bg-color-secondarycontainer)] !rounded-xl"
+                    class="shadow-sm border border-[var(--td-component-border)] !bg-[var(--td-bg-color-secondarycontainer)] !rounded-xl overflow-hidden"
                     shape="round"
                     size="56px"
-                  />
+                  >
+                    <img 
+                      :src="getImageUrl(item.icon, item.id)" 
+                      :fetchpriority="index < 4 ? 'high' : 'low'" 
+                      :loading="index < 4 ? 'eager' : 'lazy'" 
+                      alt="server icon"
+                      class="w-full h-full object-cover"
+                    />
+                  </t-avatar>
                   <span class="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5">
                     <span
                       v-if="item.status === 2"
@@ -489,7 +497,8 @@ const handleConfirmDelete = async () => {
 
 .list-item-anim {
   animation: slideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
-  will-change: transform, opacity;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 150px;
 }
 
 @keyframes slideUp {

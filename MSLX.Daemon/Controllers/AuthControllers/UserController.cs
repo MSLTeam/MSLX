@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.Models;
@@ -78,6 +78,16 @@ public class UserController : ControllerBase
         // 更新密码
         if (!string.IsNullOrEmpty(request.Password))
         {
+            if (string.IsNullOrEmpty(request.OldPassword))
+            {
+                return BadRequest(new ApiResponse<object> { Code = 400, Message = "修改密码必须提供旧密码" });
+            }
+
+            if (string.IsNullOrEmpty(user.PasswordHash) || !BCrypt.Net.BCrypt.Verify(request.OldPassword, user.PasswordHash))
+            {
+                return BadRequest(new ApiResponse<object> { Code = 400, Message = "旧密码不正确或当前尚未设置密码" });
+            }
+
             // 长度校验
             if (request.Password.Length < 8 || request.Password.Length > 32)
             {
@@ -101,6 +111,7 @@ public class UserController : ControllerBase
             }
 
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+            user.TokenVersion++; // 修改密码后使得旧的全部 Token 失效
         }
 
         // 重置 ApiKey
@@ -118,5 +129,41 @@ public class UserController : ControllerBase
         {
             return StatusCode(500, new ApiResponse<object> { Code = 500, Message = "保存失败" });
         }
+    }
+
+    /// <summary>
+    /// 退出登录
+    /// </summary>
+    [HttpPost("logout")]
+    public IActionResult Logout()
+    {
+        var userId = User.FindFirst("UserId")?.Value;
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var user = IConfigBase.UserList.GetUserById(userId);
+        if (user == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "用户不存在" });
+
+        var jti = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)?.Value;
+        var expStr = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Exp)?.Value;
+
+        if (!string.IsNullOrEmpty(jti) && long.TryParse(expStr, out long expSeconds))
+        {
+            var expTime = DateTimeOffset.FromUnixTimeSeconds(expSeconds).UtcDateTime;
+            
+            // 加入黑名单
+            user.RevokedTokens[jti] = expTime;
+
+            // 清理已过期的 token
+            var now = DateTime.UtcNow;
+            var expiredKeys = user.RevokedTokens.Where(kvp => kvp.Value <= now).Select(kvp => kvp.Key).ToList();
+            foreach (var key in expiredKeys)
+            {
+                user.RevokedTokens.Remove(key);
+            }
+
+            IConfigBase.UserList.UpdateUser(user);
+        }
+
+        return Ok(new ApiResponse<object> { Code = 200, Message = "已成功退出登录" });
     }
 }
