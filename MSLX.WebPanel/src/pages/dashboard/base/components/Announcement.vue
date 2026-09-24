@@ -137,5 +137,4 @@ const handleMdClick = (e: MouseEvent) => {
 :deep(.md-editor-preview table tr:nth-child(n)){
   background-color: transparent;
 }
-
 </style>
