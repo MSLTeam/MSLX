@@ -5,7 +5,7 @@ using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.Models;
 using MSLX.SDK.Models.Node;
 
-namespace MSLX.Daemon.Controllers.NodesControlllers
+namespace MSLX.Daemon.Controllers.NodesControllers
 {
     [ApiController]
     [Route("api/node")]
