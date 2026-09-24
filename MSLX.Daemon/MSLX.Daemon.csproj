@@ -47,7 +47,7 @@
 		<PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
 		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
-		<PackageReference Include="System.Diagnostics.PerformanceCounters" Version="1.0.21-alpha" />
+		<PackageReference Include="System.Diagnostics.PerformanceCounter" Version="10.0.10" />
 		<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
 		<PackageReference Include="System.Management" Version="10.0.10" />
 		<PackageReference Include="System.Text.Encoding.CodePages" Version="10.0.10" NoWarn="NU1510" />
