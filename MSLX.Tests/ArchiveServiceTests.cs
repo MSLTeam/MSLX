@@ -269,4 +269,40 @@ public class ArchiveServiceTests : IDisposable
             await _archiveService.CompressAsync(files, tarPath, "password123", CancellationToken.None);
         });
     }
+
+    [Theory]
+    [InlineData("【新版】白露键鼠 Bongocat  - 标准模式_packed.zip", true)]
+    [InlineData("My Server (1).zip", true)]
+    [InlineData("[1.20.1] Fabric Server.zip", true)]
+    [InlineData("Forge+Fabric.tar.gz", true)]
+    [InlineData("archive.7z", true)]
+    [InlineData("archive.tar.bz2", true)]
+    [InlineData("../../evil.zip", false)]
+    [InlineData("dir/test.zip", false)]
+    [InlineData("dir\\test.zip", false)]
+    [InlineData("test:stream.zip", false)]
+    [InlineData("test*.zip", false)]
+    [InlineData("test?.zip", false)]
+    [InlineData("test<1>.zip", false)]
+    [InlineData("test|1.zip", false)]
+    [InlineData("test.exe", false)]
+    [InlineData("", false)]
+    public void CompressRequest_TargetName_Validation(string targetName, bool expectedValid)
+    {
+        var request = new CompressRequest
+        {
+            Sources = new List<string> { "test.txt" },
+            TargetName = targetName
+        };
+
+        var context = new System.ComponentModel.DataAnnotations.ValidationContext(request)
+        {
+            MemberName = nameof(CompressRequest.TargetName)
+        };
+        var results = new List<System.ComponentModel.DataAnnotations.ValidationResult>();
+        bool isValid = System.ComponentModel.DataAnnotations.Validator.TryValidateProperty(
+            request.TargetName, context, results);
+
+        Assert.Equal(expectedValid, isValid);
+    }
 }

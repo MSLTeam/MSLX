@@ -59,7 +59,7 @@ public class CompressRequest
     public List<string> Sources { get; set; } = new(); 
 
     [Required(ErrorMessage = "目标文件名 (TargetName) 不能为空")]
-    [RegularExpression(@"^(?i)[\w\-. ]+\.(zip|tar|tar\.gz|tgz|tar\.bz2|tbz2|tar\.xz|txz|7z)$", ErrorMessage = "目标文件名格式错误或不支持该后缀")]
+    [RegularExpression(@"^(?i)[^<>:""/\\|?*\x00-\x1f\r\n]+\.(zip|tar|tar\.gz|tgz|tar\.bz2|tbz2|tar\.xz|txz|7z)$", ErrorMessage = "目标文件名格式错误或不支持该后缀")]
     public string TargetName { get; set; } = string.Empty; 
 
     public string CurrentPath { get; set; } = string.Empty;
