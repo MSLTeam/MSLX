@@ -230,6 +230,7 @@ onUnmounted(() => {
             variant="outline"
             class="flex-1 !rounded-lg !h-8 !bg-zinc-100 dark:!bg-zinc-800 !border-zinc-200 dark:!border-zinc-700 !text-zinc-700 dark:!text-zinc-300 hover:!bg-zinc-200 dark:hover:!bg-zinc-700 transition-colors"
             @click="changeUrl(`/instance/files/${serverId}`)"
+            @auxclick.prevent="changeUrl(`/instance/files/${serverId}`, true)"
           >
             <template #icon><folder-icon /></template>文件管理
           </t-button>

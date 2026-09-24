@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import type { PropType } from 'vue';
 import isObject from 'lodash/isObject';
 import type { MenuRoute } from '@/types/interface';
-import { getActive } from '@/router';
+import router, { getActive } from '@/router';
 
 defineOptions({
   name: 'MenuContent',
@@ -100,7 +100,14 @@ const beRender = (item: MenuRoute) => {
 };
 
 const openHref = (url: string) => {
-  window.open(url);
+  const win = window.open(url, '_blank');
+  if (win) win.focus();
+};
+
+const openNewTab = (path: string) => {
+  const routeUrl = router.resolve(path).href;
+  const win = window.open(routeUrl, '_blank');
+  if (win) win.focus();
 };
 </script>
 
@@ -114,6 +121,7 @@ const openHref = (url: string) => {
           :value="getPath(item)"
           class="modern-menu-item"
           @click="openHref(getHref(item)[0])"
+          @auxclick.prevent="openHref(getHref(item)[0])"
         >
           <template #icon>
             <t-icon v-if="beIcon(item)" :name="item.icon" />
@@ -128,6 +136,7 @@ const openHref = (url: string) => {
           :value="getPath(item)"
           :to="item.path"
           class="modern-menu-item"
+          @auxclick.prevent="openNewTab(getPath(item))"
         >
           <template #icon>
             <t-icon v-if="beIcon(item)" :name="item.icon" />

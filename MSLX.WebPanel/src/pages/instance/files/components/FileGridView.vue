@@ -34,7 +34,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:selectedRowKeys': [keys: string[]];
-  'row-click': [row: FilesListModel];
+  'row-click': [row: FilesListModel, newTab?: boolean];
   'open-editor': [fileName: string];
   'open-preview': [fileName: string];
   'open-video-preview': [fileName: string];
@@ -224,12 +224,12 @@ const toggleSelect = (name: string, e?: Event) => {
   emit('update:selectedRowKeys', next);
 };
 
-const handleCardClick = (item: FilesListModel, e: MouseEvent) => {
+const handleCardClick = (item: FilesListModel, e: MouseEvent, newTab = false) => {
   if (e.ctrlKey || e.metaKey || e.shiftKey) {
     toggleSelect(item.name, e);
     return;
   }
-  emit('row-click', item);
+  emit('row-click', item, newTab);
 };
 
 // 视口监听
@@ -339,6 +339,7 @@ onUnmounted(() => {
             : 'border-zinc-200/70 dark:border-zinc-800 hover:border-[var(--color-primary)]/50',
         ]"
         @click="handleCardClick(item, $event)"
+        @auxclick.prevent="handleCardClick(item, $event, true)"
       >
         <!-- 左上角勾选框 (悬浮/选中时显示) -->
         <div

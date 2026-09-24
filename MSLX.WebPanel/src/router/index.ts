@@ -80,10 +80,16 @@ export const getActive = (maxLevel = 3): string => {
     .join('');
 };
 
-export function changeUrl(url: string) {
+export function changeUrl(url: string, newTab: boolean = false) {
   if(url.includes('http')){
     window.open(url);
-  }else{
+  } else if (newTab) {
+    const routeUrl = router.resolve(url).href;
+    const win = window.open(routeUrl, '_blank');
+    if (win) {
+      win.focus();
+    }
+  } else {
     router.replace(url);
   }
 }
