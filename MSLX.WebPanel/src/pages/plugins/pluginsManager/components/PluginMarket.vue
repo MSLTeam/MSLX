@@ -3,8 +3,8 @@ import { ref, onMounted, reactive, computed } from 'vue';
 import { DownloadIcon, TimeIcon, LinkIcon, ChevronLeftIcon, ChevronRightIcon } from 'tdesign-icons-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 
-import { getMarketPluginList, getMarketPluginVersions, postInstallPlugin, getInstallPluginStatus } from '@/api/plugins';
-import type { MarketPluginModel, MarketPluginVersionModel } from '@/api/model/plugins';
+import { getMarketPluginList, getMarketPluginVersions, postInstallPlugin, getInstallPluginStatus, getMarketCategories } from '@/api/plugins';
+import type { MarketPluginModel, MarketPluginVersionModel, PluginCategoryModel } from '@/api/model/plugins';
 import NotificationPlugin from 'tdesign-vue-next/es/notification/plugin';
 import { useUserStore } from '@/store';
 
@@ -13,6 +13,10 @@ const keyword = ref('');
 const marketList = ref<MarketPluginModel[]>([]);
 const pagination = reactive({ current: 1, pageSize: 10, total: 0 });
 const userStore = useUserStore();
+
+// 分类
+const categories = ref<PluginCategoryModel[]>([]);
+const activeCategoryId = ref<number | undefined>(undefined);
 
 // 搜索
 const handleSearch = (kw: string) => {
@@ -30,6 +34,7 @@ const fetchMarketList = async () => {
       keyword: keyword.value,
       page: pagination.current,
       size: pagination.pageSize,
+      categoryId: activeCategoryId.value,
     });
     marketList.value = res.list;
     pagination.total = res.total;
@@ -38,6 +43,20 @@ const fetchMarketList = async () => {
   } finally {
     listLoading.value = false;
   }
+};
+
+const fetchCategories = async () => {
+  try {
+    categories.value = await getMarketCategories();
+  } catch (error: any) {
+    console.error('获取分类失败', error);
+  }
+};
+
+const selectCategory = (id?: number) => {
+  activeCategoryId.value = id;
+  pagination.current = 1;
+  fetchMarketList();
 };
 
 // 分页逻辑
@@ -209,12 +228,43 @@ const onDialogClose = () => {
 };
 
 onMounted(() => {
+  fetchCategories();
   fetchMarketList();
 });
 </script>
 
 <template>
   <div class="relative min-h-[400px]">
+    <!-- 分类 -->
+    <div v-if="categories.length > 0" class="mb-5 design-card w-full flex items-center overflow-x-auto custom-scrollbar bg-[var(--td-bg-color-container)]/80 dark:bg-zinc-800/40 rounded-2xl border border-[var(--td-component-border)] shadow-sm p-2.5">
+      <div class="flex gap-2">
+        <button
+          @click="selectCategory(undefined)"
+          :class="[
+            'px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300 whitespace-nowrap',
+            activeCategoryId === undefined
+              ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm'
+              : 'text-[var(--td-text-color-secondary)] border border-transparent hover:bg-[var(--td-bg-color-secondarycontainer)] hover:text-[var(--td-text-color-primary)]'
+          ]"
+        >
+          全部
+        </button>
+        <button
+          v-for="cat in categories"
+          :key="cat.id"
+          @click="selectCategory(cat.id)"
+          :class="[
+            'px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300 whitespace-nowrap',
+            activeCategoryId === cat.id
+              ? 'bg-primary/10 text-primary border border-primary/20 shadow-sm'
+              : 'text-[var(--td-text-color-secondary)] border border-transparent hover:bg-[var(--td-bg-color-secondarycontainer)] hover:text-[var(--td-text-color-primary)]'
+          ]"
+        >
+          {{ cat.name }}
+        </button>
+      </div>
+    </div>
+
     <div v-if="listLoading" class="flex flex-col items-center justify-center py-24">
       <t-loading size="medium" text="正在从 MSLX 星系加载插件生态..." />
     </div>
@@ -252,6 +302,18 @@ onMounted(() => {
               <t-tag v-if="item.developerUid === 1 || item.developerUid === 5" theme="success">MSLX 官方</t-tag>
               <t-tag v-else theme="primary">社区插件</t-tag>
               <t-tag>{{ item.appId }}</t-tag>
+
+              <template v-if="item.categoryList && item.categoryList.length > 0">
+                <t-tag
+                  v-for="cat in item.categoryList"
+                  :key="cat.id"
+                  theme="default"
+                  variant="light-outline"
+                  class="border-zinc-200 dark:border-zinc-700/60 ml-1"
+                >
+                  {{ cat.name }}
+                </t-tag>
+              </template>
             </div>
             <p class="text-sm text-[var(--td-text-color-secondary)] line-clamp-2 m-0 leading-relaxed max-w-2xl">
               {{ item.shortDesc }}

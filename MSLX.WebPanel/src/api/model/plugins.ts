@@ -10,6 +10,7 @@ export interface PluginListModel {
   pluginUrl: string;
   entryPath: string;
   status: string;
+  categoryList?: PluginCategoryModel[];
 }
 
 export interface InstalPluginResponse {
@@ -20,6 +21,13 @@ export interface InstalPluginStatusModel {
   status: string;
   progress: number;
   message: string;
+}
+
+export interface PluginCategoryModel {
+  id: number;
+  name: string;
+  sortOrder: number;
+  createTime: string;
 }
 
 // 插件市场
@@ -33,6 +41,7 @@ export interface MarketPluginModel {
   name: string;
   shortDesc: string;
   totalDownloads: number;
+  categoryList?: PluginCategoryModel[];
 }
 
 export interface MarketPluginPageModel {
