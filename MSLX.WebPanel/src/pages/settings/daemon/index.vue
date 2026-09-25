@@ -5,6 +5,7 @@ import { useWebpanelStore, useUserStore } from '@/store';
 import SystemSettingsCard from '../base/components/SystemSettingsCard.vue';
 import PluginSlot from '@/components/PluginSlot.vue';
 import SslSettingsCard from '../base/components/SslSettingsCard.vue';
+import AiSettingsCard from '../base/components/AiSettingsCard.vue';
 
 const webpanelStore = useWebpanelStore();
 const userStore = useUserStore();
@@ -32,6 +33,8 @@ onMounted(() => {
   <div class="settings-page">
     <t-space direction="vertical" size="large" style="width: 100%">
       <system-settings-card v-if="userStore.isAdmin" ref="sysCardRef" @refresh="initAllData" />
+
+      <ai-settings-card v-if="userStore.isAdmin" />
 
       <ssl-settings-card v-if="userStore.isAdmin" />
 
