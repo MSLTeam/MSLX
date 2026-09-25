@@ -7,6 +7,7 @@ import { markRaw, ref } from 'vue';
 export const pluginStateChanged = ref(false);
 
 let pluginsLoaded = false;
+let pluginsLoadingPromise: Promise<void> | null = null;
 
 export function arePluginsLoaded() {
   return pluginsLoaded;
@@ -14,30 +15,37 @@ export function arePluginsLoaded() {
 
 export async function loadAllPlugins() {
   if (pluginsLoaded) return;
+  if (pluginsLoadingPromise) return pluginsLoadingPromise;
 
   // 开发模式下可以在这加载插件
   // await loadPlugin("http://localhost:5001/mslx-plugin-entry.js");
 
-  try {
-    const plugins = await getPluginList();
+  pluginsLoadingPromise = (async () => {
+    try {
+      const plugins = await getPluginList();
 
-    if (!plugins || plugins.length === 0) {
+      if (!plugins || plugins.length === 0) {
+        pluginsLoaded = true;
+        return;
+      }
+      const userStore = useUserStore();
+      const { baseUrl } = userStore;
+      const pluginUrls = plugins
+        .filter((plugin: any) => plugin.status === '已启用' && plugin.entryPath)
+        .map((plugin: any) => `${baseUrl || window.location.origin}${plugin.entryPath}`);
+
+      await Promise.all(pluginUrls.map((url) => loadPlugin(url)));
+
       pluginsLoaded = true;
-      return;
+      console.log('[MSLX Plugin] 🎉 所有插件加载完毕！');
+    } catch (error) {
+      console.error('[MSLX Plugin] 获取插件列表失败:', error);
+    } finally {
+      pluginsLoadingPromise = null;
     }
-    const userStore = useUserStore();
-    const { baseUrl } = userStore;
-    const pluginUrls = plugins
-      .filter((plugin: any) => plugin.status === '已启用' && plugin.entryPath)
-      .map((plugin: any) => `${baseUrl || window.location.origin}${plugin.entryPath}`);
+  })();
 
-    await Promise.all(pluginUrls.map((url) => loadPlugin(url)));
-
-    pluginsLoaded = true;
-    console.log('[MSLX Plugin] 🎉 所有插件加载完毕！');
-  } catch (error) {
-    console.error('[MSLX Plugin] 获取插件列表失败:', error);
-  }
+  return pluginsLoadingPromise;
 }
 
 function findMenuByName(menus: any[], name: string): any {
@@ -129,6 +137,7 @@ export async function loadPlugin(pluginUrl: string) {
           const extensionItem = {
             ...ext,
             component: markRaw(ext.component),
+            ...(ext.icon && typeof ext.icon === 'object' ? { icon: markRaw(ext.icon) } : {}),
           };
 
           pluginUIStore.registerExtension(ext.slot, extensionItem);
