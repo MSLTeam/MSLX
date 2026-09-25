@@ -42,8 +42,6 @@ const sysData = reactive<SettingsModel>({
   cdnProxySecretValue: '',
 });
 
-
-
 const mirrorOptions = [
   { label: '官方源 (较慢)', value: 'Official' },
   { label: 'MSL镜像源 (推荐)', value: 'MSL Mirrors' },
@@ -208,6 +206,15 @@ onMounted(() => {
             <t-switch v-model="sysData.allowNormalUserEditFrpConfig" />
           </t-form-item>
 
+          <t-form-item label="允许离线下载">
+            <template #help>
+              <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block"
+                >开启后，普通用户（服主）可以使用离线下载功能下载任意链接到其服务器目录下。</span
+              >
+            </template>
+            <t-switch v-model="sysData.allowNormalUserOfflineDownload" />
+          </t-form-item>
+
           <template v-if="!isInternalNetwork()">
             <div class="flex items-center gap-3 mt-8 mb-6">
               <span class="text-xs font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest"
@@ -275,15 +282,6 @@ onMounted(() => {
               </t-button>
             </t-form-item>
           </template>
-
-          <t-form-item label="允许离线下载">
-            <template #help>
-              <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block"
-                >开启后，普通用户（服主）可以使用离线下载功能下载任意链接到其服务器目录下。</span
-              >
-            </template>
-            <t-switch v-model="sysData.allowNormalUserOfflineDownload" />
-          </t-form-item>
 
           <div class="flex items-center gap-3 mt-8 mb-6">
             <span class="text-xs font-extrabold text-[var(--td-text-color-secondary)] uppercase tracking-widest"
@@ -355,8 +353,11 @@ onMounted(() => {
           <t-form-item label="CDN/反代真实IP">
             <template #help>
               <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block">
-                开启后允许通过指定的请求头提取客户端真实 IP。<br/>
-                建议配置下方的私密密钥，以防止恶意用户直接向服务器发送伪造的请求头。<span class="text-amber-500/90 dark:text-amber-500/80">修改此功能需重启 {{ isEmbeddedDaemon ? 'App' : '守护进程' }} 生效。</span>
+                开启后允许通过指定的请求头提取客户端真实 IP。<br />
+                建议配置下方的私密密钥，以防止恶意用户直接向服务器发送伪造的请求头。<span
+                  class="text-amber-500/90 dark:text-amber-500/80"
+                  >修改此功能需重启 {{ isEmbeddedDaemon ? 'App' : '守护进程' }} 生效。</span
+                >
               </span>
             </template>
             <t-switch v-model="sysData.enableCdnProxy" />
@@ -375,7 +376,8 @@ onMounted(() => {
             <t-form-item label="请求头验证密钥">
               <template #help>
                 <span class="text-[11px] font-medium text-[var(--td-text-color-secondary)] mt-1 inline-block">
-                  (可选但强烈建议) 安全防护：请在您的 CDN 回源规则或 Nginx 代理规则中强制添加请求头 <code>X-MSLX-CDN-Secret-Key</code>，值为此处的密钥。<br/>
+                  (可选但强烈建议) 安全防护：请在您的 CDN 回源规则或 Nginx 代理规则中强制添加请求头
+                  <code>X-MSLX-CDN-Secret-Key</code>，值为此处的密钥。<br />
                   清空此密钥将不再校验请求头，存在被伪造 IP 的风险。
                 </span>
               </template>
@@ -387,8 +389,15 @@ onMounted(() => {
               >
                 <template #suffix>
                   <div class="flex items-center gap-1">
-                    <t-button variant="text" size="small" @click="sysData.cdnProxySecretValue = generateRandomString(32)">随机</t-button>
-                    <t-button variant="text" size="small" theme="danger" @click="sysData.cdnProxySecretValue = ''">清空</t-button>
+                    <t-button
+                      variant="text"
+                      size="small"
+                      @click="sysData.cdnProxySecretValue = generateRandomString(32)"
+                      >随机</t-button
+                    >
+                    <t-button variant="text" size="small" theme="danger" @click="sysData.cdnProxySecretValue = ''"
+                      >清空</t-button
+                    >
                   </div>
                 </template>
               </t-input>
