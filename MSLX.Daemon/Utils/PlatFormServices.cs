@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -230,13 +230,14 @@ public class PlatFormServices
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                var psi = new ProcessStartInfo("xdg-open", url)
+                var psi = new ProcessStartInfo("xdg-open")
                 {
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     UseShellExecute = false,
                     CreateNoWindow = true
                 };
+                psi.ArgumentList.Add(url);
                 Process.Start(psi);
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
