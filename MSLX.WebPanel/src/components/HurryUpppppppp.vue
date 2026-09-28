@@ -37,6 +37,11 @@ const phrases = [
   '这虽然是痛痛，但也是成长的过程... (指修Bug) 🩹',
 ];
 
+// 彩蛋视频列表与弹窗状态
+const easterEggVideos = ['BV1GJ411x7h7', 'BV1wm4y1m7DC'];
+const easterEggVisible = ref(false);
+const currentBvid = ref('');
+
 // 根据点击次数显示的文案
 const dynamicText = computed(() => {
   if (urgeCount.value === 0) return '这里正在进行一项神秘的大工程...';
@@ -54,6 +59,14 @@ const handleUrge = () => {
   setTimeout(() => {
     isShaking.value = false;
   }, 500);
+
+  // 当催更进度条点满一轮（第 70 次及每 70 次）时触发彩蛋弹窗
+  if (urgeCount.value % 70 === 0) {
+    const randomBvid = easterEggVideos[Math.floor(Math.random() * easterEggVideos.length)];
+    currentBvid.value = randomBvid;
+    easterEggVisible.value = true;
+    return;
+  }
 
   // 随机提示消息
   let msg = phrases[Math.floor(Math.random() * phrases.length)];
@@ -95,6 +108,33 @@ const handleUrge = () => {
         </t-button>
       </div>
     </div>
+
+    <!-- 催更彩蛋弹窗 -->
+    <t-dialog
+      v-model:visible="easterEggVisible"
+      header="(￣^￣) 让你催让你催"
+      attach="body"
+      width="69%"
+      top="5vh"
+      :footer="false"
+      destroy-on-close
+    >
+      <div class="relative w-full aspect-video bg-black overflow-hidden flex items-center justify-center">
+        <iframe
+          v-if="easterEggVisible && currentBvid"
+          :src="`https://player.bilibili.com/player.html?bvid=${currentBvid}&autoplay=1&high_quality=1`"
+          scrolling="no"
+          border="0"
+          frameborder="no"
+          framespacing="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen="true"
+          referrerpolicy="no-referrer"
+          sandbox="allow-top-navigation allow-same-origin allow-forms allow-scripts"
+          class="w-full h-full border-0"
+        ></iframe>
+      </div>
+    </t-dialog>
   </div>
 </template>
 
