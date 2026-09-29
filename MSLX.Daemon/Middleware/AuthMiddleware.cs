@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Caching.Memory;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.Attributes;
 using System.Net;
 using System.Security.Claims;
 
@@ -247,35 +248,55 @@ namespace MSLX.Daemon.Middleware
                 if (!string.IsNullOrEmpty(scope))
                 {
                     bool isAllowedMethod = HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsHead(context.Request.Method);
-
-                    if (scope == "download")
+                    if (!isAllowedMethod)
                     {
-                        bool isDownloadPath = (path.StartsWithSegments("/api/files/instance") && path.Value?.EndsWith("/download") == true)
-                            || path.StartsWithSegments("/api/instance/backups/download")
-                            || (path.StartsWithSegments("/api/plugin") && path.Value?.EndsWith("/download") == true);
-
-                        if (!isAllowedMethod || !isDownloadPath)
-                        {
-                            await HandleErrorAsync(context, 403, "令牌权限不足：下载凭据仅允许用于文件下载（GET/HEAD）。");
-                            return;
-                        }
+                        await HandleErrorAsync(context, 403, "令牌权限不足：降权凭据仅支持读取操作（GET/HEAD）。");
+                        return;
                     }
-                    else if (scope == "media")
-                    {
-                        bool isMediaPath = path.StartsWithSegments("/api/instance/icon")
-                            || path.StartsWithSegments("/api/instance/map")
-                            || (path.StartsWithSegments("/api/files/instance") && path.Value?.EndsWith("/thumbnail") == true);
 
-                        if (!isAllowedMethod || !isMediaPath)
+                    // 1. 优先读取端点是否显式声明了允许的 Scope（支持插件及控制器特性声明）
+                    var allowedScopeAttr = endpoint?.Metadata.GetMetadata<AllowTokenScopeAttribute>();
+
+                    if (allowedScopeAttr != null)
+                    {
+                        if (!allowedScopeAttr.AllowedScopes.Contains(scope, StringComparer.OrdinalIgnoreCase))
                         {
-                            await HandleErrorAsync(context, 403, "令牌权限不足：媒体凭据仅允许用于媒体资源访问（GET/HEAD）。");
+                            await HandleErrorAsync(context, 403, $"令牌权限不足：当前接口仅允许 [{string.Join(", ", allowedScopeAttr.AllowedScopes)}] 凭据访问。");
                             return;
                         }
                     }
                     else
                     {
-                        await HandleErrorAsync(context, 403, "未知或不受支持的凭据权限范围。");
-                        return;
+                        // 2. 默认白名单判定（宿主内置接口与存量兼容）
+                        if (scope == "download")
+                        {
+                            bool isDownloadPath = (path.StartsWithSegments("/api/files/instance") && path.Value?.EndsWith("/download") == true)
+                                || path.StartsWithSegments("/api/instance/backups/download")
+                                || (path.StartsWithSegments("/api/plugin") && path.Value?.EndsWith("/download") == true);
+
+                            if (!isDownloadPath)
+                            {
+                                await HandleErrorAsync(context, 403, "令牌权限不足：下载凭据仅允许用于文件下载（GET/HEAD）。");
+                                return;
+                            }
+                        }
+                        else if (scope == "media")
+                        {
+                            bool isMediaPath = path.StartsWithSegments("/api/instance/icon")
+                                || path.StartsWithSegments("/api/instance/map")
+                                || (path.StartsWithSegments("/api/files/instance") && path.Value?.EndsWith("/thumbnail") == true);
+
+                            if (!isMediaPath)
+                            {
+                                await HandleErrorAsync(context, 403, "令牌权限不足：媒体凭据仅允许用于媒体资源访问（GET/HEAD）。");
+                                return;
+                            }
+                        }
+                        else
+                        {
+                            await HandleErrorAsync(context, 403, "未知或不受支持的凭据权限范围。");
+                            return;
+                        }
                     }
                 }
 
