@@ -21,6 +21,7 @@ import {
 } from 'tdesign-icons-vue-next';
 import type { FilesListModel } from '@/api/model/files';
 import { getFileThumbnailUrl, getVideoStreamUrl } from '@/api/files';
+import { getDownloadToken } from '@/utils/scopedToken';
 
 const props = defineProps<{
   fileList: FilesListModel[];
@@ -78,16 +79,17 @@ const enqueueVideoThumbnail = (fileName: string, fullPath: string) => {
   videoStatuses.value[fullPath] = 'pending';
 
   const task = () =>
-    new Promise<void>((resolve) => {
+    new Promise<void>(async (resolve) => {
       videoStatuses.value[fullPath] = 'loading';
 
+      const dlToken = await getDownloadToken();
       const video = document.createElement('video');
       video.crossOrigin = 'anonymous';
       video.preload = 'metadata';
       video.muted = true;
       (video as any).playsInline = true;
 
-      const videoUrl = getVideoStreamUrl(props.instanceId, fullPath);
+      const videoUrl = getVideoStreamUrl(props.instanceId, fullPath, dlToken);
       let isResolved = false;
 
       const cleanup = () => {

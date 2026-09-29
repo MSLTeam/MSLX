@@ -213,4 +213,107 @@ public class AuthController : ControllerBase
             Message = "用户名或密码错误"
         });
     }
+
+    /// <summary>
+    /// 获取专用下载凭据（有效期 2 小时）
+    /// </summary>
+    [HttpPost("download-token")]
+    [Authorize]
+    public IActionResult GetDownloadToken()
+    {
+        var userId = User.FindFirst("UserId")?.Value;
+        var user = string.IsNullOrWhiteSpace(userId) ? null : IConfigBase.UserList.GetUserById(userId);
+        if (user == null)
+        {
+            if (userId == "system-admin")
+            {
+                user = new UserInfo
+                {
+                    Id = "system-admin",
+                    Username = "MSLX Manager",
+                    Role = "admin",
+                    TokenVersion = 1
+                };
+            }
+            else
+            {
+                return Unauthorized(new ApiResponse<object> { Code = 401, Message = "用户不存在或已被删除" });
+            }
+        }
+
+        var parentJti = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)?.Value;
+        var parentExpStr = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Exp)?.Value;
+        var lifetime = TimeSpan.FromHours(2);
+        if (long.TryParse(parentExpStr, out var parentExpSeconds))
+        {
+            var parentExpUtc = DateTimeOffset.FromUnixTimeSeconds(parentExpSeconds).UtcDateTime;
+            var remaining = parentExpUtc - DateTime.UtcNow;
+            if (remaining <= TimeSpan.Zero)
+            {
+                return Unauthorized(new ApiResponse<object> { Code = 401, Message = "登录状态已失效" });
+            }
+            if (remaining < lifetime)
+            {
+                lifetime = remaining;
+            }
+        }
+
+        string token = JwtUtils.GenerateScopedToken(user, "download", lifetime, parentJti);
+        return Ok(new ApiResponse<object>
+        {
+            Code = 200,
+            Message = "获取下载凭据成功",
+            Data = new { token, expiresIn = (int)lifetime.TotalSeconds }
+        });
+    }
+
+    /// <summary>
+    /// 获取专用媒体资源凭据（有效期与登录会话剩余时间一致）
+    /// </summary>
+    [HttpGet("media-token")]
+    [Authorize]
+    public IActionResult GetMediaToken()
+    {
+        var userId = User.FindFirst("UserId")?.Value;
+        var user = string.IsNullOrWhiteSpace(userId) ? null : IConfigBase.UserList.GetUserById(userId);
+        if (user == null)
+        {
+            if (userId == "system-admin")
+            {
+                user = new UserInfo
+                {
+                    Id = "system-admin",
+                    Username = "MSLX Manager",
+                    Role = "admin",
+                    TokenVersion = 1
+                };
+            }
+            else
+            {
+                return Unauthorized(new ApiResponse<object> { Code = 401, Message = "用户不存在或已被删除" });
+            }
+        }
+
+        var parentJti = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)?.Value;
+        var parentExpStr = User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Exp)?.Value;
+        var lifetime = TimeSpan.FromDays(1);
+        if (long.TryParse(parentExpStr, out var parentExpSeconds))
+        {
+            var parentExpUtc = DateTimeOffset.FromUnixTimeSeconds(parentExpSeconds).UtcDateTime;
+            var remaining = parentExpUtc - DateTime.UtcNow;
+            if (remaining <= TimeSpan.Zero)
+            {
+                return Unauthorized(new ApiResponse<object> { Code = 401, Message = "登录状态已失效" });
+            }
+            lifetime = remaining;
+        }
+
+        string token = JwtUtils.GenerateScopedToken(user, "media", lifetime, parentJti);
+        return Ok(new ApiResponse<object>
+        {
+            Code = 200,
+            Message = "获取媒体凭据成功",
+            Data = new { token, expiresIn = (int)lifetime.TotalSeconds }
+        });
+    }
 }

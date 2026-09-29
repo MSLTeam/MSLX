@@ -1,5 +1,6 @@
 import { request } from '@/utils/request';
 import { TOKEN_NAME, BASE_URL_NAME } from '@/config/global';
+import { getSyncMediaToken, getSyncDownloadToken } from '@/utils/scopedToken';
 import {
   FilesListModel,
   FilesListResponse,
@@ -131,8 +132,9 @@ export function downloadFileStream(instanceId: number, path: string) {
   });
 }
 
-export function getVideoStreamUrl(instanceId: number, path: string): string {
-  const token = localStorage.getItem(TOKEN_NAME);
+export function getVideoStreamUrl(instanceId: number, path: string, downloadToken?: string): string {
+  const dlToken = downloadToken || getSyncDownloadToken();
+  const token = dlToken || localStorage.getItem(TOKEN_NAME);
   const baseUrl = localStorage.getItem(BASE_URL_NAME);
   const activeNodeId = localStorage.getItem('ACTIVE_NODE_ID');
   const activeNodeUrl = localStorage.getItem('ACTIVE_NODE_URL');
@@ -146,7 +148,7 @@ export function getVideoStreamUrl(instanceId: number, path: string): string {
   url.searchParams.append('path', path);
   url.searchParams.append('inline', 'true');
   if (token) {
-    url.searchParams.append('x-user-token', token);
+    url.searchParams.append(dlToken ? 'download_token' : 'x-user-token', token);
   }
   if (activeNodeId && activeNodeId !== 'local') {
     url.searchParams.append('x-node-id', activeNodeId);
@@ -155,7 +157,7 @@ export function getVideoStreamUrl(instanceId: number, path: string): string {
 }
 
 export function getFileThumbnailUrl(instanceId: number, path: string, size = 256): string {
-  const token = localStorage.getItem(TOKEN_NAME);
+  const token = getSyncMediaToken() || localStorage.getItem(TOKEN_NAME);
   const baseUrl = localStorage.getItem(BASE_URL_NAME);
   const activeNodeId = localStorage.getItem('ACTIVE_NODE_ID');
   const activeNodeUrl = localStorage.getItem('ACTIVE_NODE_URL');
@@ -169,7 +171,7 @@ export function getFileThumbnailUrl(instanceId: number, path: string, size = 256
   url.searchParams.append('path', path);
   url.searchParams.append('size', size.toString());
   if (token) {
-    url.searchParams.append('x-user-token', token);
+    url.searchParams.append(getSyncMediaToken() ? 'media_token' : 'x-user-token', token);
   }
   if (activeNodeId && activeNodeId !== 'local') {
     url.searchParams.append('x-node-id', activeNodeId);

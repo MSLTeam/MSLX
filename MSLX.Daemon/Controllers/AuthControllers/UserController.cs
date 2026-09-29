@@ -150,8 +150,9 @@ public class UserController : ControllerBase
         {
             var expTime = DateTimeOffset.FromUnixTimeSeconds(expSeconds).UtcDateTime;
             
-            // 加入黑名单
-            user.RevokedTokens[jti] = expTime;
+            // 加入黑名单（至少保留 24 小时）
+            var maxChildLife = DateTime.UtcNow.AddHours(24);
+            user.RevokedTokens[jti] = expTime > maxChildLife ? expTime : maxChildLife;
 
             // 清理已过期的 token
             var now = DateTime.UtcNow;
