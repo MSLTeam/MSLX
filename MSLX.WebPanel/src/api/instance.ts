@@ -173,10 +173,12 @@ export async function postDeleteBackupFiles(id:number,fileName:string){
     data: {id,fileName},
   })
 }
-export function getBackupDownloadUrl(id: number, fileName: string) {
+export function getBackupDownloadUrl(id: number, fileName: string, downloadToken?: string) {
   const userStore = useUserStore();
   const { baseUrl, token } = userStore;
-  return `${baseUrl || window.location.origin}/api/instance/backups/download?id=${id}&fileName=${encodeURIComponent(fileName)}&x-user-token=${token}`;
+  const authToken = downloadToken || token;
+  const tokenParam = downloadToken ? `download_token=${encodeURIComponent(authToken)}` : `x-user-token=${encodeURIComponent(authToken)}`;
+  return `${baseUrl || window.location.origin}/api/instance/backups/download?id=${id}&fileName=${encodeURIComponent(fileName)}&${tokenParam}`;
 }
 
 // 玩家管理相关

@@ -3,6 +3,7 @@ import { TOKEN_NAME, BASE_URL_NAME } from '@/config/global';
 import { store, usePermissionStore } from '@/store';
 import { request } from '@/utils/request';
 import { changeUrl } from '@/router';
+import { clearMediaToken, getMediaToken } from '@/utils/scopedToken';
 
 // 存储记忆信息
 const REMEMBER_URL_NAME = 'remembered_url';
@@ -72,6 +73,7 @@ export const useUserStore = defineStore('user', {
       const requestBaseUrl = processedUrl || '';
 
       try {
+        clearMediaToken();
         localStorage.removeItem('ACTIVE_NODE_ID');
         localStorage.removeItem('ACTIVE_NODE_URL');
         // 请求登录接口拿到 Token
@@ -108,6 +110,7 @@ export const useUserStore = defineStore('user', {
     // oauth 登录
     async loginByOAuth(data: { token: string; userInfo?: any }) {
       try {
+        clearMediaToken();
         this.token = data.token;
         localStorage.setItem(TOKEN_NAME, data.token);
 
@@ -148,6 +151,9 @@ export const useUserStore = defineStore('user', {
         const permissionStore = usePermissionStore();
         await permissionStore.initRoutes(this.userInfo.roles);
 
+        // 预热媒体凭据
+        getMediaToken().catch(() => {});
+
       } catch (e) {
         console.error('Get user info failed:', e);
         await this.logout();
@@ -165,6 +171,8 @@ export const useUserStore = defineStore('user', {
         }
       }
 
+      clearMediaToken();
+
       const permissionStore = usePermissionStore();
       await permissionStore.clearRoutes();
 
@@ -178,6 +186,7 @@ export const useUserStore = defineStore('user', {
     },
 
     async removeToken() {
+      clearMediaToken();
       this.token = '';
     },
   },

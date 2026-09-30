@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Caching.Memory;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.Attributes;
 using System.Net;
 using System.Security.Claims;
 
@@ -61,7 +62,12 @@ namespace MSLX.Daemon.Middleware
             // Token 验证
             if (!context.Request.Headers.TryGetValue(TokenHeaderName, out var extractedToken))
             {
-                context.Request.Query.TryGetValue(TokenHeaderName, out extractedToken);
+                if (!context.Request.Query.TryGetValue("download_token", out extractedToken) &&
+                    !context.Request.Query.TryGetValue("media_token", out extractedToken) &&
+                    !context.Request.Query.TryGetValue("token", out extractedToken))
+                {
+                    context.Request.Query.TryGetValue(TokenHeaderName, out extractedToken);
+                }
             }
             string token = extractedToken.ToString();
 
@@ -89,6 +95,11 @@ namespace MSLX.Daemon.Middleware
                                 authErrorMessage = rejectionReason;
                                 context.Items["isTokenValidButRejected"] = true;
                             }
+                        }
+                        else if (userId == "system-admin")
+                        {
+                            context.User = principal;
+                            isAuthenticated = true;
                         }
                         else
                         {
@@ -187,12 +198,17 @@ namespace MSLX.Daemon.Middleware
                                     {
                                         var role = resObj["data"]?["role"]?.ToString() ?? "user";
                                         var uid = resObj["data"]?["userId"]?.ToString() ?? "";
+                                        var nodeScope = resObj["data"]?["scope"]?.ToString();
                                         var resources = resObj["data"]?["resources"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
                                         
                                         var claims = new List<Claim> { 
                                             new Claim(ClaimTypes.Role, role),
                                             new Claim("UserId", uid) 
                                         };
+                                        if (!string.IsNullOrEmpty(nodeScope))
+                                        {
+                                            claims.Add(new Claim("Scope", nodeScope));
+                                        }
                                         var proxyPrincipal = new ClaimsPrincipal(new ClaimsIdentity(claims, "NodeAuth"));
                                         context.User = proxyPrincipal;
                                         isAuthenticated = true;
@@ -228,6 +244,62 @@ namespace MSLX.Daemon.Middleware
             // 结果判定
             if (isAuthenticated)
             {
+                var scope = context.User?.FindFirst("Scope")?.Value;
+                if (!string.IsNullOrEmpty(scope))
+                {
+                    bool isAllowedMethod = HttpMethods.IsGet(context.Request.Method) || HttpMethods.IsHead(context.Request.Method);
+                    if (!isAllowedMethod)
+                    {
+                        await HandleErrorAsync(context, 403, "令牌权限不足：降权凭据仅支持读取操作（GET/HEAD）。");
+                        return;
+                    }
+
+                    // 1. 优先读取端点是否显式声明了允许的 Scope（支持插件及控制器特性声明）
+                    var allowedScopeAttr = endpoint?.Metadata.GetMetadata<AllowTokenScopeAttribute>();
+
+                    if (allowedScopeAttr != null)
+                    {
+                        if (!allowedScopeAttr.AllowedScopes.Contains(scope, StringComparer.OrdinalIgnoreCase))
+                        {
+                            await HandleErrorAsync(context, 403, $"令牌权限不足：当前接口仅允许 [{string.Join(", ", allowedScopeAttr.AllowedScopes)}] 凭据访问。");
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        // 2. 默认白名单判定（宿主内置接口与存量兼容）
+                        if (scope == "download")
+                        {
+                            bool isDownloadPath = (path.StartsWithSegments("/api/files/instance") && path.Value?.EndsWith("/download") == true)
+                                || path.StartsWithSegments("/api/instance/backups/download")
+                                || (path.StartsWithSegments("/api/plugin") && path.Value?.EndsWith("/download") == true);
+
+                            if (!isDownloadPath)
+                            {
+                                await HandleErrorAsync(context, 403, "令牌权限不足：下载凭据仅允许用于文件下载（GET/HEAD）。");
+                                return;
+                            }
+                        }
+                        else if (scope == "media")
+                        {
+                            bool isMediaPath = path.StartsWithSegments("/api/instance/icon")
+                                || path.StartsWithSegments("/api/instance/map")
+                                || (path.StartsWithSegments("/api/files/instance") && path.Value?.EndsWith("/thumbnail") == true);
+
+                            if (!isMediaPath)
+                            {
+                                await HandleErrorAsync(context, 403, "令牌权限不足：媒体凭据仅允许用于媒体资源访问（GET/HEAD）。");
+                                return;
+                            }
+                        }
+                        else
+                        {
+                            await HandleErrorAsync(context, 403, "未知或不受支持的凭据权限范围。");
+                            return;
+                        }
+                    }
+                }
+
                 if (isSlaveMode)
                 {
                     if (path.StartsWithSegments("/api/user") || path.StartsWithSegments("/api/settings") || path.StartsWithSegments("/api/admin"))

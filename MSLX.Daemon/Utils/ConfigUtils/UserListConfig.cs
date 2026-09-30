@@ -10,6 +10,7 @@ public class UserListConfig : IDisposable
     private readonly ReaderWriterLockSlim _userListLock = new();
     private readonly ILogger _logger;
     private static bool _hasInitialized = false;
+    public bool IsFirstInitialization { get; private set; }
 
     public UserListConfig()
     {
@@ -20,6 +21,7 @@ public class UserListConfig : IDisposable
         // 如果没有用户，创建一个默认管理员
         if (!_userListCache.HasValues)
         {
+            IsFirstInitialization = true;
             var defaultPassword = StringServices.GenerateRandomString(16);
             CreateUser(new UserInfo
             {
@@ -33,21 +35,14 @@ public class UserListConfig : IDisposable
             _logger.LogInformation($"已初始化默认管理员用户: mslx / {defaultPassword}");
             _logger.LogInformation($"账号: mslx \n密码: {defaultPassword}");
             ExportDefaultCredentialsFile("mslx", defaultPassword);
-
-            // 这里打开带初始化信息提示的登录页面
-            OpenWebBrowser(true);
         }
-        else
-        {
-            OpenWebBrowser();
-        }
-
-        _hasInitialized = true;
     }
 
-    private void OpenWebBrowser(bool isInitialize = false)
+    public void OpenWebBrowser()
     {
         if (_hasInitialized) return;
+        _hasInitialized = true;
+
         var config = IConfigBase.Config.ReadConfig();
 
         var openOnLaunch = (bool?)config["openWebConsoleOnLaunch"] ?? true;
@@ -64,7 +59,7 @@ public class UserListConfig : IDisposable
         {
             var isWildcard = rawHost == "*" || rawHost == "0.0.0.0" || rawHost == "[::]" || rawHost == "+";
             var targetHost = isWildcard ? "localhost" : rawHost;
-            var suffix = isInitialize ? "/login?initialize=true" : string.Empty;
+            var suffix = IsFirstInitialization ? "/login?initialize=true" : string.Empty;
             var enableSsl = (bool?)config["enableSsl"] ?? false;
             var protocol = enableSsl ? "https" : "http";
             var url = $"{protocol}://{targetHost}:{port}{suffix}";
@@ -93,6 +88,11 @@ public class UserListConfig : IDisposable
                 slaveKeyStr = $"\n\n【子节点连接秘钥信息】\n节点秘钥: {linkKey}\n(主控节点在链接此子节点时，需输入该秘钥进行通讯校验)";
             }
 
+            var enableSsl = (bool?)IConfigBase.Config.ReadConfig()["enableSsl"] ?? false;
+            var protocol = enableSsl ? "https" : "http";
+            var port = IConfigBase.Config.ReadConfig()["listenPort"] ?? 1027;
+            var defaultUrl = $"{protocol}://localhost:{port}";
+
             var txtPath = Path.Combine(IConfigBase.GetAppDataPath(), "默认账户信息.txt");
             var content = $@"==================================================
 MSLX-Daemon 初始化成功 - 默认管理员凭据
@@ -109,7 +109,7 @@ MSLX-Daemon 初始化成功 - 默认管理员凭据
 默认密码: {password}{slaveKeyStr}
 
 【控制台地址】
-如果浏览器未自动打开，请手动访问配置的端口（默认 http://localhost:1027）
+如果浏览器未自动打开，请手动访问配置的端口（默认 {defaultUrl}）
 ==================================================";
 
             File.WriteAllText(txtPath, content, System.Text.Encoding.UTF8);

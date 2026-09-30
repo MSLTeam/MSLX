@@ -14,6 +14,7 @@ import {
 import { getAllInstanceBackupFiles, postDeleteBackupFiles, getBackupDownloadUrl } from '@/api/instance';
 import { AllInstanceBackupFilesModel } from '@/api/model/instance';
 import NodeSwitcher from '@/components/node-switcher/index.vue';
+import { getDownloadToken } from '@/utils/scopedToken';
 
 
 const loading = ref(false);
@@ -72,8 +73,9 @@ const togglePath = (id: number) => {
 };
 
 // 处理下载
-const handleDownload = (id: number, fileName: string) => {
-  const url = getBackupDownloadUrl(id, fileName);
+const handleDownload = async (id: number, fileName: string) => {
+  const dlToken = await getDownloadToken();
+  const url = getBackupDownloadUrl(id, fileName, dlToken);
   window.open(url, '_blank');
 };
 

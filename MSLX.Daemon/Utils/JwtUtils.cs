@@ -35,6 +35,38 @@ public static class JwtUtils
         return tokenHandler.WriteToken(token);
     }
 
+    // 生成 Scoped 降权 Token (如 download, media)
+    public static string GenerateScopedToken(UserInfo user, string scope, TimeSpan? lifetime = null, string? parentJti = null)
+    {
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var key = Encoding.ASCII.GetBytes(IConfigBase.JwtSecret);
+
+        var claims = new List<Claim>
+        {
+            new Claim("UserId", user.Id),
+            new Claim(ClaimTypes.Name, user.Username),
+            new Claim(ClaimTypes.Role, user.Role),
+            new Claim("Scope", scope),
+            new Claim("TokenVersion", user.TokenVersion.ToString()),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+        if (!string.IsNullOrEmpty(parentJti))
+        {
+            claims.Add(new Claim("ParentJti", parentJti));
+        }
+
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(claims),
+            Expires = DateTime.UtcNow.Add(lifetime ?? TimeSpan.FromDays(1)),
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+        };
+
+        var token = tokenHandler.CreateToken(tokenDescriptor);
+        return tokenHandler.WriteToken(token);
+    }
+
     // 验证 Token
     public static ClaimsPrincipal? ValidateToken(string token)
     {
@@ -65,9 +97,15 @@ public static class JwtUtils
     public static string? GetTokenRejectionReason(ClaimsPrincipal principal, UserInfo user)
     {
         var jti = principal.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)?.Value;
+        var parentJti = principal.FindFirst("ParentJti")?.Value;
         var tokenVersionStr = principal.FindFirst("TokenVersion")?.Value;
 
         if (!string.IsNullOrEmpty(jti) && user.RevokedTokens != null && user.RevokedTokens.TryGetValue(jti, out var exp) && exp > DateTime.UtcNow)
+        {
+            return "登录状态已失效，请重新登录";
+        }
+
+        if (!string.IsNullOrEmpty(parentJti) && user.RevokedTokens != null && user.RevokedTokens.TryGetValue(parentJti, out var parentExp) && parentExp > DateTime.UtcNow)
         {
             return "登录状态已失效，请重新登录";
         }

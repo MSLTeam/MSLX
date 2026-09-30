@@ -26,6 +26,7 @@ import customImg from '@/assets/serverLogos/150px-MinecartWithCommandBlock.png';
 import defaultImg from '@/assets/serverLogos/150px-Allium.png';
 import { BASE_URL_NAME, TOKEN_NAME } from '@/config/global';
 import { useUserStore, useNodeStore } from '@/store';
+import { getMediaToken, getSyncMediaToken } from '@/utils/scopedToken';
 
 const store = useInstanceListStore();
 const userStore = useUserStore();
@@ -44,7 +45,8 @@ watch(
   },
 );
 
-onMounted(() => {
+onMounted(async () => {
+  await getMediaToken();
   store.refreshInstanceList();
 });
 
@@ -176,11 +178,17 @@ const getImageUrl = (name: string, id: number) => {
       return forgeImg;
     case 'custom':
       return customImg;
-    case 'server-icon':
+    case 'server-icon': {
+      const mediaToken = getSyncMediaToken();
+      const fallbackToken = localStorage.getItem(TOKEN_NAME);
+      const tokenParam = mediaToken
+        ? `?media_token=${mediaToken}`
+        : (fallbackToken ? `?x-user-token=${fallbackToken}` : '');
       return new URL(
-        `${localStorage.getItem(BASE_URL_NAME)}/api/instance/icon/${id}.png?x-user-token=${localStorage.getItem(TOKEN_NAME)}`,
+        `${localStorage.getItem(BASE_URL_NAME)}/api/instance/icon/${id}.png${tokenParam}`,
         import.meta.url,
       ).href;
+    }
     default:
       return defaultImg;
   }

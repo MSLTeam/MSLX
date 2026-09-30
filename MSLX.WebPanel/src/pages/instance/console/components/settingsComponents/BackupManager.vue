@@ -7,6 +7,7 @@ import { DeleteIcon, DownloadIcon, TimeIcon, FileIcon, RefreshIcon } from 'tdesi
 // API
 import { getBackupDownloadUrl, getInstanceBackupFiles, postDeleteBackupFiles } from '@/api/instance';
 import { type InstanceBackupFilesModel } from '@/api/model/instance';
+import { getDownloadToken } from '@/utils/scopedToken';
 
 const route = useRoute();
 
@@ -101,9 +102,10 @@ const handleDelete = (row: InstanceBackupFilesModel) => {
   });
 };
 
-const handleDownload = (row: InstanceBackupFilesModel) => {
+const handleDownload = async (row: InstanceBackupFilesModel) => {
   try {
-    const url = getBackupDownloadUrl(instanceId.value, row.fileName);
+    const dlToken = await getDownloadToken();
+    const url = getBackupDownloadUrl(instanceId.value, row.fileName, dlToken);
     window.open(url, '_blank');
   } catch (e: any) {
     MessagePlugin.error('下载失败！' + e.message);
@@ -113,15 +115,16 @@ const handleDownload = (row: InstanceBackupFilesModel) => {
 // --- 批量操作逻辑 ---
 
 // 批量下载
-const handleBatchDownload = () => {
+const handleBatchDownload = async () => {
   const count = selectedRowKeys.value.length;
   if (count === 0) return;
 
   MessagePlugin.info(`开始下载 ${count} 个文件，请注意允许浏览器弹窗...`);
+  const dlToken = await getDownloadToken();
 
   selectedRowKeys.value.forEach((fileName, index) => {
     setTimeout(() => {
-      const url = getBackupDownloadUrl(instanceId.value, fileName);
+      const url = getBackupDownloadUrl(instanceId.value, fileName, dlToken);
       window.open(url, '_blank');
     }, index * 1000);
   });

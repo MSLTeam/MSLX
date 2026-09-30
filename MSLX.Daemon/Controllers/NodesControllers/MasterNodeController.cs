@@ -216,7 +216,8 @@ namespace MSLX.Daemon.Controllers.NodesControllers
                                 nodeResources.Add(res.Substring(node.NodeId.Length + 1));
                             }
                         }
-                        return Ok(new ApiResponse<object> { Code = 200, Message = "鉴权成功", Data = new { userId = userId, role = user.Role, resources = nodeResources } });
+                        var scope = principal.FindFirst("Scope")?.Value;
+                        return Ok(new ApiResponse<object> { Code = 200, Message = "鉴权成功", Data = new { userId = userId, role = user.Role, resources = nodeResources, scope = scope } });
                     }
                 }
             }

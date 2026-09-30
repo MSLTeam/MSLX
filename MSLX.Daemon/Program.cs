@@ -600,6 +600,11 @@ catch (Exception ex)
 }
 
 
+app.Lifetime.ApplicationStarted.Register(() =>
+{
+    IConfigBase.UserList.OpenWebBrowser();
+});
+
 try
 {
     app.Run();

@@ -4,6 +4,7 @@ import { useUserStore } from '@/store';
 import { getWorldSpawn } from '@/api/instance';
 import { LocationIcon, HomeIcon, DownloadIcon } from 'tdesign-icons-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
+import { getMediaToken, getSyncMediaToken } from '@/utils/scopedToken';
 
 const props = defineProps<{
   visible: boolean;
@@ -116,7 +117,11 @@ const updateVisibleRegions = () => {
 
   missingTiles.forEach((item) => {
     const host = baseUrl || '';
-    const src = `${host}/api/instance/map/${props.serverId}/${item.x}/${item.z}?x-user-token=${token}`;
+    const mediaToken = getSyncMediaToken();
+    const tokenParam = mediaToken
+      ? `?media_token=${mediaToken}`
+      : (token ? `?x-user-token=${token}` : '');
+    const src = `${host}/api/instance/map/${props.serverId}/${item.x}/${item.z}${tokenParam}`;
 
     loadedRegions.value.push({
       x: item.x,
@@ -130,8 +135,9 @@ const updateVisibleRegions = () => {
 
 watch(
   () => props.visible,
-  (val) => {
+  async (val) => {
     if (val) {
+      await getMediaToken();
       scale.value = 1;
       loadedRegions.value = [];
       jumpToSpawn();
@@ -200,12 +206,16 @@ const handleExportMap = async () => {
       }
 
       const host = baseUrl || '';
+      const mediaToken = getSyncMediaToken();
+      const tokenParam = mediaToken
+        ? `?media_token=${mediaToken}`
+        : (token ? `?x-user-token=${token}` : '');
       for (let rx = minX; rx <= maxX; rx++) {
         for (let rz = minZ; rz <= maxZ; rz++) {
           tilesToExport.push({
             x: rx,
             z: rz,
-            src: `${host}/api/instance/map/${props.serverId}/${rx}/${rz}?x-user-token=${token}`,
+            src: `${host}/api/instance/map/${props.serverId}/${rx}/${rz}${tokenParam}`,
           });
         }
       }

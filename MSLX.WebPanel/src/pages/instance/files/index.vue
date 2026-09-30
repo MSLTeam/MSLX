@@ -48,6 +48,7 @@ import {
 } from '@/api/files';
 import type { FilesListModel } from '@/api/model/files';
 import { defineAsyncComponent } from 'vue';
+import { getDownloadToken } from '@/utils/scopedToken';
 
 const FileEditor = defineAsyncComponent(() => import('./components/FileEditor.vue'));
 const FileUploader = defineAsyncComponent(() => import('./components/FileUploader.vue'));
@@ -281,9 +282,10 @@ const openPreview = async (fileName: string) => {
   }
 };
 
-const openVideoPreview = (fileName: string) => {
+const openVideoPreview = async (fileName: string) => {
   const fullPath = currentPath.value ? `${currentPath.value}/${fileName}` : fileName;
-  videoPreviewUrl.value = getVideoStreamUrl(instanceId.value, fullPath);
+  const dlToken = await getDownloadToken();
+  videoPreviewUrl.value = getVideoStreamUrl(instanceId.value, fullPath, dlToken);
   previewFileName.value = fileName;
   showVideoPreview.value = true;
 };
@@ -468,12 +470,13 @@ const handleDownload = async (row?: any) => {
     const fullPath = currentPath.value ? `${currentPath.value}/${name}` : name;
 
     try {
+      const dlToken = await getDownloadToken();
       const downloadUrl = new URL(
         `${apiBase || window.location.origin}/api/files/instance/${instanceId.value}/download`,
       );
 
       downloadUrl.searchParams.append('path', fullPath);
-      downloadUrl.searchParams.append('x-user-token', token); // 暂时先用token鉴权
+      downloadUrl.searchParams.append(dlToken ? 'download_token' : 'x-user-token', dlToken || token);
 
       const link = document.createElement('a');
       link.href = downloadUrl.toString();
