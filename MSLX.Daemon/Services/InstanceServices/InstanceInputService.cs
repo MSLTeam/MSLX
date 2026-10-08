@@ -99,11 +99,16 @@ public class InstanceInputService : IInstanceConsoleService
                                         using var rcon = new Utils.MinecraftRconClient("127.0.0.1", rconPort, rconPassword);
                                         if (rcon.ConnectAsync().GetAwaiter().GetResult())
                                         {
-                                            string response = rcon.SendCommandAsync(command).GetAwaiter().GetResult();
-                                            sentViaRcon = true;
-                                            if (!string.IsNullOrWhiteSpace(response))
+                                            var cmdLines = command.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                                            foreach (var line in cmdLines)
                                             {
-                                                _console.RecordLog(instanceId, context, $">>> [RCON] {response}");
+                                                if (string.IsNullOrWhiteSpace(line)) continue;
+                                                string response = rcon.SendCommandAsync(line).GetAwaiter().GetResult();
+                                                sentViaRcon = true;
+                                                if (!string.IsNullOrWhiteSpace(response))
+                                                {
+                                                    _console.RecordLog(instanceId, context, $">>> [RCON] {response}");
+                                                }
                                             }
                                         }
                                     }
@@ -122,11 +127,16 @@ public class InstanceInputService : IInstanceConsoleService
                                     using var rcon = new Utils.MinecraftRconClient("127.0.0.1", rconPort, rconPassword);
                                     if (rcon.ConnectAsync().GetAwaiter().GetResult())
                                     {
-                                        string response = rcon.SendCommandAsync(command).GetAwaiter().GetResult();
-                                        sentViaRcon = true;
-                                        if (!string.IsNullOrWhiteSpace(response))
+                                        var lines = command.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                                        foreach (var line in lines)
                                         {
-                                            _console.RecordLog(instanceId, context, $">>> [RCON] {response}");
+                                            if (string.IsNullOrWhiteSpace(line)) continue;
+                                            string response = rcon.SendCommandAsync(line).GetAwaiter().GetResult();
+                                            sentViaRcon = true;
+                                            if (!string.IsNullOrWhiteSpace(response))
+                                            {
+                                                _console.RecordLog(instanceId, context, $">>> [RCON] {response}");
+                                            }
                                         }
                                     }
                                 }
