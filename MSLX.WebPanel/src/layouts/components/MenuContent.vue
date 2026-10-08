@@ -121,7 +121,7 @@ const openNewTab = (path: string) => {
           :value="getPath(item)"
           class="modern-menu-item"
           @click="openHref(getHref(item)[0])"
-          @auxclick.prevent="openHref(getHref(item)[0])"
+          @auxclick.middle.prevent="openHref(getHref(item)[0])"
         >
           <template #icon>
             <t-icon v-if="beIcon(item)" :name="item.icon" />
@@ -136,7 +136,7 @@ const openNewTab = (path: string) => {
           :value="getPath(item)"
           :to="item.path"
           class="modern-menu-item"
-          @auxclick.prevent="openNewTab(getPath(item))"
+          @auxclick.middle.prevent="openNewTab(getPath(item))"
         >
           <template #icon>
             <t-icon v-if="beIcon(item)" :name="item.icon" />
