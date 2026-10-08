@@ -1,4 +1,4 @@
-﻿using MSLX.SDK.Models.Instance;
+using MSLX.SDK.Models.Instance;
 using Newtonsoft.Json.Linq;
 
 namespace MSLX.Daemon.Utils.ConfigUtils
@@ -109,6 +109,33 @@ namespace MSLX.Daemon.Utils.ConfigUtils
                 _taskListCache.Remove(target);
                 IConfigBase.SaveJson(_taskListPath, _taskListCache);
                 return true;
+            }
+            finally
+            {
+                _taskListLock.ExitWriteLock();
+            }
+        }
+
+        /// <summary>
+        /// 删除特定服务器的所有定时任务
+        /// </summary>
+        public void DeleteTasksByInstanceId(uint instanceId)
+        {
+            _taskListLock.EnterWriteLock();
+            try
+            {
+                var targets = _taskListCache
+                    .Where(s => s["InstanceId"]?.Value<uint>() == instanceId)
+                    .ToList();
+
+                if (targets.Count == 0) return;
+
+                foreach (var target in targets)
+                {
+                    _taskListCache.Remove(target);
+                }
+
+                IConfigBase.SaveJson(_taskListPath, _taskListCache);
             }
             finally
             {
