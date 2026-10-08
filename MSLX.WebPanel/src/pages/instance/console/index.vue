@@ -10,6 +10,7 @@ import { getInstanceInfo, postInstanceAction } from '@/api/instance';
 import { InstanceInfoModel } from '@/api/model/instance';
 import { useInstanceListStore } from '@/store/modules/instance';
 import { useInstanceHubStore } from '@/store/modules/instanceHub';
+import { useTaskStore } from '@/store';
 
 const route = useRoute();
 
@@ -114,6 +115,7 @@ const handleBackup = async () => {
   try {
     terminalRef.value?.writeln('\x1b[1;32m[System] 正在发送备份任务...\x1b[0m');
     await postInstanceAction(serverId.value, 'backup');
+    useTaskStore().fetchTasks();
     // isRunning.value = true; // 由状态更新处理
     MessagePlugin.success('备份任务启动中···');
     loading.value = false;

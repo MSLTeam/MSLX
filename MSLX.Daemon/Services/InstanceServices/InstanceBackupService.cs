@@ -6,6 +6,9 @@ using MSLX.SDK.IServices;
 using MSLX.SDK.Models;
 using System.IO.Compression;
 
+using MSLX.Daemon.Services;
+using MSLX.SDK.Models.Files;
+
 namespace MSLX.Daemon.Services.InstanceServices;
 
 /// <summary>
@@ -20,6 +23,7 @@ public class InstanceBackupService : IInstanceBackupService
     private readonly InstanceConsoleService _console;
     private readonly IInstanceLifecycleService _lifecycle;
     private readonly IInstanceConsoleService _consoleService;
+    private readonly BackgroundTaskManager _taskManager;
 
     public InstanceBackupService(
         ILogger<InstanceBackupService> logger,
@@ -27,7 +31,8 @@ public class InstanceBackupService : IInstanceBackupService
         InstanceStateStore stateStore,
         InstanceConsoleService console,
         IInstanceLifecycleService lifecycle,
-        IInstanceConsoleService consoleService)
+        IInstanceConsoleService consoleService,
+        BackgroundTaskManager taskManager)
     {
         _logger = logger;
         _events = events;
@@ -35,21 +40,22 @@ public class InstanceBackupService : IInstanceBackupService
         _console = console;
         _lifecycle = lifecycle;
         _consoleService = consoleService;
+        _taskManager = taskManager;
     }
 
 
-    public bool StartBackupServer(uint instanceId)
+    public bool StartBackupServer(uint instanceId, string userId = "")
     {
         if (_stateStore.Get(instanceId) is { } context)
         {
-            _ = Task.Run(async () => await BackupServer(instanceId, context));
+            _ = Task.Run(async () => await BackupServer(instanceId, context, userId));
             return true;
         }
 
         return false;
     }
 
-    public async Task BackupServer(uint instanceId, ServerContext context)
+    public async Task BackupServer(uint instanceId, ServerContext context, string userId = "")
     {
         if (context.IsBackuping)
         {
@@ -61,8 +67,10 @@ public class InstanceBackupService : IInstanceBackupService
         bool isBedrock = false;
         DateTime backupStartTime = DateTime.Now;
         McServerInfo.ServerInfo? server = null;
+        string? bgTaskId = null;
+        CancellationToken bgCt = CancellationToken.None;
+        string backupPath = "";
 
-        
         try
         {
             context.IsBackuping = true;
@@ -84,6 +92,22 @@ public class InstanceBackupService : IInstanceBackupService
                 }
             }
 
+            string backupFileName = $"mslx-backup_{DateTime.Now.ToString("yyyyMMdd_HHmmss")}.zip";
+            backupPath = Path.Combine(backupDir, backupFileName);
+            if (!Directory.Exists(backupDir)) Directory.CreateDirectory(backupDir);
+
+            // 注册后台任务
+            var (bgTask, token) = _taskManager.CreateTask(
+                userId,
+                instanceId,
+                TaskType.Backup,
+                $"备份存档: {server.Name}",
+                backupFileName
+            );
+            bgTaskId = bgTask.Id;
+            bgCt = token;
+            _taskManager.UpdateProgress(bgTaskId, 0, "正在准备备份...");
+
             var backupStartingArgs = new BackupStartingEventArgs
             {
                 InstanceId = instanceId,
@@ -96,6 +120,10 @@ public class InstanceBackupService : IInstanceBackupService
             {
                 _console.RecordLog(instanceId, context, $"[MSLX-Backup] 备份已被插件取消: {backupStartingArgs.CancelReason ?? "无"}");
                 _logger.LogInformation($"实例 [{instanceId}] 备份已被插件取消: {backupStartingArgs.CancelReason ?? "无"}");
+                if (!string.IsNullOrEmpty(bgTaskId))
+                {
+                    _taskManager.UpdateProgress(bgTaskId, 100, $"备份已被插件取消: {backupStartingArgs.CancelReason ?? "无"}", TaskState.Canceled);
+                }
                 return;
             }
 
@@ -108,6 +136,11 @@ public class InstanceBackupService : IInstanceBackupService
 
             if (_lifecycle.IsServerRunning(instanceId))
             {
+                if (!string.IsNullOrEmpty(bgTaskId))
+                {
+                    _taskManager.UpdateProgress(bgTaskId, 0, "正在通知服务端保存世界并等待同步...");
+                }
+
                 if (isBedrock)
                 {
                     _consoleService.SendCommand(instanceId, "save hold");
@@ -123,18 +156,18 @@ public class InstanceBackupService : IInstanceBackupService
                     }
 
                     _console.RecordLog(instanceId, context, "[MSLX-Backup] 正在备份基岩版服务器存档...");
-                    await Task.Delay(server.BackupDelay * 1000);
+                    await Task.Delay(server.BackupDelay * 1000, bgCt);
                 }
                 else
                 {
                     _consoleService.SendCommand(instanceId, "save-off");
-                    await Task.Delay(1000);
+                    await Task.Delay(1000, bgCt);
                     _consoleService.SendCommand(instanceId, "save-all");
                     _consoleService.SendCommand(instanceId,
                         "tellraw @a [{\"text\":\"[\",\"color\":\"yellow\"},{\"text\":\"MSLX\",\"color\":\"green\"},{\"text\":\"]\",\"color\":\"yellow\"},{\"text\":\"正在进行服务器存档备份，请勿关闭服务器哦，否则可能造成回档！备份期间不会影响正常游戏~\",\"color\":\"aqua\"}]");
                     _console.RecordLog(instanceId, context, "[MSLX-Backup] 正在备份服务器存档...");
 
-                    await Task.Delay(server.BackupDelay * 1000); // 等待延迟时间进行保存
+                    await Task.Delay(server.BackupDelay * 1000, bgCt); // 等待延迟时间进行保存
                 }
             }
 
@@ -174,6 +207,10 @@ public class InstanceBackupService : IInstanceBackupService
             if (foldersToCompress.Count == 0)
             {
                 _logger.LogWarning("未找到任何世界存档文件夹（包括主世界、下界、末地），备份失败！");
+                if (!string.IsNullOrEmpty(bgTaskId))
+                {
+                    _taskManager.SetFailed(bgTaskId, "未找到任何世界存档文件夹（包括主世界、下界、末地），备份失败！");
+                }
                 _events.PublishBackupFailed(new BackupFailedEventArgs
                 {
                     InstanceId = instanceId,
@@ -209,14 +246,15 @@ public class InstanceBackupService : IInstanceBackupService
                 return;
             }
 
-            string backupPath = Path.Combine(backupDir, $"mslx-backup_{DateTime.Now.ToString("yyyyMMdd_HHmmss")}.zip");
-            if (!Directory.Exists(backupDir)) Directory.CreateDirectory(backupDir);
-
             // 最大备份存档限制
             int maxBackups = 20;
             if (server.BackupMaxCount > 0) maxBackups = server.BackupMaxCount;
 
             // 删除多余的备份
+            if (!string.IsNullOrEmpty(bgTaskId))
+            {
+                _taskManager.UpdateProgress(bgTaskId, 5, "正在检查并轮替历史备份...");
+            }
             try
             {
                 var backupFiles = Directory.GetFiles(backupDir, "mslx-backup_*.zip")
@@ -260,16 +298,73 @@ public class InstanceBackupService : IInstanceBackupService
                 _console.RecordLog(instanceId, context, $"[MSLX-Backup] 删除多余的备份失败：{e.Message}");
             }
 
+            // 扫描并收集文件清单
+            if (!string.IsNullOrEmpty(bgTaskId))
+            {
+                _taskManager.UpdateProgress(bgTaskId, 10, "正在扫描世界存档文件...");
+            }
+            var allFilesToBackup = new List<string>();
+            void CollectBackupFiles(string currentDir)
+            {
+                foreach (var file in Directory.GetFiles(currentDir))
+                {
+                    if (!Path.GetFileName(file).Equals("session.lock", StringComparison.OrdinalIgnoreCase))
+                    {
+                        allFilesToBackup.Add(file);
+                    }
+                }
+                foreach (var subDir in Directory.GetDirectories(currentDir))
+                {
+                    CollectBackupFiles(subDir);
+                }
+            }
+            foreach (var folderPath in foldersToCompress)
+            {
+                CollectBackupFiles(folderPath);
+            }
+
+            int totalFiles = allFilesToBackup.Count;
+            int processedFiles = 0;
+            DateTime lastReportTime = DateTime.MinValue;
+
             // 开始压缩
-            _console.RecordLog(instanceId, context, $"[MSLX-Backup] 正在压缩服务器存档...");
+            _console.RecordLog(instanceId, context, $"[MSLX-Backup] 正在压缩服务器存档 (共 {totalFiles} 个文件)...");
             await using (FileStream zipToOpen = new FileStream(backupPath, FileMode.Create))
             {
                 using (ZipArchive archive = new ZipArchive(zipToOpen, ZipArchiveMode.Create))
                 {
-                    foreach (var folderPath in foldersToCompress)
+                    foreach (var file in allFilesToBackup)
                     {
-                        // 开始递归压缩
-                        await CompressFolder(server.Base, folderPath, archive);
+                        bgCt.ThrowIfCancellationRequested();
+
+                        string entryName = Path.GetRelativePath(server.Base, file);
+                        try
+                        {
+                            await using (FileStream fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                            {
+                                ZipArchiveEntry entry = archive.CreateEntry(entryName, CompressionLevel.Optimal);
+                                entry.LastWriteTime = File.GetLastWriteTime(file);
+                                using (Stream entryStream = entry.Open())
+                                {
+                                    await fs.CopyToAsync(entryStream, bgCt);
+                                }
+                            }
+                        }
+                        catch (IOException ex)
+                        {
+                            throw new IOException($"无法以共享只读模式打开文件 '{entryName}'。服务器施加了排他锁。错误: {ex.Message}", ex);
+                        }
+
+                        processedFiles++;
+                        if (processedFiles == totalFiles || processedFiles % 15 == 0 || (DateTime.Now - lastReportTime).TotalMilliseconds >= 300)
+                        {
+                            lastReportTime = DateTime.Now;
+                            int prog = 10 + (int)((processedFiles * 85.0) / Math.Max(1, totalFiles));
+                            if (!string.IsNullOrEmpty(bgTaskId))
+                            {
+                                _taskManager.UpdateProgress(bgTaskId, prog, $"正在压缩: {Path.GetFileName(file)} ({processedFiles}/{totalFiles})");
+                            }
+                        }
                     }
                 }
             }
@@ -379,6 +474,11 @@ public class InstanceBackupService : IInstanceBackupService
                     _ => $"{fileSize} Bytes"
                 };
 
+                if (!string.IsNullOrEmpty(bgTaskId))
+                {
+                    _taskManager.SetSuccess(bgTaskId, $"备份完成！大小: {fmtSize}");
+                }
+
                 _events.PublishBackupCompleted(new BackupCompletedEventArgs
                 {
                     InstanceId = instanceId,
@@ -396,9 +496,34 @@ public class InstanceBackupService : IInstanceBackupService
                 _logger.LogWarning($"[MSLX-Backup] 发布 BackupCompleted 事件失败: {ex.Message}");
             }
         }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation($"[MSLX-Backup] 实例 [{instanceId}] 备份已被用户取消。");
+            _console.RecordLog(instanceId, context, "[MSLX-Backup] 备份已被用户取消。");
+            if (!string.IsNullOrEmpty(bgTaskId))
+            {
+                _taskManager.UpdateProgress(bgTaskId, 100, "备份已被用户取消", TaskState.Canceled);
+            }
+            try
+            {
+                if (File.Exists(backupPath))
+                {
+                    File.Delete(backupPath);
+                }
+            }
+            catch (Exception delEx)
+            {
+                _logger.LogWarning(delEx, $"删除未完成的备份文件失败: {backupPath}");
+            }
+        }
         catch (Exception ex)
         {
             _logger.LogError($"备份服务器失败 {instanceId}, {ex.Message}");
+            _console.RecordLog(instanceId, context, $"[MSLX-Backup] 备份失败：{ex.Message}");
+            if (!string.IsNullOrEmpty(bgTaskId))
+            {
+                _taskManager.SetFailed(bgTaskId, ex.Message);
+            }
             _events.PublishBackupFailed(new BackupFailedEventArgs
             {
                 InstanceId = instanceId,

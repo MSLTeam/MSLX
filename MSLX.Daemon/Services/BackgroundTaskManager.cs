@@ -115,7 +115,7 @@ public class BackgroundTaskManager : IBackgroundTaskManager
 
     public IEnumerable<BackgroundTaskItem> GetUserTasks(string userId, uint? instanceId = null)
     {
-        var query = _tasks.Values.Where(t => t.UserId == userId);
+        var query = _tasks.Values.Where(t => t.UserId == userId || string.IsNullOrEmpty(t.UserId));
         if (instanceId.HasValue)
         {
             query = query.Where(t => t.InstanceId == instanceId.Value);
@@ -127,7 +127,7 @@ public class BackgroundTaskManager : IBackgroundTaskManager
     {
         if (_tasks.TryGetValue(taskId, out var task))
         {
-            if (!isAdmin && task.UserId != userId)
+            if (!isAdmin && !string.IsNullOrEmpty(task.UserId) && task.UserId != userId)
                 return false;
 
             if (task.State == TaskState.Success || task.State == TaskState.Failed || task.State == TaskState.Canceled)
@@ -141,7 +141,7 @@ public class BackgroundTaskManager : IBackgroundTaskManager
 
     public void ClearFinished(string userId)
     {
-        var finishedTasks = _tasks.Values.Where(t => t.UserId == userId && (t.State == TaskState.Success || t.State == TaskState.Failed || t.State == TaskState.Canceled)).ToList();
+        var finishedTasks = _tasks.Values.Where(t => (t.UserId == userId || string.IsNullOrEmpty(t.UserId)) && (t.State == TaskState.Success || t.State == TaskState.Failed || t.State == TaskState.Canceled)).ToList();
         foreach (var task in finishedTasks)
         {
             _tasks.TryRemove(task.Id, out _);

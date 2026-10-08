@@ -8,5 +8,5 @@ public interface IInstanceBackupService
     /// <summary>
     /// 开始对实例进行备份
     /// </summary>
-    bool StartBackupServer(uint instanceId);
+    bool StartBackupServer(uint instanceId, string userId = "");
 }
