@@ -108,4 +108,27 @@ public class PlayerActivityParserTests
     {
         Assert.Equal(expected, PlayerActivityParser.IsFakePlayer(input));
     }
+
+    [Theory]
+    // 标准 IPv6 带括号与端口
+    [InlineData("[12:00:00] [Server thread/INFO]: Steve[/[2001:db8::1]:25565] logged in with entity id 1", "2001:db8::1")]
+    // 无斜杠标准 IPv6 带括号与端口
+    [InlineData("[12:00:00] [Server thread/INFO]: Steve[[2001:db8::1]:25565] logged in with entity id 1", "2001:db8::1")]
+    // 标准 IPv6 带括号无端口
+    [InlineData("[12:00:00] [Server thread/INFO]: Steve[/[2001:db8::1]] logged in with entity id 1", "2001:db8::1")]
+    // 裸 IPv6 带端口
+    [InlineData("[12:00:00] [Server thread/INFO]: Steve[/2001:db8::1:25565] logged in with entity id 1", "2001:db8::1")]
+    // 裸 IPv6 无端口
+    [InlineData("[12:00:00] [Server thread/INFO]: Steve[/2001:db8::1] logged in with entity id 1", "2001:db8::1")]
+    // 本地回环 IPv6 ::1
+    [InlineData("[12:00:00] [Server thread/INFO]: Steve[/[::1]:25565] logged in with entity id 1", "::1")]
+    [InlineData("[12:00:00] [Server thread/INFO]: Steve[/::1:25565] logged in with entity id 1", "::1")]
+    public void Parse_PlayerJoinedIpv6_ReturnsNormalizedIp(string line, string expectedIp)
+    {
+        var activity = PlayerActivityParser.Parse(line);
+
+        Assert.Equal(PlayerActivityType.Joined, activity.Type);
+        Assert.Equal("Steve", activity.PlayerName);
+        Assert.Equal(expectedIp, activity.PlayerIp);
+    }
 }

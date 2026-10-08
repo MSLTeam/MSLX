@@ -41,6 +41,63 @@ public static class PlayerActivityParser
     public static bool IsFakePlayer(string nameOrIp) => FakePlayerFilterRegex.IsMatch(nameOrIp);
 
     /// <summary>
+    /// 解析并清理原始 IP 字符串
+    /// </summary>
+    public static string? CleanAndParseIp(string? rawIp)
+    {
+        if (string.IsNullOrWhiteSpace(rawIp))
+            return null;
+
+        var ip = rawIp.Trim();
+        if (ip.StartsWith('/'))
+            ip = ip.TrimStart('/');
+
+        if (string.IsNullOrWhiteSpace(ip))
+            return null;
+
+        // 形式1：[2001:db8::1]:25565 或 [2001:db8::1]
+        if (ip.StartsWith('['))
+        {
+            int closeBracket = ip.IndexOf(']');
+            if (closeBracket > 1)
+            {
+                var inside = ip.Substring(1, closeBracket - 1);
+                if (System.Net.IPAddress.TryParse(inside, out var parsedV6))
+                    return parsedV6.ToString();
+            }
+        }
+
+        // 形式2：通过 IPEndPoint 尝试解析（如 127.0.0.1:25565 或 [::1]:25565）
+        if (System.Net.IPEndPoint.TryParse(ip, out var endpoint))
+        {
+            return endpoint.Address.ToString();
+        }
+
+        // 形式3：纯 IP（未带端口，如 127.0.0.1 或 2001:db8::1）
+        if (System.Net.IPAddress.TryParse(ip, out var directIp))
+        {
+            return directIp.ToString();
+        }
+
+        // 形式4：裸 IPv6 带端口，形如 2001:db8::1:25565
+        int lastColon = ip.LastIndexOf(':');
+        if (lastColon > 0)
+        {
+            var withoutPort = ip.Substring(0, lastColon);
+            if (System.Net.IPAddress.TryParse(withoutPort, out var v6WithoutPort))
+            {
+                return v6WithoutPort.ToString();
+            }
+        }
+
+        // 兜底：若包含端口截取（如旧逻辑）
+        if (lastColon > 0)
+            return ip.Substring(0, lastColon);
+
+        return ip;
+    }
+
+    /// <summary>
     /// 解析一行日志。优先匹配加入事件，其次匹配离开事件，都不匹配返回 <see cref="PlayerActivity.None"/>。
     /// </summary>
     public static PlayerActivity Parse(string logLine)
@@ -62,17 +119,18 @@ public static class PlayerActivityParser
             string playerName = joinMatch.Groups["player"].Value.Trim();
             var rawIp = joinMatch.Groups["ip"].Value.Trim();
 
-            // 排除假人
-            if (IsFakePlayer(playerName) || IsFakePlayer(rawIp))
+            // 玩家名如果是假人（含中括号或 local）则直接过滤
+            if (IsFakePlayer(playerName))
                 return PlayerActivity.None;
 
-            string? playerIp = null;
-            if (!string.IsNullOrEmpty(rawIp))
+            // 清理并解析 IP
+            string? playerIp = CleanAndParseIp(rawIp);
+
+            // 如果 IP 包含 local 或为空且未提供合法 IP，且原 rawIp 匹配假人模式（如 "local"）
+            if (string.Equals(rawIp, "local", StringComparison.OrdinalIgnoreCase) ||
+                (playerIp == null && IsFakePlayer(rawIp)))
             {
-                if (rawIp.StartsWith("/")) rawIp = rawIp.TrimStart('/');
-                int colonIdx = rawIp.LastIndexOf(':');
-                if (colonIdx > 0) rawIp = rawIp.Substring(0, colonIdx);
-                playerIp = rawIp;
+                return PlayerActivity.None;
             }
 
             return new PlayerActivity(PlayerActivityType.Joined, playerName, playerIp);
