@@ -268,13 +268,13 @@ const openNewTab = (path: string) => {
 }
 
 /* ================== 暗黑模式兜底 ================== */
-:global(html[theme-mode='dark']) :deep(.t-menu__item:not(.t-is-active)),
-:global(html[theme-mode='dark']) :deep(.t-submenu__title:not(.t-is-opened)) {
+:global(html[theme-mode='dark'] .t-menu__item:not(.t-is-active)),
+:global(html[theme-mode='dark'] .t-submenu__title:not(.t-is-opened)) {
   color: rgba(255, 255, 255, 0.65) !important;
 }
 
-:global(html[theme-mode='dark']) :deep(.t-menu__item:hover:not(.t-is-active)),
-:global(html[theme-mode='dark']) :deep(.t-submenu__title:hover:not(.t-is-opened)) {
+:global(html[theme-mode='dark'] .t-menu__item:hover:not(.t-is-active)),
+:global(html[theme-mode='dark'] .t-submenu__title:hover:not(.t-is-opened)) {
   color: #ffffff !important;
 }
 </style>

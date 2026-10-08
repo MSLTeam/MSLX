@@ -147,14 +147,11 @@ const goHome = () => {
 <style scoped>
 @reference "@/style/tailwind/index.css";
 /* 暗黑模式下，菜单项的背景色 */
-&.dark,
-:global(html[theme-mode='dark']) & {
-  :deep(.sidebar-menu-clear),
-  :deep(.t-menu),
-  :deep(.t-menu--dark),
-  :deep(.t-default-menu__inner) {
-    background: transparent !important;
-  }
+:global(html[theme-mode='dark'] .sidebar-menu-clear),
+:global(html[theme-mode='dark'] .t-menu),
+:global(html[theme-mode='dark'] .t-menu--dark),
+:global(html[theme-mode='dark'] .t-default-menu__inner) {
+  background: transparent !important;
 }
 
 /* 强制抹杀 TDesign 的偏移，保证 Logo 的 !ml-0 绝对生效 */
@@ -172,7 +169,7 @@ const goHome = () => {
 :deep(.t-menu__operations) {
   border-top: none !important;
 }
-:global(html[theme-mode='dark']) :deep(.t-menu__operations) {
+:global(html[theme-mode='dark'] .t-menu__operations) {
   background: transparent !important;
 }
 
@@ -204,15 +201,15 @@ const goHome = () => {
 }
 
 /* 菜单文字颜色的一致性 */
-:global(html[theme-mode='dark']) .design-card :deep(.t-menu__item) {
+:global(html[theme-mode='dark'] .design-card .t-menu__item) {
   color: rgba(255, 255, 255, 0.7);
 }
 
-:global(html[theme-mode='dark']) .design-card :deep(.t-menu__item:hover:not(.t-is-active)) {
+:global(html[theme-mode='dark'] .design-card .t-menu__item:hover:not(.t-is-active)) {
   color: #ffffff !important;
 }
 
-:global(html[theme-mode='dark']) .design-card :deep(.t-menu__item.t-is-active) {
+:global(html[theme-mode='dark'] .design-card .t-menu__item.t-is-active) {
   color: var(--color-primary) !important;
 }
 

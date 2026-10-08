@@ -132,8 +132,7 @@ body .global-layout-bg.custom-theme-enabled,
     transition: background-image 0.3s ease, opacity 0.3s ease;
   }
 
-  &.dark::before,
-  :global(html[theme-mode='dark']) &::before {
+  &.dark::before {
     background-image: var(--bg-img-dark) !important;
     opacity: var(--bg-op-dark) !important;
   }
@@ -184,8 +183,7 @@ body .global-layout-bg.custom-theme-enabled,
   :deep(.t-radio-group) {
     --td-bg-color-container: #ffffff !important;
   }
-  &.dark,
-  :global(html[theme-mode='dark']) & {
+  &.dark {
     :deep(.t-radio-group) {
       --td-bg-color-container: #3f3f46 !important;
     }
@@ -219,8 +217,7 @@ body .global-layout-bg.custom-theme-enabled,
   }
 
   // 黑夜组件样式
-  &.dark,
-  :global(html[theme-mode='dark']) & {
+  &.dark {
     --current-comp-op: var(--comp-op-dark);
 
     :deep(.design-card),
