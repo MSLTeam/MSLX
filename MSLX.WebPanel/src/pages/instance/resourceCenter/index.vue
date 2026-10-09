@@ -10,6 +10,7 @@ import { useSettingStore, useNodeStore } from '@/store';
 import DependencyGuideModal from './components/DependencyGuideModal.vue';
 import { useInstanceListStore } from '@/store/modules/instance';
 import NodeSwitcher from '@/components/node-switcher/index.vue';
+import LoadingCard from '@/components/loading-card/index.vue';
 
 const typeOptions = [
   { label: 'Mod', value: 0 },
@@ -538,9 +539,19 @@ watch(isDark, (val) => {
       </aside>
 
       <!-- 资源卡片网格与分页 -->
-      <main class="flex-1 min-w-0 w-full" v-loading="loading">
-        <div class="relative min-h-[400px]">
-          <template v-if="resourceList && resourceList.length > 0">
+      <main class="flex-1 min-w-0 w-full flex flex-col">
+        <!-- 卡片网格与空状态区域 -->
+        <div class="relative min-h-[420px] rounded-2xl">
+          <!-- 动画加载组件 -->
+          <loading-card
+            v-if="loading"
+            text="正在探索资源星系..."
+            description="正在加载中,至于还有多久,我不知道哇......"
+            min-height="420px"
+          />
+
+          <!-- 数据列表 -->
+          <template v-else-if="resourceList && resourceList.length > 0">
             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
               <div
                 v-for="(item, index) in resourceList"
@@ -611,19 +622,21 @@ watch(isDark, (val) => {
             </div>
           </template>
 
-          <div v-if="resourceList.length === 0 && !loading" class="text-center text-[var(--td-text-color-secondary)] my-16">
+          <!-- 空状态 -->
+          <div v-else class="text-center text-[var(--td-text-color-secondary)] my-16">
             未找到相关资源，请修改筛选条件后重试。
           </div>
+        </div>
 
-          <div class="mt-6 flex justify-end">
-            <t-pagination
-              v-model="pagination.current"
-              v-model:page-size="pagination.pageSize"
-              :total="pagination.total"
-              :page-size-options="[12, 24, 48]"
-              @change="handlePageChange"
-            />
-          </div>
+        <!-- 底部分页 -->
+        <div v-if="!loading && resourceList.length > 0" class="mt-6 flex justify-end">
+          <t-pagination
+            v-model="pagination.current"
+            v-model:page-size="pagination.pageSize"
+            :total="pagination.total"
+            :page-size-options="[12, 24, 48]"
+            @change="handlePageChange"
+          />
         </div>
       </main>
     </div>
