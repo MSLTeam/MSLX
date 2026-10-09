@@ -15,14 +15,18 @@ import {
   CloseIcon,
   SaveIcon,
   BookIcon,
+  DownloadIcon,
+  NotificationIcon,
+  SearchIcon,
 } from 'tdesign-icons-vue-next';
 
 import { CronTaskItemModel } from '@/api/model/cronTasks';
-import { getCronTasks, addCronTask, updateCronTask, deleteCronTask } from '@/api/cronTasks';
+import { getCronTasks, getAllCronTasks, addCronTask, updateCronTask, deleteCronTask } from '@/api/cronTasks';
 
 import CronGenerator from './CronGenerator.vue';
 import { changeUrl } from '@/router';
 import { DOC_URLS } from '@/api/docs';
+import { COMMON_COMMAND_PRESETS, shiftCronMinutes, generateAdvanceNoticePayload } from '@/utils/cronHelper';
 
 const route = useRoute();
 const instanceId = computed(() => parseInt(route.params.serverId as string));
@@ -32,10 +36,40 @@ const userStore = useUserStore();
 const taskList = ref<CronTaskItemModel[]>([]);
 const loading = ref(false);
 const isCreating = ref(false); // 控制顶部创建容器显示
-const isEditingId = ref<string | null>(null); // 如果要支持内联编辑，可以扩展此逻辑，目前用于区分Create/Update
+const isEditingId = ref<string | null>(null);
 const submitLoading = ref(false);
 const formRef = ref<FormInstanceFunctions | null>(null);
 const showCronGen = ref(false); // Cron生成器弹窗
+
+// --- 导入任务状态 ---
+const showImportModal = ref(false);
+const allTasksList = ref<CronTaskItemModel[]>([]);
+const importLoading = ref(false);
+const importSearch = ref('');
+
+const filteredImportTasks = computed(() => {
+  const kw = importSearch.value.trim().toLowerCase();
+  if (!kw) return allTasksList.value;
+  return allTasksList.value.filter(
+    (t) =>
+      t.name.toLowerCase().includes(kw) ||
+      t.cron.toLowerCase().includes(kw) ||
+      t.type.toLowerCase().includes(kw) ||
+      (t.payload && t.payload.toLowerCase().includes(kw))
+  );
+});
+
+// --- 提前提醒任务状态 ---
+const showAdvanceModal = ref(false);
+const advanceLoading = ref(false);
+const advanceTargetTask = ref<CronTaskItemModel | null>(null);
+const advanceMinutes = ref(10);
+const advanceTemplateType = ref<'title' | 'tellraw' | 'say'>('say');
+const advanceForm = ref({
+  name: '',
+  cron: '',
+  payload: '',
+});
 
 // 表单数据
 const formData = ref({
@@ -193,6 +227,95 @@ const onCronGenerated = (cron: string) => {
   formData.value.cron = cron;
 };
 
+// --- 导入任务处理 ---
+const handleOpenImport = async () => {
+  showImportModal.value = true;
+  importLoading.value = true;
+  try {
+    const res = await getAllCronTasks();
+    allTasksList.value = res || [];
+  } catch (e: any) {
+    MessagePlugin.error(e.message || '获取任务列表失败');
+  } finally {
+    importLoading.value = false;
+  }
+};
+
+const handleApplyImport = (item: CronTaskItemModel) => {
+  formData.value = {
+    id: '',
+    name: `${item.name} (副本)`,
+    cron: item.cron,
+    type: item.type.toLowerCase(),
+    payload: item.payload,
+    enable: true,
+    runWhenOffline: item.runWhenOffline ?? true,
+  };
+  isEditingId.value = null;
+  isCreating.value = true;
+  showImportModal.value = false;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  MessagePlugin.success(`已回填任务 [${item.name}] 的配置`);
+};
+
+// --- 提前提醒任务处理 ---
+const handleOpenAdvance = (task: CronTaskItemModel) => {
+  advanceTargetTask.value = task;
+  advanceMinutes.value = 10;
+  advanceTemplateType.value = 'say';
+  updateAdvanceFormPreview();
+  showAdvanceModal.value = true;
+};
+
+const updateAdvanceFormPreview = () => {
+  if (!advanceTargetTask.value) return;
+  const shifted = shiftCronMinutes(advanceTargetTask.value.cron, advanceMinutes.value);
+  advanceForm.value.name = `[提前${advanceMinutes.value}分钟提醒] ${advanceTargetTask.value.name}`;
+  // 推算不出来就让用户自己写
+  advanceForm.value.cron = shifted || '';
+  advanceForm.value.payload = generateAdvanceNoticePayload(
+    advanceTemplateType.value,
+    advanceMinutes.value,
+    advanceTargetTask.value.type,
+    advanceTargetTask.value.name
+  );
+};
+
+const handleConfirmCreateAdvance = async () => {
+  if (!advanceForm.value.name || !advanceForm.value.cron) {
+    MessagePlugin.warning('任务名称与 Cron 规则不能为空');
+    return;
+  }
+  if (advanceTargetTask.value && advanceForm.value.cron.trim() === advanceTargetTask.value.cron.trim()) {
+    MessagePlugin.warning('提醒任务的触发时间不能与原任务完全一致，请修改 Cron');
+    return;
+  }
+  advanceLoading.value = true;
+  try {
+    await addCronTask(
+      instanceId.value,
+      advanceForm.value.name,
+      advanceForm.value.cron,
+      advanceForm.value.payload,
+      'command',
+      true,
+      true
+    );
+    MessagePlugin.success('提前提醒任务创建成功');
+    showAdvanceModal.value = false;
+    fetchData();
+  } catch (e: any) {
+    MessagePlugin.error(e.message || '创建提前提醒任务失败');
+  } finally {
+    advanceLoading.value = false;
+  }
+};
+
+const applyCommandPreset = (presetCommand: string) => {
+  formData.value.payload = presetCommand;
+  MessagePlugin.success('已填入常用指令预设');
+};
+
 // 工具函数
 const getIconByType = (type: string) => {
   const t = type.toLowerCase();
@@ -226,6 +349,9 @@ onMounted(fetchData);
       <t-space v-if="!isCreating">
         <t-button theme="default" variant="outline" class="!rounded-lg" @click="changeUrl(DOC_URLS.cron)">
           <template #icon><book-icon /></template>使用文档
+        </t-button>
+        <t-button theme="default" variant="outline" class="!rounded-lg" @click="handleOpenImport">
+          <template #icon><download-icon /></template>导入已有任务
         </t-button>
         <t-button theme="primary" class="!rounded-lg shadow-sm" @click="handleStartCreate">
           <template #icon><add-icon /></template>创建新任务
@@ -269,10 +395,24 @@ onMounted(fetchData);
             <div class="flex-1 md:max-w-[40%] pr-0 md:pr-8 mb-3 md:mb-0">
               <div class="text-sm font-bold text-[var(--td-text-color-primary)]">{{ formData.type === 'restart' ? '重启提示语' : (formData.type === 'shell' ? 'Shell 命令' : '控制台命令') }}</div>
               <div class="text-xs text-[var(--td-text-color-secondary)] mt-1">
-                {{ formData.type === 'restart' ? '重启前发送给玩家的消息' : (formData.type === 'shell' ? '输入要执行的宿主机 Shell 命令' : '直接输入内容，不需要加 /') }}
+                {{ formData.type === 'restart' ? '重启前发送给玩家的消息（系统将在重启前60秒自动广播预警并倒计时）' : (formData.type === 'shell' ? '输入要执行的宿主机 Shell 命令' : '直接输入内容，不需要加 /') }}
               </div>
             </div>
-            <div class="flex-1 md:max-w-[60%] w-full">
+            <div class="flex-1 md:max-w-[60%] w-full flex flex-col gap-2">
+              <div v-if="formData.type === 'command'" class="flex flex-wrap items-center gap-1.5 mb-1">
+                <span class="text-xs text-[var(--td-text-color-secondary)] mr-1">快捷预设:</span>
+                <t-tag
+                  v-for="preset in COMMON_COMMAND_PRESETS"
+                  :key="preset.label"
+                  size="small"
+                  variant="light"
+                  theme="primary"
+                  class="cursor-pointer hover:opacity-80 !rounded-md"
+                  @click="applyCommandPreset(preset.command)"
+                >
+                  {{ preset.label }}
+                </t-tag>
+              </div>
               <t-textarea v-model="formData.payload" :autosize="{ minRows: 2, maxRows: 4 }" placeholder="请输入内容..." class="w-full" />
             </div>
           </div>
@@ -304,7 +444,7 @@ onMounted(fetchData);
     </transition>
 
     <t-loading :loading="loading" show-overlay>
-      <div class="flex flex-col gap-3 mt-2">
+      <div class="flex flex-col gap-5 mt-4">
         <div v-if="taskList.length === 0 && !loading" class="flex flex-col items-center justify-center p-12 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl text-[var(--td-text-color-secondary)]">
           <span class="text-sm font-medium">暂无任务，请点击上方创建</span>
         </div>
@@ -335,6 +475,15 @@ onMounted(fetchData);
           </div>
 
           <div class="flex shrink-0 gap-1 mt-4 md:mt-0 pt-3 md:pt-0 border-t md:border-t-0 border-zinc-100 dark:border-zinc-800 w-full md:w-auto justify-end">
+            <t-button
+              v-if="['stop', 'restart'].includes(item.type.toLowerCase())"
+              variant="text"
+              theme="primary"
+              class="!rounded-lg hover:!bg-[var(--color-primary)]/10"
+              @click="handleOpenAdvance(item)"
+            >
+              <template #icon><notification-icon /></template> 提前提醒
+            </t-button>
             <t-button variant="text" theme="primary" class="!rounded-lg hover:!bg-[var(--color-primary)]/10" @click="handleEdit(item)">
               <template #icon><edit-icon /></template> 编辑
             </t-button>
@@ -347,6 +496,117 @@ onMounted(fetchData);
     </t-loading>
 
     <cron-generator v-model:visible="showCronGen" :initial-value="formData.cron" @confirm="onCronGenerated" />
+
+    <!-- 导入已有任务弹窗 -->
+    <t-dialog
+      v-model:visible="showImportModal"
+      header="导入已有任务配置"
+      width="700px"
+      :footer="false"
+      placement="center"
+      attach="body"
+    >
+      <div class="flex flex-col gap-4 mt-2">
+        <t-input
+          v-model="importSearch"
+          placeholder="搜索任务名称、类型或 Cron 规则..."
+          clearable
+        >
+          <template #prefix-icon><search-icon /></template>
+        </t-input>
+
+        <div class="max-h-[420px] overflow-y-auto pr-1">
+          <t-loading :loading="importLoading" show-overlay>
+            <div v-if="filteredImportTasks.length === 0 && !importLoading" class="text-center py-10 text-xs text-[var(--td-text-color-secondary)]">
+              暂无匹配的任务配置
+            </div>
+            <div v-else class="flex flex-col py-1">
+              <div
+                v-for="task in filteredImportTasks"
+                :key="task.id"
+                class="flex items-center justify-between p-4 mb-3 last:mb-0 bg-zinc-50 dark:bg-zinc-800/40 rounded-xl border border-[var(--td-component-border)] hover:border-[var(--color-primary)]/50 transition-all shadow-xs"
+              >
+                <div class="flex flex-col gap-1 min-w-0 pr-4">
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-sm text-[var(--td-text-color-primary)] truncate">{{ task.name }}</span>
+                    <t-tag size="small" variant="light" :theme="getColorByType(task.type)" class="!rounded uppercase text-xs">
+                      {{ task.type }}
+                    </t-tag>
+                    <t-tag size="small" theme="default" variant="light" class="!rounded text-xs">
+                      实例 ID: {{ task.instanceId }}
+                    </t-tag>
+                  </div>
+                  <div class="flex items-center gap-2 text-xs text-[var(--td-text-color-secondary)] font-mono">
+                    <span>Cron: {{ task.cron }}</span>
+                    <span v-if="task.payload" class="truncate max-w-[260px] text-zinc-400">| {{ task.payload }}</span>
+                  </div>
+                </div>
+                <t-button theme="primary" variant="outline" size="small" class="!rounded-lg shrink-0" @click="handleApplyImport(task)">
+                  导入
+                </t-button>
+              </div>
+            </div>
+          </t-loading>
+        </div>
+      </div>
+    </t-dialog>
+
+    <!-- 创建提前提醒任务弹窗 -->
+    <t-dialog
+      v-model:visible="showAdvanceModal"
+      header="快速创建提前提醒任务"
+      width="600px"
+      :confirm-btn="{ content: '立即创建', theme: 'primary', loading: advanceLoading, disabled: !advanceForm.cron }"
+      placement="center"
+      attach="body"
+      @confirm="handleConfirmCreateAdvance"
+    >
+      <div v-if="advanceTargetTask" class="flex flex-col gap-4 mt-2">
+        <div class="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-[var(--td-component-border)] flex items-center justify-between text-xs">
+          <span class="text-[var(--td-text-color-secondary)]">
+            关联任务: <b class="text-[var(--td-text-color-primary)]">{{ advanceTargetTask.name }}</b>
+          </span>
+          <span class="font-mono text-[var(--td-text-color-secondary)]">原 Cron: {{ advanceTargetTask.cron }}</span>
+        </div>
+
+        <div>
+          <div class="text-xs font-bold text-[var(--td-text-color-primary)] mb-1.5">提前提醒时间</div>
+          <t-radio-group v-model="advanceMinutes" variant="default-filled" @change="updateAdvanceFormPreview">
+            <t-radio-button :value="5">提前 5 分钟</t-radio-button>
+            <t-radio-button :value="10">提前 10 分钟</t-radio-button>
+            <t-radio-button :value="15">提前 15 分钟</t-radio-button>
+            <t-radio-button :value="30">提前 30 分钟</t-radio-button>
+          </t-radio-group>
+        </div>
+
+        <div>
+          <div class="text-xs font-bold text-[var(--td-text-color-primary)] mb-1.5">提醒通知样式</div>
+          <t-radio-group v-model="advanceTemplateType" variant="default-filled" @change="updateAdvanceFormPreview">
+            <t-radio-button value="say">控制台标准广播 (通用)</t-radio-button>
+            <t-radio-button value="tellraw">彩色聊天框 (仅 MC Java)</t-radio-button>
+            <t-radio-button value="title">全屏大标题 (仅 MC Java)</t-radio-button>
+          </t-radio-group>
+        </div>
+
+        <div>
+          <div class="text-xs font-bold text-[var(--td-text-color-primary)] mb-1.5">新任务名称</div>
+          <t-input v-model="advanceForm.name" placeholder="请输入任务名称" />
+        </div>
+
+        <div>
+          <div class="text-xs font-bold text-[var(--td-text-color-primary)] mb-1.5 flex items-center justify-between">
+            <span>定时 Cron 表达式</span>
+            <span v-if="!advanceForm.cron" class="text-amber-500 font-normal">当前规则无法自动推算，请手动填写</span>
+          </div>
+          <t-input v-model="advanceForm.cron" placeholder="例如: 0 50 3 * * ?" />
+        </div>
+
+        <div>
+          <div class="text-xs font-bold text-[var(--td-text-color-primary)] mb-1.5">通知执行指令</div>
+          <t-textarea v-model="advanceForm.payload" :autosize="{ minRows: 2, maxRows: 4 }" placeholder="发送给服务器控制台的提醒指令" />
+        </div>
+      </div>
+    </t-dialog>
   </div>
 </template>
 

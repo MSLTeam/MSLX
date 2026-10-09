@@ -341,7 +341,7 @@ onUnmounted(() => {
             : 'border-zinc-200/70 dark:border-zinc-800 hover:border-[var(--color-primary)]/50',
         ]"
         @click="handleCardClick(item, $event)"
-        @auxclick.prevent="handleCardClick(item, $event, true)"
+        @auxclick.middle.prevent="handleCardClick(item, $event, true)"
       >
         <!-- 左上角勾选框 (悬浮/选中时显示) -->
         <div

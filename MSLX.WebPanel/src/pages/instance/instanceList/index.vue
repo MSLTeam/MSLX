@@ -275,7 +275,7 @@ const handleConfirmDelete = async () => {
             <template #icon><refresh-icon /></template>
             刷新列表
           </t-button>
-          <t-button v-if="userStore.isAdmin" theme="primary" @click="changeUrl('/instance/create')" @auxclick.prevent="changeUrl('/instance/create', true)">
+          <t-button v-if="userStore.isAdmin" theme="primary" @click="changeUrl('/instance/create')" @auxclick.middle.prevent="changeUrl('/instance/create', true)">
             <template #icon><add-icon /></template>
             添加服务端
           </t-button>
@@ -342,7 +342,7 @@ const handleConfirmDelete = async () => {
                 '!border-[var(--color-primary)] shadow-md': isBatchMode && selectedIds.includes(item.id),
               }"
               @click="handleCardClick($event, item)"
-              @auxclick.prevent="handleCardClick($event, item, true)"
+              @auxclick.middle.prevent="handleCardClick($event, item, true)"
             >
               <div v-if="isBatchMode" class="absolute top-4 right-4 z-10 pointer-events-none">
                 <t-checkbox :checked="selectedIds.includes(item.id)" />

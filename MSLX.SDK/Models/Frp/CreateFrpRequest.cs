@@ -20,6 +20,8 @@ public class CreateFrpRequest
     public string format { get; set; }
     
     public string? clientPath { get; set; }
+    
+    public List<string>? tags { get; set; }
 }
 
 public class DeleteFrpRequest

@@ -10,7 +10,8 @@ public enum TaskType
     Export,
     Plugin,
     CreateServer,
-    UpdateServer
+    UpdateServer,
+    Backup
 }
 
 public enum TaskState

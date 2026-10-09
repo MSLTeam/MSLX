@@ -3,10 +3,11 @@ import type { ResourceSearchFilter, ResourceVersionModel, ResourceSearchResult, 
 
 export * from '@/api/model/resourceCenter';
 
-export async function searchResources(filter: ResourceSearchFilter) {
+export async function searchResources(filter: ResourceSearchFilter, signal?: AbortSignal) {
   return await request.post<ResourceSearchResult>({
     url: '/api/resource/search',
     data: filter,
+    signal,
     timeout: 30000
   });
 }

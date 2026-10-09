@@ -46,7 +46,7 @@
 }
 
 /* 暗黑模式光影特调 */
-:global(html[theme-mode='dark']) .glass-capsule:hover {
+:global(html[theme-mode='dark'] .glass-capsule:hover) {
   border-color: color-mix(in srgb, var(--color-primary), transparent 60%);
 
   box-shadow:

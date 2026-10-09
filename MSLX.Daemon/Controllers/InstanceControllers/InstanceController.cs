@@ -67,7 +67,8 @@ public class InstanceController : ControllerBase
                     ? Ok(ApiResponseService.Success("执行成功"))
                     : Ok(ApiResponseService.Error("执行失败"));
             case "backup":
-                bool backup = _backupService.StartBackupServer(request.ID!.Value);
+                var userId = User?.FindFirst("UserId")?.Value ?? "";
+                bool backup = _backupService.StartBackupServer(request.ID!.Value, userId);
                 return backup
                     ? Ok(ApiResponseService.Success("已开始备份···"))
                     : Ok(ApiResponseService.Error("服务器可能不在运行，启动备份失败！"));

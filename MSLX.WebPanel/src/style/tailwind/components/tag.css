@@ -1,7 +1,7 @@
 /* ================= 标签 (Tag) 现代 Zinc 风格重构 ================= */
 
 .t-tag {
-  @apply font-bold px-2.5 py-0.5 border transition-all flex items-center shadow-none text-xs tracking-tight select-none active:scale-95;
+  @apply font-bold px-2.5 py-0.5 border transition-all inline-flex items-center justify-center w-fit shadow-none text-xs tracking-tight select-none active:scale-95;
   border-radius: var(--td-radius-default, 8px) !important;
 }
 

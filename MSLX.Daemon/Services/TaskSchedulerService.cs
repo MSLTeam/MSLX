@@ -258,7 +258,27 @@ namespace MSLX.Daemon.Services
             {
                 _consoleService.SendCommand(instanceId, $"say [计划任务] {payload}");
             }
-            _consoleService.SendCommand(instanceId, "say 服务器即将执行计划重启...");
+            _consoleService.SendCommand(instanceId, FormatRestartBroadcast(60));
+
+            // 60秒内阶段性通知即将重启
+            for (int i = 60; i > 0; i--)
+            {
+                if (!_lifecycleService.IsServerRunning(instanceId))
+                {
+                    _logger.LogInformation($"[MSLX-Scheduler] 实例 {instanceId} 在重启倒计时期间已停止，取消重启操作。");
+                    return;
+                }
+
+                if (i == 30 || i == 10 || i == 5)
+                {
+                    _consoleService.SendCommand(instanceId, FormatRestartBroadcast(i));
+                }
+
+                await Task.Delay(1000);
+            }
+
+            _consoleService.SendCommand(instanceId, "tellraw @a [{\"text\":\"[\",\"color\":\"yellow\"},{\"text\":\"MSLX\",\"color\":\"green\"},{\"text\":\"]\",\"color\":\"yellow\"},{\"text\":\"服务器即将重启...\",\"color\":\"aqua\"}]");
+            await Task.Delay(1000); // 确保发包给客户端
 
             // 执行停止
             bool stopped = _lifecycleService.StopServer(instanceId);
@@ -278,6 +298,11 @@ namespace MSLX.Daemon.Services
             // 启动
             _lifecycleService.StartServer(instanceId);
             _logger.LogInformation($"任务触发的重启已完成: Instance {instanceId}");
+        }
+
+        private static string FormatRestartBroadcast(int seconds)
+        {
+            return $"tellraw @a [{{\"text\":\"[\",\"color\":\"yellow\"}},{{\"text\":\"MSLX\",\"color\":\"green\"}},{{\"text\":\"]\",\"color\":\"yellow\"}},{{\"text\":\"服务器将在 {seconds} 秒后重启\",\"color\":\"aqua\"}}]";
         }
     }
 }

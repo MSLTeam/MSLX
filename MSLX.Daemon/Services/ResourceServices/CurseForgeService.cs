@@ -27,6 +27,19 @@ namespace MSLX.Daemon.Services.ResourceServices
             { ResourceType.Shader, 6552 },
         };
 
+        private static readonly Dictionary<string, int> ModCategoryMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "technology", 412 },
+            { "magic", 419 },
+            { "adventure", 406 },
+            { "worldgen", 409 },
+            { "decoration", 424 },
+            { "storage", 422 },
+            { "utility", 423 },
+            { "food", 416 },
+            { "equipment", 418 },
+        };
+
         public CurseForgeService(HttpClient httpClient)
         {
             _httpClient = httpClient;
@@ -94,6 +107,11 @@ namespace MSLX.Daemon.Services.ResourceServices
             if (!string.IsNullOrEmpty(filter.GameVersion))
             {
                 urlBuilder.Append($"&gameVersion={Uri.EscapeDataString(filter.GameVersion)}");
+            }
+
+            if (!string.IsNullOrEmpty(filter.Category) && ModCategoryMap.TryGetValue(filter.Category, out int categoryId))
+            {
+                urlBuilder.Append($"&categoryId={categoryId}");
             }
 
             urlBuilder.Append($"&index={filter.Offset}&pageSize={filter.Limit}");

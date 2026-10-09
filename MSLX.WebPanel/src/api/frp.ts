@@ -1,7 +1,7 @@
 import { request } from '@/utils/request';
 import { FrpListModel, TunnelInfoModel } from '@/api/model/frp';
 
-export async function postCreateFrpTunnel(name: string, config: string, provider: string, format: string = 'toml', clientPath?: string) {
+export async function postCreateFrpTunnel(name: string, config: string, provider: string, format: string = 'toml', clientPath?: string, tags?: string[]) {
   return await request.post({
     url: '/api/frp/add',
     data: {
@@ -9,7 +9,19 @@ export async function postCreateFrpTunnel(name: string, config: string, provider
       config,
       provider,
       format,
-      clientPath
+      clientPath,
+      tags
+    }
+  });
+}
+
+export async function postUpdateFrpTunnel(id: number, name?: string, tags?: string[]) {
+  return await request.post({
+    url: '/api/frp/update',
+    data: {
+      id,
+      name,
+      tags
     }
   });
 }

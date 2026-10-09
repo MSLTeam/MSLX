@@ -413,7 +413,7 @@ const handleAvatarClick = () => {
 }
 
 /* 修复暗黑模式下菜单文字颜色 */
-:global(html[theme-mode='dark']) .design-card {
+:global(html[theme-mode='dark'] .design-card) {
   :deep(.t-menu__item) {
     color: rgba(255, 255, 255, 0.7);
     &:hover {
@@ -462,7 +462,7 @@ const handleAvatarClick = () => {
   border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important; /* 亮色模式：淡淡的灰色 */
 }
 
-:global(html[theme-mode='dark']) .design-card:not(.enable-custom-theme) {
+:global(html[theme-mode='dark'] .design-card:not(.enable-custom-theme)) {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important; /* 暗黑模式：克制的深色线 */
 }
 

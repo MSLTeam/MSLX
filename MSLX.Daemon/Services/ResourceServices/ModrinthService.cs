@@ -61,12 +61,22 @@ namespace MSLX.Daemon.Services.ResourceServices
             }
             
             // Loaders
-            if (filter.GameLoaders != null && filter.GameLoaders.Count > 0)
+            var loaders = (filter.GameLoaders ?? Enumerable.Empty<string>())
+                .Concat(filter.PluginLoaders ?? Enumerable.Empty<string>())
+                .Distinct(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var loader in loaders)
             {
-                foreach (var loader in filter.GameLoaders)
+                if (!string.IsNullOrWhiteSpace(loader))
                 {
-                    facets.Add($"[\"categories:{loader.ToLower()}\"]");
+                    facets.Add($"[\"categories:{loader.Trim().ToLower()}\"]");
                 }
+            }
+
+            // Category facet
+            if (!string.IsNullOrWhiteSpace(filter.Category))
+            {
+                facets.Add($"[\"categories:{filter.Category.Trim().ToLower()}\"]");
             }
 
             if (facets.Count > 0)

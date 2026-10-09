@@ -40,6 +40,8 @@ const getTaskTypeLabel = (type: number) => {
       return '创建';
     case 6:
       return '更新';
+    case 7:
+      return '备份';
     default:
       return '任务';
   }

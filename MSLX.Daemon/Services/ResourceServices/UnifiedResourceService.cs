@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -53,6 +53,7 @@ namespace MSLX.Daemon.Services.ResourceServices
                     PluginLoaders = filter.PluginLoaders,
                     Category = filter.Category,
                     Provider = provider.ProviderType,
+                    UseMirror = filter.UseMirror,
                     Limit = subLimit + (i < remainderLimit ? 1 : 0),
                     Offset = subOffset + (i < remainderOffset ? 1 : 0)
                 };

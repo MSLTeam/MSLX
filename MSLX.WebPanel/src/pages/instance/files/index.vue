@@ -895,7 +895,7 @@ onUnmounted(() => {
             size="medium"
             class="!rounded-lg !m-0"
             @click="changeUrl(`/instance/console/${instanceId}`)"
-            @auxclick.prevent="changeUrl(`/instance/console/${instanceId}`, true)"
+            @auxclick.middle.prevent="changeUrl(`/instance/console/${instanceId}`, true)"
           >
             <template #icon><rollback-icon /></template>
             <span v-if="!isMobile">控制台</span>
@@ -987,7 +987,7 @@ onUnmounted(() => {
           @page-change="handlePageChange"
         >
           <template #name="{ row }">
-            <div class="flex items-center py-1.5 cursor-pointer group" @click.stop="handleRowClick(row)" @auxclick.prevent.stop="handleRowClick(row, true)">
+            <div class="flex items-center py-1.5 cursor-pointer group" @click.stop="handleRowClick(row)" @auxclick.middle.prevent.stop="handleRowClick(row, true)">
               <component
                 :is="getFileIcon(row).icon"
                 class="text-xl mr-2 shrink-0 transition-transform group-hover:scale-110"

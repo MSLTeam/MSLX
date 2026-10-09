@@ -12,6 +12,7 @@ import {
   CodeIcon,
   PlayCircleIcon,
   StopCircleIcon,
+  NotificationIcon,
 } from 'tdesign-icons-vue-next';
 import { useInstanceListStore, useUserStore, useNodeStore } from '@/store';
 import { getAllCronTasks, addCronTask, updateCronTask, deleteCronTask } from '@/api/cronTasks';
@@ -19,6 +20,7 @@ import { CronTaskItemModel } from '@/api/model/cronTasks';
 
 import CronGenerator from '@/pages/instance/console/components/settingsComponents/CronGenerator.vue';
 import NodeSwitcher from '@/components/node-switcher/index.vue';
+import { COMMON_COMMAND_PRESETS, shiftCronMinutes, generateAdvanceNoticePayload } from '@/utils/cronHelper';
 
 const instanceStore = useInstanceListStore();
 const nodeStore = useNodeStore();
@@ -31,9 +33,12 @@ const handleNodeChange = () => {
   fetchData();
 };
 
-watch(() => nodeStore.activeNodeId, () => {
-  fetchData();
-});
+watch(
+  () => nodeStore.activeNodeId,
+  () => {
+    fetchData();
+  },
+);
 const selectedRowKeys = ref<Record<number, string[]>>({}); // 存储每个实例选中的任务 ID 为 Key
 
 // 弹窗表单状态
@@ -78,7 +83,10 @@ const rules: FormRules = {
   payload: [
     {
       validator: (val) => {
-        if ((formData.value.type === 'command' || formData.value.type === 'restart' || formData.value.type === 'shell') && !val) {
+        if (
+          (formData.value.type === 'command' || formData.value.type === 'restart' || formData.value.type === 'shell') &&
+          !val
+        ) {
           return { result: false, message: '此类型下内容不能为空', type: 'error' };
         }
         return true;
@@ -90,13 +98,13 @@ const rules: FormRules = {
 
 // 表格列定义
 const columns = [
-  { colKey: 'row-select', type: 'multiple', width: 30, fixed: 'left' },
+  { colKey: 'row-select', type: 'multiple', width: 36 },
   { colKey: 'name', title: '任务名称', ellipsis: true },
-  { colKey: 'type', title: '类型', width: 120 },
-  { colKey: 'cron', title: 'Cron 规则', width: 140 },
+  { colKey: 'type', title: '类型', width: 100 },
+  { colKey: 'cron', title: 'Cron 规则', width: 125 },
   { colKey: 'payload', title: '执行参数', ellipsis: true },
-  { colKey: 'enable', title: '状态', width: 90 },
-  { colKey: 'op', title: '操作', width: 140, fixed: 'right' },
+  { colKey: 'enable', title: '状态', width: 70 },
+  { colKey: 'op', title: '操作', width: 195 },
 ];
 
 const instanceOptions = computed(() => {
@@ -203,7 +211,16 @@ const onDialogConfirm = async () => {
 // 切换启停状态
 const handleToggleEnable = async (item: CronTaskItemModel, val: boolean) => {
   try {
-    await updateCronTask(item.instanceId, item.id, item.name, item.cron, item.payload, item.type, val, item.runWhenOffline ?? true);
+    await updateCronTask(
+      item.instanceId,
+      item.id,
+      item.name,
+      item.cron,
+      item.payload,
+      item.type,
+      val,
+      item.runWhenOffline ?? true,
+    );
     MessagePlugin.success(`任务 [${item.name}] 已${val ? '启用' : '暂停'}`);
     item.enable = val;
   } catch (error: any) {
@@ -264,6 +281,75 @@ const onCronGenerated = (cron: string) => {
   formData.value.cron = cron;
 };
 
+const applyCommandPreset = (presetCommand: string) => {
+  formData.value.payload = presetCommand;
+  MessagePlugin.success('已填入常用指令预设');
+};
+
+// --- 提前提醒任务状态与方法 ---
+const showAdvanceModal = ref(false);
+const advanceLoading = ref(false);
+const advanceTargetTask = ref<CronTaskItemModel | null>(null);
+const advanceMinutes = ref(10);
+const advanceTemplateType = ref<'title' | 'tellraw' | 'say'>('say');
+const advanceForm = ref({
+  name: '',
+  cron: '',
+  payload: '',
+});
+
+const handleOpenAdvance = (task: CronTaskItemModel) => {
+  advanceTargetTask.value = task;
+  advanceMinutes.value = 10;
+  advanceTemplateType.value = 'say';
+  updateAdvanceFormPreview();
+  showAdvanceModal.value = true;
+};
+
+const updateAdvanceFormPreview = () => {
+  if (!advanceTargetTask.value) return;
+  const shifted = shiftCronMinutes(advanceTargetTask.value.cron, advanceMinutes.value);
+  advanceForm.value.name = `[提前${advanceMinutes.value}分钟提醒] ${advanceTargetTask.value.name}`;
+  // 算不出来就让用户自己填
+  advanceForm.value.cron = shifted || '';
+  advanceForm.value.payload = generateAdvanceNoticePayload(
+    advanceTemplateType.value,
+    advanceMinutes.value,
+    advanceTargetTask.value.type,
+    advanceTargetTask.value.name,
+  );
+};
+
+const handleConfirmCreateAdvance = async () => {
+  if (!advanceForm.value.name || !advanceForm.value.cron || !advanceTargetTask.value) {
+    MessagePlugin.warning('任务名称与 Cron 规则不能为空');
+    return;
+  }
+  if (advanceForm.value.cron.trim() === advanceTargetTask.value.cron.trim()) {
+    MessagePlugin.warning('提醒任务的触发时间不能与原任务完全一致，请修改 Cron');
+    return;
+  }
+  advanceLoading.value = true;
+  try {
+    await addCronTask(
+      advanceTargetTask.value.instanceId,
+      advanceForm.value.name,
+      advanceForm.value.cron,
+      advanceForm.value.payload,
+      'command',
+      true,
+      true,
+    );
+    MessagePlugin.success('提前提醒任务创建成功');
+    showAdvanceModal.value = false;
+    fetchData();
+  } catch (e: any) {
+    MessagePlugin.error(e.message || '创建提前提醒任务失败');
+  } finally {
+    advanceLoading.value = false;
+  }
+};
+
 // 工具函数
 const getIconByType = (type: string) => {
   const t = type.toLowerCase();
@@ -289,7 +375,6 @@ onMounted(() => {
 
 <template>
   <div class="mx-auto flex flex-col gap-6 text-[var(--td-text-color-primary)] pb-5">
-
     <div
       class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
     >
@@ -314,120 +399,190 @@ onMounted(() => {
     </div>
 
     <div class="relative min-h-[400px]">
-
       <div v-if="loading && groupedInstances.length === 0" class="flex justify-center items-center py-24">
         <t-loading text="加载数据中..." size="small"></t-loading>
       </div>
 
       <template v-else-if="groupedInstances.length > 0">
         <div class="flex flex-col gap-5">
+          <div
+            v-for="(instance, index) in groupedInstances"
+            :key="instance.id"
+            class="list-item-anim"
+            :style="{ animationDelay: `${index * 0.05}s` }"
+          >
             <div
-              v-for="(instance, index) in groupedInstances"
-              :key="instance.id"
-              class="list-item-anim"
-              :style="{ animationDelay: `${index * 0.05}s` }"
+              class="design-card flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300 hover:border-[var(--color-primary)]/30"
+              :class="{ 'opacity-80': !instance.tasks?.length }"
             >
               <div
-                class="design-card flex flex-col bg-[var(--td-bg-color-container)]/80  rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300 hover:border-[var(--color-primary)]/30"
-                :class="{ 'opacity-80': !instance.tasks?.length }"
+                class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 border-b border-dashed border-zinc-200 dark:border-zinc-700/60"
               >
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 border-b border-dashed border-zinc-200 dark:border-zinc-700/60">
-                  <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-                    <t-tag theme="primary" variant="light" shape="round" class="!px-3 !font-mono font-bold tracking-wider">ID: {{ instance.id }}</t-tag>
-                    <div class="flex items-center gap-3">
-                      <h3 class="text-base font-bold text-[var(--td-text-color-primary)] flex items-center gap-2 m-0 tracking-tight">
-                        <server-icon class="text-[var(--td-text-color-secondary)] shrink-0" />
-                        {{ instance.name }}
-                      </h3>
-                      <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-xs text-[var(--td-text-color-secondary)] font-medium border border-[var(--td-component-border)]">
-                        <cloud-icon size="14px" class="opacity-80" />
-                        {{ instance.core }}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div class="flex items-center gap-2">
-                    <t-button size="small" variant="outline" class="!border-zinc-200 dark:!border-zinc-700 !text-zinc-600 dark:!text-zinc-400 hover:!text-[var(--color-primary)] hover:!border-[var(--color-primary)] bg-white/50 dark:bg-zinc-900/50" @click="handleAdd(instance.id)">
-                      <template #icon><add-icon /></template> 添加任务
-                    </t-button>
-                    <t-tag v-if="instance.tasks?.length" theme="success" variant="light" shape="round" class="!px-3 !font-medium">
-                      {{ instance.tasks.length }} 个任务
-                    </t-tag>
-                    <t-tag v-else theme="default" variant="light" shape="round" class="!px-3 !text-zinc-400 !bg-zinc-100 dark:!bg-zinc-800">无任务</t-tag>
-                  </div>
-                </div>
-
-                <div class="p-5">
-                  <div v-if="instance.tasks?.length" class="flex flex-col gap-3">
-
-                    <div v-if="selectedRowKeys[instance.id]?.length > 0" class="flex items-center gap-3 p-2 px-4 bg-red-500/10 border border-red-500/20 rounded-xl mb-1 transition-all">
-                      <span class="text-xs font-medium text-red-600 dark:text-red-400">已选 {{ selectedRowKeys[instance.id].length }} 项</span>
-                      <t-button theme="danger" variant="text" size="small" class="!h-auto !py-1 hover:!bg-red-500/20" @click="handleBatchDelete(instance.id)">
-                        批量删除
-                      </t-button>
-                    </div>
-
-                    <t-table
-                      row-key="id"
-                      :data="instance.tasks"
-                      :columns="columns as any"
-                      :selected-row-keys="selectedRowKeys[instance.id] || []"
-                      size="small"
-                      :hover="true"
-                      :pagination="instance.tasks.length > 5 ? { pageSize: 5 } : null"
-                      @select-change="(val, ctx) => onSelectChange(val as any, ctx, instance.id)"
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <t-tag theme="primary" variant="light" shape="round" class="!px-3 !font-mono font-bold tracking-wider"
+                    >ID: {{ instance.id }}</t-tag
+                  >
+                  <div class="flex items-center gap-3">
+                    <h3
+                      class="text-base font-bold text-[var(--td-text-color-primary)] flex items-center gap-2 m-0 tracking-tight"
                     >
-                      <template #name="{ row }">
-                        <div class="flex items-center gap-2">
-                          <time-icon class="text-[var(--color-primary)] opacity-90 shrink-0" />
-                          <span class="font-medium text-[var(--td-text-color-primary)] truncate" :title="row.name">{{ row.name }}</span>
-                        </div>
-                      </template>
-
-                      <template #type="{ row }">
-                        <t-tag size="small" variant="light" :theme="getColorByType(row.type)" class="!rounded-md !px-2 font-medium">
-                          <template #icon>
-                            <component :is="getIconByType(row.type)" class="opacity-80" />
-                          </template>
-                          {{ row.type.toUpperCase() }}
-                        </t-tag>
-                      </template>
-
-                      <template #cron="{ row }">
-                        <span class="font-mono text-xs text-[var(--td-text-color-secondary)] bg-zinc-100 dark:bg-zinc-900 px-2.5 py-1 rounded-md border border-[var(--td-component-border)]">
-                          {{ row.cron }}
-                        </span>
-                      </template>
-
-                      <template #enable="{ row }">
-                        <t-switch
-                          :value="row.enable"
-                          size="small"
-                          @change="(val) => handleToggleEnable(row, val as boolean)"
-                        />
-                      </template>
-
-                      <template #op="{ row }">
-                        <div class="flex items-center gap-1">
-                          <t-button theme="primary" variant="text" size="small" class="hover:!bg-[var(--color-primary)]/10" @click="handleEdit(row)">
-                            <template #icon><edit-icon /></template> 编辑
-                          </t-button>
-                          <t-button theme="danger" variant="text" size="small" class="hover:!bg-red-500/10" @click="handleDeleteOne(instance.id, row.id)">
-                            <template #icon><delete-icon /></template> 删除
-                          </t-button>
-                        </div>
-                      </template>
-                    </t-table>
-                  </div>
-
-                  <div v-else class="flex flex-col items-center justify-center py-12">
-                    <span class="text-sm font-medium text-[var(--td-text-color-secondary)] bg-zinc-50 dark:bg-zinc-800/50 px-4 py-2 rounded-full border border-[var(--td-component-border)]">
-                      当前实例暂无定时任务安排
+                      <server-icon class="text-[var(--td-text-color-secondary)] shrink-0" />
+                      {{ instance.name }}
+                    </h3>
+                    <span
+                      class="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-xs text-[var(--td-text-color-secondary)] font-medium border border-[var(--td-component-border)]"
+                    >
+                      <cloud-icon size="14px" class="opacity-80" />
+                      {{ instance.core }}
                     </span>
                   </div>
                 </div>
+
+                <div class="flex items-center gap-2">
+                  <t-button
+                    size="small"
+                    variant="outline"
+                    class="!border-zinc-200 dark:!border-zinc-700 !text-zinc-600 dark:!text-zinc-400 hover:!text-[var(--color-primary)] hover:!border-[var(--color-primary)] bg-white/50 dark:bg-zinc-900/50"
+                    @click="handleAdd(instance.id)"
+                  >
+                    <template #icon><add-icon /></template> 添加任务
+                  </t-button>
+                  <t-tag
+                    v-if="instance.tasks?.length"
+                    theme="success"
+                    variant="light"
+                    shape="round"
+                    class="!px-3 !font-medium"
+                  >
+                    {{ instance.tasks.length }} 个任务
+                  </t-tag>
+                  <t-tag
+                    v-else
+                    theme="default"
+                    variant="light"
+                    shape="round"
+                    class="!px-3 !text-zinc-400 !bg-zinc-100 dark:!bg-zinc-800"
+                    >无任务</t-tag
+                  >
+                </div>
+              </div>
+
+              <div class="p-5">
+                <div v-if="instance.tasks?.length" class="flex flex-col gap-3">
+                  <div
+                    v-if="selectedRowKeys[instance.id]?.length > 0"
+                    class="flex items-center gap-3 p-2 px-4 bg-red-500/10 border border-red-500/20 rounded-xl mb-1 transition-all"
+                  >
+                    <span class="text-xs font-medium text-red-600 dark:text-red-400"
+                      >已选 {{ selectedRowKeys[instance.id].length }} 项</span
+                    >
+                    <t-button
+                      theme="danger"
+                      variant="text"
+                      size="small"
+                      class="!h-auto !py-1 hover:!bg-red-500/20"
+                      @click="handleBatchDelete(instance.id)"
+                    >
+                      批量删除
+                    </t-button>
+                  </div>
+
+                  <t-table
+                    row-key="id"
+                    :data="instance.tasks"
+                    :columns="columns as any"
+                    :selected-row-keys="selectedRowKeys[instance.id] || []"
+                    size="small"
+                    :hover="true"
+                    :pagination="instance.tasks.length > 5 ? { pageSize: 5 } : null"
+                    @select-change="(val, ctx) => onSelectChange(val as any, ctx, instance.id)"
+                  >
+                    <template #name="{ row }">
+                      <div class="flex items-center gap-2">
+                        <time-icon class="text-[var(--color-primary)] opacity-90 shrink-0" />
+                        <span class="font-medium text-[var(--td-text-color-primary)] truncate" :title="row.name">{{
+                          row.name
+                        }}</span>
+                      </div>
+                    </template>
+
+                    <template #type="{ row }">
+                      <div class="flex items-center">
+                        <t-tag
+                          size="small"
+                          variant="light"
+                          :theme="getColorByType(row.type)"
+                          class="!rounded-md !px-2 font-medium !inline-flex !items-center !justify-center !w-fit"
+                        >
+                          <template #icon>
+                            <component :is="getIconByType(row.type)" class="opacity-80 shrink-0" />
+                          </template>
+                          {{ row.type.toUpperCase() }}
+                        </t-tag>
+                      </div>
+                    </template>
+
+                    <template #cron="{ row }">
+                      <span
+                        class="font-mono text-xs text-[var(--td-text-color-secondary)] bg-zinc-100 dark:bg-zinc-900 px-2.5 py-1 rounded-md border border-[var(--td-component-border)]"
+                      >
+                        {{ row.cron }}
+                      </span>
+                    </template>
+
+                    <template #enable="{ row }">
+                      <t-switch
+                        :value="row.enable"
+                        size="small"
+                        @change="(val) => handleToggleEnable(row, val as boolean)"
+                      />
+                    </template>
+
+                    <template #op="{ row }">
+                      <div class="flex items-center gap-1 shrink-0">
+                        <t-button
+                          v-if="['stop', 'restart'].includes(row.type.toLowerCase())"
+                          theme="primary"
+                          variant="text"
+                          size="small"
+                          class="!px-1.5 hover:!bg-[var(--color-primary)]/10 shrink-0"
+                          @click="handleOpenAdvance(row)"
+                        >
+                          <template #icon><notification-icon class="shrink-0" /></template> 提醒
+                        </t-button>
+                        <t-button
+                          theme="primary"
+                          variant="text"
+                          size="small"
+                          class="!px-1.5 hover:!bg-[var(--color-primary)]/10 shrink-0"
+                          @click="handleEdit(row)"
+                        >
+                          <template #icon><edit-icon class="shrink-0" /></template> 编辑
+                        </t-button>
+                        <t-button
+                          theme="danger"
+                          variant="text"
+                          size="small"
+                          class="!px-1.5 hover:!bg-red-500/10 shrink-0"
+                          @click="handleDeleteOne(instance.id, row.id)"
+                        >
+                          <template #icon><delete-icon class="shrink-0" /></template> 删除
+                        </t-button>
+                      </div>
+                    </template>
+                  </t-table>
+                </div>
+
+                <div v-else class="flex flex-col items-center justify-center py-12">
+                  <span
+                    class="text-sm font-medium text-[var(--td-text-color-secondary)] bg-zinc-50 dark:bg-zinc-800/50 px-4 py-2 rounded-full border border-[var(--td-component-border)]"
+                  >
+                    当前实例暂无定时任务安排
+                  </span>
+                </div>
               </div>
             </div>
+          </div>
         </div>
       </template>
 
@@ -448,7 +603,6 @@ onMounted(() => {
       :on-confirm="onDialogConfirm"
     >
       <t-form ref="formRef" :data="formData" :rules="rules" label-align="top" class="mt-4">
-
         <t-form-item label="归属实例" name="instanceId">
           <t-select
             v-model="formData.instanceId"
@@ -466,7 +620,9 @@ onMounted(() => {
         <t-form-item label="触发规则 (Cron 表达式)" name="cron">
           <t-input v-model="formData.cron" placeholder="例如: 0 0 4 * * ?">
             <template #suffix>
-              <t-button variant="text" theme="primary" size="small" class="!h-auto !py-1" @click="showCronGen = true"> 生成器 </t-button>
+              <t-button variant="text" theme="primary" size="small" class="!h-auto !py-1" @click="showCronGen = true">
+                生成器
+              </t-button>
             </template>
           </t-input>
         </t-form-item>
@@ -477,26 +633,53 @@ onMounted(() => {
 
         <t-form-item
           v-if="formData.type === 'command' || formData.type === 'restart' || formData.type === 'shell'"
-          :label="formData.type === 'restart' ? '重启全服倒计时提示语' : (formData.type === 'shell' ? '执行宿主机 Shell 命令' : '控制台执行命令')"
+          :label="
+            formData.type === 'restart'
+              ? '重启提示语（系统将在重启前60秒自动广播预警并倒计时）'
+              : formData.type === 'shell'
+                ? '执行宿主机 Shell 命令'
+                : '控制台执行命令'
+          "
           name="payload"
         >
-          <t-textarea
-            v-model="formData.payload"
-            :autosize="{ minRows: 2, maxRows: 5 }"
-            placeholder="请输入执行内容..."
-          />
+          <div class="flex flex-col gap-2 w-full">
+            <div v-if="formData.type === 'command'" class="flex flex-wrap items-center gap-1.5 mb-1">
+              <span class="text-xs text-[var(--td-text-color-secondary)] mr-1">快捷预设:</span>
+              <t-tag
+                v-for="preset in COMMON_COMMAND_PRESETS"
+                :key="preset.label"
+                size="small"
+                variant="light"
+                theme="primary"
+                class="cursor-pointer hover:opacity-80 !rounded-md"
+                @click="applyCommandPreset(preset.command)"
+              >
+                {{ preset.label }}
+              </t-tag>
+            </div>
+            <t-textarea
+              v-model="formData.payload"
+              :autosize="{ minRows: 2, maxRows: 5 }"
+              placeholder="请输入执行内容..."
+            />
+          </div>
         </t-form-item>
 
         <t-form-item label="初始状态" name="enable">
           <div class="flex flex-col gap-3 w-full">
-            <div class="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-[var(--td-component-border)] w-full mt-1">
+            <div
+              class="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-[var(--td-component-border)] w-full mt-1"
+            >
               <t-switch v-model="formData.enable" />
               <span class="text-xs font-medium text-[var(--td-text-color-secondary)]">
                 {{ formData.enable ? '保存后立即生效运行' : '保存后处于暂停状态' }}
               </span>
             </div>
-            
-            <div v-if="formData.type === 'shell'" class="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-[var(--td-component-border)] w-full">
+
+            <div
+              v-if="formData.type === 'shell'"
+              class="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-xl border border-[var(--td-component-border)] w-full"
+            >
               <t-switch v-model="formData.runWhenOffline" />
               <span class="text-xs font-medium text-[var(--td-text-color-secondary)]">
                 {{ formData.runWhenOffline ? '实例未运行时，也会执行该命令' : '仅在实例运行时执行' }}
@@ -504,11 +687,73 @@ onMounted(() => {
             </div>
           </div>
         </t-form-item>
-
       </t-form>
     </t-dialog>
 
     <cron-generator v-model:visible="showCronGen" :initial-value="formData.cron" @confirm="onCronGenerated" />
+
+    <!-- 创建提前提醒任务弹窗 -->
+    <t-dialog
+      v-model:visible="showAdvanceModal"
+      header="快速创建提前提醒任务"
+      width="600px"
+      :confirm-btn="{ content: '立即创建', theme: 'primary', loading: advanceLoading, disabled: !advanceForm.cron }"
+      placement="center"
+      attach="body"
+      @confirm="handleConfirmCreateAdvance"
+    >
+      <div v-if="advanceTargetTask" class="flex flex-col gap-4 mt-2">
+        <div
+          class="p-3 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-[var(--td-component-border)] flex items-center justify-between text-xs"
+        >
+          <span class="text-[var(--td-text-color-secondary)]">
+            关联任务: <b class="text-[var(--td-text-color-primary)]">{{ advanceTargetTask.name }}</b>
+          </span>
+          <span class="font-mono text-[var(--td-text-color-secondary)]">原 Cron: {{ advanceTargetTask.cron }}</span>
+        </div>
+
+        <div>
+          <div class="text-xs font-bold text-[var(--td-text-color-primary)] mb-1.5">提前提醒时间</div>
+          <t-radio-group v-model="advanceMinutes" variant="default-filled" @change="updateAdvanceFormPreview">
+            <t-radio-button :value="5">提前 5 分钟</t-radio-button>
+            <t-radio-button :value="10">提前 10 分钟</t-radio-button>
+            <t-radio-button :value="15">提前 15 分钟</t-radio-button>
+            <t-radio-button :value="30">提前 30 分钟</t-radio-button>
+          </t-radio-group>
+        </div>
+
+        <div>
+          <div class="text-xs font-bold text-[var(--td-text-color-primary)] mb-1.5">提醒通知样式</div>
+          <t-radio-group v-model="advanceTemplateType" variant="default-filled" @change="updateAdvanceFormPreview">
+            <t-radio-button value="say">控制台标准广播 (通用)</t-radio-button>
+            <t-radio-button value="tellraw">彩色聊天框 (仅 MC Java)</t-radio-button>
+            <t-radio-button value="title">全屏大标题 (仅 MC Java)</t-radio-button>
+          </t-radio-group>
+        </div>
+
+        <div>
+          <div class="text-xs font-bold text-[var(--td-text-color-primary)] mb-1.5">新任务名称</div>
+          <t-input v-model="advanceForm.name" placeholder="请输入任务名称" />
+        </div>
+
+        <div>
+          <div class="text-xs font-bold text-[var(--td-text-color-primary)] mb-1.5 flex items-center justify-between">
+            <span>定时 Cron 表达式</span>
+            <span v-if="!advanceForm.cron" class="text-amber-500 font-normal">当前规则无法自动推算，请手动填写</span>
+          </div>
+          <t-input v-model="advanceForm.cron" placeholder="例如: 0 50 3 * * ?" />
+        </div>
+
+        <div>
+          <div class="text-xs font-bold text-[var(--td-text-color-primary)] mb-1.5">通知执行指令</div>
+          <t-textarea
+            v-model="advanceForm.payload"
+            :autosize="{ minRows: 2, maxRows: 4 }"
+            placeholder="发送给服务器控制台的提醒指令"
+          />
+        </div>
+      </div>
+    </t-dialog>
   </div>
 </template>
 
@@ -534,7 +779,9 @@ onMounted(() => {
 
 .list-anim-enter-active,
 .list-anim-leave-active {
-  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s;
+  transition:
+    transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.4s;
   content-visibility: auto;
   contain-intrinsic-size: auto 150px;
 }

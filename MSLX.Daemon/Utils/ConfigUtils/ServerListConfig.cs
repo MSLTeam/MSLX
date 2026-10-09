@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server;
 using MSLX.SDK.Models;
 using Newtonsoft.Json.Linq;
 
@@ -124,6 +124,10 @@ namespace MSLX.Daemon.Utils.ConfigUtils
                         catch { }
                     }
                 }
+
+                // 联动删除该服务器关联的所有定时任务
+                IConfigBase.TaskList?.DeleteTasksByInstanceId(serverId);
+
                 return true;
             }
             finally
