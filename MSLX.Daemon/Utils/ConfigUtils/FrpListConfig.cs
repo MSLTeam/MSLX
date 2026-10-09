@@ -53,7 +53,7 @@ namespace MSLX.Daemon.Utils.ConfigUtils
             }
         }
 
-        public bool CreateFrpConfig(string name, string server, string configType, string config, string? clientPath = null)
+        public bool CreateFrpConfig(string name, string server, string configType, string config, string? clientPath = null, List<string>? tags = null)
         {
             int id = StringServices.GetRandomNumber(10000000, 99999999);
             _frpListLock.EnterWriteLock();
@@ -84,6 +84,10 @@ namespace MSLX.Daemon.Utils.ConfigUtils
                 if (!string.IsNullOrWhiteSpace(clientPath))
                 {
                     newItem["ClientPath"] = clientPath;
+                }
+                if (tags != null && tags.Count > 0)
+                {
+                    newItem["Tags"] = JArray.FromObject(tags.Where(t => !string.IsNullOrWhiteSpace(t)).Select(t => t.Trim()).Distinct());
                 }
                 _frpListCache.Add(newItem);
                 IConfigBase.SaveJson(_frpListPath, _frpListCache);
@@ -131,6 +135,31 @@ namespace MSLX.Daemon.Utils.ConfigUtils
                         target.Remove("ClientPath");
                     else
                         target["ClientPath"] = clientPath;
+                }
+                IConfigBase.SaveJson(_frpListPath, _frpListCache);
+                return true;
+            }
+            finally
+            {
+                _frpListLock.ExitWriteLock();
+            }
+        }
+
+        public bool UpdateFrpMetadata(int id, string? name, List<string>? tags)
+        {
+            _frpListLock.EnterWriteLock();
+            try
+            {
+                var target = _frpListCache.FirstOrDefault(s => s["ID"]?.Value<int>() == id) as JObject;
+                if (target == null) return false;
+
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    target["Name"] = name;
+                }
+                if (tags != null)
+                {
+                    target["Tags"] = JArray.FromObject(tags.Where(t => !string.IsNullOrWhiteSpace(t)).Select(t => t.Trim()).Distinct());
                 }
                 IConfigBase.SaveJson(_frpListPath, _frpListCache);
                 return true;

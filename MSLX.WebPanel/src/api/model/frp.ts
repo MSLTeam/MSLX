@@ -4,6 +4,7 @@ export interface FrpListModel {
   service: string;
   configType: string;
   status: boolean;
+  tags?: string[];
 }
 
 export interface ProxyInfoModel {

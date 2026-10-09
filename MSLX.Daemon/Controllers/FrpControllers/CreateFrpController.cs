@@ -24,7 +24,7 @@ public class CreateFrpController : ControllerBase
     public IActionResult CreateTunnel([FromBody] CreateFrpRequest request)
     {
         bool suc = IConfigBase.FrpList.CreateFrpConfig(request.name, request.provider, request.format,
-            request.config, request.clientPath);
+            request.config, request.clientPath, request.tags);
         var response = new ApiResponse<JObject>
         {
             Code = suc ? 200 : 500,
@@ -32,6 +32,18 @@ public class CreateFrpController : ControllerBase
         };
 
         return Ok(response);
+    }
+
+    [HttpPost("update")]
+    public IActionResult UpdateTunnel([FromBody] UpdateFrpRequest request)
+    {
+        bool suc = IConfigBase.FrpList.UpdateFrpMetadata(request.id, request.name, request.tags);
+        var response = new ApiResponse<object>
+        {
+            Code = suc ? 200 : 400,
+            Message = suc ? "隧道更新成功！" : "更新失败或隧道不存在！",
+        };
+        return suc ? Ok(response) : BadRequest(response);
     }
 
     [HttpPost("delete")]

@@ -59,6 +59,14 @@ public class FrpController : ControllerBase
                 int id = item["ID"]?.Value<int>() ?? 0;
                 bool isRunning = _frpService.IsFrpRunning(id);
 
+                var rawTags = item["Tags"];
+                List<string> tags = rawTags switch
+                {
+                    JArray arr => arr.Select(t => t.ToString()).ToList(),
+                    JValue val when val.Value is string str => str.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(),
+                    _ => new List<string>()
+                };
+
                 return new 
                 {
                     id,
@@ -66,6 +74,7 @@ public class FrpController : ControllerBase
                     service = item["Service"]?.Value<string>(),
                     configType = item["ConfigType"]?.Value<string>(),
                     status = isRunning,
+                    tags = tags
                 };
             }).Reverse().ToList();
         

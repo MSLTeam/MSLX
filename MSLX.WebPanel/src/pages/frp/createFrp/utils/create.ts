@@ -2,7 +2,7 @@ import { h, ref } from 'vue';
 import { postCreateFrpTunnel } from '@/api/frp';
 import { changeUrl } from '@/router';
 import { useTunnelsStore } from '@/store/modules/frp';
-import { DialogPlugin, Input, MessagePlugin } from 'tdesign-vue-next';
+import { DialogPlugin, Input, Select, MessagePlugin } from 'tdesign-vue-next';
 
 const tunnelsStore = useTunnelsStore();
 
@@ -15,30 +15,57 @@ export async function createFrpTunnel(
   clientPath?: string,
 ) {
   let finalName = name;
+  let finalTags: string[] = [];
 
   if (showCustomName) {
     try {
-      finalName = await new Promise((resolve, reject) => {
-        const inputValue = ref(name);
+      if (tunnelsStore.frpList.length === 0) {
+        await tunnelsStore.getTunnels();
+      }
+      const existingTags = Array.from(new Set(tunnelsStore.frpList.flatMap((i) => i.tags || [])));
+      const tagOptions = existingTags.map((t) => ({ label: t, value: t }));
+
+      const result = await new Promise<{ name: string; tags: string[] }>((resolve, reject) => {
+        const inputName = ref(name);
+        const inputTags = ref<string[]>([]);
 
         const dialog = DialogPlugin({
-          header: '自定义隧道名称',
+          header: '自定义隧道设置',
           body: () =>
-            h(Input, {
-              value: inputValue.value,
-              placeholder: '请输入隧道名称',
-              clearable: true,
-              onChange: (val: string) => {
-                inputValue.value = val;
-              },
-            }),
+            h('div', { class: 'flex flex-col gap-4 py-2' }, [
+              h('div', { class: 'flex flex-col gap-1.5' }, [
+                h('label', { class: 'text-xs text-[var(--td-text-color-secondary)] font-medium' }, '隧道名称'),
+                h(Input, {
+                  value: inputName.value,
+                  placeholder: '请输入隧道名称',
+                  clearable: true,
+                  onChange: (val: string) => {
+                    inputName.value = val;
+                  },
+                }),
+              ]),
+              h('div', { class: 'flex flex-col gap-1.5' }, [
+                h('label', { class: 'text-xs text-[var(--td-text-color-secondary)] font-medium' }, '隧道标签 (选填，支持回车创建新标签)'),
+                h(Select, {
+                  value: inputTags.value,
+                  multiple: true,
+                  filterable: true,
+                  creatable: true,
+                  placeholder: '选择已有标签或输入新标签并回车',
+                  options: tagOptions,
+                  onChange: (val: any) => {
+                    inputTags.value = val;
+                  },
+                }),
+              ]),
+            ]),
           onConfirm: () => {
-            if (!inputValue.value.trim()) {
+            if (!inputName.value.trim()) {
               MessagePlugin.warning('隧道名称不能为空');
               return;
             }
             dialog.hide();
-            resolve(inputValue.value.trim());
+            resolve({ name: inputName.value.trim(), tags: inputTags.value });
           },
           onClose: () => {
             dialog.hide();
@@ -50,11 +77,13 @@ export async function createFrpTunnel(
           },
         });
       });
+      finalName = result.name;
+      finalTags = result.tags;
     } catch {
       return;
     }
   }
-  await postCreateFrpTunnel(finalName, config, provider, format, clientPath);
+  await postCreateFrpTunnel(finalName, config, provider, format, clientPath, finalTags);
   MessagePlugin.success('添加成功');
   await tunnelsStore.getTunnels();
   changeUrl('/frp/list');
