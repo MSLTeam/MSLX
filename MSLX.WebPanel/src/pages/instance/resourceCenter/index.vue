@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, reactive, onMounted, computed, watch } from 'vue';
+import { ref, reactive, onMounted, onBeforeUnmount, computed, watch } from 'vue';
 import { SearchIcon } from 'tdesign-icons-vue-next';
 import { searchResources, getResourceVersions, getResourceDetail } from '@/api/resourceCenter';
 import type { ResourceModel, ResourceVersionModel } from '@/api/model/resourceCenter';
@@ -46,6 +46,110 @@ const loaderOptions = computed(() => {
   }
 });
 
+interface CategoryOption {
+  label: string;
+  value: string;
+  icon?: string;
+}
+
+const categoryOptions = computed<CategoryOption[]>(() => {
+  switch (filter.type) {
+    case 0: // Mod (模组)
+      return [
+        { label: '全部分类', value: '', icon: 'app' },
+        { label: '科技与机械', value: 'technology', icon: 'setting' },
+        { label: '魔法探秘', value: 'magic', icon: 'star' },
+        { label: '冒险与探索', value: 'adventure', icon: 'explore' },
+        { label: '建筑与装饰', value: 'decoration', icon: 'palette' },
+        { label: '性能优化', value: 'optimization', icon: 'dashboard' },
+        { label: '实用工具', value: 'utility', icon: 'tools' },
+        { label: '存储与物品', value: 'storage', icon: 'folder' },
+        { label: '农业与饮食', value: 'food', icon: 'apple' },
+        { label: '装备与战斗', value: 'equipment', icon: 'user-safety' },
+        { label: '游戏机制', value: 'game-mechanics', icon: 'gamepad' },
+        { label: '世界生成', value: 'worldgen', icon: 'map' },
+        { label: '交通与载具', value: 'transportation', icon: 'rocket' },
+        { label: '社交与联机', value: 'social', icon: 'chat' },
+        { label: '恶搞娱乐', value: 'cursed', icon: 'heart' },
+      ];
+    case 5: // 插件
+      return [
+        { label: '全部分类', value: '', icon: 'app' },
+        { label: '管理与运维', value: 'management', icon: 'control-platform' },
+        { label: '经济与商业', value: 'economy', icon: 'cart' },
+        { label: '实用工具', value: 'utility', icon: 'tools' },
+        { label: '社交与聊天', value: 'social', icon: 'chat' },
+        { label: '游戏机制', value: 'game-mechanics', icon: 'gamepad' },
+        { label: '小游戏', value: 'minigame', icon: 'play-circle' },
+        { label: '性能优化', value: 'optimization', icon: 'dashboard' },
+        { label: '冒险与RPG', value: 'adventure', icon: 'explore' },
+        { label: '世界与地图', value: 'worldgen', icon: 'map' },
+        { label: '物品与存储', value: 'storage', icon: 'folder' },
+        { label: '传送与交通', value: 'transportation', icon: 'rocket' },
+        { label: '装备与战斗', value: 'equipment', icon: 'user-safety' },
+        { label: '魔法系统', value: 'magic', icon: 'star' },
+        { label: '科技机制', value: 'technology', icon: 'layers' },
+        { label: '建筑装饰', value: 'decoration', icon: 'palette' },
+        { label: '恶搞娱乐', value: 'cursed', icon: 'heart' },
+      ];
+    case 1: // 资源包
+      return [
+        { label: '全部分类', value: '', icon: 'app' },
+        { label: '原版风格', value: 'vanilla-like', icon: 'brush' },
+        { label: '写实逼真', value: 'photorealistic', icon: 'image' },
+        { label: '中世纪', value: 'medieval', icon: 'city' },
+        { label: '现代风格', value: 'modern', icon: 'city' },
+        { label: '蒸汽朋克', value: 'steampunk', icon: 'setting' },
+        { label: '16x 分辨率', value: '16x', icon: 'format-vertical-align-center' },
+        { label: '32x 分辨率', value: '32x', icon: 'format-vertical-align-center' },
+        { label: '64x 分辨率', value: '64x', icon: 'format-vertical-align-center' },
+        { label: '128x 分辨率', value: '128x', icon: 'format-vertical-align-center' },
+        { label: '256x+ 分辨率', value: '256x+', icon: 'format-vertical-align-center' },
+      ];
+    case 2: // 数据包
+      return [
+        { label: '全部分类', value: '', icon: 'app' },
+        { label: '冒险与探索', value: 'adventure', icon: 'explore' },
+        { label: '游戏机制', value: 'game-mechanics', icon: 'gamepad' },
+        { label: '实用工具', value: 'utility', icon: 'tools' },
+        { label: '魔法探秘', value: 'magic', icon: 'star' },
+        { label: '科技机械', value: 'technology', icon: 'setting' },
+        { label: '世界生成', value: 'worldgen', icon: 'map' },
+        { label: '建筑与装饰', value: 'decoration', icon: 'palette' },
+        { label: '性能优化', value: 'optimization', icon: 'dashboard' },
+      ];
+    case 3: // 光影
+      return [
+        { label: '全部分类', value: '', icon: 'app' },
+        { label: '性能优化 / 低配', value: 'performance', icon: 'dashboard' },
+        { label: '逼真写实', value: 'realistic', icon: 'browse' },
+        { label: '奇幻梦幻', value: 'fantasy', icon: 'star' },
+        { label: '原版增强', value: 'vanilla-like', icon: 'brush' },
+      ];
+    case 4: // 整合包
+      return [
+        { label: '全部分类', value: '', icon: 'app' },
+        { label: '冒险与探索', value: 'adventure', icon: 'explore' },
+        { label: '任务引导', value: 'quest', icon: 'bulletpoint' },
+        { label: '科技机械', value: 'technology', icon: 'setting' },
+        { label: '魔法探秘', value: 'magic', icon: 'star' },
+        { label: '硬核生存', value: 'challenging', icon: 'error-circle' },
+        { label: '多人联机', value: 'multiplayer', icon: 'usergroup' },
+        { label: '性能优化', value: 'optimization', icon: 'dashboard' },
+        { label: '综合杂锦', value: 'kitchen-sink', icon: 'view-module' },
+      ];
+    default:
+      return [];
+  }
+});
+
+const selectCategory = (categoryVal: string) => {
+  if (filter.category === categoryVal) return;
+  filter.category = categoryVal;
+  pagination.current = 1;
+  handleSearch();
+};
+
 const providerOptions = [
   { label: '全部来源', value: -1 },
   { label: 'Modrinth', value: 0 },
@@ -83,6 +187,7 @@ const pagination = reactive({
 const resourceList = ref<ResourceModel[]>([]);
 const loading = ref(false);
 let searchRequestId = 0; // 用于丢弃过期响应，避免竞态条件
+let currentAbortController: AbortController | null = null; // 用于打断/取消进行中的网络请求
 
 const loadVanillaVersions = async () => {
   try {
@@ -100,10 +205,21 @@ const loadVanillaVersions = async () => {
 
 const handleTypeChange = () => {
   selectedLoader.value = '';
+  filter.category = '';
+  pagination.current = 1;
   handleSearch();
 };
 
 const handleSearch = async () => {
+  // 1. 如果上一个请求正在进行，立即主动打断取消，防止并发串调与无用带宽浪费
+  if (currentAbortController) {
+    currentAbortController.abort();
+    currentAbortController = null;
+  }
+
+  const abortController = new AbortController();
+  currentAbortController = abortController;
+
   loading.value = true;
   filter.offset = (pagination.current - 1) * pagination.pageSize;
   filter.limit = pagination.pageSize;
@@ -117,7 +233,7 @@ const handleSearch = async () => {
   };
 
   try {
-    const res = await searchResources(searchPayload);
+    const res = await searchResources(searchPayload, abortController.signal);
     if (currentRequestId !== searchRequestId) return; // 已有更新的请求，丢弃本次结果
     if (res && res.items) {
       resourceList.value = res.items;
@@ -130,11 +246,16 @@ const handleSearch = async () => {
       resourceList.value = [];
       pagination.total = 0;
     }
-  } catch (error) {
+  } catch (error: any) {
+    // 若请求被主动中止/打断，不作为错误处理
+    if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED' || abortController.signal.aborted) {
+      return;
+    }
     console.error('Search failed', error);
   } finally {
     if (currentRequestId === searchRequestId) {
       loading.value = false;
+      currentAbortController = null;
     }
   }
 };
@@ -173,6 +294,13 @@ onMounted(() => {
   loadVanillaVersions();
   handleSearch();
   instanceStore.refreshInstanceList();
+});
+
+onBeforeUnmount(() => {
+  if (currentAbortController) {
+    currentAbortController.abort();
+    currentAbortController = null;
+  }
 });
 
 // 版本下载
@@ -377,91 +505,127 @@ watch(isDark, (val) => {
       </div>
     </div>
 
-    <div v-loading="loading" class="relative min-h-[400px]">
-      <template v-if="resourceList && resourceList.length > 0">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
-          <div
-            v-for="(item, index) in resourceList"
-            :key="item.id"
-            class="list-item-anim h-full"
-            :style="{ animationDelay: `${index * 0.05}s` }"
+    <!-- 主体区域：左侧分类列表（桌面端）/ 顶部水平滑动胶囊栏（移动端） + 右侧资源卡片区 -->
+    <div class="flex flex-col lg:flex-row gap-5 items-start">
+      <!-- 分类侧栏 / 水平滑动栏 -->
+      <aside
+        v-if="categoryOptions.length > 0"
+        class="w-full lg:w-56 shrink-0 design-card p-3 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm lg:sticky lg:top-4 text-left"
+      >
+        <div class="text-xs font-bold text-[var(--td-text-color-secondary)] uppercase tracking-wider mb-2.5 hidden lg:block px-2">
+          分类筛选
+        </div>
+        <!-- 桌面端垂直列表 -->
+        <div class="flex flex-row lg:flex-col gap-1.5 overflow-x-auto lg:overflow-y-auto custom-scrollbar max-h-none lg:max-h-[calc(100vh-220px)] pb-1 lg:pb-0">
+          <button
+            v-for="cat in categoryOptions"
+            :key="cat.value"
+            type="button"
+            class="px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 text-left whitespace-nowrap flex items-center justify-between group cursor-pointer shrink-0 lg:shrink"
+            :class="
+              filter.category === cat.value
+                ? 'bg-[var(--td-brand-color)]/10 text-[var(--td-brand-color)] font-bold border border-[var(--td-brand-color)]/25 shadow-sm'
+                : 'text-[var(--td-text-color-secondary)] hover:bg-[var(--td-bg-color-secondarycontainer)] hover:text-[var(--td-text-color-primary)] border border-transparent'
+            "
+            @click="selectCategory(cat.value)"
           >
-            <div
-              class="design-card relative h-full flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm hover:shadow-md hover:border-[var(--color-primary)]/50 transition-all duration-300 p-5 gap-4"
-            >
-              <div class="flex items-center gap-4">
-                <div class="relative shrink-0">
-                  <t-avatar
-                    :image="item.iconUrl"
-                    class="shadow-sm border border-[var(--td-component-border)] !bg-[var(--td-bg-color-secondarycontainer)] !rounded-xl"
-                    shape="round"
-                    size="56px"
-                  >
-                    <template #icon>
-                      <span class="text-[var(--td-text-color-secondary)]">{{ item.name.charAt(0) }}</span>
-                    </template>
-                  </t-avatar>
-                </div>
-                <div class="flex-1 min-w-0 pr-4">
-                  <div class="flex items-center min-w-0">
-                    <h4 class="flex-1 text-base font-bold text-[var(--td-text-color-primary)] truncate tracking-tight">
-                      {{ item.name }}
-                    </h4>
-                    <t-tag
-                      v-if="item.provider === 0"
-                      theme="success"
-                      variant="light-outline"
-                      size="small"
-                      class="ml-2 shrink-0"
-                      >Modrinth</t-tag
-                    >
-                    <t-tag
-                      v-else-if="item.provider === 1"
-                      theme="warning"
-                      variant="light-outline"
-                      size="small"
-                      class="ml-2 shrink-0"
-                      >CurseForge</t-tag
-                    >
-                  </div>
-                  <div class="mt-1 flex items-center text-xs text-[var(--td-text-color-secondary)]">
-                    <span class="truncate">{{ item.author || 'Unknown' }}</span>
-                  </div>
-                </div>
-              </div>
-              <p
-                class="text-sm text-[var(--td-text-color-secondary)] flex-1 overflow-hidden"
-                style="display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3"
+            <span class="flex items-center gap-2.5">
+              <t-icon v-if="cat.icon" :name="cat.icon" class="text-base shrink-0" />
+              <span>{{ cat.label }}</span>
+            </span>
+          </button>
+        </div>
+      </aside>
+
+      <!-- 资源卡片网格与分页 -->
+      <main class="flex-1 min-w-0 w-full" v-loading="loading">
+        <div class="relative min-h-[400px]">
+          <template v-if="resourceList && resourceList.length > 0">
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+              <div
+                v-for="(item, index) in resourceList"
+                :key="item.id"
+                class="list-item-anim h-full"
+                :style="{ animationDelay: `${index * 0.05}s` }"
               >
-                {{ item.summary }}
-              </p>
-              <div class="flex justify-between items-center mt-2 border-t border-[var(--td-component-border)] pt-4">
-                <div class="text-xs text-[var(--td-text-color-secondary)]">
-                  下载量: {{ formatNumber(item.downloadCount) }}
-                </div>
-                <div class="flex gap-2">
-                  <t-button size="small" theme="default" @click="openDetailModal(item)">详情</t-button>
-                  <t-button size="small" theme="primary" @click="openDownloadModal(item)">下载</t-button>
+                <div
+                  class="design-card relative h-full flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm hover:shadow-md hover:border-[var(--color-primary)]/50 transition-all duration-300 p-5 gap-4"
+                >
+                  <div class="flex items-center gap-4">
+                    <div class="relative shrink-0">
+                      <t-avatar
+                        :image="item.iconUrl"
+                        class="shadow-sm border border-[var(--td-component-border)] !bg-[var(--td-bg-color-secondarycontainer)] !rounded-xl"
+                        shape="round"
+                        size="56px"
+                      >
+                        <template #icon>
+                          <span class="text-[var(--td-text-color-secondary)]">{{ item.name.charAt(0) }}</span>
+                        </template>
+                      </t-avatar>
+                    </div>
+                    <div class="flex-1 min-w-0 pr-4">
+                      <div class="flex items-center min-w-0">
+                        <h4 class="flex-1 text-base font-bold text-[var(--td-text-color-primary)] truncate tracking-tight">
+                          {{ item.name }}
+                        </h4>
+                        <t-tag
+                          v-if="item.provider === 0"
+                          theme="success"
+                          variant="light-outline"
+                          size="small"
+                          class="ml-2 shrink-0"
+                          >Modrinth</t-tag
+                        >
+                        <t-tag
+                          v-else-if="item.provider === 1"
+                          theme="warning"
+                          variant="light-outline"
+                          size="small"
+                          class="ml-2 shrink-0"
+                          >CurseForge</t-tag
+                        >
+                      </div>
+                      <div class="mt-1 flex items-center text-xs text-[var(--td-text-color-secondary)]">
+                        <span class="truncate">{{ item.author || 'Unknown' }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <p
+                    class="text-sm text-[var(--td-text-color-secondary)] flex-1 overflow-hidden"
+                    style="display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3"
+                  >
+                    {{ item.summary }}
+                  </p>
+                  <div class="flex justify-between items-center mt-2 border-t border-[var(--td-component-border)] pt-4">
+                    <div class="text-xs text-[var(--td-text-color-secondary)]">
+                      下载量: {{ formatNumber(item.downloadCount) }}
+                    </div>
+                    <div class="flex gap-2">
+                      <t-button size="small" theme="default" @click="openDetailModal(item)">详情</t-button>
+                      <t-button size="small" theme="primary" @click="openDownloadModal(item)">下载</t-button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
+          </template>
+
+          <div v-if="resourceList.length === 0 && !loading" class="text-center text-[var(--td-text-color-secondary)] my-16">
+            未找到相关资源，请修改筛选条件后重试。
+          </div>
+
+          <div class="mt-6 flex justify-end">
+            <t-pagination
+              v-model="pagination.current"
+              v-model:page-size="pagination.pageSize"
+              :total="pagination.total"
+              :page-size-options="[12, 24, 48]"
+              @change="handlePageChange"
+            />
           </div>
         </div>
-      </template>
-
-      <div v-if="resourceList.length === 0 && !loading" class="text-center text-[var(--td-text-color-secondary)] my-16">
-        未找到相关资源，请修改筛选条件后重试。
-      </div>
-
-      <div class="mt-6 flex justify-end">
-        <t-pagination
-          v-model="pagination.current"
-          v-model:page-size="pagination.pageSize"
-          :total="pagination.total"
-          :page-size-options="[12, 24, 48]"
-          @change="handlePageChange"
-        />
-      </div>
+      </main>
     </div>
 
     <!-- 版本选择下载弹窗 -->
