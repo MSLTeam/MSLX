@@ -139,6 +139,24 @@ public class PluginManagerController : ControllerBase
             }
             System.IO.File.Move(tempPath, targetDllPath);
 
+            // 检查插件是否处于禁用状态
+            bool isPluginDisabled = System.IO.File.Exists(targetDllPath + ".disabled");
+            if (isPluginDisabled)
+            {
+                _logger.LogInformation($"[MSLX Plugin] 本地插件 [{metadata.Name}] v{metadata.Version} ({pluginId}) 上传成功（当前处于禁用状态，跳过热加载）");
+                return Ok(new ApiResponse<object>
+                {
+                    Code = 200,
+                    Message = $"插件 [{metadata.Name}] v{metadata.Version} 上传更新成功！（插件当前处于禁用状态）",
+                    Data = new
+                    {
+                        id = metadata.Id,
+                        name = metadata.Name,
+                        version = metadata.Version
+                    }
+                });
+            }
+
             // 热加载
             bool loadResult = _pluginManager.LoadPlugin(targetDllPath);
             if (loadResult)
@@ -310,14 +328,23 @@ public class PluginManagerController : ControllerBase
                         _pluginManager.UnloadPlugin(realDllPath);
                     }
                     
-                    bool loadResult = _pluginManager.LoadPlugin(realDllPath);
-                    if (loadResult)
+                    bool isPluginDisabled = System.IO.File.Exists(realDllPath + ".disabled");
+                    if (isPluginDisabled)
                     {
-                        UpdateStatus(cacheKey, "success", 100, "下载完成，已自动热重载并生效！");
+                        _logger.LogInformation($"[MSLX Plugin] 插件 {fileName} 更新成功（当前处于禁用状态，跳过热加载）");
+                        UpdateStatus(cacheKey, "success", 100, "下载完成，插件更新成功（当前处于禁用状态）");
                     }
                     else
                     {
-                        UpdateStatus(cacheKey, "error", 0, "下载完成，但热加载插件失败（请查看控制台日志）");
+                        bool loadResult = _pluginManager.LoadPlugin(realDllPath);
+                        if (loadResult)
+                        {
+                            UpdateStatus(cacheKey, "success", 100, "下载完成，已自动热重载并生效！");
+                        }
+                        else
+                        {
+                            UpdateStatus(cacheKey, "error", 0, "下载完成，但热加载插件失败（请查看控制台日志）");
+                        }
                     }
                 }
                 catch (Exception ex)

@@ -213,7 +213,7 @@ const pollUpdateStatus = (taskId: string, pluginId: string) => {
 
         NotificationPlugin.success({
           title: '插件更新成功',
-          content: '新版本插件已就绪并自动热重载生效！',
+          content: res.message || '新版本插件已就绪！',
           duration: 5000,
         });
         setTimeout(async () => {
