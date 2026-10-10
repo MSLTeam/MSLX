@@ -772,7 +772,7 @@ async function handleDeleteTunnel() {
   animation: smoothLoadingGlass 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards !important;
 }
 
-:global(.dark) :deep(.t-loading__overlay) {
+:global(.dark .t-loading__overlay) {
   background: rgb(24 24 27 / 50%) !important;
 }
 </style>
