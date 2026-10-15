@@ -94,7 +94,6 @@ public class InstanceBackupService : IInstanceBackupService
 
             string backupFileName = $"mslx-backup_{DateTime.Now.ToString("yyyyMMdd_HHmmss")}.zip";
             backupPath = Path.Combine(backupDir, backupFileName);
-            if (!Directory.Exists(backupDir)) Directory.CreateDirectory(backupDir);
 
             // 注册后台任务
             var (bgTask, token) = _taskManager.CreateTask(
@@ -245,6 +244,8 @@ public class InstanceBackupService : IInstanceBackupService
 
                 return;
             }
+
+            if (!Directory.Exists(backupDir)) Directory.CreateDirectory(backupDir);
 
             // 最大备份存档限制
             int maxBackups = 20;
