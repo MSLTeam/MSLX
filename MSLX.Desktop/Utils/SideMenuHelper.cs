@@ -50,7 +50,9 @@ namespace MSLX.Desktop.Utils
 
         public void NavigateRemove(UserControl userControl)
         {
-            var page = PageStore.MainPages.FirstOrDefault(p => p.PageContent.GetType() == userControl.GetType());
+            // 优先按实例匹配：同类型页面可能同时打开多个（如多个服务器实例页），按类型会误删其他页面
+            var page = PageStore.MainPages.FirstOrDefault(p => ReferenceEquals(p.PageContent, userControl))
+                       ?? PageStore.MainPages.FirstOrDefault(p => p.PageContent.GetType() == userControl.GetType());
             if (page != null)
             {
                 if (SideMenu.SelectedItem == page)

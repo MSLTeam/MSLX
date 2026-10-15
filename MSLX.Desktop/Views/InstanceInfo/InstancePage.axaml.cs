@@ -16,6 +16,7 @@ public partial class InstancePage : UserControl
     private readonly InstanceSignalRService _signalR = new(); // SignalR 服务实例
     private int _instanceId; // 实例ID
     private bool _isRunning; // 状态
+    private bool _isUnloaded; // 页面已关闭，SignalR 已释放
     public InstancePage() // 无参构造函数，供 XAML 设计器使用
     {
         InitializeComponent();
@@ -40,6 +41,7 @@ public partial class InstancePage : UserControl
     {
         ConsoleTab.AppendLog($"[实例] ID: {_instanceId}");
         await Task.Delay(500);
+        if (_isUnloaded) return;
         // 1. 将发送指令的能力注入控制台 Tab
         ConsoleTab.SendCommandHandler = async cmd =>
             await _signalR.SendCommandAsync(_instanceId, cmd);
@@ -58,8 +60,10 @@ public partial class InstancePage : UserControl
         // 4. 加载设置 Tab 数据
         await SettingsTab.LoadAsync(_instanceId);
 
-        // 5. 连接 SignalR，开始接收日志
+        // 5. 连接 SignalR，开始接收日志（加载期间页面可能已被关闭）
+        if (_isUnloaded) return;
         await ConnectSignalRAsync();
+        if (_isUnloaded) await _signalR.DisposeAsync();
     }
 
     // 信息刷新
@@ -214,10 +218,11 @@ public partial class InstancePage : UserControl
         }
     }
 
-    private void CloseBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private async void CloseBtn_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         SideMenuHelper.Current.NavigateTo<InstanceListPage>();
         SideMenuHelper.Current.NavigateRemove(this);
+        await UnloadAsync();
     }
     #endregion
 
@@ -242,14 +247,25 @@ public partial class InstancePage : UserControl
 
     // 生命周期
     /// <summary>
-    /// 页面卸载时释放 SignalR 连接（在导航离开时调用）
+    /// 页面关闭时释放 SignalR 连接与远程终端。释放后页面不可再用，重新打开实例需创建新页面。
     /// </summary>
     public async Task UnloadAsync()
     {
+        if (_isUnloaded) return;
+        _isUnloaded = true;
+
         _signalR.LogReceived -= OnLogReceived;
         _signalR.ConnectionStateChanged -= OnConnectionStateChanged;
         _signalR.EulaRequired -= OnEulaRequired;
-        await _signalR.LeaveGroupAsync(_instanceId);
+        ConsoleTab.ReleasePty();
+        try
+        {
+            await _signalR.LeaveGroupAsync(_instanceId);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[InstancePage] 离开实例组失败: {ex.Message}");
+        }
         await _signalR.DisposeAsync();
     }
     #endregion
