@@ -207,6 +207,21 @@ public partial class InstanceConsoleTab : UserControl
         SubscribeEvents();
     }
 
+    /// <summary>页面关闭时调用：断开并释放远程 PTY，退订 SignalR 事件</summary>
+    public void ReleasePty()
+    {
+        UnsubscribeEvents();
+        _signalR = null;
+        if (_remotePty != null)
+        {
+            Terminal.DetachConnection();
+            _remotePty.Dispose();
+            _remotePty = null;
+        }
+        _isPtyAttached = false;
+        _isPtyJoined = false;
+    }
+
     private void OnConnectionStateChanged(bool connected)
     {
         if (connected && _isPtyMode && !_isPtyJoined)
