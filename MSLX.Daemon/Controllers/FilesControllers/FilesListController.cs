@@ -541,7 +541,14 @@ public class FilesListController : ControllerBase
             return PhysicalFile(targetPath, "image/svg+xml");
         }
 
-        var supportedImageExts = new HashSet<string> { ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".ico", ".tga" };
+        // ImageSharp 3.x 不支持 ICO，且图标文件通常很小，浏览器可直接渲染，原样返回
+        if (ext == ".ico")
+        {
+            Response.Headers.CacheControl = "public, max-age=604800";
+            return PhysicalFile(targetPath, "image/x-icon");
+        }
+
+        var supportedImageExts = new HashSet<string> { ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".tga" };
         if (!supportedImageExts.Contains(ext))
         {
             return BadRequest("不支持生成该格式的缩略图");
