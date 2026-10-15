@@ -49,7 +49,8 @@ public class InstanceSignalRService : IAsyncDisposable
         if (_connection != null)
             await DisposeAsync();
 
-        _connection = new HubConnectionBuilder()
+        // 后续使用局部变量：连接过程中服务可能被释放（_connection 被置空），避免空引用
+        var connection = _connection = new HubConnectionBuilder()
             .WithUrl($"{ConfigStore.DaemonAddress}/api/hubs/instanceControlHub", options =>
             {
                 options.Headers.Add("x-api-key", ConfigStore.DaemonApiKey);
@@ -58,31 +59,31 @@ public class InstanceSignalRService : IAsyncDisposable
             .Build();
 
         // 注册日志监听
-        _connection.On<string>("ReceiveLog", log =>
+        connection.On<string>("ReceiveLog", log =>
         {
             LogReceived?.Invoke(log);
         });
 
         // 注册指令结果监听
-        _connection.On<string>("CommandResult", result =>
+        connection.On<string>("CommandResult", result =>
         {
             CommandResultReceived?.Invoke(result);
         });
 
         // 注册 EULA 监听
-        _connection.On("RequireEULA", () =>
+        connection.On("RequireEULA", () =>
         {
             EulaRequired?.Invoke();
         });
 
         // 注册 PTY 数据流监听
-        _connection.On<string>("ReceivePtyData", chunk =>
+        connection.On<string>("ReceivePtyData", chunk =>
         {
             PtyDataReceived?.Invoke(chunk);
         });
 
         // 注册 PTY 状态监听
-        _connection.On<System.Text.Json.JsonElement>("PtyStatus", statusEl =>
+        connection.On<System.Text.Json.JsonElement>("PtyStatus", statusEl =>
         {
             bool isPty = statusEl.TryGetProperty("isPty", out var p1) && p1.GetBoolean();
             bool isRunning = statusEl.TryGetProperty("isRunning", out var p2) && p2.GetBoolean();
@@ -91,22 +92,22 @@ public class InstanceSignalRService : IAsyncDisposable
         });
 
         // 连接状态回调
-        _connection.Reconnected += _ =>
+        connection.Reconnected += _ =>
         {
             ConnectionStateChanged?.Invoke(true);
             return Task.CompletedTask;
         };
-        _connection.Closed += _ =>
+        connection.Closed += _ =>
         {
             ConnectionStateChanged?.Invoke(false);
             return Task.CompletedTask;
         };
 
-        await _connection.StartAsync();
-        await _connection.InvokeAsync("JoinGroup", instanceId);
+        await connection.StartAsync();
+        await connection.InvokeAsync("JoinGroup", instanceId);
         try
         {
-            await _connection.InvokeAsync("GetPtyStatus", (uint)instanceId);
+            await connection.InvokeAsync("GetPtyStatus", (uint)instanceId);
         }
         catch { }
         ConnectionStateChanged?.Invoke(true);
@@ -189,14 +190,12 @@ public class InstanceSignalRService : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (_connection != null)
-        {
-            _connection.Remove("ReceiveLog");
-            _connection.Remove("CommandResult");
-            _connection.Remove("RequireEULA");
-            await _connection.DisposeAsync();
-            _connection = null;
-        }
+        // 先取出并置空再释放：释放过程中可能被再次调用（如页面关闭与加载流程同时收尾），
+        // 置空后第二次调用直接返回，不会访问已释放的连接。HubConnection 释放时会一并清理已注册的处理器。
+        var connection = _connection;
+        if (connection == null) return;
+        _connection = null;
+        await connection.DisposeAsync();
     }
     #endregion
 }

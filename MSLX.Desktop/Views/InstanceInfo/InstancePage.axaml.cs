@@ -103,9 +103,13 @@ public partial class InstancePage : UserControl
         {
             await _signalR.ConnectAsync(_instanceId);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (!_isUnloaded)
         {
             ConsoleTab.AppendLog($"[连接失败] {ex.Message}", LogLevel.Error);
+        }
+        catch
+        {
+            // 连接过程中页面已关闭、连接被释放，属于正常收尾
         }
     }
 
