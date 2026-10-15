@@ -28,6 +28,15 @@
 		<Style Selector="Border.InfoItem:pointerover">
 			<Setter Property="BorderBrush" Value="{DynamicResource SukiPrimaryColor}"/>
 		</Style>
+		<Style Selector="UniformGrid#InfoGrid">
+			<Setter Property="Columns" Value="4"/>
+		</Style>
+		<!-- 卡片较窄时信息项改为两列，避免标签与值挤压重叠 -->
+		<ContainerQuery Name="InfoCard" Query="max-width:900">
+			<Style Selector="UniformGrid#InfoGrid">
+				<Setter Property="Columns" Value="2"/>
+			</Style>
+		</ContainerQuery>
 		<Style Selector="Border.Clickable">
 			<Setter Property="Cursor" Value="Hand"/>
 		</Style>
@@ -73,93 +82,93 @@
 		</suki:GlassCard>
 
 		<!-- 信息卡片 (Info Card) -->
-		<suki:GlassCard Grid.Row="1" Margin="12,6,12,6" Padding="12">
-			<UniformGrid Columns="4">
+		<suki:GlassCard Grid.Row="1" Margin="12,6,12,6" Padding="12" Container.Name="InfoCard" Container.Sizing="Width">
+			<UniformGrid x:Name="InfoGrid">
 				<!-- 在线实例 -->
 				<Border Classes="InfoItem Clickable" PointerPressed="OnlineInstances_PointerPressed" ToolTip.Tip="点击查看实例列表">
-					<Grid ColumnDefinitions="Auto,*,Auto">
+					<Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
 						<StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
 							<micon:MaterialIcon Kind="Server" Width="18" Height="18" Foreground="{DynamicResource SukiLowText}"/>
 							<TextBlock Text="在线实例：" FontSize="13" Foreground="{DynamicResource SukiLowText}" VerticalAlignment="Center"/>
 						</StackPanel>
-						<TextBlock Grid.Column="2" x:Name="OnlineInstancesText" Text="0 / 0" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right"/>
+						<TextBlock Grid.Column="1" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding $self.Text}" x:Name="OnlineInstancesText" Text="0 / 0" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right"/>
 					</Grid>
 				</Border>
 
 				<!-- NET环境 -->
 				<Border Classes="InfoItem">
-					<Grid ColumnDefinitions="Auto,*,Auto">
+					<Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
 						<StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
 							<micon:MaterialIcon Kind="CodeTags" Width="18" Height="18" Foreground="{DynamicResource SukiLowText}"/>
 							<TextBlock Text="NET环境：" FontSize="13" Foreground="{DynamicResource SukiLowText}" VerticalAlignment="Center"/>
 						</StackPanel>
-						<TextBlock Grid.Column="2" x:Name="NetVersionText" Text="Loading..." FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right"/>
+						<TextBlock Grid.Column="1" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding $self.Text}" x:Name="NetVersionText" Text="Loading..." FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right"/>
 					</Grid>
 				</Border>
 
 				<!-- 客户端版本 -->
 				<Border Classes="InfoItem">
-					<Grid ColumnDefinitions="Auto,*,Auto">
+					<Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
 						<StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
 							<micon:MaterialIcon Kind="ViewDashboardOutline" Width="18" Height="18" Foreground="{DynamicResource SukiLowText}"/>
 							<TextBlock Text="客户端版本：" FontSize="13" Foreground="{DynamicResource SukiLowText}" VerticalAlignment="Center"/>
 						</StackPanel>
-						<TextBlock Grid.Column="2" x:Name="DesktopVersionText" Text="v1.0.0" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right"/>
+						<TextBlock Grid.Column="1" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding $self.Text}" x:Name="DesktopVersionText" Text="v1.0.0" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right"/>
 					</Grid>
 				</Border>
 
 				<!-- 节点版本 -->
 				<Border Classes="InfoItem">
-					<Grid ColumnDefinitions="Auto,*,Auto">
+					<Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
 						<StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
 							<micon:MaterialIcon Kind="CloudOutline" Width="18" Height="18" Foreground="{DynamicResource SukiLowText}"/>
 							<TextBlock Text="节点版本：" FontSize="13" Foreground="{DynamicResource SukiLowText}" VerticalAlignment="Center"/>
 						</StackPanel>
-						<TextBlock Grid.Column="2" x:Name="DaemonVersionText" Text="v1.0.0" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right"/>
+						<TextBlock Grid.Column="1" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding $self.Text}" x:Name="DaemonVersionText" Text="v1.0.0" FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right"/>
 					</Grid>
 				</Border>
 
 				<!-- 主机名 -->
 				<Border Classes="InfoItem">
-					<Grid ColumnDefinitions="Auto,*,Auto">
+					<Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
 						<StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
 							<micon:MaterialIcon Kind="Monitor" Width="18" Height="18" Foreground="{DynamicResource SukiLowText}"/>
 							<TextBlock Text="主机名：" FontSize="13" Foreground="{DynamicResource SukiLowText}" VerticalAlignment="Center"/>
 						</StackPanel>
-						<TextBlock Grid.Column="2" x:Name="HostnameText" Text="Loading..." FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right" TextTrimming="CharacterEllipsis" MaxWidth="120"/>
+						<TextBlock Grid.Column="1" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding $self.Text}" x:Name="HostnameText" Text="Loading..." FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right"/>
 					</Grid>
 				</Border>
 
 				<!-- 系统类型 -->
 				<Border Classes="InfoItem">
-					<Grid ColumnDefinitions="Auto,*,Auto">
+					<Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
 						<StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
 							<micon:MaterialIcon Kind="Console" Width="18" Height="18" Foreground="{DynamicResource SukiLowText}"/>
 							<TextBlock Text="系统类型：" FontSize="13" Foreground="{DynamicResource SukiLowText}" VerticalAlignment="Center"/>
 						</StackPanel>
-						<TextBlock Grid.Column="2" x:Name="OsTypeText" Text="Loading..." FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right" TextTrimming="CharacterEllipsis" MaxWidth="120"/>
+						<TextBlock Grid.Column="1" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding $self.Text}" x:Name="OsTypeText" Text="Loading..." FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right"/>
 					</Grid>
 				</Border>
 
 				<!-- 系统版本 -->
 				<Border Classes="InfoItem">
-					<Grid ColumnDefinitions="Auto,*,Auto">
+					<Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
 						<StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
 							<micon:MaterialIcon Kind="CogOutline" Width="18" Height="18" Foreground="{DynamicResource SukiLowText}"/>
 							<TextBlock Text="系统版本：" FontSize="13" Foreground="{DynamicResource SukiLowText}" VerticalAlignment="Center"/>
 						</StackPanel>
-						<TextBlock Grid.Column="2" x:Name="OsVersionText" Text="Loading..." FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right" TextTrimming="CharacterEllipsis" MaxWidth="120"/>
+						<TextBlock Grid.Column="1" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding $self.Text}" x:Name="OsVersionText" Text="Loading..." FontSize="13" FontWeight="SemiBold" VerticalAlignment="Center" TextAlignment="Right"/>
 					</Grid>
 				</Border>
 
 				<!-- 版本匹配 -->
 				<Border Classes="InfoItem">
-					<Grid ColumnDefinitions="Auto,*,Auto">
+					<Grid ColumnDefinitions="Auto,*" ColumnSpacing="8">
 						<StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
 							<micon:MaterialIcon Kind="CheckCircleOutline" Width="18" Height="18" Foreground="{DynamicResource SukiLowText}"/>
 							<TextBlock Text="版本匹配：" FontSize="13" Foreground="{DynamicResource SukiLowText}" VerticalAlignment="Center"/>
 						</StackPanel>
-						<Border Grid.Column="2" x:Name="VersionMatchBadge" CornerRadius="10" Padding="8,2" VerticalAlignment="Center" Background="#10B981">
+						<Border Grid.Column="1" HorizontalAlignment="Right" x:Name="VersionMatchBadge" CornerRadius="10" Padding="8,2" VerticalAlignment="Center" Background="#10B981">
 							<TextBlock x:Name="VersionMatchText" Text="正确匹配" Foreground="White" FontSize="11" FontWeight="SemiBold"/>
 						</Border>
 					</Grid>
