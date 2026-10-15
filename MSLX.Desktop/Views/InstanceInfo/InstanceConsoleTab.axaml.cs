@@ -80,16 +80,56 @@ public partial class InstanceConsoleTab : UserControl
         // 初始化当前主题模式（白天白毛玻璃 / 黑夜黑毛玻璃）
         var isDark = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
         ApplyTheme(isDark);
+    }
 
-        if (Application.Current != null)
-        {
-            Application.Current.ActualThemeVariantChanged += OnActualThemeVariantChanged;
-        }
+    // 切换侧边栏页面时本控件会被移出/重新加入可视树，事件需随之退订/重新订阅
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        SubscribeEvents();
+        ApplyTheme(Application.Current?.ActualThemeVariant == ThemeVariant.Dark);
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnDetachedFromVisualTree(e);
+        UnsubscribeEvents();
+    }
+
+    protected override void OnLoaded(Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        // TerminalControl 移出可视树时会断开已挂载的连接（不会释放），重新显示时需再次挂载远程 PTY。
+        // 远程数据在断开期间仍缓存在 RemotePtyConnection 中，重新挂载后按顺序续上，不会重复。
+        if (_isPtyAttached && _remotePty != null && !Terminal.IsLive)
+        {
+            try
+            {
+                Terminal.AttachConnection(_remotePty);
+            }
+            catch (Exception ex)
+            {
+                AppendLog($"[PTY 挂载失败] {ex.Message}", LogLevel.Error);
+            }
+        }
+    }
+
+    private void SubscribeEvents()
+    {
+        UnsubscribeEvents();
+        if (Application.Current != null)
+        {
+            Application.Current.ActualThemeVariantChanged += OnActualThemeVariantChanged;
+        }
+        if (_signalR != null)
+        {
+            _signalR.ConnectionStateChanged += OnConnectionStateChanged;
+            _signalR.PtyStatusReceived += OnPtyStatusReceived;
+        }
+    }
+
+    private void UnsubscribeEvents()
+    {
         if (Application.Current != null)
         {
             Application.Current.ActualThemeVariantChanged -= OnActualThemeVariantChanged;
@@ -164,8 +204,7 @@ public partial class InstanceConsoleTab : UserControl
         _signalR = signalR;
         _instanceId = instanceId;
 
-        _signalR.ConnectionStateChanged += OnConnectionStateChanged;
-        _signalR.PtyStatusReceived += OnPtyStatusReceived;
+        SubscribeEvents();
     }
 
     private void OnConnectionStateChanged(bool connected)
