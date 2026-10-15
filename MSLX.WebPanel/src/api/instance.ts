@@ -238,13 +238,6 @@ export async function getHistoryPlayers(id: number) {
   return await request.get<PlayerHistoryResponse>({ url: `/api/instance/players/history/${id}` });
 }
 
-// 获取世界出生点
-export async function getWorldSpawn(id: number) {
-  return await request.get<{ x: number; z: number }>({
-    url: `/api/instance/map/spawn/${id}`,
-  });
-}
-
 // 导出服务端包
 export async function exportInstancePack(id: number, excludes: string[]) {
   return await request.post<{ taskId: string }>({

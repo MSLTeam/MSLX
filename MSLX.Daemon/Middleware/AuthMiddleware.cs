@@ -283,7 +283,6 @@ namespace MSLX.Daemon.Middleware
                         else if (scope == "media")
                         {
                             bool isMediaPath = path.StartsWithSegments("/api/instance/icon")
-                                || path.StartsWithSegments("/api/instance/map")
                                 || (path.StartsWithSegments("/api/files/instance") && path.Value?.EndsWith("/thumbnail") == true);
 
                             if (!isMediaPath)

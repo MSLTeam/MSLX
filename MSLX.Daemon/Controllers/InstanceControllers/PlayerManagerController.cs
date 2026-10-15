@@ -1,12 +1,5 @@
-using fNbt;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils.ConfigUtils;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
-using System.IO.Compression;
 using System.Text.Json;
 using MSLX.Daemon.Utils;
 using MSLX.SDK.IServices;
