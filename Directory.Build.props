@@ -1,0 +1,14 @@
+<Project>
+	<!--
+		SixLabors.ImageSharp 3.1.12 的以下漏洞仅在 4.1.2+ 修复，而 4.x 需要商业授权密钥才能进行 Release 构建。
+		Daemon 仅用其生成缩略图，已在 FilesListController 中限制解码格式（排除 TIFF）并跳过 ICC 等元数据解析，
+		相关代码路径不可达，故在此抑制审计告警。升级 ImageSharp 后请删除本段。
+	-->
+	<ItemGroup>
+		<NuGetAuditSuppress Include="https://github.com/advisories/GHSA-gwg2-r3hj-4w44" /> <!-- ICC CLUT 解析 -->
+		<NuGetAuditSuppress Include="https://github.com/advisories/GHSA-j3p4-wp97-rph4" /> <!-- HistogramEqualization，未使用 -->
+		<NuGetAuditSuppress Include="https://github.com/advisories/GHSA-j9gm-c75j-xc9q" /> <!-- TIFF CCITT T4 编码器，未使用 -->
+		<NuGetAuditSuppress Include="https://github.com/advisories/GHSA-wmxv-xphr-5c9g" /> <!-- BigTIFF 解码 -->
+		<NuGetAuditSuppress Include="https://github.com/advisories/GHSA-jjfr-hcj7-qf5w" /> <!-- TIFF CCITT T6 编码器，未使用 -->
+	</ItemGroup>
+</Project>
