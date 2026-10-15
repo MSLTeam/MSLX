@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using MSLX.Daemon.Hubs;
+using MSLX.Daemon.Services;
 using MSLX.Daemon.Services.InstanceServices;
+using MSLX.Daemon.Utils.BackgroundTasks;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.Models;
 using MSLX.Tests.Fakes;
@@ -37,7 +39,8 @@ public class InstanceBackupFlowTests : IDisposable
             events,
             new InstanceStateStore(),
             console,
-            mc, mc);
+            mc, mc,
+            new BackgroundTaskManager(NullLogger<BackgroundTaskManager>.Instance, new CreationTaskTracker()));
         return (svc, mc, events, console);
     }
 

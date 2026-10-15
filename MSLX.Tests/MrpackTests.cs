@@ -9,7 +9,7 @@ namespace MSLX.Tests;
 public class MrpackTests
 {
     [Fact]
-    public void InspectMrpack_UsesServerOverridesAndSkipsClientJars()
+    public void InspectMrpack_ListsRootJarsFromOverridesAndServerOverrides()
     {
         using var stream = new MemoryStream();
         using (var archive = new ZipArchive(stream, ZipArchiveMode.Create, true, Encoding.UTF8))
@@ -22,7 +22,8 @@ public class MrpackTests
 
             archive.CreateEntry("server-overrides/server.jar");
             archive.CreateEntry("server-overrides/config/server.cfg");
-            archive.CreateEntry("overrides/client.jar");
+            archive.CreateEntry("overrides/shared.jar");
+            archive.CreateEntry("overrides/mods/some-mod.jar");
         }
 
         using (var reopened = new ZipArchive(stream, ZipArchiveMode.Read, true, Encoding.UTF8))
@@ -32,8 +33,11 @@ public class MrpackTests
 
             Assert.NotNull(result);
             Assert.Equal("mrpack", result!["format"]?.ToObject<string>());
-            Assert.Equal(1, result["count"]?.ToObject<int>());
-            Assert.Equal("server.jar", result["jars"]?[0]?.ToObject<string>());
+            // overrides 与 server-overrides 部署时都会解压到服务端，故两者根目录下的 jar 都是候选；子目录（如 mods）中的 jar 不计入
+            var jars = result["jars"]!.ToObject<List<string>>()!;
+            Assert.Equal(2, result["count"]?.ToObject<int>());
+            Assert.Contains("server.jar", jars);
+            Assert.Contains("shared.jar", jars);
             Assert.Equal("Test Pack", result["metadata"]?["name"]?.ToObject<string>());
         }
     }
