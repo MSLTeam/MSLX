@@ -76,8 +76,8 @@ public partial class InstanceListPage : UserControl
                     SideMenuHelper.Current?.NavigateTo(value);
                     return;
                 }
-                SideMenuHelper.Current?.NavigateTo(value, true, 2);
-                return;
+                // 页面已关闭，其 SignalR 连接已释放，不能复用，下面重新创建
+                instancePages.Remove(serverId);
             }
 
             var serverPage = new SukiSideMenuItem
@@ -128,9 +128,16 @@ public partial class InstanceListPage : UserControl
                 return;
             }
 
-            if (instancePages.TryGetValue(serverId, out SukiSideMenuItem? value) && SideMenuHelper.Current?.SideMenu.Items.Contains(value) == true)
+            if (instancePages.Remove(serverId, out SukiSideMenuItem? value))
             {
-                SideMenuHelper.Current?.NavigateRemove(value);
+                if (SideMenuHelper.Current?.SideMenu.Items.Contains(value) == true)
+                {
+                    SideMenuHelper.Current?.NavigateRemove(value);
+                }
+                if (value.PageContent is InstanceInfo.InstancePage instancePage)
+                {
+                    await instancePage.UnloadAsync();
+                }
             }
             await DaemonAPIService.PostApiAsync("/api/instance/delete", null, HttpService.PostContentType.Json, new { id = serverId, deleteFiles = deleteFiles.Value });
             await LoadServersList();

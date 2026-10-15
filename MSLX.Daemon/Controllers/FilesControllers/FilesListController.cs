@@ -7,6 +7,13 @@ using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.Models;
 using MSLX.SDK.Models.Files;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.Formats.Bmp;
+using SixLabors.ImageSharp.Formats.Gif;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.Formats.Tga;
+using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
 
 namespace MSLX.Daemon.Controllers.FilesControllers;
@@ -22,6 +29,20 @@ public class FilesListController : ControllerBase
             [".mkv"] = "video/x-matroska",
             [".flv"] = "video/x-flv"
         }
+    };
+
+    // 缩略图解码配置：ImageSharp 按文件内容而非扩展名识别格式，
+    // 因此只注册需要的格式（不含 TIFF 等），并跳过 ICC/EXIF 等元数据解析，规避 3.x 中相关解码漏洞。
+    private static readonly DecoderOptions _thumbnailDecoderOptions = new()
+    {
+        Configuration = new Configuration(
+            new PngConfigurationModule(),
+            new JpegConfigurationModule(),
+            new GifConfigurationModule(),
+            new BmpConfigurationModule(),
+            new TgaConfigurationModule(),
+            new WebpConfigurationModule()),
+        SkipMetadata = true
     };
     // 获取文件列表
     [HttpGet("instance/{id}/lists")]
@@ -520,7 +541,14 @@ public class FilesListController : ControllerBase
             return PhysicalFile(targetPath, "image/svg+xml");
         }
 
-        var supportedImageExts = new HashSet<string> { ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".ico", ".tiff", ".tga" };
+        // ImageSharp 3.x 不支持 ICO，且图标文件通常很小，浏览器可直接渲染，原样返回
+        if (ext == ".ico")
+        {
+            Response.Headers.CacheControl = "public, max-age=604800";
+            return PhysicalFile(targetPath, "image/x-icon");
+        }
+
+        var supportedImageExts = new HashSet<string> { ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".tga" };
         if (!supportedImageExts.Contains(ext))
         {
             return BadRequest("不支持生成该格式的缩略图");
@@ -556,8 +584,15 @@ public class FilesListController : ControllerBase
             }
 
             // 生成缩略图
-            using (var image = await SixLabors.ImageSharp.Image.LoadAsync(targetPath))
+            using (var image = await SixLabors.ImageSharp.Image.LoadAsync(_thumbnailDecoderOptions, targetPath))
             {
+                // PNG/BMP 解码器即使跳过元数据仍会挂载 ICC，这里清除，确保后续不会解析它
+                image.Metadata.IccProfile = null;
+                foreach (var frame in image.Frames)
+                {
+                    frame.Metadata.IccProfile = null;
+                }
+
                 image.Mutate(x => x.Resize(new ResizeOptions
                 {
                     Size = new SixLabors.ImageSharp.Size(size, size),
