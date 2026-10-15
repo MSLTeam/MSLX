@@ -73,6 +73,11 @@ public class RemotePtyConnection : IPtyConnection
 
     public Stream ReaderStream => _readerStream;
     public Stream WriterStream => _writerStream;
+
+    // Pipe 的读取流支持按 CancellationToken 取消。声明后 TerminalControl 断开时可以取消挂起的读取；
+    // 否则它使用阻塞读取，旧读取线程无法退出，重新挂载时会与新线程并发读取而报错。
+    public bool SupportsCancellableRead => true;
+
     public int Pid => 1;
     public int ExitCode => 0;
 
