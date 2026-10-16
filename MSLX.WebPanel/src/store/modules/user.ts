@@ -3,7 +3,7 @@ import { TOKEN_NAME, BASE_URL_NAME } from '@/config/global';
 import { store, usePermissionStore } from '@/store';
 import { request } from '@/utils/request';
 import { changeUrl } from '@/router';
-import { clearMediaToken, getMediaToken } from '@/utils/scopedToken';
+import { clearMediaToken, getMediaToken, getSyncMediaToken, getDownloadToken, getSyncDownloadToken } from '@/utils/scopedToken';
 
 // 存储记忆信息
 const REMEMBER_URL_NAME = 'remembered_url';
@@ -188,6 +188,31 @@ export const useUserStore = defineStore('user', {
     async removeToken() {
       clearMediaToken();
       this.token = '';
+    },
+
+    // 媒体与下载专用降权凭据 (Scoped Tokens)
+    async getMediaToken(): Promise<string> {
+      return await getMediaToken();
+    },
+
+    getSyncMediaToken(): string {
+      return getSyncMediaToken();
+    },
+
+    getMediaTokenParam(): string {
+      const mediaToken = getSyncMediaToken();
+      if (mediaToken) {
+        return `?media_token=${encodeURIComponent(mediaToken)}`;
+      }
+      return this.token ? `?x-user-token=${encodeURIComponent(this.token)}` : '';
+    },
+
+    async getDownloadToken(): Promise<string> {
+      return await getDownloadToken();
+    },
+
+    getSyncDownloadToken(): string {
+      return getSyncDownloadToken();
     },
   },
 

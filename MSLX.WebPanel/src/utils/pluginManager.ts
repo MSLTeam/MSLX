@@ -81,6 +81,23 @@ export async function loadPlugin(pluginUrl: string) {
 
         if (route.component === 'HOST_LAYOUT') {
           route.component = Layout;
+        } else if (route.component === 'HOST_BLANK_LAYOUT') {
+          route.component = () => import('@/layouts/blank.vue');
+        }
+
+        // 收集免登录匿名路由加入白名单
+        if (route.meta?.anonymous && route.path) {
+          if (!permissionStore.whiteListRouters.includes(route.path)) {
+            permissionStore.whiteListRouters.push(route.path);
+          }
+        }
+        if (route.children && Array.isArray(route.children)) {
+          route.children.forEach((child: any) => {
+            const childPath = child.path.startsWith('/') ? child.path : `${route.path}/${child.path}`;
+            if (child.meta?.anonymous && !permissionStore.whiteListRouters.includes(childPath)) {
+              permissionStore.whiteListRouters.push(childPath);
+            }
+          });
         }
 
         const parentName = route.parentName;

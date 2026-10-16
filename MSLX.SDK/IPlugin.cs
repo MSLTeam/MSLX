@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MSLX.SDK
@@ -31,6 +31,12 @@ namespace MSLX.SDK
 
         // 插件项目主页
         string PluginUrl => "https://github.com/MSLTeam";
+
+        /// <summary>
+        /// 声明插件是否提供免登录公开页面（如对外公开的世界地图、状态大屏等）。
+        /// 默认为 false。若设为 true，在管理员允许公开访问时，未登录访客才可获取本插件的前端入口。
+        /// </summary>
+        bool HasPublicPages => false;
 
         // 初始化 & 结束加载方法
         void OnLoad() { }

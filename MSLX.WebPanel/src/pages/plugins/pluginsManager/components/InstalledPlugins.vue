@@ -453,6 +453,22 @@ onMounted(() => {
                 </t-button>
               </div>
 
+              <!-- 公开页面开关（仅当插件声明了 hasPublicPages 时显示） -->
+              <t-tooltip
+                v-if="item.hasPublicPages"
+                :content="item.isPublicAccessEnabled ? '已开启公开访问：未登录访客可访问此插件公开页面（点击关闭）' : '未开启公开访问：未登录访客无法访问（点击开启）'"
+              >
+                <div class="flex items-center gap-1.5 px-2 py-1 rounded-lg border border-dashed border-zinc-200 dark:border-zinc-700/60 text-xs text-[var(--td-text-color-secondary)]">
+                  <span class="text-xs">公开页面</span>
+                  <t-switch
+                    :value="item.isPublicAccessEnabled"
+                    :disabled="actionLoading"
+                    size="small"
+                    @change="(val) => handleAction(item.id, val ? 'enable_public' : 'disable_public')"
+                  />
+                </div>
+              </t-tooltip>
+
               <!-- 启用 / 禁用 开关 -->
               <t-switch
                 :value="item.status === '已启用'"

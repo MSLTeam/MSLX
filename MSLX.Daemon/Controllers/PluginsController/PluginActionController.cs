@@ -40,8 +40,16 @@ public class PluginActionController : ControllerBase
             "enable"  => EnablePlugin(dllPath),
             "delete"  => DeletePlugin(dllPath),
             "cancel"  => CancelPendingAction(request.Id, dllPath),
+            "enable_public"  => SetPublicAccess(request.Id, true),
+            "disable_public" => SetPublicAccess(request.Id, false),
             _         => Error("未知的操作类型")
         };
+    }
+
+    private IActionResult SetPublicAccess(string pluginId, bool enabled)
+    {
+        IConfigBase.Config.WriteConfigKey($"Plugins:PublicAccess:{pluginId}", enabled);
+        return Success(enabled ? "已开启该插件公开访问" : "已关闭该插件公开访问");
     }
     
 

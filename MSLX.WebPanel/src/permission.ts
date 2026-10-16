@@ -93,8 +93,20 @@ router.beforeEach(async (to, from, next) => {
       }
     }
   } else {
-    if (whiteListRouters.indexOf(to.path) !== -1) {
+    if (whiteListRouters.indexOf(to.path) !== -1 || to.matched.some((r) => r.meta?.anonymous)) {
       next();
+    } else if (!arePluginsLoaded()) {
+      // 未登录时访问未知路由，按需预加载公开插件
+      await loadAllPlugins();
+      addCatchAllRoute();
+      if (whiteListRouters.indexOf(to.path) !== -1 || to.matched.some((r) => r.meta?.anonymous)) {
+        next({ ...to, replace: true });
+      } else {
+        next({
+          path: '/login',
+          query: { redirect: encodeURIComponent(to.fullPath) },
+        });
+      }
     } else {
       next({
         path: '/login',
