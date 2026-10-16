@@ -29,6 +29,7 @@
     "@eslint/js": "^9.38.0",
     "@microsoft/signalr": "^10.0.0",
     "@tailwindcss/vite": "^4.2.1",
+    "@tdesign-vue-next/chat": "^0.6.0",
     "@vueuse/core": "^14.2.1",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",

@@ -13,6 +13,7 @@ export function getHubUrl(hubPath: string): string {
     '/api/hubs/updateProgressHub',
     '/api/hubs/creationProgressHub',
     '/api/hubs/instanceControlHub',
+    '/api/hubs/aiChatHub',
   ];
 
   const isSlaveRoute = slaveHubs.includes(hubPath) || slaveHubs.some(h => hubPath.startsWith(h));
@@ -23,7 +24,6 @@ export function getHubUrl(hubPath: string): string {
     finalBase = activeNodeUrl;
   }
 
-  // 拼接 URL 节点ID Token
   const hubUrl = new URL(hubPath, finalBase);
   if (token) {
     hubUrl.searchParams.append('x-user-token', token);
