@@ -30,6 +30,11 @@ namespace MSLX.Desktop
         {
             AvaloniaXamlLoader.Load(this);
 
+            // 提前触发 TerminalControl 的静态构造：它会把自身主题插入 Application.Styles 首位。
+            // 若等到首次打开实例页面时才插入，运行期样式重算会让 SukiUI 按钮模板中依赖 [Width=0]
+            // 隐藏的进度占位区变为可见，导致侧栏折叠按钮等 Button 变宽、位置偏移。
+            System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(typeof(Iciclecreek.Terminal.TerminalControl).TypeHandle);
+
             IsMacAppBundle = PlatformHelper.IsMacAppBundle();
             var trayIcons = TrayIcon.GetIcons(this);
             if (IsMacAppBundle && trayIcons != null)

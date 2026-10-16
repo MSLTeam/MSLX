@@ -56,14 +56,19 @@
 															   FontWeight="Bold"/>
 												</Border>
 											</StackPanel>
-											<StackPanel Orientation="Horizontal">
+											<!-- 使用 Grid 限制宽度，过长的路径/核心名以省略号截断，悬停显示完整内容 -->
+											<Grid ColumnDefinitions="Auto,*">
 												<TextBlock Text="目录："/>
-												<TextBlock Text="{Binding Base}"/>
-											</StackPanel>
-											<StackPanel Orientation="Horizontal">
+												<TextBlock Grid.Column="1" Text="{Binding Base}"
+														   TextTrimming="PathSegmentEllipsis"
+														   ToolTip.Tip="{Binding Base}"/>
+											</Grid>
+											<Grid ColumnDefinitions="Auto,*">
 												<TextBlock Text="核心："/>
-												<TextBlock Text="{Binding Core, Converter={x:Static ic:CoreNameConverter.Instance}}"/>
-											</StackPanel>
+												<TextBlock Grid.Column="1" Text="{Binding Core, Converter={x:Static ic:CoreNameConverter.Instance}}"
+														   TextTrimming="CharacterEllipsis"
+														   ToolTip.Tip="{Binding $self.Text}"/>
+											</Grid>
 										</StackPanel>
 										<Grid Grid.Column="2" Margin="10,0,0,0" VerticalAlignment="Center">
 											<Grid.RowDefinitions>

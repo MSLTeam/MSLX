@@ -1,6 +1,9 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Services.PluginsService;
+using MSLX.Daemon.Utils;
 using MSLX.SDK.Models;
 using MSLX.Daemon.Utils.ConfigUtils;
 
@@ -17,32 +20,84 @@ public class PluginListController : ControllerBase
         _pluginManager = pluginManager;
     }
 
-[HttpGet("list")]
-    public IActionResult GetPluginList()
+    private bool IsPublicAccessEnabled(string pluginId)
     {
-        var resultList = new List<object>();
-        var pluginsPath = Path.Combine(IConfigBase.GetAppDataPath(), "Plugins"); 
-        
-        var processedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        
-        foreach (var p in _pluginManager.Plugins)
+        var val = IConfigBase.Config.ReadConfigKey($"Plugins:PublicAccess:{pluginId}");
+        if (val != null && bool.TryParse(val.ToString(), out var parsed)) return parsed;
+        return false;
+    }
+
+    private (bool isAuthenticated, bool isAdmin) GetAuthInfo()
+    {
+        // Token 检查
+        string? token = Request.Headers["x-user-token"].FirstOrDefault()
+                     ?? Request.Query["x-user-token"].FirstOrDefault()
+                     ?? Request.Query["token"].FirstOrDefault();
+
+        if (!string.IsNullOrEmpty(token))
         {
-            var dllPath = p.DllPath;
-            processedPaths.Add(dllPath);
-
-            var status = "已启用";
-            if (System.IO.File.Exists(dllPath + ".delete")) status = "待删除";
-            
-            var iconPath = p.Metadata.Icon switch
+            var principal = JwtUtils.ValidateToken(token);
+            if (principal != null)
             {
-                null or "" => "https://www.mslmc.cn/logo.png",
-                var icon when icon.StartsWith("http", StringComparison.OrdinalIgnoreCase) => icon,
-                var icon => $"/plugins/{p.Metadata.Id.ToLower()}/{p.Metadata.Version.ToLower()}/{icon}"
-            };
+                var userId = principal.FindFirst("UserId")?.Value;
+                var role = principal.FindFirst(ClaimTypes.Role)?.Value;
 
-            resultList.Add(new
+                if (userId == "system-admin")
+                {
+                    return (true, true);
+                }
+
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    var dbUser = IConfigBase.UserList.GetUserById(userId);
+                    if (dbUser != null && JwtUtils.GetTokenRejectionReason(principal, dbUser) == null)
+                    {
+                        bool isAdmin = role == "admin" || dbUser.Role == "admin";
+                        return (true, isAdmin);
+                    }
+                }
+            }
+        }
+
+        // ApiKey 检查
+        string? apiKey = Request.Headers["x-api-key"].FirstOrDefault()
+                      ?? Request.Query["x-api-key"].FirstOrDefault();
+
+        if (!string.IsNullOrEmpty(apiKey))
+        {
+            string globalApiKey = IConfigBase.Config.ReadConfigKey("apiKey")?.ToString() ?? "";
+            if (!string.IsNullOrEmpty(globalApiKey) && globalApiKey.Equals(apiKey))
             {
-                id = p.Metadata.Id, 
+                return (true, true);
+            }
+
+            var user = IConfigBase.UserList.GetUserByApiKey(apiKey);
+            if (user != null)
+            {
+                return (true, user.Role == "admin");
+            }
+        }
+
+        return (false, false);
+    }
+
+    private object FormatPluginDto(LoadedPlugin p, bool includePath = false)
+    {
+        var iconPath = p.Metadata.Icon switch
+        {
+            null or "" => "https://www.mslmc.cn/logo.png",
+            var icon when icon.StartsWith("http", StringComparison.OrdinalIgnoreCase) => icon,
+            var icon => $"/plugins/{p.Metadata.Id.ToLower()}/{p.Metadata.Version.ToLower()}/{icon}"
+        };
+
+        var status = "已启用";
+        if (System.IO.File.Exists(p.DllPath + ".delete")) status = "待删除";
+
+        if (includePath)
+        {
+            return new
+            {
+                id = p.Metadata.Id,
                 name = p.Metadata.Name,
                 description = p.Metadata.Description,
                 icon = iconPath,
@@ -52,9 +107,79 @@ public class PluginListController : ControllerBase
                 authorUrl = p.Metadata.AuthorUrl,
                 pluginUrl = p.Metadata.PluginUrl,
                 entryPath = $"/plugins/{p.Metadata.Id.ToLower()}/{p.Metadata.Version.ToLower()}/mslx-plugin-entry.js",
-                path = dllPath,
-                status = status
+                path = p.DllPath,
+                status = status,
+                hasPublicPages = p.Metadata.HasPublicPages,
+                isPublicAccessEnabled = IsPublicAccessEnabled(p.Metadata.Id)
+            };
+        }
+
+        return new
+        {
+            id = p.Metadata.Id,
+            name = p.Metadata.Name,
+            description = p.Metadata.Description,
+            icon = iconPath,
+            version = p.Metadata.Version,
+            minSDKVersion = p.Metadata.MinSDKVersion,
+            developer = p.Metadata.Developer,
+            authorUrl = p.Metadata.AuthorUrl,
+            pluginUrl = p.Metadata.PluginUrl,
+            entryPath = $"/plugins/{p.Metadata.Id.ToLower()}/{p.Metadata.Version.ToLower()}/mslx-plugin-entry.js",
+            status = status,
+            hasPublicPages = p.Metadata.HasPublicPages,
+            isPublicAccessEnabled = IsPublicAccessEnabled(p.Metadata.Id)
+        };
+    }
+
+    [HttpGet("list")]
+    [AllowAnonymous]
+    public IActionResult GetPluginList()
+    {
+        var (isAuthenticated, isAdmin) = GetAuthInfo();
+
+        if (!isAuthenticated)
+        {
+            // 匿名访客：仅返回开启公开页面的插件
+            var publicList = _pluginManager.Plugins
+                .Where(p => p.Metadata.HasPublicPages && IsPublicAccessEnabled(p.Metadata.Id))
+                .Where(p => !System.IO.File.Exists(p.DllPath + ".disabled") && !System.IO.File.Exists(p.DllPath + ".delete"))
+                .Select(p => FormatPluginDto(p, includePath: false))
+                .ToList();
+
+            return Ok(new ApiResponse<object>
+            {
+                Code = 200,
+                Message = "公开插件列表获取成功",
+                Data = publicList
             });
+        }
+
+        if (!isAdmin)
+        {
+            // 普通登录用户
+            var userPluginList = _pluginManager.Plugins
+                .Where(p => !System.IO.File.Exists(p.DllPath + ".disabled") && !System.IO.File.Exists(p.DllPath + ".delete"))
+                .Select(p => FormatPluginDto(p, includePath: false))
+                .ToList();
+
+            return Ok(new ApiResponse<object>
+            {
+                Code = 200,
+                Message = "插件列表获取成功",
+                Data = userPluginList
+            });
+        }
+
+        var resultList = new List<object>();
+        var pluginsPath = Path.Combine(IConfigBase.GetAppDataPath(), "Plugins"); 
+        
+        var processedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        
+        foreach (var p in _pluginManager.Plugins)
+        {
+            processedPaths.Add(p.DllPath);
+            resultList.Add(FormatPluginDto(p, includePath: true));
         }
 
         // 未加载的插件
@@ -133,7 +258,9 @@ public class PluginListController : ControllerBase
                 pluginUrl = metadata.PluginUrl ?? "",
                 entryPath = $"/plugins/{metadata.Id.ToLower()}/{metadata.Version.ToLower()}/mslx-plugin-entry.js",
                 path = dllPath,
-                status = status
+                status = status,
+                hasPublicPages = metadata.HasPublicPages,
+                isPublicAccessEnabled = IsPublicAccessEnabled(metadata.Id)
             };
         }
 
@@ -150,7 +277,9 @@ public class PluginListController : ControllerBase
             pluginUrl = "",
             entryPath = "",
             path = dllPath,
-            status = status
+            status = status,
+            hasPublicPages = false,
+            isPublicAccessEnabled = false
         };
     }
 

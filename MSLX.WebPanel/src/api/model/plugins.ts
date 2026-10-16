@@ -10,6 +10,8 @@ export interface PluginListModel {
   pluginUrl: string;
   entryPath: string;
   status: string;
+  hasPublicPages?: boolean;
+  isPublicAccessEnabled?: boolean;
   categoryList?: PluginCategoryModel[];
 }
 

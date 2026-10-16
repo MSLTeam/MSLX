@@ -98,7 +98,9 @@
       <!-- 主内容区域：行 1 -->
       <!-- 模式 1：PTY 交互终端 -->
       <Grid Grid.Row="1" x:Name="PtyViewPanel" IsVisible="False" Background="Transparent">
+        <!-- Process 置空：终端只显示远程 PTY，禁止控件在加载时于本机自动启动 cmd.exe/bash -->
         <terminal:TerminalControl x:Name="Terminal"
+                                  Process=""
                                   HorizontalAlignment="Stretch"
                                   VerticalAlignment="Stretch"
                                   Background="Transparent"

@@ -7,7 +7,9 @@
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="MSLX.Desktop.Views.LinkDaemon.DownloadDaemonPage">
     <suki:GlassCard Margin="10">
-        <Grid HorizontalAlignment="Center" VerticalAlignment="Center" RowDefinitions="*,auto,auto,auto" RowSpacing="15">
+      <!-- 显示下载进度后内容可能超出卡片高度，使用滚动容器与自适应行高，避免表单被压缩而与进度条重叠 -->
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <Grid HorizontalAlignment="Center" VerticalAlignment="Center" RowDefinitions="auto,auto,auto,auto" RowSpacing="15">
             <StackPanel Spacing="10">
                 <TextBlock Text="下载守护程序" Classes="h3" HorizontalAlignment="Center"/>
                 <TextBlock Text="请输入系统信息" Classes="h5" FontWeight="Bold" HorizontalAlignment="Center"/>
@@ -31,6 +33,7 @@
             <controls:DownloadDisplayControl x:Name="DwnDisplay" IsVisible="False" Grid.Row="1"/>
             <Button x:Name="DoneBtn" Content="确定下载" Classes="Flat" Grid.Row="2"/>
             <Button x:Name="LinkDaemonBtn" Content="已有守护程序？点我链接！" Classes="Basic" Grid.Row="3"/>
-      </Grid>
+        </Grid>
+      </ScrollViewer>
     </suki:GlassCard>
 </UserControl>

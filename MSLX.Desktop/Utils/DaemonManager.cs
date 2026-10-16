@@ -12,6 +12,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -168,6 +169,13 @@ namespace MSLX.Desktop.Utils
                 {
                     Directory.CreateDirectory(daemonPath);
                 }
+
+                // 覆盖前先停止正在运行的旧 Daemon（包括上次会话残留的进程），否则可执行文件被占用无法解压
+                if (DaemonProcess == null || DaemonProcess.HasExited)
+                {
+                    DaemonProcess = FindBundledDaemonProcess(Path.Combine(daemonPath, GetDaemonExecutableName()));
+                }
+                await StopRunningDaemon();
 
                 // 根据文件扩展名选择解压方式
                 string fileExtension = Path.GetExtension(archiveFilePath).ToLowerInvariant();
@@ -483,6 +491,12 @@ namespace MSLX.Desktop.Utils
                     RedirectStandardError = true
                 };
 
+                if (GetDaemonConsoleEncoding() is { } consoleEncoding)
+                {
+                    processStartInfo.StandardOutputEncoding = consoleEncoding;
+                    processStartInfo.StandardErrorEncoding = consoleEncoding;
+                }
+
                 if (isBundledDaemon)
                 {
                     processStartInfo.Environment["MSLX_EMBEDDED_DAEMON"] = "true";
@@ -571,6 +585,8 @@ namespace MSLX.Desktop.Utils
                 }
 
                 Debug.WriteLine("[DaemonManager] Daemon启动超时，未检测到就绪信号");
+                // 结束未就绪的进程，避免其残留占用端口和文件，导致重试时无法覆盖解压
+                await StopRunningDaemon();
                 return (false, "Daemon启动超时（30秒内未检测到就绪信号）");
             }
             catch (Exception ex)
@@ -736,6 +752,32 @@ namespace MSLX.Desktop.Utils
 
             return false;
         }
+
+        /// <summary>
+        /// 获取Daemon标准输出所用的编码。
+        /// Windows 下 Daemon 运行在 Desktop 创建的隐藏控制台中，按系统 OEM 代码页（如中文系统的 GBK）输出，
+        /// 而 Desktop 作为 GUI 程序默认按 UTF-8 解码，会导致中文乱码并无法识别就绪信号。
+        /// </summary>
+        private static Encoding? GetDaemonConsoleEncoding()
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                return null;
+            }
+
+            try
+            {
+                Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+                return Encoding.GetEncoding((int)GetOEMCP());
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
+            {
+                return null;
+            }
+        }
+
+        [DllImport("kernel32.dll")]
+        private static extern uint GetOEMCP();
 
         /// <summary>
         /// 获取Daemon进程名（不含扩展名）
