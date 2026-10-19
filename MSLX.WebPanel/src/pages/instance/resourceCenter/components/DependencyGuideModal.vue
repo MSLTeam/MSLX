@@ -12,6 +12,8 @@ const props = defineProps<{
   mainResource: ResourceModel | null;
   instanceId?: number | null;
   resourceType?: number; // 0=Mod, 1=资源包, 2=数据包, 3=光影, 4=整合包, 5=插件
+  gameVersion?: string;
+  loader?: string;
 }>();
 
 const emit = defineEmits(['update:visible', 'download-complete']);
@@ -76,6 +78,16 @@ const resourceLabel = computed(() => {
   }
 });
 
+const checkInstalled = (name: string, filename?: string) => {
+  if (!installedFiles.value.length) return false;
+  if (filename && installedFiles.value.includes(filename.toLowerCase())) return true;
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  if (slug.length > 2 && installedFiles.value.some(f => f.includes(slug))) return true;
+  const cleanToken = slug.replace(/-(forge|fabric|neoforge|api)$/, '');
+  if (cleanToken.length > 3 && installedFiles.value.some(f => f.includes(cleanToken))) return true;
+  return false;
+};
+
 const loadDependencies = async () => {
   if (!props.version || !props.version.dependencies || props.version.dependencies.length === 0) {
     resolvedDependencies.value = [];
@@ -88,58 +100,111 @@ const loadDependencies = async () => {
 
   if (props.instanceId) {
     try {
-      const res = await getPluginsOrModsList(props.instanceId, 'mods', false);
+      const targetFolder = props.resourceType === 5 ? 'plugins' : 'mods';
+      const res = await getPluginsOrModsList(props.instanceId, targetFolder, false);
       if (res && res.jarFiles) {
         installedFiles.value = res.jarFiles.map(f => f.toLowerCase());
       }
     } catch { /* empty */ }
   }
 
-  const visited = new Set<string>();
-  const gameVersion = props.version.gameVersions?.[0] || '';
-  const loader = props.version.loaders?.[0] || '';
+  const visitedRequired = new Set<string>();
+  const optionalDepsToProcess: ResourceDependencyModel[] = [];
+  const resolvedMap = new Map<string, any>();
+  const gameVersion = props.gameVersion || props.version.gameVersions?.[0] || '';
+  const loader = props.loader || props.version.loaders?.[0] || '';
 
-  const resolveRecursive = async (deps: ResourceDependencyModel[]) => {
-    const toProcess = deps.filter(d => (d.type === 0 || d.type === 1) && !visited.has(d.projectId));
+  // 第一阶段：仅沿必需依赖（type === 0）向下递归解析
+  const resolveRequiredRecursive = async (deps: ResourceDependencyModel[]) => {
+    for (const dep of deps) {
+      if (dep.type === 0) {
+        if (visitedRequired.has(dep.projectId)) continue;
+        visitedRequired.add(dep.projectId);
 
-    for (const dep of toProcess) {
-      visited.add(dep.projectId);
-      try {
-        const detail = await getResourceDetail(dep.provider, dep.projectId);
-        if (detail) {
-          const versions = await getResourceVersions(dep.provider, dep.projectId, gameVersion, loader);
-          let selected = null;
-          if (versions && versions.length > 0) {
-            selected = versions[0];
+        try {
+          const detail = await getResourceDetail(dep.provider, dep.projectId);
+          if (detail) {
+            const versions = await getResourceVersions(dep.provider, dep.projectId, gameVersion, loader);
+            const selected = versions && versions.length > 0 ? versions[0] : null;
+            const isInstalled = checkInstalled(detail.name, selected?.filename);
+
+            resolvedMap.set(dep.projectId, {
+              ...dep,
+              type: 0, // 确保为必需
+              name: detail.name,
+              iconUrl: detail.iconUrl,
+              summary: detail.summary,
+              selectedVersion: selected,
+              candidateVersions: versions || [],
+              alreadyInstalled: isInstalled,
+              selected: !isInstalled
+            });
+
+            if (selected && selected.dependencies && selected.dependencies.length > 0) {
+              // 收集子依赖中的可选依赖
+              for (const childDep of selected.dependencies) {
+                if (childDep.type === 1) {
+                  optionalDepsToProcess.push(childDep);
+                }
+              }
+              // 仅继续递归必需子依赖
+              await resolveRequiredRecursive(selected.dependencies);
+            }
           }
-
-          const slug = detail.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-          const isInstalled = selected && (
-              installedFiles.value.includes(selected.filename.toLowerCase()) ||
-              (slug.length > 2 && installedFiles.value.some(f => f.includes(slug)))
-          );
-
-          resolvedDependencies.value.push({
-            ...dep,
-            name: detail.name,
-            iconUrl: detail.iconUrl,
-            summary: detail.summary,
-            selectedVersion: selected,
-            candidateVersions: versions || [],
-            alreadyInstalled: isInstalled
-          });
-
-          if (selected && selected.dependencies && selected.dependencies.length > 0) {
-            await resolveRecursive(selected.dependencies);
-          }
+        } catch (e) {
+          console.error('Failed to load required dependency', dep.projectId, e);
         }
-      } catch (e) {
-        console.error('Failed to load dependency', dep.projectId, e);
+      } else if (dep.type === 1) {
+        optionalDepsToProcess.push(dep);
       }
     }
   };
 
-  await resolveRecursive(props.version.dependencies);
+  // 第二阶段：浅层解析可选依赖（不递归可选依赖的子依赖）
+  const resolveOptionalDependencies = async () => {
+    const visitedOptional = new Set<string>();
+    for (const dep of optionalDepsToProcess) {
+      if (resolvedMap.has(dep.projectId) && resolvedMap.get(dep.projectId).type === 0) {
+        continue; // 已作为必需依赖收录，无需重复处理
+      }
+      if (visitedOptional.has(dep.projectId)) continue;
+      visitedOptional.add(dep.projectId);
+
+      try {
+        const detail = await getResourceDetail(dep.provider, dep.projectId);
+        if (detail) {
+          const versions = await getResourceVersions(dep.provider, dep.projectId, gameVersion, loader);
+          const selected = versions && versions.length > 0 ? versions[0] : null;
+          const isInstalled = checkInstalled(detail.name, selected?.filename);
+
+          if (!resolvedMap.has(dep.projectId) || resolvedMap.get(dep.projectId).type !== 0) {
+            resolvedMap.set(dep.projectId, {
+              ...dep,
+              type: 1, // 可选
+              name: detail.name,
+              iconUrl: detail.iconUrl,
+              summary: detail.summary,
+              selectedVersion: selected,
+              candidateVersions: versions || [],
+              alreadyInstalled: isInstalled,
+              selected: false // 可选依赖默认不勾选
+            });
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load optional dependency', dep.projectId, e);
+      }
+    }
+  };
+
+  await resolveRequiredRecursive(props.version.dependencies);
+  await resolveOptionalDependencies();
+
+  resolvedDependencies.value = Array.from(resolvedMap.values()).sort((a, b) => {
+    if (a.type !== b.type) return a.type - b.type;
+    if (a.alreadyInstalled !== b.alreadyInstalled) return a.alreadyInstalled ? 1 : -1;
+    return a.name.localeCompare(b.name);
+  });
   loading.value = false;
 };
 
@@ -197,7 +262,7 @@ const handleDownloadAll = async () => {
       window.open(props.version.downloadUrl, '_blank');
     }
     for (const dep of resolvedDependencies.value) {
-      if (dep.type === 0 && dep.selectedVersion && !dep.alreadyInstalled) {
+      if (dep.selected && dep.selectedVersion && !dep.alreadyInstalled) {
         window.open(dep.selectedVersion.downloadUrl, '_blank');
       }
     }
@@ -254,7 +319,7 @@ const handleDownloadAll = async () => {
     addQueueItem(props.mainResource?.name || resourceLabel.value, props.version.downloadUrl, props.version.filename);
   }
   for (const dep of resolvedDependencies.value) {
-    if (dep.type === 0 && dep.selectedVersion && !dep.alreadyInstalled) {
+    if (dep.selected && dep.selectedVersion && !dep.alreadyInstalled) {
       addQueueItem(dep.name, dep.selectedVersion.downloadUrl, dep.selectedVersion.filename);
     }
   }
@@ -350,6 +415,7 @@ const handleDownloadAll = async () => {
             <div v-for="dep in resolvedDependencies" :key="dep.projectId"
                  class="flex items-center justify-between p-2 border border-[var(--td-component-border)] rounded-lg bg-[var(--td-bg-color-secondarycontainer)]">
               <div class="flex items-center gap-3 min-w-0">
+                <t-checkbox v-model="dep.selected" :disabled="dep.alreadyInstalled" />
                 <t-avatar :image="dep.iconUrl" size="32px" shape="round">
                   <template #icon>{{ dep.name?.charAt(0) || '?' }}</template>
                 </t-avatar>
@@ -378,7 +444,7 @@ const handleDownloadAll = async () => {
             <t-button theme="default" @click="dialogVisible = false">取消</t-button>
             <t-button theme="primary" @click="handleDownloadAll">
               {{ downloadMode === 'browser' ? '下载' : (props.resourceType === 4 ? '部署' : '直装') }}
-              ({{ (resolvedDependencies.filter(d => d.type === 0 && d.selectedVersion && !d.alreadyInstalled).length) + 1 }}个文件)
+              ({{ (resolvedDependencies.filter(d => d.selected && d.selectedVersion && !d.alreadyInstalled).length) + 1 }}个文件)
             </t-button>
           </div>
         </div>

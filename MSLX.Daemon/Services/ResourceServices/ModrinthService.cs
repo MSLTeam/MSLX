@@ -241,10 +241,10 @@ namespace MSLX.Daemon.Services.ResourceServices
                         foreach (var dep in depsArray.EnumerateArray())
                         {
                             var depTypeStr = dep.GetProperty("dependency_type").GetString();
-                            DependencyType depType = DependencyType.Required;
-                            if (depTypeStr == "optional") depType = DependencyType.Optional;
-                            else if (depTypeStr == "incompatible") depType = DependencyType.Incompatible;
-                            else if (depTypeStr == "embedded") depType = DependencyType.Embedded;
+                            DependencyType depType = DependencyType.Optional;
+                            if (string.Equals(depTypeStr, "required", StringComparison.OrdinalIgnoreCase)) depType = DependencyType.Required;
+                            else if (string.Equals(depTypeStr, "incompatible", StringComparison.OrdinalIgnoreCase)) depType = DependencyType.Incompatible;
+                            else if (string.Equals(depTypeStr, "embedded", StringComparison.OrdinalIgnoreCase)) depType = DependencyType.Embedded;
 
                             dependencies.Add(new ResourceDependency
                             {

@@ -363,8 +363,8 @@ namespace MSLX.Daemon.Services.ResourceServices
                         {
                             var modId = dep.GetProperty("modId").GetInt32().ToString();
                             var relType = dep.GetProperty("relationType").GetInt32();
-                            DependencyType depType = DependencyType.Required;
-                            if (relType == 2) depType = DependencyType.Optional;
+                            DependencyType depType = DependencyType.Optional;
+                            if (relType == 3) depType = DependencyType.Required;
                             else if (relType == 5) depType = DependencyType.Incompatible;
                             else if (relType == 1 || relType == 6) depType = DependencyType.Embedded;
 
@@ -452,8 +452,8 @@ namespace MSLX.Daemon.Services.ResourceServices
                                     {
                                         var modId = dep.GetProperty("modId").GetInt32().ToString();
                                         var relType = dep.GetProperty("relationType").GetInt32();
-                                        DependencyType depType = DependencyType.Required;
-                                        if (relType == 2) depType = DependencyType.Optional;
+                                        DependencyType depType = DependencyType.Optional;
+                                        if (relType == 3) depType = DependencyType.Required;
                                         else if (relType == 5) depType = DependencyType.Incompatible;
                                         else if (relType == 1 || relType == 6) depType = DependencyType.Embedded;
 

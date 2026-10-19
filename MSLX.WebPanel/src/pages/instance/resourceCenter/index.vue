@@ -770,6 +770,8 @@ watch(isDark, (val) => {
       :main-resource="currentItem"
       :instance-id="selectedInstanceId"
       :resource-type="filter.type"
+      :game-version="filter.gameVersion"
+      :loader="selectedLoader"
     />
   </div>
 </template>
