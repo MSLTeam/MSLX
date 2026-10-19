@@ -9,6 +9,6 @@ public class PluginActionRequest
     public required string Id { get; init; }
     
     [Required(ErrorMessage = "操作类型不能为空")]
-    [AllowedValues("enable", "disable", "delete", "cancel", ErrorMessage = "未知的操作类型")]
+    [AllowedValues("enable", "disable", "delete", "cancel", "enable_public", "disable_public", ErrorMessage = "未知的操作类型")]
     public required string Action { get; init; } 
 }

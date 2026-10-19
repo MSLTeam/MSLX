@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using MSLX.SDK.IServices;
 using MSLX.SDK.Models.Resources;
@@ -20,10 +21,14 @@ namespace MSLX.Daemon.Services.ResourceServices
 
         public async Task<ResourceSearchResult> SearchAsync(ResourceSearchFilter filter)
         {
+            var rawQuery = filter.Query?.Trim();
+            string translatedQuery = null;
+
             // 中译英（本地词库）
             if (!string.IsNullOrWhiteSpace(filter.Query))
             {
-                filter.Query = _modDictionary.TranslateChineseQueryToEnglish(filter.Query);
+                translatedQuery = _modDictionary.TranslateChineseQueryToEnglish(filter.Query);
+                filter.Query = translatedQuery;
             }
             var activeProviders = _providers.Where(p => 
             {
@@ -79,12 +84,32 @@ namespace MSLX.Daemon.Services.ResourceServices
             }
             long totalCount = results.Sum(r => r.TotalCount);
 
-            foreach (var item in merged)
+            if (!string.IsNullOrWhiteSpace(rawQuery))
             {
-                var cnName = _modDictionary.GetChineseName(item.Name);
-                if (!string.IsNullOrEmpty(cnName))
+                merged = merged
+                    .Select(item =>
+                    {
+                        var origName = item.Name;
+                        var cnName = _modDictionary.GetChineseName(origName);
+                        var displayName = !string.IsNullOrEmpty(cnName) ? cnName : origName;
+                        int score = CalculateRelevanceScore(displayName, origName, rawQuery, translatedQuery);
+                        item.Name = displayName;
+                        return new { Item = item, Score = score };
+                    })
+                    .OrderByDescending(x => x.Score)
+                    .ThenByDescending(x => x.Item.DownloadCount)
+                    .Select(x => x.Item)
+                    .ToList();
+            }
+            else
+            {
+                foreach (var item in merged)
                 {
-                    item.Name = cnName;
+                    var cnName = _modDictionary.GetChineseName(item.Name);
+                    if (!string.IsNullOrEmpty(cnName))
+                    {
+                        item.Name = cnName;
+                    }
                 }
             }
 
@@ -93,6 +118,46 @@ namespace MSLX.Daemon.Services.ResourceServices
                 Items = merged,
                 TotalCount = totalCount
             };
+        }
+
+        private static int CalculateRelevanceScore(string displayName, string originalName, string rawQuery, string translatedQuery)
+        {
+            if (string.IsNullOrWhiteSpace(rawQuery)) return 0;
+
+            int score = 0;
+            var queries = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { rawQuery.Trim() };
+            if (!string.IsNullOrWhiteSpace(translatedQuery))
+            {
+                queries.Add(translatedQuery.Trim());
+            }
+
+            var cleanDisplay = Regex.Replace(displayName ?? "", @"^\[.*?\]\s*", "").Trim();
+            var cleanOriginal = Regex.Replace(originalName ?? "", @"^\[.*?\]\s*", "").Trim();
+
+            foreach (var q in queries)
+            {
+                if (string.Equals(displayName, q, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(originalName, q, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(cleanDisplay, q, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(cleanOriginal, q, StringComparison.OrdinalIgnoreCase))
+                {
+                    score = Math.Max(score, 100);
+                }
+                else if ((displayName != null && displayName.StartsWith(q, StringComparison.OrdinalIgnoreCase)) ||
+                         (originalName != null && originalName.StartsWith(q, StringComparison.OrdinalIgnoreCase)) ||
+                         cleanDisplay.StartsWith(q, StringComparison.OrdinalIgnoreCase) ||
+                         cleanOriginal.StartsWith(q, StringComparison.OrdinalIgnoreCase))
+                {
+                    score = Math.Max(score, 60);
+                }
+                else if ((displayName != null && displayName.Contains(q, StringComparison.OrdinalIgnoreCase)) ||
+                         (originalName != null && originalName.Contains(q, StringComparison.OrdinalIgnoreCase)))
+                {
+                    score = Math.Max(score, 30);
+                }
+            }
+
+            return score;
         }
 
         private async Task<ResourceSearchResult> SafeSearchAsync(IResourceProvider provider, ResourceSearchFilter filter)

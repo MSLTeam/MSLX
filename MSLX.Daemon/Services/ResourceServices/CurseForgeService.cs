@@ -98,11 +98,9 @@ namespace MSLX.Daemon.Services.ResourceServices
             {
                 urlBuilder.Append($"&searchFilter={Uri.EscapeDataString(filter.Query)}");
             }
-            else
-            {
-                // 如果查询为空，可以通过排序参数获取默认热门列表
-                urlBuilder.Append("&sortField=2&sortOrder=desc"); // 2 = Popularity
-            }
+
+            // 默认按热度降序排序
+            urlBuilder.Append("&sortField=2&sortOrder=desc"); // 2 = Popularity
 
             if (!string.IsNullOrEmpty(filter.GameVersion))
             {
@@ -363,8 +361,8 @@ namespace MSLX.Daemon.Services.ResourceServices
                         {
                             var modId = dep.GetProperty("modId").GetInt32().ToString();
                             var relType = dep.GetProperty("relationType").GetInt32();
-                            DependencyType depType = DependencyType.Required;
-                            if (relType == 2) depType = DependencyType.Optional;
+                            DependencyType depType = DependencyType.Optional;
+                            if (relType == 3) depType = DependencyType.Required;
                             else if (relType == 5) depType = DependencyType.Incompatible;
                             else if (relType == 1 || relType == 6) depType = DependencyType.Embedded;
 
@@ -452,8 +450,8 @@ namespace MSLX.Daemon.Services.ResourceServices
                                     {
                                         var modId = dep.GetProperty("modId").GetInt32().ToString();
                                         var relType = dep.GetProperty("relationType").GetInt32();
-                                        DependencyType depType = DependencyType.Required;
-                                        if (relType == 2) depType = DependencyType.Optional;
+                                        DependencyType depType = DependencyType.Optional;
+                                        if (relType == 3) depType = DependencyType.Required;
                                         else if (relType == 5) depType = DependencyType.Incompatible;
                                         else if (relType == 1 || relType == 6) depType = DependencyType.Embedded;
 

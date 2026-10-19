@@ -92,6 +92,17 @@ namespace MSLX.Daemon.Services.ResourceServices
                 return slug.Replace("-", " ");
             }
 
+            bestMatch = _reverseDict.Keys
+                .Where(k => query.Contains(k, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(k => k.Length)
+                .FirstOrDefault();
+
+            if (bestMatch != null)
+            {
+                var slug = _reverseDict[bestMatch];
+                return slug.Replace("-", " ");
+            }
+
             return query; 
         }
     }

@@ -19,6 +19,7 @@ import {
   HomeIcon,
   LockOnIcon,
   MoreIcon,
+  EllipsisIcon,
   RefreshIcon,
   RollbackIcon,
   SettingIcon,
@@ -62,6 +63,7 @@ const FileGridView = defineAsyncComponent(() => import('./components/FileGridVie
 
 import { changeUrl } from '@/router';
 import { useUserStore } from '@/store';
+import { useDynamicBreadcrumbs } from './hooks/useDynamicBreadcrumbs';
 
 const route = useRoute();
 const router = useRouter();
@@ -193,17 +195,11 @@ const columns = computed(() => {
   ];
 });
 
-const breadcrumbs = computed(() => {
-  const parts = currentPath.value.split('/').filter((p) => p);
-  const crumbs = [{ name: '根目录', path: '' }];
-  let accumPath = '';
-  parts.forEach((part) => {
-    accumPath = accumPath ? `${accumPath}/${part}` : part;
-    crumbs.push({ name: part, path: accumPath });
-  });
-  // 手机端如果路径太长，只显示最后两级和根目录
-  return crumbs;
-});
+const { breadcrumbContainerRef, dynamicBreadcrumbs } = useDynamicBreadcrumbs(
+  currentPath,
+  isMobile,
+  screenWidth,
+);
 
 const hasSelection = computed(() => selectedRowKeys.value.length > 0);
 
@@ -839,19 +835,58 @@ onUnmounted(() => {
       class="card-enter-anim design-card bg-[var(--td-bg-color-container)] border-y md:border border-zinc-200/60 dark:border-zinc-700/60 md:rounded-xl shadow-sm flex flex-col min-h-[calc(100vh-100px)] md:min-h-[600px] -mx-4 md:mx-0 overflow-hidden"
     >
       <div
-        class="sticky top-0 z-10 p-3 md:px-5 md:py-4 !bg-inherit border-b border-zinc-200/60 dark:border-zinc-800 flex items-center justify-between gap-4 overflow-x-auto hide-scrollbar"
+        class="sticky top-0 z-10 p-3 md:px-5 md:py-4 !bg-inherit border-b border-zinc-200/60 dark:border-zinc-800 flex items-center justify-between gap-3 md:gap-4 overflow-x-auto hide-scrollbar"
       >
-        <div class="flex-1 flex items-center min-w-max">
+        <div ref="breadcrumbContainerRef" class="flex-1 min-w-0 flex items-center overflow-x-auto hide-scrollbar">
           <t-breadcrumb :max-item-width="isMobile ? '80px' : '150px'">
+            <!-- 头部目录项（未折叠时为全部项；折叠时为根目录及可选一级大目录） -->
             <t-breadcrumb-item
-              v-for="(crumb, index) in breadcrumbs"
-              :key="index"
+              v-for="(crumb, index) in dynamicBreadcrumbs.headCrumbs"
+              :key="crumb.path || 'root'"
               class="cursor-pointer whitespace-nowrap transition-colors hover:text-[var(--color-primary)]"
               @click="navigateTo(crumb.path)"
             >
               <template v-if="index === 0" #icon><home-icon /></template>
               {{ crumb.name }}
             </t-breadcrumb-item>
+
+            <!-- 中间折叠项（仅在折叠时展示省略号与下拉菜单） -->
+            <t-breadcrumb-item v-if="dynamicBreadcrumbs.isFolded" :is-ellipsis-item="true">
+              <t-dropdown trigger="click" :min-column-number="1" :max-height="300" class="flex items-center">
+                <span
+                  class="flex items-center cursor-pointer transition-colors hover:text-[var(--color-primary)] text-zinc-500 dark:text-zinc-400 select-none"
+                  :title="`展开折叠路径（共 ${dynamicBreadcrumbs.foldedCrumbs.length} 项）`"
+                >
+                  <ellipsis-icon class="!block" />
+                </span>
+                <template #dropdown>
+                  <t-dropdown-menu class="max-h-64 overflow-y-auto">
+                    <t-dropdown-item
+                      v-for="item in dynamicBreadcrumbs.foldedCrumbs"
+                      :key="item.path"
+                      @click="navigateTo(item.path)"
+                    >
+                      <div class="flex items-center gap-2 max-w-[220px]" :title="item.name">
+                        <folder-icon class="text-zinc-400 shrink-0 text-sm" />
+                        <span class="truncate text-sm">{{ item.name }}</span>
+                      </div>
+                    </t-dropdown-item>
+                  </t-dropdown-menu>
+                </template>
+              </t-dropdown>
+            </t-breadcrumb-item>
+
+            <!-- 尾部目录项（仅在折叠时展示末尾各级路径） -->
+            <template v-if="dynamicBreadcrumbs.isFolded">
+              <t-breadcrumb-item
+                v-for="crumb in dynamicBreadcrumbs.tailCrumbs"
+                :key="crumb.path"
+                class="cursor-pointer whitespace-nowrap transition-colors hover:text-[var(--color-primary)]"
+                @click="navigateTo(crumb.path)"
+              >
+                {{ crumb.name }}
+              </t-breadcrumb-item>
+            </template>
           </t-breadcrumb>
         </div>
 
