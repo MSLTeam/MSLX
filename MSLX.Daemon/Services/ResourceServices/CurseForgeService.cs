@@ -98,11 +98,9 @@ namespace MSLX.Daemon.Services.ResourceServices
             {
                 urlBuilder.Append($"&searchFilter={Uri.EscapeDataString(filter.Query)}");
             }
-            else
-            {
-                // 如果查询为空，可以通过排序参数获取默认热门列表
-                urlBuilder.Append("&sortField=2&sortOrder=desc"); // 2 = Popularity
-            }
+
+            // 默认按热度降序排序
+            urlBuilder.Append("&sortField=2&sortOrder=desc"); // 2 = Popularity
 
             if (!string.IsNullOrEmpty(filter.GameVersion))
             {
