@@ -99,7 +99,11 @@ router.beforeEach(async (to, from, next) => {
       // 未登录时访问未知路由，按需预加载公开插件
       await loadAllPlugins();
       addCatchAllRoute();
-      if (whiteListRouters.indexOf(to.path) !== -1 || to.matched.some((r) => r.meta?.anonymous)) {
+      const resolved = router.resolve(to.fullPath);
+      if (
+        permissionStore.whiteListRouters.indexOf(to.path) !== -1 ||
+        resolved.matched.some((r) => r.meta?.anonymous)
+      ) {
         next({ ...to, replace: true });
       } else {
         next({
