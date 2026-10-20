@@ -287,11 +287,11 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
             <div
               v-for="dev in developers"
               :key="dev.name"
-              class="group flex items-center bg-zinc-50/80 dark:bg-zinc-800/50 p-4 rounded-xl border border-[var(--td-component-border)] transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-[var(--color-primary)]/50 hover:bg-white dark:hover:bg-zinc-800"
+              class="design-card group flex items-center bg-[var(--td-bg-color-container)]/80 p-4 rounded-xl border border-[var(--td-component-border)] transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-[var(--color-primary)]/50 h-full min-h-[88px]"
             >
               <t-avatar
                 :image="dev.avatar"
@@ -302,7 +302,7 @@ onMounted(() => {
               <div class="ml-4 flex-1 min-w-0">
                 <div class="font-bold text-base text-[var(--td-text-color-primary)] truncate">{{ dev.name }}</div>
                 <div
-                  class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-[var(--color-primary)]/10 text-[var(--color-primary)] inline-block mt-0.5 mb-1 tracking-wider uppercase"
+                  class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-[var(--color-primary)]/10 text-[var(--color-primary)] inline-block mt-0.5 mb-1 tracking-wider uppercase whitespace-nowrap"
                 >
                   {{ dev.role }}
                 </div>
@@ -332,11 +332,11 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
             <div
               v-for="dev in contributors"
               :key="dev.name"
-              class="group flex items-center bg-zinc-50/80 dark:bg-zinc-800/50 p-4 rounded-xl border border-[var(--td-component-border)] transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-[var(--color-primary)]/50 hover:bg-white dark:hover:bg-zinc-800"
+              class="design-card group flex items-center bg-[var(--td-bg-color-container)]/80 p-4 rounded-xl border border-[var(--td-component-border)] transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-[var(--color-primary)]/50 h-full min-h-[88px]"
             >
               <t-avatar
                 :image="dev.avatar"
@@ -347,7 +347,7 @@ onMounted(() => {
               <div class="ml-4 flex-1 min-w-0">
                 <div class="font-bold text-base text-[var(--td-text-color-primary)] truncate">{{ dev.name }}</div>
                 <div
-                  class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-[var(--color-primary)]/10 text-[var(--color-primary)] inline-block mt-0.5 mb-1 tracking-wider uppercase"
+                  class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-[var(--color-primary)]/10 text-[var(--color-primary)] inline-block mt-0.5 mb-1 tracking-wider uppercase whitespace-nowrap"
                 >
                   {{ dev.role }}
                 </div>
@@ -395,11 +395,11 @@ onMounted(() => {
             </div>
           </div>
 
-          <div v-if="allSponsors.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div v-if="allSponsors.length > 0" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
             <div
               v-for="sponsor in allSponsors"
               :key="sponsor.name"
-              class="design-card group flex items-center p-4 rounded-xl border bg-[var(--td-bg-color-container)]/80 transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
+              class="design-card group flex items-center p-4 rounded-xl border bg-[var(--td-bg-color-container)]/80 transition-all duration-300 hover:-translate-y-1 hover:shadow-md h-full min-h-[88px]"
               :class="[
                 sponsor.isGold
                   ? 'gold-sponsor-card ring-1 ring-amber-500/35 hover:ring-amber-500/60 shadow-[0_0_12px_rgba(245,158,11,0.08)]'
@@ -420,8 +420,8 @@ onMounted(() => {
               />
 
               <div class="ml-4 flex-1 min-w-0">
-                <div class="flex items-center justify-between gap-1.5">
-                  <div class="font-bold text-base text-[var(--td-text-color-primary)] truncate flex items-center gap-1.5">
+                <div class="flex items-center justify-between gap-2 min-w-0">
+                  <div class="flex items-center gap-1.5 min-w-0 flex-1">
                     <svg
                       v-if="sponsor.isGold"
                       class="w-4 h-4 text-amber-500 shrink-0"
@@ -430,10 +430,12 @@ onMounted(() => {
                     >
                       <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/>
                     </svg>
-                    <span :title="sponsor.name" class="truncate">{{ sponsor.name }}</span>
+                    <span :title="sponsor.name" class="font-bold text-base text-[var(--td-text-color-primary)] truncate">
+                      {{ sponsor.name }}
+                    </span>
                   </div>
                   <span
-                    class="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded shrink-0"
+                    class="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded shrink-0 whitespace-nowrap"
                     :class="[
                       sponsor.isGold
                         ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
@@ -445,7 +447,7 @@ onMounted(() => {
                 </div>
 
                 <div
-                  class="text-[10px] font-extrabold px-2 py-0.5 rounded inline-block mt-1 mb-1 tracking-wider uppercase"
+                  class="text-[10px] font-extrabold px-2 py-0.5 rounded inline-block mt-1 mb-1 tracking-wider uppercase whitespace-nowrap"
                   :class="[
                     sponsor.isGold
                       ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
@@ -513,11 +515,11 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
             <div
               v-for="tester in testers"
               :key="tester.name"
-              class="group flex items-center bg-zinc-50/80 dark:bg-zinc-800/50 p-4 rounded-xl border border-[var(--td-component-border)] transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-[var(--color-success)]/50 hover:bg-white dark:hover:bg-zinc-800"
+              class="design-card group flex items-center bg-[var(--td-bg-color-container)]/80 p-4 rounded-xl border border-[var(--td-component-border)] transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-[var(--color-success)]/50 h-full min-h-[88px]"
             >
               <t-avatar
                 :image="tester.avatar"
@@ -528,7 +530,7 @@ onMounted(() => {
               <div class="ml-4 flex-1 min-w-0">
                 <div class="font-bold text-base text-[var(--td-text-color-primary)] truncate">{{ tester.name }}</div>
                 <div
-                  class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-[var(--color-success)]/10 text-[var(--color-success)] inline-block mt-0.5 mb-1 tracking-wider uppercase"
+                  class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-[var(--color-success)]/10 text-[var(--color-success)] inline-block mt-0.5 mb-1 tracking-wider uppercase whitespace-nowrap"
                 >
                   {{ tester.role }}
                 </div>
