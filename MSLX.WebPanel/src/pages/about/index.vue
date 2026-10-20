@@ -4,6 +4,7 @@ import {
   CheckCircleIcon,
   CodeIcon,
   GitCommitIcon,
+  HeartIcon,
   HistoryIcon,
   TimeIcon,
   UserCircleIcon,
@@ -127,6 +128,75 @@ const fetchUpdateLogs = async () => {
   }
 };
 
+interface GoldSponsor {
+  name: string;
+  avatar: string;
+  amount: number;
+  time: number;
+  source?: string;
+  slogan?: string;
+}
+
+interface NormalSponsor {
+  name: string;
+  avatar: string;
+  amount: number;
+  time: number;
+  source?: string;
+}
+
+interface SponsorItem {
+  name: string;
+  avatar: string;
+  amount: number;
+  time: number;
+  source?: string;
+  slogan?: string;
+  isGold: boolean;
+}
+
+const sponsorsLoading = ref(true);
+const goldSponsors = ref<GoldSponsor[]>([]);
+const normalSponsors = ref<NormalSponsor[]>([]);
+
+const allSponsors = computed<SponsorItem[]>(() => {
+  return [
+    ...goldSponsors.value.map((s) => ({ ...s, isGold: true })),
+    ...normalSponsors.value.map((s) => ({ ...s, isGold: false })),
+  ];
+});
+
+const defaultSponsorAvatar = 'https://pic1.afdiancdn.com/default/avatar.png';
+const failedAvatarMap = ref<Record<string, boolean>>({});
+
+const resolveSponsorAvatar = (sponsor: SponsorItem) => {
+  if (failedAvatarMap.value[sponsor.name] || !sponsor.avatar) {
+    return defaultSponsorAvatar;
+  }
+  return sponsor.avatar;
+};
+
+const handleSponsorAvatarError = (sponsor: SponsorItem) => {
+  failedAvatarMap.value[sponsor.name] = true;
+};
+
+const fetchSponsors = async () => {
+  try {
+    sponsorsLoading.value = true;
+    const res = await fetch('https://user.mslmc.net/api/sponsor/public');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    if (json.code === 200 && json.data) {
+      goldSponsors.value = Array.isArray(json.data.goldSponsors) ? json.data.goldSponsors : [];
+      normalSponsors.value = Array.isArray(json.data.normalSponsors) ? json.data.normalSponsors : [];
+    }
+  } catch (err) {
+    console.error('获取赞助名单失败:', err);
+  } finally {
+    sponsorsLoading.value = false;
+  }
+};
+
 const dependenciesList = computed(() => {
   if (!buildInfo.value?.dependencies) return [];
   return Object.entries(buildInfo.value.dependencies).map(([k, v]) => ({ name: k, version: v }));
@@ -135,6 +205,7 @@ const dependenciesList = computed(() => {
 onMounted(() => {
   fetchBuildInfo();
   fetchUpdateLogs();
+  fetchSponsors();
 });
 </script>
 <template>
@@ -285,6 +356,122 @@ onMounted(() => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div
+          class="design-card list-item-anim flex flex-col bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm p-6"
+          style="animation-delay: 0.08s"
+        >
+          <div
+            class="mb-5 pb-4 border-b border-dashed border-zinc-200/70 dark:border-zinc-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+          >
+            <div class="flex items-center gap-3">
+              <div
+                class="w-1.5 h-6 bg-[#f59e0b] rounded-full shadow-[0_0_8px_rgba(245,158,11,0.5)] opacity-90"
+              ></div>
+              <div class="flex flex-col">
+                <h2 class="text-lg font-bold text-[var(--td-text-color-primary)] m-0 leading-none">特别赞助与鸣谢</h2>
+                <span class="text-xs text-[var(--td-text-color-secondary)] mt-1.5 font-medium"
+                  >感谢所有支持 MSLX 开源项目发展的赞助者</span
+                >
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <t-loading v-if="sponsorsLoading" size="small" />
+              <t-button
+                theme="primary"
+                variant="outline"
+                shape="round"
+                size="small"
+                href="https://afdian.com/a/mslteam"
+                target="_blank"
+                class="!font-medium"
+              >
+                <template #icon><heart-icon /></template>
+                前往爱发电赞助
+              </t-button>
+            </div>
+          </div>
+
+          <div v-if="allSponsors.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div
+              v-for="sponsor in allSponsors"
+              :key="sponsor.name"
+              class="design-card group flex items-center p-4 rounded-xl border bg-[var(--td-bg-color-container)]/80 transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
+              :class="[
+                sponsor.isGold
+                  ? 'gold-sponsor-card ring-1 ring-amber-500/35 hover:ring-amber-500/60 shadow-[0_0_12px_rgba(245,158,11,0.08)]'
+                  : 'border-[var(--td-component-border)] hover:border-[var(--color-primary)]/50'
+              ]"
+            >
+              <t-avatar
+                :image="resolveSponsorAvatar(sponsor)"
+                size="56px"
+                shape="circle"
+                class="shrink-0 transition-transform group-hover:scale-105"
+                :class="[
+                  sponsor.isGold
+                    ? 'ring-2 ring-amber-500/70 shadow-[0_0_8px_rgba(245,158,11,0.3)]'
+                    : 'ring-2 ring-white dark:ring-zinc-700 shadow-sm'
+                ]"
+                @error="() => handleSponsorAvatarError(sponsor)"
+              />
+
+              <div class="ml-4 flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-1.5">
+                  <div class="font-bold text-base text-[var(--td-text-color-primary)] truncate flex items-center gap-1.5">
+                    <svg
+                      v-if="sponsor.isGold"
+                      class="w-4 h-4 text-amber-500 shrink-0"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                    >
+                      <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/>
+                    </svg>
+                    <span :title="sponsor.name" class="truncate">{{ sponsor.name }}</span>
+                  </div>
+                  <span
+                    class="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded shrink-0"
+                    :class="[
+                      sponsor.isGold
+                        ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                        : 'bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20'
+                    ]"
+                  >
+                    ¥{{ sponsor.amount }}
+                  </span>
+                </div>
+
+                <div
+                  class="text-[10px] font-extrabold px-2 py-0.5 rounded inline-block mt-1 mb-1 tracking-wider uppercase"
+                  :class="[
+                    sponsor.isGold
+                      ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                      : 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
+                  ]"
+                >
+                  {{ sponsor.isGold ? '金牌赞助者' : '赞助者' }}
+                </div>
+
+                <div
+                  v-if="sponsor.slogan"
+                  class="text-xs text-[var(--td-text-color-secondary)] truncate font-medium italic mt-0.5"
+                  :title="sponsor.slogan"
+                >
+                  “{{ sponsor.slogan }}”
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-else-if="!sponsorsLoading" class="flex justify-center items-center py-8">
+            <span
+              class="design-card text-sm font-medium text-[var(--td-text-color-secondary)] bg-[var(--td-bg-color-container)]/80 px-4 py-2 rounded-full border border-[var(--td-component-border)]"
+            >
+              暂无赞助记录，欢迎成为第一位赞助者
+            </span>
           </div>
         </div>
 
@@ -582,5 +769,14 @@ onMounted(() => {
 }
 :deep(.t-timeline-item__label) {
   display: none !important;
+}
+
+body .global-layout-bg.custom-theme-enabled :deep(.gold-sponsor-card),
+:deep(.gold-sponsor-card),
+.gold-sponsor-card {
+  border-color: rgba(245, 158, 11, 0.45) !important;
+  &:hover {
+    border-color: rgba(245, 158, 11, 0.8) !important;
+  }
 }
 </style>
