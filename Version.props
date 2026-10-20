@@ -1,8 +1,8 @@
 ﻿<Project>
     <PropertyGroup>
-        <DaemonBaseVersion>1.7.4</DaemonBaseVersion>
-        <DesktopBaseVersion>1.7.4</DesktopBaseVersion>
-        <PanelBaseVersion>1.7.4</PanelBaseVersion>
+        <DaemonBaseVersion>1.7.5</DaemonBaseVersion>
+        <DesktopBaseVersion>1.7.5</DesktopBaseVersion>
+        <PanelBaseVersion>1.7.5</PanelBaseVersion>
         
         <VersionSuffix>-release</VersionSuffix>
     </PropertyGroup>

@@ -96,6 +96,50 @@ const handleSaveAutoStart = async () => {
   }
 };
 
+// ================= 自启动快捷批量选择 =================
+const getAutoStartTagTunnelIds = (tag: string) => {
+  if (tag === '__untagged__') {
+    return tunnelsStore.frpList
+      .filter((i) => !i.tags || i.tags.length === 0)
+      .map((i) => i.id);
+  }
+  return tunnelsStore.frpList
+    .filter((i) => (i.tags || []).includes(tag))
+    .map((i) => i.id);
+};
+
+const isAutoStartTagAllSelected = (tag: string) => {
+  const ids = getAutoStartTagTunnelIds(tag);
+  if (ids.length === 0) return false;
+  return ids.every((id) => autoStartState.selectedIds.includes(id));
+};
+
+const getAutoStartTagSelectedCount = (tag: string) => {
+  const ids = getAutoStartTagTunnelIds(tag);
+  return ids.filter((id) => autoStartState.selectedIds.includes(id)).length;
+};
+
+const handleToggleAutoStartTag = (tag: string) => {
+  const ids = getAutoStartTagTunnelIds(tag);
+  if (ids.length === 0) return;
+
+  const allSelected = ids.every((id) => autoStartState.selectedIds.includes(id));
+  if (allSelected) {
+    autoStartState.selectedIds = autoStartState.selectedIds.filter((id) => !ids.includes(id));
+  } else {
+    const newSelected = new Set([...autoStartState.selectedIds, ...ids]);
+    autoStartState.selectedIds = Array.from(newSelected);
+  }
+};
+
+const handleSelectAllAutoStart = () => {
+  autoStartState.selectedIds = tunnelsStore.frpList.map((i) => i.id);
+};
+
+const handleDeselectAllAutoStart = () => {
+  autoStartState.selectedIds = [];
+};
+
 // 配置文件 → 颜色
 const getConfigTheme = (type: string) => {
   const map: Record<string, string> = {
@@ -663,7 +707,7 @@ onMounted(() => {
     >
       <div class="delete-dialog-body min-h-[200px]">
         <t-loading :loading="autoStartState.loading" text="读取配置中..." size="small">
-          <div class="alert-zinc bg-primary/5 border border-primary/20 p-4 rounded-xl mb-6 flex items-start gap-3">
+          <div class="alert-zinc bg-primary/5 border border-primary/20 p-4 rounded-xl mb-4 flex items-start gap-3">
             <t-icon name="info-circle-filled" class="text-primary mt-0.5" />
             <div class="text-sm">
               <p class="text-[var(--td-text-color-primary)] font-bold mb-1">自启动策略说明</p>
@@ -673,25 +717,96 @@ onMounted(() => {
             </div>
           </div>
 
-          <div v-if="tunnelsStore.frpList.length > 0">
-            <t-checkbox-group v-model="autoStartState.selectedIds" class="w-full">
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div
-                  v-for="item in tunnelsStore.frpList"
-                  :key="item.id"
-                  class="p-3 bg-zinc-50/50 dark:bg-zinc-800/40 rounded-xl border border-[var(--td-component-border)] hover:bg-zinc-100 dark:hover:bg-zinc-700/60 transition-colors"
-                >
-                  <t-checkbox :value="item.id" class="!w-full">
-                    <div class="flex items-center justify-between w-full ml-1 overflow-hidden">
-                      <span class="text-sm font-medium text-[var(--td-text-color-primary)] truncate pr-2">{{
-                        item.name
-                      }}</span>
-                      <span class="text-[10px] font-mono text-zinc-400 shrink-0">#{{ item.id }}</span>
-                    </div>
-                  </t-checkbox>
+          <div v-if="tunnelsStore.frpList.length > 0" class="flex flex-col gap-4">
+            <!-- 快捷批量选择栏 -->
+            <div class="flex flex-col gap-2 p-3 bg-zinc-50/70 dark:bg-zinc-800/40 rounded-xl border border-[var(--td-component-border)]">
+              <div class="flex items-center justify-between text-xs text-[var(--td-text-color-secondary)]">
+                <span class="font-bold flex items-center gap-1.5 text-[var(--td-text-color-primary)]">
+                  <tag-icon size="14" class="text-[var(--color-primary)]" />
+                  按标签快捷选择
+                </span>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs">
+                    已选 <span class="font-bold text-[var(--color-primary)]">{{ autoStartState.selectedIds.length }}</span> / {{ tunnelsStore.frpList.length }}
+                  </span>
+                  <span class="text-zinc-300 dark:text-zinc-600">|</span>
+                  <t-link theme="primary" size="small" hover="color" @click="handleSelectAllAutoStart">全选</t-link>
+                  <t-link theme="default" size="small" hover="color" @click="handleDeselectAllAutoStart">清空</t-link>
                 </div>
               </div>
-            </t-checkbox-group>
+
+              <!-- 标签选择按钮组 (仅当有标签或存在未分类时呈现) -->
+              <div
+                v-if="allExistingTags.length > 0 || untaggedCount > 0"
+                class="flex flex-wrap gap-1.5 pt-2 border-t border-dashed border-[var(--td-component-border)]"
+              >
+                <t-button
+                  v-for="tag in allExistingTags"
+                  :key="tag"
+                  size="small"
+                  :variant="isAutoStartTagAllSelected(tag) ? 'base' : 'outline'"
+                  :theme="isAutoStartTagAllSelected(tag) ? 'primary' : 'default'"
+                  shape="round"
+                  class="!text-xs"
+                  @click="handleToggleAutoStartTag(tag)"
+                >
+                  {{ tag }} ({{ getAutoStartTagSelectedCount(tag) }}/{{ getAutoStartTagTunnelIds(tag).length }})
+                </t-button>
+
+                <t-button
+                  v-if="untaggedCount > 0"
+                  size="small"
+                  :variant="isAutoStartTagAllSelected('__untagged__') ? 'base' : 'outline'"
+                  :theme="isAutoStartTagAllSelected('__untagged__') ? 'primary' : 'default'"
+                  shape="round"
+                  class="!text-xs"
+                  @click="handleToggleAutoStartTag('__untagged__')"
+                >
+                  未分类 ({{ getAutoStartTagSelectedCount('__untagged__') }}/{{ untaggedCount }})
+                </t-button>
+              </div>
+            </div>
+
+            <!-- 隧道多选列表 -->
+            <div class="max-h-[50vh] overflow-y-auto custom-scrollbar pr-1">
+              <t-checkbox-group v-model="autoStartState.selectedIds" class="w-full">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div
+                    v-for="item in tunnelsStore.frpList"
+                    :key="item.id"
+                    :class="[
+                      'p-3 rounded-xl border transition-colors cursor-pointer',
+                      autoStartState.selectedIds.includes(item.id)
+                        ? 'bg-primary/5 border-primary/40'
+                        : 'bg-zinc-50/50 dark:bg-zinc-800/40 border-[var(--td-component-border)] hover:bg-zinc-100 dark:hover:bg-zinc-700/60'
+                    ]"
+                  >
+                    <t-checkbox :value="item.id" class="!w-full">
+                      <div class="flex flex-col gap-1.5 w-full ml-1 overflow-hidden">
+                        <div class="flex items-center justify-between w-full">
+                          <span class="text-sm font-medium text-[var(--td-text-color-primary)] truncate pr-2">{{
+                            item.name
+                          }}</span>
+                          <span class="text-[10px] font-mono text-zinc-400 shrink-0">#{{ item.id }}</span>
+                        </div>
+                        <div v-if="item.tags && item.tags.length > 0" class="flex flex-wrap gap-1">
+                          <t-tag
+                            v-for="tag in item.tags"
+                            :key="tag"
+                            size="small"
+                            variant="light"
+                            :theme="getTagTheme(tag) as any"
+                            class="!text-[10px] !px-1.5 !h-4.5 !font-normal"
+                          >
+                            {{ tag }}
+                          </t-tag>
+                        </div>
+                      </div>
+                    </t-checkbox>
+                  </div>
+                </div>
+              </t-checkbox-group>
+            </div>
           </div>
           <div v-else class="py-12 text-center text-zinc-400 italic">暂无可用隧道</div>
         </t-loading>
