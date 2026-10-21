@@ -83,6 +83,8 @@ export async function loadPlugin(pluginUrl: string) {
           route.component = Layout;
         } else if (route.component === 'HOST_BLANK_LAYOUT') {
           route.component = () => import('@/layouts/blank.vue');
+        } else if (route.component === 'PLUGINS_PUBLIC_LAYOUT') {
+          route.component = () => import('@/layouts/plugins-public.vue');
         }
 
         // 收集免登录匿名路由加入白名单
@@ -93,7 +95,10 @@ export async function loadPlugin(pluginUrl: string) {
         }
         if (route.children && Array.isArray(route.children)) {
           route.children.forEach((child: any) => {
-            const childPath = child.path.startsWith('/') ? child.path : `${route.path}/${child.path}`;
+            let childPath = !child.path ? route.path : (child.path.startsWith('/') ? child.path : `${route.path}/${child.path}`);
+            if (childPath.length > 1 && childPath.endsWith('/')) {
+              childPath = childPath.slice(0, -1);
+            }
             if (child.meta?.anonymous && !permissionStore.whiteListRouters.includes(childPath)) {
               permissionStore.whiteListRouters.push(childPath);
             }
