@@ -892,8 +892,8 @@ public class InstanceLauncherService
 
                                 int charCount = decoder.GetChars(buffer, 0, read, chars, 0, false);
                                 string rawChunk = new string(chars, 0, charCount);
-                                _console.AppendPtyHistory(context, rawChunk);
-                                await _hubContext.Clients.Group("pty_" + instanceId).SendAsync("ReceivePtyData", rawChunk);
+                                var cursor = _console.AppendPtyHistory(context, rawChunk);
+                                await _hubContext.Clients.Group("pty_" + instanceId).SendAsync("ReceivePtyData", rawChunk, cursor);
 
                                 for (int i = 0; i < charCount; i++)
                                 {

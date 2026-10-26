@@ -2,7 +2,7 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import NProgress from 'nprogress';
 import 'nprogress/nprogress.css';
 
-import { getPermissionStore, getUserStore } from '@/store';
+import { getPermissionStore, getUserStore, useNodeStore } from '@/store';
 import router from '@/router';
 import { arePluginsLoaded, loadAllPlugins } from '@/utils/pluginManager';
 
@@ -27,6 +27,11 @@ router.beforeEach(async (to, from, next) => {
   const permissionStore = getPermissionStore();
   const { whiteListRouters } = permissionStore;
   const { token } = userStore;
+
+  // 获取分布式子节点
+  if (token && typeof to.query.node === 'string' && to.query.node) {
+    await useNodeStore().fetchNodes();
+  }
 
   if (token) {
     if (to.path === '/login' || to.path === '/oauth/callback') {
@@ -122,6 +127,7 @@ router.beforeEach(async (to, from, next) => {
 });
 
 router.afterEach((to) => {
+  useNodeStore().activeNodeId = typeof to.query.node === 'string' && to.query.node ? to.query.node : 'local';
   if (to.path === '/login') {
     const userStore = getUserStore();
     userStore.logout();

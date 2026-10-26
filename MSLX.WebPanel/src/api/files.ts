@@ -1,5 +1,5 @@
+import { nodeResourceUrl } from '@/utils/nodeTarget';
 import { request } from '@/utils/request';
-import { TOKEN_NAME, BASE_URL_NAME } from '@/config/global';
 import { getSyncMediaToken, getSyncDownloadToken } from '@/utils/scopedToken';
 import {
   FilesListModel,
@@ -133,49 +133,18 @@ export function downloadFileStream(instanceId: number, path: string) {
 }
 
 export function getVideoStreamUrl(instanceId: number, path: string, downloadToken?: string): string {
-  const dlToken = downloadToken || getSyncDownloadToken();
-  const token = dlToken || localStorage.getItem(TOKEN_NAME);
-  const baseUrl = localStorage.getItem(BASE_URL_NAME);
-  const activeNodeId = localStorage.getItem('ACTIVE_NODE_ID');
-  const activeNodeUrl = localStorage.getItem('ACTIVE_NODE_URL');
-
-  let finalBase = baseUrl || window.location.origin;
-  if (activeNodeUrl && activeNodeId !== 'local') {
-    finalBase = activeNodeUrl;
-  }
-
-  const url = new URL(`/api/files/instance/${instanceId}/download`, finalBase);
-  url.searchParams.append('path', path);
-  url.searchParams.append('inline', 'true');
-  if (token) {
-    url.searchParams.append(dlToken ? 'download_token' : 'x-user-token', token);
-  }
-  if (activeNodeId && activeNodeId !== 'local') {
-    url.searchParams.append('x-node-id', activeNodeId);
-  }
+  const url = nodeResourceUrl(`/api/files/instance/${instanceId}/download`, downloadToken || getSyncDownloadToken(), 'download_token');
+  url.searchParams.set('path', path);
+  url.searchParams.set('inline', 'true');
   return url.toString();
 }
 
 export function getFileThumbnailUrl(instanceId: number, path: string, size = 256): string {
-  const token = getSyncMediaToken() || localStorage.getItem(TOKEN_NAME);
-  const baseUrl = localStorage.getItem(BASE_URL_NAME);
-  const activeNodeId = localStorage.getItem('ACTIVE_NODE_ID');
-  const activeNodeUrl = localStorage.getItem('ACTIVE_NODE_URL');
-
-  let finalBase = baseUrl || window.location.origin;
-  if (activeNodeUrl && activeNodeId !== 'local') {
-    finalBase = activeNodeUrl;
-  }
-
-  const url = new URL(`/api/files/instance/${instanceId}/thumbnail`, finalBase);
-  url.searchParams.append('path', path);
-  url.searchParams.append('size', size.toString());
-  if (token) {
-    url.searchParams.append(getSyncMediaToken() ? 'media_token' : 'x-user-token', token);
-  }
-  if (activeNodeId && activeNodeId !== 'local') {
-    url.searchParams.append('x-node-id', activeNodeId);
-  }
+  const token = getSyncMediaToken();
+  if (!token) return '';
+  const url = nodeResourceUrl(`/api/files/instance/${instanceId}/thumbnail`, token, 'media_token');
+  url.searchParams.set('path', path);
+  url.searchParams.set('size', String(size));
   return url.toString();
 }
 
@@ -288,18 +257,18 @@ export async function getHostDrivesList() {
 
 
 // 后台任务管理
-export async function getUserTasks(instanceId?: number) {
-  return await request.get<any[]>({ url: '/api/tasks', params: { instanceId } });
+export async function getUserTasks(instanceId?: number, targetNodeId?: string) {
+  return await request.get<any[]>({ url: '/api/tasks', params: { instanceId } }, { targetNodeId });
 }
 
-export async function cancelUserTask(taskId: string) {
-  return await request.post({ url: `/api/tasks/${taskId}/cancel` });
+export async function cancelUserTask(taskId: string, targetNodeId?: string) {
+  return await request.post({ url: `/api/tasks/${taskId}/cancel` }, { targetNodeId });
 }
 
-export async function deleteUserTask(taskId: string) {
-  return await request.delete({ url: `/api/tasks/${taskId}` });
+export async function deleteUserTask(taskId: string, targetNodeId?: string) {
+  return await request.delete({ url: `/api/tasks/${taskId}` }, { targetNodeId });
 }
 
-export async function clearFinishedUserTasks() {
-  return await request.post({ url: '/api/tasks/clear-finished' });
+export async function clearFinishedUserTasks(targetNodeId?: string) {
+  return await request.post({ url: '/api/tasks/clear-finished' }, { targetNodeId });
 }

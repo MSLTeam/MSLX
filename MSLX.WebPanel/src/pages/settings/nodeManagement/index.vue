@@ -33,6 +33,7 @@ const linkForm = ref({
   nodeLogo: 'https://www.mslmc.cn/logo.png',
   masterUrl: '',
   linkKey: '',
+  pairingId: '',
   nodeTags: '',
 });
 
@@ -136,8 +137,10 @@ const handleAddNode = () => {
     nodeLogo: 'https://www.mslmc.cn/logo.png',
     masterUrl: '',
     linkKey: '',
+    pairingId: '',
     nodeTags: '',
   };
+  linkForm.value.pairingId = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
   tagsArray.value = [];
   linkVisible.value = true;
 };
@@ -151,7 +154,8 @@ const handleEditNode = (node: any) => {
     nodeUrl: node.nodeUrl,
     nodeLogo: node.nodeLogo || 'https://www.mslmc.cn/logo.png',
     masterUrl: node.masterUrl || '',
-    linkKey: node.linkKey,
+    linkKey: '',
+    pairingId: '',
     nodeTags: rawTags,
   };
   tagsArray.value = rawTags
@@ -174,7 +178,7 @@ const testConnection = async (url: string) => {
 };
 
 const handleLink = async () => {
-  if (!linkForm.value.nodeName || !linkForm.value.nodeUrl || !linkForm.value.linkKey) {
+  if (!linkForm.value.nodeName || !linkForm.value.nodeUrl || (!isEdit.value && !linkForm.value.linkKey)) {
     MessagePlugin.warning('请填写完整信息');
     return;
   }
@@ -212,13 +216,15 @@ const handleLink = async () => {
 
 const handleUnlink = (row: any) => {
   const dialog = DialogPlugin.confirm({
-    header: '解除链接',
-    body: `确定要解除与节点 ${row.nodeName} 的链接吗？`,
+    header: row.pendingRemoval ? '仅从主节点移除' : '解除链接',
+    body: row.pendingRemoval
+      ? `远端清理尚未确认。移除 ${row.nodeName} 的本地记录后，可以重新登记此地址；此操作不代表远端已完成清理。`
+      : `确定要解除与节点 ${row.nodeName} 的链接吗？`,
     theme: 'danger',
     onConfirm: async () => {
       try {
-        await unlinkSlaveNode(row.nodeId);
-        MessagePlugin.success('解除链接成功');
+        await unlinkSlaveNode(row.nodeId, !!row.pendingRemoval);
+        MessagePlugin.success(row.pendingRemoval ? '已从主节点移除记录' : '授权已撤销，正在清理子节点链接');
         fetchNodes(true);
       } catch (e: any) {
         MessagePlugin.error(`解除链接失败: ${e.message}`);
@@ -500,13 +506,13 @@ onUnmounted(async () => {
                 <template #icon><cloud-upload-icon /></template>
                 升级
               </t-button>
-              <t-button variant="outline" size="small" class="!px-2" @click="handleEditNode(item)">
+              <t-button v-if="!item.pendingRemoval" variant="outline" size="small" class="!px-2" @click="handleEditNode(item)">
                 <template #icon><edit-icon /></template>
                 编辑
               </t-button>
               <t-button theme="danger" variant="outline" size="small" class="!px-2" @click="handleUnlink(item)">
                 <template #icon><delete-icon /></template>
-                解除
+                {{ item.pendingRemoval ? '仅从主节点移除' : '解除' }}
               </t-button>
             </div>
           </div>
@@ -526,7 +532,7 @@ onUnmounted(async () => {
         <t-form-item label="节点Logo" name="nodeLogo">
           <t-input v-model="linkForm.nodeLogo" placeholder="如 https://www.mslmc.cn/logo.png" />
         </t-form-item>
-        <t-form-item label="通讯密钥" name="linkKey">
+        <t-form-item v-if="!isEdit" label="配对密钥" name="linkKey">
           <t-input v-model="linkForm.linkKey" type="password" placeholder="请输入子节点的 LinkKey" />
         </t-form-item>
         <t-form-item label="主节点地址" name="masterUrl" help="覆盖自动识别的主节点地址（留空则自动检测）">
@@ -592,8 +598,8 @@ onUnmounted(async () => {
           </span>
         </div>
         <div class="flex justify-between border-b border-[var(--td-component-border)] pb-2">
-          <span class="text-[var(--td-text-color-secondary)]">通讯密钥</span>
-          <span class="font-mono text-[var(--td-text-color-primary)]">{{ activeNodeDetails.commsKey }}</span>
+          <span class="text-[var(--td-text-color-secondary)]">链接状态</span>
+          <span class="font-mono text-[var(--td-text-color-primary)]">{{ activeNodeDetails.pendingRemoval ? '授权已撤销，等待远端清理' : '已连接' }}</span>
         </div>
         <div class="flex justify-between border-b border-[var(--td-component-border)] pb-2">
           <span class="text-[var(--td-text-color-secondary)]">链接时间</span>

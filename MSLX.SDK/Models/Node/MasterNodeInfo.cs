@@ -8,6 +8,8 @@ namespace MSLX.SDK.Models.Node
 
         public string NodeId { get; set; } = string.Empty;
 
+        public string PairingId { get; set; } = string.Empty;
+
         public string CommsKey { get; set; } = string.Empty;
 
         public string MasterUrl { get; set; } = string.Empty;

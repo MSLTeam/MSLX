@@ -1,4 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+using Newtonsoft.Json.Linq;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
@@ -12,6 +16,32 @@ namespace MSLX.Daemon.Controllers.NodesControllers
     public class MasterNodeController : ControllerBase
     {
         private readonly ILogger<MasterNodeController> _logger;
+        private static readonly SemaphoreSlim LinkLock = new(1, 1);
+
+        private static object PublicNode(SlaveNodeConfig n) => new
+        {
+            n.NodeId, n.NodeName, n.NodeUrl, n.NodeLogo, n.MasterUrl, n.NodeTags, n.LinkedAt, n.PendingRemoval
+        };
+
+        [Authorize]
+        [HttpPost("session")]
+        public IActionResult CreateSession([FromBody] NodeSessionRequest request)
+        {
+            if (User.HasClaim(c => c.Type == "Scope") || User.Identity?.AuthenticationType == "NodeAuth" ||
+                User.FindFirst("exp") == null || User.FindFirst("jti") == null)
+                return Forbid();
+            if (request.Scope is not (null or "" or "media" or "download")) return BadRequest();
+            var node = IConfigBase.NodeList.GetNodeById(request.NodeId);
+            if (node == null || node.PendingRemoval) return NotFound();
+            var user = IConfigBase.UserList.GetUserById(User.FindFirst("UserId")!.Value);
+            if (user == null || (user.Role != "admin" && !user.Resources.Any(r => r.StartsWith(node.NodeId + "_")))) return Forbid();
+            var token = JwtUtils.GenerateNodeToken(user, node, User, request.Scope);
+            var principal = JwtUtils.ValidateNodeToken(token, node)!;
+            return Ok(new ApiResponse<object> { Code = 200, Message = "节点凭据签发成功", Data = new
+            {
+                token, expiresAt = long.Parse(principal.FindFirst("exp")!.Value)
+            }});
+        }
 
         public MasterNodeController(ILogger<MasterNodeController> logger)
         {
@@ -25,14 +55,30 @@ namespace MSLX.Daemon.Controllers.NodesControllers
             bool isSlaveMode = bool.Parse(IConfigBase.Config.ReadConfigKey("IsSlaveMode")?.ToString() ?? "false");
             if (isSlaveMode) return BadRequest(new ApiResponse<object> { Code = 400, Message = "当前为主节点专有接口，子节点模式下不可用" });
 
+            if (!Uri.TryCreate(request.NodeUrl, UriKind.Absolute, out var nodeUri) ||
+                nodeUri.Scheme is not ("http" or "https") || !string.IsNullOrEmpty(nodeUri.UserInfo) ||
+                !string.IsNullOrEmpty(nodeUri.Query) || !string.IsNullOrEmpty(nodeUri.Fragment))
+                return BadRequest(new ApiResponse<object> { Code = 400, Message = "节点地址必须为有效 HTTP/HTTPS 地址" });
+            request.NodeUrl = nodeUri.AbsoluteUri.TrimEnd('/');
+            if (!Guid.TryParseExact(request.PairingId, "N", out _)) return BadRequest(new ApiResponse<object> { Code = 400, Message = "配对标识无效，请重新打开链接窗口" });
+            if (string.IsNullOrWhiteSpace(request.LinkKey)) return BadRequest(new ApiResponse<object> { Code = 400, Message = "配对密钥不能为空" });
+            await LinkLock.WaitAsync(HttpContext.RequestAborted);
             try
             {
+                if (IConfigBase.NodeList.GetAllNodes().Any(n => string.Equals(n.NodeUrl.TrimEnd('/'), request.NodeUrl, StringComparison.OrdinalIgnoreCase)))
+                    return Conflict(new ApiResponse<object> { Code = 409, Message = "此地址已登记，请编辑已有关系或完成解除链接" });
+                var protocol = await GeneralApi.GetAsync($"{request.NodeUrl}/api/node/protocol");
+                if (!protocol.IsSuccessStatusCode || Newtonsoft.Json.Linq.JObject.Parse(protocol.Content ?? "{}") ["data"]?["protocolVersion"]?.Value<int>() != JwtUtils.NodeProtocolVersion)
+                    return BadRequest(new ApiResponse<object> { Code = 400, Message = "子节点协议不兼容，请将主、子节点一起升级" });
+                // 本地保存失败后尝试恢复节点关系
                 // 请求子节点
-                string masterId = Guid.NewGuid().ToString("N");
+                string masterId = Convert.ToHexString(HMACSHA256.HashData(Encoding.UTF8.GetBytes(IConfigBase.JwtSecret), Encoding.UTF8.GetBytes(request.NodeUrl))).ToLowerInvariant()[..32];
                 string masterUrl = !string.IsNullOrEmpty(request.MasterUrl) ? request.MasterUrl : $"{Request.Scheme}://{Request.Host}";
                 var payload = new
                 {
+                    ProtocolVersion = JwtUtils.NodeProtocolVersion,
                     MasterId = masterId,
+                    PairingId = request.PairingId,
                     MasterUrl = masterUrl,
                     LinkKey = request.LinkKey
                 };
@@ -58,14 +104,14 @@ namespace MSLX.Daemon.Controllers.NodesControllers
                             NodeUrl = request.NodeUrl,
                             NodeLogo = request.NodeLogo ?? "https://www.mslmc.cn/logo.png",
                             MasterUrl = masterUrl,
-                            LinkKey = request.LinkKey,
+                            LinkKey = string.Empty,
                             CommsKey = commsKey,
                             NodeTags = request.NodeTags ?? string.Empty,
                             LinkedAt = DateTime.Now
                         };
                         IConfigBase.NodeList.AddOrUpdateNode(slaveNode);
                         _logger.LogInformation("成功链接子节点: {NodeName} ({NodeUrl}), NodeId: {NodeId}", request.NodeName, request.NodeUrl, nodeId);
-                        return Ok(new ApiResponse<object> { Code = 200, Message = "链接成功", Data = slaveNode });
+                        return Ok(new ApiResponse<object> { Code = 200, Message = "链接成功", Data = PublicNode(slaveNode) });
                     }
                     else
                     {
@@ -81,6 +127,7 @@ namespace MSLX.Daemon.Controllers.NodesControllers
                 _logger.LogError(ex, "链接子节点时发生异常");
                 return BadRequest(new ApiResponse<object> { Code = 500, Message = "发生网络异常: " + ex.Message });
             }
+            finally { LinkLock.Release(); }
         }
 
         [Authorize]
@@ -92,7 +139,7 @@ namespace MSLX.Daemon.Controllers.NodesControllers
 
             if (role == "admin")
             {
-                return Ok(new ApiResponse<List<SlaveNodeConfig>> { Code = 200, Message = "获取成功", Data = nodes });
+                return Ok(new ApiResponse<object> { Code = 200, Message = "获取成功", Data = nodes.Select(PublicNode).ToList() });
             }
             else
             {
@@ -106,13 +153,14 @@ namespace MSLX.Daemon.Controllers.NodesControllers
                     .ToList() ?? new List<string>();
 
                 var safeNodes = nodes
-                    .Where(n => userNodeIds.Contains(n.NodeId))
+                    .Where(n => !n.PendingRemoval && userNodeIds.Contains(n.NodeId))
                     .Select(n => new 
                     {
                         NodeId = n.NodeId,
                         NodeName = n.NodeName,
                         NodeUrl = n.NodeUrl,
                         NodeLogo = n.NodeLogo,
+                        NodeTags = n.NodeTags,
                         MasterUrl = n.MasterUrl,
                         LinkedAt = n.LinkedAt
                     }).ToList();
@@ -123,14 +171,21 @@ namespace MSLX.Daemon.Controllers.NodesControllers
 
         [Authorize(Roles = "admin")]
         [HttpPost("delete/{id}")]
-        public IActionResult UnlinkNode(string id)
+        public IActionResult UnlinkNode(string id, [FromQuery] bool force = false)
         {
-            if (IConfigBase.NodeList.RemoveNode(id))
+            var node = IConfigBase.NodeList.GetNodeById(id);
+            if (node == null) return force ? Ok(new ApiResponse<object> { Code = 200, Message = "记录已移除" })
+                : NotFound(new ApiResponse<object> { Code = 404, Message = "节点不存在" });
+            if (force)
             {
+                if (!node.PendingRemoval) return Conflict(new ApiResponse<object> { Code = 409, Message = "请先解除链接，再移除本地记录" });
+                IConfigBase.NodeList.RemovePendingNode(id, node.CommsKey);
                 NodeStatsManager.RemoveNodeStats(id);
-                return Ok(new ApiResponse<object> { Code = 200, Message = "删除成功" });
+                return Ok(new ApiResponse<object> { Code = 200, Message = "已从主节点移除记录" });
             }
-            return BadRequest(new ApiResponse<object> { Code = 400, Message = "节点不存在" });
+            IConfigBase.NodeList.MarkPendingRemoval(id);
+            NodeStatsManager.RemoveNodeStats(id);
+            return Ok(new ApiResponse<object> { Code = 200, Message = "主节点授权已撤销，正在清理子节点链接" });
         }
 
         [Authorize(Roles = "admin")]
@@ -138,7 +193,7 @@ namespace MSLX.Daemon.Controllers.NodesControllers
         public async Task<IActionResult> EditNode(string id, [FromBody] LinkNodeRequest request)
         {
             var existingNode = IConfigBase.NodeList.GetAllNodes().FirstOrDefault(n => n.NodeId == id);
-            if (existingNode == null) return BadRequest(new ApiResponse<object> { Code = 400, Message = "节点不存在" });
+            if (existingNode == null || existingNode.PendingRemoval) return BadRequest(new ApiResponse<object> { Code = 400, Message = "节点不存在" });
 
             string masterUrl = !string.IsNullOrEmpty(request.MasterUrl) ? request.MasterUrl : $"{Request.Scheme}://{Request.Host}";
             
@@ -173,10 +228,11 @@ namespace MSLX.Daemon.Controllers.NodesControllers
             existingNode.NodeUrl = request.NodeUrl;
             existingNode.NodeLogo = request.NodeLogo ?? "https://www.mslmc.cn/logo.png";
             existingNode.MasterUrl = masterUrl;
-            existingNode.LinkKey = request.LinkKey;
+            existingNode.LinkKey = string.Empty;
             existingNode.NodeTags = request.NodeTags ?? string.Empty;
 
-            IConfigBase.NodeList.AddOrUpdateNode(existingNode);
+            if (!IConfigBase.NodeList.UpdateActiveNode(existingNode))
+                return Conflict(new ApiResponse<object> { Code = 409, Message = "节点关系已变化，请刷新后重试" });
             return Ok(new ApiResponse<object> { Code = 200, Message = "修改成功" });
         }
 
@@ -191,7 +247,7 @@ namespace MSLX.Daemon.Controllers.NodesControllers
                 return Unauthorized(new ApiResponse<object> { Code = 401, Message = "无效的通讯密钥" });
             }
 
-            var principal = JwtUtils.ValidateToken(request.Token);
+            var principal = node.PendingRemoval ? null : JwtUtils.ValidateNodeToken(request.Token, node);
             if (principal != null)
             {
                 var userId = principal.FindFirst("UserId")?.Value;
@@ -217,7 +273,7 @@ namespace MSLX.Daemon.Controllers.NodesControllers
                             }
                         }
                         var scope = principal.FindFirst("Scope")?.Value;
-                        return Ok(new ApiResponse<object> { Code = 200, Message = "鉴权成功", Data = new { userId = userId, role = user.Role, resources = nodeResources, scope = scope } });
+                        return Ok(new ApiResponse<object> { Code = 200, Message = "鉴权成功", Data = new { userId = userId, role = user.Role, resources = nodeResources, scope = scope, expiresAt = long.Parse(principal.FindFirst("exp")!.Value) } });
                     }
                 }
             }
@@ -232,6 +288,7 @@ namespace MSLX.Daemon.Controllers.NodesControllers
             var node = IConfigBase.NodeList.GetAllNodes().FirstOrDefault(n => n.CommsKey == commsKey);
             if (node == null) return Unauthorized(new ApiResponse<object> { Code = 401, Message = "无效的通讯密钥" });
 
+            if (node.PendingRemoval) return StatusCode(410, new ApiResponse<object> { Code = 410, Message = "节点关系已撤销" });
             NodeStatsManager.UpdateNodeStats(node.NodeId, stats);
             return Ok(new ApiResponse<object> { Code = 200, Message = "上报成功" });
         }

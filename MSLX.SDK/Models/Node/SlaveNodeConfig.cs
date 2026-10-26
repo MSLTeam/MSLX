@@ -21,5 +21,6 @@ namespace MSLX.SDK.Models.Node
         public string NodeTags { get; set; } = string.Empty;
 
         public DateTime LinkedAt { get; set; } = DateTime.Now;
+        public bool PendingRemoval { get; set; }
     }
 }

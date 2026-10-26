@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import uniq from 'lodash/uniq';
+import { isNodePage } from '@/utils/nodeTarget';
 
 // 自动导入modules文件夹下所有ts文件
 const modules: Record<string, { default: RouteRecordRaw | RouteRecordRaw[] }> =
@@ -81,6 +82,9 @@ export const getActive = (maxLevel = 3): string => {
 };
 
 export function changeUrl(url: string, newTab: boolean = false) {
+  if (!/^https?:/.test(url) && isNodePage(url.split('?')[0]) && router.currentRoute.value.query.node && !url.includes('node=')) {
+    url += `${url.includes('?') ? '&' : '?'}node=${encodeURIComponent(String(router.currentRoute.value.query.node))}`;
+  }
   if(url.includes('http')){
     window.open(url);
   } else if (newTab) {

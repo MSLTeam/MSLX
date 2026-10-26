@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { getHubUrl, getHubOptions } from '@/utils/hub';
 import { computed, ref, onUnmounted, watch } from 'vue';
 import {
   DownloadIcon,
@@ -125,16 +126,10 @@ const stopSignalR = async () => {
 const startSignalR = async () => {
   await stopSignalR();
 
-  const { baseUrl, token } = userStore;
-  const hubBaseUrl = props.targetNodeUrl || baseUrl || window.location.origin;
-  const hubUrl = new URL('/api/hubs/daemonUpdate', hubBaseUrl);
-  if (token) hubUrl.searchParams.append('x-user-token', token);
-  if (props.targetNodeId && props.targetNodeId !== 'local') {
-    hubUrl.searchParams.append('x-node-id', props.targetNodeId);
-  }
+  const hubUrl = getHubUrl('/api/hubs/daemonUpdate', props.targetNodeId || 'local');
 
   hubConnection = new HubConnectionBuilder()
-    .withUrl(hubUrl.toString(), { withCredentials: false })
+    .withUrl(hubUrl, getHubOptions(hubUrl))
     .configureLogging(LogLevel.Warning)
     .withAutomaticReconnect([0, 2000, 5000, 10000])
     .build();

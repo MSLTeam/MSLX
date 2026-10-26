@@ -33,30 +33,20 @@ public class InstanceConsoleService
     /// <summary>
     /// 追加一行日志到实例的日志缓冲，超出 <see cref="MaxLogLines"/> 时丢弃最旧的行
     /// </summary>
-    public void AppendLog(ServerContext context, string line)
-    {
-        context.Logs.Enqueue(line);
-        while (context.Logs.Count > MaxLogLines)
-            context.Logs.TryDequeue(out _);
-    }
+    public ConsoleCursor AppendLog(ServerContext context, string line) => context.Logs.Append(line);
 
     /// <summary>
     /// 追加一块 PTY 原始输出到历史缓冲，超出 <see cref="MaxPtyHistoryChunks"/> 时丢弃最旧的块
     /// </summary>
-    public void AppendPtyHistory(ServerContext context, string chunk)
-    {
-        context.PtyHistory.Enqueue(chunk);
-        while (context.PtyHistory.Count > MaxPtyHistoryChunks)
-            context.PtyHistory.TryDequeue(out _);
-    }
+    public ConsoleCursor AppendPtyHistory(ServerContext context, string chunk) => context.PtyHistory.Append(chunk);
 
     /// <summary>获取实例当前的日志缓冲快照，实例不存在时返回空列表</summary>
     public List<string> GetLogs(ServerContext? context)
-        => context?.Logs.ToList() ?? new List<string>();
+        => context?.Logs.Texts() ?? new List<string>();
 
     /// <summary>获取实例当前的 PTY 历史缓冲快照，实例不存在时返回空列表</summary>
     public List<string> GetPtyHistory(ServerContext? context)
-        => context?.PtyHistory.ToList() ?? new List<string>();
+        => context?.PtyHistory.Texts() ?? new List<string>();
 
     #endregion
 
@@ -70,10 +60,10 @@ public class InstanceConsoleService
     {
         if (string.IsNullOrWhiteSpace(data)) return;
 
-        AppendLog(context, data);
+        var cursor = AppendLog(context, data);
 
         // 通过 SignalR 推送日志
-        _hubContext.Clients.Group(instanceId.ToString()).SendAsync("ReceiveLog", data);
+        _hubContext.Clients.Group(instanceId.ToString()).SendAsync("ReceiveLog", data, cursor);
 
         _events.PublishServerLogReceived(new ServerLogEventArgs
         {

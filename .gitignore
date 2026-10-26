@@ -360,4 +360,10 @@ MigrationBackup/
 .ionide/
 
 # Fody - auto-generated XML schema
-FodyWeavers.xsdLibrary/
+FodyWeavers.xsd
+
+# Local package and developer-tool caches
+/.pnpm-store/
+/Library/
+/.apifox/
+/MSLX.Tests/.local/

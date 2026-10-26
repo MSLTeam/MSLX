@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Services;
+using MSLX.Daemon.Services.InstanceServices;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.IServices;
 
@@ -12,11 +13,13 @@ namespace MSLX.Daemon.Hubs
     {
         private readonly IInstanceConsoleService _consoleService;
         private readonly IInstanceLifecycleService _lifecycleService;
+        private readonly InstanceStateStore _stateStore;
 
-        public InstanceConsoleHub(IInstanceConsoleService consoleService, IInstanceLifecycleService lifecycleService)
+        public InstanceConsoleHub(IInstanceConsoleService consoleService, IInstanceLifecycleService lifecycleService, InstanceStateStore stateStore)
         {
             _consoleService = consoleService;
             _lifecycleService = lifecycleService;
+            _stateStore = stateStore;
         }
 
         /// <summary>
@@ -69,6 +72,28 @@ namespace MSLX.Daemon.Hubs
 
             // 推送当前 PTY 配置与运行状态
             await GetPtyStatus(instanceId);
+        }
+        
+        // 短凭据刷新重连的时候，恢复控制台（无感刷新）
+        public async Task<object> ResumeConsole(uint instanceId, ConsoleCursor? logCursor, ConsoleCursor? ptyCursor,
+            bool pty, int cols, int rows)
+        {
+            if (!HasPermission(instanceId)) throw new HubException("未找到实例资源");
+            await Groups.AddToGroupAsync(Context.ConnectionId, instanceId.ToString());
+            if (pty)
+            {
+                await Groups.AddToGroupAsync(Context.ConnectionId, "pty_" + instanceId);
+                if (cols > 0 && rows > 0) _consoleService.ResizePty(instanceId, cols, rows);
+            }
+            else await Groups.RemoveFromGroupAsync(Context.ConnectionId, "pty_" + instanceId);
+            var context = _stateStore.Get(instanceId);
+            var server = IConfigBase.ServerList.GetServer(instanceId);
+            return new {
+                log = context?.Logs.Replay(logCursor),
+                pty = pty ? context?.PtyHistory.Replay(ptyCursor) : null,
+                status = new { isPty = _consoleService.IsServerPtyMode(instanceId),
+                    isRunning = _lifecycleService.IsServerRunning(instanceId), enablePty = server?.EnablePty ?? false }
+            };
         }
 
         /// <summary>

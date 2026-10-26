@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { confirmNodeAction } from '@/utils/nodeDialog';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 import {
@@ -34,7 +35,7 @@ import {
   ViewListIcon,
   ViewModuleIcon,
 } from 'tdesign-icons-vue-next';
-import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
+import { MessagePlugin } from 'tdesign-vue-next';
 import {
   copyFiles,
   createDirectory,
@@ -49,7 +50,8 @@ import {
 } from '@/api/files';
 import type { FilesListModel } from '@/api/model/files';
 import { defineAsyncComponent } from 'vue';
-import { getDownloadToken } from '@/utils/scopedToken';
+import { getDownloadToken, getMediaToken } from '@/utils/scopedToken';
+import { nodeResourceUrl } from '@/utils/nodeTarget';
 
 const FileEditor = defineAsyncComponent(() => import('./components/FileEditor.vue'));
 const FileUploader = defineAsyncComponent(() => import('./components/FileUploader.vue'));
@@ -62,14 +64,12 @@ const FileOfflineDownloader = defineAsyncComponent(() => import('./components/Fi
 const FileGridView = defineAsyncComponent(() => import('./components/FileGridView.vue'));
 
 import { changeUrl } from '@/router';
-import { useUserStore } from '@/store';
 import { useDynamicBreadcrumbs } from './hooks/useDynamicBreadcrumbs';
 
 const route = useRoute();
 const router = useRouter();
 const instanceId = computed(() => Number(route.params.serverFilesId));
 
-const userStore = useUserStore();
 
 const loading = ref(false);
 const fileList = ref<FilesListModel[]>([]);
@@ -279,11 +279,16 @@ const openPreview = async (fileName: string) => {
 };
 
 const openVideoPreview = async (fileName: string) => {
-  const fullPath = currentPath.value ? `${currentPath.value}/${fileName}` : fileName;
-  const dlToken = await getDownloadToken();
-  videoPreviewUrl.value = getVideoStreamUrl(instanceId.value, fullPath, dlToken);
-  previewFileName.value = fileName;
-  showVideoPreview.value = true;
+  try {
+    const fullPath = currentPath.value ? `${currentPath.value}/${fileName}` : fileName;
+    const dlToken = await getDownloadToken();
+    if (!dlToken) throw new Error('下载凭据获取失败，请重试');
+    videoPreviewUrl.value = getVideoStreamUrl(instanceId.value, fullPath, dlToken);
+    previewFileName.value = fileName;
+    showVideoPreview.value = true;
+  } catch (error) {
+    MessagePlugin.error(error instanceof Error ? error.message : '视频预览加载失败，请重试');
+  }
 };
 
 const openEditor = async (fileName: string, isNewFile = false) => {
@@ -393,7 +398,7 @@ const handleDelete = (row?: any) => {
   }
   if (targets.length === 0) return;
 
-  const confirmDialog = DialogPlugin.confirm({
+  const confirmDialog = confirmNodeAction({
     header: '确认删除',
     body: `确定要永久删除这 ${targets.length} 项吗？`,
     theme: 'danger',
@@ -442,7 +447,14 @@ const handleRowClick = (row: any, newTab = false) => {
 const navigateTo = (path: string) => {
   router.push({ query: { ...route.query, path: path || undefined } });
 };
-const handleRefresh = () => fetchData();
+const prepareMediaToken = async () => {
+  try {
+    if (!await getMediaToken()) throw new Error('媒体凭据获取失败');
+  } catch {
+    MessagePlugin.warning('媒体凭据获取失败，缩略图暂不可用，请点击刷新重试');
+  }
+};
+const handleRefresh = () => Promise.all([fetchData(), prepareMediaToken()]);
 
 const handleDownload = async (row?: any) => {
   let targets: string[] = [];
@@ -454,8 +466,7 @@ const handleDownload = async (row?: any) => {
 
   if (targets.length === 0) return;
 
-  const { baseUrl, token } = userStore;
-  const apiBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+
 
   for (const name of targets) {
     if (fileList.value.find((f) => f.name === name)?.type === 'folder') {
@@ -467,12 +478,8 @@ const handleDownload = async (row?: any) => {
 
     try {
       const dlToken = await getDownloadToken();
-      const downloadUrl = new URL(
-        `${apiBase || window.location.origin}/api/files/instance/${instanceId.value}/download`,
-      );
-
-      downloadUrl.searchParams.append('path', fullPath);
-      downloadUrl.searchParams.append(dlToken ? 'download_token' : 'x-user-token', dlToken || token);
+      const downloadUrl = nodeResourceUrl(`/api/files/instance/${instanceId.value}/download`, dlToken, 'download_token');
+      downloadUrl.searchParams.set('path', fullPath);
 
       const link = document.createElement('a');
       link.href = downloadUrl.toString();
@@ -788,7 +795,7 @@ onBeforeRouteLeave((to, _from, next) => {
     return;
   }
 
-  const confirmDialog = DialogPlugin.confirm({
+  const confirmDialog = confirmNodeAction({
     header: '存在未保存的修改',
     body: '离开文件管理将放弃编辑器中的未保存修改，是否继续？',
     theme: 'default',
@@ -817,6 +824,7 @@ watch(instanceId, async () => {
   }
 });
 onMounted(() => {
+  void prepareMediaToken();
   window.addEventListener('resize', handleResize);
 });
 

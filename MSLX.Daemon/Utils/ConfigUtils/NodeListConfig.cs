@@ -65,16 +65,18 @@ namespace MSLX.Daemon.Utils.ConfigUtils
             _lock.EnterWriteLock();
             try
             {
-                var target = _nodesCache.FirstOrDefault(n => n["NodeId"]?.ToString() == node.NodeId);
+                var updated = (JArray)_nodesCache.DeepClone();
+                var target = updated.FirstOrDefault(n => n["NodeId"]?.ToString() == node.NodeId);
                 if (target != null)
                 {
                     target.Replace(JObject.FromObject(node, _pascalSerializer));
                 }
                 else
                 {
-                    _nodesCache.Add(JObject.FromObject(node, _pascalSerializer));
+                    updated.Add(JObject.FromObject(node, _pascalSerializer));
                 }
-                IConfigBase.SaveJson(_path, _nodesCache);
+                IConfigBase.SaveNodeJson(_path, updated);
+                _nodesCache = updated;
             }
             finally
             {
@@ -82,16 +84,44 @@ namespace MSLX.Daemon.Utils.ConfigUtils
             }
         }
 
+        public bool MarkPendingRemoval(string nodeId) => MutateNode(nodeId, _ => true, node => node["PendingRemoval"] = true);
+
+        public bool RemovePendingNode(string nodeId, string commsKey) => MutateNode(nodeId,
+            node => node["PendingRemoval"]?.Value<bool>() == true && node["CommsKey"]?.ToString() == commsKey,
+            node => node.Remove());
+
+        public bool UpdateActiveNode(SlaveNodeConfig node) => MutateNode(node.NodeId,
+            current => current["PendingRemoval"]?.Value<bool>() != true && current["CommsKey"]?.ToString() == node.CommsKey,
+            current => current.Replace(JObject.FromObject(node, _pascalSerializer)));
+
+        private bool MutateNode(string nodeId, Func<JToken, bool> matches, Action<JToken> change)
+        {
+            _lock.EnterWriteLock();
+            try
+            {
+                var updated = (JArray)_nodesCache.DeepClone();
+                var target = updated.FirstOrDefault(n => n["NodeId"]?.ToString() == nodeId);
+                if (target == null || !matches(target)) return false;
+                change(target);
+                IConfigBase.SaveNodeJson(_path, updated);
+                _nodesCache = updated;
+                return true;
+            }
+            finally { _lock.ExitWriteLock(); }
+        }
+
         public bool RemoveNode(string nodeId)
         {
             _lock.EnterWriteLock();
             try
             {
-                var target = _nodesCache.FirstOrDefault(n => n["NodeId"]?.ToString() == nodeId);
+                var updated = (JArray)_nodesCache.DeepClone();
+                var target = updated.FirstOrDefault(n => n["NodeId"]?.ToString() == nodeId);
                 if (target == null) return false;
 
-                _nodesCache.Remove(target);
-                IConfigBase.SaveJson(_path, _nodesCache);
+                updated.Remove(target);
+                IConfigBase.SaveNodeJson(_path, updated);
+                _nodesCache = updated;
                 return true;
             }
             finally

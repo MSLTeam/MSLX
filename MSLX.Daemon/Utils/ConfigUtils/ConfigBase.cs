@@ -91,4 +91,16 @@ public static class IConfigBase
     {
         File.WriteAllText(path, data.ToString(Formatting.Indented));
     }
+
+    // 节点关系变更必须先写盘才能识别到
+    public static void SaveNodeJson(string path, JArray data)
+    {
+        var temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        try
+        {
+            SaveJson(temporary, data);
+            File.Move(temporary, path, true);
+        }
+        finally { if (File.Exists(temporary)) File.Delete(temporary); }
+    }
 }

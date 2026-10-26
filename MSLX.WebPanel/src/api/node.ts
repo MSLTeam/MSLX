@@ -1,6 +1,6 @@
 import { request } from '@/utils/request';
 
-export function linkSlaveNode(data: { nodeUrl: string, nodeName: string, linkKey: string }) {
+export function linkSlaveNode(data: { nodeUrl: string, nodeName: string, linkKey: string, pairingId: string }) {
   return request.post({
     url: '/api/node/link',
     data
@@ -13,9 +13,9 @@ export function getSlaveNodes() {
   });
 }
 
-export function unlinkSlaveNode(id: string) {
+export function unlinkSlaveNode(id: string, force = false) {
   return request.post({
-    url: `/api/node/delete/${id}`
+    url: `/api/node/delete/${id}${force ? '?force=true' : ''}`
   });
 }
 

@@ -3,7 +3,7 @@ import { onUnmounted, ref, watch, onMounted, computed, nextTick } from 'vue';
 import { type FormRules, MessagePlugin } from 'tdesign-vue-next';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { useUserStore } from '@/store';
-import { getHubUrl } from '@/utils/hub';
+import { getHubUrl, getHubOptions } from '@/utils/hub';
 import { FolderOpenIcon } from 'tdesign-icons-vue-next';
 
 import ServerCoreSelector from './ServerCoreSelector.vue';
@@ -798,7 +798,7 @@ const startSignalRConnection = async (serverId: string) => {
   const hubUrlStr = getHubUrl('/api/hubs/creationProgressHub');
 
   hubConnection.value = new HubConnectionBuilder()
-    .withUrl(hubUrlStr, { withCredentials: false })
+    .withUrl(hubUrlStr, getHubOptions(hubUrlStr))
     .configureLogging(LogLevel.Information)
     .build();
 

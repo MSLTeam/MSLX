@@ -3,6 +3,7 @@ using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.Attributes;
 using System.Net;
+using MSLX.Daemon.Services;
 using System.Security.Claims;
 
 namespace MSLX.Daemon.Middleware
@@ -25,7 +26,7 @@ namespace MSLX.Daemon.Middleware
             _cache = cache;
         }
 
-        public async Task InvokeAsync(HttpContext context)
+        public async Task InvokeAsync(HttpContext context, NodeAuthorization nodeAuthorization)
         {
             // 忽略非 API 请求
             var path = context.Request.Path;
@@ -70,6 +71,12 @@ namespace MSLX.Daemon.Middleware
                 }
             }
             string token = extractedToken.ToString();
+            if (path.StartsWithSegments("/api/hubs"))
+            {
+                var bearer = context.Request.Headers.Authorization.ToString();
+                if (bearer.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase)) token = bearer[7..];
+                else if (context.Request.Query.TryGetValue("access_token", out var accessToken)) token = accessToken.ToString();
+            }
 
             if (!string.IsNullOrEmpty(token))
             {
@@ -159,85 +166,24 @@ namespace MSLX.Daemon.Middleware
                 }
             }
 
-            // 子节点模式下鉴权
+            // 处理子节点鉴权
             bool isSlaveMode = bool.Parse(IConfigBase.Config.ReadConfigKey("IsSlaveMode")?.ToString() ?? "false");
-            if (!isAuthenticated && isSlaveMode && !string.IsNullOrEmpty(token))
+            var nodeId = context.Request.Headers["x-node-id"].FirstOrDefault()
+                ?? context.Request.Query["x-node-id"].ToString();
+            if (isSlaveMode && !string.IsNullOrEmpty(nodeId))
             {
-                if (!context.Request.Headers.TryGetValue("x-node-id", out var extractedNodeId))
+                try
                 {
-                    context.Request.Query.TryGetValue("x-node-id", out extractedNodeId);
+                    var lease = await nodeAuthorization.VerifyAsync(nodeId, token, context.RequestAborted);
+                    NodeAuthorization.Apply(context, lease);
+                    isAuthenticated = true;
                 }
-                string nodeId = extractedNodeId.ToString();
-
-                if (!string.IsNullOrEmpty(nodeId))
+                catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
                 {
-                    var masterNode = IConfigBase.MasterNodes.GetMasterById(nodeId);
-                    if (masterNode != null)
-                    {
-                        string cacheKey = $"NODE_AUTH_{nodeId}_{token}";
-                        if (_cache.TryGetValue(cacheKey, out ClaimsPrincipal? cachedPrincipal) && cachedPrincipal != null)
-                        {
-                            context.User = cachedPrincipal;
-                            isAuthenticated = true;
-                        }
-                        else
-                        {
-                            // 找主人进行鉴权喵~
-                            try
-                            {
-                                using var client = new HttpClient();
-                                client.DefaultRequestHeaders.Add("x-api-key", masterNode.CommsKey);
-                                var reqContent = new StringContent(System.Text.Json.JsonSerializer.Serialize(new { Token = token }), System.Text.Encoding.UTF8, "application/json");
-                                var res = await client.PostAsync($"{masterNode.MasterUrl.TrimEnd('/')}/api/node/verify-token", reqContent);
-                                
-                                if (res.IsSuccessStatusCode)
-                                {
-                                    var resStr = await res.Content.ReadAsStringAsync();
-                                    var resObj = Newtonsoft.Json.Linq.JObject.Parse(resStr);
-                                    if ((int?)resObj["code"] == 200)
-                                    {
-                                        var role = resObj["data"]?["role"]?.ToString() ?? "user";
-                                        var uid = resObj["data"]?["userId"]?.ToString() ?? "";
-                                        var nodeScope = resObj["data"]?["scope"]?.ToString();
-                                        var resources = resObj["data"]?["resources"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray();
-                                        
-                                        var claims = new List<Claim> { 
-                                            new Claim(ClaimTypes.Role, role),
-                                            new Claim("UserId", uid) 
-                                        };
-                                        if (!string.IsNullOrEmpty(nodeScope))
-                                        {
-                                            claims.Add(new Claim("Scope", nodeScope));
-                                        }
-                                        var proxyPrincipal = new ClaimsPrincipal(new ClaimsIdentity(claims, "NodeAuth"));
-                                        context.User = proxyPrincipal;
-                                        isAuthenticated = true;
-
-                                        // 同步数据到子节点用户信息（影子用户）
-                                        IConfigBase.UserList.UpdateShadowUser(uid, role, resources);
-
-                                        _cache.Set(cacheKey, proxyPrincipal, TimeSpan.FromMinutes(5));
-                                    }
-                                    else
-                                    {
-                                        authErrorMessage = "主节点拒绝了该令牌";
-                                    }
-                                }
-                                else
-                                {
-                                    authErrorMessage = "无法连接到主节点进行鉴权";
-                                }
-                            }
-                            catch (Exception)
-                            {
-                                authErrorMessage = "向主节点鉴权时发生网络错误";
-                            }
-                        }
-                    }
-                    else
-                    {
-                        authErrorMessage = "未找到对应的主节点配置";
-                    }
+                    var status = ex is HttpRequestException { StatusCode: HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden }
+                        ? 401 : 503;
+                    await HandleErrorAsync(context, status, status == 503 ? "主节点暂时不可用，请稍后重试" : "节点授权已失效，请重新登录或检查节点权限");
+                    return;
                 }
             }
 

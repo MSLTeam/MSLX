@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import { confirmNodeAction } from '@/utils/nodeDialog';
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import {
   MessagePlugin,
-  DialogPlugin,
   type TableRowData,
   type PrimaryTableCol,
 } from 'tdesign-vue-next';
@@ -146,7 +146,7 @@ const handleAction = async (action: 'enable' | 'disable' | 'delete', targets: st
 
   // 二次确认
   if (action === 'delete') {
-    const confirmDialog = DialogPlugin.confirm({
+    const confirmDialog = confirmNodeAction({
       header: `确认删除 ${targets.length} 个文件?`,
       body: '此操作不可逆，文件将被永久删除。',
       theme: 'danger',

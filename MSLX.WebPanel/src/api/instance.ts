@@ -1,3 +1,4 @@
+import { nodeResourceUrl, getPageNodeId } from '@/utils/nodeTarget';
 import { request } from '@/utils/request';
 import {
   AllInstanceBackupFilesModel,
@@ -14,7 +15,7 @@ import {
   UserCacheItem,
   WhitelistItem,
 } from '@/api/model/instance';
-import { useUserStore, useTaskStore } from '@/store';
+import { useTaskStore } from '@/store';
 
 export async function postCreateInstanceQuickMode(data:CreateInstanceQucikModeModel){
   const res = await request.post<{ serverId: number }>({
@@ -41,6 +42,7 @@ export async function postCancelCreateInstance(serverId:string, cleanupFiles:boo
 
 // 带确认对话框的取消创建
 export async function cancelCreationWithConfirm(serverId: string): Promise<boolean> {
+  const nodeId = getPageNodeId();
   const { DialogPlugin, MessagePlugin, Checkbox } = await import('tdesign-vue-next');
   const { h, ref } = await import('vue');
 
@@ -97,7 +99,7 @@ export async function cancelCreationWithConfirm(serverId: string): Promise<boole
     });
   });
 
-  if (!confirmed) {
+  if (!confirmed || getPageNodeId() !== nodeId) {
     return false; // 用户放弃取消或关闭了弹窗
   }
 
@@ -174,11 +176,10 @@ export async function postDeleteBackupFiles(id:number,fileName:string){
   })
 }
 export function getBackupDownloadUrl(id: number, fileName: string, downloadToken?: string) {
-  const userStore = useUserStore();
-  const { baseUrl, token } = userStore;
-  const authToken = downloadToken || token;
-  const tokenParam = downloadToken ? `download_token=${encodeURIComponent(authToken)}` : `x-user-token=${encodeURIComponent(authToken)}`;
-  return `${baseUrl || window.location.origin}/api/instance/backups/download?id=${id}&fileName=${encodeURIComponent(fileName)}&${tokenParam}`;
+  const url = nodeResourceUrl('/api/instance/backups/download', downloadToken || '', 'download_token');
+  url.searchParams.set('id', String(id));
+  url.searchParams.set('fileName', fileName);
+  return url.toString();
 }
 
 // 玩家管理相关

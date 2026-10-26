@@ -19,9 +19,24 @@ namespace MSLX.Daemon.Controllers.NodesControllers
         }
 
         [AllowAnonymous]
+        [HttpGet("protocol")]
+        public IActionResult Protocol() => Ok(new ApiResponse<object> { Code = 200, Message = "成功",
+            Data = new { protocolVersion = JwtUtils.NodeProtocolVersion } });
+
+        [AllowAnonymous]
+        [HttpPost("remove-link")]
+        public IActionResult RemoveLink([FromBody] UpdateLinkRequest request)
+        {
+            IConfigBase.MasterNodes.RemoveRelationship(request.NodeId, request.CommsKey);
+            return Ok(new ApiResponse<object> { Code = 200, Message = "已清理链接" });
+        }
+
+        [AllowAnonymous]
         [HttpPost("accept-link")]
         public IActionResult AcceptLink([FromBody] AcceptLinkRequest request)
         {
+            if (request.ProtocolVersion != JwtUtils.NodeProtocolVersion)
+                return BadRequest(new ApiResponse<object> { Code = 400, Message = "节点协议不兼容，请一起升级" });
             bool isSlaveMode = bool.Parse(IConfigBase.Config.ReadConfigKey("IsSlaveMode")?.ToString() ?? "false");
             if (!isSlaveMode) return BadRequest(new ApiResponse<object> { Code = 400, Message = "当前并非子节点模式，拒绝链接请求" });
 
@@ -32,46 +47,20 @@ namespace MSLX.Daemon.Controllers.NodesControllers
                 return Unauthorized(new ApiResponse<object> { Code = 401, Message = "子节点 LinkKey 错误" });
             }
 
-            // 生成唯一的 nodeId 和 commsKey
-            string nodeId = Guid.NewGuid().ToString("N");
-            string commsKey = StringServices.GenerateRandomString(32);
-
-            var masterNode = new MasterNodeInfo
-            {
-                MasterId = request.MasterId,
-                NodeId = nodeId,
-                MasterUrl = request.MasterUrl,
-                CommsKey = commsKey,
-                LinkedAt = DateTime.Now
-            };
-
-            IConfigBase.MasterNodes.AddOrUpdateMaster(masterNode);
-
-            _logger.LogInformation("已接受来自主节点的链接。分配 NodeId: {NodeId}, MasterUrl: {MasterUrl}", nodeId, request.MasterUrl);
-
-            return Ok(new ApiResponse<object> { Code = 200, Message = "链接成功", Data = new { nodeId, commsKey } });
+            if (!Guid.TryParseExact(request.PairingId, "N", out _))
+                return BadRequest(new ApiResponse<object> { Code = 400, Message = "配对标识无效" });
+            var master = IConfigBase.MasterNodes.AcceptPairing(request);
+            return Ok(new ApiResponse<object> { Code = 200, Message = "链接成功", Data = new { nodeId = master.NodeId, commsKey = master.CommsKey } });
         }
 
         [AllowAnonymous]
         [HttpPost("update-link")]
         public IActionResult UpdateLink([FromBody] UpdateLinkRequest request)
         {
-            var masterNode = IConfigBase.MasterNodes.GetAllMasters().FirstOrDefault(m => m.CommsKey == request.CommsKey);
-            if (masterNode == null)
-            {
-                _logger.LogWarning("拒绝更新链接请求: 无效的通讯密钥(CommsKey)");
-                return Unauthorized(new ApiResponse<object> { Code = 401, Message = "无效的通讯密钥" });
-            }
+            if (!IConfigBase.MasterNodes.UpdateRelationship(request))
+                return Unauthorized(new ApiResponse<object> { Code = 401, Message = "节点关系已变化或通讯密钥无效" });
 
-            masterNode.MasterUrl = request.MasterUrl;
-            // 修复老版本缺失 NodeId 的问题
-            if (!string.IsNullOrEmpty(request.NodeId))
-            {
-                masterNode.NodeId = request.NodeId;
-            }
-            IConfigBase.MasterNodes.AddOrUpdateMaster(masterNode);
-
-            _logger.LogInformation("更新链接成功。同步的 MasterUrl: {MasterUrl}, NodeId: {NodeId}", request.MasterUrl, masterNode.NodeId);
+            _logger.LogInformation("更新链接成功。同步的 MasterUrl: {MasterUrl}, NodeId: {NodeId}", request.MasterUrl, request.NodeId);
 
             return Ok(new ApiResponse<object> { Code = 200, Message = "同步成功" });
         }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
-import { getHubUrl } from '@/utils/hub';
+import { getHubUrl, getHubOptions } from '@/utils/hub';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import c from 'ansi-colors';
@@ -179,7 +179,7 @@ const startSignalR = async () => {
   hubUrl.searchParams.append('tunnelId', String(props.frpId));
 
   hubConnection = new HubConnectionBuilder()
-    .withUrl(hubUrl.toString(), { withCredentials: false })
+    .withUrl(hubUrl.toString(), getHubOptions(hubUrl.toString()))
     .configureLogging(LogLevel.Warning)
     .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
     .build();

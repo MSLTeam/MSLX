@@ -4,6 +4,8 @@ import { useNodeStore } from '@/store';
 import { request } from '@/utils/request';
 
 const props = defineProps({
+  independent: { type: Boolean, default: false },
+  modelValue: { type: String, default: 'local' },
   width: {
     type: String,
     default: '150px'
@@ -14,8 +16,8 @@ const emit = defineEmits(['change']);
 
 const nodeStore = useNodeStore();
 const activeNodeId = computed({
-  get: () => nodeStore.activeNodeId,
-  set: (val) => nodeStore.setActiveNode(val)
+  get: () => props.independent ? props.modelValue : nodeStore.activeNodeId,
+  set: (val) => { void handleNodeChange(val); }
 });
 const nodeOptions = ref<any[]>([{ label: '主节点', value: 'local', status: 'online' }]);
 
@@ -58,15 +60,13 @@ const initNodes = async (nodes: any[]) => {
         }))
       ];
 
-      let isCurrentNodeOffline = false;
+
 
       // 异步检测每个节点的状态
       const promises = nodes.map(async (n: any) => {
         const isOnline = await checkNodeStatus(n.nodeUrl, n.nodeId);
 
-        if (!isOnline && activeNodeId.value === n.nodeId) {
-          isCurrentNodeOffline = true;
-        }
+
 
         return {
           label: n.nodeName,
@@ -81,16 +81,14 @@ const initNodes = async (nodes: any[]) => {
       const checkedNodes = await Promise.all(promises);
       nodeOptions.value = [...options, ...checkedNodes];
 
-      if (isCurrentNodeOffline) {
-        handleNodeChange('local');
-      }
+
   } catch (e) {
     console.warn('获取节点列表失败', e);
   }
 };
 
-const handleNodeChange = (val: string) => {
-  nodeStore.setActiveNode(val);
+const handleNodeChange = async (val: string) => {
+  if (!props.independent) await nodeStore.setActiveNode(val);
   emit('change', val);
 };
 
@@ -103,7 +101,7 @@ watch(
   () => nodeStore.slaveNodes,
   (newVal, oldVal) => {
     if (JSON.stringify(newVal) !== JSON.stringify(oldVal)) {
-      initNodes(newVal);
+      initNodes(newVal.filter(n => !n.pendingRemoval));
     }
   },
   { deep: true, immediate: true }
@@ -117,7 +115,7 @@ watch(
     class="cursor-pointer"
     placeholder="选择节点"
     :style="{ width: props.width }"
-    @change="handleNodeChange"
+
   >
     <t-option
       v-for="option in nodeOptions"

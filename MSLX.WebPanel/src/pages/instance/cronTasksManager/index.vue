@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { confirmNodeAction } from '@/utils/nodeDialog';
 import { ref, computed, onMounted, watch } from 'vue';
-import { MessagePlugin, DialogPlugin, type FormRules, type FormInstanceFunctions } from 'tdesign-vue-next';
+import { MessagePlugin, type FormRules, type FormInstanceFunctions } from 'tdesign-vue-next';
 import {
   CloudIcon,
   ServerIcon,
@@ -231,7 +232,7 @@ const handleToggleEnable = async (item: CronTaskItemModel, val: boolean) => {
 
 // 删除逻辑
 const processDelete = async (instanceId: number, taskIds: string[]) => {
-  const confirmDialog = DialogPlugin.confirm({
+  const confirmDialog = confirmNodeAction({
     header: '确认删除',
     body: `确定要删除选中的 ${taskIds.length} 个定时任务吗？此操作不可恢复。`,
     theme: 'danger',

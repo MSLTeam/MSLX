@@ -63,7 +63,7 @@ export class VAxios {
     const axiosCanceler = new AxiosCanceler();
 
     // 请求配置处理
-    this.instance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+    this.instance.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
       const {
         headers: { ignoreRepeatRequest },
       } = config;
@@ -71,7 +71,7 @@ export class VAxios {
       if (!ignoreRepeat) axiosCanceler.addPending(config);
 
       if (requestInterceptors && isFunction(requestInterceptors)) {
-        config = requestInterceptors(config, this.options);
+        config = await requestInterceptors(config, this.options);
       }
       return config;
     }, undefined);

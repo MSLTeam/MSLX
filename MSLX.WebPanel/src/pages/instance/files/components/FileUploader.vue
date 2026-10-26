@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { confirmNodeAction } from '@/utils/nodeDialog';
 import { computed, onUnmounted, ref, watch } from 'vue';
 import {
   CheckCircleFilledIcon,
@@ -14,7 +15,7 @@ import {
   PlayCircleIcon,
   ServiceIcon,
 } from 'tdesign-icons-vue-next';
-import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
+import { MessagePlugin } from 'tdesign-vue-next';
 import { finishUpload, initUpload, saveUploadedFile, uploadChunk } from '@/api/files';
 
 const props = withDefaults(
@@ -229,7 +230,7 @@ const handleStartUpload = () => {
   const conflicts = conflictTopLevelNames.value;
   const displayNames = conflicts.slice(0, 10).join('、');
   const moreText = conflicts.length > 10 ? ` 等 ${conflicts.length} 项` : '';
-  const confirmDialog = DialogPlugin.confirm({
+  const confirmDialog = confirmNodeAction({
       header: '确认覆盖上传',
       body: `检测到 ${conflicts.length} 个同名顶层目标：${displayNames}${moreText}。继续上传将覆盖原文件，是否继续？`,
       theme: 'warning',
