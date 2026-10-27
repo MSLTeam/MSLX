@@ -1,10 +1,11 @@
 <script lang="ts" setup>
 import { onMounted, ref, watch, computed } from 'vue';
-import { useNodeStore } from '@/store';
+import { useNodeStore, useSettingStore } from '@/store';
 import { request } from '@/utils/request';
 
 const props = defineProps({
   independent: { type: Boolean, default: false },
+  inHeader: { type: Boolean, default: false },
   modelValue: { type: String, default: 'local' },
   width: {
     type: String,
@@ -15,6 +16,9 @@ const props = defineProps({
 const emit = defineEmits(['change']);
 
 const nodeStore = useNodeStore();
+const settingStore = useSettingStore();
+const visible = computed(() => nodeStore.slaveNodes.some(n => !n.pendingRemoval) &&
+  (props.independent || props.inHeader || !settingStore.showHeader));
 const activeNodeId = computed({
   get: () => props.independent ? props.modelValue : nodeStore.activeNodeId,
   set: (val) => { void handleNodeChange(val); }
@@ -94,15 +98,13 @@ const handleNodeChange = async (val: string) => {
 
 onMounted(() => {
   // 初次加载
-  nodeStore.fetchNodes();
+  if (props.independent || props.inHeader || !settingStore.showHeader) nodeStore.fetchNodes();
 });
 
 watch(
-  () => nodeStore.slaveNodes,
-  (newVal, oldVal) => {
-    if (JSON.stringify(newVal) !== JSON.stringify(oldVal)) {
-      initNodes(newVal.filter(n => !n.pendingRemoval));
-    }
+  [() => nodeStore.slaveNodes, visible],
+  ([nodes, shown]) => {
+    if (shown) initNodes(nodes.filter(n => !n.pendingRemoval));
   },
   { deep: true, immediate: true }
 );
@@ -110,9 +112,9 @@ watch(
 
 <template>
   <t-select
-    v-if="nodeStore.slaveNodes && nodeStore.slaveNodes.length > 0"
+    v-if="visible"
     v-model="activeNodeId"
-    class="cursor-pointer"
+    class="node-switcher cursor-pointer shrink-0"
     placeholder="选择节点"
     :style="{ width: props.width }"
 
@@ -147,13 +149,30 @@ watch(
     </t-option>
 
     <template #valueDisplay>
-      <div class="flex items-center gap-1.5 cursor-pointer w-full overflow-hidden">
+      <div class="flex min-w-0 items-center gap-1.5 cursor-pointer overflow-hidden">
         <span
           class="w-2 h-2 rounded-full flex-shrink-0"
           :class="(nodeOptions.find(n => n.value === activeNodeId)?.status || 'online') === 'online' ? 'bg-emerald-500' : 'bg-amber-400'"
         ></span>
-        <span class="truncate">{{ nodeOptions.find(n => n.value === activeNodeId)?.label || '选择节点' }}</span>
+        <span class="min-w-0 truncate">{{ nodeOptions.find(n => n.value === activeNodeId)?.label || '选择节点' }}</span>
       </div>
     </template>
   </t-select>
 </template>
+
+<style scoped>
+.node-switcher :deep(.t-input__prefix:not(:empty)) {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  margin-right: 0;
+}
+.node-switcher :deep(.t-input__inner) {
+  flex: 0 1 0;
+  width: 0;
+}
+.node-switcher :deep(.t-input__suffix:not(:empty)) {
+  flex-shrink: 0;
+  margin-left: 6px;
+}
+</style>

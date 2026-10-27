@@ -6,6 +6,15 @@ import { reactive } from 'vue';
 export const getPageNodeId = () => new URL(window.location.href).searchParams.get('node') || 'local';
 export const isNodePage = (path: string) => /^\/(?:instance|frp)(?:\/|$)/.test(path) || path === '/settings/docker';
 
+// 面板生成的节点url才集成
+export function nodeNavigationUrl(path: string, nodeId = getPageNodeId()) {
+  if (!path.startsWith('/') || path.startsWith('//') || nodeId === 'local') return path;
+  const url = new URL(path, window.location.origin);
+  if (!isNodePage(url.pathname) || url.searchParams.has('node')) return path;
+  url.searchParams.set('node', nodeId);
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
 export function getNodeTarget(nodeId = getPageNodeId()) {
   if (nodeId === 'local') return { nodeId, baseUrl: localStorage.getItem(BASE_URL_NAME) || window.location.origin };
   const nodeStore = useNodeStore();

@@ -32,7 +32,10 @@ export const useNodeStore = defineStore('node', {
     async setActiveNode(nodeId: string) {
       if (nodeId !== 'local' && !this.slaveNodes.some(n => n.nodeId === nodeId && !n.pendingRemoval))
         throw new Error('节点不存在或已解除链接');
-      await router.replace({ query: { ...router.currentRoute.value.query, node: nodeId === 'local' ? undefined : nodeId } });
+      const route = router.currentRoute.value;
+      const path = nodeId !== this.activeNodeId && /^\/instance\/(?:console|files)\//.test(route.path) ? '/instance/list'
+        : nodeId !== this.activeNodeId && /^\/frp\/console\//.test(route.path) ? '/frp/list' : route.path;
+      await router.replace({ path, query: { ...(path === route.path ? route.query : {}), node: nodeId === 'local' ? undefined : nodeId } });
       sessionStorage.setItem('MSLX_DEFAULT_NODE', nodeId);
     }
   }

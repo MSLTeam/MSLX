@@ -431,3 +431,45 @@ test('node management uses authenticated status checks and restores monitoring s
   await page.handleLink();
   assert.deepEqual(linkCalls, ['add', 'edit', 'add']);
 });
+
+test('generated node navigation keeps child context without changing plain URLs or master pages', () => {
+  const helper = setup();
+  window.location.href += '?node=slave-a';
+  assert.equal(helper.nodeNavigationUrl('/instance/list'), '/instance/list?node=slave-a');
+  assert.equal(helper.nodeNavigationUrl('/frp/list?search=test#rows'), '/frp/list?search=test&node=slave-a#rows');
+  assert.equal(helper.nodeNavigationUrl('/settings/docker'), '/settings/docker?node=slave-a');
+  assert.equal(helper.nodeNavigationUrl('/settings/node'), '/settings/node');
+  assert.equal(helper.nodeNavigationUrl('/users/list'), '/users/list');
+  assert.equal(helper.nodeNavigationUrl('/instance/list?node=other'), '/instance/list?node=other');
+  assert.equal(helper.nodeNavigationUrl('https://external.test/instance/list'), 'https://external.test/instance/list');
+  assert.equal(helper.nodeNavigationUrl('//external.test/instance/list'), '//external.test/instance/list');
+  assert.equal(helper.nodeNavigationUrl('/instance/list', 'local'), '/instance/list');
+  window.location.href = 'http://panel.test/instance/list';
+  assert.equal(helper.getPageNodeId(), 'local');
+});
+
+test('switching nodes from a specific resource opens its list instead of reusing the resource ID', async () => {
+  setup();
+  const { createPinia, setActivePinia } = require('pinia');
+  setActivePinia(createPinia());
+  const replacements = [];
+  const route = { path: '/instance/console/1', query: { node: 'slave-a', tab: 'terminal' } };
+  const router = { currentRoute: { value: route }, replace: async target => replacements.push(target) };
+  const { useNodeStore } = loadTs('store/modules/node', {
+    '@/api/node': {}, '@/router': { __esModule: true, default: router },
+  });
+  const store = useNodeStore();
+  store.activeNodeId = 'slave-a';
+  store.slaveNodes = [{ nodeId: 'slave-a' }, { nodeId: 'slave-b' }];
+  await store.setActiveNode('slave-b');
+  assert.deepEqual(replacements.at(-1), { path: '/instance/list', query: { node: 'slave-b' } });
+  route.path = '/frp/console/1';
+  await store.setActiveNode('slave-b');
+  assert.deepEqual(replacements.at(-1), { path: '/frp/list', query: { node: 'slave-b' } });
+  route.path = '/instance/list';
+  await store.setActiveNode('local');
+  assert.deepEqual(replacements.at(-1), { path: '/instance/list', query: { node: undefined, tab: 'terminal' } });
+  const count = replacements.length;
+  await assert.rejects(store.setActiveNode('missing'), /节点不存在/);
+  assert.equal(replacements.length, count);
+});

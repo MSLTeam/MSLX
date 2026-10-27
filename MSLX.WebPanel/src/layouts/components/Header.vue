@@ -2,13 +2,15 @@
 import { computed, ref } from 'vue';
 import type { PropType } from 'vue';
 import { useRouter } from 'vue-router';
-import { useSettingStore, useUserStore } from '@/store';
+import { useSettingStore, useUserStore, useNodeStore } from '@/store';
 import { getActive } from '@/router';
 import { prefix } from '@/config/global';
 import type { MenuRoute } from '@/types/interface';
 
 import MenuContent from './MenuContent.vue';
 import TaskDrawer from './TaskDrawer.vue';
+import NodeSwitcher from '@/components/node-switcher/index.vue';
+import { isNodePage, nodeNavigationUrl } from '@/utils/nodeTarget';
 import { useTaskStore } from '@/store';
 import CustomLogo from '@/assets/logo.png';
 
@@ -47,6 +49,8 @@ const props = defineProps({
 
 const router = useRouter();
 const settingStore = useSettingStore();
+const nodeStore = useNodeStore();
+const showNodeSwitcher = computed(() => isNodePage(router.currentRoute.value.path) && nodeStore.slaveNodes.some(n => !n.pendingRemoval));
 
 const toggleSettingPanel = () => {
   settingStore.updateConfig({
@@ -92,7 +96,7 @@ const handleNav = (url) => {
 const handleMenuChange = (value: string) => {
   // value = 路由 path
   if (value) {
-    router.push(value);
+    router.push(nodeNavigationUrl(value, String(router.currentRoute.value.query.node || 'local')));
     mobileMenuVisible.value = false;
   }
 };
@@ -189,6 +193,7 @@ const handleAvatarClick = () => {
 
       <template #operations>
         <div class="flex items-center gap-1 sm:gap-2">
+          <node-switcher v-if="isNodePage(router.currentRoute.value.path)" in-header width="clamp(110px, 17vw, 170px)" />
           <div class="hidden lg:flex items-center gap-2 sm:gap-4">
             <t-dropdown trigger="click" :min-column-width="120">
               <template #dropdown>
@@ -221,14 +226,15 @@ const handleAvatarClick = () => {
             :overlay-inner-style="{ padding: '0', background: 'transparent', boxShadow: 'none' }"
             attach="body"
           >
-            <t-button class="user-profile-btn" theme="default" variant="text">
+            <t-button class="user-profile-btn shrink-0" :class="{ 'compact-user-profile': showNodeSwitcher }" theme="default" variant="text">
               <img
                 :src="userStore.userInfo.avatar"
-                class="w-8 h-8 rounded-full object-cover"
+                class="w-8 h-8 shrink-0 rounded-full object-cover"
                 alt="avatar"
               />
               <div
-                class="flex items-center text-sm font-bold text-zinc-700 dark:text-zinc-200 ml-1 truncate max-w-[100px]"
+                class="items-center text-sm font-bold text-zinc-700 dark:text-zinc-200 ml-1 truncate max-w-[100px]"
+                :class="showNodeSwitcher ? 'hidden sm:flex' : 'flex'"
               >
                 {{ userStore.userInfo.name || userStore.userInfo.username || '用户' }}
               </div>
@@ -410,6 +416,15 @@ const handleAvatarClick = () => {
 
 :deep(.user-profile-btn) {
   @apply !border-none !bg-transparent hover:!bg-zinc-100 dark:hover:!bg-zinc-700/50 !px-2 !py-1 !rounded-xl transition-colors !h-auto !shadow-none !ring-0 !outline-none;
+}
+
+@media (max-width: 639px) {
+  .compact-user-profile :deep(.t-button__suffix) {
+    display: none;
+  }
+  .compact-user-profile :deep(.t-button__text) {
+    flex-shrink: 0;
+  }
 }
 
 /* 修复暗黑模式下菜单文字颜色 */
