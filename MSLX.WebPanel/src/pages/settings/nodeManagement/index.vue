@@ -363,9 +363,17 @@ onUnmounted(async () => {
     <div
       class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
     >
-      <div class="flex flex-col gap-1 items-start">
-        <h2 class="text-lg font-bold tracking-tight text-[var(--td-text-color-primary)] m-0">节点管理</h2>
+      <div class="flex min-w-0 flex-col gap-1 items-start">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <h2 class="text-lg font-bold tracking-tight text-[var(--td-text-color-primary)] m-0">节点管理</h2>
+          <t-tag theme="primary" variant="light-outline" size="small" shape="round" class="shrink-0 !font-mono">
+            Protocol: V1
+          </t-tag>
+        </div>
         <p class="text-sm text-[var(--td-text-color-secondary)] m-0">管理您的子节点映射，查看所有节点运行状态</p>
+        <p class="text-sm text-[var(--td-text-color-secondary)] m-0 leading-relaxed">
+          分布式子节点功能无法保证所有插件均可正常运行，若需要体验完整插件功能，建议独立节点使用。
+        </p>
       </div>
 
       <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -384,20 +392,6 @@ onUnmounted(async () => {
         </t-button>
       </div>
     </div>
-
-    <t-alert theme="warning" variant="light" title="子节点功能为测试功能">
-      <template #message>
-        分布式子节点管理涉及较为复杂的远程通信与网络鉴权，目前<strong>仍处于开发及测试阶段</strong>。此功能仅供测试体验，请<strong>切勿将其直接部署于商业化或关键性生产业务环境</strong>，以规避可能出现的不稳定风险。如有疑问或遇到
-        Bug，欢迎前往
-        <a
-          href="javascript:void(0)"
-          class="text-blue-500 font-bold hover:underline"
-          @click="changeUrl(DOC_URLS.github_issues)"
-          >GitHub Issues</a
-        >
-        提交反馈。
-      </template>
-    </t-alert>
 
     <div class="relative min-h-[400px]">
       <div v-if="loading" class="flex flex-col items-center justify-center py-24">
