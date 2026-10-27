@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -7,6 +8,7 @@ using MSLX.Daemon.Adapters;
 using MSLX.Daemon.Hubs;
 using MSLX.Daemon.Middleware;
 using MSLX.Daemon.Services;
+using MSLX.Daemon.Services.NodeServices;
 using MSLX.Daemon.Services.DeployServerService;
 using MSLX.Daemon.Services.InstanceServices;
 using MSLX.Daemon.Services.PluginsService;
@@ -207,7 +209,9 @@ builder.Services.AddCors(options =>
         });
 });
 
-builder.Services.AddSignalR();
+builder.Services.AddSingleton<NodeAuthorization>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddSignalR(options => options.AddFilter<NodeAuthorizationHubFilter>());
 
 // 权限拦截处理器
 builder.Services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationMiddlewareResultHandler, CustomAuthorizationResultHandler>();
@@ -235,6 +239,8 @@ builder.Services.AddSingleton<IMSLXEvents, MSLXEventBus>();
 // 插件的一些服务
 var pluginManager = new PluginManager();
 builder.Services.AddSingleton(pluginManager);
+builder.Services.AddSingleton<PluginPackageService>();
+builder.Services.AddSingleton<NodeSyncService>();
 builder.Services.AddSingleton<Microsoft.AspNetCore.Mvc.Infrastructure.IActionDescriptorChangeProvider>(HotReloadActionDescriptorChangeProvider.Instance);
 builder.Services.Replace(ServiceDescriptor.Transient<Microsoft.AspNetCore.Mvc.Controllers.IControllerActivator, PluginControllerActivator>());
 builder.Services.Replace(ServiceDescriptor.Transient(typeof(Microsoft.AspNetCore.SignalR.IHubActivator<>), typeof(MSLX.Daemon.Services.PluginsService.PluginHubActivator<>)));

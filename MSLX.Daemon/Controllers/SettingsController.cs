@@ -6,6 +6,9 @@ using MSLX.SDK.Models;
 using MSLX.SDK.Models.Settings;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
+using MSLX.Daemon.Services.NodeServices;
+using MSLX.Daemon.Services.PluginsService;
+using MSLX.SDK.Models.Node;
 
 namespace MSLX.Daemon.Controllers;
 
@@ -13,6 +16,27 @@ namespace MSLX.Daemon.Controllers;
 [Route("api/settings")]
 public class SettingsController : ControllerBase
 {
+    [HttpPost("sync")]
+    [Authorize(Roles = "admin")]
+    public IActionResult SyncSettings([FromBody] SettingsSyncRequest request)
+    {
+        try
+        {
+            NodeSettingsSync.Validate(request.Values);
+            IConfigBase.Config.UpdateConfig(current =>
+            {
+                var selected = NodeSettingsSync.Select(current, request.Values.Properties().Select(p => p.Name));
+                if (string.IsNullOrEmpty(request.ExpectedRevision) || NodeSettingsSync.Revision(selected) != request.ExpectedRevision)
+                    throw new SyncConflictException("目标设置已变化，请重新预览");
+                foreach (var property in request.Values.Properties()) current[property.Name] = property.Value.DeepClone();
+                return current;
+            });
+            return Ok(new ApiResponse<object> { Code = 200, Message = "所选设置已同步" });
+        }
+        catch (SyncConflictException ex) { return Conflict(new ApiResponse<object> { Code = 409, Message = ex.Message }); }
+        catch (InvalidDataException ex) { return BadRequest(new ApiResponse<object> { Code = 400, Message = ex.Message }); }
+    }
+
     [HttpGet]
     [Authorize(Roles = "admin")]
     public IActionResult GetSettings()
@@ -169,12 +193,13 @@ public class SettingsController : ControllerBase
         
         bool isSelfSigned = false;
         
-        var activeCert = MSLX.Daemon.Utils.SslCertificateManager.GetCertificate();
-        if (activeCert != null)
+        var subject = SslCertificateManager.CurrentSubject;
+        if (subject == null && certContent != null)
         {
-            isSelfSigned = activeCert.Subject.Contains("MSLX Local Certificate") || 
-                           activeCert.Subject.Contains("MSLX Emergency Temporary Certificate");
+            try { using var cert = X509Certificate2.CreateFromPem(certContent); subject = cert.Subject; }
+            catch (System.Security.Cryptography.CryptographicException) { /* Invalid saved certificates remain editable. */ }
         }
+        isSelfSigned = subject?.Contains("MSLX Local Certificate") == true || subject?.Contains("MSLX Emergency Temporary Certificate") == true;
 
         return Ok(new ApiResponse<SslSettingsResponse>
         {

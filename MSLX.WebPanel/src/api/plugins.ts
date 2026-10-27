@@ -1,4 +1,6 @@
 import { request } from '@/utils/request';
+import { getPageNodeId, getNodeTarget } from '@/utils/nodeTarget';
+import { parsePluginMultiNodeSupport } from '@/api/model/plugins';
 import {
   InstalPluginResponse,
   InstalPluginStatusModel,
@@ -8,38 +10,35 @@ import {
   PluginListModel,
 } from '@/api/model/plugins';
 
-export async function getPluginList(params?: { categoryId?: number }){
-  return await request.get<PluginListModel[]>({
+export async function getPluginList(params?: { categoryId?: number; includeSyncInfo?: boolean }, nodeId = getPageNodeId()){
+  const list = await request.get<PluginListModel[]>({
     url: '/api/plugins/list',
     params
-  });
+  }, { targetNodeId: nodeId });
+  return list.map(plugin => ({ ...plugin, supportsMultiNode: parsePluginMultiNodeSupport(plugin.supportsMultiNode),
+    icon: plugin.icon?.startsWith('/') ? new URL(plugin.icon, getNodeTarget(nodeId).baseUrl).toString() : plugin.icon }));
 }
 
-export async function postPluginAction(id:string, action:string){
-  return await request.post({
-    url: `/api/plugins/action`,
-    data: {id, action}
-  });
+export async function postPluginAction(id: string, action: string, nodeId = getPageNodeId()) {
+  const result = await request.post({ url: '/api/plugins/action', data: { id, action } }, { targetNodeId: nodeId });
+  (await import('@/utils/pluginManager')).invalidateNodePlugins(nodeId);
+  return result;
 }
 
-export async function postInstallPlugin(downloadUrl: string, fileName: string, overwrite: boolean = true) {
-  return await request.post<InstalPluginResponse>({
-    url: '/api/plugins/install',
-    data: {downloadUrl, fileName,overwrite},
-  });
+export async function postInstallPlugin(downloadUrl: string, fileName: string, overwrite = true, nodeId = getPageNodeId()) {
+  return request.post<InstalPluginResponse>({ url: '/api/plugins/install', data: { downloadUrl, fileName, overwrite } }, { targetNodeId: nodeId });
 }
 
-export async function getInstallPluginStatus(taskId:string) {
-  return await request.get<InstalPluginStatusModel>({
-    url:`/api/plugins/task/install/${taskId}`,
-  })
+export async function getInstallPluginStatus(taskId: string, nodeId = getPageNodeId()) {
+  const result = await request.get<InstalPluginStatusModel>({ url: `/api/plugins/task/install/${taskId}` }, { targetNodeId: nodeId });
+  if (result.status === 'success') (await import('@/utils/pluginManager')).invalidateNodePlugins(nodeId);
+  return result;
 }
 
-export async function postUploadLocalPlugin(fileId: string, fileName?: string) {
-  return await request.post({
-    url: '/api/plugins/upload',
-    data: { fileId, fileName },
-  });
+export async function postUploadLocalPlugin(fileId: string, fileName?: string, nodeId = getPageNodeId()) {
+  const result = await request.post({ url: '/api/plugins/upload', data: { fileId, fileName } }, { targetNodeId: nodeId });
+  (await import('@/utils/pluginManager')).invalidateNodePlugins(nodeId);
+  return result;
 }
 
 // 插件市场

@@ -1,11 +1,23 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, shallowRef } from 'vue';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
-import { getHubUrl } from '@/utils/hub';
+import { getHubUrl, getHubOptions } from '@/utils/hub';
+import { getPageNodeId } from '@/utils/nodeTarget';
+import { ConsoleStream, type ConsoleCursor, type ConsoleReplay } from '@/utils/consoleStream';
 
 export const useInstanceHubStore = defineStore('instanceHub', () => {
-  const connection = ref<HubConnection | null>(null);
+  const connection = shallowRef<HubConnection | null>(null);
   const isConnected = ref(false);
+  const connectionNotice = ref('');
+  let noticeTimer: ReturnType<typeof setTimeout> | undefined;
+  let wantsPty = false;
+  let ptySize = { cols: 80, rows: 24 };
+  let modeVersion = 0;
+  let reconnectAbort: AbortController | null = null;
+  let restoring = false;
+  let restorePromise: Promise<void> | null = null;
+  let buffered: { pty: boolean; text: string; cursor: ConsoleCursor }[] = [];
+  let currentNodeId = 'local';
   const currentServerId = ref<number | null>(null);
   const refCount = ref(0);
   const currentMaxMemory = ref(0);
@@ -34,6 +46,63 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
   const ptyStatusHandlers = new Set<(_status: { isPty: boolean; isRunning: boolean }) => void>();
 
 
+  const logStream = new ConsoleStream(text => logHandlers.forEach(handler => handler(text)));
+  const ptyStream = new ConsoleStream(text => ptyDataHandlers.forEach(handler => handler(text)));
+  const markInterrupted = () => {
+    isConnected.value = false;
+    clearTimeout(noticeTimer);
+    noticeTimer = setTimeout(() => { connectionNotice.value = '正在恢复连接…'; }, 2000);
+  };
+  const requireConnected = () => {
+    if (isConnected.value) return true;
+    connectionNotice.value = '连接尚未恢复，输入未发送';
+    return false;
+  };
+
+  const restoreSession = (hub = connection.value): Promise<void> => {
+    if (!hub || hub.state !== 'Connected') return Promise.resolve();
+    if (restorePromise) return restorePromise;
+    restoring = true;
+    isConnected.value = false;
+    const task = (async () => {
+      let version: number;
+      let gap = false;
+      do {
+        version = modeVersion;
+        const result = await hub.invoke<{ log: ConsoleReplay | null; pty: ConsoleReplay | null; status: { isPty: boolean; isRunning: boolean } }>(
+          'ResumeConsole', currentServerId.value, logStream.cursor, ptyStream.cursor, wantsPty, ptySize.cols, ptySize.rows);
+        if (connection.value !== hub) return;
+        gap ||= !!result.log?.gap || !!result.pty?.gap;
+        logStream.replay(result.log);
+        if (wantsPty) ptyStream.replay(result.pty);
+        ptyStatusHandlers.forEach(handler => handler(result.status));
+        const pending = buffered;
+        buffered = [];
+        for (const frame of pending) {
+          if (!frame.pty || wantsPty) (frame.pty ? ptyStream : logStream).receive(frame.text, frame.cursor);
+        }
+      } while (version !== modeVersion);
+      if (connection.value !== hub) return;
+      clearTimeout(noticeTimer);
+      connectionNotice.value = gap ? '部分输出超出缓冲或进程已更换，历史可能不完整' : '';
+      isConnected.value = true;
+    })();
+    restorePromise = task;
+    return task.finally(() => {
+      if (restorePromise === task) { restoring = false; restorePromise = null; }
+    });
+  };
+
+  const receiveFrame = (pty: boolean, text: string, cursor?: ConsoleCursor) => {
+    if (!cursor) return;
+    const stream = pty ? ptyStream : logStream;
+    if (restoring) { buffered.push({ pty, text, cursor }); return; }
+    if (!stream.receive(text, cursor)) {
+      buffered.push({ pty, text, cursor });
+      void restoreSession().catch(() => { connectionNotice.value = '恢复会话失败，请刷新页面'; });
+    }
+  };
+
   // 系统生命周期/控制台消息通知
   const systemMessageHandlers = new Set<(_msg: string) => void>();
 
@@ -47,11 +116,11 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
   };
 
   // connect 不再需要传 maxMemory
-  const connect = (serverId: number) => {
-    connectionPromise = connectionPromise.then(async () => {
+  const connect = (serverId: number, nodeId = getPageNodeId()) => {
+    connectionPromise = connectionPromise.catch(() => {}).then(async () => {
       refCount.value++;
 
-      if (connection.value?.state === 'Connected' && currentServerId.value === serverId) {
+      if (connection.value?.state === 'Connected' && currentServerId.value === serverId && currentNodeId === nodeId) {
         return;
       }
 
@@ -60,20 +129,19 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
       }
 
       currentServerId.value = serverId;
+      currentNodeId = nodeId;
       currentMaxMemory.value = 0;
 
-      const hubUrlStr = getHubUrl('/api/hubs/instanceControlHub');
+      const hubUrlStr = getHubUrl('/api/hubs/instanceControlHub', nodeId);
 
       const newConnection = new HubConnectionBuilder()
-        .withUrl(hubUrlStr,{ withCredentials: false })
+        .withUrl(hubUrlStr, getHubOptions(hubUrlStr))
         .configureLogging(LogLevel.Warning)
         .withAutomaticReconnect([0, 2000, 5000, 10000])
         .build();
 
       // --- 注册事件 ---
-      newConnection.on('ReceiveLog', (message: string) => {
-        logHandlers.forEach((handler) => handler(message));
-      });
+      newConnection.on('ReceiveLog', (message: string, cursor?: ConsoleCursor) => receiveFrame(false, message, cursor));
 
       newConnection.on('RequireEULA', () => {
         eulaHandlers.forEach((handler) => handler());
@@ -119,32 +187,70 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
         }
       });
 
-      newConnection.on('ReceivePtyData', (chunk: string) => {
-        ptyDataHandlers.forEach((handler) => handler(chunk));
-      });
+      newConnection.on('ReceivePtyData', (chunk: string, cursor?: ConsoleCursor) => receiveFrame(true, chunk, cursor));
 
       newConnection.on('PtyStatus', (status: { isPty: boolean; isRunning: boolean }) => {
         ptyStatusHandlers.forEach((handler) => handler(status));
       });
 
-      newConnection.onreconnecting(() => emitSystemMsg('\x1b[1;31m[System] 连接中断，尝试重连...\x1b[0m'));
-
+      let automaticReconnecting = false;
+      let restarting = false;
+      newConnection.onreconnecting(() => {
+        if (connection.value !== newConnection) return;
+        automaticReconnecting = true;
+        markInterrupted();
+      });
       newConnection.onreconnected(async () => {
-        emitSystemMsg('\x1b[1;32m[System] 网络恢复，重新加入会话...\x1b[0m');
-        try { await newConnection.invoke('JoinGroup', serverId); } catch (e) { console.error(e); }
+        if (connection.value !== newConnection) return;
+        automaticReconnecting = false;
+        try { await restoreSession(newConnection); }
+        catch { connectionNotice.value = '恢复会话失败，请刷新页面'; }
+      });
+      newConnection.onclose(async () => {
+        if (connection.value !== newConnection || restarting) return;
+        // 服务器侧关闭，不进入重连
+        if (!automaticReconnecting) {
+          restarting = true;
+          markInterrupted();
+          const abort = new AbortController();
+          reconnectAbort = abort;
+          try {
+            for (const delay of [0, 2000, 5000, 10000]) {
+              if (delay) await new Promise<void>(resolve => {
+                const timer = setTimeout(resolve, delay);
+                abort.signal.addEventListener('abort', () => { clearTimeout(timer); resolve(); }, { once: true });
+              });
+              if (abort.signal.aborted || connection.value !== newConnection) return;
+              try {
+                await newConnection.start();
+                await restoreSession(newConnection);
+                return;
+              } catch {
+                await newConnection.stop();
+              }
+            }
+          } finally {
+            restarting = false;
+            if (reconnectAbort === abort) reconnectAbort = null;
+          }
+        }
+        if (connection.value !== newConnection) return;
+        clearTimeout(noticeTimer);
+        isConnected.value = false;
+        connectionNotice.value = '连接已断开，请刷新页面';
       });
 
       try {
         await newConnection.start();
-        await newConnection.invoke('JoinGroup', serverId);
         connection.value = newConnection;
-        isConnected.value = true;
-        emitSystemMsg('\x1b[1;32m[System] 已连接到实例控制服务\x1b[0m');
+        await restoreSession(newConnection);
       } catch (err: any) {
         isConnected.value = false;
         emitSystemMsg(`\x1b[1;31m[Error] 连接失败: ${err.message}\x1b[0m`);
         currentServerId.value = null;
         connection.value = null;
+        connectionNotice.value = '连接失败，请刷新页面重试';
+        await newConnection.stop();
       }
     });
     return connectionPromise;
@@ -161,15 +267,27 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
   };
 
   const _stopInternal = async () => {
-    if (connection.value) {
+    const stopping = connection.value;
+    connection.value = null;
+    reconnectAbort?.abort();
+    reconnectAbort = null;
+    if (stopping) {
       try {
-        if (connection.value.state === 'Connected' && currentServerId.value) {
-          await connection.value.invoke('LeaveGroup', currentServerId.value);
+        if (stopping.state === 'Connected' && currentServerId.value) {
+          await stopping.invoke('LeaveGroup', currentServerId.value);
         }
-        await connection.value.stop();
+        await stopping.stop();
       } catch (e) { console.warn(e); }
     }
-    connection.value = null;
+    clearTimeout(noticeTimer);
+    connectionNotice.value = '';
+    wantsPty = false;
+    modeVersion++;
+    restorePromise = null;
+    restoring = false;
+    buffered = [];
+    logStream.reset();
+    ptyStream.reset();
     isConnected.value = false;
     currentServerId.value = null;
     currentMaxMemory.value = 0; // 重置
@@ -177,8 +295,8 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
   };
 
   const sendCommand = async (cmd: string) => {
-    if (!connection.value || connection.value.state !== 'Connected' || !currentServerId.value) {
-      throw new Error('未连接到服务');
+    if (!requireConnected() || !connection.value || connection.value.state !== 'Connected' || !currentServerId.value) {
+      throw new Error('连接尚未恢复，指令未发送');
     }
     await connection.value.invoke('SendCommand', currentServerId.value, cmd);
   };
@@ -220,39 +338,31 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
   };
 
   const joinPtyGroup = async (cols: number, rows: number) => {
-    if (!connection.value || connection.value.state !== 'Connected' || !currentServerId.value) return;
-    try {
-      await connection.value.invoke('JoinPtyGroup', currentServerId.value, cols, rows);
-    } catch (e) {
-      console.error('[PTY] JoinPtyGroup failed:', e);
-    }
+    wantsPty = true;
+    ptySize = { cols, rows };
+    modeVersion++;
+    await restoreSession();
   };
 
   const leavePtyGroup = async () => {
-    if (!connection.value || connection.value.state !== 'Connected' || !currentServerId.value) return;
-    try {
-      await connection.value.invoke('LeavePtyGroup', currentServerId.value);
-    } catch (e) {
-      console.error('[PTY] LeavePtyGroup failed:', e);
-    }
+    wantsPty = false;
+    modeVersion++;
+    await restoreSession();
   };
 
   const sendPtyInput = async (data: string) => {
-    if (!connection.value || connection.value.state !== 'Connected' || !currentServerId.value) return;
-    try {
-      await connection.value.invoke('SendPtyInput', currentServerId.value, data);
-    } catch (e) {
-      console.error('[PTY] SendPtyInput failed:', e);
-    }
+    if (!requireConnected() || !connection.value || !currentServerId.value) return;
+    try { await connection.value.invoke('SendPtyInput', currentServerId.value, data); }
+    catch { connectionNotice.value = '输入发送失败，请确认后重试'; }
   };
 
   const resizePty = async (cols: number, rows: number) => {
-    if (!connection.value || connection.value.state !== 'Connected' || !currentServerId.value) return;
-    try {
-      await connection.value.invoke('ResizePty', currentServerId.value, cols, rows);
-    } catch (e) {
-      console.error('[PTY] ResizePty failed:', e);
-    }
+    if (cols <= 0 || rows <= 0) return;
+    if (ptySize.cols !== cols || ptySize.rows !== rows) modeVersion++;
+    ptySize = { cols, rows };
+    if (!isConnected.value || !connection.value || !currentServerId.value) return;
+    try { await connection.value.invoke('ResizePty', currentServerId.value, cols, rows); }
+    catch (e) { console.error('[PTY] ResizePty failed:', e); }
   };
 
   const getPtyStatus = async () => {
@@ -276,6 +386,8 @@ export const useInstanceHubStore = defineStore('instanceHub', () => {
 
   return {
     isConnected,
+    connectionNotice,
+    requireConnected,
     stats,
     currentServerId,
     connect,

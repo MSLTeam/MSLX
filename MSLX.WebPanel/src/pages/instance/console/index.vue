@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { MessagePlugin } from 'tdesign-vue-next';
 
@@ -11,8 +11,11 @@ import { InstanceInfoModel } from '@/api/model/instance';
 import { useInstanceListStore } from '@/store/modules/instance';
 import { useInstanceHubStore } from '@/store/modules/instanceHub';
 import { useTaskStore } from '@/store';
+import { getPageNodeId } from '@/utils/nodeTarget';
 
 const route = useRoute();
+const nodeId = getPageNodeId();
+let disposed = false;
 
 const instanceListStore = useInstanceListStore();
 
@@ -34,6 +37,7 @@ async function fetchServerInfo() {
   try {
     loading.value = true;
     const res = await getInstanceInfo(serverId.value);
+    if (disposed) return;
     await instanceListStore.refreshInstanceList();
     status.value = res.status;
     serverInfo.value = res;
@@ -129,16 +133,20 @@ const handleClearLog = () => {
 };
 const eulaDialogVisible = ref(false);
 // 连接 Store
+let releaseEula: (() => boolean) | undefined;
+let acquiredHub = false;
+onUnmounted(() => { disposed = true; releaseEula?.(); if (acquiredHub) void hubStore.disconnect(); });
 const connectStore = async () => {
-  if (!serverId.value) return;
+  if (disposed || !serverId.value) return;
 
-  hubStore.onEula(() => {
+  releaseEula = hubStore.onEula(() => {
     // 显示对话框
     eulaDialogVisible.value = true;
   });
 
   // 发起连接
-  await hubStore.connect(serverId.value);
+  acquiredHub = true;
+  await hubStore.connect(serverId.value, nodeId);
 };
 
 const handleAgreeEula = async (agreed) => {

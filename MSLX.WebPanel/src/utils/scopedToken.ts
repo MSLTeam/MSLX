@@ -1,4 +1,6 @@
 import { request } from '@/utils/request';
+import { getPageNodeId, getNodeToken, getCachedNodeToken } from './nodeTarget';
+import { ref } from 'vue';
 
 const MEDIA_TOKEN_KEY = 'MSLX_MEDIA_TOKEN';
 const MEDIA_TOKEN_EXP_KEY = 'MSLX_MEDIA_TOKEN_EXP';
@@ -9,11 +11,13 @@ let mediaEpoch = 0;
 let downloadEpoch = 0;
 let mediaTokenPromise: Promise<string> | null = null;
 let downloadTokenPromise: Promise<string> | null = null;
+const mediaRevision = ref(0);
 
 /**
  * 获取媒体资源专用降权 Token（存储于 localStorage，与 24h 登录会话生命周期对齐，页面刷新不丢失）
  */
-export async function getMediaToken(): Promise<string> {
+export async function getMediaToken(nodeId = getPageNodeId()): Promise<string> {
+  if (nodeId !== 'local') return getNodeToken(nodeId, 'media');
   const stored = localStorage.getItem(MEDIA_TOKEN_KEY);
   const expStr = localStorage.getItem(MEDIA_TOKEN_EXP_KEY);
   const exp = expStr ? parseInt(expStr, 10) : 0;
@@ -37,6 +41,7 @@ export async function getMediaToken(): Promise<string> {
         if (res.expiresIn && res.expiresIn > 0) {
           localStorage.setItem(MEDIA_TOKEN_EXP_KEY, (Date.now() + res.expiresIn * 1000).toString());
         }
+        mediaRevision.value++;
       }
       return currentEpoch === mediaEpoch ? token : '';
     } catch (e) {
@@ -55,7 +60,10 @@ export async function getMediaToken(): Promise<string> {
 /**
  * 同步获取当前缓存的媒体 Token（从 localStorage 读取，刷新页面立即生效，确保地图切片/图标稳定命中强缓存）
  */
-export function getSyncMediaToken(): string {
+export function getSyncMediaToken(nodeId = getPageNodeId()): string {
+  if (nodeId !== 'local') return getCachedNodeToken(nodeId, 'media');
+  // 非响应式存储的
+  void mediaRevision.value;
   const stored = localStorage.getItem(MEDIA_TOKEN_KEY);
   const expStr = localStorage.getItem(MEDIA_TOKEN_EXP_KEY);
   const exp = expStr ? parseInt(expStr, 10) : 0;
@@ -69,7 +77,8 @@ export function getSyncMediaToken(): string {
  * 获取文件下载专用降权 Token（存储于 sessionStorage，有效期 2h，支持断点续传）
  * 无论当前目录下有多少视频，在当前标签页 2 小时内只向后端请求 1 次签名。
  */
-export async function getDownloadToken(): Promise<string> {
+export async function getDownloadToken(nodeId = getPageNodeId()): Promise<string> {
+  if (nodeId !== 'local') return getNodeToken(nodeId, 'download');
   const stored = sessionStorage.getItem(DOWNLOAD_TOKEN_KEY);
   const expStr = sessionStorage.getItem(DOWNLOAD_TOKEN_EXP_KEY);
   const exp = expStr ? parseInt(expStr, 10) : 0;
@@ -122,7 +131,8 @@ export async function getDownloadToken(): Promise<string> {
 /**
  * 同步获取当前缓存的下载 Token（若未初始化或已过期返回空字符串）
  */
-export function getSyncDownloadToken(): string {
+export function getSyncDownloadToken(nodeId = getPageNodeId()): string {
+  if (nodeId !== 'local') return getCachedNodeToken(nodeId, 'download');
   const stored = sessionStorage.getItem(DOWNLOAD_TOKEN_KEY);
   const expStr = sessionStorage.getItem(DOWNLOAD_TOKEN_EXP_KEY);
   const exp = expStr ? parseInt(expStr, 10) : 0;
@@ -144,4 +154,5 @@ export function clearMediaToken(): void {
   sessionStorage.removeItem(DOWNLOAD_TOKEN_EXP_KEY);
   mediaTokenPromise = null;
   downloadTokenPromise = null;
+  mediaRevision.value++;
 }

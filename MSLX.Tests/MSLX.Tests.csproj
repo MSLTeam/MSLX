@@ -18,6 +18,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="Fixtures/**/*.cs" />
+    <ProjectReference Include="Fixtures/NodePlugin/NodePlugin.csproj" />
     <Using Include="Xunit" />
   </ItemGroup>
 

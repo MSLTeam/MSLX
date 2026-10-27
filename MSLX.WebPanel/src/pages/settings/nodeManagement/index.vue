@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
+import NodeSyncDialog from './components/NodeSyncDialog.vue';
+const showSyncDialog = ref(false);
 import { linkSlaveNode, unlinkSlaveNode, postEditSlaveNode } from '@/api/node';
 import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next';
 import {
@@ -33,6 +35,7 @@ const linkForm = ref({
   nodeLogo: 'https://www.mslmc.cn/logo.png',
   masterUrl: '',
   linkKey: '',
+  pairingId: '',
   nodeTags: '',
 });
 
@@ -126,6 +129,18 @@ const handleUpdateNode = async (nodeId: string, nodeUrl: string, nodeName: strin
 const fetchNodes = async (force = false) => {
   await nodeStore.fetchNodes(force);
   fetchVersions();
+  const monitor = connection.value;
+  if (force && monitor) {
+    try {
+      if (monitor.state === signalR.HubConnectionState.Disconnected) await monitor.start();
+      if (monitor.state === signalR.HubConnectionState.Connected) {
+        await monitor.invoke('JoinMonitor');
+        isSignalRConnected.value = true;
+      }
+    } catch (error) {
+      console.error('刷新监控订阅失败:', error);
+    }
+  }
 };
 
 const handleAddNode = () => {
@@ -136,8 +151,10 @@ const handleAddNode = () => {
     nodeLogo: 'https://www.mslmc.cn/logo.png',
     masterUrl: '',
     linkKey: '',
+    pairingId: '',
     nodeTags: '',
   };
+  linkForm.value.pairingId = Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join('');
   tagsArray.value = [];
   linkVisible.value = true;
 };
@@ -151,7 +168,8 @@ const handleEditNode = (node: any) => {
     nodeUrl: node.nodeUrl,
     nodeLogo: node.nodeLogo || 'https://www.mslmc.cn/logo.png',
     masterUrl: node.masterUrl || '',
-    linkKey: node.linkKey,
+    linkKey: '',
+    pairingId: '',
     nodeTags: rawTags,
   };
   tagsArray.value = rawTags
@@ -163,19 +181,32 @@ const handleEditNode = (node: any) => {
   linkVisible.value = true;
 };
 
-const testConnection = async (url: string) => {
+const testConnection = async (nodeId: string, url: string) => {
   try {
-    const res = await fetch(`${url.replace(/\/$/, '')}/api/status`);
-    if (res.ok || res.status === 401 || res.status === 404) return true;
-    return false;
+    await getDaemonStatusInfo(nodeId, url);
+    return true;
   } catch {
     return false;
   }
 };
 
 const handleLink = async () => {
-  if (!linkForm.value.nodeName || !linkForm.value.nodeUrl || !linkForm.value.linkKey) {
+  if (!linkForm.value.nodeName || !linkForm.value.nodeUrl || (!isEdit.value && !linkForm.value.linkKey)) {
     MessagePlugin.warning('请填写完整信息');
+    return;
+  }
+
+  let nodeUrl: URL;
+  try {
+    nodeUrl = new URL(linkForm.value.nodeUrl);
+  } catch {
+    MessagePlugin.warning('节点地址必须为有效 HTTP/HTTPS 地址');
+    return;
+  }
+  const usesHttps = [window.location.href, userStore.baseUrl, linkForm.value.masterUrl]
+    .some(url => /^https:/i.test(url?.trim() || ''));
+  if (usesHttps && nodeUrl.protocol === 'http:') {
+    MessagePlugin.warning('当前使用 HTTPS，不能连接 HTTP 子节点，请为子节点配置 HTTPS 后重试');
     return;
   }
 
@@ -184,10 +215,11 @@ const handleLink = async () => {
   try {
     if (isEdit.value) {
       await postEditSlaveNode(editingId.value, linkForm.value);
+      await fetchNodes(true);
       MessagePlugin.success('节点修改成功');
 
       // 测试连通性
-      const ok = await testConnection(linkForm.value.nodeUrl);
+      const ok = await testConnection(editingId.value, linkForm.value.nodeUrl);
       if (!ok) {
         const alertObj = DialogPlugin.alert({
           header: '连通性警告',
@@ -204,7 +236,7 @@ const handleLink = async () => {
     }
 
     linkVisible.value = false;
-    fetchNodes(true);
+    if (!isEdit.value) await fetchNodes(true);
   } catch (e: any) {
     MessagePlugin.error(`${isEdit.value ? '修改' : '链接'}失败: ${e.message}`);
   }
@@ -212,13 +244,15 @@ const handleLink = async () => {
 
 const handleUnlink = (row: any) => {
   const dialog = DialogPlugin.confirm({
-    header: '解除链接',
-    body: `确定要解除与节点 ${row.nodeName} 的链接吗？`,
+    header: row.pendingRemoval ? '仅从主节点移除' : '解除链接',
+    body: row.pendingRemoval
+      ? `远端清理尚未确认。移除 ${row.nodeName} 的本地记录后，可以重新登记此地址；此操作不代表远端已完成清理。`
+      : `确定要解除与节点 ${row.nodeName} 的链接吗？`,
     theme: 'danger',
     onConfirm: async () => {
       try {
-        await unlinkSlaveNode(row.nodeId);
-        MessagePlugin.success('解除链接成功');
+        await unlinkSlaveNode(row.nodeId, !!row.pendingRemoval);
+        MessagePlugin.success(row.pendingRemoval ? '已从主节点移除记录' : '授权已撤销，正在清理子节点链接');
         fetchNodes(true);
       } catch (e: any) {
         MessagePlugin.error(`解除链接失败: ${e.message}`);
@@ -278,6 +312,21 @@ const initSignalR = async () => {
     }
   });
 
+  connection.value.onreconnecting(() => {
+    isSignalRConnected.value = false;
+    hasReceivedFirstPayload.value = false;
+  });
+  connection.value.onreconnected(async () => {
+    try {
+      // SignalR 重连后的连接 ID 已变化，需要重新订阅监控组。
+      await connection.value!.invoke('JoinMonitor');
+      isSignalRConnected.value = true;
+    } catch (error) {
+      console.error('恢复监控订阅失败:', error);
+      isSignalRConnected.value = false;
+    }
+  });
+
   try {
     await connection.value.start();
     isSignalRConnected.value = true;
@@ -314,9 +363,17 @@ onUnmounted(async () => {
     <div
       class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
     >
-      <div class="flex flex-col gap-1 items-start">
-        <h2 class="text-lg font-bold tracking-tight text-[var(--td-text-color-primary)] m-0">节点管理</h2>
+      <div class="flex min-w-0 flex-col gap-1 items-start">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <h2 class="text-lg font-bold tracking-tight text-[var(--td-text-color-primary)] m-0">节点管理</h2>
+          <t-tag theme="primary" variant="light-outline" size="small" shape="round" class="shrink-0 !font-mono">
+            Protocol: V1
+          </t-tag>
+        </div>
         <p class="text-sm text-[var(--td-text-color-secondary)] m-0">管理您的子节点映射，查看所有节点运行状态</p>
+        <p class="text-sm text-[var(--td-text-color-secondary)] m-0 leading-relaxed">
+          分布式子节点功能无法保证所有插件均可正常运行，若需要体验完整插件功能，建议独立节点使用。
+        </p>
       </div>
 
       <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -324,6 +381,7 @@ onUnmounted(async () => {
           <template #icon><help-circle-icon /></template>
           文档
         </t-button>
+        <t-button v-if="userStore.isAdmin" variant="outline" @click="showSyncDialog = true">从主节点同步</t-button>
         <t-button variant="dashed" @click="fetchNodes(true)">
           <template #icon><refresh-icon /></template>
           刷新
@@ -334,20 +392,6 @@ onUnmounted(async () => {
         </t-button>
       </div>
     </div>
-
-    <t-alert theme="warning" variant="light" title="子节点功能为测试功能">
-      <template #message>
-        分布式子节点管理涉及较为复杂的远程通信与网络鉴权，目前<strong>仍处于开发及测试阶段</strong>。此功能仅供测试体验，请<strong>切勿将其直接部署于商业化或关键性生产业务环境</strong>，以规避可能出现的不稳定风险。如有疑问或遇到
-        Bug，欢迎前往
-        <a
-          href="javascript:void(0)"
-          class="text-blue-500 font-bold hover:underline"
-          @click="changeUrl(DOC_URLS.github_issues)"
-          >GitHub Issues</a
-        >
-        提交反馈。
-      </template>
-    </t-alert>
 
     <div class="relative min-h-[400px]">
       <div v-if="loading" class="flex flex-col items-center justify-center py-24">
@@ -500,13 +544,13 @@ onUnmounted(async () => {
                 <template #icon><cloud-upload-icon /></template>
                 升级
               </t-button>
-              <t-button variant="outline" size="small" class="!px-2" @click="handleEditNode(item)">
+              <t-button v-if="!item.pendingRemoval" variant="outline" size="small" class="!px-2" @click="handleEditNode(item)">
                 <template #icon><edit-icon /></template>
                 编辑
               </t-button>
               <t-button theme="danger" variant="outline" size="small" class="!px-2" @click="handleUnlink(item)">
                 <template #icon><delete-icon /></template>
-                解除
+                {{ item.pendingRemoval ? '仅从主节点移除' : '解除' }}
               </t-button>
             </div>
           </div>
@@ -526,10 +570,10 @@ onUnmounted(async () => {
         <t-form-item label="节点Logo" name="nodeLogo">
           <t-input v-model="linkForm.nodeLogo" placeholder="如 https://www.mslmc.cn/logo.png" />
         </t-form-item>
-        <t-form-item label="通讯密钥" name="linkKey">
+        <t-form-item v-if="!isEdit" label="配对密钥" name="linkKey">
           <t-input v-model="linkForm.linkKey" type="password" placeholder="请输入子节点的 LinkKey" />
         </t-form-item>
-        <t-form-item label="主节点地址" name="masterUrl" help="覆盖自动识别的主节点地址（留空则自动检测）">
+        <t-form-item label="主节点地址" name="masterUrl" help="填写子节点能够访问的主节点地址（含端口）；留空自动识别，localhost 指向子节点自身">
           <t-input v-model="linkForm.masterUrl" placeholder="如 http://192.168.1.50:1027" />
         </t-form-item>
         <t-form-item label="节点标签" name="nodeTags" help="输入标签后按回车(Enter)添加标签">
@@ -592,8 +636,8 @@ onUnmounted(async () => {
           </span>
         </div>
         <div class="flex justify-between border-b border-[var(--td-component-border)] pb-2">
-          <span class="text-[var(--td-text-color-secondary)]">通讯密钥</span>
-          <span class="font-mono text-[var(--td-text-color-primary)]">{{ activeNodeDetails.commsKey }}</span>
+          <span class="text-[var(--td-text-color-secondary)]">链接状态</span>
+          <span class="font-mono text-[var(--td-text-color-primary)]">{{ activeNodeDetails.pendingRemoval ? '授权已撤销，等待远端清理' : '已连接' }}</span>
         </div>
         <div class="flex justify-between border-b border-[var(--td-component-border)] pb-2">
           <span class="text-[var(--td-text-color-secondary)]">链接时间</span>
@@ -659,6 +703,7 @@ onUnmounted(async () => {
     </t-dialog>
 
     <!-- 升级弹窗 -->
+    <node-sync-dialog v-model:visible="showSyncDialog" />
     <update-modal
       :visible="showUpdateModal"
       :update-info="slaveUpdateInfo"

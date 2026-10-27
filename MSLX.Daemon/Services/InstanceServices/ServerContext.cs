@@ -15,8 +15,8 @@ public class ServerContext
     public IPtyConnection? PtyConnection { get; set; }
     public bool IsPtyMode { get; set; } = false;
     public CancellationTokenSource? PtyReadCts { get; set; }
-    public ConcurrentQueue<string> Logs { get; set; } = new();
-    public ConcurrentQueue<string> PtyHistory { get; set; } = new();
+    public ConsoleOutputBuffer Logs { get; } = new(InstanceConsoleService.MaxLogLines);
+    public ConsoleOutputBuffer PtyHistory { get; } = new(InstanceConsoleService.MaxPtyHistoryChunks);
     public bool IsInitializing { get; set; } = false;
     public volatile bool IsStopping = false;
     public volatile bool IsBackuping = false;

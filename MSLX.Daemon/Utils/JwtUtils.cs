@@ -4,11 +4,63 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using MSLX.SDK.Models;
+using MSLX.SDK.Models.Node;
+using System.Security.Cryptography;
+using MSLX.Daemon.Services.NodeServices;
 
 namespace MSLX.Daemon.Utils;
 
 public static class JwtUtils
 {
+    public const int NodeProtocolVersion = 1;
+
+    // 独立的签名密钥
+    private static byte[] NodeSigningKey(SlaveNodeConfig node) =>
+        HMACSHA256.HashData(Encoding.UTF8.GetBytes(IConfigBase.JwtSecret),
+            Encoding.UTF8.GetBytes($"MSLX.Node.v2:{node.NodeId}:{node.CommsKey}"));
+
+    public static string GenerateNodeToken(UserInfo user, SlaveNodeConfig node, ClaimsPrincipal parent, string? scope = null)
+    {
+        var isApiKey = parent.Identity?.AuthenticationType == "ApiKey";
+        // 降权token相关处理
+        var lifetime = scope switch { "media" => TimeSpan.FromDays(1), "download" => TimeSpan.FromHours(2), _ => TimeSpan.FromMinutes(10) };
+        var expiry = DateTime.UtcNow.Add(lifetime);
+        if (!isApiKey)
+            expiry = new[] { expiry, DateTimeOffset.FromUnixTimeSeconds(long.Parse(parent.FindFirst("exp")!.Value)).UtcDateTime }.Min();
+        var claims = new List<Claim>
+        {
+            new("UserId", user.Id), new("NodeId", node.NodeId),
+            new("TokenVersion", user.TokenVersion.ToString()),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+        if (isApiKey) claims.AddRange(NodeCallerAuthorization.CreateNodeClaims(parent, user, node.NodeId));
+        else claims.Add(new("ParentJti", parent.FindFirst(JwtRegisteredClaimNames.Jti)!.Value));
+        if (!string.IsNullOrEmpty(scope)) claims.Add(new("Scope", scope));
+        var handler = new JwtSecurityTokenHandler();
+        return handler.WriteToken(handler.CreateToken(new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity(claims), Expires = expiry,
+            Audience = node.NodeId,
+            SigningCredentials = new(new SymmetricSecurityKey(NodeSigningKey(node)), SecurityAlgorithms.HmacSha256)
+        }));
+    }
+
+    public static ClaimsPrincipal? ValidateNodeToken(string token, SlaveNodeConfig node)
+    {
+        try
+        {
+            var principal = new JwtSecurityTokenHandler().ValidateToken(token, new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true, IssuerSigningKey = new SymmetricSecurityKey(NodeSigningKey(node)),
+                ValidateIssuer = false, ValidateAudience = true, ValidAudience = node.NodeId,
+                ValidateLifetime = true, ClockSkew = TimeSpan.Zero,
+                ValidAlgorithms = [SecurityAlgorithms.HmacSha256]
+            }, out _);
+            return principal.FindFirst("NodeId")?.Value == node.NodeId ? principal : null;
+        }
+        catch { return null; }
+    }
+
     // 生成 Token
     public static string GenerateToken(UserInfo user)
     {
@@ -96,6 +148,8 @@ public static class JwtUtils
     /// </summary>
     public static string? GetTokenRejectionReason(ClaimsPrincipal principal, UserInfo user)
     {
+        if (!NodeCallerAuthorization.IsCurrentNodeGrant(principal, user))
+            return "APIKey 或节点访问权限已失效，请重新获取节点凭据";
         var jti = principal.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)?.Value;
         var parentJti = principal.FindFirst("ParentJti")?.Value;
         var tokenVersionStr = principal.FindFirst("TokenVersion")?.Value;

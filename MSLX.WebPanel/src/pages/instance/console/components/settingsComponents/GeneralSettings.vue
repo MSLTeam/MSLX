@@ -1,15 +1,15 @@
 <script setup lang="ts">
+import { confirmNodeAction } from '@/utils/nodeDialog';
 import { ref, onMounted, watch, nextTick, onUnmounted, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import {
   MessagePlugin,
   type FormRules,
   type FormInstanceFunctions,
-  DialogPlugin,
   NotifyPlugin,
 } from 'tdesign-vue-next';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
-import { getHubUrl } from '@/utils/hub';
+import { getHubUrl, getHubOptions } from '@/utils/hub';
 import { useUserStore, useTunnelsStore, useTaskStore } from '@/store';
 import { LockOnIcon, LockOffIcon } from 'tdesign-icons-vue-next';
 
@@ -883,7 +883,7 @@ const onSubmit = async () => {
     const isChangingCore = !!formData.value.coreUrl || !!formData.value.coreFileKey;
     if (isChangingCore) {
       const confirm = await new Promise((resolve) => {
-        const dialog = DialogPlugin.confirm({
+        const dialog = confirmNodeAction({
           header: '确认变更核心文件?',
           body: '检测到您上传或选择了新的核心文件，这将覆盖服务器现有的部署。',
           theme: 'warning',
@@ -955,7 +955,7 @@ const startSignalRListening = async () => {
   const hubUrlStr = getHubUrl('/api/hubs/updateProgressHub');
 
   hubConnection.value = new HubConnectionBuilder()
-    .withUrl(hubUrlStr, { withCredentials: false })
+    .withUrl(hubUrlStr, getHubOptions(hubUrlStr))
     .configureLogging(LogLevel.None)
     .build();
 

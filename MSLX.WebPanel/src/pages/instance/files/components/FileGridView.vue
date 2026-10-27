@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 import {
   AppIcon,
   CodeIcon,
@@ -21,7 +21,7 @@ import {
 } from 'tdesign-icons-vue-next';
 import type { FilesListModel } from '@/api/model/files';
 import { getFileThumbnailUrl, getVideoStreamUrl } from '@/api/files';
-import { getDownloadToken } from '@/utils/scopedToken';
+import { getDownloadToken, getSyncMediaToken } from '@/utils/scopedToken';
 
 const props = defineProps<{
   fileList: FilesListModel[];
@@ -51,6 +51,8 @@ const emit = defineEmits<{
 const visibleItems = ref<Record<string, boolean>>({});
 // 图片加载失败追踪
 const imageLoadErrors = ref<Record<string, boolean>>({});
+const mediaToken = computed(() => getSyncMediaToken());
+watch(mediaToken, () => { imageLoadErrors.value = {}; });
 
 // 视频缩略图缓存与状态追踪
 const videoThumbnails = ref<Record<string, string>>({});
@@ -78,79 +80,85 @@ const enqueueVideoThumbnail = (fileName: string, fullPath: string) => {
 
   videoStatuses.value[fullPath] = 'pending';
 
-  const task = () =>
-    new Promise<void>(async (resolve) => {
-      videoStatuses.value[fullPath] = 'loading';
-
+  const task = async () => {
+    videoStatuses.value[fullPath] = 'loading';
+    try {
       const dlToken = await getDownloadToken();
-      const video = document.createElement('video');
-      video.crossOrigin = 'anonymous';
-      video.preload = 'metadata';
-      video.muted = true;
-      (video as any).playsInline = true;
-
+      if (!dlToken) throw new Error('下载凭据获取失败');
       const videoUrl = getVideoStreamUrl(props.instanceId, fullPath, dlToken);
-      let isResolved = false;
+      await new Promise<void>((resolve) => {
+        const video = document.createElement('video');
+        video.crossOrigin = 'anonymous';
+        video.preload = 'metadata';
+        video.muted = true;
+        (video as any).playsInline = true;
 
-      const cleanup = () => {
-        if (!isResolved) {
-          isResolved = true;
-          video.removeAttribute('src');
-          video.load();
-          resolve();
-        }
-      };
+        let isResolved = false;
 
-      // 6秒超时容灾（解码失败/太慢了）
-      const timeoutId = setTimeout(() => {
-        videoStatuses.value[fullPath] = 'error';
-        cleanup();
-      }, 6000);
-
-      video.addEventListener('loadedmetadata', () => {
-        // 定位到第 1 秒，若视频很短则定位到 0.1 秒
-        video.currentTime = video.duration > 1.0 ? 1.0 : 0.1;
-      });
-
-      video.addEventListener('seeked', () => {
-        clearTimeout(timeoutId);
-        try {
-          const canvas = document.createElement('canvas');
-          const maxDim = 320;
-          let w = video.videoWidth || 320;
-          let h = video.videoHeight || 180;
-          if (w > maxDim || h > maxDim) {
-            const scale = Math.min(maxDim / w, maxDim / h);
-            w = Math.round(w * scale);
-            h = Math.round(h * scale);
+        const cleanup = () => {
+          if (!isResolved) {
+            isResolved = true;
+            video.removeAttribute('src');
+            video.load();
+            resolve();
           }
-          canvas.width = w;
-          canvas.height = h;
+        };
 
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(video, 0, 0, w, h);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
-            videoThumbnails.value[fullPath] = dataUrl;
-            videoStatuses.value[fullPath] = 'done';
-          } else {
+        // 6秒超时容灾（解码失败/太慢了）
+        const timeoutId = setTimeout(() => {
+          videoStatuses.value[fullPath] = 'error';
+          cleanup();
+        }, 6000);
+
+        video.addEventListener('loadedmetadata', () => {
+          // 定位到第 1 秒，若视频很短则定位到 0.1 秒
+          video.currentTime = video.duration > 1.0 ? 1.0 : 0.1;
+        });
+
+        video.addEventListener('seeked', () => {
+          clearTimeout(timeoutId);
+          try {
+            const canvas = document.createElement('canvas');
+            const maxDim = 320;
+            let w = video.videoWidth || 320;
+            let h = video.videoHeight || 180;
+            if (w > maxDim || h > maxDim) {
+              const scale = Math.min(maxDim / w, maxDim / h);
+              w = Math.round(w * scale);
+              h = Math.round(h * scale);
+            }
+            canvas.width = w;
+            canvas.height = h;
+
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(video, 0, 0, w, h);
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+              videoThumbnails.value[fullPath] = dataUrl;
+              videoStatuses.value[fullPath] = 'done';
+            } else {
+              videoStatuses.value[fullPath] = 'error';
+            }
+          } catch (e) {
+            console.warn('提取视频首帧失败:', fileName, e);
             videoStatuses.value[fullPath] = 'error';
           }
-        } catch (e) {
-          console.warn('提取视频首帧失败:', fileName, e);
+          cleanup();
+        });
+
+        video.addEventListener('error', () => {
+          clearTimeout(timeoutId);
           videoStatuses.value[fullPath] = 'error';
-        }
-        cleanup();
-      });
+          cleanup();
+        });
 
-      video.addEventListener('error', () => {
-        clearTimeout(timeoutId);
-        videoStatuses.value[fullPath] = 'error';
-        cleanup();
+        video.src = videoUrl;
       });
-
-      video.src = videoUrl;
-    });
+    } catch (error) {
+      console.warn('提取视频首帧失败:', fileName, error);
+      videoStatuses.value[fullPath] = 'error';
+    }
+  };
 
   videoQueue.push(task);
   processVideoQueue();
@@ -289,6 +297,9 @@ watch(
   () => {
     // 列表变更时观察新元素
     visibleItems.value = {};
+    for (const path of Object.keys(videoStatuses.value)) {
+      if (videoStatuses.value[path] === 'error') delete videoStatuses.value[path];
+    }
     if (observer) {
       observer.disconnect();
       setTimeout(() => {
@@ -428,7 +439,7 @@ onUnmounted(() => {
           <!-- 图片类型 -->
           <template v-if="isImage(item.name) && item.type !== 'folder'">
             <img
-              v-if="visibleItems[item.name] && !imageLoadErrors[item.name]"
+              v-if="visibleItems[item.name] && mediaToken && !imageLoadErrors[item.name]"
               :src="getFileThumbnailUrl(instanceId, currentPath ? `${currentPath}/${item.name}` : item.name, 256)"
               :alt="item.name"
               loading="lazy"

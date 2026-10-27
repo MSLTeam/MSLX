@@ -5,6 +5,8 @@ import { FitAddon } from '@xterm/addon-fit';
 import c from 'ansi-colors';
 import '@xterm/xterm/css/xterm.css';
 import { useInstanceHubStore } from '@/store/modules/instanceHub';
+import { useNodeStore } from '@/store/modules/node';
+import { getPageNodeId } from '@/utils/nodeTarget';
 import colorizeServerLog from '@/utils/colorizeLog';
 
 const props = defineProps<{
@@ -18,6 +20,11 @@ const emits = defineEmits<{
 
 // 使用 Store
 const hubStore = useInstanceHubStore();
+const nodeId = getPageNodeId();
+let disposed = false;
+let acquiredHub = false;
+const nodeStore = useNodeStore();
+const nodeName = computed(() => nodeStore.slaveNodes.find(node => node.nodeId === nodeId)?.nodeName);
 
 const terminalWrapper = ref<HTMLElement | null>(null);
 const logTerminalBody = ref<HTMLElement | null>(null);
@@ -357,7 +364,7 @@ const fitTerminals = () => {
 
 // 终端输入处理（日志模式下的回车与输入）
 const handleTerminalInput = async (data: string) => {
-  if (!logTerm || !props.serverId) return;
+  if (!logTerm || !props.serverId || !hubStore.requireConnected()) return;
   if (data === '\r') {
     logTerm.write('\r\n');
     if (commandBuffer.trim()) {
@@ -376,7 +383,7 @@ const handleTerminalInput = async (data: string) => {
 };
 
 const handleSendInput = async () => {
-  if (!inputCommand.value) return;
+  if (!inputCommand.value || !hubStore.requireConnected()) return;
   const cmd = inputCommand.value;
   logTerm?.writeln(cmd);
   await sendCommandToServer(cmd);
@@ -423,6 +430,7 @@ const toggleTerminalMode = async (mode: 'log' | 'pty', isManual = false) => {
   isPtyMode.value = mode === 'pty';
 
   await nextTick();
+  if (disposed) return;
   fitTerminals();
 
   if (isPtyMode.value) {
@@ -459,6 +467,7 @@ watch(
 
 // 连接 Store
 const connectStore = async () => {
+  if (disposed) return;
   if (!props.serverId) return;
 
   // 订阅系统控制台消息
@@ -528,7 +537,9 @@ const connectStore = async () => {
   });
 
   // 发起连接
-  await hubStore.connect(props.serverId);
+  acquiredHub = true;
+  await hubStore.connect(props.serverId, nodeId);
+  if (disposed) return;
 
   // 如果初始处于 PTY 模式，加入 PTY 会话组（先 fit 确保尺寸真实准确）
   if (isPtyMode.value && ptyTerm) {
@@ -545,12 +556,12 @@ const disconnectStore = async () => {
   if (cleanupPtyData) cleanupPtyData();
   if (cleanupPtyStatus) cleanupPtyStatus();
 
-  if (isPtyMode.value) {
+  if (acquiredHub && isPtyMode.value) {
     await hubStore.leavePtyGroup();
   }
 
   // 告知 Store 本组件退出
-  await hubStore.disconnect();
+  if (acquiredHub) { acquiredHub = false; await hubStore.disconnect(); }
 };
 
 const writeln = (msg: string) => {
@@ -610,6 +621,7 @@ watch(
 
 onMounted(async () => {
   await nextTick();
+  if (disposed) return;
   loadHistory();
   initLogTerminal();
   initPtyTerminal();
@@ -623,6 +635,7 @@ onMounted(async () => {
   }
 
   await nextTick();
+  if (disposed) return;
   fitTerminals();
 
   await connectStore();
@@ -630,6 +643,7 @@ onMounted(async () => {
 });
 
 onUnmounted(async () => {
+  disposed = true;
   themeObserver?.disconnect();
   resizeObserver?.disconnect();
   logTerm?.dispose();
@@ -656,8 +670,11 @@ onUnmounted(async () => {
           <span class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></span>
           <span class="w-2.5 h-2.5 rounded-full bg-[#27c93f]"></span>
         </div>
-        <div class="text-[var(--td-text-color-secondary)] text-xs font-mono truncate">
-          MSLX 控制台 | #{{ serverId }}
+        <div role="status" class="text-xs font-mono truncate"
+          :class="hubStore.connectionNotice ? 'text-[var(--td-warning-color)]' : 'text-[var(--td-text-color-secondary)]'"
+          :title="hubStore.connectionNotice || undefined">
+          <template v-if="hubStore.connectionNotice">{{ hubStore.connectionNotice }}</template>
+          <template v-else>MSLX 控制台 | #{{ serverId }}<template v-if="nodeName"> · {{ nodeName }}</template></template>
         </div>
       </div>
 

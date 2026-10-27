@@ -12,6 +12,7 @@ export interface RequestOptions {
   joinTime?: boolean;
   withToken?: boolean;
   requestToSlaveNode?: boolean | 'auto'; // 是否发送到子节点 auto模式为自动正则判定
+  targetNodeId?: string;
   retry?: {
     count: number;
     delay: number;

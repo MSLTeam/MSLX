@@ -1,11 +1,11 @@
 import { useUserStore } from '@/store';
+import { getPageNodeId, getNodeTarget, getNodeToken } from './nodeTarget';
 
-export function getHubUrl(hubPath: string): string {
+export function getHubUrl(hubPath: string, targetNodeId?: string): string {
   const userStore = useUserStore();
   const { baseUrl, token } = userStore;
 
-  const activeNodeId = localStorage.getItem('ACTIVE_NODE_ID');
-  const activeNodeUrl = localStorage.getItem('ACTIVE_NODE_URL');
+  const activeNodeId = targetNodeId ?? getPageNodeId();
 
   // 白名单 这些允许请求到子节点
   const slaveHubs = [
@@ -15,17 +15,17 @@ export function getHubUrl(hubPath: string): string {
     '/api/hubs/instanceControlHub',
   ];
 
-  const isSlaveRoute = slaveHubs.includes(hubPath) || slaveHubs.some(h => hubPath.startsWith(h));
+  const isSlaveRoute = targetNodeId !== undefined || slaveHubs.includes(hubPath) || slaveHubs.some(h => hubPath.startsWith(h));
 
   let finalBase = baseUrl || window.location.origin;
 
-  if (activeNodeUrl && activeNodeId !== 'local' && isSlaveRoute) {
-    finalBase = activeNodeUrl;
+  if (activeNodeId !== 'local' && isSlaveRoute) {
+    finalBase = getNodeTarget(activeNodeId).baseUrl;
   }
 
   // 拼接 URL 节点ID Token
   const hubUrl = new URL(hubPath, finalBase);
-  if (token) {
+  if (token && (activeNodeId === 'local' || !isSlaveRoute)) {
     hubUrl.searchParams.append('x-user-token', token);
   }
   if (activeNodeId && activeNodeId !== 'local' && isSlaveRoute) {
@@ -33,4 +33,10 @@ export function getHubUrl(hubPath: string): string {
   }
 
   return hubUrl.toString();
+}
+
+// SignalR 重连的时候调用这个（存在续订调用）
+export function getHubOptions(hubUrl: string) {
+  const nodeId = new URL(hubUrl).searchParams.get('x-node-id');
+  return nodeId ? { withCredentials: false, accessTokenFactory: () => getNodeToken(nodeId) } : { withCredentials: false };
 }

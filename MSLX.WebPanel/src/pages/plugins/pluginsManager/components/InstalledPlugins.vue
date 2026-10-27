@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue';
+import { getPageNodeId } from '@/utils/nodeTarget';
+const targetNodeId = getPageNodeId();
+import { getDaemonStatusInfo } from '@/api/update';
+import { onUnmounted as cleanupPluginPage } from 'vue';
+import { confirmNodeAction } from '@/utils/nodeDialog';
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
 import {
   UserIcon,
   LinkIcon,
@@ -14,6 +19,7 @@ import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 
 import Result from '@/components/result/index.vue';
 import { useUserStore } from '@/store';
+import { PluginMultiNodeSupport } from '@/api/model/plugins';
 import type { PluginListModel } from '@/api/model/plugins';
 import {
   getPluginList,
@@ -27,6 +33,11 @@ import NotificationPlugin from 'tdesign-vue-next/es/notification/plugin';
 import { DownloadIcon } from 'tdesign-icons-vue-next';
 
 const userStore = useUserStore();
+const targetSystemVersion = ref(targetNodeId === 'local' ? userStore.userInfo.version : '');
+onMounted(async () => {
+  try { targetSystemVersion.value = (await getDaemonStatusInfo(targetNodeId)).version || ''; }
+  catch { /* The target validates SDK compatibility again before installation. */ }
+});
 const loading = ref(true);
 const actionLoading = ref(false);
 const isError = ref(false);
@@ -41,7 +52,7 @@ async function getList() {
   try {
     loading.value = true;
     isError.value = false;
-    const res = await getPluginList();
+    const res = await getPluginList(undefined, targetNodeId);
     plugins.value = res;
     if (plugins.value.length > 0) {
       checkUpdates(plugins.value.map((p) => p.id));
@@ -66,7 +77,7 @@ async function handleAction(id: string, action: string) {
 
     loadingInstance = await MessagePlugin.loading('正在处理...');
 
-    await postPluginAction(id, action);
+    await postPluginAction(id, action, targetNodeId);
 
     MessagePlugin.success('处理成功');
     await getList();
@@ -170,7 +181,7 @@ const handleUpdate = async (pluginId: string, currentVersion: string) => {
     const safeFileName = formatFileName(pluginId).replace(/[^a-zA-Z0-9_\-.]/g, '');
 
     try {
-      const res = await postInstallPlugin(updateInfo.downloadLink, `${safeFileName}.new`, true);
+      const res = await postInstallPlugin(updateInfo.downloadLink, `${safeFileName}.new`, true, targetNodeId);
       pollUpdateStatus(res.taskId, pluginId);
     } catch (error: any) {
       updateState.isUpdating = false;
@@ -181,16 +192,8 @@ const handleUpdate = async (pluginId: string, currentVersion: string) => {
 
   // 检查minSdk
   if (requiresHigherSdk(updateInfo.minSdkVersion)) {
-    const confirmDialog = DialogPlugin.confirm({
-      header: '存在兼容性风险',
-      body: `该插件更新要求节点版本至少为 v${updateInfo.minSdkVersion}，而您当前版本为 v${currentSystemVersion.value}。强制更新可能导致插件无法正常运行，是否继续？`,
-      theme: 'warning',
-      onConfirm: () => {
-        executeUpdate();
-        confirmDialog.hide();
-      },
-      onClose: () => confirmDialog.hide(),
-    });
+    MessagePlugin.error('插件要求更高的节点版本，请先升级目标节点');
+    return;
   } else {
     // 版本兼容
     executeUpdate();
@@ -201,7 +204,7 @@ const pollUpdateStatus = (taskId: string, pluginId: string) => {
   if (updateState.timer) clearInterval(updateState.timer);
   updateState.timer = setInterval(async () => {
     try {
-      const res = await getInstallPluginStatus(taskId);
+      const res = await getInstallPluginStatus(taskId, targetNodeId);
       updateState.progress = res.progress;
       updateState.message = res.message;
 
@@ -238,7 +241,7 @@ const pollUpdateStatus = (taskId: string, pluginId: string) => {
 
 // minSdk版本对比
 const currentSystemVersion = computed(() => {
-  const rawVersion = userStore.userInfo.version || '';
+  const rawVersion = targetSystemVersion.value || '';
   const match = rawVersion.match(/v?(\d+(\.\d+)+)/);
   return match ? match[1] : '0.0.0';
 });
@@ -272,6 +275,8 @@ defineExpose({ getList });
 onMounted(() => {
   getList();
 });
+
+cleanupPluginPage(() => { if (updateState.timer) clearInterval(updateState.timer); });
 </script>
 
 <template>
@@ -335,6 +340,9 @@ onMounted(() => {
                 {{ item.name }}
               </h3>
 
+              <t-tag size="small" variant="light" :theme="item.supportsMultiNode === PluginMultiNodeSupport.Supported ? 'success' : item.supportsMultiNode === PluginMultiNodeSupport.Unsupported ? 'warning' : 'default'">
+                {{ item.supportsMultiNode === PluginMultiNodeSupport.Supported ? '已适配多节点' : item.supportsMultiNode === PluginMultiNodeSupport.Unsupported ? '仅主节点界面' : '多节点未验证' }}
+              </t-tag>
               <!-- 动态状态标签 -->
               <t-tag size="small" :theme="getStatusTheme(item.status)" variant="light" class="!px-2 !rounded-md">
                 {{ item.status || '未知状态' }}

@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { confirmNodeAction } from '@/utils/nodeDialog';
 import { ref, onMounted, watch, computed } from 'vue';
 import { useRoute } from 'vue-router';
-import { MessagePlugin, DialogPlugin, type PrimaryTableCol, type TableRowData } from 'tdesign-vue-next';
+import { MessagePlugin, type PrimaryTableCol, type TableRowData } from 'tdesign-vue-next';
 import { DeleteIcon, DownloadIcon, TimeIcon, FileIcon, RefreshIcon } from 'tdesign-icons-vue-next';
 
 // API
@@ -82,7 +83,7 @@ const onSelectChange = (value: (string | number)[]) => {
 // --- 单个操作逻辑 ---
 
 const handleDelete = (row: InstanceBackupFilesModel) => {
-  const confirmDialog = DialogPlugin.confirm({
+  const confirmDialog = confirmNodeAction({
     header: '确认删除备份?',
     body: `您确定要永久删除文件 "${row.fileName}" 吗？此操作不可恢复。`,
     theme: 'danger',
@@ -136,7 +137,7 @@ const handleBatchDelete = () => {
   const count = selectedRowKeys.value.length;
   if (count === 0) return;
 
-  const confirmDialog = DialogPlugin.confirm({
+  const confirmDialog = confirmNodeAction({
     header: '确认批量删除?',
     body: `您选中了 ${count} 个备份文件。删除后无法恢复，确定要继续吗？`,
     theme: 'danger',

@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import { confirmNodeAction } from '@/utils/nodeDialog';
 import { ref, onMounted, computed, watch } from 'vue';
 import { useUserStore } from '@/store';
 import { useRoute } from 'vue-router';
-import { MessagePlugin, DialogPlugin, type FormRules, type FormInstanceFunctions } from 'tdesign-vue-next';
+import { MessagePlugin, type FormRules, type FormInstanceFunctions } from 'tdesign-vue-next';
 import {
   TimeIcon,
   AddIcon,
@@ -204,7 +205,7 @@ const handleSubmit = async () => {
 
 // 删除
 const handleDelete = (item: CronTaskItemModel) => {
-  const confirmDialog = DialogPlugin.confirm({
+  const confirmDialog = confirmNodeAction({
     header: '确认删除?',
     body: `确定删除任务 "${item.name}" 吗？`,
     theme: 'danger',

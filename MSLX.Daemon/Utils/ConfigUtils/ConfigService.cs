@@ -175,5 +175,23 @@ namespace MSLX.Daemon.Utils.ConfigUtils
         {
             _configLock?.Dispose();
         }
+
+        public void UpdateConfig(Func<JObject, JObject> update)
+        {
+            _configLock.EnterWriteLock();
+            try
+            {
+                var next = update((JObject)_configCache.DeepClone());
+                var temporary = _configPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+                try
+                {
+                    IConfigBase.SaveJson(temporary, next);
+                    File.Move(temporary, _configPath, true);
+                }
+                finally { if (File.Exists(temporary)) File.Delete(temporary); }
+                _configCache = (JObject)next.DeepClone();
+            }
+            finally { _configLock.ExitWriteLock(); }
+        }
     }
 }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { confirmNodeAction } from '@/utils/nodeDialog';
 import { ref, watch, computed } from 'vue';
-import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next';
+import { MessagePlugin } from 'tdesign-vue-next';
 import { CheckCircleFilledIcon, ErrorCircleFilledIcon } from 'tdesign-icons-vue-next';
 import { useUserStore } from '@/store';
 import {
@@ -136,7 +137,7 @@ const handleStartUpdate = () => {
     return;
   }
 
-  const confirmDialog = DialogPlugin.confirm({
+  const confirmDialog = confirmNodeAction({
     header: '高危操作确认',
     theme: 'warning',
     body: '即将开始自动下载并覆盖更新基岩版服务端。请确认您已备份核心数据（如 worlds 目录）。此更新为前台任务，请勿在更新期间关闭或刷新此页面，否则可能导致服务端文件损坏！',

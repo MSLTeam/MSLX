@@ -5,6 +5,7 @@ import type { AxiosTransform, CreateAxiosOptions } from './AxiosTransform';
 import { VAxios } from './Axios';
 import { joinTimestamp, formatRequestDate, setObjToUrlParams } from './utils';
 import { TOKEN_NAME, BASE_URL_NAME } from '@/config/global';
+import { getPageNodeId, getNodeTarget, getNodeToken } from '@/utils/nodeTarget';
 
 // 数据处理，方便区分多种处理方式
 const transform: AxiosTransform = {
@@ -59,6 +60,12 @@ const transform: AxiosTransform = {
 
   // 请求前处理配置
   beforeRequestHook: (config, options) => {
+    // Capture synchronously, before Axios schedules the asynchronous interceptor.
+    const nodeRoute = /^(?:\/api)?\/(?:instance|files|frp|java|python|docker|tasks|plugins?)(?:\/|$)/.test(config.url || '') || config.url === '/api/static/images/upload';
+    const external = /^(https?:)?\/\//.test(config.url || '') || (config.baseURL &&
+      new URL(config.baseURL, window.location.origin).origin !== new URL(localStorage.getItem(BASE_URL_NAME) || window.location.origin).origin);
+    if (!external && !options.targetNodeId && !config.headers?.['x-node-id'] && options.requestToSlaveNode !== false &&
+        (nodeRoute || options.requestToSlaveNode === true)) options.targetNodeId = getPageNodeId();
     const { apiUrl, isJoinPrefix, urlPrefix, joinParamsToUrl, formatDate, joinTime = true } = options;
 
     // 添加接口前缀
@@ -109,42 +116,29 @@ const transform: AxiosTransform = {
   },
 
   // 请求拦截器处理
-  requestInterceptors: (config, _options) => {
-    const token = localStorage.getItem(TOKEN_NAME);
-    const baseUrl = localStorage.getItem(BASE_URL_NAME);
-    const activeNodeId = localStorage.getItem('ACTIVE_NODE_ID');
-    const activeNodeUrl = localStorage.getItem('ACTIVE_NODE_URL');
+  requestInterceptors: async (config, _options) => {
     const reqOptions = (config as Recordable)?.requestOptions || {};
-    const requestToSlaveNode = reqOptions.requestToSlaveNode;
-
-    // 判断是否是子节点支持处理的接口 （这些接口会导向到子节点）
-    let isSlaveRoute = /^(?:\/api)?\/(?:instance|files|frp|java|python|docker|tasks)(?:\/|$)/.test(config.url || '') || config.url === '/api/static/images/upload';
-
-    if (requestToSlaveNode === true) {
-      isSlaveRoute = true;
-    } else if (requestToSlaveNode === false) {
-      isSlaveRoute = false;
-    }
-
-    // 动态设置 baseURL
-    if (activeNodeUrl && activeNodeId !== 'local' && isSlaveRoute) {
-      if (!/^(https?:)?\/\//.test(config.url || '') && !config.baseURL) {
-        config.baseURL = activeNodeUrl;
+    const explicitNode = reqOptions.targetNodeId || config.headers['x-node-id'];
+    let isSlaveRoute = /^(?:\/api)?\/(?:instance|files|frp|java|python|docker|tasks|plugins?)(?:\/|$)/.test(config.url || '') || config.url === '/api/static/images/upload';
+    if (reqOptions.requestToSlaveNode === true) isSlaveRoute = true;
+    if (reqOptions.requestToSlaveNode === false) isSlaveRoute = false;
+    const absolute = /^(https?:)?\/\//.test(config.url || '');
+    const mainOrigin = new URL(localStorage.getItem(BASE_URL_NAME) || window.location.origin).origin;
+    const externalBase = config.baseURL && new URL(config.baseURL, window.location.origin).origin !== mainOrigin;
+    if (absolute || (externalBase && !explicitNode)) return config;
+    const nodeId = explicitNode || (isSlaveRoute ? getPageNodeId() : 'local');
+    if (!absolute) {
+      if (nodeId !== 'local') {
+        const nodeStore = (await import('@/store/modules/node')).useNodeStore();
+        await nodeStore.fetchNodes();
       }
-    } else if (baseUrl && !/^(https?:)?\/\//.test(config.url || '') && !config.baseURL) {
-      config.baseURL = baseUrl;
-    }
-
-    // 动态设置 x-user-token 和 x-node-id
-    if (token && (config as Recordable)?.requestOptions?.withToken !== false) {
-      // 如果包含了headers 大概率不是请求到守护进程端的 就不传递鉴权相关参数
-      if (!config.headers.hasAuthorization()) {
-        (config as Recordable).headers['x-user-token'] = token;
-        if (activeNodeId && activeNodeId !== 'local' && isSlaveRoute) {
-          if (!(config as Recordable).headers['x-node-id']) {
-            (config as Recordable).headers['x-node-id'] = activeNodeId;
-          }
-        }
+      const target = getNodeTarget(nodeId);
+      // An explicit node must also be the source of the URL; never trust a stale cached address.
+      config.baseURL = nodeId !== 'local' || explicitNode ? target.baseUrl : (config.baseURL || target.baseUrl);
+      if (reqOptions.withToken !== false && !config.headers.hasAuthorization()) {
+        const token = localStorage.getItem(TOKEN_NAME);
+        if (token) config.headers['x-user-token'] = nodeId === 'local' ? token : await getNodeToken(nodeId);
+        if (nodeId !== 'local') config.headers['x-node-id'] = nodeId;
       }
     }
     return config;

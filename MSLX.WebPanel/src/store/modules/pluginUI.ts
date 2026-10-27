@@ -2,26 +2,18 @@ import { defineStore } from 'pinia';
 
 export const usePluginUIStore = defineStore('pluginUI', {
   state: () => ({
-    extensions: {
-      // 预埋插槽名字
-      'instance-console-dropdown': [], // 实例控制台-更多功能下拉菜单
-      'instance-console-overview-bottom': [], // 实例控制台-玩家列表下方
-      'instance-settings-tab': [], // 实例配置-扩展选项卡
-    } as Record<string, any[]>,
+    nodeId: 'local', loading: false, error: '',
+    extensionsByNode: {} as Record<string, Record<string, any[]>>,
   }),
+  getters: {
+    extensions: state => state.loading || state.error ? {} as Record<string, any[]> : state.extensionsByNode[state.nodeId] || {},
+  },
   actions: {
-    registerExtension(slotName: string, extObj: any) {
-      if (!this.extensions[slotName]) {
-        this.extensions[slotName] = [];
-      }
-      const current = this.extensions[slotName];
-      const isDuplicate = current.some(
-        (item: any) => item === extObj || (item.component && item.component === extObj.component),
-      );
-      if (!isDuplicate) {
-        this.extensions[slotName] = [...current, extObj];
-      }
+    registerExtension(slotName: string, extObj: any, nodeId = this.nodeId) {
+      const slots = this.extensionsByNode[nodeId] ||= {};
+      const current = slots[slotName] ||= [];
+      if (!current.some(item => item === extObj || item.component === extObj.component)) slots[slotName] = [...current, extObj];
     },
+    clear() { this.extensionsByNode = {}; this.error = ''; this.loading = false; },
   },
 });
-

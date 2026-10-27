@@ -10,7 +10,10 @@ namespace MSLX.Daemon.Services.PluginsService;
 
 public class PluginManager
 {
-    public List<LoadedPlugin> Plugins { get; } = new();
+    private readonly List<LoadedPlugin> _plugins = new();
+    public IReadOnlyList<LoadedPlugin> Plugins { get { lock (_plugins) return _plugins.ToArray(); } }
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> _operationLocks = new(StringComparer.OrdinalIgnoreCase);
+    public SemaphoreSlim GetOperationLock(string pluginId) => _operationLocks.GetOrAdd(pluginId, _ => new(1, 1));
 
     private IServiceProvider? _serviceProvider;
     private ApplicationPartManager? _partManager;
@@ -32,11 +35,12 @@ public class PluginManager
         AppRouteBuilder = app;
     }
 
-    public IPlugin? GetPluginMetadata(string dllPath)
+    public IPlugin? GetPluginMetadata(string dllPath, bool throwOnError = false)
     {
+        PluginLoadContext? loadContext = null;
         try
         {
-            var loadContext = new PluginLoadContext(dllPath);
+            loadContext = new PluginLoadContext(dllPath);
             using var fs = new FileStream(dllPath, FileMode.Open, FileAccess.Read, FileShare.Read);
             var assembly = loadContext.LoadFromStream(fs);
             var pluginType = assembly.GetTypes().FirstOrDefault(t => 
@@ -44,19 +48,27 @@ public class PluginManager
             
             if (pluginType == null)
             {
-                loadContext.Unload();
                 return null;
             }
 
             var pluginInstance = (IPlugin)Activator.CreateInstance(pluginType)!;
-            // 卸载 ALC
-            loadContext.Unload(); 
+            ValidateMetadata(pluginInstance);
             return pluginInstance;
         }
-        catch
+        catch (Exception ex) when (!throwOnError)
         {
+            _logger?.LogWarning(ex, "读取插件元数据失败: {File}", Path.GetFileName(dllPath));
             return null;
         }
+        finally { loadContext?.Unload(); }
+    }
+
+    public static void ValidateMetadata(IPlugin plugin)
+    {
+        if (!System.Text.RegularExpressions.Regex.IsMatch(plugin.Id ?? "", "^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$"))
+            throw new InvalidDataException("插件 ID 无效");
+        if (!Enum.IsDefined(plugin.SupportsMultiNode))
+            throw new InvalidDataException("插件 SupportsMultiNode 声明无效，请使用 PluginMultiNodeSupport 枚举");
     }
 
     public bool LoadPlugin(string dllPath)
@@ -64,6 +76,12 @@ public class PluginManager
         if (_serviceProvider == null || _partManager == null || _logger == null)
             return false;
 
+        PluginLoadContext? loadContext = null;
+        IServiceScope? scope = null;
+        AssemblyPart? part = null;
+        Assembly? assembly = null;
+        List<Microsoft.AspNetCore.Routing.EndpointDataSource> capturedDataSources = new();
+        var loaded = false;
         try
         {
             var disabledMarker = dllPath + ".disabled";
@@ -74,11 +92,10 @@ public class PluginManager
             }
 
             // 初始化独立的 AssemblyLoadContext
-            var loadContext = new PluginLoadContext(dllPath);
+            loadContext = new PluginLoadContext(dllPath);
             
             using var fs = new FileStream(dllPath, FileMode.Open, FileAccess.Read, FileShare.Read);
             var pdbPath = Path.ChangeExtension(dllPath, ".pdb");
-            Assembly assembly;
             
             if (File.Exists(pdbPath))
             {
@@ -96,11 +113,11 @@ public class PluginManager
             if (pluginType == null)
             {
                 _logger.LogWarning($"[MSLX Plugin] 未找到实现 IPlugin 的类: {dllPath}");
-                loadContext.Unload();
                 return false;
             }
 
             var pluginInstance = (IPlugin)Activator.CreateInstance(pluginType)!;
+            ValidateMetadata(pluginInstance);
             
             // 校验兼容性
             var hostVersion = Assembly.GetEntryAssembly()?.GetName().Version ?? new Version("0.0.0.0");
@@ -151,17 +168,16 @@ public class PluginManager
             
             // 构建插件的 Provider 并生成 Scope
             var pluginProvider = pluginServices.BuildServiceProvider();
-            var scope = pluginProvider.CreateScope();
+            scope = pluginProvider.CreateScope();
 
             pluginInstance.OnPluginInitialize(scope.ServiceProvider);
             pluginInstance.OnLoad();
 
             // 挂载路由
-            var part = new AssemblyPart(assembly);
+            part = new AssemblyPart(assembly);
             _partManager.ApplicationParts.Add(part);
             NotifyRouteChanges();
 
-            List<Microsoft.AspNetCore.Routing.EndpointDataSource> capturedDataSources = new();
             if (AppRouteBuilder != null)
             {
                 var routeWrapper = new PluginEndpointRouteBuilderWrapper(AppRouteBuilder);
@@ -178,13 +194,14 @@ public class PluginManager
                 catch (Exception ex)
                 {
                     _logger.LogError($"[MSLX Plugin] 插件 {pluginInstance.Name} 注册扩展路由时抛出异常: {ex.Message}");
+                    throw;
                 }
             }
 
             // 注册到弱引用表
             PluginProviders.AddOrUpdate(assembly, pluginProvider);
 
-            Plugins.Add(new LoadedPlugin 
+            lock (_plugins) _plugins.Add(new LoadedPlugin
             { 
                 Assembly = assembly, 
                 Metadata = pluginInstance,
@@ -196,6 +213,7 @@ public class PluginManager
                 DataSourcesAdded = capturedDataSources
             });
 
+            loaded = true;
             _logger.LogInformation($"[MSLX Plugin] 成功加载插件: {pluginInstance.Name} v{pluginInstance.Version}");
             return true;
         }
@@ -203,6 +221,22 @@ public class PluginManager
         {
             _logger.LogError($"[MSLX Plugin] 插件加载失败 ({Path.GetFileName(dllPath)}): {ex.Message}");
             return false;
+        }
+        finally
+        {
+            if (!loaded)
+            {
+                if (assembly != null)
+                {
+                    try { _serviceProvider.GetService<IMSLXEvents>()?.UnregisterPlugin(assembly); }
+                    catch (Exception ex) { _logger.LogWarning(ex, "清理失败插件的事件监听器时出错"); }
+                }
+                if (part != null) { _partManager.ApplicationParts.Remove(part); NotifyRouteChanges(); }
+                if (capturedDataSources.Count > 0) DynamicEndpoints.RemoveDataSources(capturedDataSources);
+                try { scope?.Dispose(); }
+                catch (Exception ex) { _logger.LogWarning(ex, "释放失败插件的作用域时出错"); }
+                loadContext?.Unload();
+            }
         }
     }
 
@@ -287,7 +321,7 @@ public class PluginManager
             plugin.Scope?.Dispose();
 
             // 从列表中移除
-            Plugins.Remove(plugin);
+            lock (_plugins) _plugins.Remove(plugin);
 
             // 卸载上下文
             plugin.LoadContext?.Unload();

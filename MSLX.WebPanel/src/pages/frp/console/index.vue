@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { confirmNodeAction } from '@/utils/nodeDialog';
 import { ref, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
+import { MessagePlugin } from 'tdesign-vue-next';
 
 // 子组件
 import ConsoleTerminal from './components/ConsoleTerminal.vue';
@@ -86,7 +87,7 @@ const handleClearLog = () => {
 };
 
 const handleEditConfig = () => {
-  const confirmDialog = DialogPlugin.confirm({
+  const confirmDialog = confirmNodeAction({
     header: '警告',
     body: '直接编辑配置文件可能会导致服务无法启动或异常。正常情况在线服务商提供的配置文件也不能修改。请确保您了解配置文件的格式和内容。\n\n是否继续？',
     theme: 'warning',

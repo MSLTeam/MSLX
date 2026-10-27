@@ -1,4 +1,9 @@
 <script setup lang="ts">
+import { getPageNodeId } from '@/utils/nodeTarget';
+const targetNodeId = getPageNodeId();
+import { getDaemonStatusInfo } from '@/api/update';
+import { onUnmounted as cleanupPluginPage } from 'vue';
+import { confirmNodeAction } from '@/utils/nodeDialog';
 import { ref, onMounted, reactive, computed } from 'vue';
 import { DownloadIcon, TimeIcon, LinkIcon, ChevronLeftIcon, ChevronRightIcon } from 'tdesign-icons-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
@@ -13,6 +18,11 @@ const keyword = ref('');
 const marketList = ref<MarketPluginModel[]>([]);
 const pagination = reactive({ current: 1, pageSize: 10, total: 0 });
 const userStore = useUserStore();
+const targetSystemVersion = ref(targetNodeId === 'local' ? userStore.userInfo.version : '');
+onMounted(async () => {
+  try { targetSystemVersion.value = (await getDaemonStatusInfo(targetNodeId)).version || ''; }
+  catch { /* 前端拿不到最低版本要求，后端也会检查 */ }
+});
 
 // 分类
 const categories = ref<PluginCategoryModel[]>([]);
@@ -134,7 +144,7 @@ const handleInstallVersion = async (version: MarketPluginVersionModel) => {
 
     const safeFileName = formatFileName(activePlugin.value!.appId).replace(/[^a-zA-Z0-9_\-.]/g, '');
     try {
-      const res = await postInstallPlugin(version.downloadLink, `${safeFileName}.new`, true);
+      const res = await postInstallPlugin(version.downloadLink, `${safeFileName}.new`, true, targetNodeId);
       pollInstallStatus(res.taskId);
     } catch (error: any) {
       installState.isInstalling = false;
@@ -144,16 +154,8 @@ const handleInstallVersion = async (version: MarketPluginVersionModel) => {
 
   // 检查 SDK 版本
   if (requiresHigherSdk(version.minSdkVersion)) {
-    const confirmDialog = DialogPlugin.confirm({
-      header: '存在兼容性风险',
-      body: `该插件要求节点版本至少为 v${version.minSdkVersion}，而您当前版本为 v${currentSystemVersion.value}。强制安装可能导致插件无法正常运行，是否继续？`,
-      theme: 'warning',
-      onConfirm: () => {
-        executeInstall();
-        confirmDialog.hide();
-      },
-      onClose: () => confirmDialog.hide(),
-    });
+    MessagePlugin.error('插件要求更高的节点版本，请先升级目标节点');
+    return;
   } else {
     // 版本兼容
     executeInstall();
@@ -164,7 +166,7 @@ const pollInstallStatus = (taskId: string) => {
   if (installState.timer) clearInterval(installState.timer);
   installState.timer = setInterval(async () => {
     try {
-      const res = await getInstallPluginStatus(taskId);
+      const res = await getInstallPluginStatus(taskId, targetNodeId);
       installState.progress = res.progress;
       installState.message = res.message;
 
@@ -196,7 +198,7 @@ const pollInstallStatus = (taskId: string) => {
 
 // sdk版本对比
 const currentSystemVersion = computed(() => {
-  const rawVersion = userStore.userInfo.version || '';
+  const rawVersion = targetSystemVersion.value || '';
   const match = rawVersion.match(/v?(\d+(\.\d+)+)/);
   return match ? match[1] : '0.0.0';
 });
@@ -231,6 +233,8 @@ onMounted(() => {
   fetchCategories();
   fetchMarketList();
 });
+
+cleanupPluginPage(() => { if (installState.timer) clearInterval(installState.timer); });
 </script>
 
 <template>

@@ -5,13 +5,16 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import { getDaemonUpdateInfo, getDaemonUpdateDownloadInfo } from '@/api/update';
 import type { UpdateInfoModel, UpdateDownloadInfoModel } from '@/api/model/update';
 import { useUserStore } from '@/store';
+import { getPageNodeId, getNodeTarget } from '@/utils/nodeTarget';
 
 export const useUpdateStore = defineStore('update', () => {
   // === State ===
   const showUpdateModal = ref(false);
   const updateInfo = ref<UpdateInfoModel | null>(null);
   const downloadInfo = ref<UpdateDownloadInfoModel | null>(null);
-  const loading = ref(false); // 检查更新时的 loading 状态
+  const loading = ref(false);
+  const targetNodeId = ref('local');
+  let checkVersion = 0; // 检查更新时的 loading 状态
 
   // === Actions ===
 
@@ -19,15 +22,19 @@ export const useUpdateStore = defineStore('update', () => {
    * 检查更新
    * @param force 是否强制检查
    */
-  const checkAppUpdate = async (force = false) => {
+  const checkAppUpdate = async (force = false, nodeId = 'local') => {
     const userStore = useUserStore();
     if (!userStore.isAdmin) return;
     if (loading.value) return;
     loading.value = true;
+    const attempt = ++checkVersion;
+    const pageNodeId = getPageNodeId();
+    targetNodeId.value = nodeId;
 
     try {
       // 获取版本信息
-      const res = await getDaemonUpdateInfo();
+      const res = await getDaemonUpdateInfo(nodeId, getNodeTarget(nodeId).baseUrl);
+      if (attempt !== checkVersion || pageNodeId !== getPageNodeId()) return;
       const data = res as unknown as UpdateInfoModel;
 
       if (data?.environment === 'desktop-bundle') {
@@ -52,7 +59,7 @@ export const useUpdateStore = defineStore('update', () => {
 
         // 获取下载链接
         try {
-          const dlRes = await getDaemonUpdateDownloadInfo();
+          const dlRes = await getDaemonUpdateDownloadInfo(nodeId, getNodeTarget(nodeId).baseUrl);
           downloadInfo.value = dlRes as unknown as UpdateDownloadInfoModel;
         } catch (e) {
           console.error('获取下载链接失败', e);
@@ -60,6 +67,7 @@ export const useUpdateStore = defineStore('update', () => {
         }
 
         // 弹窗
+        if (attempt !== checkVersion || pageNodeId !== getPageNodeId()) return;
         showUpdateModal.value = true;
 
         if (force) {
@@ -95,6 +103,7 @@ export const useUpdateStore = defineStore('update', () => {
 
   return {
     showUpdateModal,
+    targetNodeId,
     updateInfo,
     downloadInfo,
     loading,

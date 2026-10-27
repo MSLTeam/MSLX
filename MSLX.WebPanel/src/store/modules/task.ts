@@ -2,27 +2,29 @@ import { defineStore } from 'pinia';
 import { ref, computed, watch } from 'vue';
 import { getUserTasks, cancelUserTask, deleteUserTask, clearFinishedUserTasks } from '@/api/files';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { useNodeStore } from './node';
+import { getPageNodeId } from '@/utils/nodeTarget';
 
 export const useTaskStore = defineStore('backgroundTask', () => {
   const tasks = ref<any[]>([]);
   let pollTimer: number | null = null;
   const isPolling = ref(false);
-  const nodeStore = useNodeStore();
+  const nodeId = ref(getPageNodeId());
 
   const runningCount = computed(() => {
     return tasks.value.filter(t => t.state === 0 || t.state === 1).length; // 0: Pending, 1: Running
   });
 
-  watch(() => nodeStore.activeNodeId, () => {
+  watch(nodeId, () => {
     tasks.value = [];
     stopPolling();
     fetchTasks();
   });
 
   const fetchTasks = async (instanceId?: number) => {
+    const target = nodeId.value;
     try {
-      const res = await getUserTasks(instanceId);
+      const res = await getUserTasks(instanceId, target);
+      if (target !== nodeId.value) return;
       const oldTasks = tasks.value;
       tasks.value = res || [];
 
@@ -71,21 +73,22 @@ export const useTaskStore = defineStore('backgroundTask', () => {
   };
 
   const cancelTask = async (taskId: string) => {
-    await cancelUserTask(taskId);
+    await cancelUserTask(taskId, nodeId.value);
     await fetchTasks();
   };
 
   const deleteTask = async (taskId: string) => {
-    await deleteUserTask(taskId);
+    await deleteUserTask(taskId, nodeId.value);
     await fetchTasks();
   };
 
   const clearFinished = async () => {
-    await clearFinishedUserTasks();
+    await clearFinishedUserTasks(nodeId.value);
     await fetchTasks();
   };
 
   return {
+    nodeId,
     tasks,
     runningCount,
     fetchTasks,

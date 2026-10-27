@@ -6,7 +6,7 @@ export async function getDaemonUpdateInfo(nodeId?: string, nodeUrl?: string) {
     url: '/api/update/info',
     baseURL: nodeUrl || undefined,
     headers: nodeId && nodeId !== 'local' ? { 'x-node-id': nodeId } : {}
-  });
+  }, { targetNodeId: nodeId || 'local' });
 }
 
 export async function getDaemonStatusInfo(nodeId?: string, nodeUrl?: string) {
@@ -14,7 +14,7 @@ export async function getDaemonStatusInfo(nodeId?: string, nodeUrl?: string) {
     url: '/api/status',
     baseURL: nodeUrl || undefined,
     headers: nodeId && nodeId !== 'local' ? { 'x-node-id': nodeId } : {}
-  });
+  }, { targetNodeId: nodeId || 'local' });
 }
 
 export async function getDaemonUpdateDownloadInfo(nodeId?: string, nodeUrl?: string) {
@@ -22,7 +22,7 @@ export async function getDaemonUpdateDownloadInfo(nodeId?: string, nodeUrl?: str
     url: '/api/update/download',
     baseURL: nodeUrl || undefined,
     headers: nodeId && nodeId !== 'local' ? { 'x-node-id': nodeId } : {}
-  });
+  }, { targetNodeId: nodeId || 'local' });
 }
 
 export async function postUpdateDaemon(nodeId?: string, nodeUrl?: string){
@@ -30,5 +30,5 @@ export async function postUpdateDaemon(nodeId?: string, nodeUrl?: string){
     url: '/api/update',
     baseURL: nodeUrl || undefined,
     headers: nodeId && nodeId !== 'local' ? { 'x-node-id': nodeId } : {}
-  });
+  }, { targetNodeId: nodeId || 'local' });
 }

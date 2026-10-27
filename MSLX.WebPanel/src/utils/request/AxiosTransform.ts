@@ -22,7 +22,7 @@ export abstract class AxiosTransform {
   requestCatchHook?: (_e: Error | AxiosError, _options: RequestOptions) => Promise<any>;
 
   // 请求前的拦截器
-  requestInterceptors?: (_config: InternalAxiosRequestConfig, _options: CreateAxiosOptions) => InternalAxiosRequestConfig;
+  requestInterceptors?: (_config: InternalAxiosRequestConfig, _options: CreateAxiosOptions) => InternalAxiosRequestConfig | Promise<InternalAxiosRequestConfig>;
 
   // 请求后的拦截器
   responseInterceptors?: (_res: AxiosResponse) => AxiosResponse;

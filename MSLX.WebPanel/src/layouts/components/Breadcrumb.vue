@@ -9,9 +9,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
+import { nodeNavigationUrl } from '@/utils/nodeTarget';
+const route = useRoute();
 
 const crumbs = computed(() => {
-  const route = useRoute();
 
   const pathArray = route.path.split('/');
   pathArray.shift();
@@ -24,7 +25,7 @@ const crumbs = computed(() => {
 
     breadcrumbArray.push({
       path,
-      to: breadcrumbArray[idx - 1] ? `/${breadcrumbArray[idx - 1].path}/${path}` : `/${path}`,
+      to: nodeNavigationUrl(breadcrumbArray[idx - 1] ? `/${breadcrumbArray[idx - 1].path}/${path}` : `/${path}`, String(route.query.node || 'local')),
       title: route.matched[idx]?.meta?.title ?? path,
     });
     return breadcrumbArray;

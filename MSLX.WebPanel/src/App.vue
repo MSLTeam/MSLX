@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue';
-import { useSettingStore, useUpdateStore } from '@/store';
+import { computed, onMounted, onUnmounted, watch } from 'vue';
+import { useSettingStore, useUpdateStore, useNodeStore } from '@/store';
 import UpdateModal from '@/components/UpdateModal.vue';
 
 const store = useSettingStore();
 const updateStore = useUpdateStore();
+const nodeStore = useNodeStore();
+watch(() => nodeStore.activeNodeId, () => { updateStore.showUpdateModal = false; });
 
 const mode = computed(() => store.displayMode);
 
@@ -35,6 +37,8 @@ onUnmounted(() => {
   <router-view :class="[mode]" />
   <update-modal
     :visible="updateStore.showUpdateModal"
+    :target-node-id="updateStore.targetNodeId"
+    :target-node-name="updateStore.targetNodeId === 'local' ? '主节点' : nodeStore.slaveNodes.find(n => n.nodeId === updateStore.targetNodeId)?.nodeName"
     :update-info="updateStore.updateInfo"
     :download-info="updateStore.downloadInfo"
     @close="updateStore.showUpdateModal = false"

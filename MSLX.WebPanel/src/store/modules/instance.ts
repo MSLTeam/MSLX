@@ -1,3 +1,4 @@
+import { getPageNodeId } from '@/utils/nodeTarget';
 import { defineStore } from 'pinia';
 import { InstanceListModel } from '@/api/model/instance';
 import { ref } from 'vue';
@@ -5,13 +6,21 @@ import { getInstanceList } from '@/api/instance';
 import { MessagePlugin } from 'tdesign-vue-next';
 
 export const useInstanceListStore = defineStore('instanceList',()=> {
+  let requestSequence = 0;
+  let loadedNode = '';
   const instanceList = ref<InstanceListModel[]>([]);
   const totalInstanceCount = ref(0);
   const onlineInstanceCount = ref(0);
 
   async function refreshInstanceList() {
+    const nodeId = getPageNodeId();
+    const sequence = ++requestSequence;
+    if (loadedNode !== nodeId) instanceList.value = [];
+    loadedNode = nodeId;
     try{
-      instanceList.value = await getInstanceList();
+      const result = await getInstanceList();
+      if (getPageNodeId() !== nodeId || sequence !== requestSequence) return;
+      instanceList.value = result;
       totalInstanceCount.value = instanceList.value.length;
       onlineInstanceCount.value = instanceList.value.filter(item=>item.status).length;
     }catch (e){

@@ -132,6 +132,7 @@ MSLX-Daemon 初始化成功 - 默认管理员凭据
             var userToken = _userListCache.FirstOrDefault(u => u["Id"]?.ToString() == userId);
             if (userToken != null)
             {
+                if (userToken["Role"]?.ToString() == role && JToken.DeepEquals(userToken["Resources"], resources)) return;
                 userToken["Role"] = role;
                 userToken["Resources"] = resources;
             }
@@ -310,8 +311,20 @@ MSLX-Daemon 初始化成功 - 默认管理员凭据
         }
     }
 
+    private static readonly HttpContextAccessor RequestContext = new();
+
+    private static UserInfo? RequestNodeUser(string id)
+    {
+        var principal = RequestContext.HttpContext?.User;
+        return principal?.Identity?.AuthenticationType == "NodeAuth" && principal.FindFirst("UserId")?.Value == id
+            ? new UserInfo { Id = id, Role = principal.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "user",
+                Resources = principal.FindAll("Resource").Select(c => c.Value).ToList() } : null;
+    }
+
     public UserInfo? GetUserById(string id)
     {
+        var requestUser = RequestNodeUser(id);
+        if (requestUser != null) return requestUser;
         if (id == "system-admin")
         {
             return new UserInfo
@@ -418,6 +431,8 @@ MSLX-Daemon 初始化成功 - 默认管理员凭据
     /// </summary>
     public bool HasResourcePermission(string userId,string type, int id)
     {
+        var requestUser = RequestNodeUser(userId);
+        if (requestUser != null) return requestUser.Role == "admin" || requestUser.Resources.Contains($"{type}:{id}");
         if(userId == "system-admin") return true; // 全局APIKey
         _userListLock.EnterReadLock();
         try

@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { confirmNodeAction } from '@/utils/nodeDialog';
 import { ref, reactive, computed, watch, onMounted } from 'vue';
-import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next';
+import { MessagePlugin } from 'tdesign-vue-next';
 import { AddIcon, EditIcon, DeleteIcon, RollbackIcon, InternetIcon, LinkIcon } from 'tdesign-icons-vue-next';
 import { request } from '@/utils/request';
 import { changeUrl } from '@/router';
@@ -233,7 +234,7 @@ const handleSubmit = async () => {
 };
 
 const handleDelete = async (id: number) => {
-  const confirmDia = DialogPlugin.confirm({
+  const confirmDia = confirmNodeAction({
     header: '确认删除',
     body: '确定要删除这条解析记录吗？删除后无法恢复。',
     onConfirm: async () => {

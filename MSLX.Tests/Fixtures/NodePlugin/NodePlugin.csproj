@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateEmbeddedFilesManifest>true</GenerateEmbeddedFilesManifest>
+    <AssemblyName>MSLX.NodeTestPlugin</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../MSLX.SDK/MSLX.SDK.csproj" />
+    <PackageReference Include="Microsoft.Extensions.FileProviders.Embedded" Version="10.0.10" />
+    <EmbeddedResource Include="Frontend/dist/mslx-plugin-entry.js" />
+  </ItemGroup>
+  <Target Name="PrepareFixtureFrontend" BeforeTargets="PrepareForBuild">
+    <MakeDir Directories="Frontend/dist" />
+    <Copy SourceFiles="Frontend/mslx-plugin-entry.js" DestinationFolder="Frontend/dist" />
+  </Target>
+</Project>

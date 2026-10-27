@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import { confirmNodeAction } from '@/utils/nodeDialog';
 import { ref, computed, onMounted } from 'vue';
-import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next';
+import { MessagePlugin } from 'tdesign-vue-next';
 import {
   CloudIcon,
   ServerIcon,
@@ -81,7 +82,7 @@ const handleDownload = async (id: number, fileName: string) => {
 
 // 删除逻辑
 const processDelete = async (instanceId: number, fileNames: string[]) => {
-  const confirmDialog = DialogPlugin.confirm({
+  const confirmDialog = confirmNodeAction({
     header: '确认删除',
     body: `确定要删除选中的 ${fileNames.length} 个备份文件吗？此操作不可恢复。`,
     theme: 'danger',

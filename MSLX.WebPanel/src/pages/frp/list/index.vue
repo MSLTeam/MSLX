@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { confirmNodeAction } from '@/utils/nodeDialog';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import {
   AddIcon,
@@ -26,7 +27,7 @@ import {
   postFrpAction,
   postUpdateFrpTunnel,
 } from '@/api/frp';
-import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
+import { MessagePlugin } from 'tdesign-vue-next';
 import { useUserStore, useNodeStore } from '@/store';
 import NodeSwitcher from '@/components/node-switcher/index.vue';
 
@@ -179,7 +180,7 @@ const handleCardClick = (e: Event, item: FrpListModel, newTab = false) => {
 };
 
 const handleDelete = (id: number) => {
-  const confirmDialog = DialogPlugin.confirm({
+  const confirmDialog = confirmNodeAction({
     header: '确认删除隧道?',
     body: '删除后该隧道将无法恢复。确定要继续吗？',
     theme: 'danger',
@@ -317,7 +318,7 @@ const handleBatchAction = async (action: 'start' | 'stop', targetGroup: TunnelGr
     return;
   }
 
-  const confirmDialog = DialogPlugin.confirm({
+  const confirmDialog = confirmNodeAction({
     header: `确认批量${actionText}【${targetGroup.label || '选定'}】隧道?`,
     body: `即将批量${actionText}该分组下的 ${targetItems.length} 条隧道，是否继续？`,
     theme: action === 'stop' ? 'warning' : 'info',

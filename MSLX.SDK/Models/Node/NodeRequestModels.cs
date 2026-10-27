@@ -14,10 +14,17 @@ namespace MSLX.SDK.Models.Node
         [Required(ErrorMessage = "节点名称不能为空")]
         public string NodeName { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "通讯秘钥不能为空")]
         public string LinkKey { get; set; } = string.Empty;
 
+        public string PairingId { get; set; } = string.Empty;
+
         public string? NodeTags { get; set; } = string.Empty;
+    }
+
+    public class NodeSessionRequest
+    {
+        [Required] public string NodeId { get; set; } = string.Empty;
+        public string? Scope { get; set; }
     }
 
     public class VerifyTokenRequest
@@ -28,6 +35,7 @@ namespace MSLX.SDK.Models.Node
 
     public class AcceptLinkRequest
     {
+        public int ProtocolVersion { get; set; }
         [Required(ErrorMessage = "主节点标识不能为空")]
         public string MasterId { get; set; } = string.Empty;
 
@@ -36,6 +44,8 @@ namespace MSLX.SDK.Models.Node
 
         [Required(ErrorMessage = "通讯秘钥不能为空")]
         public string LinkKey { get; set; } = string.Empty;
+
+        public string PairingId { get; set; } = string.Empty;
     }
 
     public class UpdateLinkRequest

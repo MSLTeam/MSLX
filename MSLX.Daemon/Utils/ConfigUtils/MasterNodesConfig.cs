@@ -53,11 +53,6 @@ namespace MSLX.Daemon.Utils.ConfigUtils
                     .FirstOrDefault(m => m["MasterId"]?.ToString() == masterId || m["NodeId"]?.ToString() == masterId)
                     ?.ToObject<MasterNodeInfo>();
 
-                if (target == null && _mastersCache.Count == 1)
-                {
-                    return _mastersCache[0].ToObject<MasterNodeInfo>();
-                }
-
                 return target;
             }
             finally
@@ -71,16 +66,18 @@ namespace MSLX.Daemon.Utils.ConfigUtils
             _lock.EnterWriteLock();
             try
             {
-                var target = _mastersCache.FirstOrDefault(m => m["MasterId"]?.ToString() == master.MasterId || (!string.IsNullOrEmpty(master.NodeId) && m["NodeId"]?.ToString() == master.NodeId));
+                var updated = (JArray)_mastersCache.DeepClone();
+                var target = updated.FirstOrDefault(m => m["MasterId"]?.ToString() == master.MasterId || (!string.IsNullOrEmpty(master.NodeId) && m["NodeId"]?.ToString() == master.NodeId));
                 if (target != null)
                 {
                     target.Replace(JObject.FromObject(master, _pascalSerializer));
                 }
                 else
                 {
-                    _mastersCache.Add(JObject.FromObject(master, _pascalSerializer));
+                    updated.Add(JObject.FromObject(master, _pascalSerializer));
                 }
-                IConfigBase.SaveJson(_path, _mastersCache);
+                IConfigBase.SaveNodeJson(_path, updated);
+                _mastersCache = updated;
             }
             finally
             {
@@ -88,16 +85,74 @@ namespace MSLX.Daemon.Utils.ConfigUtils
             }
         }
 
+        public MasterNodeInfo AcceptPairing(AcceptLinkRequest request)
+        {
+            _lock.EnterWriteLock();
+            try
+            {
+                var existing = _mastersCache.FirstOrDefault(m => m["MasterId"]?.ToString() == request.MasterId)?.ToObject<MasterNodeInfo>();
+                if (existing != null && existing.PairingId == request.PairingId) return existing;
+                var master = new MasterNodeInfo { MasterId = request.MasterId, PairingId = request.PairingId,
+                    NodeId = Guid.NewGuid().ToString("N"), CommsKey = StringServices.GenerateRandomString(32),
+                    MasterUrl = request.MasterUrl, LinkedAt = DateTime.Now };
+                var updated = (JArray)_mastersCache.DeepClone();
+                var target = updated.FirstOrDefault(m => m["MasterId"]?.ToString() == request.MasterId);
+                if (target == null) updated.Add(JObject.FromObject(master, _pascalSerializer));
+                else target.Replace(JObject.FromObject(master, _pascalSerializer));
+                IConfigBase.SaveNodeJson(_path, updated);
+                _mastersCache = updated;
+                return master;
+            }
+            finally { _lock.ExitWriteLock(); }
+        }
+
+        public bool UpdateRelationship(UpdateLinkRequest request)
+        {
+            _lock.EnterWriteLock();
+            try
+            {
+                var updated = (JArray)_mastersCache.DeepClone();
+                var target = updated.FirstOrDefault(m => m["CommsKey"]?.ToString() == request.CommsKey &&
+                    (m["NodeId"]?.ToString() == request.NodeId || string.IsNullOrEmpty(m["NodeId"]?.ToString())));
+                if (target == null) return false;
+                target["NodeId"] = request.NodeId;
+                target["MasterUrl"] = request.MasterUrl;
+                IConfigBase.SaveNodeJson(_path, updated);
+                _mastersCache = updated;
+                return true;
+            }
+            finally { _lock.ExitWriteLock(); }
+        }
+
+        public bool RemoveRelationship(string nodeId, string commsKey)
+        {
+            _lock.EnterWriteLock();
+            try
+            {
+                var updated = (JArray)_mastersCache.DeepClone();
+                var target = updated.FirstOrDefault(m => m["CommsKey"]?.ToString() == commsKey &&
+                    (m["NodeId"]?.ToString() == nodeId || string.IsNullOrEmpty(m["NodeId"]?.ToString())));
+                if (target == null) return false;
+                target.Remove();
+                IConfigBase.SaveNodeJson(_path, updated);
+                _mastersCache = updated;
+                return true;
+            }
+            finally { _lock.ExitWriteLock(); }
+        }
+
         public bool RemoveMaster(string masterId)
         {
             _lock.EnterWriteLock();
             try
             {
-                var target = _mastersCache.FirstOrDefault(m => m["MasterId"]?.ToString() == masterId || m["NodeId"]?.ToString() == masterId);
+                var updated = (JArray)_mastersCache.DeepClone();
+                var target = updated.FirstOrDefault(m => m["MasterId"]?.ToString() == masterId || m["NodeId"]?.ToString() == masterId);
                 if (target == null) return false;
 
-                _mastersCache.Remove(target);
-                IConfigBase.SaveJson(_path, _mastersCache);
+                updated.Remove(target);
+                IConfigBase.SaveNodeJson(_path, updated);
+                _mastersCache = updated;
                 return true;
             }
             finally

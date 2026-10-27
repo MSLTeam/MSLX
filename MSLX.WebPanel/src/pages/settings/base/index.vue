@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
+import { getPageNodeId } from '@/utils/nodeTarget';
+const targetNodeId = getPageNodeId();
 import { useWebpanelStore, useUserStore } from '@/store';
 
 import UserProfileCard from './components/UserProfileCard.vue';
@@ -18,7 +20,7 @@ const initAllData = async () => {
   const promises = [];
   if (userCardRef.value) promises.push(userCardRef.value.initData());
   if (sysCardRef.value) promises.push(sysCardRef.value.initData());
-  promises.push(webpanelStore.fetchSettings());
+  if (targetNodeId === 'local') promises.push(webpanelStore.fetchSettings());
 
   await Promise.all(promises);
 };
@@ -31,10 +33,11 @@ onMounted(() => {
 <template>
   <div class="settings-page">
     <t-space direction="vertical" size="large" style="width: 100%">
-      <user-profile-card ref="userCardRef" />
+      <user-profile-card v-if="targetNodeId === 'local'" ref="userCardRef" />
 
-      <web-panel-style-card v-if="userStore.isAdmin" />
+      <web-panel-style-card v-if="userStore.isAdmin && targetNodeId === 'local'" />
 
+      <t-alert v-if="targetNodeId !== 'local'" theme="info" message="此处显示所选子节点的插件设置。登录账号资料和当前面板外观由主节点统一管理。" />
       <!--插件扩展区域 "settings-profile-bottom -->
       <plugin-slot name="settings-profile-bottom" />
     </t-space>

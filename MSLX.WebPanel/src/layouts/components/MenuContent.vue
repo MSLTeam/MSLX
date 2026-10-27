@@ -4,6 +4,7 @@ import type { PropType } from 'vue';
 import isObject from 'lodash/isObject';
 import type { MenuRoute } from '@/types/interface';
 import router, { getActive } from '@/router';
+import { nodeNavigationUrl } from '@/utils/nodeTarget';
 
 defineOptions({
   name: 'MenuContent',
@@ -105,10 +106,12 @@ const openHref = (url: string) => {
 };
 
 const openNewTab = (path: string) => {
-  const routeUrl = router.resolve(path).href;
+  const routeUrl = router.resolve(getTarget(path)).href;
   const win = window.open(routeUrl, '_blank');
   if (win) win.focus();
 };
+
+const getTarget = (path: string) => nodeNavigationUrl(path, String(router.currentRoute.value.query.node || 'local'));
 </script>
 
 <template>
@@ -134,7 +137,7 @@ const openNewTab = (path: string) => {
           v-else
           :name="item.path"
           :value="getPath(item)"
-          :to="item.path"
+          :to="getTarget(item.path)"
           class="modern-menu-item"
           @auxclick.middle.prevent="openNewTab(getPath(item))"
         >

@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { confirmNodeAction } from '@/utils/nodeDialog';
 import { onMounted, reactive, ref, watch, computed } from 'vue';
 import {
   AddIcon,
@@ -13,7 +14,7 @@ import {
   SearchIcon,
   UsergroupIcon,
 } from 'tdesign-icons-vue-next';
-import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next';
+import { MessagePlugin } from 'tdesign-vue-next';
 import { useInstanceListStore } from '@/store/modules/instance';
 import type { InstanceListModel } from '@/api/model/instance';
 import { changeUrl } from '@/router';
@@ -24,7 +25,8 @@ import neoforgedImg from '@/assets/serverLogos/neoforged.png';
 import forgeImg from '@/assets/serverLogos/150px-Anvil.png';
 import customImg from '@/assets/serverLogos/150px-MinecartWithCommandBlock.png';
 import defaultImg from '@/assets/serverLogos/150px-Allium.png';
-import { BASE_URL_NAME, TOKEN_NAME } from '@/config/global';
+import { TOKEN_NAME } from '@/config/global';
+import { getPageNodeId, getNodeTarget } from '@/utils/nodeTarget';
 import { useUserStore, useNodeStore } from '@/store';
 import { getMediaToken, getSyncMediaToken } from '@/utils/scopedToken';
 
@@ -41,6 +43,8 @@ const handleNodeChange = (_val: string) => {
 watch(
   () => nodeStore.activeNodeId,
   () => {
+    selectedIds.value = [];
+    isBatchMode.value = false;
     store.refreshInstanceList();
   },
 );
@@ -123,7 +127,7 @@ const handleBatchAction = (action: 'start' | 'stop' | 'restart' | 'delete') => {
   const actionName = actionMap[action];
   const isDelete = action === 'delete';
 
-  const confirmDialog = DialogPlugin.confirm({
+  const confirmDialog = confirmNodeAction({
     header: `确认批量${actionName}`,
     body: `您确定要对已选中的 ${selectedIds.value.length} 个实例执行${actionName}操作吗？${
       isDelete ? '（注意：删除操作不可逆，批量删除默认不清理磁盘上的服务端数据文件）' : ''
@@ -180,12 +184,12 @@ const getImageUrl = (name: string, id: number) => {
       return customImg;
     case 'server-icon': {
       const mediaToken = getSyncMediaToken();
-      const fallbackToken = localStorage.getItem(TOKEN_NAME);
+      const fallbackToken = getPageNodeId() === 'local' ? localStorage.getItem(TOKEN_NAME) : '';
       const tokenParam = mediaToken
         ? `?media_token=${mediaToken}`
         : (fallbackToken ? `?x-user-token=${fallbackToken}` : '');
       return new URL(
-        `${localStorage.getItem(BASE_URL_NAME)}/api/instance/icon/${id}.png${tokenParam}`,
+        `${getNodeTarget().baseUrl}/api/instance/icon/${id}.png${tokenParam}${getPageNodeId() !== 'local' ? `&x-node-id=${encodeURIComponent(getPageNodeId())}` : ''}`,
         import.meta.url,
       ).href;
     }
