@@ -192,7 +192,7 @@ const handleAvatarClick = () => {
       </template>
 
       <template #operations>
-        <div class="flex items-center gap-1 sm:gap-2">
+        <div class="flex items-center gap-2 sm:gap-4">
           <node-switcher v-if="isNodePage(router.currentRoute.value.path)" in-header width="clamp(110px, 17vw, 170px)" />
           <div class="hidden lg:flex items-center gap-2 sm:gap-4">
             <t-dropdown trigger="click" :min-column-width="120">
