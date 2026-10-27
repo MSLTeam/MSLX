@@ -340,3 +340,94 @@ test('failed video credentials and URL construction release queue slots for subs
     assert.equal(grid.videoStatuses.value['request-failure.mp4'], 'done');
   } finally { global.document = originalDocument; console.warn = originalWarn; }
 });
+
+// Exercise the actual node-management setup without starting a browser or network service.
+test('node management uses authenticated status checks and restores monitoring subscriptions', async () => {
+  setup();
+  const { parse, compileScript } = require('@vue/compiler-sfc');
+  const vue = require('vue');
+  const callbacks = {}; const calls = [];
+  const hub = {
+    state: 'Connected', on: (name, fn) => { callbacks[name] = fn; },
+    onreconnecting: fn => { callbacks.reconnecting = fn; },
+    onreconnected: fn => { callbacks.reconnected = fn; },
+    onclose: fn => { callbacks.close = fn; },
+    start: async () => { hub.state = 'Connected'; }, invoke: async method => { calls.push(method); },
+  };
+  class Builder {
+    withUrl() { return this; }
+    withAutomaticReconnect() { return this; }
+    build() { return hub; }
+  }
+  const statusCalls = [];
+  const notices = [];
+  const linkCalls = [];
+  const userStore = { baseUrl: 'http://master.test', token: 'parent' };
+  const nodeStore = { slaveNodes: [], fetchNodes: async () => {} };
+  const { descriptor } = parse(fs.readFileSync(require.resolve('../src/pages/settings/nodeManagement/index.vue'), 'utf8'));
+  const script = compileScript(descriptor, { id: 'node-management-recovery-test' });
+  const output = ts.transpileModule(script.content, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 } }).outputText;
+  const exports = {};
+  new Function('require', 'exports', output)(name => {
+    if (name === 'vue') return { ...vue, onMounted() {}, onUnmounted() {} };
+    if (name === '@microsoft/signalr') return { HubConnectionBuilder: Builder, HubConnectionState: { Connected: 'Connected', Disconnected: 'Disconnected' } };
+    if (name === '@/store') return { useUserStore: () => userStore, useNodeStore: () => nodeStore };
+    if (name === '@/api/node') return {
+      linkSlaveNode: async () => { linkCalls.push('add'); }, postEditSlaveNode: async () => { linkCalls.push('edit'); },
+    };
+    if (name === 'tdesign-vue-next') return { MessagePlugin: { warning: message => notices.push(message), success() {}, error: assert.fail } };
+    if (name === '@/api/update') return { getDaemonStatusInfo: async (...args) => { statusCalls.push(args); return { version: '1.7.6' }; } };
+    if (name === '@/api/node' || name === 'tdesign-vue-next' || name === 'tdesign-icons-vue-next' ||
+        name === '@/utils/request' || name === '@/router' || name === '@/api/docs' || name.endsWith('.vue')) return {};
+    return require(name);
+  }, exports);
+  const page = exports.default.setup({}, { expose() {} });
+  assert.equal(await page.testConnection('slave-a', 'http://slave.test'), true);
+  assert.deepEqual(statusCalls, [['slave-a', 'http://slave.test']]);
+  await page.initSignalR();
+  assert.deepEqual(calls, ['JoinMonitor']);
+  callbacks.ReceiveSystemStats({ slaves: { 'slave-a': { cpu: 10 } } });
+  assert.equal(page.hasReceivedFirstPayload.value, true);
+  callbacks.reconnecting();
+  assert.equal(page.isSignalRConnected.value, false);
+  assert.equal(page.hasReceivedFirstPayload.value, false);
+  await callbacks.reconnected();
+  assert.deepEqual(calls, ['JoinMonitor', 'JoinMonitor']);
+  assert.equal(page.isSignalRConnected.value, true);
+  await page.fetchNodes(true);
+  assert.deepEqual(calls, ['JoinMonitor', 'JoinMonitor', 'JoinMonitor']);
+  hub.state = 'Disconnected';
+  callbacks.close();
+  await page.fetchNodes(true);
+  assert.equal(hub.state, 'Connected');
+  assert.equal(page.isSignalRConnected.value, true);
+  assert.deepEqual(calls, ['JoinMonitor', 'JoinMonitor', 'JoinMonitor', 'JoinMonitor']);
+
+  page.linkForm.value = { nodeName: 'test', nodeUrl: 'http://slave.test', linkKey: 'key', masterUrl: '' };
+  for (const editing of [false, true]) {
+    page.isEdit.value = editing;
+    // Check HTTPS page, HTTPS API base, and an explicit HTTPS callback independently.
+    for (const httpsSource of ['page', 'api', 'callback']) {
+      window.location.href = httpsSource === 'page' ? 'https://panel.test/settings/node' : 'http://panel.test/settings/node';
+      userStore.baseUrl = httpsSource === 'api' ? 'https://master.test' : 'http://master.test';
+      page.linkForm.value.masterUrl = httpsSource === 'callback' ? 'https://master.test' : '';
+      await page.handleLink();
+      assert.match(notices.at(-1), /不能连接 HTTP 子节点/);
+      assert.equal(linkCalls.length, 0);
+    }
+  }
+  window.location.href = 'http://panel.test/settings/node';
+  userStore.baseUrl = 'http://master.test';
+  page.linkForm.value.masterUrl = '';
+  for (const editing of [false, true]) {
+    page.isEdit.value = editing;
+    await page.handleLink();
+  }
+  assert.deepEqual(linkCalls, ['add', 'edit']);
+  window.location.href = 'https://panel.test/settings/node';
+  userStore.baseUrl = 'https://master.test';
+  page.isEdit.value = false;
+  page.linkForm.value.nodeUrl = 'https://slave.test';
+  await page.handleLink();
+  assert.deepEqual(linkCalls, ['add', 'edit', 'add']);
+});
