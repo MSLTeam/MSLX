@@ -6,6 +6,7 @@ using System.Text;
 using MSLX.SDK.Models;
 using MSLX.SDK.Models.Node;
 using System.Security.Cryptography;
+using MSLX.Daemon.Services.NodeServices;
 
 namespace MSLX.Daemon.Utils;
 
@@ -20,17 +21,20 @@ public static class JwtUtils
 
     public static string GenerateNodeToken(UserInfo user, SlaveNodeConfig node, ClaimsPrincipal parent, string? scope = null)
     {
-        var parentExpiry = DateTimeOffset.FromUnixTimeSeconds(long.Parse(parent.FindFirst("exp")!.Value)).UtcDateTime;
+        var isApiKey = parent.Identity?.AuthenticationType == "ApiKey";
         // 降权token相关处理
         var lifetime = scope switch { "media" => TimeSpan.FromDays(1), "download" => TimeSpan.FromHours(2), _ => TimeSpan.FromMinutes(10) };
-        var expiry = new[] { DateTime.UtcNow.Add(lifetime), parentExpiry }.Min();
+        var expiry = DateTime.UtcNow.Add(lifetime);
+        if (!isApiKey)
+            expiry = new[] { expiry, DateTimeOffset.FromUnixTimeSeconds(long.Parse(parent.FindFirst("exp")!.Value)).UtcDateTime }.Min();
         var claims = new List<Claim>
         {
             new("UserId", user.Id), new("NodeId", node.NodeId),
             new("TokenVersion", user.TokenVersion.ToString()),
-            new("ParentJti", parent.FindFirst(JwtRegisteredClaimNames.Jti)!.Value),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+        if (isApiKey) claims.AddRange(NodeCallerAuthorization.CreateNodeClaims(parent, user, node.NodeId));
+        else claims.Add(new("ParentJti", parent.FindFirst(JwtRegisteredClaimNames.Jti)!.Value));
         if (!string.IsNullOrEmpty(scope)) claims.Add(new("Scope", scope));
         var handler = new JwtSecurityTokenHandler();
         return handler.WriteToken(handler.CreateToken(new SecurityTokenDescriptor
@@ -144,6 +148,8 @@ public static class JwtUtils
     /// </summary>
     public static string? GetTokenRejectionReason(ClaimsPrincipal principal, UserInfo user)
     {
+        if (!NodeCallerAuthorization.IsCurrentNodeGrant(principal, user))
+            return "APIKey 或节点访问权限已失效，请重新获取节点凭据";
         var jti = principal.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Jti)?.Value;
         var parentJti = principal.FindFirst("ParentJti")?.Value;
         var tokenVersionStr = principal.FindFirst("TokenVersion")?.Value;

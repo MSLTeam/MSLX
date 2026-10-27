@@ -8,6 +8,7 @@ using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.Models;
 using MSLX.SDK.Models.Node;
+using MSLX.Daemon.Services.NodeServices;
 
 namespace MSLX.Daemon.Controllers.NodesControllers
 {
@@ -31,15 +32,16 @@ namespace MSLX.Daemon.Controllers.NodesControllers
         [HttpPost("session")]
         public IActionResult CreateSession([FromBody] NodeSessionRequest request)
         {
-            if (User.HasClaim(c => c.Type == "Scope") || User.Identity?.AuthenticationType == "NodeAuth" ||
-                User.FindFirst("exp") == null || User.FindFirst("jti") == null)
-                return Forbid();
+            var user = NodeCallerAuthorization.GetCaller(User);
+            if (user == null) return Unauthorized(new ApiResponse<object> { Code = 401, Message = "需要有效的主节点登录会话或 APIKey" });
             if (request.Scope is not (null or "" or "media" or "download")) return BadRequest();
             var node = IConfigBase.NodeList.GetNodeById(request.NodeId);
             if (node == null || node.PendingRemoval) return NotFound();
-            var user = IConfigBase.UserList.GetUserById(User.FindFirst("UserId")!.Value);
-            if (user == null || (user.Role != "admin" && !user.Resources.Any(r => r.StartsWith(node.NodeId + "_")))) return Forbid();
-            var token = JwtUtils.GenerateNodeToken(user, node, User, request.Scope);
+            if (user.Role != "admin" && !user.Resources.Any(r => r.StartsWith(node.NodeId + "_", StringComparison.Ordinal))) return Forbid();
+            string token;
+            try { token = JwtUtils.GenerateNodeToken(user, node, User, request.Scope); }
+            catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            { return Unauthorized(new ApiResponse<object> { Code = 401, Message = ex.Message }); }
             var principal = JwtUtils.ValidateNodeToken(token, node)!;
             return Ok(new ApiResponse<object> { Code = 200, Message = "节点凭据签发成功", Data = new
             {

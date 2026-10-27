@@ -22,12 +22,9 @@ public sealed class NodeSyncService(PluginManager plugins, PluginPackageService 
 
     private static UserInfo CheckCaller(ClaimsPrincipal caller)
     {
-        if (caller.Identity?.AuthenticationType == "NodeAuth" || caller.HasClaim(c => c.Type == "Scope") ||
-            !long.TryParse(caller.FindFirst("exp")?.Value, out var exp) || exp <= DateTimeOffset.UtcNow.ToUnixTimeSeconds() || caller.FindFirst("jti") == null)
-            throw new HttpRequestException("同步需要有效的管理员登录会话", null, HttpStatusCode.Unauthorized);
-        var user = IConfigBase.UserList.GetUserById(caller.FindFirst("UserId")?.Value ?? "");
-        if (user == null || user.Role != "admin" || JwtUtils.GetTokenRejectionReason(caller, user) != null)
-            throw new HttpRequestException("管理员会话已失效，同步已停止", null, HttpStatusCode.Unauthorized);
+        var user = NodeCallerAuthorization.GetCaller(caller);
+        if (user == null || user.Role != "admin")
+            throw new HttpRequestException("管理员会话或 APIKey 已失效，同步已停止", null, HttpStatusCode.Unauthorized);
         return user;
     }
 

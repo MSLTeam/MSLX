@@ -121,11 +121,12 @@ namespace MSLX.Daemon.Middleware
             }
 
             // APIKEY验证
-            if (!isAuthenticated)
+            var isNodeDelegation = path.StartsWithSegments("/api/node/session") || path.StartsWithSegments("/api/node/sync");
+            if (!isAuthenticated && (!isNodeDelegation || string.IsNullOrEmpty(token)))
             {
                 if (!context.Request.Headers.TryGetValue(ApiKeyHeaderName, out var extractedApiKey))
                 {
-                    context.Request.Query.TryGetValue(ApiKeyHeaderName, out extractedApiKey);
+                    if (!isNodeDelegation) context.Request.Query.TryGetValue(ApiKeyHeaderName, out extractedApiKey);
                 }
 
                 string inputKey = extractedApiKey.ToString();
@@ -143,6 +144,8 @@ namespace MSLX.Daemon.Middleware
                             new Claim("UserId", "system-admin"),
                         };
                         context.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "ApiKey"));
+                        NodeCallerAuthorization.CaptureApiKey(context.User, inputKey, true,
+                            IConfigBase.UserList.GetUserById("system-admin")!.TokenVersion);
                         isAuthenticated = true;
                     }
                     // 用户级别 APIKey
@@ -152,6 +155,7 @@ namespace MSLX.Daemon.Middleware
                         if (user != null)
                         {
                             context.User = user.ToPrincipal("ApiKey");
+                            NodeCallerAuthorization.CaptureApiKey(context.User, inputKey, false, user.TokenVersion);
                             isAuthenticated = true;
                         }
                         else

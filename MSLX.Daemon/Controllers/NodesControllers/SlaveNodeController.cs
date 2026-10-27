@@ -29,10 +29,10 @@ namespace MSLX.Daemon.Controllers.NodesControllers
                 if (!MasterNodeController.IsPairingInProgress(pairingId))
                     return BadRequest(new ApiResponse<object> { Code = 400, Message = "此主节点没有对应的配对请求" });
                 return Ok(new ApiResponse<object> { Code = 200, Message = "成功",
-                    Data = new { protocolVersion = JwtUtils.NodeProtocolVersion, pairingId, features = new { pluginMultiNode = true, nodeSync = true } } });
+                    Data = new { protocolVersion = JwtUtils.NodeProtocolVersion, pairingId, features = new { pluginMultiNode = true, nodeSync = true, nodeApiKeySession = true } } });
             }
             return Ok(new ApiResponse<object> { Code = 200, Message = "成功",
-                Data = new { protocolVersion = JwtUtils.NodeProtocolVersion, features = new { pluginMultiNode = true, nodeSync = true } } });
+                Data = new { protocolVersion = JwtUtils.NodeProtocolVersion, features = new { pluginMultiNode = true, nodeSync = true, nodeApiKeySession = true } } });
         }
 
         private static async Task<string?> CheckMasterConnectionAsync(AcceptLinkRequest request, HttpClient client, CancellationToken cancellationToken)
