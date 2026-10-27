@@ -10,6 +10,7 @@ namespace MSLX.Daemon.Utils
     {
         private static X509Certificate2? _cachedCert;
         private static readonly object _lock = new object();
+        public static string? CurrentSubject { get { lock (_lock) return _cachedCert?.Subject; } }
         
         public static X509Certificate2? GetCertificate()
         {

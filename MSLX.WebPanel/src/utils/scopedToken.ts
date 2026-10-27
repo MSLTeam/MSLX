@@ -16,8 +16,7 @@ const mediaRevision = ref(0);
 /**
  * 获取媒体资源专用降权 Token（存储于 localStorage，与 24h 登录会话生命周期对齐，页面刷新不丢失）
  */
-export async function getMediaToken(): Promise<string> {
-  const nodeId = getPageNodeId();
+export async function getMediaToken(nodeId = getPageNodeId()): Promise<string> {
   if (nodeId !== 'local') return getNodeToken(nodeId, 'media');
   const stored = localStorage.getItem(MEDIA_TOKEN_KEY);
   const expStr = localStorage.getItem(MEDIA_TOKEN_EXP_KEY);
@@ -61,8 +60,7 @@ export async function getMediaToken(): Promise<string> {
 /**
  * 同步获取当前缓存的媒体 Token（从 localStorage 读取，刷新页面立即生效，确保地图切片/图标稳定命中强缓存）
  */
-export function getSyncMediaToken(): string {
-  const nodeId = getPageNodeId();
+export function getSyncMediaToken(nodeId = getPageNodeId()): string {
   if (nodeId !== 'local') return getCachedNodeToken(nodeId, 'media');
   // 非响应式存储的
   void mediaRevision.value;
@@ -79,8 +77,7 @@ export function getSyncMediaToken(): string {
  * 获取文件下载专用降权 Token（存储于 sessionStorage，有效期 2h，支持断点续传）
  * 无论当前目录下有多少视频，在当前标签页 2 小时内只向后端请求 1 次签名。
  */
-export async function getDownloadToken(): Promise<string> {
-  const nodeId = getPageNodeId();
+export async function getDownloadToken(nodeId = getPageNodeId()): Promise<string> {
   if (nodeId !== 'local') return getNodeToken(nodeId, 'download');
   const stored = sessionStorage.getItem(DOWNLOAD_TOKEN_KEY);
   const expStr = sessionStorage.getItem(DOWNLOAD_TOKEN_EXP_KEY);
@@ -134,8 +131,7 @@ export async function getDownloadToken(): Promise<string> {
 /**
  * 同步获取当前缓存的下载 Token（若未初始化或已过期返回空字符串）
  */
-export function getSyncDownloadToken(): string {
-  const nodeId = getPageNodeId();
+export function getSyncDownloadToken(nodeId = getPageNodeId()): string {
   if (nodeId !== 'local') return getCachedNodeToken(nodeId, 'download');
   const stored = sessionStorage.getItem(DOWNLOAD_TOKEN_KEY);
   const expStr = sessionStorage.getItem(DOWNLOAD_TOKEN_EXP_KEY);

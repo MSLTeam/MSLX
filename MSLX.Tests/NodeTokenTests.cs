@@ -8,7 +8,7 @@ using MSLX.SDK.Models.Node;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using MSLX.Daemon.Middleware;
-using MSLX.Daemon.Services;
+using MSLX.Daemon.Services.NodeServices;
 using System.Net;
 
 namespace MSLX.Tests;
@@ -115,7 +115,7 @@ public class NodeTokenTests
     [Fact]
     public void UpdatingOneHubIdentity_DoesNotMutateCachedOrOtherRequestIdentity()
     {
-        var lease = new MSLX.Daemon.Services.NodeAuthorization.Lease(
+        var lease = new NodeAuthorization.Lease(
             new ClaimsPrincipal(new ClaimsIdentity([new Claim("UserId", "node:a:u")], "NodeAuth")), [], DateTimeOffset.UtcNow.AddSeconds(15));
         var connection = lease.CreatePrincipal();
         var request = lease.CreatePrincipal();

@@ -1,3 +1,14 @@
+export enum PluginMultiNodeSupport {
+  NoTest = 'no-test', Supported = 'true', Unsupported = 'false',
+}
+
+export function parsePluginMultiNodeSupport(value: unknown): PluginMultiNodeSupport {
+  if (value === undefined) return PluginMultiNodeSupport.NoTest;
+  if (!Object.values(PluginMultiNodeSupport).includes(value as PluginMultiNodeSupport))
+    throw new Error('插件多节点支持声明无效');
+  return value as PluginMultiNodeSupport;
+}
+
 export interface PluginListModel {
   id: string;
   name: string;
@@ -10,6 +21,9 @@ export interface PluginListModel {
   pluginUrl: string;
   entryPath: string;
   status: string;
+  supportsMultiNode?: PluginMultiNodeSupport;
+  frontendRevision?: string;
+  syncInfo?: any;
   hasPublicPages?: boolean;
   isPublicAccessEnabled?: boolean;
   categoryList?: PluginCategoryModel[];

@@ -1,4 +1,4 @@
-import { nodeResourceUrl } from '@/utils/nodeTarget';
+import { nodeResourceUrl, getPageNodeId } from '@/utils/nodeTarget';
 import { request } from '@/utils/request';
 import { getSyncMediaToken, getSyncDownloadToken } from '@/utils/scopedToken';
 import {
@@ -13,10 +13,13 @@ import {
 } from '@/api/model/files';
 import { AxiosProgressEvent } from 'axios';
 
-export async function initUpload() {
-  return await request.post<UploadInitResponse>({
-    url: '/api/files/upload/init',
-  });
+const uploadTargets = new Map<string, { nodeId: string; at: number }>();
+const uploadNode = (id: string) => uploadTargets.get(id)?.nodeId || getPageNodeId();
+export async function initUpload(nodeId = getPageNodeId()) {
+  const result = await request.post<UploadInitResponse>({ url: '/api/files/upload/init' }, { targetNodeId: nodeId });
+  for (const [id, value] of uploadTargets) if (Date.now() - value.at > 3600000) uploadTargets.delete(id);
+  uploadTargets.set(result.uploadId, { nodeId, at: Date.now() });
+  return result;
 }
 
 export async function uploadChunk(
@@ -37,7 +40,7 @@ export async function uploadChunk(
     timeout: 300 * 1000,
     onUploadProgress: onProgress,
     signal,
-  });
+  }, { targetNodeId: uploadNode(uploadId) });
 }
 
 export async function finishUpload(uploadId: string, totalChunks: number) {
@@ -45,13 +48,13 @@ export async function finishUpload(uploadId: string, totalChunks: number) {
     url: `/api/files/upload/finish/${uploadId}`,
     data: { totalChunks },
     timeout: 120 * 1000,
-  });
+  }, { targetNodeId: uploadNode(uploadId) });
 }
 
 export async function deleteUpload(uploadId: string) {
   return await request.post({
     url: `/api/files/upload/delete/${uploadId}`,
-  });
+  }, { targetNodeId: uploadNode(uploadId) });
 }
 
 export async function checkPackageJarList(uploadId: string, localPath?: string) {
@@ -121,7 +124,7 @@ export function saveUploadedFile(instanceId: number, uploadId: string, fileName:
   return request.post({
     url: `/api/files/instance/${instanceId}/upload`,
     data: { uploadId, fileName, currentPath }
-  });
+  }, { targetNodeId: uploadNode(uploadId) });
 }
 
 export function downloadFileStream(instanceId: number, path: string) {

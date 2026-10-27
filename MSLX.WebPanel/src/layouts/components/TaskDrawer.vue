@@ -42,6 +42,8 @@ const getTaskTypeLabel = (type: number) => {
       return '更新';
     case 7:
       return '备份';
+    case 8:
+      return '同步';
     default:
       return '任务';
   }
@@ -142,6 +144,12 @@ const handleClearFinished = async () => {
             {{ task.message }}
           </div>
 
+          <details v-if="task.syncResults?.length" class="text-xs text-[var(--td-text-color-secondary)]">
+            <summary class="cursor-pointer">同步明细</summary>
+            <div v-for="(item, index) in task.syncResults" :key="index" class="mt-1 break-words">
+              {{ item.nodeId }} · {{ item.item === 'settings' ? '设置' : item.item }}：{{ item.message || item.status }}
+            </div>
+          </details>
           <div class="flex items-center gap-2 mt-1">
             <div class="flex-1">
               <t-progress

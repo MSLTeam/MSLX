@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MSLX.Daemon.Services;
+using MSLX.Daemon.Services.NodeServices;
 using MSLX.Daemon.Services.PluginsService;
 using MSLX.Daemon.Utils;
 using MSLX.SDK.Models;
@@ -14,10 +14,15 @@ namespace MSLX.Daemon.Controllers.PluginsController;
 public class PluginListController : ControllerBase
 {
     private readonly PluginManager _pluginManager;
+    private readonly PluginPackageService _packages;
+    private readonly NodeAuthorization _nodeAuthorization;
+    private bool _includeSyncInfo;
 
-    public PluginListController(PluginManager pluginManager)
+    public PluginListController(PluginManager pluginManager, PluginPackageService packages, NodeAuthorization nodeAuthorization)
     {
         _pluginManager = pluginManager;
+        _packages = packages;
+        _nodeAuthorization = nodeAuthorization;
     }
 
     private bool IsPublicAccessEnabled(string pluginId)
@@ -37,10 +42,9 @@ public class PluginListController : ControllerBase
         if (!string.IsNullOrEmpty(token))
         {
             var principal = JwtUtils.ValidateToken(token);
-            if (principal != null)
+            if (principal != null && !principal.HasClaim(c => c.Type == "Scope"))
             {
                 var userId = principal.FindFirst("UserId")?.Value;
-                var role = principal.FindFirst(ClaimTypes.Role)?.Value;
 
                 if (userId == "system-admin")
                 {
@@ -52,7 +56,7 @@ public class PluginListController : ControllerBase
                     var dbUser = IConfigBase.UserList.GetUserById(userId);
                     if (dbUser != null && JwtUtils.GetTokenRejectionReason(principal, dbUser) == null)
                     {
-                        bool isAdmin = role == "admin" || dbUser.Role == "admin";
+                        bool isAdmin = dbUser.Role == "admin";
                         return (true, isAdmin);
                     }
                 }
@@ -109,6 +113,9 @@ public class PluginListController : ControllerBase
                 entryPath = $"/plugins/{p.Metadata.Id.ToLower()}/{p.Metadata.Version.ToLower()}/mslx-plugin-entry.js",
                 path = p.DllPath,
                 status = status,
+                supportsMultiNode = p.Metadata.SupportsMultiNode,
+                frontendRevision = System.IO.File.GetLastWriteTimeUtc(p.DllPath).Ticks.ToString(),
+                syncInfo = _includeSyncInfo ? _packages.Describe(p.Metadata.Id) : null,
                 hasPublicPages = p.Metadata.HasPublicPages,
                 isPublicAccessEnabled = IsPublicAccessEnabled(p.Metadata.Id)
             };
@@ -127,6 +134,8 @@ public class PluginListController : ControllerBase
             pluginUrl = p.Metadata.PluginUrl,
             entryPath = $"/plugins/{p.Metadata.Id.ToLower()}/{p.Metadata.Version.ToLower()}/mslx-plugin-entry.js",
             status = status,
+            supportsMultiNode = p.Metadata.SupportsMultiNode,
+            frontendRevision = System.IO.File.GetLastWriteTimeUtc(p.DllPath).Ticks.ToString(),
             hasPublicPages = p.Metadata.HasPublicPages,
             isPublicAccessEnabled = IsPublicAccessEnabled(p.Metadata.Id)
         };
@@ -134,9 +143,28 @@ public class PluginListController : ControllerBase
 
     [HttpGet("list")]
     [AllowAnonymous]
-    public IActionResult GetPluginList()
+    public async Task<IActionResult> GetPluginList([FromQuery] bool includeSyncInfo = false)
     {
-        var (isAuthenticated, isAdmin) = GetAuthInfo();
+        bool isAuthenticated, isAdmin;
+        var nodeId = Request.Headers["x-node-id"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(nodeId) && (bool?)IConfigBase.Config.ReadConfigKey("IsSlaveMode") == true)
+        {
+            try
+            {
+                var lease = await _nodeAuthorization.VerifyAsync(nodeId, Request.Headers["x-user-token"].ToString(), HttpContext.RequestAborted);
+                if (lease.Principal.HasClaim(c => c.Type == "Scope")) return Unauthorized(new ApiResponse<object> { Code = 401, Message = "插件列表需要普通节点凭据" });
+                NodeAuthorization.Apply(HttpContext, lease);
+                isAuthenticated = true;
+                isAdmin = User.IsInRole("admin");
+            }
+            catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
+            {
+                var code = ex is HttpRequestException { StatusCode: System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden } ? 401 : 503;
+                return StatusCode(code, new ApiResponse<object> { Code = code, Message = code == 401 ? "节点授权已失效" : "主节点暂时不可用" });
+            }
+        }
+        else (isAuthenticated, isAdmin) = GetAuthInfo();
+        _includeSyncInfo = isAdmin && includeSyncInfo;
 
         if (!isAuthenticated)
         {
@@ -259,6 +287,9 @@ public class PluginListController : ControllerBase
                 entryPath = $"/plugins/{metadata.Id.ToLower()}/{metadata.Version.ToLower()}/mslx-plugin-entry.js",
                 path = dllPath,
                 status = status,
+                supportsMultiNode = metadata.SupportsMultiNode,
+                frontendRevision = System.IO.File.GetLastWriteTimeUtc(dllPath).Ticks.ToString(),
+                syncInfo = _includeSyncInfo && System.IO.File.Exists(dllPath) ? _packages.Describe(metadata.Id) : null,
                 hasPublicPages = metadata.HasPublicPages,
                 isPublicAccessEnabled = IsPublicAccessEnabled(metadata.Id)
             };
@@ -278,6 +309,7 @@ public class PluginListController : ControllerBase
             entryPath = "",
             path = dllPath,
             status = status,
+            supportsMultiNode = MSLX.SDK.Models.Plugins.PluginMultiNodeSupport.NoTest,
             hasPublicPages = false,
             isPublicAccessEnabled = false
         };

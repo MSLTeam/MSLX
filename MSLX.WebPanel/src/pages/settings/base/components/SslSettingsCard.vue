@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { getPageNodeId } from '@/utils/nodeTarget';
+const targetNodeId = getPageNodeId();
 import { onMounted, reactive, ref } from 'vue';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { SecuredIcon, RefreshIcon, VerifiedIcon } from 'tdesign-icons-vue-next';
@@ -28,7 +30,7 @@ const emit = defineEmits(['refresh']);
 const initData = async () => {
   loading.value = true;
   try {
-    const res = await getSslSettings();
+    const res = await getSslSettings(targetNodeId);
     Object.assign(originalData, res);
 
     formData.enableSsl = res.enableSsl;
@@ -65,7 +67,7 @@ const onSubmit = async () => {
       }
     }
 
-    await updateSslSettings(payload);
+    await updateSslSettings(payload, targetNodeId);
 
     await initData();
     MessagePlugin.success('SSL 配置已保存，部分网络协议修改需重启面板后生效');

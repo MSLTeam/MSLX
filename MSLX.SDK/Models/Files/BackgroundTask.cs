@@ -11,7 +11,8 @@ public enum TaskType
     Plugin,
     CreateServer,
     UpdateServer,
-    Backup
+    Backup,
+    NodeSync
 }
 
 public enum TaskState
@@ -36,4 +37,5 @@ public class BackgroundTaskItem
     public string Message { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public DateTime? FinishedAt { get; set; }
+    public List<Models.Node.NodeSyncItemResult>? SyncResults { get; set; }
 }

@@ -4,7 +4,10 @@ import { BASE_URL_NAME, TOKEN_NAME } from '@/config/global';
 import { reactive } from 'vue';
 
 export const getPageNodeId = () => new URL(window.location.href).searchParams.get('node') || 'local';
-export const isNodePage = (path: string) => /^\/(?:instance|frp)(?:\/|$)/.test(path) || path === '/settings/docker';
+export const pluginNodePages = reactive(new Set<string>());
+export const isNodePage = (path: string) => /^\/(?:instance|frp)(?:\/|$)/.test(path) ||
+  ['/dashboard/base', '/settings/docker', '/settings/profile', '/settings/daemon', '/settings/plugins'].includes(path) ||
+  [...pluginNodePages].some(root => path === root || path.startsWith(root + '/'));
 
 // 面板生成的节点url才集成
 export function nodeNavigationUrl(path: string, nodeId = getPageNodeId()) {

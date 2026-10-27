@@ -71,8 +71,9 @@ public class PluginConfigService : IDisposable
         _configLock.EnterWriteLock();
         try
         {
-            _configCache = (JObject)content.DeepClone();
-            IConfigBase.SaveJson(_configPath, _configCache);
+            var next = (JObject)content.DeepClone();
+            IConfigBase.SaveJson(_configPath, next);
+            _configCache = next;
         }
         finally { _configLock.ExitWriteLock(); }
     }

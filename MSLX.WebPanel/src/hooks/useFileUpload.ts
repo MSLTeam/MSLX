@@ -1,4 +1,5 @@
 import { ref, onUnmounted } from 'vue';
+import { getPageNodeId } from '@/utils/nodeTarget';
 import { initUpload, uploadChunk, finishUpload, deleteUpload } from '@/api/files';
 
 // 动态计算并发数
@@ -17,6 +18,7 @@ function backoffDelay(attempt: number): Promise<void> {
 }
 
 export function useFileUpload() {
+  const targetNodeId = getPageNodeId();
   const isUploading = ref(false);
   const uploadProgress = ref(0);
   const uploadedFileName = ref('');
@@ -79,7 +81,7 @@ export function useFileUpload() {
     };
 
     try {
-      const initRes = await initUpload();
+      const initRes = await initUpload(targetNodeId);
       const uploadId = (initRes as any).uploadId;
       if (!uploadId) throw new Error('无法获取上传凭证');
 

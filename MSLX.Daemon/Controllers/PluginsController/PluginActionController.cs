@@ -25,25 +25,32 @@ public class PluginActionController : ControllerBase
 
     [HttpPost("action")]
     [Authorize(Roles = "admin")]
-    public IActionResult HandleAction([FromBody] PluginActionRequest request)
+    public async Task<IActionResult> HandleAction([FromBody] PluginActionRequest request)
     {
-        var dllPath = GetDllPathById(request.Id);
-        
-        if (string.IsNullOrEmpty(dllPath) && request.Action.ToLower() != "cancel")
+        PluginPackageService.ValidateId(request.Id);
+        var gate = _pluginManager.GetOperationLock(request.Id);
+        await gate.WaitAsync(HttpContext.RequestAborted);
+        try
         {
-            return Error("找不到对应的插件文件");
-        }
+            var dllPath = GetDllPathById(request.Id);
 
-        return request.Action.ToLower() switch
-        {
-            "disable" => DisablePlugin(dllPath),
-            "enable"  => EnablePlugin(dllPath),
-            "delete"  => DeletePlugin(dllPath),
-            "cancel"  => CancelPendingAction(request.Id, dllPath),
-            "enable_public"  => SetPublicAccess(request.Id, true),
-            "disable_public" => SetPublicAccess(request.Id, false),
-            _         => Error("未知的操作类型")
-        };
+            if (string.IsNullOrEmpty(dllPath) && request.Action.ToLower() != "cancel")
+            {
+                return Error("找不到对应的插件文件");
+            }
+
+            return request.Action.ToLower() switch
+            {
+                "disable" => DisablePlugin(dllPath),
+                "enable"  => EnablePlugin(dllPath),
+                "delete"  => DeletePlugin(dllPath),
+                "cancel"  => CancelPendingAction(request.Id, dllPath),
+                "enable_public"  => SetPublicAccess(request.Id, true),
+                "disable_public" => SetPublicAccess(request.Id, false),
+                _         => Error("未知的操作类型")
+            };
+        }
+        finally { gate.Release(); }
     }
 
     private IActionResult SetPublicAccess(string pluginId, bool enabled)
@@ -51,7 +58,7 @@ public class PluginActionController : ControllerBase
         IConfigBase.Config.WriteConfigKey($"Plugins:PublicAccess:{pluginId}", enabled);
         return Success(enabled ? "已开启该插件公开访问" : "已关闭该插件公开访问");
     }
-    
+
 
     private IActionResult DisablePlugin(string dllPath)
     {
@@ -62,9 +69,9 @@ public class PluginActionController : ControllerBase
             {
                 System.IO.File.WriteAllText(disabledMarker, "");
             }
-            
+
             _pluginManager.UnloadPlugin(dllPath);
-            
+
             return Success("插件已成功禁用并卸载，立即生效");
         }
         catch (Exception ex)
@@ -110,17 +117,17 @@ public class PluginActionController : ControllerBase
             {
                 System.IO.File.WriteAllText(deleteMarker, "");
             }
-            
+
             if (System.IO.File.Exists(dllPath))
             {
-                try { 
-                    System.IO.File.Delete(dllPath); 
+                try {
+                    System.IO.File.Delete(dllPath);
                     System.IO.File.Delete(deleteMarker);
                     return Success("插件已成功删除并卸载！");
-                } 
-                catch 
-                { 
-                    return Success("插件已标记为删除，将在下次重启时彻底删除文件"); 
+                }
+                catch
+                {
+                    return Success("插件已标记为删除，将在下次重启时彻底删除文件");
                 }
             }
             return Success("插件已移除");
@@ -141,7 +148,7 @@ public class PluginActionController : ControllerBase
         try
         {
             if (System.IO.File.Exists(dllPath + ".delete")) System.IO.File.Delete(dllPath + ".delete");
-            if (System.IO.File.Exists(dllPath + ".new")) System.IO.File.Delete(dllPath + ".new"); 
+            if (System.IO.File.Exists(dllPath + ".new")) System.IO.File.Delete(dllPath + ".new");
             if (System.IO.File.Exists(dllPath + ".disabled")) System.IO.File.Delete(dllPath + ".disabled");
 
             return Success("已成功撤销所有待处理的变更操作");
@@ -151,40 +158,24 @@ public class PluginActionController : ControllerBase
             return Error($"撤销操作失败: {ex.Message}");
         }
     }
-    
+
 
     private string GetDllPathById(string id)
     {
-        var loadedPlugin = _pluginManager.Plugins.FirstOrDefault(p => 
+        var loadedPlugin = _pluginManager.Plugins.FirstOrDefault(p =>
             p.Metadata.Id.Equals(id, StringComparison.OrdinalIgnoreCase));
-        
+
         if (loadedPlugin != null) return loadedPlugin.DllPath;
-        
+
         if (Directory.Exists(_pluginsPath))
         {
-            var allDlls = Directory.GetFiles(_pluginsPath, "*.dll");
-            foreach (var dll in allDlls)
+            foreach (var dll in Directory.GetFiles(_pluginsPath, "*.dll"))
             {
-                var fileName = Path.GetFileNameWithoutExtension(dll);
-                var convertedId = ConvertFileNameToId(fileName);
-                if (convertedId.Equals(id, StringComparison.OrdinalIgnoreCase))
-                {
-                    return dll;
-                }
+                var metadataId = _pluginManager.GetPluginMetadata(dll)?.Id;
+                if (string.Equals(metadataId, id, StringComparison.OrdinalIgnoreCase)) return dll;
             }
         }
         return string.Empty;
-    }
-
-    private string ConvertFileNameToId(string fileName)
-    {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(fileName)) return fileName;
-            var parts = fileName.Split('.', StringSplitOptions.RemoveEmptyEntries);
-            return parts.Length > 0 ? string.Join("-", parts).ToLower() : fileName.ToLower();
-        }
-        catch { return fileName; }
     }
 
     private IActionResult Success(string message) => Ok(new ApiResponse<object> { Code = 200, Message = message });

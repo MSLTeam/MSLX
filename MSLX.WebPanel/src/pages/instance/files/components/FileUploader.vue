@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { getPageNodeId } from '@/utils/nodeTarget';
+const targetNodeId = getPageNodeId();
 import { confirmNodeAction } from '@/utils/nodeDialog';
 import { computed, onUnmounted, ref, watch } from 'vue';
 import {
@@ -40,6 +42,7 @@ const props = withDefaults(
 const emit = defineEmits(['update:visible', 'success']);
 
 interface UploadTask {
+  nodeId?: string;
   id: string;
   file: File;
   path: string;
@@ -267,6 +270,7 @@ const processQueue = async () => {
 };
 
 const uploadSingleFile = async (task: UploadTask) => {
+  task.nodeId = targetNodeId;
   task.status = 'uploading';
   task.progress = 0;
   task.committedBytes = 0;
@@ -276,7 +280,7 @@ const uploadSingleFile = async (task: UploadTask) => {
   let currentSpeedMBps = 0; // 用于动态调度并发的实时速度追踪
 
   try {
-    const initRes = await initUpload();
+    const initRes = await initUpload(targetNodeId);
     const uploadId = initRes.uploadId;
 
     const isLargeFile = task.file.size > 200 * 1024 * 1024;

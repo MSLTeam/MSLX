@@ -16,6 +16,7 @@ import './permission';
 import App from './App.vue';
 import { request } from '@/utils/request';
 import { useFileUpload } from '@/hooks/useFileUpload';
+import { createPluginNodeContext, usePluginNodeContext } from '@/utils/pluginNodeContext';
 
 // 映射出去给插件用的东西
 (window as any).Vue = Vue;
@@ -24,6 +25,7 @@ import { useFileUpload } from '@/hooks/useFileUpload';
 (window as any).TDesign = TDesign;
 (window as any).mslxRequest = request;
 (window as any).MSLX_Stores = MSLXStores;
+(window as any).MSLX_NodeContext = { create: createPluginNodeContext, use: usePluginNodeContext };
 (window as any).useFileUpload = useFileUpload;
 
 const app = createApp(App);

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { getPageNodeId } from '@/utils/nodeTarget';
+const targetNodeId = getPageNodeId();
 import { ref } from 'vue';
 import { BookFilledIcon, AppIcon, StoreIcon, RefreshIcon, SearchIcon, UploadIcon } from 'tdesign-icons-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
@@ -31,7 +33,7 @@ const handleRefreshPage = () => {
 };
 
 const handlePluginUpload = async (uploadId: string, task: any) => {
-  await postUploadLocalPlugin(uploadId, task.file?.name || task.name);
+  await postUploadLocalPlugin(uploadId, task.file?.name || task.name, task.nodeId || targetNodeId);
 };
 
 const onUploadSuccess = () => {

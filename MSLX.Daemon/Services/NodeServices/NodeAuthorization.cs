@@ -8,7 +8,7 @@ using Microsoft.Extensions.Caching.Memory;
 using MSLX.Daemon.Utils.ConfigUtils;
 using Newtonsoft.Json.Linq;
 
-namespace MSLX.Daemon.Services;
+namespace MSLX.Daemon.Services.NodeServices;
 
 /// <summary>子节点授权服务</summary>
 public sealed class NodeAuthorization(IMemoryCache cache)

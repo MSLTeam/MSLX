@@ -183,6 +183,7 @@ export const useUserStore = defineStore('user', {
       this.token = '';
       this.baseUrl = '';
       this.userInfo = { ...InitUserInfo };
+      (await import('@/utils/pluginManager')).resetPluginRuntime();
     },
 
     async removeToken() {

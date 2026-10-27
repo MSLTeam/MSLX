@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { getPageNodeId, getNodeTarget } from '@/utils/nodeTarget';
+const targetNodeId = getPageNodeId();
 import { computed, onMounted, reactive, ref } from 'vue';
 import { MessagePlugin } from 'tdesign-vue-next';
 import {
@@ -54,7 +56,7 @@ const isEmbeddedDaemon = computed(() => sysData.isEmbeddedDaemon);
 const initData = async () => {
   loading.value = true;
   try {
-    const sysRes = await getSettings();
+    const sysRes = await getSettings(targetNodeId);
     Object.assign(sysData, sysRes);
     if (sysData.isEmbeddedDaemon) {
       sysData.fireWallBanLocalAddr = false;
@@ -75,7 +77,7 @@ const onSysSubmit = async () => {
       sysData.fireWallBanLocalAddr = false;
       sysData.listenHost = 'localhost';
     }
-    await updateSettings(sysData);
+    await updateSettings(sysData, targetNodeId);
     MessagePlugin.success('系统设置保存成功');
   } catch (error: any) {
     MessagePlugin.error(error.message);
@@ -94,7 +96,7 @@ defineExpose({ initData });
 const callbackUrl = ref('');
 
 onMounted(() => {
-  callbackUrl.value = `${window.location.origin}/oauth/callback`;
+  callbackUrl.value = new URL('/oauth/callback', getNodeTarget(targetNodeId).baseUrl).toString();
 });
 </script>
 
@@ -134,7 +136,7 @@ onMounted(() => {
               theme="default"
               :loading="updateStore.loading"
               class="!bg-zinc-50 dark:!bg-zinc-800/50 hover:!bg-zinc-100 dark:hover:!bg-zinc-800 !border-zinc-200/80 dark:!border-zinc-700/80 !text-zinc-700 dark:!text-zinc-300"
-              @click="updateStore.checkAppUpdate(true)"
+              @click="updateStore.checkAppUpdate(true, targetNodeId)"
             >
               <template #icon><cloud-download-icon class="opacity-70" /></template>
               检查更新

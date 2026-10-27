@@ -3,18 +3,32 @@ import { Tag as TTag, Icon as TIcon, Tooltip as TTooltip } from 'tdesign-vue-nex
 import { useUserStore } from '@/store';
 import pkg from '@/../package.json';
 import { useInstanceListStore } from '@/store/modules/instance';
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
+import { getPageNodeId } from '@/utils/nodeTarget';
+import { getDaemonStatusInfo } from '@/api/update';
 import { changeUrl } from '@/router';
 const userStore = useUserStore();
 const instanceListStore = useInstanceListStore();
+const targetNodeId = getPageNodeId();
+const nodeInfo = ref(userStore.userInfo);
+const loading = ref(true);
+const loadError = ref('');
 
-onMounted(() => {
-  instanceListStore.refreshInstanceList();
+onMounted(async () => {
+  try {
+    await Promise.all([
+      instanceListStore.refreshInstanceList(),
+      targetNodeId === 'local' ? Promise.resolve() : getDaemonStatusInfo(targetNodeId).then(info => { nodeInfo.value = info; }),
+    ]);
+  } catch (error: any) { loadError.value = '目标节点信息加载失败: ' + error.message; }
+  finally { loading.value = false; }
 });
 </script>
 
 <template>
-  <div
+  <t-loading v-if="loading" text="正在读取节点信息" />
+  <t-alert v-else-if="loadError" theme="error" :message="loadError" />
+  <div v-else
     class="design-card w-full bg-white dark:bg-zinc-800 p-5 sm:p-6 rounded-2xl border border-[var(--td-component-border)] shadow-sm transition-all duration-300"
   >
     <div class="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-4">
@@ -46,7 +60,7 @@ onMounted(() => {
           <span>NET环境：</span>
         </span>
         <span class="text-[var(--td-text-color-primary)] font-semibold text-sm text-right break-all pl-2">
-          {{ userStore.userInfo.systemInfo.netVersion }}
+          {{ nodeInfo.systemInfo.netVersion }}
         </span>
       </div>
 
@@ -77,9 +91,9 @@ onMounted(() => {
           />
           <span>节点版本：</span>
         </span>
-        <t-tooltip :content="`v${userStore.userInfo.version}`" max-width="400px">
+        <t-tooltip :content="`v${nodeInfo.version}`" max-width="400px">
           <span class="text-[var(--td-text-color-primary)] font-semibold text-sm text-right truncate min-w-0 pl-2">
-            v{{ userStore.userInfo.version }}
+            v{{ nodeInfo.version }}
           </span>
         </t-tooltip>
       </div>
@@ -95,7 +109,7 @@ onMounted(() => {
           <span>主机名：</span>
         </span>
         <span class="text-[var(--td-text-color-primary)] font-semibold text-sm text-right truncate min-w-0 pl-2">
-          {{ userStore.userInfo.systemInfo.hostname }}
+          {{ nodeInfo.systemInfo.hostname }}
         </span>
       </div>
 
@@ -110,7 +124,7 @@ onMounted(() => {
           <span>系统类型：</span>
         </span>
         <span class="text-[var(--td-text-color-primary)] font-semibold text-sm text-right break-all pl-2">
-          {{ userStore.userInfo.systemInfo.osType }} ({{ userStore.userInfo.systemInfo.osArchitecture }})
+          {{ nodeInfo.systemInfo.osType }} ({{ nodeInfo.systemInfo.osArchitecture }})
         </span>
       </div>
 
@@ -124,9 +138,9 @@ onMounted(() => {
           />
           <span>系统版本：</span>
         </span>
-        <t-tooltip :content="userStore.userInfo.systemInfo.osVersion" max-width="400px">
+        <t-tooltip :content="nodeInfo.systemInfo.osVersion" max-width="400px">
           <span class="text-[var(--td-text-color-primary)] font-semibold text-sm text-right truncate min-w-0 pl-2">
-            {{ userStore.userInfo.systemInfo.osVersion }}
+            {{ nodeInfo.systemInfo.osVersion }}
           </span>
         </t-tooltip>
       </div>
@@ -143,10 +157,10 @@ onMounted(() => {
         </span>
         <span class="flex justify-end pl-2">
           <t-tag
-            :theme="pkg.version.startsWith(userStore.userInfo.targetFrontendVersion.panel) ? 'success' : 'danger'"
+            :theme="pkg.version.startsWith(nodeInfo.targetFrontendVersion.panel) ? 'success' : 'danger'"
             shape="round"
           >
-            {{ pkg.version.startsWith(userStore.userInfo.targetFrontendVersion.panel) ? '正确匹配' : '请更新' }}
+            {{ pkg.version.startsWith(nodeInfo.targetFrontendVersion.panel) ? '正确匹配' : '请更新' }}
           </t-tag>
         </span>
       </div>

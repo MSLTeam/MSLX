@@ -1,136 +1,66 @@
 import { MessagePlugin } from 'tdesign-vue-next';
 import NProgress from 'nprogress';
 import 'nprogress/nprogress.css';
-
 import { getPermissionStore, getUserStore, useNodeStore } from '@/store';
 import router from '@/router';
-import { arePluginsLoaded, loadAllPlugins } from '@/utils/pluginManager';
+import Layout from '@/layouts/index.vue';
+import { getNodeTarget } from '@/utils/nodeTarget';
+import { arePluginsLoaded, loadAllPlugins, activatePluginNode, setPluginLoadError } from '@/utils/pluginManager';
+import { usePluginUIStore } from '@/store/modules/pluginUI';
 
 NProgress.configure({ showSpinner: false });
-
-// 404路由在这里兜底
 const addCatchAllRoute = () => {
-  if (!router.hasRoute('404Page')) {
-    router.addRoute({
-      path: '/:w+',
-      name: '404Page',
-      redirect: '/404',
-    });
-  }
+  if (!router.hasRoute('404Page')) router.addRoute({
+    path: '/:pathMatch(.*)*', name: '404Page', component: Layout,
+    children: [{ path: '', component: () => import('@/pages/notFound/index.vue') }],
+  });
 };
 
-router.beforeEach(async (to, from, next) => {
-  window.document.title = to.meta.title ? `${to.meta.title} | MSLX 控制台` : 'MSLX 控制台';
+router.beforeEach(async (to, _from, next) => {
+  document.title = to.meta.title ? `${to.meta.title} | MSLX 控制台` : 'MSLX 控制台';
   NProgress.start();
-
-  const userStore = getUserStore();
-  const permissionStore = getPermissionStore();
-  const { whiteListRouters } = permissionStore;
-  const { token } = userStore;
-
-  // 获取分布式子节点
-  if (token && typeof to.query.node === 'string' && to.query.node) {
-    await useNodeStore().fetchNodes();
+  const user = getUserStore();
+  const permission = getPermissionStore();
+  if (to.path === '/login' || to.path === '/oauth/callback') { next(); return; }
+  if (user.token) {
+    try {
+      if (!user.roles?.length) await user.getUserInfo();
+      if (!permission.routers?.length) await permission.initRoutes(user.roles);
+    } catch (error) {
+      MessagePlugin.error(error instanceof Error ? error.message : '登录状态已失效');
+      next({ path: '/login', query: { redirect: encodeURIComponent(to.fullPath) } });
+      NProgress.done(); return;
+    }
   }
-
-  if (token) {
-    if (to.path === '/login' || to.path === '/oauth/callback') {
-      next();
-      return;
-    }
-
-    const { roles } = userStore;
-
-    if (roles && roles.length > 0) {
-      if (!arePluginsLoaded()) {
-        if (!permissionStore.routers || permissionStore.routers.length === 0) {
-          await permissionStore.initRoutes(roles);
-        }
-
-        const isKnownRoute = to.matched.length > 0;
-
-        if (isKnownRoute) {
-          // 挂载插件 (后台静默)
-          loadAllPlugins().then(() => {
-            // 补上404路由
-            addCatchAllRoute();
-          });
-          next();
-        } else {
-          // 未知路由（可能属于尚未加载的插件），阻塞等待
-          await loadAllPlugins();
-          addCatchAllRoute();
-          next({ ...to, replace: true });
-        }
-      } else {
-        next();
-      }
-    } else {
-      try {
-        // userStore.getUserInfo 是初始化必须的，阻塞是合理的（但应该很快）
-        await userStore.getUserInfo();
-        const { roles } = userStore;
-        await permissionStore.initRoutes(roles);
-
-        const isKnownRoute = to.matched.length > 0;
-
-        if (isKnownRoute) {
-          loadAllPlugins().then(() => {
-            addCatchAllRoute();
-          });
-          next();
-        } else {
-          await loadAllPlugins();
-          addCatchAllRoute();
-          if (to.name && router.hasRoute(to.name)) {
-            next();
-          } else {
-            next({ ...to, replace: true });
-          }
-        }
-      } catch (error) {
-        MessagePlugin.error(error as string);
-        next({
-          path: '/login',
-          query: { redirect: encodeURIComponent(to.fullPath) },
-        });
-        NProgress.done();
-      }
-    }
-  } else {
-    if (whiteListRouters.indexOf(to.path) !== -1 || to.matched.some((r) => r.meta?.anonymous)) {
-      next();
-    } else if (!arePluginsLoaded()) {
-      // 未登录时访问未知路由，按需预加载公开插件
-      await loadAllPlugins();
-      addCatchAllRoute();
-      const resolved = router.resolve(to.fullPath);
-      if (
-        permissionStore.whiteListRouters.indexOf(to.path) !== -1 ||
-        resolved.matched.some((r) => r.meta?.anonymous)
-      ) {
-        next({ ...to, replace: true });
-      } else {
-        next({
-          path: '/login',
-          query: { redirect: encodeURIComponent(to.fullPath) },
-        });
-      }
-    } else {
-      next({
-        path: '/login',
-        query: { redirect: encodeURIComponent(to.fullPath) },
-      });
-    }
-    NProgress.done();
+  const nodeId = typeof to.query.node === 'string' && to.query.node ? to.query.node : 'local';
+  if (nodeId !== 'local' && !user.token) {
+    next({ path: '/login', query: { redirect: encodeURIComponent(to.fullPath) } }); NProgress.done(); return;
   }
+  try {
+    if (nodeId !== 'local') { await useNodeStore().fetchNodes(); getNodeTarget(nodeId); }
+    if (!arePluginsLoaded(nodeId)) await loadAllPlugins(nodeId);
+  } catch (error) {
+    setPluginLoadError(nodeId, error);
+    const ui = usePluginUIStore();
+    ui.error = error instanceof Error ? error.message : '目标节点插件加载失败';
+    ui.loading = false;
+  }
+  addCatchAllRoute();
+  const resolved = router.resolve(to.fullPath);
+  const anonymous = permission.whiteListRouters.includes(to.path) || resolved.matched.some(record => record.meta?.anonymous);
+  if (!user.token && !anonymous) {
+    next({ path: '/login', query: { redirect: encodeURIComponent(to.fullPath) } }); NProgress.done(); return;
+  }
+  if (resolved.matched.length !== to.matched.length || resolved.matched.some((record, index) => record !== to.matched[index])) {
+    next({ path: to.path, query: to.query, hash: to.hash, replace: true }); return;
+  }
+  next();
 });
 
-router.afterEach((to) => {
-  useNodeStore().activeNodeId = typeof to.query.node === 'string' && to.query.node ? to.query.node : 'local';
-  if (to.path === '/login') {
-    const userStore = getUserStore();
-    userStore.logout();
-  }
+router.afterEach(to => {
+  const nodeId = typeof to.query.node === 'string' && to.query.node ? to.query.node : 'local';
+  useNodeStore().activeNodeId = nodeId;
+  activatePluginNode(nodeId);
+  if (to.path === '/login') getUserStore().logout();
   NProgress.done();
 });

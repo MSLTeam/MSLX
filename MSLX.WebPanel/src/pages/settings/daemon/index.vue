@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
+import { getPageNodeId } from '@/utils/nodeTarget';
+const targetNodeId = getPageNodeId();
 import { useWebpanelStore, useUserStore } from '@/store';
 
 import SystemSettingsCard from '../base/components/SystemSettingsCard.vue';
@@ -18,7 +20,7 @@ const initAllData = async () => {
   const promises = [];
   if (userCardRef.value) promises.push(userCardRef.value.initData());
   if (sysCardRef.value) promises.push(sysCardRef.value.initData());
-  promises.push(webpanelStore.fetchSettings());
+  if (targetNodeId === 'local') promises.push(webpanelStore.fetchSettings());
 
   await Promise.all(promises);
 };
@@ -30,6 +32,7 @@ onMounted(() => {
 
 <template>
   <div class="settings-page">
+    <t-alert v-if="targetNodeId !== 'local'" theme="warning" class="mb-4" message="正在编辑所选子节点。修改监听地址、端口或 SSL 后需重启，并确认主节点登记的节点地址仍然可用。" />
     <t-space direction="vertical" size="large" style="width: 100%">
       <system-settings-card v-if="userStore.isAdmin" ref="sysCardRef" @refresh="initAllData" />
 

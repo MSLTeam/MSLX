@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
+import NodeSyncDialog from './components/NodeSyncDialog.vue';
+const showSyncDialog = ref(false);
 import { linkSlaveNode, unlinkSlaveNode, postEditSlaveNode } from '@/api/node';
 import { MessagePlugin, DialogPlugin } from 'tdesign-vue-next';
 import {
@@ -371,6 +373,7 @@ onUnmounted(async () => {
           <template #icon><help-circle-icon /></template>
           文档
         </t-button>
+        <t-button v-if="userStore.isAdmin" variant="outline" @click="showSyncDialog = true">从主节点同步</t-button>
         <t-button variant="dashed" @click="fetchNodes(true)">
           <template #icon><refresh-icon /></template>
           刷新
@@ -706,6 +709,7 @@ onUnmounted(async () => {
     </t-dialog>
 
     <!-- 升级弹窗 -->
+    <node-sync-dialog v-model:visible="showSyncDialog" />
     <update-modal
       :visible="showUpdateModal"
       :update-info="slaveUpdateInfo"

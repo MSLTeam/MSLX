@@ -25,3 +25,18 @@ export function postEditSlaveNode(id: string, data: { nodeUrl: string, nodeName:
     data
   });
 }
+
+export interface NodeSyncSelection {
+  targetNodeIds: string[];
+  settingKeys: string[];
+  pluginIds: string[];
+  includePluginConfig: boolean;
+  sourceRevision?: string;
+  targetRevisions?: Record<string, string>;
+}
+export function previewNodeSync(data: NodeSyncSelection) {
+  return request.post<any>({ url: '/api/node/sync/preview', data, timeout: 120000 }, { targetNodeId: 'local', requestToSlaveNode: false });
+}
+export function startNodeSync(data: NodeSyncSelection) {
+  return request.post<{ taskId: string }>({ url: '/api/node/sync', data, timeout: 120000 }, { targetNodeId: 'local', requestToSlaveNode: false });
+}

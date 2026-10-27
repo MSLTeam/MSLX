@@ -38,6 +38,8 @@ namespace MSLX.SDK
         /// </summary>
         bool HasPublicPages => false;
 
+        Models.Plugins.PluginMultiNodeSupport SupportsMultiNode => Models.Plugins.PluginMultiNodeSupport.NoTest;
+
         // 初始化 & 结束加载方法
         void OnLoad() { }
         void OnUnload() { }

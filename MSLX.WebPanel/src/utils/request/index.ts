@@ -61,7 +61,7 @@ const transform: AxiosTransform = {
   // 请求前处理配置
   beforeRequestHook: (config, options) => {
     // Capture synchronously, before Axios schedules the asynchronous interceptor.
-    const nodeRoute = /^(?:\/api)?\/(?:instance|files|frp|java|python|docker|tasks)(?:\/|$)/.test(config.url || '') || config.url === '/api/static/images/upload';
+    const nodeRoute = /^(?:\/api)?\/(?:instance|files|frp|java|python|docker|tasks|plugins?)(?:\/|$)/.test(config.url || '') || config.url === '/api/static/images/upload';
     const external = /^(https?:)?\/\//.test(config.url || '') || (config.baseURL &&
       new URL(config.baseURL, window.location.origin).origin !== new URL(localStorage.getItem(BASE_URL_NAME) || window.location.origin).origin);
     if (!external && !options.targetNodeId && !config.headers?.['x-node-id'] && options.requestToSlaveNode !== false &&
@@ -119,7 +119,7 @@ const transform: AxiosTransform = {
   requestInterceptors: async (config, _options) => {
     const reqOptions = (config as Recordable)?.requestOptions || {};
     const explicitNode = reqOptions.targetNodeId || config.headers['x-node-id'];
-    let isSlaveRoute = /^(?:\/api)?\/(?:instance|files|frp|java|python|docker|tasks)(?:\/|$)/.test(config.url || '') || config.url === '/api/static/images/upload';
+    let isSlaveRoute = /^(?:\/api)?\/(?:instance|files|frp|java|python|docker|tasks|plugins?)(?:\/|$)/.test(config.url || '') || config.url === '/api/static/images/upload';
     if (reqOptions.requestToSlaveNode === true) isSlaveRoute = true;
     if (reqOptions.requestToSlaveNode === false) isSlaveRoute = false;
     const absolute = /^(https?:)?\/\//.test(config.url || '');
@@ -134,7 +134,7 @@ const transform: AxiosTransform = {
       }
       const target = getNodeTarget(nodeId);
       // An explicit node must also be the source of the URL; never trust a stale cached address.
-      config.baseURL = nodeId !== 'local' ? target.baseUrl : (config.baseURL || target.baseUrl);
+      config.baseURL = nodeId !== 'local' || explicitNode ? target.baseUrl : (config.baseURL || target.baseUrl);
       if (reqOptions.withToken !== false && !config.headers.hasAuthorization()) {
         const token = localStorage.getItem(TOKEN_NAME);
         if (token) config.headers['x-user-token'] = nodeId === 'local' ? token : await getNodeToken(nodeId);

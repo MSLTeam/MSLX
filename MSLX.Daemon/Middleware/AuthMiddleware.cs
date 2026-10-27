@@ -3,7 +3,7 @@ using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.Attributes;
 using System.Net;
-using MSLX.Daemon.Services;
+using MSLX.Daemon.Services.NodeServices;
 using System.Security.Claims;
 
 namespace MSLX.Daemon.Middleware
@@ -247,9 +247,11 @@ namespace MSLX.Daemon.Middleware
 
                 if (isSlaveMode)
                 {
+                    var delegatedSettings = context.User.Identity?.AuthenticationType == "NodeAuth" && context.User.IsInRole("admin") &&
+                        (path == "/api/settings" || path == "/api/settings/ssl" || path == "/api/settings/sync");
                     if (path.StartsWithSegments("/api/user") || path.StartsWithSegments("/api/settings") || path.StartsWithSegments("/api/admin"))
                     {
-                        if (!path.StartsWithSegments("/api/node") && !path.StartsWithSegments("/api/user/logout"))
+                        if (!delegatedSettings && !path.StartsWithSegments("/api/user/logout"))
                         {
                             await HandleErrorAsync(context, 403, "当前为子节点模式，禁止直接修改全局配置和用户数据。");
                             return;

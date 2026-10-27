@@ -4,6 +4,8 @@ import { Tag as TTag } from 'tdesign-vue-next';
 import * as signalR from '@microsoft/signalr';
 import * as echarts from 'echarts';
 import { useUserStore } from '@/store/modules/user';
+import { getPageNodeId } from '@/utils/nodeTarget';
+const targetNodeId = getPageNodeId();
 
 // --- 类型定义 ---
 interface SystemStats {
@@ -137,7 +139,8 @@ const initSignalR = async () => {
     .build();
 
   connection.value.on('ReceiveSystemStats', (broadcast: SystemStatsBroadcast) => {
-    const data = broadcast.local;
+    const data = targetNodeId === 'local' ? broadcast.local : broadcast.slaves?.[targetNodeId];
+    if (!data) return;
     currentStats.cpu = data.cpu;
     currentStats.memUsage = data.memUsage;
     currentStats.memUsed = data.memUsed;
@@ -164,6 +167,11 @@ const initSignalR = async () => {
     console.error('SignalR 连接失败:', err);
   }
 
+  connection.value.onreconnected(async () => {
+    await connection.value?.invoke('JoinMonitor');
+    isConnected.value = true;
+  });
+  connection.value.onreconnecting(() => { isConnected.value = false; });
   connection.value.onclose(() => {
     isConnected.value = false;
   });
