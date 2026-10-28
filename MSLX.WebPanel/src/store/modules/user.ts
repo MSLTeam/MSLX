@@ -63,7 +63,7 @@ export const useUserStore = defineStore('user', {
 
     // 登录
     async login(loginParams: Record<string, unknown>) {
-      const { url, username, password, checked } = loginParams;
+      const { url, username, password, checked, twoFactorCode } = loginParams;
 
       // 处理 URL
       let processedUrl = url as string;
@@ -73,22 +73,15 @@ export const useUserStore = defineStore('user', {
       const requestBaseUrl = processedUrl || '';
 
       try {
-        clearMediaToken();
-        localStorage.removeItem('ACTIVE_NODE_ID');
-        localStorage.removeItem('ACTIVE_NODE_URL');
-        // 请求登录接口拿到 Token
+        // 二步验证完成前不修改登录状态。
         const res = await request.post({
           url: '/api/auth/login',
           baseURL: requestBaseUrl,
-          data: { username, password },
+          data: { username, password, twoFactorCode },
         });
 
-        // 保存 Token 和 BaseURL
-        this.token = res.token;
-        this.baseUrl = requestBaseUrl;
-
-        localStorage.setItem(TOKEN_NAME, res.token);
-        localStorage.setItem(BASE_URL_NAME, requestBaseUrl);
+        if (res.requiresTwoFactor) return { requiresTwoFactor: true };
+        await this.completeLogin(res.token, requestBaseUrl);
 
         // 处理记住账号
         if (checked) {
@@ -99,12 +92,29 @@ export const useUserStore = defineStore('user', {
           localStorage.removeItem(REMEMBER_USER_NAME);
         }
 
-        await this.getUserInfo();
+        return { requiresTwoFactor: false };
 
       } catch (e) {
         console.error('Login failed:', e);
         throw e;
       }
+    },
+
+    setSessionToken(token: string) {
+      if (!token) throw new Error('服务端未返回登录凭据');
+      clearMediaToken();
+      this.token = token;
+      localStorage.setItem(TOKEN_NAME, token);
+    },
+
+    async completeLogin(token: string, baseUrl = '') {
+      this.setSessionToken(token);
+      this.baseUrl = baseUrl;
+      localStorage.setItem(BASE_URL_NAME, baseUrl);
+      localStorage.removeItem('ACTIVE_NODE_ID');
+      localStorage.removeItem('ACTIVE_NODE_URL');
+      await this.getUserInfo();
+      if (!this.token) throw new Error('无法初始化登录状态');
     },
 
     // oauth 登录

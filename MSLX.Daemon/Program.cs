@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.StaticFiles;
@@ -274,7 +275,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     if (enableCdnProxy)
     {
         options.ForwardedForHeaderName = cdnProxyIpHeader;
-        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        // Restore the public origin before WebAuthn validation, under the existing proxy opt-in/secret checks.
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
         options.KnownIPNetworks.Clear(); 
         options.KnownProxies.Clear();
     }
@@ -350,6 +352,10 @@ else
 }
 
 builder.Services.AddMemoryCache();
+builder.Services.AddDataProtection()
+    .SetApplicationName("MSLX")
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(IConfigBase.GetAppDataPath(), "DataProtection-Keys")));
+builder.Services.AddSingleton<AccountSecurityService>();
 
 var app = builder.Build();
 

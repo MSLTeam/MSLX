@@ -364,7 +364,9 @@ MSLX-Daemon 初始化成功 - 默认管理员凭据
         }
     }
 
-    public bool UpdateUser(UserInfo updatedUser)
+    public bool UpdateUser(UserInfo updatedUser) => UpdateUser(updatedUser, false);
+
+    public bool UpdateUser(UserInfo updatedUser, bool resetTotp)
     {
         _userListLock.EnterWriteLock();
         try
@@ -372,14 +374,51 @@ MSLX-Daemon 初始化成功 - 默认管理员凭据
             var target = _userListCache.FirstOrDefault(u => u["Id"]?.ToString() == updatedUser.Id);
             if (target == null) return false;
 
-            target.Replace(JObject.FromObject(updatedUser));
-            IConfigBase.SaveJson(_userListPath, _userListCache);
+            var current = target.ToObject<UserInfo>()!;
+            // 常规信息更新不覆盖安全登录设置
+            updatedUser.Authentication = current.Authentication;
+            updatedUser.TokenVersion = Math.Max(current.TokenVersion +
+                ((current.PasswordHash != updatedUser.PasswordHash || current.Role != updatedUser.Role || resetTotp) ? 1 : 0), updatedUser.TokenVersion);
+            if (resetTotp) MSLX.Daemon.Services.AccountSecurityService.ClearTotp(updatedUser);
+            var next = (JArray)_userListCache.DeepClone();
+            next.First(u => u["Id"]?.ToString() == updatedUser.Id).Replace(JObject.FromObject(updatedUser));
+            SaveUsers(next);
             return true;
         }
         finally
         {
             _userListLock.ExitWriteLock();
         }
+    }
+
+    /// <summary>保存文件成功后再更新数据（现有锁）</summary>
+    public UserInfo MutateAuthentication(string userId, Action<UserInfo> mutation)
+    {
+        _userListLock.EnterWriteLock();
+        try
+        {
+            var next = (JArray)_userListCache.DeepClone();
+            var target = next.FirstOrDefault(u => u["Id"]?.ToString() == userId)
+                ?? throw new InvalidOperationException("用户不存在或已被删除");
+            var user = target.ToObject<UserInfo>()!;
+            mutation(user);
+            target.Replace(JObject.FromObject(user));
+            SaveUsers(next);
+            return user;
+        }
+        finally { _userListLock.ExitWriteLock(); }
+    }
+
+    private void SaveUsers(JArray next)
+    {
+        var temporary = _userListPath + "." + Guid.NewGuid().ToString("N") + ".tmp";
+        try
+        {
+            File.WriteAllText(temporary, next.ToString());
+            File.Move(temporary, _userListPath, true);
+            _userListCache = next;
+        }
+        finally { if (File.Exists(temporary)) File.Delete(temporary); }
     }
 
     public bool DeleteUser(string userId)

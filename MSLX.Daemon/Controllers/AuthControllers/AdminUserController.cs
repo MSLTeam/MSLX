@@ -21,6 +21,7 @@ public class AdminUserController : ControllerBase
 
         var dtoList = users.Select(u => new UserDto
         {
+            Security = new AccountSecuritySummary { TotpEnabled = MSLX.Daemon.Services.AccountSecurityService.HasTotp(u) },
             Id = u.Id,
             Username = u.Username,
             Name = u.Name,
@@ -174,7 +175,7 @@ public class AdminUserController : ControllerBase
             user.ApiKey = StringServices.GenerateRandomString(32);
         }
 
-        if (IConfigBase.UserList.UpdateUser(user))
+        if (IConfigBase.UserList.UpdateUser(user, request.ResetTotp))
         {
             return Ok(new ApiResponse<object> { Code = 200, Message = "更新成功" });
         }

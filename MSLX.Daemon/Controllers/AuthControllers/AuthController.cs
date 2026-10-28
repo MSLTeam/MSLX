@@ -7,6 +7,7 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text.Json;
 using MSLX.SDK.Models;
+using MSLX.Daemon.Services;
 
 namespace MSLX.Daemon.Controllers.AuthControllers;
 
@@ -15,6 +16,7 @@ namespace MSLX.Daemon.Controllers.AuthControllers;
 public class AuthController : ControllerBase
 {
     private readonly IMemoryCache _cache;
+    private readonly AccountSecurityService _security;
 
     // 登录错误次数限制
     private const int MaxErrorLimit = 10;                
@@ -22,9 +24,10 @@ public class AuthController : ControllerBase
     private readonly TimeSpan BanDuration = TimeSpan.FromMinutes(60);
     private readonly TimeSpan BrowserLaunchTokenLifetime = TimeSpan.FromSeconds(60);
     
-    public AuthController(IMemoryCache cache)
+    public AuthController(IMemoryCache cache, AccountSecurityService security)
     {
         _cache = cache;
+        _security = security;
     }
 
     /// <summary>
@@ -118,6 +121,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("login")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     [AllowAnonymous] 
     public IActionResult Login([FromBody] LoginRequest request)
     {
@@ -139,51 +143,38 @@ public class AuthController : ControllerBase
         }
 
         // 登录流程
-        if (IConfigBase.UserList.ValidateUser(request.Username, request.Password))
+        var user = IConfigBase.UserList.GetUserByUsername(request.Username);
+        if (user != null && AccountSecurityService.PasswordMatches(user, request.Password))
         {
-            // 成功则清空计数
-            if (!isLocalIp)
+            try
             {
-                _cache.Remove(countKey);
-            }
-
-            var user = IConfigBase.UserList.GetUserByUsername(request.Username);
-            IConfigBase.UserList.UpdateLastLoginTime(request.Username);
-
-            if (user == null)
-            {
-                return StatusCode(500, new ApiResponse<object> { Code = 500, Message = "获取用户信息失败" });
-            }
-
-            // 成功登录后删除初始密码文件，防止凭据泄露
-            var defaultCredPath = Path.Combine(IConfigBase.GetAppDataPath(), "默认账户信息.txt");
-            if (System.IO.File.Exists(defaultCredPath))
-            {
-                try { System.IO.File.Delete(defaultCredPath); } catch { }
-            }
-
-            string token = JwtUtils.GenerateToken(user);
-
-            var resultData = new
-            {
-                token,
-                userInfo = new
+                if (AccountSecurityService.HasTotp(user))
                 {
-                    user.Id,
-                    user.Username,
-                    user.Avatar,
-                    user.Role,
-                    user.Resources,
-                    user.LastLoginTime
+                    if (string.IsNullOrWhiteSpace(request.TwoFactorCode))
+                        return Ok(new ApiResponse<object> { Code = 200, Message = "请输入二步验证码", Data = new { requiresTwoFactor = true } });
+                    user = _security.VerifyLogin(user, request.TwoFactorCode);
                 }
-            };
-
-            return Ok(new ApiResponse<object>
+                var data = AccountSecurityService.CompleteLogin(user);
+                _cache.Remove("ACCOUNT_" + user.Id);
+                if (!isLocalIp) _cache.Remove(countKey);
+                return Ok(new ApiResponse<object> { Code = 200, Message = "登录成功", Data = data });
+            }
+            catch (AccountSecurityException e)
             {
-                Code = 200,
-                Message = "登录成功",
-                Data = resultData
-            });
+                return StatusCode(e.Status, new ApiResponse<object> { Code = e.Status, Message = e.Message });
+            }
+            catch (CryptographicException)
+            {
+                return StatusCode(503, new ApiResponse<object> { Code = 503, Message = "无法读取二步验证密钥，请检查 DataProtection-Keys 备份或联系管理员重置" });
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                return StatusCode(500, new ApiResponse<object> { Code = 500, Message = "登录状态保存失败，请稍后重试" });
+            }
+            catch (InvalidOperationException)
+            {
+                return Unauthorized(new ApiResponse<object> { Code = 401, Message = "用户不存在或已被删除" });
+            }
         }
 
         // 登录失败计数

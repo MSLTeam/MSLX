@@ -160,7 +160,7 @@ const transform: AxiosTransform = {
 
       if (message) {
         // 如果后端 JSON 中有 message, 抛出这个 message
-        return Promise.reject(new Error(message));
+        return Promise.reject(Object.assign(new Error(message), { status: response.status }));
       }
       // 如果有 JSON 但没有 'message'，也立即 reject, 不重试
       return Promise.reject(error);

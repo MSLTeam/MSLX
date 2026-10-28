@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue';
+import { ref, reactive, onMounted, onBeforeUnmount, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { MessagePlugin } from 'tdesign-vue-next';
 import type { FormInstanceFunctions, FormRule } from 'tdesign-vue-next';
 import { useUpdateStore, useUserStore } from '@/store';
 import NotificationPlugin from 'tdesign-vue-next/es/notification/plugin';
 import { request } from '@/utils/request';
+import { passkeyLoginOptions, passkeyLoginVerify } from '@/api/accountSecurity';
+import { getPasskey, passkeySupported, passkeyCancelled, signalUnknownPasskey } from '@/utils/passkey';
 
 const userStore = useUserStore();
 const updateStore = useUpdateStore();
@@ -18,6 +20,10 @@ const REMEMBER_USER = 'remembered_username';
 
 // 状态控制
 const loading = ref(false);
+const requiresTwoFactor = ref(false);
+let passkeyAbort: AbortController | undefined;
+const hasPasskeys = ref(false);
+const canPasskey = computed(() => !isChecking.value && isLocalBackend.value && hasPasskeys.value && passkeySupported());
 const allowOAuth = ref(false);
 const showPsw = ref(false);
 const isLocalBackend = ref(false); // 是否是同源后端
@@ -29,6 +35,7 @@ const formData = reactive({
   url: localStorage.getItem(REMEMBER_URL) || '',
   username: localStorage.getItem(REMEMBER_USER) || '',
   password: '',
+  twoFactorCode: '',
   checked: !!localStorage.getItem(REMEMBER_USER), // 记住用户名开关
 });
 
@@ -36,6 +43,8 @@ const form = ref<FormInstanceFunctions>();
 
 // 动态校验规则
 const formRules = computed((): Record<string, FormRule[]> => {
+  if (requiresTwoFactor.value)
+    return { twoFactorCode: [{ required: true, message: '请输入动态码或恢复码', type: 'error' }] };
   const rules: Record<string, FormRule[]> = {
     username: [{ required: true, message: '请输入用户名', type: 'error' }],
     password: [{ required: true, message: '请输入密码', type: 'error' }],
@@ -51,7 +60,7 @@ const formRules = computed((): Record<string, FormRule[]> => {
 const initCheck = async () => {
   isChecking.value = true;
   // 检测同源
-  const isLocal = await userStore.checkConnection('');
+  const isLocal = await userStore.checkConnection(window.location.origin);
 
   if (isLocal) {
     isLocalBackend.value = true;
@@ -64,7 +73,9 @@ const initCheck = async () => {
   try {
     const res: any = await request.get({
       url: '/api/auth/oauth/status',
+      baseURL: window.location.origin,
     });
+    hasPasskeys.value = res.allowPasskey === true;
     if (res.allowOAuth) {
       allowOAuth.value = true;
     }
@@ -79,28 +90,21 @@ const onSubmit = async ({ validateResult }) => {
   if (validateResult === true) {
     loading.value = true;
     try {
-      await userStore.login({
+      const result = await userStore.login({
         url: isLocalBackend.value ? '' : formData.url, // 同源传空，异地传值
         // url: isLocalBackend.value ? window.location.origin : formData.url, // 同源传空，异地传值
         username: formData.username,
         password: formData.password,
+        twoFactorCode: formData.twoFactorCode || undefined,
         checked: formData.checked,
       });
 
-      MessagePlugin.success('登录成功');
-
-      // 跳转逻辑
-      const redirect = route.query.redirect as string;
-      const redirectUrl = redirect ? decodeURIComponent(redirect) : '/dashboard/base';
-      router.push(redirectUrl);
-
-      NotificationPlugin.success({
-        content: `欢迎回来！${userStore.userInfo.name}`,
-        title: 'MSLX 控制台',
-      });
-
-      // 检查更新
-      updateStore.checkAppUpdate(false);
+      if (result.requiresTwoFactor) {
+        requiresTwoFactor.value = true;
+        return;
+      }
+      cancelTwoFactor();
+      finishLogin();
     } catch (e: any) {
       MessagePlugin.error(e.message || '登录失败，请检查账号密码');
     } finally {
@@ -108,6 +112,56 @@ const onSubmit = async ({ validateResult }) => {
     }
   }
 };
+
+const cancelTwoFactor = () => {
+  requiresTwoFactor.value = false;
+  formData.password = '';
+  formData.twoFactorCode = '';
+};
+const finishLogin = () => {
+  MessagePlugin.success('登录成功');
+
+  // 跳转逻辑
+  const redirect = route.query.redirect as string;
+  const redirectUrl = redirect ? decodeURIComponent(redirect) : '/dashboard/base';
+  router.push(redirectUrl);
+
+  NotificationPlugin.success({
+    content: `欢迎回来！${userStore.userInfo.name}`,
+    title: 'MSLX 控制台',
+  });
+
+  // 检查更新
+  updateStore.checkAppUpdate(false);
+};
+const handlePasskey = async () => {
+  if (!canPasskey.value) return;
+  loading.value = true;
+  passkeyAbort?.abort();
+  passkeyAbort = new AbortController();
+  try {
+    const { challengeId, options } = await passkeyLoginOptions();
+    const credential = await getPasskey(options, passkeyAbort.signal);
+    let result;
+    try {
+      result = await passkeyLoginVerify({ challengeId, credential });
+    } catch (error) {
+      await signalUnknownPasskey(credential, error);
+      throw error;
+    }
+    await userStore.completeLogin(result.token, '');
+    cancelTwoFactor();
+    finishLogin();
+  } catch (error: any) {
+    if (!passkeyCancelled(error)) MessagePlugin.error(error.message || '通行密钥登录失败');
+  } finally {
+    loading.value = false;
+  }
+};
+onBeforeUnmount(() => {
+  cancelTwoFactor();
+  passkeyAbort?.abort();
+});
 
 // MSL登录
 const handleMSLLogin = async () => {
@@ -147,12 +201,22 @@ onMounted(() => {
 
 <template>
   <div>
-    <t-form ref="form" class="login-form" :data="formData" :rules="formRules" label-width="0" @submit="onSubmit">
+    <t-form
+      :key="requiresTwoFactor ? 'two-factor' : 'password'"
+      :id="requiresTwoFactor ? 'totp-login-form' : 'password-login-form'"
+      ref="form"
+      class="login-form"
+      :class="{ 'two-factor-form': requiresTwoFactor }"
+      :data="formData"
+      :rules="formRules"
+      label-width="0"
+      @submit="onSubmit"
+    >
       <div v-if="isChecking" class="loading-wrapper">
         <t-loading text="正在连接服务..." size="small" />
       </div>
 
-      <div v-else class="input-group">
+      <div v-else-if="!requiresTwoFactor" class="input-group">
         <t-form-item v-if="!isLocalBackend" name="url">
           <t-input v-model="formData.url" size="large" placeholder="服务器地址 (如 localhost:1027)" class="glass-input">
             <template #prefix-icon><t-icon name="server" /></template>
@@ -160,7 +224,16 @@ onMounted(() => {
         </t-form-item>
 
         <t-form-item name="username">
-          <t-input v-model="formData.username" size="large" placeholder="请输入用户名" class="glass-input">
+          <t-input
+            v-model="formData.username"
+            name="username"
+            autocomplete="username"
+            :spellcheck="false"
+            autocapitalize="none"
+            size="large"
+            placeholder="请输入用户名"
+            class="glass-input"
+          >
             <template #prefix-icon><t-icon name="user" /></template>
           </t-input>
         </t-form-item>
@@ -168,10 +241,12 @@ onMounted(() => {
         <t-form-item name="password">
           <t-input
             v-model="formData.password"
+            name="password"
             size="large"
             :type="showPsw ? 'text' : 'password'"
             placeholder="请输入密码"
             class="glass-input"
+            autocomplete="current-password"
           >
             <template #prefix-icon><t-icon name="lock-on" /></template>
             <template #suffix-icon>
@@ -181,20 +256,48 @@ onMounted(() => {
         </t-form-item>
       </div>
 
-      <div class="check-container">
+      <div v-else class="input-group">
+        <p>密码已验证，请输入验证器的动态码或一次性恢复码。</p>
+        <t-form-item name="twoFactorCode">
+          <t-input
+            v-model="formData.twoFactorCode"
+            name="one-time-code"
+            type="text"
+            :spellcheck="false"
+            autocapitalize="none"
+            enterkeyhint="done"
+            autofocus
+            autocomplete="one-time-code"
+            :maxlength="64"
+            size="large"
+            placeholder="动态码或恢复码"
+          />
+        </t-form-item>
+      </div>
+
+      <div v-if="!requiresTwoFactor" class="check-container">
         <t-checkbox v-model="formData.checked">记住用户名</t-checkbox>
         <t-link theme="primary" hover="color" @click="showForgetModal = true"> 忘记密码？ </t-link>
       </div>
 
       <t-form-item class="btn-container">
         <div class="btn-wrapper">
-          <t-button block size="large" type="submit" class="login-btn" :loading="loading"> 登 录 </t-button>
+          <t-button block size="large" type="submit" class="login-btn" :loading="loading">{{
+            requiresTwoFactor ? '验 证' : '登 录'
+          }}</t-button>
 
-          <div v-if="allowOAuth" class="msl-login-wrapper">
-            <a class="msl-link-btn" @click="handleMSLLogin">
-              <t-icon name="user-transmit" />
-              <span>使用 MSL 账户登录</span>
-            </a>
+          <div v-if="requiresTwoFactor" class="alternative-login two-factor-return">
+            <button type="button" class="msl-link-btn" :disabled="loading" @click="cancelTwoFactor">
+              <t-icon name="rollback" /><span>返回密码登录</span>
+            </button>
+          </div>
+          <div v-else-if="canPasskey || allowOAuth" class="alternative-login">
+            <button v-if="canPasskey" type="button" class="msl-link-btn" :disabled="loading" @click="handlePasskey">
+              <t-icon name="secured" /><span>使用通行密钥登录</span>
+            </button>
+            <button v-if="allowOAuth" type="button" class="msl-link-btn" :disabled="loading" @click="handleMSLLogin">
+              <t-icon name="user-transmit" /><span>使用 MSL 账户登录</span>
+            </button>
           </div>
         </div>
       </t-form-item>
@@ -273,6 +376,14 @@ onMounted(() => {
     }
   }
 
+  &.two-factor-form .btn-container {
+    margin-top: 24px;
+  }
+
+  .btn-wrapper > .t-button {
+    margin-left: 0;
+  }
+
   .btn-container {
     // 让表单项内容区域占满宽度
     :deep(.t-form__content) {
@@ -287,23 +398,26 @@ onMounted(() => {
     flex-direction: column; // 强制垂直排列
   }
 
-  // 间距
-  .msl-login-wrapper {
-    margin-top: 16px; // 登录按钮和下方文字的间距
-    width: 100%;
+  .alternative-login {
+    margin-top: 20px;
     display: flex;
     justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    column-gap: 24px;
+    row-gap: 8px;
   }
 
-
-  .msl-login-wrapper {
-    margin-top: 20px;
-    width: 100%;
-    display: flex;
-    justify-content: center;
+  .two-factor-return {
+    margin-top: 16px;
   }
 
   .msl-link-btn {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    font-family: inherit;
+    line-height: 1.5;
     position: relative;
     display: inline-flex;
     align-items: center;
@@ -336,7 +450,17 @@ onMounted(() => {
     }
 
     // 悬浮状态
-    &:hover {
+    &:focus-visible {
+      outline: 2px solid var(--td-brand-color);
+      outline-offset: 4px;
+      border-radius: 2px;
+    }
+    &:disabled {
+      opacity: 0.5;
+      cursor: wait;
+    }
+
+    &:hover:not(:disabled) {
       color: var(--td-brand-color);
 
       // 图标轻微上浮
