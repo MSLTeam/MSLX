@@ -101,6 +101,16 @@ async function submit({ validateResult }: any) {
     busy.value = false;
   }
 }
+function formatDate(value: string) {
+  return new Date(value).toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+}
 async function copyRecoveryCodes() {
   try {
     await navigator.clipboard.writeText(recoveryCodes.value.join('\n'));
@@ -132,7 +142,7 @@ async function copyRecoveryCodes() {
         </div>
       </div>
       <div class="security-row">
-        <div>
+        <div class="security-summary">
           <strong>二步验证</strong>
           <p>使用验证器生成动态码，在密码验证后确认身份。</p>
           <span v-if="security?.totpEnabled" class="enabled"
@@ -147,35 +157,64 @@ async function copyRecoveryCodes() {
           >{{ security?.totpEnabled ? '关闭验证' : '启用验证' }}</t-button
         >
       </div>
-      <div class="security-row">
-        <div>
-          <strong>通行密钥</strong>
-          <p>使用指纹、设备 PIN 或安全密钥快捷登录。</p>
-          <span v-if="!security?.passkeys?.length && canPasskey">尚未绑定</span>
-          <span v-if="!canPasskey">新增通行密钥需要同源 HTTPS 域名或 localhost 及支持 WebAuthn 的浏览器。</span>
+      <div class="passkey-section">
+        <div class="security-row">
+          <div class="security-summary">
+            <strong>通行密钥</strong>
+            <p>使用指纹、设备 PIN 或安全密钥快捷登录。</p>
+            <span v-if="security?.passkeys?.length">已绑定 {{ security.passkeys.length }} 个通行密钥</span>
+            <span v-if="!canPasskey">绑定需使用同源 HTTPS 域名或 localhost，并使用支持通行密钥的浏览器。</span>
+          </div>
+          <t-button
+            v-if="canPasskey"
+            theme="default"
+            variant="outline"
+            :disabled="busy"
+            class="security-action !h-10 !px-5 !rounded-xl !font-medium"
+            @click="open('register')"
+          >
+            <template #icon><t-icon name="add" /></template>新增通行密钥
+          </t-button>
         </div>
-        <t-button
-          v-if="canPasskey"
-          theme="default"
-          variant="outline"
-          class="security-action !h-10 !px-5 !rounded-xl !font-medium"
-          @click="open('register')"
-          ><template #icon><t-icon name="add" /></template>新增通行密钥</t-button
-        >
-      </div>
-      <div v-for="key in security?.passkeys || []" :key="key.id" class="security-row passkey-row">
-        <div>
-          <strong>{{ key.name }}</strong>
-          <p>{{ key.rpId }} · 创建于 {{ new Date(key.createdAt).toLocaleString() }}</p>
-          <span>上次使用：{{ key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleString() : '尚未使用' }}</span>
+        <ul v-if="security?.passkeys?.length" class="passkey-list" aria-label="已绑定的通行密钥">
+          <li v-for="key in security.passkeys" :key="key.id" class="passkey-item design-card">
+            <div class="passkey-identity">
+              <div class="passkey-symbol" aria-hidden="true"><t-icon name="secured" /></div>
+              <div class="passkey-name">
+                <strong>{{ key.name }}</strong>
+                <span>{{ key.rpId }}</span>
+              </div>
+            </div>
+            <dl class="passkey-details">
+              <div>
+                <dt>创建时间</dt>
+                <dd>
+                  <time :datetime="key.createdAt">{{ formatDate(key.createdAt) }}</time>
+                </dd>
+              </div>
+              <div>
+                <dt>上次使用</dt>
+                <dd>
+                  <time v-if="key.lastUsedAt" :datetime="key.lastUsedAt">{{ formatDate(key.lastUsedAt) }}</time
+                  ><span v-else>尚未使用</span>
+                </dd>
+              </div>
+            </dl>
+            <t-button
+              theme="danger"
+              variant="outline"
+              :disabled="busy"
+              :aria-label="`删除通行密钥 ${key.name}`"
+              class="passkey-delete !h-10 !px-4 !rounded-xl !font-medium"
+              @click="open('delete', key.id)"
+            >
+              <template #icon><t-icon name="delete" /></template>删除
+            </t-button>
+          </li>
+        </ul>
+        <div v-else class="passkey-empty">
+          <t-icon name="secured" aria-hidden="true" /><span>尚未绑定通行密钥</span>
         </div>
-        <t-button
-          theme="danger"
-          variant="outline"
-          class="security-action !h-10 !px-5 !rounded-xl !font-medium"
-          @click="open('delete', key.id)"
-          ><template #icon><t-icon name="delete" /></template>删除</t-button
-        >
       </div>
     </div>
     <t-dialog
@@ -240,75 +279,151 @@ async function copyRecoveryCodes() {
 <style scoped>
 .security-settings {
   color: var(--td-text-color-primary);
-}
-.security-heading {
-  display: flex;
-  gap: 12px;
-  align-items: baseline;
-  flex-wrap: wrap;
-}
-.security-heading h3 {
-  margin: 0;
-  font-size: 16px;
-}
-.security-heading span,
-.security-row p,
-.security-row span,
-.empty-hint {
-  color: var(--td-text-color-secondary);
-  font-size: 12px;
-  line-height: 1.6;
+  container-type: inline-size;
 }
 .security-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
-  padding: 20px 0;
+  gap: 20px;
 }
-.security-row + .security-row {
-  border-top: 1px dashed var(--td-component-border);
+.security-summary {
+  min-width: 0;
 }
-.security-header + .security-row {
-  padding-top: 0;
-}
-.security-row:last-child {
-  padding-bottom: 0;
-}
-.security-row strong {
+.security-summary strong {
   font-size: 14px;
   font-weight: 600;
 }
-.security-row > .t-button {
-  flex-shrink: 0;
-}
-.security-row span.enabled {
-  color: var(--td-success-color);
-}
-.security-row > div {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.security-row p {
+.security-summary p {
   margin: 6px 0;
 }
-.passkey-row {
-  margin-top: 10px;
-  padding: 12px;
-  background: var(--td-bg-color-secondarycontainer);
+.security-summary p,
+.security-summary > span {
+  color: var(--td-text-color-secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.security-summary > span {
+  display: block;
+}
+.security-summary > .enabled {
+  color: var(--td-success-color);
+}
+.security-action {
+  flex-shrink: 0;
+}
+.passkey-section {
+  margin-block-start: 24px;
+  padding-block-start: 24px;
+  border-block-start: 1px dashed var(--td-component-border);
+}
+.passkey-list {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+  margin: 20px 0 0;
+}
+.passkey-item {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(280px, 1fr) auto;
+  align-items: center;
+  gap: 24px;
+  padding: 20px;
+  background: var(--td-bg-color-container);
   border: 1px solid var(--td-component-border);
   border-radius: 12px;
 }
-@media (max-width: 600px) {
+.passkey-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.passkey-symbol {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border: 1px solid var(--td-component-border);
+  border-radius: 12px;
+  color: var(--td-text-color-secondary);
+  font-size: 20px;
+}
+.passkey-name {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.passkey-name strong {
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 600;
+}
+.passkey-name > span {
+  color: var(--td-text-color-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.passkey-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin: 0;
+  min-width: 0;
+}
+.passkey-details > div {
+  min-width: 0;
+}
+.passkey-details dt {
+  color: var(--td-text-color-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.passkey-details dd {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.passkey-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-block-start: 16px;
+  padding-block: 12px;
+  color: var(--td-text-color-secondary);
+  font-size: 12px;
+}
+@container (max-width: 680px) {
+  .passkey-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 16px;
+    padding: 16px;
+  }
+  .passkey-delete {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .passkey-details {
+    grid-column: 1 / -1;
+    padding-block-start: 14px;
+    border-block-start: 1px solid var(--td-component-border);
+    gap: 16px;
+  }
+}
+@container (max-width: 440px) {
   .security-row {
-    flex-wrap: wrap;
+    align-items: stretch;
+    flex-direction: column;
     gap: 12px;
   }
-  .security-row > div {
-    flex-basis: 100%;
-  }
   .security-action {
-    width: 100%;
+    align-self: flex-start;
   }
 }
 .dialog-actions {
