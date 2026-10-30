@@ -10,6 +10,9 @@ export const useNodeStore = defineStore('node', {
     lastFetchTime: 0,
     activeNodeId: new URL(window.location.href).searchParams.get('node') || 'local'
   }),
+  getters: {
+    hasSlaveNodes: (state) => state.slaveNodes.some((n: any) => !n.pendingRemoval)
+  },
   actions: {
     async fetchNodes(force = false) {
       if (!force && Date.now() - this.lastFetchTime < 5000) {

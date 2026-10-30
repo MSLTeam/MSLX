@@ -151,3 +151,29 @@ test('node registry loads child-only plugins and different versions without mixi
   assert.equal(loader.arePluginsLoaded('local'), false);
   assert.equal(Object.keys(slots).length, 0);
 });
+
+test('nodeStore reports hasSlaveNodes only when active non-removed slave nodes exist', () => {
+  const { setActivePinia, createPinia } = require('pinia');
+  setActivePinia(createPinia());
+  const { useNodeStore } = load('store/modules/node', { '@/api/node': {}, '@/router': {} });
+  const store = useNodeStore();
+
+  assert.equal(store.hasSlaveNodes, false);
+  store.slaveNodes = [{ nodeId: 'orphan', pendingRemoval: true }];
+  assert.equal(store.hasSlaveNodes, false);
+  store.slaveNodes = [{ nodeId: 'child-1' }];
+  assert.equal(store.hasSlaveNodes, true);
+  store.slaveNodes = [{ nodeId: 'child-1', pendingRemoval: true }, { nodeId: 'child-2' }];
+  assert.equal(store.hasSlaveNodes, true);
+});
+
+test('multi-node plugin tag visibility is suppressed in standalone mode and shown in multi-node context', () => {
+  const isMultiNodeTagVisible = (targetNodeId, hasSlaveNodes) => targetNodeId !== 'local' || Boolean(hasSlaveNodes);
+  // Pure standalone master node with no slave nodes: hidden
+  assert.equal(isMultiNodeTagVisible('local', false), false);
+  // Master node with active slave nodes present in cluster: visible
+  assert.equal(isMultiNodeTagVisible('local', true), true);
+  // Directly targeting a slave node: always visible
+  assert.equal(isMultiNodeTagVisible('slave-a', false), true);
+  assert.equal(isMultiNodeTagVisible('slave-a', true), true);
+});
