@@ -18,7 +18,7 @@ const isDark = computed(() => settingStore.displayMode === 'dark');
 
 // 快捷明暗模式切换
 const toggleTheme = () => {
-  settingStore.changeMode(isDark.value ? 'light' : 'dark');
+  settingStore.updateConfig({ mode: isDark.value ? 'light' : 'dark' });
 };
 
 const getImageUrl = (fileName: string, defaultImg: string) => {

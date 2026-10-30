@@ -26,6 +26,7 @@ onMounted(() => {
 
   // 初始化校准
   store.setSystemTheme(mediaQuery.matches ? 'dark' : 'light');
+  store.changeMode(store.mode as 'dark' | 'light' | 'auto');
 });
 
 onUnmounted(() => {
