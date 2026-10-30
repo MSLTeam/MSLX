@@ -33,11 +33,13 @@ router.beforeEach(async (to, _from, next) => {
     }
   }
   const nodeId = typeof to.query.node === 'string' && to.query.node ? to.query.node : 'local';
-  if (nodeId !== 'local' && !user.token) {
-    next({ path: '/login', query: { redirect: encodeURIComponent(to.fullPath) } }); NProgress.done(); return;
-  }
   try {
-    if (nodeId !== 'local') { await useNodeStore().fetchNodes(); getNodeTarget(nodeId); }
+    if (nodeId !== 'local') {
+      const nodeStore = useNodeStore();
+      if (user.token) await nodeStore.fetchNodes();
+      else await nodeStore.fetchPublicNode(nodeId);
+      getNodeTarget(nodeId);
+    }
     if (!arePluginsLoaded(nodeId)) await loadAllPlugins(nodeId);
   } catch (error) {
     setPluginLoadError(nodeId, error);

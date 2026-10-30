@@ -30,9 +30,14 @@ test('plugin declaration accepts only the exact string enum, defaulting an absen
 });
 
 function contextModule(send) {
+  const { getPluginPublicUrl } = load('utils/nodeTarget', {
+    '@/utils/request': { request: {} },
+    '@/store/modules/node': { useNodeStore: () => ({ slaveNodes: [] }) },
+    '@/config/global': constants,
+  });
   return load('utils/pluginNodeContext', {
     '@/utils/request': { request: { request: send } }, '@/config/global': constants,
-    './nodeTarget': { getPageNodeId: () => 'child-a', getNodeTarget: nodeId => ({ nodeId, baseUrl: 'http://node.test' }), nodeResourceUrl: () => 'resource' },
+    './nodeTarget': { getPageNodeId: () => 'child-a', getNodeTarget: nodeId => ({ nodeId, baseUrl: 'http://node.test' }), nodeResourceUrl: () => 'resource', getPluginPublicUrl },
     './scopedToken': {}, './hub': {}, '@microsoft/signalr': {},
   });
 }
@@ -176,4 +181,68 @@ test('multi-node plugin tag visibility is suppressed in standalone mode and show
   // Directly targeting a slave node: always visible
   assert.equal(isMultiNodeTagVisible('slave-a', false), true);
   assert.equal(isMultiNodeTagVisible('slave-a', true), true);
+});
+
+test('getPluginPublicUrl and context.publicPageUrl correctly construct public URLs across nodes', () => {
+  storage();
+  const { getPluginPublicUrl } = load('utils/nodeTarget', {
+    '@/utils/request': { request: {} },
+    '@/store/modules/node': { useNodeStore: () => ({ slaveNodes: [] }) },
+    '@/config/global': constants,
+  });
+
+  // Local node: no node parameter added
+  assert.equal(getPluginPublicUrl('/dynmap', 'local'), '/dynmap');
+  assert.equal(getPluginPublicUrl('/dynmap?world=nether#top', 'local'), '/dynmap?world=nether#top');
+  assert.equal(getPluginPublicUrl('/dynmap', 'local', { absolute: true }), 'http://panel.test/dynmap');
+
+  // Slave node: node parameter appended
+  assert.equal(getPluginPublicUrl('/dynmap', 'slave-1'), '/dynmap?node=slave-1');
+  assert.equal(getPluginPublicUrl('dynmap', 'slave-1'), '/dynmap?node=slave-1');
+  assert.equal(getPluginPublicUrl('/dynmap?world=nether#top', 'slave-1'), '/dynmap?world=nether&node=slave-1#top');
+  assert.equal(getPluginPublicUrl('/dynmap', 'slave-1', { absolute: true }), 'http://panel.test/dynmap?node=slave-1');
+
+  // Via plugin node context
+  const { createPluginNodeContext } = contextModule(async () => ({}));
+  const context = createPluginNodeContext('child-a', 'my-plugin');
+  assert.equal(context.publicPageUrl('/dashboard'), '/dashboard?node=child-a');
+  assert.equal(context.publicPageUrl('/dashboard', { absolute: true }), 'http://panel.test/dashboard?node=child-a');
+  context.dispose();
+});
+
+test('child node public plugin route preserves anonymous: true and registers into whiteListRouters', async () => {
+  storage();
+  const routes = new Map();
+  const router = { hasRoute: name => routes.has(name), addRoute: (...args) => {
+    const route = args.at(-1);
+    const names = [route.name, ...(route.children || []).map(child => child.name)].filter(Boolean);
+    names.forEach(name => routes.set(name, route));
+    return () => names.forEach(name => routes.delete(name));
+  } };
+  const permission = { routers: [], whiteListRouters: ['/login'] };
+  const { PluginMultiNodeSupport } = load('api/model/plugins', {});
+  const slots = {};
+  const ui = {
+    nodeId: 'slave-a', loading: false, error: '', extensionsByNode: slots,
+    registerExtension(slot, ext, node) { ((slots[node] ||= {})[slot] ||= []).push(ext); },
+    clear() { for (const key of Object.keys(slots)) delete slots[key]; },
+  };
+  const loader = load('utils/pluginManager', {
+    '@/router': { __esModule: true, default: router }, '@/layouts/index.vue': {}, '@/config/global': constants,
+    '@/store': { getPermissionStore: () => permission, usePluginUIStore: () => ui, useUserStore: () => ({ isAdmin: false }) },
+    '@/api/plugins': { getPluginList: async () => [{ id: 'public-plugin', name: 'public', status: '已启用', entryPath: '/entry.js' }] },
+    '@/api/model/plugins': { PluginMultiNodeSupport },
+    './nodeTarget': { getPageNodeId: () => 'slave-a', getNodeTarget: () => ({ baseUrl: 'http://slave.test' }), pluginNodePages: new Set() },
+    './pluginNodeContext': { bindPluginComponent: (component, nodeId) => ({ component, nodeId }) },
+    './request': { request: { get: async () => ({ features: { pluginMultiNode: true } }) } },
+    importer: () => ({ pluginConfig: {
+      routes: [{ name: 'PublicPage', path: '/public-view', component: {}, meta: { anonymous: true, title: 'Public' } }]
+    } }),
+  });
+
+  await loader.loadAllPlugins('slave-a');
+  loader.activatePluginNode('slave-a');
+
+  assert.equal(permission.routers[0].meta.anonymous, true);
+  assert.equal(permission.whiteListRouters.includes('/public-view'), true);
 });

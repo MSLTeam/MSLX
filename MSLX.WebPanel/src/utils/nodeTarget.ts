@@ -18,6 +18,14 @@ export function nodeNavigationUrl(path: string, nodeId = getPageNodeId()) {
   return `${url.pathname}${url.search}${url.hash}`;
 }
 
+export function getPluginPublicUrl(path: string, nodeId = getPageNodeId(), options: { absolute?: boolean } = {}) {
+  if (!path.startsWith('/')) path = `/${path}`;
+  const base = window.location.origin;
+  const url = new URL(path, base);
+  if (nodeId && nodeId !== 'local') url.searchParams.set('node', nodeId);
+  return options.absolute ? url.toString() : `${url.pathname}${url.search}${url.hash}`;
+}
+
 export function getNodeTarget(nodeId = getPageNodeId()) {
   if (nodeId === 'local') return { nodeId, baseUrl: localStorage.getItem(BASE_URL_NAME) || window.location.origin };
   const nodeStore = useNodeStore();

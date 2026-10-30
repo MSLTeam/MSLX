@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { getSlaveNodes } from '@/api/node';
+import { getSlaveNodes, getPublicSlaveNode } from '@/api/node';
 import router from '@/router';
 
 export const useNodeStore = defineStore('node', {
@@ -31,6 +31,17 @@ export const useNodeStore = defineStore('node', {
         this.loading = false;
       }
       return this.slaveNodes;
+    },
+    async fetchPublicNode(nodeId: string) {
+      if (nodeId === 'local' || this.slaveNodes.some(n => n.nodeId === nodeId && !n.pendingRemoval)) return;
+      try {
+        const res = await getPublicSlaveNode(nodeId);
+        if (res && !this.slaveNodes.some(n => n.nodeId === res.nodeId)) {
+          this.slaveNodes.push(res);
+        }
+      } catch (error) {
+        console.error('Failed to fetch public node target:', error);
+      }
     },
     async setActiveNode(nodeId: string) {
       if (nodeId !== 'local' && !this.slaveNodes.some(n => n.nodeId === nodeId && !n.pendingRemoval))
