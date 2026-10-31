@@ -18,8 +18,13 @@ import { useInstanceListStore } from '@/store/modules/instance';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { parseMcVersion, getRecommendedJava } from './javaRecommendation';
 
-const { isUploading, uploadProgress, uploadedFileName, uploadedFileSize, startUpload, removeUploadData } =
+const { isUploading, uploadProgress, uploadedFileName, uploadedFileSize, startUpload, cancelUpload, removeUploadData } =
   useFileUpload();
+
+const cancelCurrentUpload = () => {
+  cancelUpload();
+  MessagePlugin.info('已取消当前上传，可以重新选择文件');
+};
 
 // 状态管理
 const userStore = useUserStore();
@@ -1440,7 +1445,17 @@ watch([onlineGameVersion, () => formData.value.core], () => updateJavaSelectionB
             <div class="mt-auto pt-6 border-t border-zinc-200 dark:border-zinc-700 flex items-center justify-between">
               <t-button v-if="currentStep > 0 && currentStep < 6" theme="default" @click="prevStep">上一步</t-button>
               <div v-else></div>
-              <t-button v-if="currentStep < 5" theme="primary" type="button" @click="nextStep">下一步</t-button>
+              <div v-if="currentStep < 5" class="flex items-center gap-3">
+                <t-button
+                  v-if="currentStep === 1 && isUploading"
+                  theme="danger"
+                  variant="outline"
+                  type="button"
+                  @click="cancelCurrentUpload"
+                  >取消上传</t-button
+                >
+                <t-button theme="primary" type="button" @click="nextStep">下一步</t-button>
+              </div>
               <t-button v-if="currentStep === 5" theme="primary" type="submit" :loading="isSubmitting"
                 >提交创建</t-button
               >
