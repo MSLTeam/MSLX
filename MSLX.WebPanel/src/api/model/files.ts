@@ -4,6 +4,8 @@ export interface UploadInitResponse {
 
 export interface UploadFinishResponse {
   uploadId: string;
+  size?: number;
+  sha256?: string;
 }
 
 export interface UploadStatusResponse {

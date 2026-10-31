@@ -10,6 +10,7 @@ import {
 } from '@/api/files';
 import {
   computeFastFileFingerprint,
+  computeChunkCrc32c,
   deleteUploadResumeRecord,
   getUploadResumeRecords,
   saveUploadResumeRecord,
@@ -57,7 +58,7 @@ function getHttpStatus(error: any): number | undefined {
 function isRetryableUploadError(error: any): boolean {
   const status = getHttpStatus(error);
   if (status === undefined) return true;
-  return status === 408 || status === 425 || status === 429 || status >= 500;
+  return status === 408 || status === 422 || status === 425 || status === 429 || status >= 500;
 }
 
 export function useFileUpload() {
@@ -227,6 +228,7 @@ export function useFileUpload() {
       const processChunk = async (index: number) => {
         if (currentAbortController.signal.aborted) throw new Error('已取消');
         const chunkBlob = file.slice(index * chunkSize, Math.min(file.size, (index + 1) * chunkSize));
+        const chunkCrc32c = await computeChunkCrc32c(chunkBlob);
         let lastError: any;
 
         for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -255,6 +257,7 @@ export function useFileUpload() {
               },
               attemptController.signal,
               uploadNodeId,
+              chunkCrc32c,
             );
             markReceived(index);
             await persistResumeRecord();
@@ -333,7 +336,7 @@ export function useFileUpload() {
       let finishRes: any;
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
-          finishRes = await finishUpload(uploadId, totalChunks, uploadNodeId);
+          finishRes = await finishUpload(uploadId, totalChunks, uploadNodeId, file.size);
           break;
         } catch (error: any) {
           if (!isRetryableUploadError(error) || attempt >= 3) throw error;

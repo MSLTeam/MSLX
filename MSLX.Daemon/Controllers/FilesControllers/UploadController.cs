@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -16,6 +17,8 @@ namespace MSLX.Daemon.Controllers.FilesControllers;
 [Route("api/files/upload")]
 public class UploadController : ControllerBase
 {
+    private static readonly uint[] Crc32cTable = CreateCrc32cTable();
+
     private readonly string _tempPath;
     private readonly IMemoryCache _memoryCache;
     private readonly ServerDeploymentService _deploymentService;
@@ -56,7 +59,11 @@ public class UploadController : ControllerBase
     /// </summary>
     [HttpPost("chunk/{uploadId}")]
     [DisableRequestSizeLimit]
-    public async Task<IActionResult> UploadChunk(string uploadId, [FromForm] int index, [FromForm] IFormFile file)
+    public async Task<IActionResult> UploadChunk(
+        string uploadId,
+        [FromForm] int index,
+        [FromForm] IFormFile file,
+        [FromForm] string? crc32c = null)
     {
         // 检查凭证
         if (!_memoryCache.TryGetValue($"Upload_Session_{uploadId}", out _))
@@ -76,15 +83,53 @@ public class UploadController : ControllerBase
         }
 
         if (file == null || file.Length == 0) return BadRequest("文件为空");
+        if (!string.IsNullOrWhiteSpace(crc32c) && !Regex.IsMatch(crc32c, "^[a-fA-F0-9]{8}$"))
+        {
+            return BadRequest(new ApiResponse<string> { Code = 400, Message = "分片 CRC32C 格式无效" });
+        }
 
         // 暂存为 uploadId_index
         var chunkPath = Path.Combine(_tempPath, $"{uploadId}_{index}");
         var tempChunkPath = chunkPath + ".uploading";
 
+        uint crc = 0xffffffff;
+        long bytesWritten = 0;
+        var buffer = new byte[1024 * 1024];
+        await using (var input = file.OpenReadStream())
         await using (var stream = new FileStream(tempChunkPath, FileMode.Create, FileAccess.Write, FileShare.None))
         {
-            await file.CopyToAsync(stream);
+            int read;
+            while ((read = await input.ReadAsync(buffer.AsMemory(0, buffer.Length))) > 0)
+            {
+                await stream.WriteAsync(buffer.AsMemory(0, read));
+                crc = UpdateCrc32c(crc, buffer.AsSpan(0, read));
+                bytesWritten += read;
+            }
         }
+
+        crc ^= 0xffffffff;
+        var actualCrc32c = crc.ToString("x8");
+        if (!string.IsNullOrWhiteSpace(crc32c) && !string.Equals(crc32c, actualCrc32c, StringComparison.OrdinalIgnoreCase))
+        {
+            System.IO.File.Delete(tempChunkPath);
+            return UnprocessableEntity(new ApiResponse<JObject>
+            {
+                Code = 422,
+                Message = "分片完整性校验失败，请重试",
+                Data = new JObject
+                {
+                    ["index"] = index,
+                    ["expectedCrc32c"] = crc32c,
+                    ["actualCrc32c"] = actualCrc32c,
+                },
+            });
+        }
+
+        // CRC 元数据与分片一起落盘，合并时可以再次验证磁盘上的分片内容。
+        var crcMetadataPath = chunkPath + ".crc32c";
+        var tempCrcMetadataPath = crcMetadataPath + ".uploading";
+        await System.IO.File.WriteAllTextAsync(tempCrcMetadataPath, actualCrc32c);
+        System.IO.File.Move(tempCrcMetadataPath, crcMetadataPath, true);
 
         // 使用原子替换，避免状态接口把半写入文件当成已完成分片。
         System.IO.File.Move(tempChunkPath, chunkPath, true);
@@ -96,7 +141,8 @@ public class UploadController : ControllerBase
             Data = new JObject
             {
                 ["index"] = index,
-                ["size"] = file.Length,
+                ["size"] = bytesWritten,
+                ["crc32c"] = actualCrc32c,
             },
         });
     }
@@ -154,11 +200,26 @@ public class UploadController : ControllerBase
         // 响应在网络中丢失时，客户端会重试 finish；已合并文件可以安全地重复确认。
         if (System.IO.File.Exists(finalPath))
         {
+            var existingSize = new FileInfo(finalPath).Length;
+            if (req.TotalSize.HasValue && existingSize != req.TotalSize.Value)
+            {
+                return BadRequest(new ApiResponse<JObject>
+                {
+                    Code = 400,
+                    Message = $"已合并文件大小不匹配，期望 {req.TotalSize.Value}，实际 {existingSize}",
+                });
+            }
+
             return Ok(new ApiResponse<JObject>
             {
                 Code = 200,
                 Message = "文件上传全部成功",
-                Data = new JObject { ["uploadId"] = uploadId },
+                Data = new JObject
+                {
+                    ["uploadId"] = uploadId,
+                    ["size"] = existingSize,
+                    ["sha256"] = await ComputeFileSha256Async(finalPath),
+                },
             });
         }
 
@@ -182,17 +243,63 @@ public class UploadController : ControllerBase
             });
         }
 
+        var mergingPath = finalPath + ".merging";
+        byte[] finalHash;
+        long mergedSize = 0;
         try
         {
-            await using var destStream = new FileStream(finalPath, FileMode.Create);
-            foreach (var chunkFile in chunks)
+            await using (var destStream = new FileStream(mergingPath, FileMode.Create, FileAccess.Write, FileShare.None))
+            using (var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256))
             {
-                await using var sourceStream = new FileStream(chunkFile, FileMode.Open);
-                await sourceStream.CopyToAsync(destStream);
+                var buffer = new byte[1024 * 1024];
+                foreach (var chunkFile in chunks)
+                {
+                    var expectedChunkCrc32c = await ReadChunkCrc32cAsync(chunkFile);
+                    uint chunkCrc = 0xffffffff;
+                    await using var sourceStream = new FileStream(chunkFile, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    int read;
+                    while ((read = await sourceStream.ReadAsync(buffer.AsMemory(0, buffer.Length))) > 0)
+                    {
+                        await destStream.WriteAsync(buffer.AsMemory(0, read));
+                        chunkCrc = UpdateCrc32c(chunkCrc, buffer.AsSpan(0, read));
+                        sha256.AppendData(buffer.AsSpan(0, read));
+                        mergedSize += read;
+                    }
+
+                    if (expectedChunkCrc32c != null)
+                    {
+                        var actualChunkCrc32c = (chunkCrc ^ 0xffffffff).ToString("x8");
+                        if (!string.Equals(expectedChunkCrc32c, actualChunkCrc32c, StringComparison.OrdinalIgnoreCase))
+                        {
+                            System.IO.File.Delete(mergingPath);
+                            return StatusCode(500, new ApiResponse<JObject>
+                            {
+                                Code = 500,
+                                Message = $"分片 {Path.GetFileName(chunkFile)} 完整性校验失败",
+                            });
+                        }
+                    }
+                }
+
+                finalHash = sha256.GetHashAndReset();
             }
+
+            if (req.TotalSize.HasValue && mergedSize != req.TotalSize.Value)
+            {
+                System.IO.File.Delete(mergingPath);
+                return BadRequest(new ApiResponse<JObject>
+                {
+                    Code = 400,
+                    Message = $"合并文件大小不匹配，期望 {req.TotalSize.Value}，实际 {mergedSize}",
+                });
+            }
+
+            // 只有完整性校验通过后才替换最终文件，避免留下半成品。
+            System.IO.File.Move(mergingPath, finalPath, true);
         }
         catch (Exception ex)
         {
+            try { System.IO.File.Delete(mergingPath); } catch { }
             return StatusCode(500, new ApiResponse<JObject>
             {
                 Code = 500,
@@ -218,9 +325,65 @@ public class UploadController : ControllerBase
             Message = "文件上传全部成功",
             Data = new JObject()
             {
-                ["uploadId"] = uploadId
+                ["uploadId"] = uploadId,
+                ["size"] = mergedSize,
+                ["sha256"] = Convert.ToHexString(finalHash).ToLowerInvariant(),
             }
         });
+    }
+
+    private static uint[] CreateCrc32cTable()
+    {
+        var table = new uint[256];
+        for (var i = 0; i < table.Length; i++)
+        {
+            var value = (uint)i;
+            for (var bit = 0; bit < 8; bit++)
+            {
+                value = (value & 1) != 0 ? 0x82f63b78 ^ (value >> 1) : value >> 1;
+            }
+
+            table[i] = value;
+        }
+
+        return table;
+    }
+
+    private static uint UpdateCrc32c(uint crc, ReadOnlySpan<byte> buffer)
+    {
+        foreach (var value in buffer)
+        {
+            crc = Crc32cTable[(crc ^ value) & 0xff] ^ (crc >> 8);
+        }
+
+        return crc;
+    }
+
+    private static async Task<string> ComputeFileSha256Async(string path)
+    {
+        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 1024, useAsync: true);
+        using var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        var buffer = new byte[1024 * 1024];
+        int read;
+        while ((read = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length))) > 0)
+        {
+            sha256.AppendData(buffer.AsSpan(0, read));
+        }
+
+        return Convert.ToHexString(sha256.GetHashAndReset()).ToLowerInvariant();
+    }
+
+    private static async Task<string?> ReadChunkCrc32cAsync(string chunkPath)
+    {
+        var metadataPath = chunkPath + ".crc32c";
+        if (!System.IO.File.Exists(metadataPath)) return null;
+        var value = (await System.IO.File.ReadAllTextAsync(metadataPath)).Trim();
+        if (!Regex.IsMatch(value, "^[a-fA-F0-9]{8}$"))
+        {
+            throw new InvalidDataException($"分片 {Path.GetFileName(chunkPath)} 的 CRC32C 元数据无效");
+        }
+
+        return value;
     }
 
     private List<int> GetChunkIndices(string uploadId)
@@ -288,6 +451,12 @@ public class UploadController : ControllerBase
                 catch
                 {
                 }
+            }
+
+            var mergingPath = Path.Combine(_tempPath, uploadId + ".tmp.merging");
+            if (System.IO.File.Exists(mergingPath))
+            {
+                System.IO.File.Delete(mergingPath);
             }
 
             return Ok(new ApiResponse<string> { Code = 200, Message = "清理成功" });

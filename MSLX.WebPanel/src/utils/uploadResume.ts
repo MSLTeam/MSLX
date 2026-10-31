@@ -24,6 +24,20 @@ const STORE_NAME = 'sessions';
 const DB_VERSION = 1;
 const HASH_WINDOW_SIZE = 1024 * 1024;
 
+// CRC32C (Castagnoli), reflected polynomial. The table is shared by all
+// chunks so calculating a checksum does not allocate per byte.
+const CRC32C_TABLE = (() => {
+  const table = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let value = i;
+    for (let bit = 0; bit < 8; bit++) {
+      value = (value & 1) ? (0x82f63b78 ^ (value >>> 1)) : (value >>> 1);
+    }
+    table[i] = value >>> 0;
+  }
+  return table;
+})();
+
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     if (!('indexedDB' in window)) {
@@ -119,4 +133,16 @@ export async function computeFastFileFingerprint(file: File): Promise<string> {
     hash = Math.imul(hash, 16777619);
   }
   return `head-tail-fnv1a:${file.size}:${(hash >>> 0).toString(16).padStart(8, '0')}`;
+}
+
+/**
+ * 计算单个上传分片的 CRC32C。只读取当前分片，适合在上传前做快速完整性校验。
+ */
+export async function computeChunkCrc32c(chunk: Blob): Promise<string> {
+  const bytes = new Uint8Array(await chunk.arrayBuffer());
+  let crc = 0xffffffff;
+  for (const byte of bytes) {
+    crc = CRC32C_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+  }
+  return ((crc ^ 0xffffffff) >>> 0).toString(16).padStart(8, '0');
 }

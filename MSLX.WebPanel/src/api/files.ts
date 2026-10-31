@@ -33,10 +33,12 @@ export async function uploadChunk(
   onProgress?: (_e: AxiosProgressEvent) => void,
   signal?: AbortSignal,
   targetNodeId?: string,
+  chunkCrc32c?: string,
 ) {
   const formData = new FormData();
   formData.append('index', index.toString());
   formData.append('file', file);
+  if (chunkCrc32c) formData.append('crc32c', chunkCrc32c);
 
   return await request.post({
     url: `/api/files/upload/chunk/${uploadId}`,
@@ -55,10 +57,10 @@ export async function getUploadStatus(uploadId: string, targetNodeId?: string) {
   }, { targetNodeId: targetNodeId || uploadNode(uploadId) });
 }
 
-export async function finishUpload(uploadId: string, totalChunks: number, targetNodeId?: string) {
+export async function finishUpload(uploadId: string, totalChunks: number, targetNodeId?: string, totalSize?: number) {
   return await request.post<UploadFinishResponse>({
     url: `/api/files/upload/finish/${uploadId}`,
-    data: { totalChunks },
+    data: { totalChunks, totalSize },
     timeout: 120 * 1000,
   }, { targetNodeId: targetNodeId || uploadNode(uploadId) });
 }
