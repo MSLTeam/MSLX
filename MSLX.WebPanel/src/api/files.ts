@@ -16,10 +16,13 @@ import { AxiosProgressEvent } from 'axios';
 
 const uploadTargets = new Map<string, { nodeId: string; at: number }>();
 const uploadNode = (id: string) => uploadTargets.get(id)?.nodeId || getPageNodeId();
+export function rememberUploadTarget(uploadId: string, nodeId: string) {
+  uploadTargets.set(uploadId, { nodeId, at: Date.now() });
+}
 export async function initUpload(nodeId = getPageNodeId()) {
   const result = await request.post<UploadInitResponse>({ url: '/api/files/upload/init' }, { targetNodeId: nodeId });
   for (const [id, value] of uploadTargets) if (Date.now() - value.at > 3600000) uploadTargets.delete(id);
-  uploadTargets.set(result.uploadId, { nodeId, at: Date.now() });
+  rememberUploadTarget(result.uploadId, nodeId);
   return result;
 }
 
@@ -29,6 +32,7 @@ export async function uploadChunk(
   file: Blob,
   onProgress?: (_e: AxiosProgressEvent) => void,
   signal?: AbortSignal,
+  targetNodeId?: string,
 ) {
   const formData = new FormData();
   formData.append('index', index.toString());
@@ -41,28 +45,28 @@ export async function uploadChunk(
     timeout: 300 * 1000,
     onUploadProgress: onProgress,
     signal,
-  }, { targetNodeId: uploadNode(uploadId) });
+  }, { targetNodeId: targetNodeId || uploadNode(uploadId) });
 }
 
-export async function getUploadStatus(uploadId: string) {
+export async function getUploadStatus(uploadId: string, targetNodeId?: string) {
   return await request.get<UploadStatusResponse>({
     url: `/api/files/upload/status/${uploadId}`,
     timeout: 30 * 1000,
-  }, { targetNodeId: uploadNode(uploadId) });
+  }, { targetNodeId: targetNodeId || uploadNode(uploadId) });
 }
 
-export async function finishUpload(uploadId: string, totalChunks: number) {
+export async function finishUpload(uploadId: string, totalChunks: number, targetNodeId?: string) {
   return await request.post<UploadFinishResponse>({
     url: `/api/files/upload/finish/${uploadId}`,
     data: { totalChunks },
     timeout: 120 * 1000,
-  }, { targetNodeId: uploadNode(uploadId) });
+  }, { targetNodeId: targetNodeId || uploadNode(uploadId) });
 }
 
-export async function deleteUpload(uploadId: string) {
+export async function deleteUpload(uploadId: string, targetNodeId?: string) {
   return await request.post({
     url: `/api/files/upload/delete/${uploadId}`,
-  }, { targetNodeId: uploadNode(uploadId) });
+  }, { targetNodeId: targetNodeId || uploadNode(uploadId) });
 }
 
 export async function checkPackageJarList(uploadId: string, localPath?: string) {

@@ -23,7 +23,16 @@ import DockerImageSelector from '@/components/docker-image-selector/index.vue';
 
 const route = useRoute();
 
-const { isUploading, uploadProgress, uploadedFileName, uploadedFileSize, startUpload, removeUploadData } =
+const {
+  isUploading,
+  uploadProgress,
+  uploadedFileName,
+  uploadedFileSize,
+  startUpload,
+  restorePendingUpload,
+  resumeUpload,
+  removeUploadData,
+} =
   useFileUpload();
 
 // 状态管理
@@ -159,9 +168,10 @@ const initFromQuery = () => {
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
   fetchJavaVersions();
   initFromQuery();
+  await restorePackageUpload();
 });
 
 watch(() => route.query, () => {
@@ -475,15 +485,7 @@ const nextStep = async () => {
   }
 };
 
-const triggerFileSelect = () => {
-  uploadInputRef.value?.click();
-};
-
-// 文件选择
-const onFileChange = async (event: Event) => {
-  const input = event.target as HTMLInputElement;
-  if (!input.files || input.files.length === 0) return;
-
+const processSelectedPackageFile = async (file: File, fileHandle?: any, resumeRecord?: any) => {
   // 清理旧状态的云端文件
   if (formData.value.packageFileKey) {
     try {
@@ -499,10 +501,8 @@ const onFileChange = async (event: Event) => {
   detectedRoot.value = '';
   packageFormat.value = '';
 
-  const file = input.files[0];
-
   try {
-    const finalKey = await startUpload(file);
+    const finalKey = await startUpload(file, { fileHandle, resumeRecord });
 
     formData.value.packageFileKey = finalKey;
     MessagePlugin.success('上传成功，正在分析整合包内容...');
@@ -515,9 +515,65 @@ const onFileChange = async (event: Event) => {
       MessagePlugin.error(`上传失败: ${error.message || '未知错误'}`);
       formData.value.packageFileKey = '';
     }
+  }
+};
+
+const triggerFileSelect = async () => {
+  const picker = (window as any).showOpenFilePicker;
+  if (typeof picker === 'function') {
+    try {
+      const handles = await picker({
+        multiple: false,
+        types: [
+          {
+            description: '整合包文件',
+            accept: {
+              'application/zip': ['.zip'],
+              'application/octet-stream': ['.mrpack'],
+            },
+          },
+        ],
+      });
+      const handle = handles?.[0];
+      if (handle) {
+        await processSelectedPackageFile(await handle.getFile(), handle);
+      }
+      return;
+    } catch (error: any) {
+      if (error?.name === 'AbortError') return;
+      console.warn('File System Access API 选择失败，将回退到文件输入框:', error);
+    }
+  }
+  uploadInputRef.value?.click();
+};
+
+// 文件选择
+const onFileChange = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  if (!input.files || input.files.length === 0) return;
+  try {
+    await processSelectedPackageFile(input.files[0]);
   } finally {
     input.value = '';
   }
+};
+
+const restorePackageUpload = async () => {
+  if (packageSourceType.value !== 'upload') return;
+  const pending = await restorePendingUpload();
+  if (!pending) return;
+
+  if (pending.file && !pending.permissionRequired) {
+    try {
+      MessagePlugin.info(`检测到未完成的上传任务，正在恢复 ${pending.record.fileName}...`);
+      await processSelectedPackageFile(pending.file, pending.fileHandle, pending.record);
+    } catch (error) {
+      console.warn('自动恢复上传任务失败:', error);
+    }
+    return;
+  }
+
+  MessagePlugin.info(`检测到未完成的上传任务，请重新选择 ${pending.record.fileName} 继续上传`);
 };
 
 // 处理导入信息

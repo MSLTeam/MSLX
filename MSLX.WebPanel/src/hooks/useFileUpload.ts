@@ -5,14 +5,35 @@ import {
   finishUpload,
   getUploadStatus,
   initUpload,
+  rememberUploadTarget,
   uploadChunk,
 } from '@/api/files';
+import {
+  computeFastFileFingerprint,
+  deleteUploadResumeRecord,
+  getUploadResumeRecords,
+  saveUploadResumeRecord,
+  type UploadFileHandleLike,
+  type UploadResumeRecord,
+} from '@/utils/uploadResume';
 
 const LARGE_FILE_SIZE = 200 * 1024 * 1024;
 const LARGE_CHUNK_SIZE = 30 * 1024 * 1024;
 const SMALL_CHUNK_SIZE = 10 * 1024 * 1024;
 const MAX_RETRIES = 5;
 const CHUNK_WATCHDOG_MS = 60 * 1000;
+
+export interface UploadStartOptions {
+  fileHandle?: UploadFileHandleLike;
+  resumeRecord?: UploadResumeRecord;
+}
+
+export interface PendingUploadResume {
+  record: UploadResumeRecord;
+  file?: File;
+  fileHandle?: UploadFileHandleLike;
+  permissionRequired: boolean;
+}
 
 // 动态计算并发数
 function calcConcurrency(speedMBps: number): number {
@@ -48,6 +69,8 @@ export function useFileUpload() {
   const fileKey = ref(''); // 成功后的文件 Key
 
   let abortController: AbortController | null = null;
+  let activeUploadId = '';
+  let activeResumeRecord: UploadResumeRecord | null = null;
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 B';
@@ -57,7 +80,7 @@ export function useFileUpload() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const startUpload = async (file: File): Promise<string> => {
+  const startUpload = async (file: File, options: UploadStartOptions = {}): Promise<string> => {
     abortController?.abort();
     const currentAbortController = new AbortController();
     abortController = currentAbortController;
@@ -70,6 +93,8 @@ export function useFileUpload() {
 
     const chunkSize = file.size > LARGE_FILE_SIZE ? LARGE_CHUNK_SIZE : SMALL_CHUNK_SIZE;
     const totalChunks = Math.ceil(file.size / chunkSize);
+    const fingerprint = await computeFastFileFingerprint(file);
+    const uploadNodeId = options.resumeRecord?.nodeId || targetNodeId;
     const receivedChunks = new Set<number>();
     const activeChunkProgressMap = new Map<number, number>();
     const chunkIndices = Array.from({ length: totalChunks }, (_, index) => index);
@@ -78,6 +103,20 @@ export function useFileUpload() {
     let lastUpdateTime = 0;
     let statusRecoveryRequested = false;
     const startTime = Date.now();
+    let resumeRecord = options.resumeRecord;
+
+    if (!resumeRecord) {
+      const existingRecords = await getUploadResumeRecords(targetNodeId).catch(() => []);
+      resumeRecord = existingRecords.find(
+        (record) =>
+          record.fileName === file.name &&
+          record.fileSize === file.size &&
+          record.lastModified === file.lastModified &&
+          record.fingerprint === fingerprint &&
+          record.chunkSize === chunkSize &&
+          record.totalChunks === totalChunks,
+      );
+    }
 
     const chunkBytes = (index: number) => {
       const start = index * chunkSize;
@@ -107,11 +146,27 @@ export function useFileUpload() {
       updateProgress();
     };
 
+    const persistResumeRecord = async () => {
+      if (!activeResumeRecord) return;
+      activeResumeRecord.receivedChunks = Array.from(receivedChunks).sort((a, b) => a - b);
+      activeResumeRecord.updatedAt = Date.now();
+      try {
+        await saveUploadResumeRecord(activeResumeRecord);
+      } catch {
+        // 某些浏览器无法结构化克隆 FileSystemFileHandle，保留元数据供重新选择文件恢复。
+        if (activeResumeRecord.fileHandle) {
+          activeResumeRecord.fileHandle = undefined;
+          await saveUploadResumeRecord(activeResumeRecord).catch(() => {});
+        }
+      }
+    };
+
     const syncStatus = async (uploadId: string) => {
-      const status = await getUploadStatus(uploadId);
+      const status = await getUploadStatus(uploadId, uploadNodeId);
       for (const index of status.receivedChunks || []) {
         if (index >= 0 && index < totalChunks) markReceived(index);
       }
+      await persistResumeRecord();
       statusRecoveryRequested = false;
       return status;
     };
@@ -122,8 +177,51 @@ export function useFileUpload() {
     window.addEventListener('online', onlineHandler);
 
     try {
-      const initRes = await initUpload(targetNodeId);
-      const uploadId = (initRes as any).uploadId;
+      let uploadId = resumeRecord?.uploadId || '';
+
+      if (uploadId) {
+        rememberUploadTarget(uploadId, uploadNodeId);
+        activeResumeRecord = resumeRecord || null;
+        try {
+          await syncStatus(uploadId);
+        } catch (error: any) {
+          const status = getHttpStatus(error);
+          if (status === 403 || status === 404) {
+            await deleteUploadResumeRecord(resumeRecord!.key).catch(() => {});
+            resumeRecord = undefined;
+            activeResumeRecord = null;
+            uploadId = '';
+          } else {
+            throw error;
+          }
+        }
+      }
+
+      if (!uploadId) {
+        const initRes = await initUpload(uploadNodeId);
+        uploadId = (initRes as any).uploadId;
+        rememberUploadTarget(uploadId, uploadNodeId);
+        activeResumeRecord = {
+          key: `${uploadNodeId}:${fingerprint}`,
+          uploadId,
+          nodeId: uploadNodeId,
+          fileName: file.name,
+          fileSize: file.size,
+          lastModified: file.lastModified,
+          chunkSize,
+          totalChunks,
+          fingerprint,
+          receivedChunks: [],
+          updatedAt: Date.now(),
+          fileHandle: options.fileHandle,
+        };
+        await persistResumeRecord();
+      } else if (options.fileHandle && activeResumeRecord) {
+        activeResumeRecord.fileHandle = options.fileHandle;
+        await persistResumeRecord();
+      }
+
+      activeUploadId = uploadId;
       if (!uploadId) throw new Error('无法获取上传凭证');
 
       const processChunk = async (index: number) => {
@@ -156,8 +254,10 @@ export function useFileUpload() {
                 }
               },
               attemptController.signal,
+              uploadNodeId,
             );
             markReceived(index);
+            await persistResumeRecord();
             return;
           } catch (error: any) {
             lastError = error;
@@ -197,13 +297,13 @@ export function useFileUpload() {
             });
           }
 
+          while (chunkIndices.length > 0 && receivedChunks.has(chunkIndices[0])) {
+            chunkIndices.shift();
+          }
+
           const targetConcurrency = Math.min(calcConcurrency(currentSpeedMBps), Math.max(1, chunkIndices.length));
           while (activeWorkers.size < targetConcurrency && chunkIndices.length > 0) {
             const index = chunkIndices.shift()!;
-            if (receivedChunks.has(index)) {
-              spawnWorkers();
-              continue;
-            }
 
             let worker: Promise<void>;
             worker = processChunk(index)
@@ -233,7 +333,7 @@ export function useFileUpload() {
       let finishRes: any;
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
-          finishRes = await finishUpload(uploadId, totalChunks);
+          finishRes = await finishUpload(uploadId, totalChunks, uploadNodeId);
           break;
         } catch (error: any) {
           if (!isRetryableUploadError(error) || attempt >= 3) throw error;
@@ -246,6 +346,11 @@ export function useFileUpload() {
       if (!finalKey) throw new Error('上传合并未返回文件标识');
       uploadProgress.value = 100;
       fileKey.value = finalKey;
+      if (activeResumeRecord) {
+        await deleteUploadResumeRecord(activeResumeRecord.key).catch(() => {});
+      }
+      activeResumeRecord = null;
+      activeUploadId = '';
       return finalKey;
     } catch (error: any) {
       if (error?.message === '已取消' || currentAbortController.signal.aborted) throw new Error('已取消');
@@ -265,13 +370,61 @@ export function useFileUpload() {
   };
 
   const removeUploadData = async () => {
-    if (fileKey.value) {
-      await deleteUpload(fileKey.value).catch(() => {});
+    const uploadId = activeUploadId;
+    const finalKey = fileKey.value;
+    if (finalKey) {
+      await deleteUpload(finalKey, targetNodeId).catch(() => {});
       fileKey.value = '';
     }
+    if (uploadId && uploadId !== finalKey) {
+      await deleteUpload(uploadId, activeResumeRecord?.nodeId || targetNodeId).catch(() => {});
+    }
+    if (activeResumeRecord) {
+      await deleteUploadResumeRecord(activeResumeRecord.key).catch(() => {});
+    }
+    activeUploadId = '';
+    activeResumeRecord = null;
     uploadedFileName.value = '';
     uploadedFileSize.value = '';
     uploadProgress.value = 0;
+  };
+
+  const restorePendingUpload = async (): Promise<PendingUploadResume | null> => {
+    const records = await getUploadResumeRecords(targetNodeId).catch(() => []);
+    for (const record of records) {
+      if (!record.uploadId || !record.fingerprint) continue;
+
+      const fileHandle = record.fileHandle;
+      if (!fileHandle) {
+        return { record, permissionRequired: true };
+      }
+
+      try {
+        let permission = await fileHandle.queryPermission?.({ mode: 'read' });
+        if (permission === 'granted') {
+          const file = await fileHandle.getFile();
+          const fingerprint = await computeFastFileFingerprint(file);
+          if (fingerprint === record.fingerprint) {
+            return { record, file, fileHandle, permissionRequired: false };
+          }
+          await deleteUploadResumeRecord(record.key).catch(() => {});
+          continue;
+        }
+
+        if (permission === 'prompt' && fileHandle.requestPermission) {
+          // 刷新后自动请求权限可能被浏览器拦截，交给页面按钮在用户操作时重试。
+          permission = 'prompt';
+        }
+        return { record, fileHandle, permissionRequired: permission !== 'granted' };
+      } catch {
+        return { record, fileHandle, permissionRequired: true };
+      }
+    }
+    return null;
+  };
+
+  const resumeUpload = (file: File, record: UploadResumeRecord, fileHandle?: UploadFileHandleLike) => {
+    return startUpload(file, { resumeRecord: record, fileHandle });
   };
 
   // 组件销毁时自动终止正在进行的上传
@@ -284,6 +437,8 @@ export function useFileUpload() {
     uploadedFileSize,
     fileKey,
     startUpload,
+    restorePendingUpload,
+    resumeUpload,
     cancelUpload,
     removeUploadData,
   };
