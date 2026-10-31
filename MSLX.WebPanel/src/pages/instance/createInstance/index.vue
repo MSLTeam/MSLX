@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { onMounted, ref } from 'vue';
 import QuickMode from './components/QuickMode.vue';
 import CustomMode from './components/CustomMode.vue';
 import PackageMode from './components/PackageMode.vue';
@@ -10,6 +10,8 @@ import NodeSwitcher from '@/components/node-switcher/index.vue';
 import { useNodeStore } from '@/store';
 import { useRoute } from 'vue-router';
 import { watch } from 'vue';
+import { getPageNodeId } from '@/utils/nodeTarget';
+import { getUploadResumeRecords } from '@/utils/uploadResume';
 
 const route = useRoute();
 const value = ref(route.query.mode ? Number(route.query.mode) : 1);
@@ -21,6 +23,34 @@ watch(() => route.query.mode, (newMode) => {
 });
 
 const nodeStore = useNodeStore();
+
+const restorePendingPackageMode = async () => {
+  // 路由显式指定模式时，以路由为准。
+  if (route.query.mode) return;
+
+  const records = await getUploadResumeRecords(getPageNodeId()).catch(() => []);
+  const hasPendingPackageUpload = records.some((record) => {
+    if (record.kind) return record.kind === 'package';
+    return /\.(?:zip|mrpack)$/i.test(record.fileName);
+  });
+  let hasRecentPackageDraft = false;
+  try {
+    const raw = localStorage.getItem(`mslx-create-package-draft:${getPageNodeId()}`);
+    const draft = raw ? JSON.parse(raw) : null;
+    hasRecentPackageDraft = Boolean(
+      draft?.mode === 'package' &&
+        typeof draft.updatedAt === 'number' &&
+        Date.now() - draft.updatedAt <= 2 * 60 * 60 * 1000,
+    );
+  } catch {
+    hasRecentPackageDraft = false;
+  }
+  if (hasPendingPackageUpload || hasRecentPackageDraft) value.value = 2;
+};
+
+onMounted(() => {
+  void restorePendingPackageMode();
+});
 
 const handleNodeChange = () => {};
 </script>

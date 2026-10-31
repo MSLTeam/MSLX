@@ -14,6 +14,7 @@ export interface UploadResumeRecord {
   chunkSize: number;
   totalChunks: number;
   fingerprint: string;
+  kind?: 'package' | 'core';
   sha256?: string;
   receivedChunks: number[];
   updatedAt: number;
@@ -146,13 +147,88 @@ export async function computeFastFileFingerprint(file: File): Promise<string> {
 /**
  * 计算单个上传分片的 CRC32C。只读取当前分片，适合在上传前做快速完整性校验。
  */
-export async function computeChunkCrc32c(chunk: Blob): Promise<string> {
-  const bytes = new Uint8Array(await chunk.arrayBuffer());
+async function computeChunkCrc32cLocal(chunk: Blob | ArrayBuffer): Promise<string> {
+  const bytes = new Uint8Array(chunk instanceof Blob ? await chunk.arrayBuffer() : chunk);
   let crc = 0xffffffff;
   for (const byte of bytes) {
     crc = CRC32C_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
   }
   return ((crc ^ 0xffffffff) >>> 0).toString(16).padStart(8, '0');
+}
+
+interface ChunkCrc32cOptions {
+  useWorker?: boolean;
+  signal?: AbortSignal;
+}
+
+function computeChunkCrc32cWithWorker(chunk: Blob, signal?: AbortSignal): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let worker: Worker;
+    try {
+      worker = new Worker(new URL('./sha256Worker.ts', import.meta.url), { type: 'module' });
+    } catch (error) {
+      reject(error);
+      return;
+    }
+
+    const cleanup = () => {
+      worker.terminate();
+      signal?.removeEventListener('abort', abort);
+    };
+    const abort = () => {
+      cleanup();
+      reject(new Error('已取消'));
+    };
+
+    worker.onmessage = (event: MessageEvent<{ crc32c?: string; error?: string }>) => {
+      if (event.data.crc32c) {
+        cleanup();
+        resolve(event.data.crc32c);
+      } else if (event.data.error) {
+        cleanup();
+        reject(new Error(event.data.error));
+      }
+    };
+    worker.onerror = (event) => {
+      cleanup();
+      reject(new Error(event.message || '计算分片 CRC32C 失败'));
+    };
+    signal?.addEventListener('abort', abort, { once: true });
+    if (signal?.aborted) {
+      abort();
+      return;
+    }
+
+    void chunk
+      .arrayBuffer()
+      .then((buffer) => {
+        if (signal?.aborted) {
+          abort();
+          return;
+        }
+        worker.postMessage({ type: 'crc32c', buffer }, [buffer]);
+      })
+      .catch((error) => {
+        cleanup();
+        reject(error);
+      });
+  });
+}
+
+/**
+ * 在 Worker 中计算单个上传分片的 CRC32C，避免大分片校验占用主线程。
+ */
+export async function computeChunkCrc32c(chunk: Blob, options: ChunkCrc32cOptions = {}): Promise<string> {
+  if (options.signal?.aborted) throw new Error('已取消');
+  if (options.useWorker !== false && typeof Worker !== 'undefined') {
+    try {
+      return await computeChunkCrc32cWithWorker(chunk, options.signal);
+    } catch (error) {
+      if (options.signal?.aborted || (error as any)?.message === '已取消') throw error;
+      // Worker 创建或加载失败时保留兼容回退，避免不支持模块 Worker 的浏览器无法上传。
+    }
+  }
+  return computeChunkCrc32cLocal(chunk);
 }
 
 const SHA256_K = new Uint32Array([
@@ -281,11 +357,79 @@ class IncrementalSha256 {
  * 流式计算完整文件 SHA-256，不会把整个大文件一次性读入内存。
  */
 export async function computeFileSha256(file: File): Promise<string> {
+  return computeFileSha256WithOptions(file);
+}
+
+export interface FileSha256Options {
+  useWorker?: boolean;
+  signal?: AbortSignal;
+  onProgress?: (progress: number) => void;
+}
+
+async function computeFileSha256Local(
+  file: File,
+  signal?: AbortSignal,
+  onProgress?: (progress: number) => void,
+): Promise<string> {
   const hasher = new IncrementalSha256();
   const blockSize = 4 * 1024 * 1024;
   for (let offset = 0; offset < file.size; offset += blockSize) {
+    if (signal?.aborted) throw new Error('已取消');
     const chunk = new Uint8Array(await file.slice(offset, Math.min(file.size, offset + blockSize)).arrayBuffer());
     hasher.update(chunk);
+    onProgress?.(file.size === 0 ? 1 : Math.min((offset + chunk.length) / file.size, 1));
+    // 让出主线程，避免不支持 Worker 的浏览器完全阻塞页面。
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
   }
   return hasher.digest();
+}
+
+function computeFileSha256WithWorker(file: File, options: FileSha256Options): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let worker: Worker;
+    try {
+      worker = new Worker(new URL('./sha256Worker.ts', import.meta.url), { type: 'module' });
+    } catch {
+      computeFileSha256Local(file, options.signal, options.onProgress).then(resolve, reject);
+      return;
+    }
+
+    const cleanup = () => {
+      worker.terminate();
+      options.signal?.removeEventListener('abort', abort);
+    };
+    const abort = () => {
+      cleanup();
+      reject(new Error('已取消'));
+    };
+
+    worker.onmessage = (event: MessageEvent<{ sha256?: string; progress?: number; error?: string }>) => {
+      if (typeof event.data.progress === 'number') options.onProgress?.(event.data.progress);
+      if (event.data.sha256) {
+        cleanup();
+        resolve(event.data.sha256);
+      } else if (event.data.error) {
+        cleanup();
+        reject(new Error(event.data.error));
+      }
+    };
+    worker.onerror = (event) => {
+      cleanup();
+      reject(new Error(event.message || '计算文件校验值失败'));
+    };
+    options.signal?.addEventListener('abort', abort, { once: true });
+    if (options.signal?.aborted) {
+      abort();
+      return;
+    }
+    worker.postMessage({ type: 'sha256', file });
+  });
+}
+
+export function computeFileSha256WithOptions(file: File, options: FileSha256Options = {}): Promise<string> {
+  if (options.signal?.aborted) return Promise.reject(new Error('已取消'));
+  if (options.useWorker !== false && typeof Worker !== 'undefined') {
+    return computeFileSha256WithWorker(file, options);
+  }
+  return computeFileSha256Local(file, options.signal, options.onProgress);
 }

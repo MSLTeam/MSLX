@@ -20,8 +20,10 @@ import { useInstanceListStore } from '@/store/modules/instance';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { parseMcVersion, getRecommendedJava } from './javaRecommendation';
 import DockerImageSelector from '@/components/docker-image-selector/index.vue';
+import { getPageNodeId } from '@/utils/nodeTarget';
 
 const route = useRoute();
+const packageDraftStorageKey = `mslx-create-package-draft:${getPageNodeId()}`;
 
 const {
   isUploading,
@@ -176,6 +178,7 @@ const initFromQuery = () => {
 
 onMounted(async () => {
   fetchJavaVersions();
+  restorePackageDraft();
   initFromQuery();
   await restorePackageUpload();
 });
@@ -291,6 +294,129 @@ watch(
     }
   },
   { deep: true, immediate: true },
+);
+
+interface PackageCreateDraft {
+  updatedAt: number;
+  mode: 'package';
+  currentStep: number;
+  packageSourceType: string;
+  downloadType: string;
+  javaType: string;
+  selectedJavaVersion: string;
+  customJavaPath: string;
+  onlineGameVersion: string;
+  detectedJars: string[];
+  detectedRoot: string;
+  packageFormat: 'zip' | 'mrpack' | '';
+  detectedScripts: string[];
+  selectedScript: string;
+  useScriptMode: boolean;
+  metadataJavaVersion: string | null;
+  dockerImageType: string;
+  dockerImagePresetVersion: string;
+  localPortList: typeof localPortList.value;
+  networkMode: typeof networkMode.value;
+  minUnit: string;
+  maxUnit: string;
+  formData: CreateInstanceQucikModeModel;
+}
+
+function restorePackageDraft() {
+  try {
+    const raw = localStorage.getItem(packageDraftStorageKey);
+    if (!raw) return;
+    const draft = JSON.parse(raw) as Partial<PackageCreateDraft>;
+    if (!draft.updatedAt || Date.now() - draft.updatedAt > 2 * 60 * 60 * 1000) {
+      localStorage.removeItem(packageDraftStorageKey);
+      return;
+    }
+
+    if (draft.formData) formData.value = { ...formData.value, ...draft.formData };
+    if (typeof draft.currentStep === 'number') currentStep.value = Math.max(0, Math.min(5, draft.currentStep));
+    if (draft.packageSourceType) packageSourceType.value = draft.packageSourceType;
+    if (draft.downloadType) downloadType.value = draft.downloadType;
+    if (draft.javaType) javaType.value = draft.javaType;
+    if (draft.selectedJavaVersion) selectedJavaVersion.value = draft.selectedJavaVersion;
+    if (draft.customJavaPath) customJavaPath.value = draft.customJavaPath;
+    if (draft.onlineGameVersion) onlineGameVersion.value = draft.onlineGameVersion;
+    if (draft.detectedJars) detectedJars.value = draft.detectedJars;
+    if (draft.detectedRoot !== undefined) detectedRoot.value = draft.detectedRoot;
+    if (draft.packageFormat) packageFormat.value = draft.packageFormat;
+    if (draft.detectedScripts) detectedScripts.value = draft.detectedScripts;
+    if (draft.selectedScript) selectedScript.value = draft.selectedScript;
+    if (typeof draft.useScriptMode === 'boolean') useScriptMode.value = draft.useScriptMode;
+    if (draft.metadataJavaVersion !== undefined) metadataJavaVersion.value = draft.metadataJavaVersion;
+    if (draft.dockerImageType) dockerImageType.value = draft.dockerImageType;
+    if (draft.dockerImagePresetVersion) dockerImagePresetVersion.value = draft.dockerImagePresetVersion;
+    if (draft.localPortList) localPortList.value = draft.localPortList;
+    if (draft.networkMode) networkMode.value = draft.networkMode;
+    if (draft.minUnit) minUnit.value = draft.minUnit;
+    if (draft.maxUnit) maxUnit.value = draft.maxUnit;
+  } catch {
+    localStorage.removeItem(packageDraftStorageKey);
+  }
+}
+
+function persistPackageDraft() {
+  try {
+    const draft: PackageCreateDraft = {
+      updatedAt: Date.now(),
+      mode: 'package',
+      currentStep: currentStep.value,
+      packageSourceType: packageSourceType.value,
+      downloadType: downloadType.value,
+      javaType: javaType.value,
+      selectedJavaVersion: selectedJavaVersion.value,
+      customJavaPath: customJavaPath.value,
+      onlineGameVersion: onlineGameVersion.value,
+      detectedJars: detectedJars.value,
+      detectedRoot: detectedRoot.value,
+      packageFormat: packageFormat.value,
+      detectedScripts: detectedScripts.value,
+      selectedScript: selectedScript.value,
+      useScriptMode: useScriptMode.value,
+      metadataJavaVersion: metadataJavaVersion.value,
+      dockerImageType: dockerImageType.value,
+      dockerImagePresetVersion: dockerImagePresetVersion.value,
+      localPortList: localPortList.value,
+      networkMode: networkMode.value,
+      minUnit: minUnit.value,
+      maxUnit: maxUnit.value,
+      formData: { ...formData.value },
+    };
+    localStorage.setItem(packageDraftStorageKey, JSON.stringify(draft));
+  } catch {
+    // 本地存储不可用时不影响上传任务本身。
+  }
+}
+
+watch(
+  [
+    formData,
+    currentStep,
+    packageSourceType,
+    downloadType,
+    javaType,
+    selectedJavaVersion,
+    customJavaPath,
+    onlineGameVersion,
+    detectedJars,
+    detectedRoot,
+    packageFormat,
+    detectedScripts,
+    selectedScript,
+    useScriptMode,
+    metadataJavaVersion,
+    dockerImageType,
+    dockerImagePresetVersion,
+    localPortList,
+    networkMode,
+    minUnit,
+    maxUnit,
+  ],
+  () => persistPackageDraft(),
+  { deep: true },
 );
 
 const addPortMapping = () => {
@@ -508,7 +634,7 @@ const processSelectedPackageFile = async (file: File, fileHandle?: any, resumeRe
   packageFormat.value = '';
 
   try {
-    const finalKey = await startUpload(file, { fileHandle, resumeRecord });
+    const finalKey = await startUpload(file, { fileHandle, resumeRecord, kind: 'package' });
 
     formData.value.packageFileKey = finalKey;
     MessagePlugin.success('上传成功，正在分析整合包内容...');
@@ -566,8 +692,11 @@ const onFileChange = async (event: Event) => {
 
 const restorePackageUpload = async () => {
   if (packageSourceType.value !== 'upload') return;
-  const pending = await restorePendingUpload();
+  const pending = await restorePendingUpload('package');
   if (!pending) return;
+
+  // 刷新后回到整合包上传步骤，保留用户可以继续选择或恢复文件的入口。
+  currentStep.value = 1;
 
   if (pending.file && !pending.permissionRequired) {
     try {
@@ -881,6 +1010,7 @@ const startSignalRConnection = async (serverId: string) => {
 
     if (prog === 100) {
       MessagePlugin.success('服务器创建成功！');
+      localStorage.removeItem(packageDraftStorageKey);
       hubConnection.value?.stop();
       isCreating.value = false;
       isSuccess.value = true;
@@ -938,6 +1068,7 @@ const goToHome = () => {
   javaType.value = 'online';
   onlineGameVersion.value = '';
 
+  localStorage.removeItem(packageDraftStorageKey);
   removeUploadData();
 };
 </script>
