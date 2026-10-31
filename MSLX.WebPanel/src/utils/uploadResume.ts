@@ -23,6 +23,7 @@ const DB_NAME = 'mslx-upload-resume';
 const STORE_NAME = 'sessions';
 const DB_VERSION = 1;
 const HASH_WINDOW_SIZE = 1024 * 1024;
+const UPLOAD_RESUME_TTL_MS = 2 * 60 * 60 * 1000;
 
 // CRC32C (Castagnoli), reflected polynomial. The table is shared by all
 // chunks so calculating a checksum does not allocate per byte.
@@ -83,12 +84,18 @@ export async function saveUploadResumeRecord(record: UploadResumeRecord): Promis
 }
 
 export async function getUploadResumeRecords(nodeId: string): Promise<UploadResumeRecord[]> {
-  return withStore<UploadResumeRecord[]>('readonly', (store, resolve, reject) => {
+  return withStore<UploadResumeRecord[]>('readwrite', (store, resolve, reject) => {
     const request = store.getAll();
     request.onsuccess = () => {
-      const records = (request.result as UploadResumeRecord[])
+      const cutoff = Date.now() - UPLOAD_RESUME_TTL_MS;
+      const allRecords = request.result as UploadResumeRecord[];
+      const records = allRecords
+        .filter((record) => record.updatedAt >= cutoff)
         .filter((record) => record.nodeId === nodeId)
         .sort((a, b) => b.updatedAt - a.updatedAt);
+      for (const record of allRecords) {
+        if (record.updatedAt < cutoff) store.delete(record.key);
+      }
       resolve(records);
     };
     request.onerror = () => reject(request.error || new Error('读取上传恢复记录失败'));

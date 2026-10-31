@@ -199,7 +199,14 @@ export function useFileUpload() {
       }
 
       if (!uploadId) {
-        const initRes = await initUpload(uploadNodeId);
+        const initRes = await initUpload(uploadNodeId, {
+          fileName: file.name,
+          fileSize: file.size,
+          lastModified: file.lastModified,
+          chunkSize,
+          totalChunks,
+          fingerprint,
+        });
         uploadId = (initRes as any).uploadId;
         rememberUploadTarget(uploadId, uploadNodeId);
         activeResumeRecord = {
@@ -216,6 +223,9 @@ export function useFileUpload() {
           updatedAt: Date.now(),
           fileHandle: options.fileHandle,
         };
+        for (const index of (initRes as any).receivedChunks || []) {
+          if (index >= 0 && index < totalChunks) markReceived(index);
+        }
         await persistResumeRecord();
       } else if (options.fileHandle && activeResumeRecord) {
         activeResumeRecord.fileHandle = options.fileHandle;

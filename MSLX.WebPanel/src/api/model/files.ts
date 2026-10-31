@@ -1,5 +1,7 @@
 export interface UploadInitResponse {
   uploadId: string;
+  resumed?: boolean;
+  receivedChunks?: number[];
 }
 
 export interface UploadFinishResponse {

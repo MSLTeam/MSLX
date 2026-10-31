@@ -1,8 +1,10 @@
 using System.IO.Compression;
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Caching.Memory;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
@@ -36,12 +38,37 @@ public class UploadController : ControllerBase
     /// 获取上传key
     /// </summary>
     [HttpPost("init")]
-    public IActionResult InitUpload()
+    public IActionResult InitUpload(
+        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] FileUploadInitRequest? request = null)
     {
+        var resumeKey = BuildResumeSessionKey(request);
+        if (resumeKey != null && _memoryCache.TryGetValue(resumeKey, out string? existingUploadId) &&
+            !string.IsNullOrWhiteSpace(existingUploadId) &&
+            _memoryCache.TryGetValue($"Upload_Session_{existingUploadId}", out _) &&
+            !System.IO.File.Exists(Path.Combine(_tempPath, existingUploadId + ".tmp")))
+        {
+            var receivedChunks = GetChunkIndices(existingUploadId);
+            return Ok(new ApiResponse<JObject>
+            {
+                Code = 200,
+                Message = "已找到可恢复的上传任务",
+                Data = new JObject
+                {
+                    ["uploadId"] = existingUploadId,
+                    ["resumed"] = true,
+                    ["receivedChunks"] = new JArray(receivedChunks),
+                },
+            });
+        }
+
         var uploadId = Guid.NewGuid().ToString("N");
 
-        // 1h有效
-        _memoryCache.Set($"Upload_Session_{uploadId}", true, TimeSpan.FromHours(1));
+        // 2h 有效；Daemon 重启时由 TempFileCleanupService 清理临时文件，会话也不会恢复。
+        _memoryCache.Set($"Upload_Session_{uploadId}", true, TimeSpan.FromHours(2));
+        if (resumeKey != null)
+        {
+            _memoryCache.Set(resumeKey, uploadId, TimeSpan.FromHours(2));
+        }
 
         return Ok(new ApiResponse<JObject>
         {
@@ -49,9 +76,29 @@ public class UploadController : ControllerBase
             Message = "获取成功",
             Data = new JObject()
             {
-                ["uploadId"] = uploadId
+                ["uploadId"] = uploadId,
+                ["resumed"] = false,
+                ["receivedChunks"] = new JArray(),
             }
         });
+    }
+
+    private string? BuildResumeSessionKey(FileUploadInitRequest? request)
+    {
+        if (request == null || string.IsNullOrWhiteSpace(request.FileName) ||
+            string.IsNullOrWhiteSpace(request.Fingerprint) || request.FileSize is null or < 0 ||
+            request.LastModified is null or < 0 || request.ChunkSize is null or <= 0 ||
+            request.TotalChunks is null or <= 0)
+        {
+            return null;
+        }
+
+        var userId = User.FindFirst("UserId")?.Value ?? User.Identity?.Name ?? "anonymous";
+        var descriptor = string.Join("|", userId, request.NodeId ?? "local", request.FileName,
+            request.FileSize.Value, request.LastModified.Value, request.ChunkSize.Value,
+            request.TotalChunks.Value, request.Fingerprint);
+        var digest = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(descriptor)));
+        return $"Upload_Resume_{digest}";
     }
 
     /// <summary>

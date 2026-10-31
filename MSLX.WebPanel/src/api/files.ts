@@ -15,13 +15,26 @@ import {
 import { AxiosProgressEvent } from 'axios';
 
 const uploadTargets = new Map<string, { nodeId: string; at: number }>();
+const UPLOAD_TARGET_TTL_MS = 2 * 60 * 60 * 1000;
 const uploadNode = (id: string) => uploadTargets.get(id)?.nodeId || getPageNodeId();
 export function rememberUploadTarget(uploadId: string, nodeId: string) {
   uploadTargets.set(uploadId, { nodeId, at: Date.now() });
 }
-export async function initUpload(nodeId = getPageNodeId()) {
-  const result = await request.post<UploadInitResponse>({ url: '/api/files/upload/init' }, { targetNodeId: nodeId });
-  for (const [id, value] of uploadTargets) if (Date.now() - value.at > 3600000) uploadTargets.delete(id);
+export interface UploadInitOptions {
+  fileName: string;
+  fileSize: number;
+  lastModified: number;
+  chunkSize: number;
+  totalChunks: number;
+  fingerprint: string;
+}
+
+export async function initUpload(nodeId = getPageNodeId(), options?: UploadInitOptions) {
+  const result = await request.post<UploadInitResponse>({
+    url: '/api/files/upload/init',
+    data: options ? { ...options, nodeId } : undefined,
+  }, { targetNodeId: nodeId });
+  for (const [id, value] of uploadTargets) if (Date.now() - value.at > UPLOAD_TARGET_TTL_MS) uploadTargets.delete(id);
   rememberUploadTarget(result.uploadId, nodeId);
   return result;
 }
