@@ -23,6 +23,8 @@ namespace MSLX.Daemon.Controllers.FilesControllers;
 public class UploadController : ControllerBase
 {
     private static readonly uint[] Crc32cTable = CreateCrc32cTable();
+    private static readonly object UploadLocksSync = new();
+    private static readonly Dictionary<string, UploadLockState> UploadLocks = new(StringComparer.Ordinal);
 
     private readonly string _tempPath;
     private readonly IMemoryCache _memoryCache;
@@ -118,14 +120,16 @@ public class UploadController : ControllerBase
         [FromForm] IFormFile file,
         [FromForm] string? crc32c = null)
     {
+        var normalizedUploadId = uploadId ?? string.Empty;
+
         // 检查凭证
-        if (!_uploadSessions.IsOwned(uploadId, User))
+        if (!_uploadSessions.IsOwned(normalizedUploadId, User))
         {
             return BadRequest(new ApiResponse<string> { Code = 403, Message = "上传凭证无效或已过期，请刷新页面重试" });
         }
 
         // 校验
-        if (!Regex.IsMatch(uploadId, "^[a-fA-F0-9]{32}$"))
+        if (!Regex.IsMatch(normalizedUploadId, "^[a-fA-F0-9]{32}$"))
         {
             return BadRequest(new ApiResponse<string> { Code = 400, Message = "非法 ID" });
         }
@@ -141,11 +145,79 @@ public class UploadController : ControllerBase
             return BadRequest(new ApiResponse<string> { Code = 400, Message = "分片 CRC32C 格式无效" });
         }
 
+        return await WithUploadLock(normalizedUploadId, state => UploadChunkCore(state, normalizedUploadId, index, file, crc32c));
+    }
+
+    private async Task<IActionResult> UploadChunkCore(
+        UploadLockState uploadLock,
+        string uploadId,
+        int index,
+        IFormFile file,
+        string? crc32c)
+    {
+        var finalPath = Path.Combine(_tempPath, $"{uploadId}.tmp");
+        if (System.IO.File.Exists(finalPath))
+        {
+            // 合并完成后到达的网络重试不应重新写入分片，直接按幂等成功处理。
+            return Ok(new ApiResponse<JObject>
+            {
+                Code = 200,
+                Message = "文件已完成，忽略迟到的分片",
+                Data = new JObject
+                {
+                    ["index"] = index,
+                    ["size"] = file.Length,
+                },
+            });
+        }
+
         // 暂存为 uploadId_index
         var chunkPath = Path.Combine(_tempPath, $"{uploadId}_{index}");
         var tempChunkPath = chunkPath + ".uploading";
 
-        uint crc = 0xffffffff;
+        Task<ChunkValidationResult>? previousValidation = null;
+        lock (UploadLocksSync)
+        {
+            uploadLock.PendingValidations.TryGetValue(index, out previousValidation);
+        }
+
+        if (previousValidation != null)
+        {
+            var previousResult = await previousValidation;
+            if (previousResult.Success && System.IO.File.Exists(chunkPath) &&
+                System.IO.File.Exists(chunkPath + ".crc32c"))
+            {
+                return Ok(new ApiResponse<JObject>
+                {
+                    Code = 200,
+                    Message = "分片已校验，忽略重复上传",
+                    Data = new JObject
+                    {
+                        ["index"] = index,
+                        ["size"] = new FileInfo(chunkPath).Length,
+                        ["crc32c"] = previousResult.ActualCrc32c,
+                    },
+                });
+            }
+        }
+
+        // .crc32c 只在后台校验成功后生成，存在它就表示该分片已经被锁定为正确版本。
+        if (System.IO.File.Exists(chunkPath) && System.IO.File.Exists(chunkPath + ".crc32c"))
+        {
+            var validatedCrc32c = await ReadChunkCrc32cAsync(chunkPath);
+            return Ok(new ApiResponse<JObject>
+            {
+                Code = 200,
+                Message = "分片已校验，忽略重复上传",
+                Data = new JObject
+                {
+                    ["index"] = index,
+                    ["size"] = new FileInfo(chunkPath).Length,
+                    ["crc32c"] = validatedCrc32c,
+                },
+            });
+        }
+
         long bytesWritten = 0;
         var buffer = new byte[1024 * 1024];
         await using (var input = file.OpenReadStream())
@@ -155,37 +227,22 @@ public class UploadController : ControllerBase
             while ((read = await input.ReadAsync(buffer.AsMemory(0, buffer.Length))) > 0)
             {
                 await stream.WriteAsync(buffer.AsMemory(0, read));
-                crc = UpdateCrc32c(crc, buffer.AsSpan(0, read));
                 bytesWritten += read;
             }
         }
 
-        crc ^= 0xffffffff;
-        var actualCrc32c = crc.ToString("x8");
-        if (!string.IsNullOrWhiteSpace(crc32c) && !string.Equals(crc32c, actualCrc32c, StringComparison.OrdinalIgnoreCase))
+        // 使用原子替换，避免状态接口把半写入文件当成已完成分片。
+        System.IO.File.Delete(chunkPath + ".crc32c");
+        System.IO.File.Move(tempChunkPath, chunkPath, true);
+
+        var validationTask = Task.Run(() => ValidateUploadedChunkAsync(chunkPath, crc32c));
+        lock (UploadLocksSync)
         {
-            System.IO.File.Delete(tempChunkPath);
-            return UnprocessableEntity(new ApiResponse<JObject>
-            {
-                Code = 422,
-                Message = "分片完整性校验失败，请重试",
-                Data = new JObject
-                {
-                    ["index"] = index,
-                    ["expectedCrc32c"] = crc32c,
-                    ["actualCrc32c"] = actualCrc32c,
-                },
-            });
+            uploadLock.PendingValidations[index] = validationTask;
+            uploadLock.References++;
         }
 
-        // CRC 元数据与分片一起落盘，合并时可以再次验证磁盘上的分片内容。
-        var crcMetadataPath = chunkPath + ".crc32c";
-        var tempCrcMetadataPath = crcMetadataPath + ".uploading";
-        await System.IO.File.WriteAllTextAsync(tempCrcMetadataPath, actualCrc32c);
-        System.IO.File.Move(tempCrcMetadataPath, crcMetadataPath, true);
-
-        // 使用原子替换，避免状态接口把半写入文件当成已完成分片。
-        System.IO.File.Move(tempChunkPath, chunkPath, true);
+        _ = ObserveChunkValidationAsync(uploadId, uploadLock, index, validationTask);
 
         return Ok(new ApiResponse<JObject>
         {
@@ -195,7 +252,8 @@ public class UploadController : ControllerBase
             {
                 ["index"] = index,
                 ["size"] = bytesWritten,
-                ["crc32c"] = actualCrc32c,
+                ["crc32c"] = crc32c,
+                ["validation"] = "pending",
             },
         });
     }
@@ -236,6 +294,50 @@ public class UploadController : ControllerBase
     /// </summary>
     [HttpPost("finish/{uploadId}")]
     public async Task<IActionResult> MergeChunks(string uploadId, [FromBody] FileUploadMergeRequest req)
+    {
+        var normalizedUploadId = uploadId ?? string.Empty;
+        if (!Regex.IsMatch(normalizedUploadId, "^[a-fA-F0-9]{32}$"))
+        {
+            return BadRequest(new ApiResponse<string> { Code = 400, Message = "非法 ID" });
+        }
+
+        return await WithUploadLock(normalizedUploadId, state => MergeChunksCore(state, normalizedUploadId, req));
+    }
+
+    private async Task<IActionResult> WithUploadLock(string uploadId, Func<UploadLockState, Task<IActionResult>> action)
+    {
+        UploadLockState uploadLock;
+        lock (UploadLocksSync)
+        {
+            if (!UploadLocks.TryGetValue(uploadId, out uploadLock!))
+            {
+                uploadLock = new UploadLockState();
+                UploadLocks[uploadId] = uploadLock;
+            }
+
+            uploadLock.References++;
+        }
+
+        await uploadLock.Semaphore.WaitAsync();
+        try
+        {
+            return await action(uploadLock);
+        }
+        finally
+        {
+            uploadLock.Semaphore.Release();
+            lock (UploadLocksSync)
+            {
+                uploadLock.References--;
+                if (uploadLock.References == 0 && uploadLock.PendingValidations.Count == 0)
+                {
+                    UploadLocks.Remove(uploadId);
+                }
+            }
+        }
+    }
+
+    private async Task<IActionResult> MergeChunksCore(UploadLockState uploadLock, string uploadId, FileUploadMergeRequest req)
     {
         // 验证key
         if (!_uploadSessions.IsOwned(uploadId, User))
@@ -332,104 +434,96 @@ public class UploadController : ControllerBase
             });
         }
 
+        Task<ChunkValidationResult>[] pendingValidations;
+        lock (UploadLocksSync)
+        {
+            pendingValidations = uploadLock.PendingValidations.Values.ToArray();
+        }
+
+        if (pendingValidations.Length > 0)
+        {
+            await Task.WhenAll(pendingValidations);
+        }
+
         var mergingPath = finalPath + ".merging";
         byte[] finalHash;
         long mergedSize = 0;
         try
         {
+            // 后台校验完成后，检查每个分片的成功标记；只有已经校验通过的分片才允许合并。
+            foreach (var chunk in orderedChunks)
+            {
+                var chunkFile = chunk.Path;
+                if (req.ChunkSize.HasValue && req.TotalSize.HasValue)
+                {
+                    var expectedLength = chunk.Index == req.TotalChunks - 1
+                        ? req.TotalSize.Value - ((long)req.ChunkSize.Value * (req.TotalChunks - 1))
+                        : req.ChunkSize.Value;
+                    var actualLength = new FileInfo(chunkFile).Length;
+                    if (expectedLength <= 0 || actualLength != expectedLength)
+                    {
+                        return UnprocessableEntity(new ApiResponse<JObject>
+                        {
+                            Code = 422,
+                            Message = $"分片 {chunk.Index} 大小不匹配，期望 {expectedLength}，实际 {actualLength}",
+                            Data = new JObject
+                            {
+                                ["index"] = chunk.Index,
+                                ["invalidChunks"] = new JArray(chunk.Index),
+                                ["expectedSize"] = expectedLength,
+                                ["actualSize"] = actualLength,
+                            },
+                        });
+                    }
+                }
+
+                string? expectedChunkCrc32c;
+                try
+                {
+                    expectedChunkCrc32c = await ReadChunkCrc32cAsync(chunkFile);
+                }
+                catch (InvalidDataException)
+                {
+                    return UnprocessableEntity(new ApiResponse<JObject>
+                    {
+                        Code = 422,
+                        Message = $"分片 {chunk.Index} 的完整性元数据无效",
+                        Data = new JObject
+                        {
+                            ["index"] = chunk.Index,
+                            ["invalidChunks"] = new JArray(chunk.Index),
+                        },
+                    });
+                }
+
+                if (string.IsNullOrWhiteSpace(expectedChunkCrc32c))
+                {
+                    return UnprocessableEntity(new ApiResponse<JObject>
+                    {
+                        Code = 422,
+                        Message = $"分片 {chunk.Index} 尚未完成完整性校验",
+                        Data = new JObject
+                        {
+                            ["index"] = chunk.Index,
+                            ["invalidChunks"] = new JArray(chunk.Index),
+                        },
+                    });
+                }
+            }
+
             await using (var destStream = new FileStream(mergingPath, FileMode.Create, FileAccess.Write, FileShare.None))
             using (var blake3 = Hasher.New())
             {
                 var buffer = new byte[1024 * 1024];
                 foreach (var chunk in orderedChunks)
                 {
-                    var chunkFile = chunk.Path;
-                    if (req.ChunkSize.HasValue && req.TotalSize.HasValue)
-                    {
-                        var expectedLength = chunk.Index == req.TotalChunks - 1
-                            ? req.TotalSize.Value - ((long)req.ChunkSize.Value * (req.TotalChunks - 1))
-                            : req.ChunkSize.Value;
-                        var actualLength = new FileInfo(chunkFile).Length;
-                        if (expectedLength <= 0 || actualLength != expectedLength)
-                        {
-                            System.IO.File.Delete(mergingPath);
-                            return UnprocessableEntity(new ApiResponse<JObject>
-                            {
-                                Code = 422,
-                                Message = $"分片 {chunk.Index} 大小不匹配，期望 {expectedLength}，实际 {actualLength}",
-                                Data = new JObject
-                                {
-                                    ["index"] = chunk.Index,
-                                    ["invalidChunks"] = new JArray(chunk.Index),
-                                    ["expectedSize"] = expectedLength,
-                                    ["actualSize"] = actualLength,
-                                },
-                            });
-                        }
-                    }
-
-                    string? expectedChunkCrc32c;
-                    try
-                    {
-                        expectedChunkCrc32c = await ReadChunkCrc32cAsync(chunkFile);
-                    }
-                    catch (InvalidDataException)
-                    {
-                        System.IO.File.Delete(mergingPath);
-                        return UnprocessableEntity(new ApiResponse<JObject>
-                        {
-                            Code = 422,
-                            Message = $"分片 {chunk.Index} 的完整性元数据无效",
-                            Data = new JObject
-                            {
-                                ["index"] = chunk.Index,
-                                ["invalidChunks"] = new JArray(chunk.Index),
-                            },
-                        });
-                    }
-
-                    if (string.IsNullOrWhiteSpace(expectedChunkCrc32c) && !string.IsNullOrWhiteSpace(req.Blake3))
-                    {
-                        System.IO.File.Delete(mergingPath);
-                        return UnprocessableEntity(new ApiResponse<JObject>
-                        {
-                            Code = 422,
-                            Message = $"分片 {chunk.Index} 缺少完整性元数据",
-                            Data = new JObject
-                            {
-                                ["index"] = chunk.Index,
-                                ["invalidChunks"] = new JArray(chunk.Index),
-                            },
-                        });
-                    }
-                    uint chunkCrc = 0xffffffff;
-                    await using var sourceStream = new FileStream(chunkFile, FileMode.Open, FileAccess.Read, FileShare.Read);
+                    await using var sourceStream = new FileStream(chunk.Path, FileMode.Open, FileAccess.Read, FileShare.Read);
                     int read;
                     while ((read = await sourceStream.ReadAsync(buffer.AsMemory(0, buffer.Length))) > 0)
                     {
                         await destStream.WriteAsync(buffer.AsMemory(0, read));
-                        chunkCrc = UpdateCrc32c(chunkCrc, buffer.AsSpan(0, read));
                         blake3.Update(buffer.AsSpan(0, read));
                         mergedSize += read;
-                    }
-
-                    if (expectedChunkCrc32c != null)
-                    {
-                        var actualChunkCrc32c = (chunkCrc ^ 0xffffffff).ToString("x8");
-                        if (!string.Equals(expectedChunkCrc32c, actualChunkCrc32c, StringComparison.OrdinalIgnoreCase))
-                        {
-                            System.IO.File.Delete(mergingPath);
-                            return UnprocessableEntity(new ApiResponse<JObject>
-                            {
-                                Code = 422,
-                                Message = $"分片 {Path.GetFileName(chunkFile)} 完整性校验失败",
-                                Data = new JObject
-                                {
-                                    ["index"] = chunk.Index,
-                                    ["invalidChunks"] = new JArray(chunk.Index),
-                                },
-                            });
-                        }
                     }
                 }
 
@@ -536,6 +630,72 @@ public class UploadController : ControllerBase
         return crc;
     }
 
+    private async Task<ChunkValidationResult> ValidateUploadedChunkAsync(string chunkPath, string? expectedCrc32c)
+    {
+        var metadataPath = chunkPath + ".crc32c";
+        var temporaryMetadataPath = metadataPath + ".uploading";
+        try
+        {
+            uint crc = 0xffffffff;
+            var buffer = new byte[1024 * 1024];
+            await using (var sourceStream = new FileStream(chunkPath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                int read;
+                while ((read = await sourceStream.ReadAsync(buffer.AsMemory(0, buffer.Length))) > 0)
+                {
+                    crc = UpdateCrc32c(crc, buffer.AsSpan(0, read));
+                }
+            }
+
+            var actualCrc32c = (crc ^ 0xffffffff).ToString("x8");
+            if (!string.IsNullOrWhiteSpace(expectedCrc32c) &&
+                !string.Equals(expectedCrc32c, actualCrc32c, StringComparison.OrdinalIgnoreCase))
+            {
+                System.IO.File.Delete(metadataPath);
+                return new ChunkValidationResult(false, actualCrc32c, expectedCrc32c, "分片完整性校验失败");
+            }
+
+            await System.IO.File.WriteAllTextAsync(temporaryMetadataPath, actualCrc32c);
+            System.IO.File.Move(temporaryMetadataPath, metadataPath, true);
+            return new ChunkValidationResult(true, actualCrc32c, expectedCrc32c, null);
+        }
+        catch (Exception ex)
+        {
+            try { System.IO.File.Delete(temporaryMetadataPath); } catch { }
+            try { System.IO.File.Delete(metadataPath); } catch { }
+            return new ChunkValidationResult(false, null, expectedCrc32c, ex.Message);
+        }
+    }
+
+    private async Task ObserveChunkValidationAsync(
+        string uploadId,
+        UploadLockState uploadLock,
+        int index,
+        Task<ChunkValidationResult> validationTask)
+    {
+        try
+        {
+            await validationTask;
+        }
+        finally
+        {
+            lock (UploadLocksSync)
+            {
+                if (uploadLock.PendingValidations.TryGetValue(index, out var currentTask) &&
+                    ReferenceEquals(currentTask, validationTask))
+                {
+                    uploadLock.PendingValidations.Remove(index);
+                }
+
+                uploadLock.References--;
+                if (uploadLock.References == 0 && uploadLock.PendingValidations.Count == 0)
+                {
+                    UploadLocks.Remove(uploadId);
+                }
+            }
+        }
+    }
+
     private static async Task<string> ComputeFileBlake3Async(string path)
     {
         await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 1024, useAsync: true);
@@ -563,9 +723,23 @@ public class UploadController : ControllerBase
         return value;
     }
 
+    private sealed class UploadLockState
+    {
+        public SemaphoreSlim Semaphore { get; } = new(1, 1);
+        public Dictionary<int, Task<ChunkValidationResult>> PendingValidations { get; } = new();
+        public int References { get; set; }
+    }
+
+    private sealed record ChunkValidationResult(
+        bool Success,
+        string? ActualCrc32c,
+        string? ExpectedCrc32c,
+        string? Error);
+
     private List<int> GetChunkIndices(string uploadId)
     {
         return GetChunkFiles(uploadId)
+            .Where(item => System.IO.File.Exists(item.Path + ".crc32c"))
             .Select(item => item.Index)
             .Distinct()
             .OrderBy(index => index)
