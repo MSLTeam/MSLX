@@ -76,11 +76,11 @@ export async function finishUpload(
   targetNodeId?: string,
   totalSize?: number,
   chunkSize?: number,
-  sha256?: string,
+  blake3?: string,
 ) {
   return await request.post<UploadFinishResponse>({
     url: `/api/files/upload/finish/${uploadId}`,
-    data: { totalChunks, totalSize, chunkSize, sha256 },
+    data: { totalChunks, totalSize, chunkSize, blake3 },
     timeout: 120 * 1000,
   }, { targetNodeId: targetNodeId || uploadNode(uploadId) });
 }

@@ -7,7 +7,7 @@ export interface UploadInitResponse {
 export interface UploadFinishResponse {
   uploadId: string;
   size?: number;
-  sha256?: string;
+  blake3?: string;
 }
 
 export interface UploadStatusResponse {

@@ -10,7 +10,7 @@ import {
 } from '@/api/files';
 import {
   computeFastFileFingerprint,
-  computeFileSha256WithOptions,
+  computeFileBlake3WithOptions,
   computeChunkCrc32c,
   deleteUploadResumeRecord,
   getUploadResumeRecords,
@@ -123,8 +123,8 @@ export function useFileUpload() {
     let statusRecoveryRequested = false;
     const startTime = Date.now();
     let resumeRecord = options.resumeRecord;
-    let fileSha256 = resumeRecord?.sha256;
-    let fileSha256Promise: Promise<string> | null = null;
+    let fileBlake3 = resumeRecord?.blake3;
+    let fileBlake3Promise: Promise<string> | null = null;
 
     if (!resumeRecord) {
       const existingRecords = await getUploadResumeRecords(targetNodeId).catch(() => []);
@@ -182,21 +182,21 @@ export function useFileUpload() {
       }
     };
 
-    const rememberComputedSha256 = async (sha256: string) => {
-      fileSha256 = sha256;
-      if (activeResumeRecord && !activeResumeRecord.sha256) {
-        activeResumeRecord.sha256 = sha256;
+    const rememberComputedBlake3 = async (blake3: string) => {
+      fileBlake3 = blake3;
+      if (activeResumeRecord && !activeResumeRecord.blake3) {
+        activeResumeRecord.blake3 = blake3;
         await persistResumeRecord();
       }
     };
 
-    if (!fileSha256) {
-      fileSha256Promise = computeFileSha256WithOptions(file, {
+    if (!fileBlake3) {
+      fileBlake3Promise = computeFileBlake3WithOptions(file, {
         signal: currentAbortController.signal,
         // 哈希在 Worker 中后台计算，不参与上传进度显示。
       });
       // 上传可能先失败或被取消，提前挂载 rejection handler，避免后台哈希产生未处理异常。
-      fileSha256Promise.catch(() => {});
+      fileBlake3Promise.catch(() => {});
     }
 
     if (currentAbortController.signal.aborted) {
@@ -228,7 +228,7 @@ export function useFileUpload() {
         if (activeResumeRecord && options.kind && !activeResumeRecord.kind) {
           activeResumeRecord.kind = options.kind;
         }
-        if (fileSha256Promise) void fileSha256Promise.then(rememberComputedSha256).catch(() => {});
+        if (fileBlake3Promise) void fileBlake3Promise.then(rememberComputedBlake3).catch(() => {});
         try {
           await syncStatus(uploadId);
         } catch (error: any) {
@@ -266,12 +266,12 @@ export function useFileUpload() {
           totalChunks,
           fingerprint,
           kind: options.kind,
-          sha256: fileSha256,
+          blake3: fileBlake3,
           receivedChunks: [],
           updatedAt: Date.now(),
           fileHandle: options.fileHandle,
         };
-        if (fileSha256Promise) void fileSha256Promise.then(rememberComputedSha256).catch(() => {});
+        if (fileBlake3Promise) void fileBlake3Promise.then(rememberComputedBlake3).catch(() => {});
         for (const index of (initRes as any).receivedChunks || []) {
           if (index >= 0 && index < totalChunks) markReceived(index);
         }
@@ -394,16 +394,16 @@ export function useFileUpload() {
 
       if (currentAbortController.signal.aborted) throw new Error('已取消');
 
-      if (!fileSha256) {
-        if (!fileSha256Promise) throw new Error('无法计算文件完整性校验值');
-        await rememberComputedSha256(await fileSha256Promise);
+      if (!fileBlake3) {
+        if (!fileBlake3Promise) throw new Error('无法计算文件完整性校验值');
+        await rememberComputedBlake3(await fileBlake3Promise);
       }
 
       uploadProgress.value = 99;
       let finishRes: any;
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
-          finishRes = await finishUpload(uploadId, totalChunks, uploadNodeId, file.size, chunkSize, fileSha256);
+          finishRes = await finishUpload(uploadId, totalChunks, uploadNodeId, file.size, chunkSize, fileBlake3);
           break;
         } catch (error: any) {
           if (getHttpStatus(error) === 422) {

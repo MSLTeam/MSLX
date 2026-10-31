@@ -1,3 +1,4 @@
+using Blake3;
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
@@ -248,7 +249,7 @@ public class UploadController : ControllerBase
         }
 
         if (req.ChunkSize is <= 0 || req.TotalSize is < 0 ||
-            (!string.IsNullOrWhiteSpace(req.Sha256) && !Regex.IsMatch(req.Sha256, "^[a-fA-F0-9]{64}$")))
+            (!string.IsNullOrWhiteSpace(req.Blake3) && !Regex.IsMatch(req.Blake3, "^[a-fA-F0-9]{64}$")))
         {
             return BadRequest(new ApiResponse<string> { Code = 400, Message = "分片完整性参数无效" });
         }
@@ -281,18 +282,18 @@ public class UploadController : ControllerBase
                 });
             }
 
-            var existingSha256 = await ComputeFileSha256Async(finalPath);
-            if (!string.IsNullOrWhiteSpace(req.Sha256) &&
-                !string.Equals(existingSha256, req.Sha256, StringComparison.OrdinalIgnoreCase))
+            var existingBlake3 = await ComputeFileBlake3Async(finalPath);
+            if (!string.IsNullOrWhiteSpace(req.Blake3) &&
+                !string.Equals(existingBlake3, req.Blake3, StringComparison.OrdinalIgnoreCase))
             {
                 return UnprocessableEntity(new ApiResponse<JObject>
                 {
                     Code = 422,
-                    Message = "已合并文件 SHA-256 与源文件不匹配",
+                    Message = "已合并文件校验值与源文件不匹配",
                     Data = new JObject
                     {
-                        ["expectedSha256"] = req.Sha256,
-                        ["actualSha256"] = existingSha256,
+                        ["expectedBlake3"] = req.Blake3,
+                        ["actualBlake3"] = existingBlake3,
                     },
                 });
             }
@@ -305,7 +306,7 @@ public class UploadController : ControllerBase
                 {
                     ["uploadId"] = uploadId,
                     ["size"] = existingSize,
-                    ["sha256"] = existingSha256,
+                    ["blake3"] = existingBlake3,
                 },
             });
         }
@@ -337,7 +338,7 @@ public class UploadController : ControllerBase
         try
         {
             await using (var destStream = new FileStream(mergingPath, FileMode.Create, FileAccess.Write, FileShare.None))
-            using (var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256))
+            using (var blake3 = Hasher.New())
             {
                 var buffer = new byte[1024 * 1024];
                 foreach (var chunk in orderedChunks)
@@ -387,7 +388,7 @@ public class UploadController : ControllerBase
                         });
                     }
 
-                    if (string.IsNullOrWhiteSpace(expectedChunkCrc32c) && !string.IsNullOrWhiteSpace(req.Sha256))
+                    if (string.IsNullOrWhiteSpace(expectedChunkCrc32c) && !string.IsNullOrWhiteSpace(req.Blake3))
                     {
                         System.IO.File.Delete(mergingPath);
                         return UnprocessableEntity(new ApiResponse<JObject>
@@ -408,7 +409,7 @@ public class UploadController : ControllerBase
                     {
                         await destStream.WriteAsync(buffer.AsMemory(0, read));
                         chunkCrc = UpdateCrc32c(chunkCrc, buffer.AsSpan(0, read));
-                        sha256.AppendData(buffer.AsSpan(0, read));
+                        blake3.Update(buffer.AsSpan(0, read));
                         mergedSize += read;
                     }
 
@@ -432,7 +433,7 @@ public class UploadController : ControllerBase
                     }
                 }
 
-                finalHash = sha256.GetHashAndReset();
+                finalHash = blake3.Finalize().AsSpan().ToArray();
             }
 
             if (req.TotalSize.HasValue && mergedSize != req.TotalSize.Value)
@@ -445,19 +446,19 @@ public class UploadController : ControllerBase
                 });
             }
 
-            var actualSha256 = Convert.ToHexString(finalHash).ToLowerInvariant();
-            if (!string.IsNullOrWhiteSpace(req.Sha256) &&
-                !string.Equals(actualSha256, req.Sha256, StringComparison.OrdinalIgnoreCase))
+            var actualBlake3 = Convert.ToHexString(finalHash).ToLowerInvariant();
+            if (!string.IsNullOrWhiteSpace(req.Blake3) &&
+                !string.Equals(actualBlake3, req.Blake3, StringComparison.OrdinalIgnoreCase))
             {
                 System.IO.File.Delete(mergingPath);
                 return UnprocessableEntity(new ApiResponse<JObject>
                 {
                     Code = 422,
-                    Message = "合并文件 SHA-256 与源文件不匹配",
+                    Message = "合并文件校验值与源文件不匹配",
                     Data = new JObject
                     {
-                        ["expectedSha256"] = req.Sha256,
-                        ["actualSha256"] = actualSha256,
+                        ["expectedBlake3"] = req.Blake3,
+                        ["actualBlake3"] = actualBlake3,
                     },
                 });
             }
@@ -503,7 +504,7 @@ public class UploadController : ControllerBase
             {
                 ["uploadId"] = uploadId,
                 ["size"] = mergedSize,
-                ["sha256"] = Convert.ToHexString(finalHash).ToLowerInvariant(),
+                ["blake3"] = Convert.ToHexString(finalHash).ToLowerInvariant(),
             }
         });
     }
@@ -535,18 +536,18 @@ public class UploadController : ControllerBase
         return crc;
     }
 
-    private static async Task<string> ComputeFileSha256Async(string path)
+    private static async Task<string> ComputeFileBlake3Async(string path)
     {
         await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 1024 * 1024, useAsync: true);
-        using var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        using var blake3 = Hasher.New();
         var buffer = new byte[1024 * 1024];
         int read;
         while ((read = await stream.ReadAsync(buffer.AsMemory(0, buffer.Length))) > 0)
         {
-            sha256.AppendData(buffer.AsSpan(0, read));
+            blake3.Update(buffer.AsSpan(0, read));
         }
 
-        return Convert.ToHexString(sha256.GetHashAndReset()).ToLowerInvariant();
+        return Convert.ToHexString(blake3.Finalize().AsSpan()).ToLowerInvariant();
     }
 
     private static async Task<string?> ReadChunkCrc32cAsync(string chunkPath)

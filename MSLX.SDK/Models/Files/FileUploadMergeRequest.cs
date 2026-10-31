@@ -15,7 +15,7 @@ public class FileUploadMergeRequest
     public long? TotalSize { get; set; }
 
     /// <summary>
-    /// 客户端完整文件 SHA-256。用于确认合并结果与源文件一致；为空时兼容旧客户端。
+    /// 客户端完整文件校验值。用于确认合并结果与源文件一致。
     /// </summary>
-    public string? Sha256 { get; set; }
+    public string? Blake3 { get; set; }
 }
