@@ -13,6 +13,9 @@ import NodeSwitcher from '@/components/node-switcher/index.vue';
 import { isNodePage, nodeNavigationUrl } from '@/utils/nodeTarget';
 import { useTaskStore } from '@/store';
 import CustomLogo from '@/assets/logo.png';
+import AIChatDrawer from '@/components/AIChat/AIChatDrawer.vue';
+
+const aiDrawerVisible = ref(false);
 
 const userStore = useUserStore();
 
@@ -218,6 +221,12 @@ const handleAvatarClick = () => {
                 <t-icon name="help-circle" class="text-[20px]" />
               </t-button>
             </t-tooltip>
+
+            <t-tooltip placement="bottom" content="AI 智能助手">
+              <t-button theme="default" shape="square" variant="text" class="header-btn" @click="aiDrawerVisible = true">
+                <t-icon name="chat-bubble-help" class="text-[20px]" />
+              </t-button>
+            </t-tooltip>
           </div>
 
           <t-popup
@@ -348,6 +357,7 @@ const handleAvatarClick = () => {
         </div>
       </template>
     </t-head-menu>
+    <AIChatDrawer v-model:visible="aiDrawerVisible" />
   </div>
   <task-drawer v-model:visible="taskDrawerVisible" />
 </template>
