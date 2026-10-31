@@ -20,6 +20,8 @@ export interface UploadResumeRecord {
   blake3?: string;
   receivedChunks: number[];
   updatedAt: number;
+  /** 用户主动取消后保留分片，但刷新时不再作为待恢复任务提示。 */
+  cancelledAt?: number;
   fileHandle?: UploadFileHandleLike;
 }
 

@@ -54,7 +54,10 @@ function backoffDelay(attempt: number): Promise<void> {
 }
 
 function getHttpStatus(error: any): number | undefined {
-  return error?.status ?? error?.response?.status;
+  const responseCode = error?.responseData?.code ?? error?.response?.data?.code;
+  return typeof responseCode === 'number'
+    ? responseCode
+    : error?.status ?? error?.response?.status;
 }
 
 function isRetryableUploadError(error: any): boolean {
@@ -130,6 +133,7 @@ export function useFileUpload() {
       const existingRecords = await getUploadResumeRecords(targetNodeId).catch(() => []);
       resumeRecord = existingRecords.find(
         (record) =>
+          !record.cancelledAt &&
           record.fileName === file.name &&
           record.fileSize === file.size &&
           record.lastModified === file.lastModified &&
@@ -253,6 +257,7 @@ export function useFileUpload() {
           totalChunks,
           fingerprint,
         });
+        if (currentAbortController.signal.aborted) throw new Error('已取消');
         uploadId = (initRes as any).uploadId;
         rememberUploadTarget(uploadId, uploadNodeId);
         activeResumeRecord = {
@@ -454,8 +459,14 @@ export function useFileUpload() {
     }
   };
 
-  const cancelUpload = () => {
+  const cancelUpload = async () => {
     abortController?.abort();
+    const record = activeResumeRecord;
+    if (record && activeResumeRecord === record) {
+      record.cancelledAt = Date.now();
+      record.updatedAt = Date.now();
+      await saveUploadResumeRecord(record).catch(() => {});
+    }
     isUploading.value = false;
   };
 
@@ -483,6 +494,7 @@ export function useFileUpload() {
     const records = await getUploadResumeRecords(targetNodeId).catch(() => []);
     for (const record of records) {
       if (!record.uploadId || !record.fingerprint) continue;
+      if (record.cancelledAt) continue;
       if (kind) {
         const matchesKind = record.kind
           ? record.kind === kind
@@ -490,6 +502,26 @@ export function useFileUpload() {
             ? /\.(?:zip|mrpack)$/i.test(record.fileName)
             : /\.jar$/i.test(record.fileName);
         if (!matchesKind) continue;
+      }
+
+      // 浏览器中的恢复记录可能在 Daemon 重启后仍然存在，但服务端会话和
+      // 临时分片已经被清理。只有服务端确认会话仍有效时，才把它显示为可恢复任务。
+      try {
+        const status = await getUploadStatus(record.uploadId, record.nodeId);
+        const receivedChunks = (status.receivedChunks || []).filter(
+          (index) => Number.isInteger(index) && index >= 0 && index < record.totalChunks,
+        );
+        record.receivedChunks = receivedChunks;
+        record.updatedAt = Date.now();
+        await saveUploadResumeRecord(record).catch(() => {});
+      } catch (error) {
+        const status = getHttpStatus(error);
+        if (status === 403 || status === 404) {
+          // 会话已过期、失效或属于已重启前的 Daemon，不能再提示用户恢复。
+          await deleteUploadResumeRecord(record.key).catch(() => {});
+        }
+        // 网络暂不可用时保留本地记录，但不把未经服务端确认的记录显示为未完成任务。
+        continue;
       }
 
       const fileHandle = record.fileHandle;
@@ -526,7 +558,9 @@ export function useFileUpload() {
   };
 
   // 组件销毁时自动终止正在进行的上传
-  onUnmounted(() => cancelUpload());
+  onUnmounted(() => {
+    void cancelUpload();
+  });
 
   return {
     isUploading,

@@ -90,6 +90,7 @@ const restorePendingPackageMode = async () => {
 
   const records = await getUploadResumeRecords(getPageNodeId()).catch(() => []);
   const hasPendingPackageUpload = records.some((record) => {
+    if (record.cancelledAt) return false;
     if (record.kind) return record.kind === 'package';
     return /\.(?:zip|mrpack)$/i.test(record.fileName);
   });
@@ -154,23 +155,23 @@ const handleNodeChange = () => {};
     </div>
 
     <div :key="`${nodeStore.activeNodeId}-${renderKey}`" class="relative w-full">
-      <div v-show="value === 1" class="list-item-anim" style="animation-delay: 0.1s">
+      <div v-if="value === 1" class="list-item-anim" style="animation-delay: 0.1s">
         <quick-mode />
       </div>
 
-      <div v-show="value === 2" class="list-item-anim" style="animation-delay: 0.1s">
+      <div v-if="value === 2" class="list-item-anim" style="animation-delay: 0.1s">
         <package-mode />
       </div>
 
-      <div v-show="value === 3" class="list-item-anim" style="animation-delay: 0.1s">
+      <div v-if="value === 3" class="list-item-anim" style="animation-delay: 0.1s">
         <bedrock-mode />
       </div>
 
-      <div v-show="value === 4" class="list-item-anim" style="animation-delay: 0.1s">
+      <div v-if="value === 4" class="list-item-anim" style="animation-delay: 0.1s">
         <mcdr-mode />
       </div>
 
-      <div v-show="value === 10" class="list-item-anim" style="animation-delay: 0.1s">
+      <div v-if="value === 10" class="list-item-anim" style="animation-delay: 0.1s">
         <custom-mode />
       </div>
     </div>

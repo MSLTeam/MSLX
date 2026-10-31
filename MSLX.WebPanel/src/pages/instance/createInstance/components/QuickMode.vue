@@ -34,8 +34,8 @@ const {
 } =
   useFileUpload();
 
-const cancelCurrentUpload = () => {
-  cancelUpload();
+const cancelCurrentUpload = async () => {
+  await cancelUpload();
   MessagePlugin.info('已取消当前上传，可以重新选择文件');
 };
 
