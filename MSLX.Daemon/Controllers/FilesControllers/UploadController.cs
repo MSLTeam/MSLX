@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Caching.Memory;
+using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.Daemon.Services.DeployServerService;
@@ -17,17 +18,20 @@ namespace MSLX.Daemon.Controllers.FilesControllers;
 
 [ApiController]
 [Route("api/files/upload")]
+[Authorize]
 public class UploadController : ControllerBase
 {
     private static readonly uint[] Crc32cTable = CreateCrc32cTable();
 
     private readonly string _tempPath;
     private readonly IMemoryCache _memoryCache;
+    private readonly UploadSessionService _uploadSessions;
     private readonly ServerDeploymentService _deploymentService;
 
-    public UploadController(IMemoryCache memoryCache, ServerDeploymentService deploymentService)
+    public UploadController(IMemoryCache memoryCache, UploadSessionService uploadSessions, ServerDeploymentService deploymentService)
     {
         _memoryCache = memoryCache;
+        _uploadSessions = uploadSessions;
         _deploymentService = deploymentService;
         // 临时文件存放目录
         _tempPath = Path.Combine(IConfigBase.GetAppDataPath(), "Temp", "Uploads");
@@ -44,7 +48,7 @@ public class UploadController : ControllerBase
         var resumeKey = BuildResumeSessionKey(request);
         if (resumeKey != null && _memoryCache.TryGetValue(resumeKey, out string? existingUploadId) &&
             !string.IsNullOrWhiteSpace(existingUploadId) &&
-            _memoryCache.TryGetValue($"Upload_Session_{existingUploadId}", out _) &&
+            _uploadSessions.IsOwned(existingUploadId, User) &&
             !System.IO.File.Exists(Path.Combine(_tempPath, existingUploadId + ".tmp")))
         {
             var receivedChunks = GetChunkIndices(existingUploadId);
@@ -64,7 +68,7 @@ public class UploadController : ControllerBase
         var uploadId = Guid.NewGuid().ToString("N");
 
         // 2h 有效；Daemon 重启时由 TempFileCleanupService 清理临时文件，会话也不会恢复。
-        _memoryCache.Set($"Upload_Session_{uploadId}", true, TimeSpan.FromHours(2));
+        _uploadSessions.Create(uploadId, User, request?.NodeId);
         if (resumeKey != null)
         {
             _memoryCache.Set(resumeKey, uploadId, TimeSpan.FromHours(2));
@@ -93,7 +97,8 @@ public class UploadController : ControllerBase
             return null;
         }
 
-        var userId = User.FindFirst("UserId")?.Value ?? User.Identity?.Name ?? "anonymous";
+        var userId = _uploadSessions.ResolveOwnerId(User);
+        if (string.IsNullOrWhiteSpace(userId)) return null;
         var descriptor = string.Join("|", userId, request.NodeId ?? "local", request.FileName,
             request.FileSize.Value, request.LastModified.Value, request.ChunkSize.Value,
             request.TotalChunks.Value, request.Fingerprint);
@@ -113,7 +118,7 @@ public class UploadController : ControllerBase
         [FromForm] string? crc32c = null)
     {
         // 检查凭证
-        if (!_memoryCache.TryGetValue($"Upload_Session_{uploadId}", out _))
+        if (!_uploadSessions.IsOwned(uploadId, User))
         {
             return BadRequest(new ApiResponse<string> { Code = 403, Message = "上传凭证无效或已过期，请刷新页面重试" });
         }
@@ -205,7 +210,7 @@ public class UploadController : ControllerBase
             return BadRequest(new ApiResponse<string> { Code = 400, Message = "非法 ID" });
         }
 
-        if (!_memoryCache.TryGetValue($"Upload_Session_{uploadId}", out _))
+        if (!_uploadSessions.IsOwned(uploadId, User))
         {
             return BadRequest(new ApiResponse<string> { Code = 403, Message = "上传凭证无效或已过期，请刷新页面重试" });
         }
@@ -232,7 +237,7 @@ public class UploadController : ControllerBase
     public async Task<IActionResult> MergeChunks(string uploadId, [FromBody] FileUploadMergeRequest req)
     {
         // 验证key
-        if (!_memoryCache.TryGetValue($"Upload_Session_{uploadId}", out _))
+        if (!_uploadSessions.IsOwned(uploadId, User))
         {
             return BadRequest(new ApiResponse<string> { Code = 403, Message = "凭证无效或已过期" });
         }
@@ -240,6 +245,25 @@ public class UploadController : ControllerBase
         if (req == null || req.TotalChunks <= 0)
         {
             return BadRequest(new ApiResponse<string> { Code = 400, Message = "分片总数必须大于 0" });
+        }
+
+        if (req.ChunkSize is <= 0 || req.TotalSize is < 0 ||
+            (!string.IsNullOrWhiteSpace(req.Sha256) && !Regex.IsMatch(req.Sha256, "^[a-fA-F0-9]{64}$")))
+        {
+            return BadRequest(new ApiResponse<string> { Code = 400, Message = "分片完整性参数无效" });
+        }
+
+        if (req.ChunkSize.HasValue && req.TotalSize.HasValue)
+        {
+            var expectedTotalChunks = (req.TotalSize.Value + req.ChunkSize.Value - 1) / req.ChunkSize.Value;
+            if (expectedTotalChunks != req.TotalChunks)
+            {
+                return BadRequest(new ApiResponse<string>
+                {
+                    Code = 400,
+                    Message = $"分片总数不匹配，按文件大小应为 {expectedTotalChunks}，实际为 {req.TotalChunks}",
+                });
+            }
         }
 
         var finalPath = Path.Combine(_tempPath, uploadId + ".tmp");
@@ -257,6 +281,22 @@ public class UploadController : ControllerBase
                 });
             }
 
+            var existingSha256 = await ComputeFileSha256Async(finalPath);
+            if (!string.IsNullOrWhiteSpace(req.Sha256) &&
+                !string.Equals(existingSha256, req.Sha256, StringComparison.OrdinalIgnoreCase))
+            {
+                return UnprocessableEntity(new ApiResponse<JObject>
+                {
+                    Code = 422,
+                    Message = "已合并文件 SHA-256 与源文件不匹配",
+                    Data = new JObject
+                    {
+                        ["expectedSha256"] = req.Sha256,
+                        ["actualSha256"] = existingSha256,
+                    },
+                });
+            }
+
             return Ok(new ApiResponse<JObject>
             {
                 Code = 200,
@@ -265,14 +305,15 @@ public class UploadController : ControllerBase
                 {
                     ["uploadId"] = uploadId,
                     ["size"] = existingSize,
-                    ["sha256"] = await ComputeFileSha256Async(finalPath),
+                    ["sha256"] = existingSha256,
                 },
             });
         }
 
         // 获取所有分片文件
         var chunksWithIndex = GetChunkFiles(uploadId);
-        var chunks = chunksWithIndex.OrderBy(item => item.Index).Select(item => item.Path).ToList();
+        var orderedChunks = chunksWithIndex.OrderBy(item => item.Index).ToList();
+        var chunks = orderedChunks.Select(item => item.Path).ToList();
 
         var receivedIndices = chunksWithIndex.Select(item => item.Index).ToHashSet();
         var missingIndices = Enumerable.Range(0, req.TotalChunks).Where(index => !receivedIndices.Contains(index)).ToList();
@@ -299,9 +340,67 @@ public class UploadController : ControllerBase
             using (var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256))
             {
                 var buffer = new byte[1024 * 1024];
-                foreach (var chunkFile in chunks)
+                foreach (var chunk in orderedChunks)
                 {
-                    var expectedChunkCrc32c = await ReadChunkCrc32cAsync(chunkFile);
+                    var chunkFile = chunk.Path;
+                    if (req.ChunkSize.HasValue && req.TotalSize.HasValue)
+                    {
+                        var expectedLength = chunk.Index == req.TotalChunks - 1
+                            ? req.TotalSize.Value - ((long)req.ChunkSize.Value * (req.TotalChunks - 1))
+                            : req.ChunkSize.Value;
+                        var actualLength = new FileInfo(chunkFile).Length;
+                        if (expectedLength <= 0 || actualLength != expectedLength)
+                        {
+                            System.IO.File.Delete(mergingPath);
+                            return UnprocessableEntity(new ApiResponse<JObject>
+                            {
+                                Code = 422,
+                                Message = $"分片 {chunk.Index} 大小不匹配，期望 {expectedLength}，实际 {actualLength}",
+                                Data = new JObject
+                                {
+                                    ["index"] = chunk.Index,
+                                    ["invalidChunks"] = new JArray(chunk.Index),
+                                    ["expectedSize"] = expectedLength,
+                                    ["actualSize"] = actualLength,
+                                },
+                            });
+                        }
+                    }
+
+                    string? expectedChunkCrc32c;
+                    try
+                    {
+                        expectedChunkCrc32c = await ReadChunkCrc32cAsync(chunkFile);
+                    }
+                    catch (InvalidDataException)
+                    {
+                        System.IO.File.Delete(mergingPath);
+                        return UnprocessableEntity(new ApiResponse<JObject>
+                        {
+                            Code = 422,
+                            Message = $"分片 {chunk.Index} 的完整性元数据无效",
+                            Data = new JObject
+                            {
+                                ["index"] = chunk.Index,
+                                ["invalidChunks"] = new JArray(chunk.Index),
+                            },
+                        });
+                    }
+
+                    if (string.IsNullOrWhiteSpace(expectedChunkCrc32c) && !string.IsNullOrWhiteSpace(req.Sha256))
+                    {
+                        System.IO.File.Delete(mergingPath);
+                        return UnprocessableEntity(new ApiResponse<JObject>
+                        {
+                            Code = 422,
+                            Message = $"分片 {chunk.Index} 缺少完整性元数据",
+                            Data = new JObject
+                            {
+                                ["index"] = chunk.Index,
+                                ["invalidChunks"] = new JArray(chunk.Index),
+                            },
+                        });
+                    }
                     uint chunkCrc = 0xffffffff;
                     await using var sourceStream = new FileStream(chunkFile, FileMode.Open, FileAccess.Read, FileShare.Read);
                     int read;
@@ -319,10 +418,15 @@ public class UploadController : ControllerBase
                         if (!string.Equals(expectedChunkCrc32c, actualChunkCrc32c, StringComparison.OrdinalIgnoreCase))
                         {
                             System.IO.File.Delete(mergingPath);
-                            return StatusCode(500, new ApiResponse<JObject>
+                            return UnprocessableEntity(new ApiResponse<JObject>
                             {
-                                Code = 500,
+                                Code = 422,
                                 Message = $"分片 {Path.GetFileName(chunkFile)} 完整性校验失败",
+                                Data = new JObject
+                                {
+                                    ["index"] = chunk.Index,
+                                    ["invalidChunks"] = new JArray(chunk.Index),
+                                },
                             });
                         }
                     }
@@ -338,6 +442,23 @@ public class UploadController : ControllerBase
                 {
                     Code = 400,
                     Message = $"合并文件大小不匹配，期望 {req.TotalSize.Value}，实际 {mergedSize}",
+                });
+            }
+
+            var actualSha256 = Convert.ToHexString(finalHash).ToLowerInvariant();
+            if (!string.IsNullOrWhiteSpace(req.Sha256) &&
+                !string.Equals(actualSha256, req.Sha256, StringComparison.OrdinalIgnoreCase))
+            {
+                System.IO.File.Delete(mergingPath);
+                return UnprocessableEntity(new ApiResponse<JObject>
+                {
+                    Code = 422,
+                    Message = "合并文件 SHA-256 与源文件不匹配",
+                    Data = new JObject
+                    {
+                        ["expectedSha256"] = req.Sha256,
+                        ["actualSha256"] = actualSha256,
+                    },
                 });
             }
 
@@ -360,6 +481,14 @@ public class UploadController : ControllerBase
             try
             {
                 System.IO.File.Delete(chunk);
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                System.IO.File.Delete(chunk + ".crc32c");
             }
             catch
             {
@@ -475,7 +604,12 @@ public class UploadController : ControllerBase
         }
 
         // 从缓存移除
-        _memoryCache.Remove($"Upload_Session_{uploadId}");
+        if (!_uploadSessions.IsOwned(uploadId, User))
+        {
+            return BadRequest(new ApiResponse<string> { Code = 403, Message = "上传凭证无效或已过期，请刷新页面重试" });
+        }
+
+        _uploadSessions.Remove(uploadId);
 
         var mergedPath = Path.Combine(_tempPath, uploadId + ".tmp");
 
@@ -531,6 +665,10 @@ public class UploadController : ControllerBase
             if (string.IsNullOrEmpty(uploadId) || !Regex.IsMatch(uploadId, "^[a-fA-F0-9]{32}$"))
             {
                 return BadRequest(new ApiResponse<string> { Code = 400, Message = "ID 格式错误" });
+            }
+            if (!_uploadSessions.IsOwned(uploadId, User))
+            {
+                return BadRequest(new ApiResponse<string> { Code = 403, Message = "上传凭证无效或已过期，请刷新页面重试" });
             }
             finalPath = Path.Combine(_tempPath, uploadId + ".tmp");
         }

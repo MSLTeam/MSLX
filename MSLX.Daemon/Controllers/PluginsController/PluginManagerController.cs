@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.Daemon.Services;
 using MSLX.SDK.Models;
 using MSLX.SDK.Models.Plugins;
 using MSLX.Daemon.Services.PluginsService;
@@ -16,13 +17,15 @@ public class PluginManagerController : ControllerBase
     private readonly IMemoryCache _cache;
     private readonly ILogger<PluginManagerController> _logger;
     private readonly PluginPackageService _packages;
+    private readonly UploadSessionService _uploadSessions;
     private static readonly ParallelDownloader _downloader = new ParallelDownloader();
 
-    public PluginManagerController(IMemoryCache cache, ILogger<PluginManagerController> logger, PluginPackageService packages)
+    public PluginManagerController(IMemoryCache cache, ILogger<PluginManagerController> logger, PluginPackageService packages, UploadSessionService uploadSessions)
     {
         _cache = cache;
         _logger = logger;
         _packages = packages;
+        _uploadSessions = uploadSessions;
     }
 
     #region 插件本地上传与热重载
@@ -33,6 +36,8 @@ public class PluginManagerController : ControllerBase
     {
         if (!Guid.TryParseExact(request.FileId, "N", out _))
             return BadRequest(new ApiResponse<object> { Code = 400, Message = "文件 ID 无效" });
+        if (!_uploadSessions.IsOwned(request.FileId, User))
+            return BadRequest(new ApiResponse<object> { Code = 403, Message = "上传会话不存在、已过期或无权访问" });
         var tempPath = Path.Combine(IConfigBase.GetAppDataPath(), "Temp", "Uploads", request.FileId + ".tmp");
         if (!System.IO.File.Exists(tempPath)) return NotFound(new ApiResponse<object> { Code = 404, Message = "未找到已上传的临时文件" });
         try
@@ -46,7 +51,11 @@ public class PluginManagerController : ControllerBase
             _logger.LogError(ex, "插件安装失败");
             return BadRequest(new ApiResponse<object> { Code = 400, Message = ex.Message });
         }
-        finally { if (System.IO.File.Exists(tempPath)) System.IO.File.Delete(tempPath); }
+        finally
+        {
+            if (System.IO.File.Exists(tempPath)) System.IO.File.Delete(tempPath);
+            _uploadSessions.Remove(request.FileId);
+        }
     }
 
     #endregion

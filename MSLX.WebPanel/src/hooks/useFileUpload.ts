@@ -10,6 +10,7 @@ import {
 } from '@/api/files';
 import {
   computeFastFileFingerprint,
+  computeFileSha256,
   computeChunkCrc32c,
   deleteUploadResumeRecord,
   getUploadResumeRecords,
@@ -105,6 +106,7 @@ export function useFileUpload() {
     let statusRecoveryRequested = false;
     const startTime = Date.now();
     let resumeRecord = options.resumeRecord;
+    let fileSha256 = resumeRecord?.sha256;
 
     if (!resumeRecord) {
       const existingRecords = await getUploadResumeRecords(targetNodeId).catch(() => []);
@@ -117,6 +119,13 @@ export function useFileUpload() {
           record.chunkSize === chunkSize &&
           record.totalChunks === totalChunks,
       );
+    }
+
+    if (!fileSha256) {
+      fileSha256 = await computeFileSha256(file);
+    }
+    if (resumeRecord && !resumeRecord.sha256) {
+      resumeRecord.sha256 = fileSha256;
     }
 
     const chunkBytes = (index: number) => {
@@ -219,6 +228,7 @@ export function useFileUpload() {
           chunkSize,
           totalChunks,
           fingerprint,
+          sha256: fileSha256,
           receivedChunks: [],
           updatedAt: Date.now(),
           fileHandle: options.fileHandle,
@@ -346,9 +356,26 @@ export function useFileUpload() {
       let finishRes: any;
       for (let attempt = 1; attempt <= 3; attempt++) {
         try {
-          finishRes = await finishUpload(uploadId, totalChunks, uploadNodeId, file.size);
+          finishRes = await finishUpload(uploadId, totalChunks, uploadNodeId, file.size, chunkSize, fileSha256);
           break;
         } catch (error: any) {
+          if (getHttpStatus(error) === 422) {
+            const invalidChunkValues = (error?.responseData?.data?.invalidChunks ||
+              error?.responseData?.Data?.invalidChunks || []) as unknown[];
+            const invalidChunks = invalidChunkValues
+              .map((index) => Number(index))
+              .filter((index): index is number => Number.isInteger(index) && index >= 0 && index < totalChunks);
+            if (invalidChunks.length > 0) {
+              for (const index of [...new Set(invalidChunks)]) {
+                if (receivedChunks.delete(index)) {
+                  committedBytes = Math.max(0, committedBytes - chunkBytes(index));
+                }
+                activeChunkProgressMap.delete(index);
+                await processChunk(index);
+              }
+              continue;
+            }
+          }
           if (!isRetryableUploadError(error) || attempt >= 3) throw error;
           await backoffDelay(attempt);
           await syncStatus(uploadId).catch(() => {});

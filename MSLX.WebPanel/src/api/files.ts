@@ -70,10 +70,17 @@ export async function getUploadStatus(uploadId: string, targetNodeId?: string) {
   }, { targetNodeId: targetNodeId || uploadNode(uploadId) });
 }
 
-export async function finishUpload(uploadId: string, totalChunks: number, targetNodeId?: string, totalSize?: number) {
+export async function finishUpload(
+  uploadId: string,
+  totalChunks: number,
+  targetNodeId?: string,
+  totalSize?: number,
+  chunkSize?: number,
+  sha256?: string,
+) {
   return await request.post<UploadFinishResponse>({
     url: `/api/files/upload/finish/${uploadId}`,
-    data: { totalChunks, totalSize },
+    data: { totalChunks, totalSize, chunkSize, sha256 },
     timeout: 120 * 1000,
   }, { targetNodeId: targetNodeId || uploadNode(uploadId) });
 }
@@ -91,7 +98,7 @@ export async function checkPackageJarList(uploadId: string, localPath?: string) 
     url: `/api/files/upload/inspect/${id}`,
     params: localPath ? { localPath } : undefined,
     timeout: 60 * 1000,
-  });
+  }, { targetNodeId: localPath ? getPageNodeId() : uploadNode(uploadId) });
 }
 
 export interface FileListParams {
