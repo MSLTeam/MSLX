@@ -6,6 +6,11 @@ import { postCreateInstanceQuickMode } from '@/api/instance';
 import { changeUrl } from '@/router';
 import { useUserStore } from '@/store';
 import DockerImageSelector from '@/components/docker-image-selector/index.vue';
+import {
+  readCreateInstanceDraft,
+  removeCreateInstanceDraft,
+  saveCreateInstanceDraft,
+} from '../createInstanceDraft';
 const userStore = useUserStore();
 
 const isSuccess = ref(false);
@@ -37,6 +42,35 @@ const rules: FormRules<CreateInstanceQucikModeModel> = {
 const isDockerActive = ref(false);
 const dockerImageType = ref('preset');
 const dockerImagePresetVersion = ref('25');
+const restoringDraft = ref(true);
+
+const customDraft = readCreateInstanceDraft<{
+  formData: CreateInstanceQucikModeModel;
+  isDockerActive: boolean;
+  dockerImageType: string;
+  dockerImagePresetVersion: string;
+}>('custom');
+if (customDraft?.state) {
+  if (customDraft.state.formData) Object.assign(formData, customDraft.state.formData);
+  if (typeof customDraft.state.isDockerActive === 'boolean') isDockerActive.value = customDraft.state.isDockerActive;
+  if (customDraft.state.dockerImageType) dockerImageType.value = customDraft.state.dockerImageType;
+  if (customDraft.state.dockerImagePresetVersion) dockerImagePresetVersion.value = customDraft.state.dockerImagePresetVersion;
+}
+restoringDraft.value = false;
+
+watch(
+  [formData, isDockerActive, dockerImageType, dockerImagePresetVersion],
+  () => {
+    if (restoringDraft.value) return;
+    saveCreateInstanceDraft('custom', {
+      formData: { ...formData },
+      isDockerActive: isDockerActive.value,
+      dockerImageType: dockerImageType.value,
+      dockerImagePresetVersion: dockerImagePresetVersion.value,
+    });
+  },
+  { deep: true },
+);
 
 watch([isDockerActive, dockerImageType, dockerImagePresetVersion], ([active, type, ver]) => {
   if (active) {
@@ -97,6 +131,7 @@ const goToHome = () => {
     dockerImage: 'MSLX://DockerImage/Java/25',
     dockerPorts: '25565:25565',
   });
+  removeCreateInstanceDraft('custom');
 };
 </script>
 

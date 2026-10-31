@@ -16,8 +16,22 @@ import { useInstanceListStore } from '@/store/modules/instance';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { parseMcVersion, getRecommendedJava } from './javaRecommendation';
 import DockerImageSelector from '@/components/docker-image-selector/index.vue';
+import {
+  readCreateInstanceDraft,
+  removeCreateInstanceDraft,
+  saveCreateInstanceDraft,
+} from '../createInstanceDraft';
 
-const { isUploading, uploadProgress, uploadedFileName, uploadedFileSize, startUpload, cancelUpload, removeUploadData } =
+const {
+  isUploading,
+  uploadProgress,
+  uploadedFileName,
+  uploadedFileSize,
+  startUpload,
+  cancelUpload,
+  removeUploadData,
+  restorePendingUpload,
+} =
   useFileUpload();
 
 const cancelCurrentUpload = () => {
@@ -128,8 +142,27 @@ const fetchJavaVersions = async (force: boolean = false) => {
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
+  restoreQuickDraft();
+  restoringDraft.value = false;
   fetchJavaVersions();
+  const pending = await restorePendingUpload('core');
+  if (pending) {
+    currentStep.value = 1;
+    if (pending.file) {
+      try {
+        formData.value.core = pending.record.fileName;
+        formData.value.coreUrl = '';
+        formData.value.coreFileKey = await startUpload(pending.file, {
+          resumeRecord: pending.record,
+          fileHandle: pending.fileHandle,
+          kind: 'core',
+        });
+      } catch {
+        // 保留草稿，用户可以重新选择文件。
+      }
+    }
+  }
 });
 
 const formData = ref(<CreateInstanceQucikModeModel>{
@@ -193,6 +226,65 @@ const localPortList = ref<{ host: number; container: number; protocol: 'tcp' | '
 ]);
 
 const networkMode = ref<'mapped' | 'host'>('mapped');
+const restoringDraft = ref(true);
+
+function restoreQuickDraft() {
+  const draft = readCreateInstanceDraft<{
+    currentStep: number;
+    formData: CreateInstanceQucikModeModel;
+    downloadType: string;
+    javaType: string;
+    selectedJavaVersion: string;
+    customJavaPath: string;
+    onlineGameVersion: string;
+    minUnit: string;
+    maxUnit: string;
+    dockerImageType: string;
+    dockerImagePresetVersion: string;
+    localPortList: typeof localPortList.value;
+    networkMode: typeof networkMode.value;
+  }>('quick');
+  const state = draft?.state;
+  if (!state) return;
+  if (state.formData) formData.value = { ...formData.value, ...state.formData };
+  if (typeof state.currentStep === 'number') currentStep.value = Math.max(0, Math.min(6, state.currentStep));
+  if (state.downloadType) downloadType.value = state.downloadType;
+  if (state.javaType) javaType.value = state.javaType;
+  if (state.selectedJavaVersion) selectedJavaVersion.value = state.selectedJavaVersion;
+  if (state.customJavaPath) customJavaPath.value = state.customJavaPath;
+  if (state.onlineGameVersion) onlineGameVersion.value = state.onlineGameVersion;
+  if (state.minUnit) minUnit.value = state.minUnit;
+  if (state.maxUnit) maxUnit.value = state.maxUnit;
+  if (state.dockerImageType) dockerImageType.value = state.dockerImageType;
+  if (state.dockerImagePresetVersion) dockerImagePresetVersion.value = state.dockerImagePresetVersion;
+  if (state.localPortList) localPortList.value = state.localPortList;
+  if (state.networkMode) networkMode.value = state.networkMode;
+}
+
+function persistQuickDraft() {
+  if (restoringDraft.value) return;
+  saveCreateInstanceDraft('quick', {
+    currentStep: currentStep.value,
+    formData: { ...formData.value },
+    downloadType: downloadType.value,
+    javaType: javaType.value,
+    selectedJavaVersion: selectedJavaVersion.value,
+    customJavaPath: customJavaPath.value,
+    onlineGameVersion: onlineGameVersion.value,
+    minUnit: minUnit.value,
+    maxUnit: maxUnit.value,
+    dockerImageType: dockerImageType.value,
+    dockerImagePresetVersion: dockerImagePresetVersion.value,
+    localPortList: localPortList.value,
+    networkMode: networkMode.value,
+  });
+}
+
+watch(
+  [formData, currentStep, downloadType, javaType, selectedJavaVersion, customJavaPath, onlineGameVersion, minUnit, maxUnit, dockerImageType, dockerImagePresetVersion, localPortList, networkMode],
+  persistQuickDraft,
+  { deep: true },
+);
 
 watch(
   [localPortList, networkMode],
@@ -427,7 +519,7 @@ const onFileChange = async (event: Event) => {
   formData.value.coreFileKey = '';
 
   try {
-    const finalKey = await startUpload(file);
+    const finalKey = await startUpload(file, { kind: 'core' });
     formData.value.coreFileKey = finalKey;
     MessagePlugin.success('核心文件上传成功！');
 
@@ -613,6 +705,7 @@ const goToHome = () => {
 
   // 视图重置时同步清理 hook 历史状态
   removeUploadData();
+  removeCreateInstanceDraft('quick');
 };
 </script>
 

@@ -11,6 +11,11 @@ import { changeUrl } from '@/router';
 import { useInstanceListStore } from '@/store/modules/instance';
 import { getServerCoreDownloadInfo, getServerCoreGameVersion } from '@/api/mslapi/serverCore';
 import DockerImageSelector from '@/components/docker-image-selector/index.vue';
+import {
+  readCreateInstanceDraft,
+  removeCreateInstanceDraft,
+  saveCreateInstanceDraft,
+} from '../createInstanceDraft';
 
 // 模型扩展
 interface BedrockCreateModel extends CreateInstanceQucikModeModel {
@@ -77,6 +82,35 @@ const formData = ref<BedrockCreateModel>({
   dockerImage: 'MSLX://DockerImage/Java/25',
   dockerPorts: '',
 });
+
+const restoringDraft = ref(true);
+
+function restoreBedrockDraft() {
+  const draft = readCreateInstanceDraft<{
+    currentStep: number;
+    selectedVersion: string;
+    portMappings: PortMapping[];
+    formData: BedrockCreateModel;
+  }>('bedrock');
+  const state = draft?.state;
+  if (!state) return;
+  if (state.formData) formData.value = { ...formData.value, ...state.formData };
+  if (typeof state.currentStep === 'number') currentStep.value = Math.max(0, Math.min(5, state.currentStep));
+  if (state.selectedVersion) selectedVersion.value = state.selectedVersion;
+  if (state.portMappings) portMappings.value = state.portMappings;
+}
+
+function persistBedrockDraft() {
+  if (restoringDraft.value) return;
+  saveCreateInstanceDraft('bedrock', {
+    currentStep: currentStep.value,
+    selectedVersion: selectedVersion.value,
+    portMappings: portMappings.value,
+    formData: { ...formData.value },
+  });
+}
+
+watch([formData, currentStep, selectedVersion, portMappings], persistBedrockDraft, { deep: true });
 
 // 添加动态端口方法
 const addPortMapping = () => {
@@ -148,6 +182,8 @@ watch(
 );
 
 onMounted(() => {
+  restoreBedrockDraft();
+  restoringDraft.value = false;
   // 如果是 Mac，强制锁定为 Docker 部署
   if (isMac.value) {
     formData.value.deployMode = 'docker';
@@ -383,6 +419,7 @@ const goToHome = () => {
     packageUrl: '',
     packageSha256: '',
   };
+  removeCreateInstanceDraft('bedrock');
 };
 </script>
 

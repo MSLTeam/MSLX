@@ -17,8 +17,22 @@ import { changeUrl } from '@/router';
 import { useInstanceListStore } from '@/store/modules/instance';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { parseMcVersion, getRecommendedJava } from './javaRecommendation';
+import {
+  readCreateInstanceDraft,
+  removeCreateInstanceDraft,
+  saveCreateInstanceDraft,
+} from '../createInstanceDraft';
 
-const { isUploading, uploadProgress, uploadedFileName, uploadedFileSize, startUpload, cancelUpload, removeUploadData } =
+const {
+  isUploading,
+  uploadProgress,
+  uploadedFileName,
+  uploadedFileSize,
+  startUpload,
+  cancelUpload,
+  removeUploadData,
+  restorePendingUpload,
+} =
   useFileUpload();
 
 const cancelCurrentUpload = () => {
@@ -149,9 +163,28 @@ const fetchJavaVersions = async (force: boolean = false) => {
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
+  restoreMcdrDraft();
+  restoringDraft.value = false;
   fetchPython();
   fetchJavaVersions();
+  const pending = await restorePendingUpload('core');
+  if (pending) {
+    currentStep.value = 2;
+    if (pending.file) {
+      try {
+        formData.value.core = pending.record.fileName;
+        formData.value.coreUrl = '';
+        formData.value.coreFileKey = await startUpload(pending.file, {
+          resumeRecord: pending.record,
+          fileHandle: pending.fileHandle,
+          kind: 'core',
+        });
+      } catch {
+        // 保留草稿，用户可以重新选择文件。
+      }
+    }
+  }
 });
 
 // handler
@@ -221,6 +254,81 @@ const maxMComputed = computed({
     formData.value.maxM = maxUnit.value === 'GB' ? Math.round(val * 1024) : val;
   },
 });
+
+const restoringDraft = ref(true);
+
+function restoreMcdrDraft() {
+  const draft = readCreateInstanceDraft<{
+    currentStep: number;
+    formData: CreateInstanceQucikModeModel;
+    downloadType: 'online' | 'manual' | 'custom';
+    pythonType: 'detected' | 'custom';
+    detectedPython: string;
+    customPython: string;
+    javaType: string;
+    selectedJavaVersion: string;
+    customJavaPath: string;
+    onlineGameVersion: string;
+    recommendedJavaVersion: string;
+    detectedGameVersion: string;
+    handlerType: 'auto' | 'manual';
+    deployMode: 'native' | 'docker';
+    dockerImageType: 'preset' | 'custom';
+    dockerImagePresetVersion: string;
+    minUnit: string;
+    maxUnit: string;
+  }>('mcdr');
+  const state = draft?.state;
+  if (!state) return;
+  if (state.formData) formData.value = { ...formData.value, ...state.formData };
+  if (typeof state.currentStep === 'number') currentStep.value = Math.max(0, Math.min(7, state.currentStep));
+  if (state.downloadType) downloadType.value = state.downloadType;
+  if (state.pythonType) pythonType.value = state.pythonType;
+  if (state.detectedPython) detectedPython.value = state.detectedPython;
+  if (state.customPython) customPython.value = state.customPython;
+  if (state.javaType) javaType.value = state.javaType;
+  if (state.selectedJavaVersion) selectedJavaVersion.value = state.selectedJavaVersion;
+  if (state.customJavaPath) customJavaPath.value = state.customJavaPath;
+  if (state.onlineGameVersion) onlineGameVersion.value = state.onlineGameVersion;
+  if (state.recommendedJavaVersion) recommendedJavaVersion.value = state.recommendedJavaVersion;
+  if (state.detectedGameVersion) detectedGameVersion.value = state.detectedGameVersion;
+  if (state.handlerType) handlerType.value = state.handlerType;
+  if (state.deployMode) deployMode.value = state.deployMode;
+  if (state.dockerImageType) dockerImageType.value = state.dockerImageType;
+  if (state.dockerImagePresetVersion) dockerImagePresetVersion.value = state.dockerImagePresetVersion;
+  if (state.minUnit) minUnit.value = state.minUnit;
+  if (state.maxUnit) maxUnit.value = state.maxUnit;
+}
+
+function persistMcdrDraft() {
+  if (restoringDraft.value) return;
+  saveCreateInstanceDraft('mcdr', {
+    currentStep: currentStep.value,
+    formData: { ...formData.value },
+    downloadType: downloadType.value,
+    pythonType: pythonType.value,
+    detectedPython: detectedPython.value,
+    customPython: customPython.value,
+    javaType: javaType.value,
+    selectedJavaVersion: selectedJavaVersion.value,
+    customJavaPath: customJavaPath.value,
+    onlineGameVersion: onlineGameVersion.value,
+    recommendedJavaVersion: recommendedJavaVersion.value,
+    detectedGameVersion: detectedGameVersion.value,
+    handlerType: handlerType.value,
+    deployMode: deployMode.value,
+    dockerImageType: dockerImageType.value,
+    dockerImagePresetVersion: dockerImagePresetVersion.value,
+    minUnit: minUnit.value,
+    maxUnit: maxUnit.value,
+  });
+}
+
+watch(
+  [formData, currentStep, downloadType, pythonType, detectedPython, customPython, javaType, selectedJavaVersion, customJavaPath, onlineGameVersion, recommendedJavaVersion, detectedGameVersion, handlerType, deployMode, dockerImageType, dockerImagePresetVersion, minUnit, maxUnit],
+  persistMcdrDraft,
+  { deep: true },
+);
 
 // 监听选择 Python 的状态变量 修改表单数据
 watch(
@@ -445,7 +553,7 @@ const onFileChange = async (event: Event) => {
   formData.value.coreFileKey = '';
 
   try {
-    const finalKey = await startUpload(file);
+    const finalKey = await startUpload(file, { kind: 'core' });
     formData.value.coreFileKey = finalKey;
     MessagePlugin.success('核心文件上传成功！');
 
@@ -640,6 +748,7 @@ const goToHome = () => {
 
   // 视图重置时同步清理 hook 历史状态
   removeUploadData();
+  removeCreateInstanceDraft('mcdr');
 };
 
 

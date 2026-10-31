@@ -20,10 +20,13 @@ import { useInstanceListStore } from '@/store/modules/instance';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { parseMcVersion, getRecommendedJava } from './javaRecommendation';
 import DockerImageSelector from '@/components/docker-image-selector/index.vue';
-import { getPageNodeId } from '@/utils/nodeTarget';
+import {
+  readCreateInstanceDraft,
+  removeCreateInstanceDraft,
+  saveCreateInstanceDraft,
+} from '../createInstanceDraft';
 
 const route = useRoute();
-const packageDraftStorageKey = `mslx-create-package-draft:${getPageNodeId()}`;
 
 const {
   isUploading,
@@ -33,7 +36,6 @@ const {
   startUpload,
   cancelUpload,
   restorePendingUpload,
-  resumeUpload,
   removeUploadData,
 } =
   useFileUpload();
@@ -50,6 +52,7 @@ const formRef = ref(null);
 const instanceListStore = useInstanceListStore();
 
 const currentStep = ref(0);
+const restoringDraft = ref(true);
 const isSubmitting = ref(false);
 
 const showHostFileSelector = ref(false);
@@ -180,6 +183,7 @@ onMounted(async () => {
   fetchJavaVersions();
   restorePackageDraft();
   initFromQuery();
+  restoringDraft.value = false;
   await restorePackageUpload();
 });
 
@@ -297,8 +301,6 @@ watch(
 );
 
 interface PackageCreateDraft {
-  updatedAt: number;
-  mode: 'package';
   currentStep: number;
   packageSourceType: string;
   downloadType: string;
@@ -319,50 +321,51 @@ interface PackageCreateDraft {
   networkMode: typeof networkMode.value;
   minUnit: string;
   maxUnit: string;
+  uploadedFileName: string;
+  uploadedFileSize: string;
   formData: CreateInstanceQucikModeModel;
 }
 
 function restorePackageDraft() {
   try {
-    const raw = localStorage.getItem(packageDraftStorageKey);
-    if (!raw) return;
-    const draft = JSON.parse(raw) as Partial<PackageCreateDraft>;
-    if (!draft.updatedAt || Date.now() - draft.updatedAt > 2 * 60 * 60 * 1000) {
-      localStorage.removeItem(packageDraftStorageKey);
-      return;
-    }
+    const draft = readCreateInstanceDraft<PackageCreateDraft>('package');
+    // 兼容此前直接写入的扁平结构，后续统一保存为 state 包裹结构。
+    const state = draft?.state ?? (draft as unknown as Partial<PackageCreateDraft> | null);
+    if (!state) return;
 
-    if (draft.formData) formData.value = { ...formData.value, ...draft.formData };
-    if (typeof draft.currentStep === 'number') currentStep.value = Math.max(0, Math.min(5, draft.currentStep));
-    if (draft.packageSourceType) packageSourceType.value = draft.packageSourceType;
-    if (draft.downloadType) downloadType.value = draft.downloadType;
-    if (draft.javaType) javaType.value = draft.javaType;
-    if (draft.selectedJavaVersion) selectedJavaVersion.value = draft.selectedJavaVersion;
-    if (draft.customJavaPath) customJavaPath.value = draft.customJavaPath;
-    if (draft.onlineGameVersion) onlineGameVersion.value = draft.onlineGameVersion;
-    if (draft.detectedJars) detectedJars.value = draft.detectedJars;
-    if (draft.detectedRoot !== undefined) detectedRoot.value = draft.detectedRoot;
-    if (draft.packageFormat) packageFormat.value = draft.packageFormat;
-    if (draft.detectedScripts) detectedScripts.value = draft.detectedScripts;
-    if (draft.selectedScript) selectedScript.value = draft.selectedScript;
-    if (typeof draft.useScriptMode === 'boolean') useScriptMode.value = draft.useScriptMode;
-    if (draft.metadataJavaVersion !== undefined) metadataJavaVersion.value = draft.metadataJavaVersion;
-    if (draft.dockerImageType) dockerImageType.value = draft.dockerImageType;
-    if (draft.dockerImagePresetVersion) dockerImagePresetVersion.value = draft.dockerImagePresetVersion;
-    if (draft.localPortList) localPortList.value = draft.localPortList;
-    if (draft.networkMode) networkMode.value = draft.networkMode;
-    if (draft.minUnit) minUnit.value = draft.minUnit;
-    if (draft.maxUnit) maxUnit.value = draft.maxUnit;
+    if (state.formData) formData.value = { ...formData.value, ...state.formData };
+    // 创建任务本身依赖 SignalR，刷新后无法直接恢复运行态；回到确认页保留全部配置，避免出现空白步骤。
+    if (typeof state.currentStep === 'number') currentStep.value = Math.max(0, Math.min(5, state.currentStep));
+    if (state.packageSourceType) packageSourceType.value = state.packageSourceType;
+    if (state.downloadType) downloadType.value = state.downloadType;
+    if (state.javaType) javaType.value = state.javaType;
+    if (state.selectedJavaVersion) selectedJavaVersion.value = state.selectedJavaVersion;
+    if (state.customJavaPath) customJavaPath.value = state.customJavaPath;
+    if (state.onlineGameVersion) onlineGameVersion.value = state.onlineGameVersion;
+    if (state.detectedJars) detectedJars.value = state.detectedJars;
+    if (state.detectedRoot !== undefined) detectedRoot.value = state.detectedRoot;
+    if (state.packageFormat) packageFormat.value = state.packageFormat;
+    if (state.detectedScripts) detectedScripts.value = state.detectedScripts;
+    if (state.selectedScript) selectedScript.value = state.selectedScript;
+    if (typeof state.useScriptMode === 'boolean') useScriptMode.value = state.useScriptMode;
+    if (state.metadataJavaVersion !== undefined) metadataJavaVersion.value = state.metadataJavaVersion;
+    if (state.dockerImageType) dockerImageType.value = state.dockerImageType;
+    if (state.dockerImagePresetVersion) dockerImagePresetVersion.value = state.dockerImagePresetVersion;
+    if (state.localPortList) localPortList.value = state.localPortList;
+    if (state.networkMode) networkMode.value = state.networkMode;
+    if (state.minUnit) minUnit.value = state.minUnit;
+    if (state.maxUnit) maxUnit.value = state.maxUnit;
+    if (state.uploadedFileName) uploadedFileName.value = state.uploadedFileName;
+    if (state.uploadedFileSize) uploadedFileSize.value = state.uploadedFileSize;
   } catch {
-    localStorage.removeItem(packageDraftStorageKey);
+    removeCreateInstanceDraft('package');
   }
 }
 
 function persistPackageDraft() {
+  if (restoringDraft.value) return;
   try {
-    const draft: PackageCreateDraft = {
-      updatedAt: Date.now(),
-      mode: 'package',
+    saveCreateInstanceDraft('package', {
       currentStep: currentStep.value,
       packageSourceType: packageSourceType.value,
       downloadType: downloadType.value,
@@ -383,9 +386,10 @@ function persistPackageDraft() {
       networkMode: networkMode.value,
       minUnit: minUnit.value,
       maxUnit: maxUnit.value,
+      uploadedFileName: uploadedFileName.value,
+      uploadedFileSize: uploadedFileSize.value,
       formData: { ...formData.value },
-    };
-    localStorage.setItem(packageDraftStorageKey, JSON.stringify(draft));
+    });
   } catch {
     // 本地存储不可用时不影响上传任务本身。
   }
@@ -414,6 +418,8 @@ watch(
     networkMode,
     minUnit,
     maxUnit,
+    uploadedFileName,
+    uploadedFileSize,
   ],
   () => persistPackageDraft(),
   { deep: true },
@@ -690,10 +696,21 @@ const onFileChange = async (event: Event) => {
   }
 };
 
+const formatUploadFileSize = (bytes: number) => {
+  if (bytes === 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const unitIndex = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  return `${parseFloat((bytes / 1024 ** unitIndex).toFixed(2))} ${units[unitIndex]}`;
+};
+
 const restorePackageUpload = async () => {
   if (packageSourceType.value !== 'upload') return;
   const pending = await restorePendingUpload('package');
   if (!pending) return;
+
+  // 没有文件句柄时仍保留文件信息，用户重新选择同一文件后可继续原会话。
+  uploadedFileName.value = pending.record.fileName;
+  uploadedFileSize.value = formatUploadFileSize(pending.record.fileSize);
 
   // 刷新后回到整合包上传步骤，保留用户可以继续选择或恢复文件的入口。
   currentStep.value = 1;
@@ -1010,7 +1027,7 @@ const startSignalRConnection = async (serverId: string) => {
 
     if (prog === 100) {
       MessagePlugin.success('服务器创建成功！');
-      localStorage.removeItem(packageDraftStorageKey);
+      removeCreateInstanceDraft('package');
       hubConnection.value?.stop();
       isCreating.value = false;
       isSuccess.value = true;
@@ -1068,7 +1085,7 @@ const goToHome = () => {
   javaType.value = 'online';
   onlineGameVersion.value = '';
 
-  localStorage.removeItem(packageDraftStorageKey);
+  removeCreateInstanceDraft('package');
   removeUploadData();
 };
 </script>
