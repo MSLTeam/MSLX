@@ -15,6 +15,31 @@ public class TempFileCleanupService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        // 上传凭证保存在内存中，Daemon 重启后不会恢复；对应的临时分片也必须一起清理，
+        // 避免重启后遗留文件被误认为是可恢复的上传任务。
+        try
+        {
+            if (Directory.Exists(_tempPath))
+            {
+                foreach (var file in Directory.GetFiles(_tempPath))
+                {
+                    try
+                    {
+                        System.IO.File.Delete(file);
+                        _logger.LogInformation("Daemon 启动时清理上传临时文件: {File}", Path.GetFileName(file));
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Daemon 启动时无法清理上传临时文件: {File}", Path.GetFileName(file));
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Daemon 启动时清理上传临时文件出错");
+        }
+
         // 创建一个 1小时 的定时器
         using var timer = new PeriodicTimer(TimeSpan.FromHours(1));
 

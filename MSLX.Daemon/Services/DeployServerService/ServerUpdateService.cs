@@ -1,6 +1,7 @@
 using Downloader;
 using Microsoft.AspNetCore.SignalR;
 using MSLX.Daemon.Hubs;
+using MSLX.Daemon.Services;
 using MSLX.Daemon.Services.DeployServerService;
 using MSLX.Daemon.Utils.BackgroundTasks;
 using MSLX.Daemon.Utils;
@@ -16,19 +17,22 @@ public class ServerUpdateService : BackgroundService
     private readonly IHubContext<UpdateProgressHub> _hubContext;
     private readonly ServerDeploymentService _deployer; 
     private readonly BackgroundTaskManager _taskManager;
+    private readonly UploadSessionService _uploadSessions;
 
     public ServerUpdateService(
         ILogger<ServerUpdateService> logger,
         IBackgroundTaskQueue<UpdateServerTask> taskQueue,
         IHubContext<UpdateProgressHub> hubContext,
         ServerDeploymentService deployer,
-        BackgroundTaskManager taskManager)
+        BackgroundTaskManager taskManager,
+        UploadSessionService uploadSessions)
     {
         _logger = logger;
         _taskQueue = taskQueue;
         _hubContext = hubContext;
         _deployer = deployer;
         _taskManager = taskManager;
+        _uploadSessions = uploadSessions;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -79,6 +83,11 @@ public class ServerUpdateService : BackgroundService
         var req = task.Request;
         string sid = task.ServerId;
         string bgTaskId = task.BackgroundTaskId;
+
+        if (!string.IsNullOrWhiteSpace(req.CoreFileKey) && !_uploadSessions.IsOwned(req.CoreFileKey, task.UserId))
+        {
+            throw new UnauthorizedAccessException("上传会话不存在、已过期或无权访问");
+        }
 
         // 定义回调
         ServerDeploymentService.ReportProgress report = async (msg, progress, isErr, ex) =>
@@ -187,6 +196,7 @@ public class ServerUpdateService : BackgroundService
                 string coreName = server.Core;
                 
                 await _deployer.DeployCoreAsync(sid, server.Base, coreName, req.CoreFileKey, req.CoreUrl, req.CoreSha256, report,null);
+                if (!string.IsNullOrWhiteSpace(req.CoreFileKey)) _uploadSessions.Remove(req.CoreFileKey);
             }
 
             // NeoForge 安装

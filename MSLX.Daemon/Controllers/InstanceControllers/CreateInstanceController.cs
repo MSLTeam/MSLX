@@ -20,17 +20,20 @@ public class CreateInstanceController : ControllerBase
     private readonly IInstanceLifecycleService _lifecycleService;
     private readonly CreationTaskTracker _taskTracker;
     private readonly BackgroundTaskManager _taskManager;
+    private readonly UploadSessionService _uploadSessions;
 
     public CreateInstanceController(
         IBackgroundTaskQueue<CreateServerTask> taskQueue, 
         IInstanceLifecycleService lifecycleService, 
         CreationTaskTracker taskTracker,
-        BackgroundTaskManager taskManager)
+        BackgroundTaskManager taskManager,
+        UploadSessionService uploadSessions)
     {
         _taskQueue = taskQueue;
         _lifecycleService = lifecycleService;
         _taskTracker = taskTracker;
         _taskManager = taskManager;
+        _uploadSessions = uploadSessions;
     }
 
     [HttpPost("createServer")]
@@ -38,6 +41,12 @@ public class CreateInstanceController : ControllerBase
     {
         var serverId = IConfigBase.ServerList.GenerateServerId();
         var userId = User?.FindFirst("UserId")?.Value ?? "";
+
+        if ((!string.IsNullOrWhiteSpace(request.coreFileKey) && !_uploadSessions.IsOwned(request.coreFileKey, userId)) ||
+            (!string.IsNullOrWhiteSpace(request.packageFileKey) && !_uploadSessions.IsOwned(request.packageFileKey, userId)))
+        {
+            return BadRequest(new ApiResponse<object> { Code = 403, Message = "上传会话不存在、已过期或无权访问" });
+        }
 
         // 创建全局后台任务
         var (bgTask, _) = _taskManager.CreateTask(

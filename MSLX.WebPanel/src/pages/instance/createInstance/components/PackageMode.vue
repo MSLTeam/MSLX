@@ -20,11 +20,30 @@ import { useInstanceListStore } from '@/store/modules/instance';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { parseMcVersion, getRecommendedJava } from './javaRecommendation';
 import DockerImageSelector from '@/components/docker-image-selector/index.vue';
+import {
+  readCreateInstanceDraft,
+  removeCreateInstanceDraft,
+  saveCreateInstanceDraft,
+} from '../createInstanceDraft';
 
 const route = useRoute();
 
-const { isUploading, uploadProgress, uploadedFileName, uploadedFileSize, startUpload, removeUploadData } =
+const {
+  isUploading,
+  uploadProgress,
+  uploadedFileName,
+  uploadedFileSize,
+  startUpload,
+  cancelUpload,
+  restorePendingUpload,
+  removeUploadData,
+} =
   useFileUpload();
+
+const cancelCurrentUpload = async () => {
+  await cancelUpload();
+  MessagePlugin.info('已取消当前上传，可以重新选择文件');
+};
 
 // 状态管理
 const userStore = useUserStore();
@@ -33,6 +52,7 @@ const formRef = ref(null);
 const instanceListStore = useInstanceListStore();
 
 const currentStep = ref(0);
+const restoringDraft = ref(true);
 const isSubmitting = ref(false);
 
 const showHostFileSelector = ref(false);
@@ -159,9 +179,12 @@ const initFromQuery = () => {
   }
 };
 
-onMounted(() => {
+onMounted(async () => {
   fetchJavaVersions();
+  restorePackageDraft();
   initFromQuery();
+  restoringDraft.value = false;
+  await restorePackageUpload();
 });
 
 watch(() => route.query, () => {
@@ -275,6 +298,131 @@ watch(
     }
   },
   { deep: true, immediate: true },
+);
+
+interface PackageCreateDraft {
+  currentStep: number;
+  packageSourceType: string;
+  downloadType: string;
+  javaType: string;
+  selectedJavaVersion: string;
+  customJavaPath: string;
+  onlineGameVersion: string;
+  detectedJars: string[];
+  detectedRoot: string;
+  packageFormat: 'zip' | 'mrpack' | '';
+  detectedScripts: string[];
+  selectedScript: string;
+  useScriptMode: boolean;
+  metadataJavaVersion: string | null;
+  dockerImageType: string;
+  dockerImagePresetVersion: string;
+  localPortList: typeof localPortList.value;
+  networkMode: typeof networkMode.value;
+  minUnit: string;
+  maxUnit: string;
+  uploadedFileName: string;
+  uploadedFileSize: string;
+  formData: CreateInstanceQucikModeModel;
+}
+
+function restorePackageDraft() {
+  try {
+    const draft = readCreateInstanceDraft<PackageCreateDraft>('package');
+    // 兼容此前直接写入的扁平结构，后续统一保存为 state 包裹结构。
+    const state = draft?.state ?? (draft as unknown as Partial<PackageCreateDraft> | null);
+    if (!state) return;
+
+    if (state.formData) formData.value = { ...formData.value, ...state.formData };
+    // 创建任务本身依赖 SignalR，刷新后无法直接恢复运行态；回到确认页保留全部配置，避免出现空白步骤。
+    if (typeof state.currentStep === 'number') currentStep.value = Math.max(0, Math.min(5, state.currentStep));
+    if (state.packageSourceType) packageSourceType.value = state.packageSourceType;
+    if (state.downloadType) downloadType.value = state.downloadType;
+    if (state.javaType) javaType.value = state.javaType;
+    if (state.selectedJavaVersion) selectedJavaVersion.value = state.selectedJavaVersion;
+    if (state.customJavaPath) customJavaPath.value = state.customJavaPath;
+    if (state.onlineGameVersion) onlineGameVersion.value = state.onlineGameVersion;
+    if (state.detectedJars) detectedJars.value = state.detectedJars;
+    if (state.detectedRoot !== undefined) detectedRoot.value = state.detectedRoot;
+    if (state.packageFormat) packageFormat.value = state.packageFormat;
+    if (state.detectedScripts) detectedScripts.value = state.detectedScripts;
+    if (state.selectedScript) selectedScript.value = state.selectedScript;
+    if (typeof state.useScriptMode === 'boolean') useScriptMode.value = state.useScriptMode;
+    if (state.metadataJavaVersion !== undefined) metadataJavaVersion.value = state.metadataJavaVersion;
+    if (state.dockerImageType) dockerImageType.value = state.dockerImageType;
+    if (state.dockerImagePresetVersion) dockerImagePresetVersion.value = state.dockerImagePresetVersion;
+    if (state.localPortList) localPortList.value = state.localPortList;
+    if (state.networkMode) networkMode.value = state.networkMode;
+    if (state.minUnit) minUnit.value = state.minUnit;
+    if (state.maxUnit) maxUnit.value = state.maxUnit;
+    if (state.uploadedFileName) uploadedFileName.value = state.uploadedFileName;
+    if (state.uploadedFileSize) uploadedFileSize.value = state.uploadedFileSize;
+  } catch {
+    removeCreateInstanceDraft('package');
+  }
+}
+
+function persistPackageDraft() {
+  if (restoringDraft.value) return;
+  try {
+    saveCreateInstanceDraft('package', {
+      currentStep: currentStep.value,
+      packageSourceType: packageSourceType.value,
+      downloadType: downloadType.value,
+      javaType: javaType.value,
+      selectedJavaVersion: selectedJavaVersion.value,
+      customJavaPath: customJavaPath.value,
+      onlineGameVersion: onlineGameVersion.value,
+      detectedJars: detectedJars.value,
+      detectedRoot: detectedRoot.value,
+      packageFormat: packageFormat.value,
+      detectedScripts: detectedScripts.value,
+      selectedScript: selectedScript.value,
+      useScriptMode: useScriptMode.value,
+      metadataJavaVersion: metadataJavaVersion.value,
+      dockerImageType: dockerImageType.value,
+      dockerImagePresetVersion: dockerImagePresetVersion.value,
+      localPortList: localPortList.value,
+      networkMode: networkMode.value,
+      minUnit: minUnit.value,
+      maxUnit: maxUnit.value,
+      uploadedFileName: uploadedFileName.value,
+      uploadedFileSize: uploadedFileSize.value,
+      formData: { ...formData.value },
+    });
+  } catch {
+    // 本地存储不可用时不影响上传任务本身。
+  }
+}
+
+watch(
+  [
+    formData,
+    currentStep,
+    packageSourceType,
+    downloadType,
+    javaType,
+    selectedJavaVersion,
+    customJavaPath,
+    onlineGameVersion,
+    detectedJars,
+    detectedRoot,
+    packageFormat,
+    detectedScripts,
+    selectedScript,
+    useScriptMode,
+    metadataJavaVersion,
+    dockerImageType,
+    dockerImagePresetVersion,
+    localPortList,
+    networkMode,
+    minUnit,
+    maxUnit,
+    uploadedFileName,
+    uploadedFileSize,
+  ],
+  () => persistPackageDraft(),
+  { deep: true },
 );
 
 const addPortMapping = () => {
@@ -475,15 +623,7 @@ const nextStep = async () => {
   }
 };
 
-const triggerFileSelect = () => {
-  uploadInputRef.value?.click();
-};
-
-// 文件选择
-const onFileChange = async (event: Event) => {
-  const input = event.target as HTMLInputElement;
-  if (!input.files || input.files.length === 0) return;
-
+const processSelectedPackageFile = async (file: File, fileHandle?: any, resumeRecord?: any) => {
   // 清理旧状态的云端文件
   if (formData.value.packageFileKey) {
     try {
@@ -499,10 +639,8 @@ const onFileChange = async (event: Event) => {
   detectedRoot.value = '';
   packageFormat.value = '';
 
-  const file = input.files[0];
-
   try {
-    const finalKey = await startUpload(file);
+    const finalKey = await startUpload(file, { fileHandle, resumeRecord, kind: 'package' });
 
     formData.value.packageFileKey = finalKey;
     MessagePlugin.success('上传成功，正在分析整合包内容...');
@@ -515,9 +653,79 @@ const onFileChange = async (event: Event) => {
       MessagePlugin.error(`上传失败: ${error.message || '未知错误'}`);
       formData.value.packageFileKey = '';
     }
+  }
+};
+
+const triggerFileSelect = async () => {
+  const picker = (window as any).showOpenFilePicker;
+  if (typeof picker === 'function') {
+    try {
+      const handles = await picker({
+        multiple: false,
+        types: [
+          {
+            description: '整合包文件',
+            accept: {
+              'application/zip': ['.zip'],
+              'application/octet-stream': ['.mrpack'],
+            },
+          },
+        ],
+      });
+      const handle = handles?.[0];
+      if (handle) {
+        await processSelectedPackageFile(await handle.getFile(), handle);
+      }
+      return;
+    } catch (error: any) {
+      if (error?.name === 'AbortError') return;
+      console.warn('File System Access API 选择失败，将回退到文件输入框:', error);
+    }
+  }
+  uploadInputRef.value?.click();
+};
+
+// 文件选择
+const onFileChange = async (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  if (!input.files || input.files.length === 0) return;
+  try {
+    await processSelectedPackageFile(input.files[0]);
   } finally {
     input.value = '';
   }
+};
+
+const formatUploadFileSize = (bytes: number) => {
+  if (bytes === 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  const unitIndex = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  return `${parseFloat((bytes / 1024 ** unitIndex).toFixed(2))} ${units[unitIndex]}`;
+};
+
+const restorePackageUpload = async () => {
+  if (packageSourceType.value !== 'upload') return;
+  const pending = await restorePendingUpload('package');
+  if (!pending) return;
+
+  // 没有文件句柄时仍保留文件信息，用户重新选择同一文件后可继续原会话。
+  uploadedFileName.value = pending.record.fileName;
+  uploadedFileSize.value = formatUploadFileSize(pending.record.fileSize);
+
+  // 刷新后回到整合包上传步骤，保留用户可以继续选择或恢复文件的入口。
+  currentStep.value = 1;
+
+  if (pending.file && !pending.permissionRequired) {
+    try {
+      MessagePlugin.info(`检测到未完成的上传任务，正在恢复 ${pending.record.fileName}...`);
+      await processSelectedPackageFile(pending.file, pending.fileHandle, pending.record);
+    } catch (error) {
+      console.warn('自动恢复上传任务失败:', error);
+    }
+    return;
+  }
+
+  MessagePlugin.info(`检测到未完成的上传任务，请重新选择 ${pending.record.fileName} 继续上传`);
 };
 
 // 处理导入信息
@@ -819,6 +1027,7 @@ const startSignalRConnection = async (serverId: string) => {
 
     if (prog === 100) {
       MessagePlugin.success('服务器创建成功！');
+      removeCreateInstanceDraft('package');
       hubConnection.value?.stop();
       isCreating.value = false;
       isSuccess.value = true;
@@ -876,6 +1085,7 @@ const goToHome = () => {
   javaType.value = 'online';
   onlineGameVersion.value = '';
 
+  removeCreateInstanceDraft('package');
   removeUploadData();
 };
 </script>
@@ -1755,14 +1965,23 @@ const goToHome = () => {
             <div class="mt-auto pt-6 border-t border-zinc-200 dark:border-zinc-700 flex items-center justify-between">
               <t-button v-if="currentStep > 0 && currentStep < 6" theme="default" @click="prevStep">上一步</t-button>
               <div v-else></div>
-              <t-button
-                v-if="currentStep < 5"
-                type="button"
-                theme="primary"
-                :loading="isUploading || isCheckingPackage"
-                @click="nextStep"
-                >下一步</t-button
-              >
+              <div v-if="currentStep < 5" class="flex items-center gap-3">
+                <t-button
+                  v-if="currentStep === 1 && isUploading"
+                  type="button"
+                  theme="danger"
+                  variant="outline"
+                  @click="cancelCurrentUpload"
+                  >取消上传</t-button
+                >
+                <t-button
+                  type="button"
+                  theme="primary"
+                  :loading="isUploading || isCheckingPackage"
+                  @click="nextStep"
+                  >下一步</t-button
+                >
+              </div>
               <t-button v-if="currentStep === 5" theme="primary" type="submit" :loading="isSubmitting"
                 >提交创建</t-button
               >

@@ -18,15 +18,18 @@ public class InstanceSettingsController : ControllerBase
     private readonly IInstanceLifecycleService _lifecycleService;
     private readonly IBackgroundTaskQueue<UpdateServerTask> _updateQueue;
     private readonly BackgroundTaskManager _taskManager;
+    private readonly UploadSessionService _uploadSessions;
 
     public InstanceSettingsController(
         IInstanceLifecycleService lifecycleService,
         IBackgroundTaskQueue<UpdateServerTask> updateQueue,
-        BackgroundTaskManager taskManager)
+        BackgroundTaskManager taskManager,
+        UploadSessionService uploadSessions)
     {
         _lifecycleService = lifecycleService;
         _updateQueue = updateQueue;
         _taskManager = taskManager;
+        _uploadSessions = uploadSessions;
     }
 
     [HttpGet("general/{id}")]
@@ -70,6 +73,12 @@ public class InstanceSettingsController : ControllerBase
         var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound("服务器不存在");
 
+        var userId = User?.FindFirst("UserId")?.Value ?? "";
+        if (!string.IsNullOrWhiteSpace(request.CoreFileKey) && !_uploadSessions.IsOwned(request.CoreFileKey, userId))
+        {
+            return BadRequest(new ApiResponse<object> { Code = 403, Message = "上传会话不存在、已过期或无权访问" });
+        }
+
         // 是否存在耗时操作
         bool needDownloadCore = !string.IsNullOrEmpty(request.CoreUrl) || !string.IsNullOrEmpty(request.CoreFileKey);
         bool needDownloadJava = IsJavaNeedDownload(request.Java);
@@ -91,7 +100,6 @@ public class InstanceSettingsController : ControllerBase
                 });
             }
             
-            var userId = User?.FindFirst("UserId")?.Value ?? "";
             var (bgTask, _) = _taskManager.CreateTask(
                 userId, 
                 id, 

@@ -1,6 +1,42 @@
 import { ref, onUnmounted } from 'vue';
 import { getPageNodeId } from '@/utils/nodeTarget';
-import { initUpload, uploadChunk, finishUpload, deleteUpload } from '@/api/files';
+import {
+  deleteUpload,
+  finishUpload,
+  getUploadStatus,
+  initUpload,
+  rememberUploadTarget,
+  uploadChunk,
+} from '@/api/files';
+import {
+  computeFastFileFingerprint,
+  computeFileBlake3WithOptions,
+  computeChunkCrc32c,
+  deleteUploadResumeRecord,
+  getUploadResumeRecords,
+  saveUploadResumeRecord,
+  type UploadFileHandleLike,
+  type UploadResumeRecord,
+} from '@/utils/uploadResume';
+
+const LARGE_FILE_SIZE = 200 * 1024 * 1024;
+const LARGE_CHUNK_SIZE = 30 * 1024 * 1024;
+const SMALL_CHUNK_SIZE = 10 * 1024 * 1024;
+const MAX_RETRIES = 5;
+const CHUNK_WATCHDOG_MS = 60 * 1000;
+
+export interface UploadStartOptions {
+  fileHandle?: UploadFileHandleLike;
+  resumeRecord?: UploadResumeRecord;
+  kind?: 'package' | 'core';
+}
+
+export interface PendingUploadResume {
+  record: UploadResumeRecord;
+  file?: File;
+  fileHandle?: UploadFileHandleLike;
+  permissionRequired: boolean;
+}
 
 // 动态计算并发数
 function calcConcurrency(speedMBps: number): number {
@@ -14,7 +50,20 @@ function calcConcurrency(speedMBps: number): number {
 function backoffDelay(attempt: number): Promise<void> {
   const base = Math.min(30_000, 500 * 2 ** attempt);
   const jitter = Math.random() * base * 0.3;
-  return new Promise((r) => setTimeout(r, base + jitter));
+  return new Promise((resolve) => setTimeout(resolve, base + jitter));
+}
+
+function getHttpStatus(error: any): number | undefined {
+  const responseCode = error?.responseData?.code ?? error?.response?.data?.code;
+  return typeof responseCode === 'number'
+    ? responseCode
+    : error?.status ?? error?.response?.status;
+}
+
+function isRetryableUploadError(error: any): boolean {
+  const status = getHttpStatus(error);
+  if (status === undefined) return true;
+  return status === 408 || status === 422 || status === 425 || status === 429 || status >= 500;
 }
 
 export function useFileUpload() {
@@ -26,6 +75,8 @@ export function useFileUpload() {
   const fileKey = ref(''); // 成功后的文件 Key
 
   let abortController: AbortController | null = null;
+  let activeUploadId = '';
+  let activeResumeRecord: UploadResumeRecord | null = null;
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 B';
@@ -35,11 +86,10 @@ export function useFileUpload() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const startUpload = async (file: File): Promise<string> => {
-    if (abortController) {
-      abortController.abort();
-    }
-    abortController = new AbortController();
+  const startUpload = async (file: File, options: UploadStartOptions = {}): Promise<string> => {
+    abortController?.abort();
+    const currentAbortController = new AbortController();
+    abortController = currentAbortController;
 
     isUploading.value = true;
     uploadProgress.value = 0;
@@ -47,18 +97,56 @@ export function useFileUpload() {
     uploadedFileSize.value = formatFileSize(file.size);
     fileKey.value = '';
 
+    const failBeforeUpload = (error: unknown): never => {
+      if (abortController === currentAbortController) {
+        abortController = null;
+        isUploading.value = false;
+      }
+      if (currentAbortController.signal.aborted || (error as any)?.message === '已取消') {
+        throw new Error('已取消');
+      }
+      throw error;
+    };
+
+    const chunkSize = file.size > LARGE_FILE_SIZE ? LARGE_CHUNK_SIZE : SMALL_CHUNK_SIZE;
+    const totalChunks = Math.ceil(file.size / chunkSize);
+    let fingerprint: string;
+    try {
+      fingerprint = await computeFastFileFingerprint(file);
+    } catch (error) {
+      return failBeforeUpload(error);
+    }
+    const uploadNodeId = options.resumeRecord?.nodeId || targetNodeId;
+    const receivedChunks = new Set<number>();
+    const activeChunkProgressMap = new Map<number, number>();
+    const chunkIndices = Array.from({ length: totalChunks }, (_, index) => index);
     let committedBytes = 0;
     let currentSpeedMBps = 0;
-    const startTime = Date.now();
-
-    const isLargeFile = file.size > 200 * 1024 * 1024;
-    const chunkSize = isLargeFile ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
-    const totalChunks = Math.ceil(file.size / chunkSize);
-    const maxRetries = 5;
-
-    const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i);
-    const activeChunkProgressMap = new Map<number, number>();
     let lastUpdateTime = 0;
+    let statusRecoveryRequested = false;
+    const startTime = Date.now();
+    let resumeRecord = options.resumeRecord;
+    let fileBlake3 = resumeRecord?.blake3;
+    let fileBlake3Promise: Promise<string> | null = null;
+
+    if (!resumeRecord) {
+      const existingRecords = await getUploadResumeRecords(targetNodeId).catch(() => []);
+      resumeRecord = existingRecords.find(
+        (record) =>
+          !record.cancelledAt &&
+          record.fileName === file.name &&
+          record.fileSize === file.size &&
+          record.lastModified === file.lastModified &&
+          record.fingerprint === fingerprint &&
+          record.chunkSize === chunkSize &&
+          record.totalChunks === totalChunks,
+      );
+    }
+
+    const chunkBytes = (index: number) => {
+      const start = index * chunkSize;
+      return Math.max(0, Math.min(file.size, start + chunkSize) - start);
+    };
 
     const updateProgress = () => {
       const now = Date.now();
@@ -66,140 +154,412 @@ export function useFileUpload() {
       lastUpdateTime = now;
 
       let activeLoadedBytes = 0;
-      for (const loaded of activeChunkProgressMap.values()) {
-        activeLoadedBytes += loaded;
-      }
+      for (const loaded of activeChunkProgressMap.values()) activeLoadedBytes += loaded;
       const totalLoadedBytes = committedBytes + activeLoadedBytes;
-      const percent = Math.min((totalLoadedBytes / file.size) * 98, 98);
-
+      const percent = file.size === 0 ? 98 : Math.min((totalLoadedBytes / file.size) * 98, 98);
       uploadProgress.value = Math.max(uploadProgress.value, Number(percent.toFixed(1)));
 
       const elapsed = (now - startTime) / 1000;
-      if (elapsed > 0) {
-        currentSpeedMBps = totalLoadedBytes / 1024 / 1024 / elapsed;
+      if (elapsed > 0) currentSpeedMBps = totalLoadedBytes / 1024 / 1024 / elapsed;
+    };
+
+    const markReceived = (index: number) => {
+      if (receivedChunks.has(index)) return;
+      receivedChunks.add(index);
+      committedBytes += chunkBytes(index);
+      activeChunkProgressMap.delete(index);
+      updateProgress();
+    };
+
+    const persistResumeRecord = async () => {
+      if (!activeResumeRecord) return;
+      activeResumeRecord.receivedChunks = Array.from(receivedChunks).sort((a, b) => a - b);
+      activeResumeRecord.updatedAt = Date.now();
+      try {
+        await saveUploadResumeRecord(activeResumeRecord);
+      } catch {
+        // 某些浏览器无法结构化克隆 FileSystemFileHandle，保留元数据供重新选择文件恢复。
+        if (activeResumeRecord.fileHandle) {
+          activeResumeRecord.fileHandle = undefined;
+          await saveUploadResumeRecord(activeResumeRecord).catch(() => {});
+        }
       }
     };
 
+    const rememberComputedBlake3 = async (blake3: string) => {
+      fileBlake3 = blake3;
+      if (activeResumeRecord && !activeResumeRecord.blake3) {
+        activeResumeRecord.blake3 = blake3;
+        await persistResumeRecord();
+      }
+    };
+
+    if (!fileBlake3) {
+      fileBlake3Promise = computeFileBlake3WithOptions(file, {
+        signal: currentAbortController.signal,
+        // 哈希在 Worker 中后台计算，不参与上传进度显示。
+      });
+      // 上传可能先失败或被取消，提前挂载 rejection handler，避免后台哈希产生未处理异常。
+      fileBlake3Promise.catch(() => {});
+    }
+
+    if (currentAbortController.signal.aborted) {
+      return failBeforeUpload(new Error('已取消'));
+    }
+
+    const syncStatus = async (uploadId: string) => {
+      const status = await getUploadStatus(uploadId, uploadNodeId);
+      for (const index of status.receivedChunks || []) {
+        if (index >= 0 && index < totalChunks) markReceived(index);
+      }
+      await persistResumeRecord();
+      statusRecoveryRequested = false;
+      return status;
+    };
+
+    const onlineHandler = () => {
+      statusRecoveryRequested = true;
+    };
+    window.addEventListener('online', onlineHandler);
+
     try {
-      const initRes = await initUpload(targetNodeId);
-      const uploadId = (initRes as any).uploadId;
+      if (currentAbortController.signal.aborted) throw new Error('已取消');
+      let uploadId = resumeRecord?.uploadId || '';
+
+      if (uploadId) {
+        rememberUploadTarget(uploadId, uploadNodeId);
+        activeResumeRecord = resumeRecord || null;
+        if (activeResumeRecord && options.kind && !activeResumeRecord.kind) {
+          activeResumeRecord.kind = options.kind;
+        }
+        if (fileBlake3Promise) void fileBlake3Promise.then(rememberComputedBlake3).catch(() => {});
+        try {
+          await syncStatus(uploadId);
+        } catch (error: any) {
+          const status = getHttpStatus(error);
+          if (status === 403 || status === 404) {
+            await deleteUploadResumeRecord(resumeRecord!.key).catch(() => {});
+            resumeRecord = undefined;
+            activeResumeRecord = null;
+            uploadId = '';
+          } else {
+            throw error;
+          }
+        }
+      }
+
+      if (!uploadId) {
+        const initRes = await initUpload(uploadNodeId, {
+          fileName: file.name,
+          fileSize: file.size,
+          lastModified: file.lastModified,
+          chunkSize,
+          totalChunks,
+          fingerprint,
+        });
+        if (currentAbortController.signal.aborted) throw new Error('已取消');
+        uploadId = (initRes as any).uploadId;
+        rememberUploadTarget(uploadId, uploadNodeId);
+        activeResumeRecord = {
+          key: `${uploadNodeId}:${fingerprint}`,
+          uploadId,
+          nodeId: uploadNodeId,
+          fileName: file.name,
+          fileSize: file.size,
+          lastModified: file.lastModified,
+          chunkSize,
+          totalChunks,
+          fingerprint,
+          kind: options.kind,
+          blake3: fileBlake3,
+          receivedChunks: [],
+          updatedAt: Date.now(),
+          fileHandle: options.fileHandle,
+        };
+        if (fileBlake3Promise) void fileBlake3Promise.then(rememberComputedBlake3).catch(() => {});
+        for (const index of (initRes as any).receivedChunks || []) {
+          if (index >= 0 && index < totalChunks) markReceived(index);
+        }
+        await persistResumeRecord();
+      } else if (options.fileHandle && activeResumeRecord) {
+        activeResumeRecord.fileHandle = options.fileHandle;
+        await persistResumeRecord();
+      }
+
+      activeUploadId = uploadId;
       if (!uploadId) throw new Error('无法获取上传凭证');
 
       const processChunk = async (index: number) => {
-        if (abortController?.signal.aborted) throw new Error('已取消');
-
-        const start = index * chunkSize;
-        const end = Math.min(file.size, start + chunkSize);
-        const chunkBlob = file.slice(start, end);
+        if (currentAbortController.signal.aborted) throw new Error('已取消');
+        const chunkBlob = file.slice(index * chunkSize, Math.min(file.size, (index + 1) * chunkSize));
+        const chunkCrc32c = await computeChunkCrc32c(chunkBlob, { signal: currentAbortController.signal });
         let lastError: any;
 
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-          if (abortController?.signal.aborted) throw new Error('已取消');
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+          if (currentAbortController.signal.aborted) throw new Error('已取消');
+
+          const attemptController = new AbortController();
+          const abortAttempt = () => attemptController.abort();
+          currentAbortController.signal.addEventListener('abort', abortAttempt, { once: true });
+          let watchdogTimer = window.setTimeout(() => attemptController.abort(), CHUNK_WATCHDOG_MS);
+          const touchWatchdog = () => {
+            window.clearTimeout(watchdogTimer);
+            watchdogTimer = window.setTimeout(() => attemptController.abort(), CHUNK_WATCHDOG_MS);
+          };
 
           try {
             await uploadChunk(
               uploadId,
               index,
               chunkBlob,
-              (e: any) => {
-                if (e && e.loaded) {
-                  activeChunkProgressMap.set(index, e.loaded);
+              (event: any) => {
+                touchWatchdog();
+                if (event?.loaded) {
+                  activeChunkProgressMap.set(index, event.loaded);
                   updateProgress();
                 }
               },
-              abortController?.signal,
+              attemptController.signal,
+              uploadNodeId,
+              chunkCrc32c,
             );
-
-            committedBytes += chunkBlob.size;
-            activeChunkProgressMap.delete(index);
-            updateProgress();
+            markReceived(index);
+            await persistResumeRecord();
             return;
-          } catch (err: any) {
-            lastError = err;
-            if (attempt < maxRetries) {
-              activeChunkProgressMap.set(index, 0);
-              updateProgress();
-              await backoffDelay(attempt);
-            }
+          } catch (error: any) {
+            lastError = error;
+            if (currentAbortController.signal.aborted) throw new Error('已取消');
+            if (!isRetryableUploadError(error) || attempt >= MAX_RETRIES) break;
+            activeChunkProgressMap.set(index, 0);
+            updateProgress();
+            await backoffDelay(attempt);
+          } finally {
+            window.clearTimeout(watchdogTimer);
+            currentAbortController.signal.removeEventListener('abort', abortAttempt);
           }
         }
-        throw new Error(`分片 ${index} 失败: ${(lastError as any)?.message}`);
+
+        try {
+          const status = await syncStatus(uploadId);
+          if (status.receivedChunks?.includes(index)) return;
+        } catch {
+          // 保留原始错误，避免状态查询失败掩盖真正的网络错误。
+        }
+
+        const status = getHttpStatus(lastError);
+        const suffix = status ? ` (HTTP ${status})` : '';
+        throw new Error(`分片 ${index} 失败${suffix}: ${lastError?.message || '网络连接中断'}`);
       };
 
-      await new Promise<void>((resolve, reject) => {
-        let hasError = false;
-        const activeWorkers = new Set<Promise<void>>();
+      const runChunkQueue = async (pendingIndices: number[]) => {
+        await new Promise<void>((resolve, reject) => {
+          let hasError = false;
+          const activeWorkers = new Set<Promise<void>>();
 
-        const spawnWorkers = () => {
-          if (hasError || abortController?.signal.aborted) return;
+          const spawnWorkers = () => {
+            if (hasError || currentAbortController.signal.aborted) return;
 
-          const targetConcurrency = Math.min(calcConcurrency(currentSpeedMBps), totalChunks);
-
-          while (activeWorkers.size < targetConcurrency && chunkIndices.length > 0) {
-            const index = chunkIndices.shift()!;
-            const p = processChunk(index)
-              .then(() => {
-                activeWorkers.delete(p);
-                if (chunkIndices.length === 0 && activeWorkers.size === 0) {
-                  resolve();
-                } else {
-                  spawnWorkers();
-                }
-              })
-              .catch((err) => {
-                hasError = true;
-                abortController?.abort();
-                reject(err);
+            if (statusRecoveryRequested) {
+              void syncStatus(uploadId).catch(() => {
+                statusRecoveryRequested = true;
               });
-            activeWorkers.add(p);
-          }
-          if (chunkIndices.length === 0 && activeWorkers.size === 0 && !hasError) {
-            resolve();
-          }
-        };
+            }
 
-        spawnWorkers();
-      });
+            while (pendingIndices.length > 0 && receivedChunks.has(pendingIndices[0])) {
+              pendingIndices.shift();
+            }
 
-      if (abortController.signal.aborted) throw new Error('已取消');
+            const targetConcurrency = Math.min(calcConcurrency(currentSpeedMBps), Math.max(1, pendingIndices.length));
+            while (activeWorkers.size < targetConcurrency && pendingIndices.length > 0) {
+              const index = pendingIndices.shift()!;
+
+              const worker = processChunk(index)
+                .then(() => {
+                  activeWorkers.delete(worker);
+                  if (pendingIndices.length === 0 && activeWorkers.size === 0) resolve();
+                  else spawnWorkers();
+                })
+                .catch((error) => {
+                  activeWorkers.delete(worker);
+                  hasError = true;
+                  currentAbortController.abort();
+                  reject(error);
+                });
+              activeWorkers.add(worker);
+            }
+
+            if (pendingIndices.length === 0 && activeWorkers.size === 0 && !hasError) resolve();
+          };
+
+          spawnWorkers();
+        });
+      };
+
+      await runChunkQueue(chunkIndices);
+
+      if (currentAbortController.signal.aborted) throw new Error('已取消');
+
+      if (!fileBlake3) {
+        if (!fileBlake3Promise) throw new Error('无法计算文件完整性校验值');
+        await rememberComputedBlake3(await fileBlake3Promise);
+      }
 
       uploadProgress.value = 99;
-      const finishRes = await finishUpload(uploadId, totalChunks);
-      const finalKey = (finishRes as any).uploadId;
+      let finishRes: any;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          finishRes = await finishUpload(uploadId, totalChunks, uploadNodeId, file.size, chunkSize, fileBlake3);
+          break;
+        } catch (error: any) {
+          if (getHttpStatus(error) === 422) {
+            const invalidChunkValues = (error?.responseData?.data?.invalidChunks ||
+              error?.responseData?.Data?.invalidChunks || []) as unknown[];
+            const invalidChunks = invalidChunkValues
+              .map((index) => Number(index))
+              .filter((index): index is number => Number.isInteger(index) && index >= 0 && index < totalChunks);
+            if (invalidChunks.length > 0) {
+              const retryQueue: number[] = [];
+              for (const index of [...new Set(invalidChunks)]) {
+                if (receivedChunks.delete(index)) {
+                  committedBytes = Math.max(0, committedBytes - chunkBytes(index));
+                }
+                activeChunkProgressMap.delete(index);
+                retryQueue.push(index);
+              }
+              // 完整性失败的分片进入独立队列，当前上传调度完成后再重传，避免插入正在运行的任务。
+              await runChunkQueue(retryQueue);
+              continue;
+            }
+          }
+          if (!isRetryableUploadError(error) || attempt >= 3) throw error;
+          await backoffDelay(attempt);
+          await syncStatus(uploadId).catch(() => {});
+        }
+      }
 
+      const finalKey = finishRes?.uploadId;
+      if (!finalKey) throw new Error('上传合并未返回文件标识');
       uploadProgress.value = 100;
       fileKey.value = finalKey;
+      if (activeResumeRecord) {
+        await deleteUploadResumeRecord(activeResumeRecord.key).catch(() => {});
+      }
+      activeResumeRecord = null;
+      activeUploadId = '';
       return finalKey;
     } catch (error: any) {
-      if (error.message !== '已取消') {
-        throw error;
-      }
-      throw new Error('已取消');
+      if (error?.message === '已取消' || currentAbortController.signal.aborted) throw new Error('已取消');
+      throw error;
     } finally {
-      if (!abortController?.signal.aborted) {
+      window.removeEventListener('online', onlineHandler);
+      if (abortController === currentAbortController) {
+        abortController = null;
         isUploading.value = false;
       }
     }
   };
 
-  const cancelUpload = () => {
+  const cancelUpload = async () => {
     abortController?.abort();
+    const record = activeResumeRecord;
+    if (record && activeResumeRecord === record) {
+      record.cancelledAt = Date.now();
+      record.updatedAt = Date.now();
+      await saveUploadResumeRecord(record).catch(() => {});
+    }
     isUploading.value = false;
   };
 
   const removeUploadData = async () => {
-    if (fileKey.value) {
-      await deleteUpload(fileKey.value).catch(() => {});
+    const uploadId = activeUploadId;
+    const finalKey = fileKey.value;
+    if (finalKey) {
+      await deleteUpload(finalKey, targetNodeId).catch(() => {});
       fileKey.value = '';
     }
+    if (uploadId && uploadId !== finalKey) {
+      await deleteUpload(uploadId, activeResumeRecord?.nodeId || targetNodeId).catch(() => {});
+    }
+    if (activeResumeRecord) {
+      await deleteUploadResumeRecord(activeResumeRecord.key).catch(() => {});
+    }
+    activeUploadId = '';
+    activeResumeRecord = null;
     uploadedFileName.value = '';
     uploadedFileSize.value = '';
     uploadProgress.value = 0;
   };
 
+  const restorePendingUpload = async (kind?: 'package' | 'core'): Promise<PendingUploadResume | null> => {
+    const records = await getUploadResumeRecords(targetNodeId).catch(() => []);
+    for (const record of records) {
+      if (!record.uploadId || !record.fingerprint) continue;
+      if (record.cancelledAt) continue;
+      if (kind) {
+        const matchesKind = record.kind
+          ? record.kind === kind
+          : kind === 'package'
+            ? /\.(?:zip|mrpack)$/i.test(record.fileName)
+            : /\.jar$/i.test(record.fileName);
+        if (!matchesKind) continue;
+      }
+
+      // 浏览器中的恢复记录可能在 Daemon 重启后仍然存在，但服务端会话和
+      // 临时分片已经被清理。只有服务端确认会话仍有效时，才把它显示为可恢复任务。
+      try {
+        const status = await getUploadStatus(record.uploadId, record.nodeId);
+        const receivedChunks = (status.receivedChunks || []).filter(
+          (index) => Number.isInteger(index) && index >= 0 && index < record.totalChunks,
+        );
+        record.receivedChunks = receivedChunks;
+        record.updatedAt = Date.now();
+        await saveUploadResumeRecord(record).catch(() => {});
+      } catch (error) {
+        const status = getHttpStatus(error);
+        if (status === 403 || status === 404) {
+          // 会话已过期、失效或属于已重启前的 Daemon，不能再提示用户恢复。
+          await deleteUploadResumeRecord(record.key).catch(() => {});
+        }
+        // 网络暂不可用时保留本地记录，但不把未经服务端确认的记录显示为未完成任务。
+        continue;
+      }
+
+      const fileHandle = record.fileHandle;
+      if (!fileHandle) {
+        return { record, permissionRequired: true };
+      }
+
+      try {
+        let permission = await fileHandle.queryPermission?.({ mode: 'read' });
+        if (permission === 'granted') {
+          const file = await fileHandle.getFile();
+          const fingerprint = await computeFastFileFingerprint(file);
+          if (fingerprint === record.fingerprint) {
+            return { record, file, fileHandle, permissionRequired: false };
+          }
+          await deleteUploadResumeRecord(record.key).catch(() => {});
+          continue;
+        }
+
+        if (permission === 'prompt' && fileHandle.requestPermission) {
+          // 刷新后自动请求权限可能被浏览器拦截，交给页面按钮在用户操作时重试。
+          permission = 'prompt';
+        }
+        return { record, fileHandle, permissionRequired: permission !== 'granted' };
+      } catch {
+        return { record, fileHandle, permissionRequired: true };
+      }
+    }
+    return null;
+  };
+
+  const resumeUpload = (file: File, record: UploadResumeRecord, fileHandle?: UploadFileHandleLike) => {
+    return startUpload(file, { resumeRecord: record, fileHandle });
+  };
+
   // 组件销毁时自动终止正在进行的上传
   onUnmounted(() => {
-    cancelUpload();
+    void cancelUpload();
   });
 
   return {
@@ -209,6 +569,8 @@ export function useFileUpload() {
     uploadedFileSize,
     fileKey,
     startUpload,
+    restorePendingUpload,
+    resumeUpload,
     cancelUpload,
     removeUploadData,
   };

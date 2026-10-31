@@ -352,6 +352,7 @@ else
 }
 
 builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<MSLX.Daemon.Services.UploadSessionService>();
 builder.Services.AddDataProtection()
     .SetApplicationName("MSLX")
     .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(IConfigBase.GetAppDataPath(), "DataProtection-Keys")));
