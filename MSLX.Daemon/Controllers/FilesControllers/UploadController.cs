@@ -70,20 +70,65 @@ public class UploadController : ControllerBase
             return BadRequest(new ApiResponse<string> { Code = 400, Message = "非法 ID" });
         }
 
+        if (index < 0 || index > 1_000_000)
+        {
+            return BadRequest(new ApiResponse<string> { Code = 400, Message = "分片索引超出范围" });
+        }
+
         if (file == null || file.Length == 0) return BadRequest("文件为空");
 
         // 暂存为 uploadId_index
         var chunkPath = Path.Combine(_tempPath, $"{uploadId}_{index}");
+        var tempChunkPath = chunkPath + ".uploading";
 
-        using (var stream = new FileStream(chunkPath, FileMode.Create))
+        await using (var stream = new FileStream(tempChunkPath, FileMode.Create, FileAccess.Write, FileShare.None))
         {
             await file.CopyToAsync(stream);
         }
+
+        // 使用原子替换，避免状态接口把半写入文件当成已完成分片。
+        System.IO.File.Move(tempChunkPath, chunkPath, true);
 
         return Ok(new ApiResponse<JObject>
         {
             Code = 200,
             Message = "上传完成",
+            Data = new JObject
+            {
+                ["index"] = index,
+                ["size"] = file.Length,
+            },
+        });
+    }
+
+    /// <summary>
+    /// 查询已接收的分片，用于网络中断后的恢复。
+    /// </summary>
+    [HttpGet("status/{uploadId}")]
+    public IActionResult UploadStatus(string uploadId)
+    {
+        if (!Regex.IsMatch(uploadId ?? string.Empty, "^[a-fA-F0-9]{32}$"))
+        {
+            return BadRequest(new ApiResponse<string> { Code = 400, Message = "非法 ID" });
+        }
+
+        if (!_memoryCache.TryGetValue($"Upload_Session_{uploadId}", out _))
+        {
+            return BadRequest(new ApiResponse<string> { Code = 403, Message = "上传凭证无效或已过期，请刷新页面重试" });
+        }
+
+        var receivedChunks = GetChunkIndices(uploadId);
+        return Ok(new ApiResponse<JObject>
+        {
+            Code = 200,
+            Message = "查询成功",
+            Data = new JObject
+            {
+                ["uploadId"] = uploadId,
+                ["receivedChunks"] = new JArray(receivedChunks),
+                ["receivedCount"] = receivedChunks.Count,
+                ["status"] = "uploading",
+            },
         });
     }
 
@@ -99,25 +144,41 @@ public class UploadController : ControllerBase
             return BadRequest(new ApiResponse<string> { Code = 403, Message = "凭证无效或已过期" });
         }
 
+        if (req == null || req.TotalChunks <= 0)
+        {
+            return BadRequest(new ApiResponse<string> { Code = 400, Message = "分片总数必须大于 0" });
+        }
+
         var finalPath = Path.Combine(_tempPath, uploadId + ".tmp");
 
-        // 获取所有分片文件
-        var chunks = Directory.GetFiles(_tempPath, $"{uploadId}_*")
-            .OrderBy(f =>
+        // 响应在网络中丢失时，客户端会重试 finish；已合并文件可以安全地重复确认。
+        if (System.IO.File.Exists(finalPath))
+        {
+            return Ok(new ApiResponse<JObject>
             {
-                // 解析文件名中的 index
-                var fileName = Path.GetFileName(f);
-                var parts = fileName.Split('_');
-                return parts.Length > 1 && int.TryParse(parts[1], out int idx) ? idx : 0;
-            })
-            .ToList();
+                Code = 200,
+                Message = "文件上传全部成功",
+                Data = new JObject { ["uploadId"] = uploadId },
+            });
+        }
 
-        if (chunks.Count != req.TotalChunks)
+        // 获取所有分片文件
+        var chunksWithIndex = GetChunkFiles(uploadId);
+        var chunks = chunksWithIndex.OrderBy(item => item.Index).Select(item => item.Path).ToList();
+
+        var receivedIndices = chunksWithIndex.Select(item => item.Index).ToHashSet();
+        var missingIndices = Enumerable.Range(0, req.TotalChunks).Where(index => !receivedIndices.Contains(index)).ToList();
+        if (chunks.Count != req.TotalChunks || receivedIndices.Any(index => index < 0 || index >= req.TotalChunks))
         {
             return BadRequest(new ApiResponse<JObject>
             {
                 Code = 400,
-                Message = $"分片数量不匹配，期望 {req.TotalChunks}，实际找到 {chunks.Count}",
+                Message = $"分片集合不完整，期望 {req.TotalChunks} 个，实际找到 {chunks.Count} 个",
+                Data = new JObject
+                {
+                    ["receivedChunks"] = new JArray(receivedIndices.OrderBy(index => index)),
+                    ["missingChunks"] = new JArray(missingIndices),
+                },
             });
         }
 
@@ -138,18 +199,16 @@ public class UploadController : ControllerBase
                 Message = $"合并失败: {ex.Message}"
             });
         }
-        finally
+        // 合并成功后再清理分片；合并失败时保留它们，客户端可以查询状态后继续。
+        // 清理分片
+        foreach (var chunk in chunks)
         {
-            // 清理分片
-            foreach (var chunk in chunks)
+            try
             {
-                try
-                {
-                    System.IO.File.Delete(chunk);
-                }
-                catch
-                {
-                }
+                System.IO.File.Delete(chunk);
+            }
+            catch
+            {
             }
         }
 
@@ -162,6 +221,35 @@ public class UploadController : ControllerBase
                 ["uploadId"] = uploadId
             }
         });
+    }
+
+    private List<int> GetChunkIndices(string uploadId)
+    {
+        return GetChunkFiles(uploadId)
+            .Select(item => item.Index)
+            .Distinct()
+            .OrderBy(index => index)
+            .ToList();
+    }
+
+    private List<(int Index, string Path)> GetChunkFiles(string uploadId)
+    {
+        var prefix = uploadId + "_";
+        return Directory.EnumerateFiles(_tempPath, prefix + "*", SearchOption.TopDirectoryOnly)
+            .Select(path =>
+            {
+                // 解析文件名中的 index
+                var fileName = Path.GetFileName(path);
+                if (!fileName.StartsWith(prefix, StringComparison.Ordinal) ||
+                    !int.TryParse(fileName[prefix.Length..], out var index))
+                {
+                    return (Index: -1, Path: path);
+                }
+
+                return (Index: index, Path: path);
+            })
+            .Where(item => item.Index >= 0)
+            .ToList();
     }
 
     /// <summary>

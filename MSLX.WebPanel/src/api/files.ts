@@ -10,6 +10,7 @@ import {
   UploadFinishResponse,
   UploadInitResponse,
   UploadPackageCheckJarResponse,
+  UploadStatusResponse,
 } from '@/api/model/files';
 import { AxiosProgressEvent } from 'axios';
 
@@ -40,6 +41,13 @@ export async function uploadChunk(
     timeout: 300 * 1000,
     onUploadProgress: onProgress,
     signal,
+  }, { targetNodeId: uploadNode(uploadId) });
+}
+
+export async function getUploadStatus(uploadId: string) {
+  return await request.get<UploadStatusResponse>({
+    url: `/api/files/upload/status/${uploadId}`,
+    timeout: 30 * 1000,
   }, { targetNodeId: uploadNode(uploadId) });
 }
 

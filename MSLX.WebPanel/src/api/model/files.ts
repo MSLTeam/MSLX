@@ -6,6 +6,13 @@ export interface UploadFinishResponse {
   uploadId: string;
 }
 
+export interface UploadStatusResponse {
+  uploadId: string;
+  receivedChunks: number[];
+  receivedCount: number;
+  status: 'uploading' | string;
+}
+
 export interface UploadPackageCheckJarResponse {
   count: number;
   jars: string[];
