@@ -220,6 +220,11 @@ const formatTime = (timeStr: string) => {
 };
 
 const fetchData = async (targetPath = currentPath.value) => {
+  if (!Number.isSafeInteger(instanceId.value) || instanceId.value <= 0) {
+    fileList.value = [];
+    totalCount.value = 0;
+    return;
+  }
   loading.value = true;
   selectedRowKeys.value = [];
   try {
