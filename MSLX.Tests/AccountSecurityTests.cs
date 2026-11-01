@@ -211,6 +211,23 @@ public sealed class AccountSecurityTests : IDisposable
     }
 
     [Fact]
+    public void Passkey_NginxHttpsProxyRestoresPublicOriginWhenBackendHostIsPrivate()
+    {
+        var http = Http("https://panel.example");
+        http.Request.Scheme = "http";
+        http.Request.Host = new HostString("127.0.0.1:1027");
+        http.Request.Headers["X-Forwarded-Proto"] = "https";
+
+        var site = AccountSecurityService.Site(http.Request);
+        Assert.Equal("https://panel.example", site.Origin);
+        Assert.Equal("panel.example", site.RpId);
+
+        http.Request.Headers["X-Forwarded-Host"] = "panel.example";
+        http.Request.Headers.Remove("Origin");
+        Assert.Equal(site, AccountSecurityService.Site(http.Request));
+    }
+
+    [Fact]
     public async Task Passkey_HttpsRegistrationAndLoginOverHttpOriginConnection_StillValidateSignedOrigin()
     {
         const string publicOrigin = "https://panel.example:8443";
