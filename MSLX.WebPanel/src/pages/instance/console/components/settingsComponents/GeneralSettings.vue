@@ -756,7 +756,8 @@ const rules = computed<FormRules>(() => {
 });
 
 const initData = async () => {
-  if (!instanceId.value) {
+  const currentInstanceId = instanceId.value;
+  if (!Number.isSafeInteger(currentInstanceId) || currentInstanceId <= 0 || route.name !== 'InstanceConsole') {
     return;
   }
   loading.value = true;
@@ -764,8 +765,11 @@ const initData = async () => {
   try {
     await fetchJavaVersions();
     await tunnelsStore.getTunnels();
-    formData.value.id = instanceId.value;
-    const res = await getInstanceSettings(instanceId.value);
+    const res = await getInstanceSettings(currentInstanceId);
+    if (route.name !== 'InstanceConsole' || instanceId.value !== currentInstanceId) {
+      return;
+    }
+    formData.value.id = currentInstanceId;
     formData.value = {
       ...formData.value,
       ...res,
@@ -844,7 +848,9 @@ const initData = async () => {
       customAuthUrl.value = authUrl;
     }
   } catch (e: any) {
-    MessagePlugin.error('获取配置失败: ' + e.message);
+    if (route.name === 'InstanceConsole' && instanceId.value === currentInstanceId) {
+      MessagePlugin.error('获取配置失败: ' + e.message);
+    }
   } finally {
     loading.value = false;
     initialized.value = true;

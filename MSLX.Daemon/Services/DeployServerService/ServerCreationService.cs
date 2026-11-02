@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Caching.Memory;
 using MSLX.Daemon.Hubs;
+using MSLX.Daemon.Services;
 using MSLX.Daemon.Services.DeployServerService;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
@@ -20,6 +21,7 @@ public class ServerCreationService : BackgroundService
     private readonly ServerDeploymentService _deploymentService;
     private readonly CreationTaskTracker _taskTracker;
     private readonly BackgroundTaskManager _taskManager;
+    private readonly UploadSessionService _uploadSessions;
 
     public ServerCreationService(
         ILogger<ServerCreationService> logger,
@@ -28,7 +30,8 @@ public class ServerCreationService : BackgroundService
         IMemoryCache memoryCache,
         ServerDeploymentService deploymentService,
         CreationTaskTracker taskTracker,
-        BackgroundTaskManager taskManager)
+        BackgroundTaskManager taskManager,
+        UploadSessionService uploadSessions)
     {
         _logger = logger;
         _taskQueue = taskQueue;
@@ -37,6 +40,7 @@ public class ServerCreationService : BackgroundService
         _deploymentService = deploymentService;
         _taskTracker = taskTracker;
         _taskManager = taskManager;
+        _uploadSessions = uploadSessions;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -87,6 +91,12 @@ public class ServerCreationService : BackgroundService
         int serverId = int.Parse(task.ServerId);
         var request = task.Request;
         string bgTaskId = task.BackgroundTaskId;
+
+        if ((!string.IsNullOrWhiteSpace(request.coreFileKey) && !_uploadSessions.IsOwned(request.coreFileKey, task.UserId)) ||
+            (!string.IsNullOrWhiteSpace(request.packageFileKey) && !_uploadSessions.IsOwned(request.packageFileKey, task.UserId)))
+        {
+            throw new UnauthorizedAccessException("上传会话不存在、已过期或无权访问");
+        }
 
         _logger.LogInformation("开始处理任务: ServerId {ServerId}", serverId);
 
@@ -217,6 +227,8 @@ public class ServerCreationService : BackgroundService
             if (request.mcdr)
             {
                 await _deploymentService.DeployMcdrAsync(serverIdStr, server, request, progressReporter, ct);
+                if (!string.IsNullOrWhiteSpace(request.packageFileKey)) _uploadSessions.Remove(request.packageFileKey);
+                if (!string.IsNullOrWhiteSpace(request.coreFileKey)) _uploadSessions.Remove(request.coreFileKey);
                 await progressReporter("服务器创建成功！", 100);
                 return;
             }
@@ -236,6 +248,7 @@ public class ServerCreationService : BackgroundService
             if (!string.IsNullOrEmpty(request.packageFileKey) || !string.IsNullOrEmpty(request.packageLocalPath))
             {
                 await _deploymentService.DeployPackageAsync(serverIdStr, request.packageFileKey, request.packageLocalPath, server.Base, progressReporter, ct);
+                if (!string.IsNullOrWhiteSpace(request.packageFileKey)) _uploadSessions.Remove(request.packageFileKey);
             }
 
             ct.ThrowIfCancellationRequested();
@@ -256,6 +269,7 @@ public class ServerCreationService : BackgroundService
                 progressReporter,
                 ct
             );
+            if (!string.IsNullOrWhiteSpace(request.coreFileKey)) _uploadSessions.Remove(request.coreFileKey);
 
             ct.ThrowIfCancellationRequested();
 

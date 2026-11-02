@@ -183,16 +183,61 @@ public sealed class AccountSecurityService(IMemoryCache cache, IDataProtectionPr
         if (user.TokenVersion != expected) throw new AccountSecurityException("账户安全设置已变更，请重新登录", 401);
     }
 
+    private static string? FirstForwardedValue(HttpRequest request, string name) =>
+        request.Headers[name].FirstOrDefault()?.Split(',')[0].Trim();
+
+    private static bool TryGetPublicAuthority(string? value, out string host, out string authority)
+    {
+        host = "";
+        authority = "";
+        if (string.IsNullOrWhiteSpace(value) ||
+            !Uri.TryCreate("https://" + value.Trim(), UriKind.Absolute, out var uri) ||
+            uri.UserInfo.Length > 0 || uri.AbsolutePath != "/" || uri.Query.Length > 0 || uri.Fragment.Length > 0 ||
+            string.IsNullOrWhiteSpace(uri.Host) || uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+            IPAddress.TryParse(uri.Host, out _))
+            return false;
+
+        host = uri.Host;
+        authority = uri.Authority;
+        return true;
+    }
+
+    private static Uri? TryGetProxyOrigin(HttpRequest request, string suppliedOrigin)
+    {
+        var forwardedHost = FirstForwardedValue(request, "X-Forwarded-Host");
+        if (TryGetPublicAuthority(forwardedHost, out _, out var forwardedAuthority))
+            return new Uri($"https://{forwardedAuthority}");
+
+        // Nginx 可能只转发 HTTPS 协议，Host 仍是上游地址，此时使用浏览器的同源 Origin 补全域名。
+        var forwardedProto = FirstForwardedValue(request, "X-Forwarded-Proto");
+        if (!string.Equals(forwardedProto, "https", StringComparison.OrdinalIgnoreCase) ||
+            !Uri.TryCreate(suppliedOrigin, UriKind.Absolute, out var origin) ||
+            !string.Equals(origin.Scheme, "https", StringComparison.OrdinalIgnoreCase) ||
+            origin.UserInfo.Length > 0 || origin.AbsolutePath != "/" || origin.Query.Length > 0 || origin.Fragment.Length > 0 ||
+            string.IsNullOrWhiteSpace(origin.Host) || origin.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+            IPAddress.TryParse(origin.Host, out _))
+            return null;
+
+        return origin;
+    }
+
     public static (string Origin, string RpId) Site(HttpRequest request)
     {
+        var suppliedOrigin = request.Headers.Origin.ToString().Trim();
         var host = request.Host.Host;
+        var authority = request.Host.Value;
+        var proxyOrigin = TryGetProxyOrigin(request, suppliedOrigin);
+        if (proxyOrigin != null)
+        {
+            host = proxyOrigin.Host;
+            authority = proxyOrigin.Authority;
+        }
+
         if (string.IsNullOrEmpty(host) || IPAddress.TryParse(host, out _))
             throw new AccountSecurityException("通行密钥需要同源 HTTPS 域名或 http://localhost");
-        // Public WebAuthn sites always use HTTPS. The transport from a CDN/proxy may be HTTP;
-        // derive the authority from the server-observed Host, never from the client-supplied Origin.
+        // 公网通行密钥必须使用 HTTPS，代理到 Daemon 的内部连接可以是 HTTP。
         var scheme = string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase) ? request.Scheme : "https";
-        var origin = new Uri($"{scheme}://{request.Host.Value}").GetLeftPart(UriPartial.Authority);
-        var suppliedOrigin = request.Headers.Origin.ToString();
+        var origin = new Uri($"{scheme}://{authority}").GetLeftPart(UriPartial.Authority);
         if (suppliedOrigin.Length > 0 && !string.Equals(suppliedOrigin, origin, StringComparison.OrdinalIgnoreCase))
             throw new AccountSecurityException("通行密钥仅支持同源面板", 403);
         return (origin, host.ToLowerInvariant());
