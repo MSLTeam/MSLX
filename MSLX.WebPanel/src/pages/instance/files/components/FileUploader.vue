@@ -278,6 +278,7 @@ const uploadSingleFile = async (task: UploadTask) => {
   const startTime = Date.now();
   let lastUpdate = 0;
   let currentSpeedMBps = 0; // 用于动态调度并发的实时速度追踪
+  let chunkQueueError: Error | undefined;
 
   try {
     const initRes = await initUpload(targetNodeId);
@@ -387,7 +388,9 @@ const uploadSingleFile = async (task: UploadTask) => {
               }
             })
             .catch((err) => {
+              if (hasError) return;
               hasError = true;
+              chunkQueueError = err;
               task.abortController?.abort(); // 取消掉池子里其他的 worker
               reject(err);
             });
@@ -422,14 +425,15 @@ const uploadSingleFile = async (task: UploadTask) => {
     task.progress = 100;
     task.speed = '完成';
   } catch (err: any) {
-    if (err.message === '已取消' || task.abortController?.signal.aborted) {
+    const uploadError = chunkQueueError || err;
+    if (uploadError.message === '已取消' || (!chunkQueueError && task.abortController?.signal.aborted)) {
       task.status = 'pending';
       task.speed = '已取消';
       task.progress = 0;
       task.committedBytes = 0;
     } else {
       task.status = 'error';
-      task.errorMsg = err.message || '失败';
+      task.errorMsg = uploadError.message || '失败';
     }
   }
 };

@@ -281,7 +281,7 @@ function restoreMcdrDraft() {
   const state = draft?.state;
   if (!state) return;
   if (state.formData) formData.value = { ...formData.value, ...state.formData };
-  if (typeof state.currentStep === 'number') currentStep.value = Math.max(0, Math.min(7, state.currentStep));
+  if (typeof state.currentStep === 'number') currentStep.value = Math.max(0, Math.min(5, state.currentStep));
   if (state.downloadType) downloadType.value = state.downloadType;
   if (state.pythonType) pythonType.value = state.pythonType;
   if (state.detectedPython) detectedPython.value = state.detectedPython;
@@ -1556,7 +1556,7 @@ watch([onlineGameVersion, () => formData.value.core], () => updateJavaSelectionB
               <div v-else></div>
               <div v-if="currentStep < 5" class="flex items-center gap-3">
                 <t-button
-                  v-if="currentStep === 1 && isUploading"
+                  v-if="currentStep === 2 && isUploading"
                   theme="danger"
                   variant="outline"
                   type="button"

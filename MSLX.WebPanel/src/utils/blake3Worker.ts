@@ -1,4 +1,4 @@
-import { computeChunkCrc32c, computeFileBlake3WithOptions } from './uploadResume';
+import { computeChunkCrc32cLocal, computeFileBlake3Local } from './uploadHash';
 
 const workerScope = globalThis as unknown as {
   onmessage: (event: MessageEvent<{
@@ -17,16 +17,14 @@ const workerScope = globalThis as unknown as {
 workerScope.onmessage = async (event) => {
   try {
     if (event.data.type === 'crc32c' && event.data.buffer) {
-      const crc32c = await computeChunkCrc32c(new Blob([event.data.buffer]), { useWorker: false });
+      const crc32c = await computeChunkCrc32cLocal(event.data.buffer);
       workerScope.postMessage({ crc32c });
       return;
     }
 
     if (!event.data.file) throw new Error('缺少待计算的文件');
-    const blake3 = await computeFileBlake3WithOptions(event.data.file, {
-      useWorker: false,
-      onProgress: (progress) => workerScope.postMessage({ progress }),
-    });
+    const blake3 = await computeFileBlake3Local(event.data.file, undefined, (progress) =>
+      workerScope.postMessage({ progress }));
     workerScope.postMessage({ blake3 });
   } catch (error) {
     workerScope.postMessage({

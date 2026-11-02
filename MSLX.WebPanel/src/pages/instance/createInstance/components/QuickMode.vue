@@ -247,7 +247,7 @@ function restoreQuickDraft() {
   const state = draft?.state;
   if (!state) return;
   if (state.formData) formData.value = { ...formData.value, ...state.formData };
-  if (typeof state.currentStep === 'number') currentStep.value = Math.max(0, Math.min(6, state.currentStep));
+  if (typeof state.currentStep === 'number') currentStep.value = Math.max(0, Math.min(4, state.currentStep));
   if (state.downloadType) downloadType.value = state.downloadType;
   if (state.javaType) javaType.value = state.javaType;
   if (state.selectedJavaVersion) selectedJavaVersion.value = state.selectedJavaVersion;

@@ -1,4 +1,5 @@
 import { blake3 } from '@noble/hashes/blake3.js';
+import { computeChunkCrc32cLocal, computeFileBlake3Local, toHex } from './uploadHash';
 
 export interface UploadFileHandleLike {
   getFile(): Promise<File>;
@@ -30,20 +31,6 @@ const STORE_NAME = 'sessions';
 const DB_VERSION = 1;
 const HASH_WINDOW_SIZE = 1024 * 1024;
 const UPLOAD_RESUME_TTL_MS = 2 * 60 * 60 * 1000;
-
-// CRC32C (Castagnoli), reflected polynomial. The table is shared by all
-// chunks so calculating a checksum does not allocate per byte.
-const CRC32C_TABLE = (() => {
-  const table = new Uint32Array(256);
-  for (let i = 0; i < 256; i++) {
-    let value = i;
-    for (let bit = 0; bit < 8; bit++) {
-      value = (value & 1) ? (0x82f63b78 ^ (value >>> 1)) : (value >>> 1);
-    }
-    table[i] = value >>> 0;
-  }
-  return table;
-})();
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -116,10 +103,6 @@ export async function deleteUploadResumeRecord(key: string): Promise<void> {
   });
 }
 
-function toHex(bytes: Uint8Array): string {
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
-}
-
 export async function computeFastFileFingerprint(file: File): Promise<string> {
   const windowSize = Math.min(HASH_WINDOW_SIZE, file.size);
   const head = new Uint8Array(await file.slice(0, windowSize).arrayBuffer());
@@ -135,18 +118,6 @@ export async function computeFastFileFingerprint(file: File): Promise<string> {
   input.set(tail, metadata.length + head.length);
 
   return `head-tail-blake3:${file.size}:${toHex(blake3(input))}`;
-}
-
-/**
- * 计算单个上传分片的 CRC32C。只读取当前分片，适合在上传前做快速完整性校验。
- */
-async function computeChunkCrc32cLocal(chunk: Blob | ArrayBuffer): Promise<string> {
-  const bytes = new Uint8Array(chunk instanceof Blob ? await chunk.arrayBuffer() : chunk);
-  let crc = 0xffffffff;
-  for (const byte of bytes) {
-    crc = CRC32C_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
-  }
-  return ((crc ^ 0xffffffff) >>> 0).toString(16).padStart(8, '0');
 }
 
 interface ChunkCrc32cOptions {
@@ -235,23 +206,6 @@ export interface FileBlake3Options {
   useWorker?: boolean;
   signal?: AbortSignal;
   onProgress?: (progress: number) => void;
-}
-
-async function computeFileBlake3Local(
-  file: File,
-  signal?: AbortSignal,
-  onProgress?: (progress: number) => void,
-): Promise<string> {
-  const hasher = blake3.create();
-  const blockSize = 4 * 1024 * 1024;
-  for (let offset = 0; offset < file.size; offset += blockSize) {
-    if (signal?.aborted) throw new Error('已取消');
-    const chunk = new Uint8Array(await file.slice(offset, Math.min(file.size, offset + blockSize)).arrayBuffer());
-    hasher.update(chunk);
-    onProgress?.(file.size === 0 ? 1 : Math.min((offset + chunk.length) / file.size, 1));
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
-  }
-  return toHex(hasher.digest());
 }
 
 function computeFileBlake3WithWorker(file: File, options: FileBlake3Options): Promise<string> {

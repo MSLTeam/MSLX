@@ -90,6 +90,7 @@ export function useFileUpload() {
     abortController?.abort();
     const currentAbortController = new AbortController();
     abortController = currentAbortController;
+    let chunkQueueError: unknown;
 
     isUploading.value = true;
     uploadProgress.value = 0;
@@ -381,7 +382,9 @@ export function useFileUpload() {
                 })
                 .catch((error) => {
                   activeWorkers.delete(worker);
+                  if (hasError) return;
                   hasError = true;
+                  chunkQueueError = error;
                   currentAbortController.abort();
                   reject(error);
                 });
@@ -411,10 +414,16 @@ export function useFileUpload() {
           finishRes = await finishUpload(uploadId, totalChunks, uploadNodeId, file.size, chunkSize, fileBlake3);
           break;
         } catch (error: any) {
-          if (getHttpStatus(error) === 422) {
-            const invalidChunkValues = (error?.responseData?.data?.invalidChunks ||
-              error?.responseData?.Data?.invalidChunks || []) as unknown[];
-            const invalidChunks = invalidChunkValues
+          // 最后一次合并失败时保留服务端错误，不再补传后落入“未返回文件标识”。
+          if (attempt >= 3) throw error;
+          const status = getHttpStatus(error);
+          if (status === 400 || status === 422) {
+            const data = error?.responseData?.data ?? error?.responseData?.Data ?? error?.response?.data?.data;
+            const retryChunkValues: unknown[] = [
+              ...(Array.isArray(data?.invalidChunks) ? data.invalidChunks : []),
+              ...(Array.isArray(data?.missingChunks) ? data.missingChunks : []),
+            ];
+            const invalidChunks = retryChunkValues
               .map((index) => Number(index))
               .filter((index): index is number => Number.isInteger(index) && index >= 0 && index < totalChunks);
             if (invalidChunks.length > 0) {
@@ -426,12 +435,12 @@ export function useFileUpload() {
                 activeChunkProgressMap.delete(index);
                 retryQueue.push(index);
               }
-              // 完整性失败的分片进入独立队列，当前上传调度完成后再重传，避免插入正在运行的任务。
+              // 损坏或缺失分片复用独立补传队列，不扩大其他 HTTP 400 的重试范围。
               await runChunkQueue(retryQueue);
               continue;
             }
           }
-          if (!isRetryableUploadError(error) || attempt >= 3) throw error;
+          if (!isRetryableUploadError(error)) throw error;
           await backoffDelay(attempt);
           await syncStatus(uploadId).catch(() => {});
         }
@@ -448,6 +457,8 @@ export function useFileUpload() {
       activeUploadId = '';
       return finalKey;
     } catch (error: any) {
+      // 停止其他 worker 的内部 abort 不代表用户取消，优先保留首次失败。
+      if (chunkQueueError !== undefined) throw chunkQueueError;
       if (error?.message === '已取消' || currentAbortController.signal.aborted) throw new Error('已取消');
       throw error;
     } finally {

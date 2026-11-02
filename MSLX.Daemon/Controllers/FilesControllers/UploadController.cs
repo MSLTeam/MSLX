@@ -22,6 +22,9 @@ namespace MSLX.Daemon.Controllers.FilesControllers;
 [Authorize]
 public class UploadController : ControllerBase
 {
+    private const int MaxChunkIndex = 1_000_000;
+    private const int MaxTotalChunks = MaxChunkIndex + 1;
+    private const int MaxDiagnosticChunks = 1_000;
     private static readonly uint[] Crc32cTable = CreateCrc32cTable();
     private static readonly object UploadLocksSync = new();
     private static readonly Dictionary<string, UploadLockState> UploadLocks = new(StringComparer.Ordinal);
@@ -134,12 +137,13 @@ public class UploadController : ControllerBase
             return BadRequest(new ApiResponse<string> { Code = 400, Message = "非法 ID" });
         }
 
-        if (index < 0 || index > 1_000_000)
+        if (index < 0 || index > MaxChunkIndex)
         {
             return BadRequest(new ApiResponse<string> { Code = 400, Message = "分片索引超出范围" });
         }
 
-        if (file == null || file.Length == 0) return BadRequest("文件为空");
+        if (file == null || file.Length == 0)
+            return BadRequest(new ApiResponse<string> { Code = 400, Message = "文件为空" });
         if (!string.IsNullOrWhiteSpace(crc32c) && !Regex.IsMatch(crc32c, "^[a-fA-F0-9]{8}$"))
         {
             return BadRequest(new ApiResponse<string> { Code = 400, Message = "分片 CRC32C 格式无效" });
@@ -155,6 +159,12 @@ public class UploadController : ControllerBase
         IFormFile file,
         string? crc32c)
     {
+        // 等待锁期间会话可能已被删除，不能仅依赖进入队列前的检查。
+        if (!_uploadSessions.IsOwned(uploadId, User))
+        {
+            return BadRequest(new ApiResponse<string> { Code = 403, Message = "上传凭证无效或已过期，请刷新页面重试" });
+        }
+
         var finalPath = Path.Combine(_tempPath, $"{uploadId}.tmp");
         if (System.IO.File.Exists(finalPath))
         {
@@ -345,12 +355,13 @@ public class UploadController : ControllerBase
             return BadRequest(new ApiResponse<string> { Code = 403, Message = "凭证无效或已过期" });
         }
 
-        if (req == null || req.TotalChunks <= 0)
+        if (req == null || req.TotalChunks < 0 || req.TotalChunks > MaxTotalChunks)
         {
-            return BadRequest(new ApiResponse<string> { Code = 400, Message = "分片总数必须大于 0" });
+            return BadRequest(new ApiResponse<string> { Code = 400, Message = $"分片总数必须在 0 到 {MaxTotalChunks} 之间" });
         }
 
         if (req.ChunkSize is <= 0 || req.TotalSize is < 0 ||
+            (req.TotalChunks == 0 && req.TotalSize is > 0) ||
             (!string.IsNullOrWhiteSpace(req.Blake3) && !Regex.IsMatch(req.Blake3, "^[a-fA-F0-9]{64}$")))
         {
             return BadRequest(new ApiResponse<string> { Code = 400, Message = "分片完整性参数无效" });
@@ -358,7 +369,8 @@ public class UploadController : ControllerBase
 
         if (req.ChunkSize.HasValue && req.TotalSize.HasValue)
         {
-            var expectedTotalChunks = (req.TotalSize.Value + req.ChunkSize.Value - 1) / req.ChunkSize.Value;
+            var expectedTotalChunks = req.TotalSize.Value / req.ChunkSize.Value +
+                                      (req.TotalSize.Value % req.ChunkSize.Value == 0 ? 0 : 1);
             if (expectedTotalChunks != req.TotalChunks)
             {
                 return BadRequest(new ApiResponse<string>
@@ -375,12 +387,13 @@ public class UploadController : ControllerBase
         if (System.IO.File.Exists(finalPath))
         {
             var existingSize = new FileInfo(finalPath).Length;
-            if (req.TotalSize.HasValue && existingSize != req.TotalSize.Value)
+            if ((req.TotalChunks == 0 && existingSize != 0) ||
+                (req.TotalSize.HasValue && existingSize != req.TotalSize.Value))
             {
                 return BadRequest(new ApiResponse<JObject>
                 {
                     Code = 400,
-                    Message = $"已合并文件大小不匹配，期望 {req.TotalSize.Value}，实际 {existingSize}",
+                    Message = $"已合并文件大小不匹配，期望 {req.TotalSize ?? 0}，实际 {existingSize}",
                 });
             }
 
@@ -419,16 +432,21 @@ public class UploadController : ControllerBase
         var chunks = orderedChunks.Select(item => item.Path).ToList();
 
         var receivedIndices = chunksWithIndex.Select(item => item.Index).ToHashSet();
-        var missingIndices = Enumerable.Range(0, req.TotalChunks).Where(index => !receivedIndices.Contains(index)).ToList();
         if (chunks.Count != req.TotalChunks || receivedIndices.Any(index => index < 0 || index >= req.TotalChunks))
         {
+            var missingCount = req.TotalChunks - receivedIndices.Count(index => index < req.TotalChunks);
+            var missingIndices = Enumerable.Range(0, req.TotalChunks)
+                .Where(index => !receivedIndices.Contains(index)).Take(MaxDiagnosticChunks);
+            var diagnosticSuffix = missingCount > MaxDiagnosticChunks || receivedIndices.Count > MaxDiagnosticChunks
+                ? $"（索引列表最多显示 {MaxDiagnosticChunks} 项）"
+                : string.Empty;
             return BadRequest(new ApiResponse<JObject>
             {
                 Code = 400,
-                Message = $"分片集合不完整，期望 {req.TotalChunks} 个，实际找到 {chunks.Count} 个",
+                Message = $"分片集合不完整，期望 {req.TotalChunks} 个，实际找到 {chunks.Count} 个{diagnosticSuffix}",
                 Data = new JObject
                 {
-                    ["receivedChunks"] = new JArray(receivedIndices.OrderBy(index => index)),
+                    ["receivedChunks"] = new JArray(receivedIndices.OrderBy(index => index).Take(MaxDiagnosticChunks)),
                     ["missingChunks"] = new JArray(missingIndices),
                 },
             });
@@ -770,7 +788,7 @@ public class UploadController : ControllerBase
     /// 删除临时文件
     /// </summary>
     [HttpPost("delete/{uploadId}")]
-    public IActionResult DeleteUpload(string uploadId)
+    public async Task<IActionResult> DeleteUpload(string uploadId)
     {
         // 简单的格式安全校验
         if (string.IsNullOrEmpty(uploadId) || !Regex.IsMatch(uploadId, "^[a-fA-F0-9]{32}$"))
@@ -778,12 +796,25 @@ public class UploadController : ControllerBase
             return BadRequest(new ApiResponse<string> { Code = 400, Message = "ID 格式错误" });
         }
 
+        return await WithUploadLock(uploadId, state => DeleteUploadCore(state, uploadId));
+    }
+
+    private async Task<IActionResult> DeleteUploadCore(UploadLockState uploadLock, string uploadId)
+    {
         // 从缓存移除
         if (!_uploadSessions.IsOwned(uploadId, User))
         {
             return BadRequest(new ApiResponse<string> { Code = 403, Message = "上传凭证无效或已过期，请刷新页面重试" });
         }
 
+        Task<ChunkValidationResult>[] pendingValidations;
+        lock (UploadLocksSync)
+        {
+            pendingValidations = uploadLock.PendingValidations.Values.ToArray();
+        }
+
+        // 校验在上传锁之外运行，必须等到它关闭文件并写完元数据后再清理。
+        await Task.WhenAll(pendingValidations);
         _uploadSessions.Remove(uploadId);
 
         var mergedPath = Path.Combine(_tempPath, uploadId + ".tmp");

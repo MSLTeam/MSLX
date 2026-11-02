@@ -7,12 +7,164 @@ using MSLX.Daemon.Controllers.FilesControllers;
 using MSLX.Daemon.Services;
 using MSLX.Daemon.Services.DeployServerService;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.SDK.Models;
 using MSLX.SDK.Models.Files;
+using Newtonsoft.Json.Linq;
 
 namespace MSLX.Tests;
 
 public sealed class UploadControllerTests
 {
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(1_000_002)]
+    [InlineData(int.MaxValue)]
+    public async Task MergeRejectsOutOfRangeChunkCounts(int totalChunks)
+    {
+        using var context = new UploadTestContext();
+        var result = await context.Controller.MergeChunks(context.UploadId,
+            new FileUploadMergeRequest { TotalChunks = totalChunks });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Empty(Directory.EnumerateFiles(context.TempPath, context.UploadId + "*"));
+    }
+
+    [Fact]
+    public async Task MergeBoundsMissingChunkDiagnosticsAtMaximumAllowedCount()
+    {
+        using var context = new UploadTestContext();
+        var result = Assert.IsType<BadRequestObjectResult>(await context.Controller.MergeChunks(context.UploadId,
+            new FileUploadMergeRequest { TotalChunks = 1_000_001 }));
+        var response = Assert.IsType<ApiResponse<JObject>>(result.Value);
+
+        Assert.Equal(1_000, response.Data!["missingChunks"]!.Count());
+        Assert.Equal(0, (int)response.Data["missingChunks"]![0]!);
+        Assert.Equal(999, (int)response.Data["missingChunks"]![999]!);
+        Assert.Contains("最多显示", response.Message);
+    }
+
+    [Fact]
+    public async Task MergeBoundsReceivedChunkDiagnostics()
+    {
+        using var context = new UploadTestContext();
+        for (var index = 0; index < 1_001; index++)
+            await File.WriteAllBytesAsync(Path.Combine(context.TempPath, $"{context.UploadId}_{index}"), []);
+
+        var result = Assert.IsType<BadRequestObjectResult>(await context.Controller.MergeChunks(context.UploadId,
+            new FileUploadMergeRequest { TotalChunks = 1_000 }));
+        var response = Assert.IsType<ApiResponse<JObject>>(result.Value);
+
+        Assert.Equal(1_000, response.Data!["receivedChunks"]!.Count());
+        Assert.Empty(response.Data["missingChunks"]!);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task EmptyFileCanBeFinishedIdempotently(bool includeIntegrityMetadata)
+    {
+        const string emptyBlake3 = "af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262";
+        using var context = new UploadTestContext();
+        var request = new FileUploadMergeRequest { TotalChunks = 0 };
+        if (includeIntegrityMetadata)
+        {
+            request.TotalSize = 0;
+            request.ChunkSize = 10 * 1024 * 1024;
+            request.Blake3 = emptyBlake3;
+        }
+
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var result = Assert.IsType<OkObjectResult>(await context.Controller.MergeChunks(context.UploadId, request));
+            var response = Assert.IsType<ApiResponse<JObject>>(result.Value);
+            Assert.Equal(0, (long)response.Data!["size"]!);
+            Assert.Equal(emptyBlake3, (string?)response.Data["blake3"]);
+        }
+
+        Assert.Equal(0, new FileInfo(Path.Combine(context.TempPath, context.UploadId + ".tmp")).Length);
+    }
+
+    [Fact]
+    public async Task EmptyFileStillRequiresMatchingHash()
+    {
+        using var context = new UploadTestContext();
+        var result = await context.Controller.MergeChunks(context.UploadId, new FileUploadMergeRequest
+        {
+            TotalChunks = 0, TotalSize = 0, ChunkSize = 1, Blake3 = new string('0', 64),
+        });
+
+        Assert.IsType<UnprocessableEntityObjectResult>(result);
+        Assert.Empty(Directory.EnumerateFiles(context.TempPath, context.UploadId + "*"));
+    }
+
+    [Fact]
+    public async Task ZeroChunksCannotDescribeNonEmptyFile()
+    {
+        using var context = new UploadTestContext();
+        Assert.IsType<BadRequestObjectResult>(await context.Controller.MergeChunks(context.UploadId,
+            new FileUploadMergeRequest { TotalChunks = 0, TotalSize = 1 }));
+
+        var chunkPath = Path.Combine(context.TempPath, context.UploadId + "_0");
+        await File.WriteAllTextAsync(chunkPath, "non-empty");
+        Assert.IsType<BadRequestObjectResult>(await context.Controller.MergeChunks(context.UploadId,
+            new FileUploadMergeRequest { TotalChunks = 0 }));
+
+        File.Move(chunkPath, Path.Combine(context.TempPath, context.UploadId + ".tmp"));
+        Assert.IsType<BadRequestObjectResult>(await context.Controller.MergeChunks(context.UploadId,
+            new FileUploadMergeRequest { TotalChunks = 0 }));
+    }
+
+    [Fact]
+    public async Task MergeChunkCountCalculationDoesNotOverflow()
+    {
+        using var context = new UploadTestContext();
+        var result = Assert.IsType<BadRequestObjectResult>(await context.Controller.MergeChunks(context.UploadId,
+            new FileUploadMergeRequest { TotalChunks = 1, TotalSize = long.MaxValue, ChunkSize = int.MaxValue }));
+        var response = Assert.IsType<ApiResponse<string>>(result.Value);
+        Assert.Contains("4294967299", response.Message);
+    }
+
+    [Fact]
+    public async Task EmptyChunkReturnsStructuredError()
+    {
+        using var context = new UploadTestContext();
+        using var stream = new MemoryStream();
+        var result = Assert.IsType<BadRequestObjectResult>(await context.Controller.UploadChunk(context.UploadId, 0,
+            new FormFile(stream, 0, 0, "file", "empty")));
+        Assert.Equal(400, Assert.IsType<ApiResponse<string>>(result.Value).Code);
+    }
+
+    [Fact]
+    public async Task DeleteWaitsForUploadAndRejectsQueuedWrites()
+    {
+        using var context = new UploadTestContext();
+        await using var source = new BlockingReadStream(new byte[1024 * 1024]);
+        using var replacement = new MemoryStream(new byte[] { 1 });
+        var uploadTask = context.Controller.UploadChunk(context.UploadId, 0, new BlockingFormFile(source));
+        await source.ReadStarted.WaitAsync(TimeSpan.FromSeconds(5));
+
+        try
+        {
+            var deleteTask = context.Controller.DeleteUpload(context.UploadId);
+            var queuedWrite = context.Controller.UploadChunk(context.UploadId, 1,
+                new FormFile(replacement, 0, 1, "file", "replacement"));
+            await Assert.ThrowsAsync<TimeoutException>(() => deleteTask.WaitAsync(TimeSpan.FromMilliseconds(100)));
+
+            source.ReleaseRead();
+            Assert.IsType<OkObjectResult>(await uploadTask);
+            Assert.IsType<OkObjectResult>(await deleteTask);
+            var rejected = Assert.IsType<BadRequestObjectResult>(await queuedWrite);
+            Assert.Equal(403, Assert.IsType<ApiResponse<string>>(rejected.Value).Code);
+            Assert.False(context.Sessions.IsOwned(context.UploadId, context.Principal));
+            Assert.Empty(Directory.EnumerateFiles(context.TempPath, context.UploadId + "*"));
+        }
+        finally
+        {
+            source.ReleaseRead();
+            await uploadTask;
+        }
+    }
+
     [Fact]
     public async Task ConcurrentFinishRequestsAreIdempotent()
     {
@@ -244,6 +396,34 @@ public sealed class UploadControllerTests
             {
                 try { File.Delete(path); } catch { }
             }
+        }
+    }
+
+    private sealed class UploadTestContext : IDisposable
+    {
+        private readonly MemoryCache _cache = new(new MemoryCacheOptions());
+        public string UploadId { get; } = Guid.NewGuid().ToString("N");
+        public string TempPath { get; } = Path.Combine(IConfigBase.GetAppDataPath(), "Temp", "Uploads");
+        public ClaimsPrincipal Principal { get; } = new(new ClaimsIdentity(
+            new[] { new Claim("UserId", "upload-boundary-test-user") }, "test"));
+        public UploadSessionService Sessions { get; }
+        public UploadController Controller { get; }
+
+        public UploadTestContext()
+        {
+            Sessions = new UploadSessionService(_cache);
+            Sessions.Create(UploadId, Principal, "local");
+            Controller = new UploadController(_cache, Sessions,
+                new ServerDeploymentService(NullLogger<ServerDeploymentService>.Instance, null!))
+            {
+                ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { User = Principal } },
+            };
+        }
+
+        public void Dispose()
+        {
+            foreach (var path in Directory.EnumerateFiles(TempPath, UploadId + "*")) File.Delete(path);
+            _cache.Dispose();
         }
     }
 
