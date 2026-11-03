@@ -74,6 +74,7 @@ const initCheck = async () => {
     const res: any = await request.get({
       url: '/api/auth/oauth/status',
       baseURL: window.location.origin,
+      headers: { 'X-MSLX-Public-Origin': window.location.origin },
     });
     hasPasskeys.value = res.allowPasskey === true;
     if (res.allowOAuth) {

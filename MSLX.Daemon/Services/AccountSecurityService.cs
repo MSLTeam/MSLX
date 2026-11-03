@@ -202,31 +202,47 @@ public sealed class AccountSecurityService(IMemoryCache cache, IDataProtectionPr
         return true;
     }
 
-    private static Uri? TryGetProxyOrigin(HttpRequest request, string suppliedOrigin)
+    private static bool TryGetPublicHttpsOrigin(string? value, out Uri origin)
+    {
+        origin = null!;
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var parsed) ||
+            !string.Equals(parsed.Scheme, "https", StringComparison.OrdinalIgnoreCase) ||
+            parsed.UserInfo.Length > 0 || parsed.AbsolutePath != "/" || parsed.Query.Length > 0 || parsed.Fragment.Length > 0 ||
+            string.IsNullOrWhiteSpace(parsed.Host) || parsed.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
+            IPAddress.TryParse(parsed.Host, out _))
+            return false;
+
+        origin = parsed;
+        return true;
+    }
+
+    private static Uri? TryGetProxyOrigin(HttpRequest request, string suppliedOrigin, bool allowOriginHint)
     {
         var forwardedHost = FirstForwardedValue(request, "X-Forwarded-Host");
         if (TryGetPublicAuthority(forwardedHost, out _, out var forwardedAuthority))
             return new Uri($"https://{forwardedAuthority}");
 
+        if (allowOriginHint && TryGetPublicHttpsOrigin(suppliedOrigin, out var hintedOrigin))
+            return hintedOrigin;
+
         // Nginx 可能只转发 HTTPS 协议，Host 仍是上游地址，此时使用浏览器的同源 Origin 补全域名。
         var forwardedProto = FirstForwardedValue(request, "X-Forwarded-Proto");
         if (!string.Equals(forwardedProto, "https", StringComparison.OrdinalIgnoreCase) ||
-            !Uri.TryCreate(suppliedOrigin, UriKind.Absolute, out var origin) ||
-            !string.Equals(origin.Scheme, "https", StringComparison.OrdinalIgnoreCase) ||
-            origin.UserInfo.Length > 0 || origin.AbsolutePath != "/" || origin.Query.Length > 0 || origin.Fragment.Length > 0 ||
-            string.IsNullOrWhiteSpace(origin.Host) || origin.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
-            IPAddress.TryParse(origin.Host, out _))
+            !TryGetPublicHttpsOrigin(suppliedOrigin, out var origin))
             return null;
 
         return origin;
     }
 
-    public static (string Origin, string RpId) Site(HttpRequest request)
+    public static (string Origin, string RpId) Site(HttpRequest request, bool allowOriginHint = false)
     {
-        var suppliedOrigin = request.Headers.Origin.ToString().Trim();
+        var browserOrigin = request.Headers.Origin.ToString().Trim();
+        var originHint = request.Headers["X-MSLX-Public-Origin"].ToString().Trim();
+        var useOriginHint = allowOriginHint && browserOrigin.Length == 0 && originHint.Length > 0;
+        var suppliedOrigin = useOriginHint ? originHint : browserOrigin;
         var host = request.Host.Host;
         var authority = request.Host.Value;
-        var proxyOrigin = TryGetProxyOrigin(request, suppliedOrigin);
+        var proxyOrigin = TryGetProxyOrigin(request, suppliedOrigin, useOriginHint);
         if (proxyOrigin != null)
         {
             host = proxyOrigin.Host;
@@ -238,17 +254,17 @@ public sealed class AccountSecurityService(IMemoryCache cache, IDataProtectionPr
         // 公网通行密钥必须使用 HTTPS，代理到 Daemon 的内部连接可以是 HTTP。
         var scheme = string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase) ? request.Scheme : "https";
         var origin = new Uri($"{scheme}://{authority}").GetLeftPart(UriPartial.Authority);
-        if (suppliedOrigin.Length > 0 && !string.Equals(suppliedOrigin, origin, StringComparison.OrdinalIgnoreCase))
+        if (browserOrigin.Length > 0 && !string.Equals(browserOrigin, origin, StringComparison.OrdinalIgnoreCase))
             throw new AccountSecurityException("通行密钥仅支持同源面板", 403);
         return (origin, host.ToLowerInvariant());
     }
 
-    // Expose only site-wide availability, never individual account/credential details.
+    // 只返回站点是否可用，不暴露账户或密钥详情。
     public static bool HasPasskeysForSite(HttpRequest request)
     {
         try
         {
-            var (_, rpId) = Site(request);
+            var (_, rpId) = Site(request, allowOriginHint: true);
             return IConfigBase.UserList.GetAllUsers().Any(u => u?.Id != "system-admin" &&
                 u?.Authentication?.Passkeys.Any(p => p.RpId == rpId) == true);
         }
