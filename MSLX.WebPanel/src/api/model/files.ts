@@ -40,6 +40,8 @@ export interface FilesListResponse {
 }
 
 export interface PluginsAndModsListModel{
+  path?: string;
+  directoryExists?: boolean;
   totalCount: number;
   activeCount: number;
   disableCount: number;
