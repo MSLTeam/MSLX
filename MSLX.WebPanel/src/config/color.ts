@@ -197,9 +197,16 @@ export function generateColorMap(theme: string, colorPalette: Array<string>, mod
 export function insertThemeStylesheet(theme: string, colorMap: TColorToken, mode: 'light' | 'dark') {
   const isDarkMode = mode === 'dark';
   const root = !isDarkMode ? `:root[theme-color='${theme}']` : `:root[theme-color='${theme}'][theme-mode='dark']`;
+  const styleId = `theme-style-${theme.replace('#', 'hex-')}-${mode}`;
 
-  const styleSheet = document.createElement('style');
-  styleSheet.type = 'text/css';
+  let styleSheet = document.getElementById(styleId) as HTMLStyleElement | null;
+  if (!styleSheet) {
+    styleSheet = document.createElement('style');
+    styleSheet.id = styleId;
+    styleSheet.type = 'text/css';
+    document.head.appendChild(styleSheet);
+  }
+
   styleSheet.innerText = `${root}{
     --td-brand-color: ${colorMap['--td-brand-color']};
     --td-brand-color-1: ${colorMap['--td-brand-color-1']};
@@ -213,6 +220,20 @@ export function insertThemeStylesheet(theme: string, colorMap: TColorToken, mode
     --td-brand-color-9: ${colorMap['--td-brand-color-9']};
     --td-brand-color-10: ${colorMap['--td-brand-color-10']};
   }`;
+}
 
-  document.head.appendChild(styleSheet);
+export function applyBrandThemeStyle(
+  theme: string,
+  mode: 'light' | 'dark',
+  onAddColor?: (payload: TColorSeries) => void,
+) {
+  document.documentElement.setAttribute('theme-color', theme);
+  if (/^#[A-F\d]{6}$/i.test(theme)) {
+    const newPalette = Color.getPaletteByGradation({ colors: [theme], step: 10 })[0];
+    const colorMap = generateColorMap(theme, newPalette, mode);
+    if (onAddColor) {
+      onAddColor({ [theme]: colorMap });
+    }
+    insertThemeStylesheet(theme, colorMap, mode);
+  }
 }

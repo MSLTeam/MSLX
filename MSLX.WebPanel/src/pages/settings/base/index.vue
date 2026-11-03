@@ -10,6 +10,7 @@ const accountInfo = ref<UserInfoModel>();
 
 import UserProfileCard from './components/UserProfileCard.vue';
 import WebPanelStyleCard from './components/WebPanelStyleCard.vue';
+import WebPanelThemeCard from './components/WebPanelThemeCard.vue';
 import PluginSlot from '@/components/PluginSlot.vue';
 
 const webpanelStore = useWebpanelStore();
@@ -46,6 +47,7 @@ onMounted(() => {
       />
 
       <web-panel-style-card v-if="userStore.isAdmin && targetNodeId === 'local'" />
+      <web-panel-theme-card v-if="userStore.isAdmin && targetNodeId === 'local'" />
 
       <t-alert
         v-if="targetNodeId !== 'local'"

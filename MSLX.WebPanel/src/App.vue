@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, watch } from 'vue';
-import { useSettingStore, useUpdateStore, useNodeStore } from '@/store';
+import { useSettingStore, useUpdateStore, useNodeStore, useWebpanelStore } from '@/store';
 import UpdateModal from '@/components/UpdateModal.vue';
 
 const store = useSettingStore();
 const updateStore = useUpdateStore();
 const nodeStore = useNodeStore();
+const webpanelStore = useWebpanelStore();
 watch(() => nodeStore.activeNodeId, () => { updateStore.showUpdateModal = false; });
 
 const mode = computed(() => store.displayMode);
@@ -26,6 +27,9 @@ onMounted(() => {
 
   // 初始化校准
   store.setSystemTheme(mediaQuery.matches ? 'dark' : 'light');
+  if (!store.isThemeCustomized && webpanelStore.settings.webPanelDefaultThemeMode) {
+    store.applyDefaultTheme(webpanelStore.settings);
+  }
   store.changeMode(store.mode as 'dark' | 'light' | 'auto');
 });
 

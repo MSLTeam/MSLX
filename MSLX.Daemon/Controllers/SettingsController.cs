@@ -149,6 +149,13 @@ public class SettingsController : ControllerBase
 
                 // 日志染色级别
                 WebPanelColorizeLogLevel = IConfigBase.Config.ReadConfig()["webPanelColorizeLogLevel"] ?? 1,
+
+                // 默认主题样式
+                WebPanelDefaultThemeMode = IConfigBase.Config.ReadConfig()["webPanelDefaultThemeMode"] ?? "auto",
+                WebPanelDefaultBrandTheme = IConfigBase.Config.ReadConfig()["webPanelDefaultBrandTheme"] ?? "default",
+                WebPanelDefaultLayout = IConfigBase.Config.ReadConfig()["webPanelDefaultLayout"] ?? "side",
+                WebPanelDefaultEnableCustomTheme = IConfigBase.Config.ReadConfig()["webPanelDefaultEnableCustomTheme"] ?? false,
+                WebPanelDefaultExpandMutex = IConfigBase.Config.ReadConfig()["webPanelDefaultExpandMutex"] ?? true,
             }
         });
     }
@@ -170,6 +177,13 @@ public class SettingsController : ControllerBase
         IConfigBase.Config.WriteConfigKey("webpPanelTerminalBlurLight", request.WebpPanelTerminalBlurLight);
         IConfigBase.Config.WriteConfigKey("webpPanelTerminalBlurDark", request.WebpPanelTerminalBlurDark);
         IConfigBase.Config.WriteConfigKey("webPanelColorizeLogLevel", request.WebPanelColorizeLogLevel);
+
+        // 默认主题样式
+        IConfigBase.Config.WriteConfigKey("webPanelDefaultThemeMode", request.WebPanelDefaultThemeMode);
+        IConfigBase.Config.WriteConfigKey("webPanelDefaultBrandTheme", request.WebPanelDefaultBrandTheme);
+        IConfigBase.Config.WriteConfigKey("webPanelDefaultLayout", request.WebPanelDefaultLayout);
+        IConfigBase.Config.WriteConfigKey("webPanelDefaultEnableCustomTheme", request.WebPanelDefaultEnableCustomTheme);
+        IConfigBase.Config.WriteConfigKey("webPanelDefaultExpandMutex", request.WebPanelDefaultExpandMutex);
         return Ok(new ApiResponse<object>
             {
                 Code = 200,

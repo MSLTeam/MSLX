@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watchEffect, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import type { PopupVisibleChangeContext } from 'tdesign-vue-next';
-import { Color } from 'tvision-color';
+import { MessagePlugin } from 'tdesign-vue-next';
 
-import { useSettingStore } from '@/store';
+import { useSettingStore, useWebpanelStore } from '@/store';
 import ColorContainer from '@/components/color/index.vue';
 import STYLE_CONFIG from '@/config/style';
-import { insertThemeStylesheet, generateColorMap } from '@/config/color';
 
 const settingStore = useSettingStore();
+const webpanelStore = useWebpanelStore();
 
 const screenWidth = ref(window.innerWidth);
 const isMobile = computed(() => screenWidth.value < 480);
@@ -61,15 +61,62 @@ const showSettingPanel = computed({
   set: (newVal) => settingStore.updateConfig({ showSettingPanel: newVal }),
 });
 
-const changeColor = (hex: string) => {
-  const newPalette = Color.getPaletteByGradation({ colors: [hex], step: 10 })[0];
-  const { mode } = settingStore;
-  const colorMap = generateColorMap(hex, newPalette, mode as 'light' | 'dark');
-
-  settingStore.addColor({ [hex]: colorMap });
-  settingStore.updateConfig({ ...formData.value, brandTheme: hex });
-  insertThemeStylesheet(hex, colorMap, mode as 'light' | 'dark');
+const onAutoModeChange = (val: boolean) => {
+  settingStore.setThemeCustomized(true);
+  isAutoMode.value = val;
+  settingStore.updateConfig({ mode: formData.value.mode });
 };
+
+const onDarkModeChange = (val: boolean) => {
+  settingStore.setThemeCustomized(true);
+  isDarkMode.value = val;
+  settingStore.updateConfig({ mode: formData.value.mode });
+};
+
+const onCustomThemeChange = (val: boolean) => {
+  settingStore.setThemeCustomized(true);
+  formData.value.enableCustomTheme = val;
+  settingStore.updateConfig({ enableCustomTheme: val });
+};
+
+const onBrandThemeChange = (val: string) => {
+  settingStore.setThemeCustomized(true);
+  formData.value.brandTheme = val;
+  settingStore.updateConfig({ brandTheme: val });
+};
+
+const onLayoutChange = (val: 'side' | 'top') => {
+  settingStore.setThemeCustomized(true);
+  formData.value.layout = val;
+  settingStore.updateConfig({ layout: val });
+};
+
+const onExpandMutexChange = (val: boolean) => {
+  settingStore.setThemeCustomized(true);
+  formData.value.expandMutex = val;
+  settingStore.updateConfig({ expandMutex: val });
+};
+
+const changeColor = (hex: string) => {
+  settingStore.setThemeCustomized(true);
+  formData.value.brandTheme = hex;
+  settingStore.updateConfig({ brandTheme: hex });
+};
+
+const handleResetDefault = () => {
+  settingStore.resetToDefault(webpanelStore.settings);
+  formData.value = { ...initStyleConfig() };
+  MessagePlugin.success('已恢复为面板默认主题样式');
+};
+
+watch(
+  () => settingStore.showSettingPanel,
+  (val) => {
+    if (val) {
+      formData.value = { ...initStyleConfig() };
+    }
+  },
+);
 
 onMounted(() => {
   const dynamicBtn = document.querySelector('.dynamic-color-btn');
@@ -94,16 +141,6 @@ const onPopupVisibleChange = (visible: boolean, context: PopupVisibleChangeConte
 const handleCloseDrawer = () => {
   settingStore.updateConfig({ showSettingPanel: false });
 };
-
-watchEffect(() => {
-  settingStore.updateConfig({
-    mode: formData.value.mode,
-    layout: formData.value.layout,
-    brandTheme: formData.value.brandTheme,
-    enableCustomTheme: formData.value.enableCustomTheme,
-    expandMutex: formData.value.expandMutex,
-  });
-});
 </script>
 
 <template>
@@ -131,7 +168,7 @@ watchEffect(() => {
                 <span class="text-[14px] font-bold text-[var(--td-text-color-primary)]">跟随系统</span>
                 <span class="text-[11px] text-zinc-400 mt-0.5">自动切换明暗外观</span>
               </div>
-              <t-switch v-model="isAutoMode" size="large" />
+              <t-switch v-model="isAutoMode" size="large" @change="onAutoModeChange" />
             </div>
 
             <div
@@ -142,7 +179,7 @@ watchEffect(() => {
                 <span class="text-[14px] font-bold text-[var(--td-text-color-primary)]">暗黑模式</span>
                 <span class="text-[11px] text-zinc-400 mt-0.5">手动开启或关闭</span>
               </div>
-              <t-switch v-model="isDarkMode" size="large" />
+              <t-switch v-model="isDarkMode" size="large" @change="onDarkModeChange" />
             </div>
           </div>
         </section>
@@ -159,7 +196,7 @@ watchEffect(() => {
               <span class="text-[14px] font-bold text-[var(--td-text-color-primary)]">开启背景美化</span>
               <span class="text-[11px] text-zinc-400 mt-0.5">启用毛玻璃卡片与自定义壁纸</span>
             </div>
-            <t-switch v-model="formData.enableCustomTheme" size="large" />
+            <t-switch v-model="formData.enableCustomTheme" size="large" @change="onCustomThemeChange" />
           </div>
         </section>
 
@@ -179,7 +216,7 @@ watchEffect(() => {
                     ? 'ring-2 ring-offset-2 ring-offset-[#f8fafc] dark:ring-offset-[#18181b] ring-[var(--color-primary)] scale-110'
                     : 'hover:scale-125 hover:shadow-sm',
                 ]"
-                @click="formData.brandTheme = item"
+                @click="onBrandThemeChange(item)"
               >
                 <!-- 色块 -->
                 <color-container :value="item" class="!w-full !h-full !rounded-full !border-none" />
@@ -268,7 +305,7 @@ watchEffect(() => {
                       ? 'text-zinc-800 dark:text-zinc-100'
                       : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'
                   "
-                  @click="formData.layout = 'side'"
+                  @click="onLayoutChange('side')"
                 >
                   侧边栏
                 </div>
@@ -280,7 +317,7 @@ watchEffect(() => {
                       ? 'text-zinc-800 dark:text-zinc-100'
                       : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'
                   "
-                  @click="formData.layout = 'top'"
+                  @click="onLayoutChange('top')"
                 >
                   顶栏
                 </div>
@@ -295,10 +332,24 @@ watchEffect(() => {
                 <span class="text-[14px] font-bold text-[var(--td-text-color-primary)]">自动折叠菜单</span>
                 <span class="text-[11px] text-zinc-400 mt-0.5">开启后仅允许展开一个菜单</span>
               </div>
-              <t-switch v-model="formData.expandMutex" size="large" />
+              <t-switch v-model="formData.expandMutex" size="large" @change="onExpandMutexChange" />
             </div>
           </div>
         </section>
+
+        <!-- 访客自定义状态与恢复默认 -->
+        <div
+          v-if="settingStore.isThemeCustomized"
+          class="flex items-center justify-between p-4 rounded-xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40"
+        >
+          <div class="flex flex-col">
+            <span class="text-[13px] font-bold text-amber-900 dark:text-amber-200">当前已自定义样式</span>
+            <span class="text-[11px] text-amber-700/80 dark:text-amber-400/80 mt-0.5">当前使用您偏好的专属外观配置</span>
+          </div>
+          <t-button variant="outline" theme="warning" size="small" @click="handleResetDefault">
+            恢复默认
+          </t-button>
+        </div>
       </t-form>
     </div>
   </t-drawer>
