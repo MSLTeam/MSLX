@@ -2,6 +2,7 @@
 import { confirmNodeAction } from '@/utils/nodeDialog';
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import { useMediaQuery } from '@vueuse/core';
 import {
   MessagePlugin,
   type TableRowData,
@@ -54,11 +55,13 @@ const displayList = computed(() => {
 
 
 // --- 表格列定义 ---
+const isMobile = useMediaQuery('(max-width: 767px)');
 const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
-  { colKey: 'row-select', type: 'multiple', width: 50, fixed: 'left' },
+  { colKey: 'row-select', type: 'multiple', width: 50, fixed: isMobile.value ? undefined : 'left' },
   {
     title: '文件名',
     colKey: 'name',
+    minWidth: 240,
     sorter: (a, b) => a.name.localeCompare(b.name),
     ellipsis: true,
   },
@@ -70,8 +73,8 @@ const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
   {
     title: '操作',
     colKey: 'op',
-    width: 180,
-    fixed: 'right',
+    width: isMobile.value ? 120 : 180,
+    fixed: isMobile.value ? undefined : 'right',
     align: 'right'
   },
 ]);
@@ -215,7 +218,7 @@ watch(() => route.params.serverId, (newId) => {
 </script>
 
 <template>
-  <div class="flex flex-col pb-6">
+  <div class="flex min-w-0 flex-col pb-6">
 
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-5 mb-4 pb-2 border-b border-dashed border-zinc-200/60 dark:border-zinc-700/60">
       <div class="flex items-center gap-2">
@@ -246,7 +249,7 @@ watch(() => route.params.serverId, (newId) => {
     <div class="flex flex-col-reverse md:flex-row justify-between items-stretch md:items-center gap-3 mb-4">
 
       <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-between md:justify-start">
-        <div class="flex items-center gap-2">
+        <div class="flex min-w-0 flex-wrap items-center gap-2">
           <t-button theme="primary" class="!rounded-lg shadow-sm" :disabled="loading || !currentFolderPath" @click="handleUpload">
             <template #icon><upload-icon /></template> 上传文件
           </t-button>
@@ -288,7 +291,8 @@ watch(() => route.params.serverId, (newId) => {
     <div class="border border-zinc-200/60 dark:border-zinc-700/60 rounded-xl overflow-hidden shadow-sm bg-white/50 dark:bg-zinc-900/20">
       <t-table
         v-model:selected-row-keys="selectedRowKeys"
-        :pagination="{ defaultPageSize: 20, total: displayList.length, showJumper: true, defaultCurrent: 1 }"
+        :pagination="{ defaultPageSize: 20, total: displayList.length, showJumper: !isMobile, showPageSize: !isMobile, totalContent: !isMobile, defaultCurrent: 1, theme: isMobile ? 'simple' : 'default' }"
+        :table-content-width="isMobile ? '600px' : undefined"
         :data="displayList"
         :columns="columns"
         :row-key="'name'"
