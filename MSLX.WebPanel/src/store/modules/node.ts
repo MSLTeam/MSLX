@@ -8,6 +8,7 @@ export const useNodeStore = defineStore('node', {
     loading: false,
     fetchError: '',
     lastFetchTime: 0,
+    navigationNodeId: 'local', // 仅用于导航记忆，不作为接口请求目标。
     activeNodeId: new URL(window.location.href).searchParams.get('node') || 'local'
   }),
   getters: {

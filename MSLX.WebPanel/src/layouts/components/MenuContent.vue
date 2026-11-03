@@ -111,7 +111,7 @@ const openNewTab = (path: string) => {
   if (win) win.focus();
 };
 
-const getTarget = (path: string) => nodeNavigationUrl(path, String(router.currentRoute.value.query.node || 'local'));
+const getTarget = (path: string) => nodeNavigationUrl(path);
 </script>
 
 <template>

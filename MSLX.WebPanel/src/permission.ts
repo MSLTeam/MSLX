@@ -4,7 +4,7 @@ import 'nprogress/nprogress.css';
 import { getPermissionStore, getUserStore, useNodeStore } from '@/store';
 import router from '@/router';
 import Layout from '@/layouts/index.vue';
-import { getNodeTarget } from '@/utils/nodeTarget';
+import { getNodeTarget, isNodePage } from '@/utils/nodeTarget';
 import { arePluginsLoaded, loadAllPlugins, activatePluginNode, setPluginLoadError } from '@/utils/pluginManager';
 import { usePluginUIStore } from '@/store/modules/pluginUI';
 
@@ -62,6 +62,7 @@ router.beforeEach(async (to, _from, next) => {
 router.afterEach(to => {
   const nodeId = typeof to.query.node === 'string' && to.query.node ? to.query.node : 'local';
   useNodeStore().activeNodeId = nodeId;
+  if (isNodePage(to.path)) useNodeStore().navigationNodeId = nodeId;
   activatePluginNode(nodeId);
   if (to.path === '/login') getUserStore().logout();
   NProgress.done();

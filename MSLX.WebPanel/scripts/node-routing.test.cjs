@@ -35,6 +35,67 @@ function token(nodeId, scope = 'download') {
   return `header.${Buffer.from(JSON.stringify({ ...(nodeId ? { NodeId: nodeId } : {}), UserId: 'test-user', Scope: scope, exp: Math.floor(Date.now() / 1000) + 600 })).toString('base64url')}.signature`;
 }
 
+test('master-only pages remember navigation while requests and plain node URLs stay local', () => {
+  const inventory = { slaveNodes: [{ nodeId: 'slave-a', nodeUrl: 'http://slave.test' }], navigationNodeId: 'local' };
+  const helper = setup(undefined, inventory);
+  let afterEach;
+  loadTs('permission', {
+    'tdesign-vue-next': {}, 'nprogress': { default: { configure() {}, done() {} } }, 'nprogress/nprogress.css': {},
+    '@/store': { useNodeStore: () => inventory },
+    '@/router': { default: { beforeEach() {}, afterEach: callback => { afterEach = callback; } } },
+    '@/layouts/index.vue': {}, '@/utils/nodeTarget': helper,
+    '@/utils/pluginManager': { activatePluginNode() {} }, '@/store/modules/pluginUI': {},
+  });
+  function visit(path, query = {}) {
+    window.location.href = 'http://panel.test' + path + (query.node ? '?node=' + query.node : '');
+    afterEach({ path, query });
+  }
+  visit('/instance/list', { node: 'slave-a' });
+  assert.equal(helper.nodeNavigationUrl('/settings/node'), '/settings/node');
+  visit('/settings/node');
+  assert.equal(inventory.activeNodeId, 'local');
+  assert.equal(inventory.navigationNodeId, 'slave-a');
+  assert.equal(helper.getPageNodeId(), 'local');
+  assert.equal(helper.getNodeTarget().baseUrl, 'http://master.test');
+  assert.equal(helper.nodeNavigationUrl('/instance/list'), '/instance/list?node=slave-a');
+  assert.equal(helper.nodeNavigationUrl('/frp/list'), '/frp/list?node=slave-a');
+  assert.equal(helper.nodeNavigationUrl('/instance/list', 'local'), '/instance/list');
+  assert.equal(helper.nodeNavigationUrl('/users/list'), '/users/list');
+  assert.equal(helper.nodeNavigationUrl('/instance/list?node=slave-b'), '/instance/list?node=slave-b');
+  visit('/users/list');
+  assert.equal(helper.nodeNavigationUrl('/instance/list'), '/instance/list?node=slave-a');
+  visit('/instance/list', { node: 'slave-a' });
+  assert.equal(inventory.activeNodeId, 'slave-a');
+  visit('/instance/list');
+  assert.equal(inventory.navigationNodeId, 'local');
+  visit('/settings/node');
+  assert.equal(helper.nodeNavigationUrl('/instance/list'), '/instance/list');
+  visit('/instance/list', { node: 'slave-a' });
+  visit('/settings/node');
+  inventory.slaveNodes = [];
+  assert.equal(helper.nodeNavigationUrl('/instance/list'), '/instance/list?node=slave-a');
+  assert.throws(() => helper.getNodeTarget('slave-a'), /节点不存在/);
+  window.location.href = 'http://panel.test/instance/list';
+  assert.equal(helper.getPageNodeId(), 'local');
+  assert.equal(helper.nodeNavigationUrl('/frp/list'), '/frp/list');
+});
+
+test('logout clears remembered node navigation for the next account', async () => {
+  setup();
+  const { createPinia, setActivePinia } = require('pinia');
+  setActivePinia(createPinia());
+  const inventory = { navigationNodeId: 'slave-a' };
+  const { useUserStore } = loadTs('store/modules/user', {
+    '@/config/global': { BASE_URL_NAME: 'BASE_URL', TOKEN_NAME: 'TOKEN' },
+    '@/store': { useNodeStore: () => inventory, usePermissionStore: () => ({ clearRoutes: async () => {} }) },
+    '@/utils/request': { request: { post: async () => {} } }, '@/router': {},
+    '@/utils/scopedToken': { clearMediaToken() {} },
+    '@/utils/pluginManager': { resetPluginRuntime() {} },
+  });
+  await useUserStore().logout();
+  assert.equal(inventory.navigationNodeId, 'local');
+});
+
 test('ordinary URLs stay local regardless of legacy global selection', () => {
   const helper = setup();
   helper.values.set('ACTIVE_NODE_ID', 'slave-a');

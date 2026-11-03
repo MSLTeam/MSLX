@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { TOKEN_NAME, BASE_URL_NAME } from '@/config/global';
-import { store, usePermissionStore } from '@/store';
+import { store, usePermissionStore, useNodeStore } from '@/store';
 import { request } from '@/utils/request';
 import { changeUrl } from '@/router';
 import { clearMediaToken, getMediaToken, getSyncMediaToken, getDownloadToken, getSyncDownloadToken } from '@/utils/scopedToken';
@@ -193,6 +193,7 @@ export const useUserStore = defineStore('user', {
       this.token = '';
       this.baseUrl = '';
       this.userInfo = { ...InitUserInfo };
+      useNodeStore().navigationNodeId = 'local';
       (await import('@/utils/pluginManager')).resetPluginRuntime();
     },
 
