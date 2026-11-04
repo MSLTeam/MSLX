@@ -7,6 +7,7 @@ import { useWebpanelStore, useUserStore } from '@/store';
 import SystemSettingsCard from '../base/components/SystemSettingsCard.vue';
 import PluginSlot from '@/components/PluginSlot.vue';
 import SslSettingsCard from '../base/components/SslSettingsCard.vue';
+import AiSettingsCard from '../base/components/AiSettingsCard.vue';
 
 const webpanelStore = useWebpanelStore();
 const userStore = useUserStore();
@@ -35,6 +36,8 @@ onMounted(() => {
     <t-alert v-if="targetNodeId !== 'local'" theme="warning" class="mb-4" message="正在编辑所选子节点。修改监听地址、端口或 SSL 后需重启，并确认主节点登记的节点地址仍然可用。" />
     <t-space direction="vertical" size="large" style="width: 100%">
       <system-settings-card v-if="userStore.isAdmin" ref="sysCardRef" @refresh="initAllData" />
+
+      <ai-settings-card v-if="userStore.isAdmin" />
 
       <ssl-settings-card v-if="userStore.isAdmin" />
 
