@@ -38,11 +38,8 @@ function deferred() {
 
 const immediateTimer = callback => { queueMicrotask(callback); return 0; };
 
-function setupUpload(api = {}) {
-  const events = new EventTarget();
-  return evaluate(readSource('hooks/useFileUpload.ts'), {
-    vue: { ref: value => ({ value }), onUnmounted: () => {} },
-    '@/utils/nodeTarget': { getPageNodeId: () => 'local' },
+function setupChunkedUpload(api = {}, resume = {}) {
+  return evaluate(readSource('utils/chunkedUpload.ts'), {
     '@/api/files': {
       initUpload: async () => ({ uploadId: 'test-upload' }),
       rememberUploadTarget: () => {},
@@ -58,14 +55,21 @@ function setupUpload(api = {}) {
       getUploadResumeRecords: async () => [],
       saveUploadResumeRecord: async () => {},
       deleteUploadResumeRecord: async () => {},
+      ...resume,
     },
   }, {
-    window: {
-      addEventListener: events.addEventListener.bind(events),
-      removeEventListener: events.removeEventListener.bind(events),
-      setTimeout, clearTimeout,
-    },
+    window: { setTimeout, clearTimeout },
     setTimeout: immediateTimer,
+  });
+}
+
+function setupUpload(api = {}, resume = {}) {
+  return evaluate(readSource('hooks/useFileUpload.ts'), {
+    vue: { ref: value => ({ value }), onUnmounted: () => {} },
+    '@/utils/nodeTarget': { getPageNodeId: () => 'local' },
+    '@/api/files': api,
+    '@/utils/uploadResume': { saveUploadResumeRecord: async () => {}, deleteUploadResumeRecord: async () => {}, ...resume },
+    '@/utils/chunkedUpload': setupChunkedUpload(api, resume),
   }).useFileUpload();
 }
 
@@ -180,6 +184,7 @@ function fileUploader(api = {}) {
   const source = scriptStatements('pages/instance/files/components/FileUploader.vue',
     ['uploadSingleFile', 'calcConcurrency', 'backoffDelay']);
   const bindings = {
+    ...setupChunkedUpload(api),
     targetNodeId: 'local', props: {},
     initUpload: async () => ({ uploadId: 'test-upload' }),
     uploadChunk: async () => {}, finishUpload: async () => {},
@@ -194,7 +199,7 @@ test('file manager retains failure feedback and still recognizes user cancellati
   const failed = { file: new File(['data'], 'file.txt') };
   await fileUploader({ uploadChunk: async () => { throw new Error('HTTP 413'); } })(failed);
   assert.equal(failed.status, 'error');
-  assert.equal(failed.errorMsg, 'HTTP 413');
+  assert.match(failed.errorMsg, /HTTP 413/);
 
   const canceled = { file: new File(['data'], 'file.txt') };
   await fileUploader({ uploadChunk: async () => { canceled.abortController.abort(); throw new Error('canceled'); } })(canceled);
@@ -206,7 +211,7 @@ test('file manager accepts a folder containing empty and non-empty files', async
   const saved = [];
   const upload = fileUploader({
     props: { instanceId: 1, currentPath: '/' },
-    finishUpload: async (_id, chunks) => saved.push(chunks),
+    finishUpload: async (_id, chunks) => { saved.push(chunks); return { uploadId: 'test-upload' }; },
     saveUploadedFile: async () => {},
   });
   for (const file of [new File([], 'empty.txt'), new File(['data'], 'normal.txt')]) {
@@ -264,5 +269,169 @@ test('hash helpers and Worker agree on standard vectors and multiple blocks', as
     assert.equal(await hash.computeFileBlake3Local(file), expected);
     await scope.onmessage({ data: { type: 'blake3', file } });
     assert.equal(scope.messages.pop().blake3, expected);
+  }
+});
+
+for (const phase of ['init', 'status', 'session']) {
+  test(`cancellation during ${phase} settles without starting chunks`, { timeout: 2000 }, async () => {
+    const started = deferred();
+    const release = deferred();
+    const controller = new AbortController();
+    const pause = async (value) => {
+      started.resolve();
+      await release.promise;
+      return value;
+    };
+    const api = {
+      uploadChunk: async () => assert.fail('canceled session must not send chunks'),
+      ...(phase === 'init' ? { initUpload: () => pause({ uploadId: 'test-upload' }) } : {}),
+      ...(phase === 'status' ? { getUploadStatus: () => pause({ receivedChunks: [] }) } : {}),
+    };
+    const { uploadFileInChunks } = setupChunkedUpload(api);
+    let sessionPublished = false;
+    const upload = uploadFileInChunks(new File(['data'], 'file.txt'), {
+      nodeId: 'local', signal: controller.signal,
+      ...(phase === 'status' ? { resumeRecord: { key: 'local:test', uploadId: 'test-upload' } } : {}),
+      onSession: () => {
+        sessionPublished = true;
+        if (phase === 'session') return pause();
+      },
+    });
+    const rejection = assert.rejects(upload, /^Error: 已取消$/);
+    await started.promise;
+    controller.abort();
+    release.resolve();
+    await rejection;
+    assert.equal(sessionPublished, phase === 'session');
+  });
+}
+
+test('failure waits for sibling cleanup and aborts background hashing', { timeout: 2000 }, async () => {
+  const bothStarted = deferred();
+  const cleanup = deferred();
+  const releaseCleanup = deferred();
+  let hashAborted = false;
+  let requests = 0;
+  let settled = false;
+  const { uploadFileInChunks } = setupChunkedUpload({
+    uploadChunk: async (_id, index, _blob, _progress, signal) => {
+      if (++requests === 2) bothStarted.resolve();
+      await bothStarted.promise;
+      if (index === 0) throw Object.assign(new Error('too large'), { status: 413 });
+      await new Promise(resolve => signal.addEventListener('abort', resolve, { once: true }));
+      cleanup.resolve();
+      await releaseCleanup.promise;
+      throw new Error('sibling canceled');
+    },
+  }, {
+    computeFileBlake3WithOptions: async (_file, { signal }) => {
+      await new Promise(resolve => signal.addEventListener('abort', resolve, { once: true }));
+      hashAborted = true;
+      throw new Error('hash canceled');
+    },
+  });
+  const upload = uploadFileInChunks(new File([new Uint8Array(10 * 1024 * 1024 + 1)], 'file.bin'), {
+    nodeId: 'local', signal: new AbortController().signal,
+  });
+  const rejection = assert.rejects(upload, /HTTP 413.*too large/).then(() => { settled = true; });
+  await cleanup.promise;
+  assert.equal(settled, false);
+  releaseCleanup.resolve();
+  await rejection;
+  assert.equal(hashAborted, true);
+  assert.equal(requests, 2);
+});
+
+for (const [name, destinations] of [
+  ['relative path', [{ path: 'a/server.properties' }, { path: 'b/server.properties' }]],
+  ['instance', [{ instanceId: 1 }, { instanceId: 2 }]],
+  ['current directory', [{ currentPath: '/a' }, { currentPath: '/b' }]],
+]) {
+  test(`file uploads to different ${name}s use separate consumable sessions`, { timeout: 2000 }, async () => {
+    const sessions = new Map();
+    const consumed = new Set();
+    const bothStarted = deferred();
+    let chunks = 0;
+    const api = {
+      initUpload: async (_node, metadata) => {
+        const key = JSON.stringify(metadata);
+        if (!sessions.has(key)) sessions.set(key, `upload-${sessions.size}`);
+        return { uploadId: sessions.get(key) };
+      },
+      uploadChunk: async () => {
+        if (++chunks === 2) bothStarted.resolve();
+        await bothStarted.promise;
+      },
+      finishUpload: async id => ({ uploadId: id }),
+      saveUploadedFile: async (_instance, id) => {
+        assert.equal(consumed.has(id), false, 'saving consumes the session');
+        consumed.add(id);
+      },
+    };
+    const tasks = await Promise.all(destinations.map(async destination => {
+      const task = {
+        path: destination.path || 'server.properties',
+        file: new File(['same contents'], 'server.properties', { lastModified: 12345 }),
+      };
+      await fileUploader({ ...api, props: { instanceId: 1, currentPath: '/', ...destination } })(task);
+      return task;
+    }));
+    assert.deepEqual(tasks.map(task => task.status), ['success', 'success']);
+    assert.equal(sessions.size, 2);
+    assert.equal(consumed.size, 2);
+  });
+}
+
+test('a scoped upload resumes the same destination after failure', async () => {
+  const records = new Map();
+  let initCount = 0;
+  let fail = true;
+  const { uploadFileInChunks } = setupChunkedUpload({
+    initUpload: async () => { initCount++; return { uploadId: 'resumable' }; },
+    uploadChunk: async () => { if (fail) throw Object.assign(new Error('failed'), { status: 403 }); },
+  }, {
+    getUploadResumeRecords: async () => [...records.values()].map(record => structuredClone(record)),
+    saveUploadResumeRecord: async record => records.set(record.key, structuredClone(record)),
+    deleteUploadResumeRecord: async key => records.delete(key),
+  });
+  const file = new File(['data'], 'file.txt');
+  const options = { nodeId: 'local', signal: new AbortController().signal, kind: 'file', resumeScope: 'destination' };
+  await assert.rejects(uploadFileInChunks(file, options), /HTTP 403/);
+  fail = false;
+  assert.equal((await uploadFileInChunks(file, options)).uploadId, 'resumable');
+  assert.equal(initCount, 1);
+  assert.equal(records.size, 0);
+});
+
+test('a canceled initialization cannot replace the active upload session', { timeout: 2000 }, async () => {
+  const firstInit = deferred();
+  const firstStarted = deferred();
+  const secondStarted = deferred();
+  const deleted = [];
+  let initCount = 0;
+  const hook = setupUpload({
+    initUpload: async () => {
+      if (++initCount === 1) { firstStarted.resolve(); return firstInit.promise; }
+      return { uploadId: 'new-session' };
+    },
+    uploadChunk: async (_id, _index, _chunk, _progress, signal) => {
+      secondStarted.resolve();
+      await new Promise((_resolve, reject) => signal.addEventListener('abort', () => reject(new Error('canceled')), { once: true }));
+    },
+    deleteUpload: async id => deleted.push(id),
+  });
+  const first = assert.rejects(hook.startUpload(new File(['first'], 'first.jar')), /^Error: 已取消$/);
+  await firstStarted.promise;
+  const second = assert.rejects(hook.startUpload(new File(['second'], 'second.jar')), /^Error: 已取消$/);
+  try {
+    await secondStarted.promise;
+    firstInit.resolve({ uploadId: 'old-session' });
+    await first;
+    assert.equal(hook.isUploading.value, true);
+    await hook.removeUploadData();
+    assert.deepEqual(deleted, ['new-session']);
+  } finally {
+    await hook.cancelUpload();
+    await second;
   }
 });

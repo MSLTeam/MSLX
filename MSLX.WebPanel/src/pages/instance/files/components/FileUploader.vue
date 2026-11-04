@@ -18,7 +18,16 @@ import {
   ServiceIcon,
 } from 'tdesign-icons-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { finishUpload, initUpload, saveUploadedFile, uploadChunk } from '@/api/files';
+import {
+  getUploadStatus,
+  saveUploadedFile,
+} from '@/api/files';
+import {
+  deleteUploadResumeRecord,
+  getUploadResumeRecords,
+} from '@/utils/uploadResume';
+import { uploadFileInChunks } from '@/utils/chunkedUpload';
+import type { UploadResumeRecord } from '@/utils/uploadResume';
 
 const props = withDefaults(
   defineProps<{
@@ -30,7 +39,7 @@ const props = withDefaults(
     allowFolder?: boolean;
     title?: string;
     accept?: string;
-    customUploadHandler?: (uploadId: string, task: UploadTask) => Promise<void>;
+    customUploadHandler?: (_uploadId: string, _task: UploadTask) => Promise<void>;
   }>(),
   {
     allowFolder: true,
@@ -52,21 +61,8 @@ interface UploadTask {
   errorMsg?: string;
   abortController?: AbortController;
   committedBytes: number; // 已确认上传的字节
-}
-
-// 推算合理的并发数
-function calcConcurrency(speedMBps: number): number {
-  if (speedMBps <= 0) return 2; // 初始默认并发
-  if (speedMBps < 0.5) return 1;
-  if (speedMBps < 2) return 2;
-  return 4;
-}
-
-// 指数退避 + jitter，上限 30s
-function backoffDelay(attempt: number): Promise<void> {
-  const base = Math.min(30_000, 500 * 2 ** attempt);
-  const jitter = Math.random() * base * 0.3;
-  return new Promise((r) => setTimeout(r, base + jitter));
+  uploadId?: string;
+  resumeRecord?: UploadResumeRecord;
 }
 
 const tasks = ref<UploadTask[]>([]);
@@ -216,10 +212,38 @@ const addTasksToQueue = (items: { file: File; path: string }[], replace = false)
   });
 };
 
+const pendingResumeHintShown = ref(false);
+const checkPendingResumes = async () => {
+  if (pendingResumeHintShown.value || tasks.value.length > 0) return;
+  const records = await getUploadResumeRecords(targetNodeId).catch(() => []);
+  for (const record of records) {
+    if (record.cancelledAt || (record.kind && record.kind !== 'file')) continue;
+    try {
+      const status = await getUploadStatus(record.uploadId, record.nodeId);
+      if ((status.receivedChunks || []).length === 0 && record.receivedChunks.length === 0) {
+        // 会话已创建但还没有分片，也仍然允许用户重新选择后复用。
+      }
+      pendingResumeHintShown.value = true;
+      MessagePlugin.info(`检测到未完成的文件上传，请重新选择 ${record.fileName} 继续上传`);
+      return;
+    } catch (error) {
+      const status = getHttpStatus(error);
+      if (status === 403 || status === 404) {
+        await deleteUploadResumeRecord(record.key).catch(() => {});
+      }
+    }
+  }
+};
+
 watch(
   () => [props.visible, props.initialItems] as const,
   ([visible, initialItems]) => {
-    if (visible && initialItems?.length) addTasksToQueue(initialItems, true);
+    if (visible) {
+      if (initialItems?.length) addTasksToQueue(initialItems, true);
+      void checkPendingResumes();
+    } else {
+      pendingResumeHintShown.value = false;
+    }
   },
 );
 
@@ -269,171 +293,59 @@ const processQueue = async () => {
   }
 };
 
+const getHttpStatus = (error: any): number | undefined => {
+  const responseCode = error?.responseData?.code ?? error?.response?.data?.code;
+  return typeof responseCode === 'number' ? responseCode : error?.status ?? error?.response?.status;
+};
+
 const uploadSingleFile = async (task: UploadTask) => {
   task.nodeId = targetNodeId;
   task.status = 'uploading';
   task.progress = 0;
   task.committedBytes = 0;
   task.abortController = new AbortController();
-  const startTime = Date.now();
-  let lastUpdate = 0;
-  let currentSpeedMBps = 0; // 用于动态调度并发的实时速度追踪
-  let chunkQueueError: Error | undefined;
 
   try {
-    const initRes = await initUpload(targetNodeId);
-    const uploadId = initRes.uploadId;
-
-    const isLargeFile = task.file.size > 200 * 1024 * 1024;
-    const CHUNK_SIZE = isLargeFile ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
-    const totalChunks = Math.ceil(task.file.size / CHUNK_SIZE);
-    const maxRetries = 5;
-
-    const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i);
-    // 只记录"正在上传中"的分片进度
-    const activeChunkProgressMap = new Map<number, number>();
-
-    // 更新进度和速度
-    const updateProgress = () => {
-      const now = Date.now();
-      if (now - lastUpdate < 100) return;
-      lastUpdate = now;
-
-      // 总上传量 = 已完成的分片 + 活跃分片的动态进度
-      let activeLoadedBytes = 0;
-      for (const loaded of activeChunkProgressMap.values()) {
-        activeLoadedBytes += loaded;
-      }
-      const totalLoadedBytes = task.committedBytes + activeLoadedBytes;
-
-      // 计算百分比 (保留 5% 给合并阶段)
-      const percent = Math.min((totalLoadedBytes / task.file.size) * 95, 95);
-
-      task.progress = Math.max(task.progress, Number(percent.toFixed(1)));
-
-      // 计算速度
-      const elapsed = (now - startTime) / 1000;
-      if (elapsed > 0) {
-        currentSpeedMBps = totalLoadedBytes / 1024 / 1024 / elapsed;
-        task.speed = currentSpeedMBps.toFixed(1) + ' MB/s';
-      }
-    };
-
-    // 单个分片处理逻辑
-    const processChunk = async (index: number) => {
-      if (task.abortController?.signal.aborted) throw new Error('已取消');
-
-      const start = index * CHUNK_SIZE;
-      const end = Math.min(task.file.size, start + CHUNK_SIZE);
-      const chunk = task.file.slice(start, end);
-      let lastError: any;
-
-      for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        if (task.abortController?.signal.aborted) throw new Error('已取消');
-
-        try {
-          await uploadChunk(
-            uploadId,
-            index,
-            chunk,
-            (e: any) => {
-              if (e && e.loaded) {
-                activeChunkProgressMap.set(index, e.loaded);
-                updateProgress();
-              }
-            },
-            task.abortController?.signal,
-          );
-
-          // 成功
-          task.committedBytes += chunk.size;
-          activeChunkProgressMap.delete(index);
-          updateProgress();
-          return;
-        } catch (err: any) {
-          lastError = err;
-          if (attempt < maxRetries) {
-            // 失败重试：当前分片进度清零
-            activeChunkProgressMap.set(index, 0);
-            updateProgress();
-
-            await backoffDelay(attempt);
-          }
+    const result = await uploadFileInChunks(task.file, {
+      nodeId: targetNodeId,
+      signal: task.abortController.signal,
+      kind: 'file',
+      resumeScope: JSON.stringify([props.instanceId ?? null, props.currentPath ?? '', task.path]),
+      progressMax: 95,
+      onSession: (record) => {
+        task.uploadId = record.uploadId;
+        task.resumeRecord = record;
+      },
+      onProgress: (progress, speedMBps) => {
+        task.progress = Math.max(task.progress, progress);
+        task.speed = speedMBps > 0 ? `${speedMBps.toFixed(1)} MB/s` : task.speed;
+      },
+      onStatus: (status) => {
+        if (status === 'merging') {
+          task.status = 'merging';
+          task.speed = '合并中...';
+          task.progress = 98;
         }
-      }
-      throw lastError || new Error(`分片 ${index} 失败`);
-    };
-
-    // 动态控制并发
-    await new Promise<void>((resolve, reject) => {
-      let hasError = false;
-      const activeWorkers = new Set<Promise<void>>();
-
-      const spawnWorkers = () => {
-        if (hasError || task.abortController?.signal.aborted) return;
-
-        // 动态计算目标并发数
-        const targetConcurrency = Math.min(calcConcurrency(currentSpeedMBps), totalChunks);
-
-        // 如果当前并发数小于目标，并且队列里还有任务，就持续拉起
-        while (activeWorkers.size < targetConcurrency && chunkIndices.length > 0) {
-          const index = chunkIndices.shift()!;
-          const p = processChunk(index)
-            .then(() => {
-              activeWorkers.delete(p);
-              if (chunkIndices.length === 0 && activeWorkers.size === 0) {
-                resolve(); // 全部上传结束了
-              } else {
-                spawnWorkers(); // 继续评估并补齐并发
-              }
-            })
-            .catch((err) => {
-              if (hasError) return;
-              hasError = true;
-              chunkQueueError = err;
-              task.abortController?.abort(); // 取消掉池子里其他的 worker
-              reject(err);
-            });
-          activeWorkers.add(p);
-        }
-
-        // 兜底校验
-        if (chunkIndices.length === 0 && activeWorkers.size === 0 && !hasError) {
-          resolve();
-        }
-      };
-
-      // 启动调度器
-      spawnWorkers();
+      },
     });
 
-    if (task.abortController.signal.aborted) throw new Error('已取消');
-
-    // 合并阶段
-    task.status = 'merging';
-    task.speed = '合并中...';
-    task.progress = 98;
-
-    await finishUpload(uploadId, totalChunks);
     if (props.customUploadHandler) {
-      await props.customUploadHandler(uploadId, task);
+      await props.customUploadHandler(result.uploadId, task);
     } else if (props.instanceId !== undefined && props.currentPath !== undefined) {
-      await saveUploadedFile(props.instanceId, uploadId, task.path, props.currentPath);
+      await saveUploadedFile(props.instanceId, result.uploadId, task.path, props.currentPath);
     }
 
     task.status = 'success';
     task.progress = 100;
     task.speed = '完成';
   } catch (err: any) {
-    const uploadError = chunkQueueError || err;
-    if (uploadError.message === '已取消' || (!chunkQueueError && task.abortController?.signal.aborted)) {
+    if (err?.message === '已取消' || task.abortController?.signal.aborted) {
       task.status = 'pending';
       task.speed = '已取消';
       task.progress = 0;
-      task.committedBytes = 0;
     } else {
       task.status = 'error';
-      task.errorMsg = uploadError.message || '失败';
+      task.errorMsg = err?.message || '失败';
     }
   }
 };

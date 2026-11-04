@@ -228,6 +228,19 @@ public sealed class AccountSecurityTests : IDisposable
     }
 
     [Fact]
+    public void PasskeyStatus_UsesPanelOriginHintWhenProxyOmitsOrigin()
+    {
+        var http = Http();
+        http.Request.Host = new HostString("127.0.0.1:1027");
+        http.Request.Headers.Remove("Origin");
+        http.Request.Headers["X-MSLX-Public-Origin"] = "https://panel.example";
+
+        var site = AccountSecurityService.Site(http.Request, allowOriginHint: true);
+        Assert.Equal("https://panel.example", site.Origin);
+        Assert.Equal("panel.example", site.RpId);
+    }
+
+    [Fact]
     public async Task Passkey_HttpsRegistrationAndLoginOverHttpOriginConnection_StillValidateSignedOrigin()
     {
         const string publicOrigin = "https://panel.example:8443";

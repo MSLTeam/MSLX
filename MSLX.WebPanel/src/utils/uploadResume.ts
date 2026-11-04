@@ -17,7 +17,7 @@ export interface UploadResumeRecord {
   chunkSize: number;
   totalChunks: number;
   fingerprint: string;
-  kind?: 'package' | 'core';
+  kind?: 'package' | 'core' | 'file';
   blake3?: string;
   receivedChunks: number[];
   updatedAt: number;
