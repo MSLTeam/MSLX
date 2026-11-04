@@ -64,6 +64,9 @@ export function useFileUpload() {
     uploadedFileName.value = file.name;
     uploadedFileSize.value = formatFileSize(file.size);
     fileKey.value = '';
+    activeUploadId = '';
+    activeResumeRecord = null;
+    const isCurrentUpload = () => abortController === currentAbortController && !currentAbortController.signal.aborted;
 
     try {
       const uploadNodeId = options.resumeRecord?.nodeId || targetNodeId;
@@ -73,6 +76,7 @@ export function useFileUpload() {
         resumeRecord: options.resumeRecord,
         kind: options.kind,
         onSession: (record) => {
+          if (!isCurrentUpload()) return;
           activeUploadId = record.uploadId;
           activeResumeRecord = record;
           if (options.fileHandle) {
@@ -82,12 +86,15 @@ export function useFileUpload() {
           }
         },
         onProgress: (progress) => {
+          if (!isCurrentUpload()) return;
           uploadProgress.value = Math.max(uploadProgress.value, progress);
         },
         onStatus: (status) => {
+          if (!isCurrentUpload()) return;
           if (status === 'merging') uploadProgress.value = 99;
         },
       });
+      if (!isCurrentUpload()) throw new Error('已取消');
       const finalKey = result.response.uploadId;
       if (!finalKey) throw new Error('上传合并未返回文件标识');
       activeUploadId = '';

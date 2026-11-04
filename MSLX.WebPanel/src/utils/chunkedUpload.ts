@@ -29,6 +29,8 @@ export interface ChunkedUploadOptions {
   signal: AbortSignal;
   resumeRecord?: UploadResumeRecord;
   kind?: UploadResumeKind;
+  /** 同一文件保存到不同目标时，分别维护恢复会话。 */
+  resumeScope?: string;
   progressMax?: number;
   onProgress?: (_progress: number, _speedMBps: number) => void;
   onStatus?: (_status: 'uploading' | 'merging') => void;
@@ -126,7 +128,10 @@ export async function uploadFileInChunks(
   const chunkSize = chunkSizeFor(file);
   const totalChunks = Math.ceil(file.size / chunkSize);
   const progressMax = options.progressMax ?? 98;
-  const fingerprint = await computeFastFileFingerprint(file);
+  const fileFingerprint = await computeFastFileFingerprint(file);
+  const fingerprint = options.resumeScope === undefined
+    ? fileFingerprint
+    : JSON.stringify([fileFingerprint, options.resumeScope]);
   let resumeRecord = options.resumeRecord || await findResumeRecord(
     file,
     nodeId,
@@ -204,6 +209,7 @@ export async function uploadFileInChunks(
     resumeRecord.receivedChunks = [...receivedChunks].sort((a, b) => a - b);
     resumeRecord.updatedAt = Date.now();
     await saveUploadResumeRecord(resumeRecord).catch(() => {});
+    ensureNotAborted();
     await options.onSession?.(resumeRecord);
     ensureNotAborted();
 

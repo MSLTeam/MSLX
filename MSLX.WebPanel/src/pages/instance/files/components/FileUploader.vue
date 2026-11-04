@@ -310,6 +310,7 @@ const uploadSingleFile = async (task: UploadTask) => {
       nodeId: targetNodeId,
       signal: task.abortController.signal,
       kind: 'file',
+      resumeScope: JSON.stringify([props.instanceId ?? null, props.currentPath ?? '', task.path]),
       progressMax: 95,
       onSession: (record) => {
         task.uploadId = record.uploadId;
