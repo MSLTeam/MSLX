@@ -95,13 +95,13 @@ onUnmounted(() => {
 // 处理菜单点击
 const handleDropdownClick = async (dropdownItem: any, playerName: string) => {
   const cmdPrefix = dropdownItem.value;
-  const reason =
-    cmdPrefix === 'kick' || cmdPrefix === 'ban'
-      ? cmdPrefix === 'kick'
-        ? ' 您被控制台踢出了服务器'
-        : '您被控制台封禁了'
-      : '';
-  const fullCmd = `${cmdPrefix} ${playerName}${reason}`;
+  let reason = '';
+  if (cmdPrefix === 'kick') {
+    reason = '您被控制台踢出了服务器';
+  } else if (cmdPrefix === 'ban') {
+    reason = '您被控制台封禁了';
+  }
+  const fullCmd = reason ? `${cmdPrefix} ${playerName} ${reason}` : `${cmdPrefix} ${playerName}`;
 
   try {
     await hubStore.sendCommand(fullCmd);

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { getSlaveNodes } from '@/api/node';
+import { getSlaveNodes, getPublicSlaveNode } from '@/api/node';
 import router from '@/router';
 
 export const useNodeStore = defineStore('node', {
@@ -8,8 +8,12 @@ export const useNodeStore = defineStore('node', {
     loading: false,
     fetchError: '',
     lastFetchTime: 0,
+    navigationNodeId: 'local', // 仅用于导航记忆，不作为接口请求目标。
     activeNodeId: new URL(window.location.href).searchParams.get('node') || 'local'
   }),
+  getters: {
+    hasSlaveNodes: (state) => state.slaveNodes.some((n: any) => !n.pendingRemoval)
+  },
   actions: {
     async fetchNodes(force = false) {
       if (!force && Date.now() - this.lastFetchTime < 5000) {
@@ -28,6 +32,17 @@ export const useNodeStore = defineStore('node', {
         this.loading = false;
       }
       return this.slaveNodes;
+    },
+    async fetchPublicNode(nodeId: string) {
+      if (nodeId === 'local' || this.slaveNodes.some(n => n.nodeId === nodeId && !n.pendingRemoval)) return;
+      try {
+        const res = await getPublicSlaveNode(nodeId);
+        if (res && !this.slaveNodes.some(n => n.nodeId === res.nodeId)) {
+          this.slaveNodes.push(res);
+        }
+      } catch (error) {
+        console.error('Failed to fetch public node target:', error);
+      }
     },
     async setActiveNode(nodeId: string) {
       if (nodeId !== 'local' && !this.slaveNodes.some(n => n.nodeId === nodeId && !n.pendingRemoval))

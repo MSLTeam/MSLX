@@ -4,7 +4,7 @@ import 'nprogress/nprogress.css';
 import { getPermissionStore, getUserStore, useNodeStore } from '@/store';
 import router from '@/router';
 import Layout from '@/layouts/index.vue';
-import { getNodeTarget } from '@/utils/nodeTarget';
+import { getNodeTarget, isNodePage } from '@/utils/nodeTarget';
 import { arePluginsLoaded, loadAllPlugins, activatePluginNode, setPluginLoadError } from '@/utils/pluginManager';
 import { usePluginUIStore } from '@/store/modules/pluginUI';
 
@@ -33,11 +33,13 @@ router.beforeEach(async (to, _from, next) => {
     }
   }
   const nodeId = typeof to.query.node === 'string' && to.query.node ? to.query.node : 'local';
-  if (nodeId !== 'local' && !user.token) {
-    next({ path: '/login', query: { redirect: encodeURIComponent(to.fullPath) } }); NProgress.done(); return;
-  }
   try {
-    if (nodeId !== 'local') { await useNodeStore().fetchNodes(); getNodeTarget(nodeId); }
+    if (nodeId !== 'local') {
+      const nodeStore = useNodeStore();
+      if (user.token) await nodeStore.fetchNodes();
+      else await nodeStore.fetchPublicNode(nodeId);
+      getNodeTarget(nodeId);
+    }
     if (!arePluginsLoaded(nodeId)) await loadAllPlugins(nodeId);
   } catch (error) {
     setPluginLoadError(nodeId, error);
@@ -60,6 +62,7 @@ router.beforeEach(async (to, _from, next) => {
 router.afterEach(to => {
   const nodeId = typeof to.query.node === 'string' && to.query.node ? to.query.node : 'local';
   useNodeStore().activeNodeId = nodeId;
+  if (isNodePage(to.path)) useNodeStore().navigationNodeId = nodeId;
   activatePluginNode(nodeId);
   if (to.path === '/login') getUserStore().logout();
   NProgress.done();

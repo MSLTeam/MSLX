@@ -82,7 +82,7 @@ export const getActive = (maxLevel = 3): string => {
 };
 
 export function changeUrl(url: string, newTab: boolean = false) {
-  url = nodeNavigationUrl(url, String(router.currentRoute.value.query.node || 'local'));
+  url = nodeNavigationUrl(url);
   if(url.includes('http')){
     window.open(url);
   } else if (newTab) {

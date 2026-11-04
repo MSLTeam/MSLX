@@ -1,4 +1,6 @@
+import type { AccountSecurity } from '@/api/accountSecurity';
 export interface UserInfoModel {
+  security?: AccountSecurity;
   id: string;
   username: string;
   name: string;
@@ -10,6 +12,7 @@ export interface UserInfoModel {
 }
 
 export interface UpdateUserRequest {
+  resetTotp?: boolean;
   username?: string;
   name?: string;
   avatar?: string;
@@ -21,6 +24,7 @@ export interface UpdateUserRequest {
 
 // 用户数据模型
 export interface AdminUserDto {
+  security?: AccountSecurity;
   id: string;
   username: string;
   name: string;

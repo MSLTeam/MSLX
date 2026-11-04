@@ -68,7 +68,7 @@ function install(configs: Array<{ id: string; config: any }>, nodeId: string) {
         component = async () => { const module = await lazy(); return bindPluginComponent(module.default || module, nodeId, id); };
       } else if (component) component = markRaw(bindPluginComponent(component, nodeId, id));
       return { ...raw, component,
-        meta: { ...raw.meta, pluginOwner: id, nodeScoped: true, ...(nodeId !== 'local' ? { anonymous: false } : {}) },
+        meta: { ...raw.meta, pluginOwner: id, nodeScoped: true, ...(nodeId !== 'local' && !raw.meta?.anonymous ? { anonymous: false } : {}) },
         ...(raw.children ? { children: raw.children.filter(allowed).map(wrapRoute) } : {}),
       };
     };
@@ -91,7 +91,7 @@ function install(configs: Array<{ id: string; config: any }>, nodeId: string) {
         const full = item.path.startsWith('/') ? item.path : `${base}/${item.path}`.replace(/\/$/, '');
         const root = full.split('/:')[0];
         if (root) pluginNodePages.add(root);
-        if (nodeId === 'local' && item.meta?.anonymous && !permission.whiteListRouters.includes(full)) {
+        if (item.meta?.anonymous && !permission.whiteListRouters.includes(full)) {
           permission.whiteListRouters.push(full); anonymousPaths.add(full);
         }
         (item.children || []).forEach(child => collect(child, full));

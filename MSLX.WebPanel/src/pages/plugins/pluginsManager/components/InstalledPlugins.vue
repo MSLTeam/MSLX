@@ -18,7 +18,7 @@ import {
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 
 import Result from '@/components/result/index.vue';
-import { useUserStore } from '@/store';
+import { useUserStore, useNodeStore } from '@/store';
 import { PluginMultiNodeSupport } from '@/api/model/plugins';
 import type { PluginListModel } from '@/api/model/plugins';
 import {
@@ -33,6 +33,8 @@ import NotificationPlugin from 'tdesign-vue-next/es/notification/plugin';
 import { DownloadIcon } from 'tdesign-icons-vue-next';
 
 const userStore = useUserStore();
+const nodeStore = useNodeStore();
+const hasSlaveNodes = computed(() => targetNodeId !== 'local' || nodeStore.hasSlaveNodes);
 const targetSystemVersion = ref(targetNodeId === 'local' ? userStore.userInfo.version : '');
 onMounted(async () => {
   try { targetSystemVersion.value = (await getDaemonStatusInfo(targetNodeId)).version || ''; }
@@ -273,6 +275,7 @@ const formatChangelog = (changelog?: string) => {
 defineExpose({ getList });
 
 onMounted(() => {
+  nodeStore.fetchNodes();
   getList();
 });
 
@@ -340,7 +343,12 @@ cleanupPluginPage(() => { if (updateState.timer) clearInterval(updateState.timer
                 {{ item.name }}
               </h3>
 
-              <t-tag size="small" variant="light" :theme="item.supportsMultiNode === PluginMultiNodeSupport.Supported ? 'success' : item.supportsMultiNode === PluginMultiNodeSupport.Unsupported ? 'warning' : 'default'">
+              <t-tag
+                v-if="hasSlaveNodes"
+                size="small"
+                variant="light"
+                :theme="item.supportsMultiNode === PluginMultiNodeSupport.Supported ? 'success' : item.supportsMultiNode === PluginMultiNodeSupport.Unsupported ? 'warning' : 'default'"
+              >
                 {{ item.supportsMultiNode === PluginMultiNodeSupport.Supported ? '已适配多节点' : item.supportsMultiNode === PluginMultiNodeSupport.Unsupported ? '仅主节点界面' : '多节点未验证' }}
               </t-tag>
               <!-- 动态状态标签 -->

@@ -54,6 +54,14 @@ public class InstanceExportController : ControllerBase
         {
             try
             {
+                var excludes = (request.Excludes ?? []).Select(exclude => exclude switch
+                {
+                    "mods" => ServerPropertiesPathUtils.NormalizeRelativePath(server.ModsPath, "mods", "模组目录路径无效"),
+                    "plugins" => ServerPropertiesPathUtils.NormalizeRelativePath(server.PluginsPath, "plugins", "插件目录路径无效"),
+                    "world" => ServerPropertiesPathUtils.NormalizeRelativePath(server.WorldPath, "world", "地图目录路径无效"),
+                    _ => exclude
+                }).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
                 using var archive = ZipFile.Open(exportPath, ZipArchiveMode.Create, System.Text.Encoding.GetEncoding("GBK"));
                 var baseUri = new Uri(server.Base.TrimEnd('\\', '/') + "/");
 
@@ -79,9 +87,9 @@ public class InstanceExportController : ControllerBase
                     
                     // Check if file is in any excluded directory
                     bool isExcluded = false;
-                    if (request.Excludes != null)
+                    if (excludes.Count > 0)
                     {
-                        foreach (var exclude in request.Excludes)
+                        foreach (var exclude in excludes)
                         {
                             if (relativePath.StartsWith(exclude + "/", StringComparison.OrdinalIgnoreCase) || 
                                 relativePath.Equals(exclude, StringComparison.OrdinalIgnoreCase))

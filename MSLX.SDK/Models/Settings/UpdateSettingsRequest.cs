@@ -85,4 +85,11 @@ public class UpdateWebPanelStyleSettingsRequest
     public double WebpPanelTerminalBlurDark { get; set; } = 5.0;
     [Range(0, 2, ErrorMessage = "日志染色级别参数错误")]
     public int WebPanelColorizeLogLevel { get; set; } = 1;
+
+    // 默认主题样式设置
+    public string WebPanelDefaultThemeMode { get; set; } = "auto";
+    public string WebPanelDefaultBrandTheme { get; set; } = "default";
+    public string WebPanelDefaultLayout { get; set; } = "side";
+    public bool WebPanelDefaultEnableCustomTheme { get; set; } = false;
+    public bool WebPanelDefaultExpandMutex { get; set; } = true;
 }

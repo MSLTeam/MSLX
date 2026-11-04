@@ -339,9 +339,10 @@ const handleRemoveWhitelist = async (name: string) => {
 // ================= 玩家封禁 =================
 const handleAddBanPlayer = async (name: string = inputNewBanPlayer.value) => {
   if (!name) return MessagePlugin.warning('请输入玩家ID');
-  const reason = inputNewBanReason.value ? ` ${inputNewBanReason.value}` : '';
+  const cleanReason = inputNewBanReason.value?.trim();
+  const reason = cleanReason ? ` ${cleanReason}` : '';
   await handleAction(
-    () => addBannedPlayer(props.serverId, name, inputNewBanReason.value),
+    () => addBannedPlayer(props.serverId, name, cleanReason),
     `ban ${name}${reason}`,
     '封禁玩家成功',
   );
@@ -357,9 +358,10 @@ const handleRemoveBanPlayer = async (name: string) => {
 // ================= IP 封禁 =================
 const handleAddBanIp = async () => {
   if (!inputNewBanIp.value) return MessagePlugin.warning('请输入IP地址');
-  const reason = inputNewBanReason.value ? ` ${inputNewBanReason.value}` : '';
+  const cleanReason = inputNewBanReason.value?.trim();
+  const reason = cleanReason ? ` ${cleanReason}` : '';
   await handleAction(
-    () => addBannedIp(props.serverId, inputNewBanIp.value, inputNewBanReason.value),
+    () => addBannedIp(props.serverId, inputNewBanIp.value, cleanReason),
     `ban-ip ${inputNewBanIp.value}${reason}`,
     '封禁IP成功',
   );

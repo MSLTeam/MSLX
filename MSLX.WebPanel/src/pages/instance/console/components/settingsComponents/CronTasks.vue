@@ -340,14 +340,14 @@ onMounted(fetchData);
 </script>
 
 <template>
-  <div class="flex flex-col mx-auto w-full">
-    <div class="flex items-center justify-between mt-5 mb-4 pb-2 border-b border-dashed border-zinc-200 dark:border-zinc-700">
-      <div class="flex items-center gap-2">
+  <div class="flex min-w-0 flex-col mx-auto w-full">
+    <div class="flex flex-col items-stretch gap-3 md:flex-row md:items-center justify-between mt-5 mb-4 pb-2 border-b border-dashed border-zinc-200 dark:border-zinc-700">
+      <div class="flex shrink-0 items-center gap-2">
         <div class="w-1 h-4 bg-[var(--color-primary)] rounded-full"></div>
-        <h2 class="text-base font-bold text-[var(--td-text-color-primary)] m-0">定时计划任务</h2>
+        <h2 class="text-base font-bold text-[var(--td-text-color-primary)] m-0 whitespace-nowrap">定时计划任务</h2>
       </div>
 
-      <t-space v-if="!isCreating">
+      <div v-if="!isCreating" class="flex min-w-0 flex-wrap gap-2">
         <t-button theme="default" variant="outline" class="!rounded-lg" @click="changeUrl(DOC_URLS.cron)">
           <template #icon><book-icon /></template>使用文档
         </t-button>
@@ -357,7 +357,7 @@ onMounted(fetchData);
         <t-button theme="primary" class="!rounded-lg shadow-sm" @click="handleStartCreate">
           <template #icon><add-icon /></template>创建新任务
         </t-button>
-      </t-space>
+      </div>
     </div>
 
     <transition

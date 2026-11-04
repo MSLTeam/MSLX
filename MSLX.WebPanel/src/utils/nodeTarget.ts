@@ -10,12 +10,21 @@ export const isNodePage = (path: string) => /^\/(?:instance|frp)(?:\/|$)/.test(p
   [...pluginNodePages].some(root => path === root || path.startsWith(root + '/'));
 
 // 面板生成的节点url才集成
-export function nodeNavigationUrl(path: string, nodeId = getPageNodeId()) {
+export function nodeNavigationUrl(path: string, nodeId = isNodePage(new URL(window.location.href).pathname)
+  ? getPageNodeId() : useNodeStore().navigationNodeId || 'local') {
   if (!path.startsWith('/') || path.startsWith('//') || nodeId === 'local') return path;
   const url = new URL(path, window.location.origin);
   if (!isNodePage(url.pathname) || url.searchParams.has('node')) return path;
   url.searchParams.set('node', nodeId);
   return `${url.pathname}${url.search}${url.hash}`;
+}
+
+export function getPluginPublicUrl(path: string, nodeId = getPageNodeId(), options: { absolute?: boolean } = {}) {
+  if (!path.startsWith('/')) path = `/${path}`;
+  const base = window.location.origin;
+  const url = new URL(path, base);
+  if (nodeId && nodeId !== 'local') url.searchParams.set('node', nodeId);
+  return options.absolute ? url.toString() : `${url.pathname}${url.search}${url.hash}`;
 }
 
 export function getNodeTarget(nodeId = getPageNodeId()) {

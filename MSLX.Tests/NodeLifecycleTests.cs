@@ -61,6 +61,49 @@ public class NodeLifecycleTests
     }
 
     [Fact]
+    public async Task GetPublicNodeTarget_ReturnsOnlyPublicInfoWithoutSecrets()
+    {
+        IConfigBase.Initialize(NullLoggerFactory.Instance);
+        var path = Path.Combine(IConfigBase.GetAppConfigPath(), "Nodes.json");
+        var original = File.Exists(path) ? File.ReadAllText(path) : null;
+        var previous = IConfigBase.NodeList;
+        using var config = new NodeListConfig();
+        try
+        {
+            var node = new SlaveNodeConfig
+            {
+                NodeId = "public-test-node",
+                NodeName = "公开测试节点",
+                NodeUrl = "http://public-test.mslmc.cn:1027",
+                NodeLogo = "https://logo.png",
+                CommsKey = "SECRET_KEY_MUST_NOT_LEAK",
+                MasterUrl = "http://master.test"
+            };
+            config.AddOrUpdateNode(node);
+            IConfigBase.NodeList = config;
+            var controller = new MasterNodeController(NullLogger<MasterNodeController>.Instance);
+
+            // Empty nodeId -> BadRequest
+            Assert.IsType<BadRequestResult>(await controller.GetPublicNodeTarget(""));
+
+            // local -> returns local
+            var localRes = Assert.IsType<OkObjectResult>(await controller.GetPublicNodeTarget("local"));
+            var localJson = Newtonsoft.Json.JsonConvert.SerializeObject(localRes.Value);
+            Assert.Contains("local", localJson);
+
+            // unknown -> NotFound
+            Assert.IsType<NotFoundObjectResult>(await controller.GetPublicNodeTarget("non-existent"));
+
+            // When node does not have public plugins (unreachable / none enabled) -> NotFound (Hidden!)
+            var hiddenRes = Assert.IsType<NotFoundObjectResult>(await controller.GetPublicNodeTarget("public-test-node"));
+            var hiddenJson = Newtonsoft.Json.JsonConvert.SerializeObject(hiddenRes.Value);
+            Assert.DoesNotContain("SECRET_KEY_MUST_NOT_LEAK", hiddenJson);
+            Assert.DoesNotContain("MasterUrl", hiddenJson);
+        }
+        finally { IConfigBase.NodeList = previous; if (original == null) File.Delete(path); else File.WriteAllText(path, original); }
+    }
+
+    [Fact]
     public void RemovalRetryBackoffIsBounded_AndDiscardedWhenRecordDisappears()
     {
         var retries = new NodeRemovalRetries();

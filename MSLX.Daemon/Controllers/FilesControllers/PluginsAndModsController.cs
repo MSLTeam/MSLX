@@ -31,19 +31,12 @@ public class PluginsAndModsController : ControllerBase
                 });
             }
 
-            string targetPath = GetPluginOrModPath(server, mode);
-            if (!Directory.Exists(targetPath))
-            {
-                return NotFound(new ApiResponse<object>
-                {
-                    Code = 404,
-                    Message = $"未检测到配置的{(mode == "plugins" ? "插件" : "模组")}目录,请检查当前服务端是否支持使用{(mode == "plugins" ? "插件" : "模组")}，或者尝试启动一次服务器。",
-                });
-            }
+            string targetPath = GetPluginOrModPath(server, mode, out var relativePath);
+            bool directoryExists = Directory.Exists(targetPath);
 
             // 获取这个文件夹所有模组/插件
-            var jarFilesList = Directory.GetFiles(targetPath, "*.jar").Select(Path.GetFileName).ToList();
-            var disableJarFiles = Directory.GetFiles(targetPath, "*.jar.disabled").Select(Path.GetFileName).ToArray();
+            var jarFilesList = directoryExists ? Directory.GetFiles(targetPath, "*.jar").Select(Path.GetFileName).ToList() : [];
+            var disableJarFiles = directoryExists ? Directory.GetFiles(targetPath, "*.jar.disabled").Select(Path.GetFileName).ToArray() : [];
             
             // 存放检测到的客户端模组
             var clientJarFiles = new List<string>();
@@ -97,6 +90,8 @@ public class PluginsAndModsController : ControllerBase
                 Message = "获取成功",
                 Data = new
                 {
+                    path = relativePath,
+                    directoryExists,
                     totalCount = disableJarFiles.Length + jarFilesList.Count + clientJarFiles.Count,
                     activeCount = jarFilesList.Count,
                     clientOnlyCount = clientJarFiles.Count,
@@ -118,11 +113,11 @@ public class PluginsAndModsController : ControllerBase
     }
 
 
-    private static string GetPluginOrModPath(McServerInfo.ServerInfo server, string? mode)
+    private static string GetPluginOrModPath(McServerInfo.ServerInfo server, string? mode, out string relativePath)
     {
         var isMods = string.Equals(mode, "mods", StringComparison.OrdinalIgnoreCase);
         var label = isMods ? "模组" : "插件";
-        var relativePath = isMods
+        relativePath = isMods
             ? ServerPropertiesPathUtils.NormalizeRelativePath(server.ModsPath, "mods", "模组目录路径必须是实例目录内的相对路径")
             : ServerPropertiesPathUtils.NormalizeRelativePath(server.PluginsPath, "plugins", "插件目录路径必须是实例目录内的相对路径");
 
@@ -318,7 +313,7 @@ public class PluginsAndModsController : ControllerBase
         if (server == null)
             return NotFound(new ApiResponse<object> { Code = 404, Message = "服务器不存在" });
 
-        string targetPath = GetPluginOrModPath(server, request.Mode);
+        string targetPath = GetPluginOrModPath(server, request.Mode, out _);
         if (!Directory.Exists(targetPath))
             return NotFound(new ApiResponse<object> { Code = 404, Message = "配置的目录不存在" });
 

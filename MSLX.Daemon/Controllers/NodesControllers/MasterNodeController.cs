@@ -49,6 +49,71 @@ namespace MSLX.Daemon.Controllers.NodesControllers
             }});
         }
 
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, (bool hasPublic, DateTimeOffset expiresAt)> PublicPluginsCache = new();
+
+        internal static async Task<bool> CheckNodeHasPublicPluginsAsync(string nodeId, string nodeUrl, CancellationToken cancellationToken = default)
+        {
+            var now = DateTimeOffset.UtcNow;
+            if (PublicPluginsCache.TryGetValue(nodeId, out var cached) && cached.expiresAt > now)
+            {
+                return cached.hasPublic;
+            }
+
+            bool hasPublic = false;
+            try
+            {
+                var response = await GeneralApi.GetAsync(
+                    $"{nodeUrl.TrimEnd('/')}/api/plugins/list",
+                    timeout: TimeSpan.FromSeconds(3));
+
+                if (response.IsSuccessStatusCode && !string.IsNullOrWhiteSpace(response.Content))
+                {
+                    var json = JObject.Parse(response.Content);
+                    if (json["code"]?.Value<int>() == 200 && json["data"] is JArray arr && arr.Count > 0)
+                    {
+                        hasPublic = true;
+                    }
+                }
+            }
+            catch
+            {
+                hasPublic = false;
+            }
+
+            PublicPluginsCache[nodeId] = (hasPublic, now.AddSeconds(hasPublic ? 30 : 10));
+            return hasPublic;
+        }
+
+        [AllowAnonymous]
+        [HttpGet("public-target")]
+        public async Task<IActionResult> GetPublicNodeTarget([FromQuery] string nodeId)
+        {
+            if (string.IsNullOrWhiteSpace(nodeId)) return BadRequest();
+            if (nodeId == "local")
+                return Ok(new ApiResponse<object> { Code = 200, Message = "获取成功", Data = new { nodeId = "local", nodeUrl = "" } });
+
+            var node = IConfigBase.NodeList.GetNodeById(nodeId);
+            if (node == null || node.PendingRemoval)
+                return NotFound(new ApiResponse<object> { Code = 404, Message = "节点不存在或未开放公开服务" });
+
+            var hasPublic = await CheckNodeHasPublicPluginsAsync(node.NodeId, node.NodeUrl, HttpContext?.RequestAborted ?? default);
+            if (!hasPublic)
+                return NotFound(new ApiResponse<object> { Code = 404, Message = "该节点未开放任何公开插件页面" });
+
+            return Ok(new ApiResponse<object>
+            {
+                Code = 200,
+                Message = "获取成功",
+                Data = new
+                {
+                    nodeId = node.NodeId,
+                    nodeName = node.NodeName,
+                    nodeUrl = node.NodeUrl,
+                    nodeLogo = node.NodeLogo
+                }
+            });
+        }
+
         public MasterNodeController(ILogger<MasterNodeController> logger)
         {
             _logger = logger;

@@ -20,6 +20,7 @@ import { request } from '@/utils/request';
 import { isInternalNetwork } from '@/utils/tools';
 import { changeUrl } from '@/router';
 
+const emit = defineEmits<{ loaded: [info: UserInfoModel] }>();
 const userStore = useUserStore();
 
 const loading = ref(false);
@@ -53,6 +54,7 @@ const initData = async () => {
   try {
     const userData = await getSelfInfo();
     Object.assign(userInfo, userData);
+    emit('loaded', userData);
     originalUsername.value = userData.username;
 
     // 解析头像模式

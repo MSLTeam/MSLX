@@ -96,7 +96,7 @@ const handleNav = (url) => {
 const handleMenuChange = (value: string) => {
   // value = 路由 path
   if (value) {
-    router.push(nodeNavigationUrl(value, String(router.currentRoute.value.query.node || 'local')));
+    router.push(nodeNavigationUrl(value));
     mobileMenuVisible.value = false;
   }
 };

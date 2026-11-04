@@ -145,10 +145,22 @@ const fetchNodeResources = async () => {
   resourceOptions.value = options;
 };
 
+const resetTotp = (row: AdminUserDto) => {
+  const dialog = DialogPlugin.confirm({
+    header: '重置 TOTP 二步验证',
+    body: `将清除 ${row.username} 的验证器绑定和所有恢复码，并使其现有登录会话失效。通行密钥会保留。`,
+    onConfirm: async () => {
+      try { await updateUser(row.id, { resetTotp: true }); dialog.hide(); MessagePlugin.success('二步验证已重置'); await fetchData(); }
+      catch (error: any) { MessagePlugin.error(error.message || '重置失败'); }
+    },
+  });
+};
+
 // 表格列定义
 const columns = computed((): PrimaryTableCol<TableRowData>[] => [
   { colKey: 'info', title: '用户信息', width: 200, fixed: 'left', cell: 'info-slot' },
   { colKey: 'role', title: '角色', width: 100, cell: 'role-slot' },
+  { colKey: 'totp', title: '二步验证', width: 120, cell: 'totp-slot' },
   { colKey: 'lastLogin', title: '最后登录', width: 180, cell: 'time-slot', className: 'hidden-xs' },
   { colKey: 'op', title: '操作', width: 140, fixed: 'right', cell: 'op-slot' },
 ]);
@@ -362,6 +374,11 @@ onMounted(async () => {
               >
                 普通用户
               </span>
+            </template>
+
+            <template #totp-slot="{ row }">
+              <t-tag :theme="row.security?.totpEnabled ? 'success' : 'default'" variant="light">{{ row.security?.totpEnabled ? '已启用' : '未启用' }}</t-tag>
+              <t-button v-if="row.security?.totpEnabled" theme="danger" variant="text" size="small" @click="resetTotp(row)">重置</t-button>
             </template>
 
             <template #time-slot="{ row }">

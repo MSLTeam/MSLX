@@ -18,6 +18,8 @@ public class UserInfo
     public int TokenVersion { get; set; } = 1;
     public Dictionary<string, DateTime> RevokedTokens { get; set; } = new Dictionary<string, DateTime>();
 
+    public AccountAuthentication? Authentication { get; set; }
+
     // 辅助方法：转换为 ClaimsPrincipal
     public ClaimsPrincipal ToPrincipal(string authType)
     {
@@ -47,6 +49,8 @@ public class LoginRequest
 
     [Required(ErrorMessage = "密码不能为空")]
     public required string Password { get; set; }
+    [StringLength(64, ErrorMessage = "验证码最长为 64 个字符")]
+    public string? TwoFactorCode { get; set; }
 }
 
 // --- 返回给前端的用户信息 ---
@@ -58,6 +62,7 @@ public class UserDto
     public string Avatar { get; set; }
     public string Role { get; set; }
     public string ApiKey { get; set; } // 用户可以看到自己的 API Key
+    public AccountSecuritySummary? Security { get; set; }
     public string OpenMSLID { get; set; } // 关联的 MSL OAuth OpenID，0 表示未关联
     public DateTime? LastLoginTime { get; set; }
     public List<string> Resources { get; set; }
@@ -91,6 +96,7 @@ public class AdminCreateUserRequest
 // --- 管理员修改用户请求 ---
 public class AdminUpdateUserRequest
 {
+    public bool ResetTotp { get; set; }
     public string? Name { get; set; }
     public string? Avatar { get; set; }
     public string? Password { get; set; } // 为空不改

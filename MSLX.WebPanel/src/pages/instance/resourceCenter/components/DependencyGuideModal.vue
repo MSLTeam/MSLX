@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, watch, computed, onUnmounted } from 'vue';
+import { ref, reactive, watch, computed, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { getResourceDetail, getResourceVersions, type ResourceVersionModel, type ResourceModel, type ResourceDependencyModel } from '@/api/resourceCenter';
 import { MessagePlugin } from 'tdesign-vue-next';
@@ -26,6 +26,9 @@ const dialogVisible = computed({
 const loading = ref(false);
 const resolvedDependencies = ref<any[]>([]);
 const installedFiles = ref<string[]>([]);
+const resolvedTargetFolder = ref('');
+const targetFolderError = ref('');
+let loadSequence = 0;
 const router = useRouter();
 
 const downloadMode = ref<'browser' | 'instance'>('browser');
@@ -93,24 +96,34 @@ const activeLoader = computed(() => props.loader || props.version?.loaders?.[0] 
 const resolvingSubDeps = ref(false);
 
 const loadDependencies = async () => {
-  if (!props.version || !props.version.dependencies || props.version.dependencies.length === 0) {
-    resolvedDependencies.value = [];
-    return;
-  }
-
+  const sequence = ++loadSequence;
+  const version = props.version;
   loading.value = true;
   resolvingSubDeps.value = false;
   resolvedDependencies.value = [];
   installedFiles.value = [];
+  resolvedTargetFolder.value = '';
+  targetFolderError.value = '';
 
-  if (props.instanceId) {
+  if (props.instanceId && (props.resourceType === 0 || props.resourceType === 5)) {
     try {
       const targetFolder = props.resourceType === 5 ? 'plugins' : 'mods';
       const res = await getPluginsOrModsList(props.instanceId, targetFolder, false);
+      if (sequence !== loadSequence) return;
+      if (!res.path) throw new Error('无法获取配置目录，请升级目标节点的 Daemon 后重试');
+      resolvedTargetFolder.value = res.path;
       if (res && res.jarFiles) {
         installedFiles.value = res.jarFiles.map(f => f.toLowerCase());
       }
-    } catch { /* empty */ }
+    } catch (e: any) {
+      if (sequence !== loadSequence) return;
+      targetFolderError.value = e.message || '获取配置目录失败，请重新打开弹窗重试';
+    }
+  }
+
+  if (!version?.dependencies?.length) {
+    loading.value = false;
+    return;
   }
 
   const visitedRequired = new Set<string>();
@@ -202,9 +215,10 @@ const loadDependencies = async () => {
     }
   };
 
-  await resolveRequiredRecursive(props.version.dependencies);
+  await resolveRequiredRecursive(version.dependencies);
   await resolveOptionalDependencies();
 
+  if (sequence !== loadSequence) return;
   resolvedDependencies.value = Array.from(resolvedMap.values()).sort((a, b) => {
     if (a.type !== b.type) return a.type - b.type;
     if (a.alreadyInstalled !== b.alreadyInstalled) return a.alreadyInstalled ? 1 : -1;
@@ -214,6 +228,7 @@ const loadDependencies = async () => {
 };
 
 const handleDependencyCheck = async (dep: any, checked: boolean) => {
+  const sequence = loadSequence;
   dep.selected = checked;
   if (dep.type !== 1) return;
 
@@ -225,6 +240,7 @@ const handleDependencyCheck = async (dep: any, checked: boolean) => {
     if (!selected) {
       try {
         const versions = await getResourceVersions(dep.provider, dep.projectId, activeGameVersion.value, activeLoader.value);
+        if (sequence !== loadSequence) return;
         if (versions && versions.length > 0) {
           selected = versions[0];
           dep.selectedVersion = selected;
@@ -244,7 +260,7 @@ const handleDependencyCheck = async (dep: any, checked: boolean) => {
       console.error('Failed to resolve sub-dependencies for', dep.name, e);
     } finally {
       dep.loadingSubDeps = false;
-      resolvingSubDeps.value = false;
+      if (sequence === loadSequence) resolvingSubDeps.value = false;
     }
   } else {
     removeSubDependencies(dep.projectId);
@@ -252,12 +268,14 @@ const handleDependencyCheck = async (dep: any, checked: boolean) => {
 };
 
 const resolveSubDependencies = async (parentDep: any, deps: ResourceDependencyModel[]) => {
+  const sequence = loadSequence;
   const gv = activeGameVersion.value;
   const ld = activeLoader.value;
   const visited = new Set<string>([parentDep.projectId]);
 
   const recurse = async (subDeps: ResourceDependencyModel[]) => {
     for (const dep of subDeps) {
+      if (sequence !== loadSequence) return;
       if (dep.type !== 0) continue;
       if (visited.has(dep.projectId)) continue;
       visited.add(dep.projectId);
@@ -277,6 +295,7 @@ const resolveSubDependencies = async (parentDep: any, deps: ResourceDependencyMo
         const detail = await getResourceDetail(dep.provider, dep.projectId);
         if (detail) {
           const versions = await getResourceVersions(dep.provider, dep.projectId, gv, ld);
+          if (sequence !== loadSequence) return;
           const selected = versions && versions.length > 0 ? versions[0] : null;
           const isInstalled = checkInstalled(detail.name, selected?.filename);
 
@@ -305,6 +324,7 @@ const resolveSubDependencies = async (parentDep: any, deps: ResourceDependencyMo
 
   await recurse(deps);
 
+  if (sequence !== loadSequence) return;
   resolvedDependencies.value.sort((a, b) => {
     if (a.type !== b.type) return a.type - b.type;
     if (a.alreadyInstalled !== b.alreadyInstalled) return a.alreadyInstalled ? 1 : -1;
@@ -356,21 +376,22 @@ const cleanupPolling = () => {
 
 onUnmounted(() => cleanupPolling());
 
-watch(() => props.visible, (val) => {
-  if (val) {
+watch([() => props.visible, () => props.instanceId, () => props.resourceType, () => props.version], () => {
+  ++loadSequence;
+  resolvedTargetFolder.value = '';
+  if (props.visible) {
     downloadingState.value = false;
     downloadTasks.value = [];
     cleanupPolling();
-    if (props.version) {
-      loadDependencies();
-    }
+    loadDependencies();
   }
-});
+}, { immediate: true });
 
 const singleDownload = async (url: string, filename: string) => {
   if (downloadMode.value === 'instance' && props.instanceId && isSupportInstance.value && props.resourceType !== 4) {
     try {
-      const targetFolder = props.resourceType === 5 ? 'plugins' : 'mods';
+      if (loading.value || !resolvedTargetFolder.value) return;
+      const targetFolder = resolvedTargetFolder.value;
       await addOfflineDownloadTask(props.instanceId, targetFolder, url, filename);
       MessagePlugin.success(`已向实例发送下载任务: ${filename}`);
     } catch (e) {
@@ -416,17 +437,18 @@ const handleDownloadAll = async () => {
   }
 
   // 服务端直装模式，进入进度展示
-  if (!props.instanceId || !isSupportInstance.value) return;
+  if (!props.instanceId || !isSupportInstance.value || loading.value || !resolvedTargetFolder.value) return;
+  const instanceId = props.instanceId;
   downloadingState.value = true;
   downloadTasks.value = [];
 
-  const targetFolder = props.resourceType === 5 ? 'plugins' : 'mods';
+  const targetFolder = resolvedTargetFolder.value;
 
   const addQueueItem = (name: string, url: string, filename: string) => {
-    const state: DownloadTaskState = { id: url, name, progress: 0, message: '准备中...', status: 'pending' };
+    const state = reactive<DownloadTaskState>({ id: url, name, progress: 0, message: '准备中...', status: 'pending' });
     downloadTasks.value.push(state);
 
-    addOfflineDownloadTask(props.instanceId!, targetFolder, url, filename).then((res: any) => {
+    addOfflineDownloadTask(instanceId, targetFolder, url, filename).then((res: any) => {
       const tid = res?.taskId;
       if (tid && typeof tid === 'string') {
         state.taskId = tid;
@@ -474,6 +496,7 @@ const handleDownloadAll = async () => {
 
             // 后端返回状态为 error 等同于 failed
             if (task.status === 'error' as any) task.status = 'failed';
+            if (task.status === 'success' as any) task.status = 'completed';
           }
         } catch { /* empty */ }
       }
@@ -528,6 +551,8 @@ const handleDownloadAll = async () => {
           </t-radio-group>
         </div>
 
+        <t-alert v-if="targetFolderError" theme="error" :message="targetFolderError" />
+
         <!-- 主模组 -->
         <div class="p-3 bg-[var(--td-bg-color-container)] border border-[var(--td-component-border)] rounded-lg">
           <div class="font-bold text-[var(--td-text-color-primary)]">{{ resourceLabel }}: {{ mainResource?.name }}</div>
@@ -562,7 +587,7 @@ const handleDownloadAll = async () => {
                   </div>
                 </div>
               </div>
-              <t-button v-if="dep.selectedVersion && !dep.alreadyInstalled" size="small" theme="default" @click="singleDownload(dep.selectedVersion.downloadUrl, dep.selectedVersion.filename)">单下</t-button>
+              <t-button v-if="dep.selectedVersion && !dep.alreadyInstalled" size="small" theme="default" :disabled="downloadMode === 'instance' && (loading || !resolvedTargetFolder)" @click="singleDownload(dep.selectedVersion.downloadUrl, dep.selectedVersion.filename)">单下</t-button>
             </div>
           </div>
         </div>
@@ -576,7 +601,7 @@ const handleDownloadAll = async () => {
             <t-button
               theme="primary"
               :loading="loading || resolvingSubDeps"
-              :disabled="loading || resolvingSubDeps"
+              :disabled="loading || resolvingSubDeps || (downloadMode === 'instance' && props.resourceType !== 4 && !resolvedTargetFolder)"
               @click="handleDownloadAll"
             >
               {{ downloadMode === 'browser' ? '下载' : (props.resourceType === 4 ? '部署' : '直装') }}

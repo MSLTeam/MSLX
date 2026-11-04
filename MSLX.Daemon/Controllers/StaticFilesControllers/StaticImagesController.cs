@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
+using MSLX.Daemon.Services;
 using MSLX.SDK.Models;
 using MSLX.SDK.Models.Files;
 
@@ -11,6 +12,13 @@ namespace MSLX.Daemon.Controllers.StaticFilesControllers;
 [Route("api/static/images")]
 public class StaticImagesController: ControllerBase
 {
+    private readonly UploadSessionService _uploadSessions;
+
+    public StaticImagesController(UploadSessionService uploadSessions)
+    {
+        _uploadSessions = uploadSessions;
+    }
+
     [HttpGet("{fileName}")]
     [AllowAnonymous]
     public IActionResult GetImage(string fileName)
@@ -83,6 +91,11 @@ public class StaticImagesController: ControllerBase
     {
         try
         {
+            if (!_uploadSessions.IsOwned(request.FileKey, User))
+            {
+                return BadRequest(new ApiResponse<string> { Code = 403, Message = "上传会话不存在、已过期或无权访问" });
+            }
+
             var finalPath = Path.Combine(IConfigBase.GetAppDataPath(), "Temp", "Uploads", request.FileKey + ".tmp");
             if (!System.IO.File.Exists(finalPath))
             {
@@ -96,6 +109,7 @@ public class StaticImagesController: ControllerBase
             
             
             System.IO.File.Move(finalPath,Path.Combine(IConfigBase.GetAppDataPath(), "Public", "Images",request.FileName),true);
+            _uploadSessions.Remove(request.FileKey);
             return Ok(new ApiResponse<object>()
             {
                 Code = 200,

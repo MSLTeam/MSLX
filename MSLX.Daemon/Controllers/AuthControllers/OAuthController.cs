@@ -6,6 +6,7 @@ using MSLX.Daemon.Utils.ConfigUtils;
 using Newtonsoft.Json.Linq;
 using System.Net;
 using MSLX.SDK.Models;
+using MSLX.Daemon.Services;
 
 using Microsoft.Extensions.Caching.Memory;
 
@@ -70,30 +71,16 @@ public class OAuthController : ControllerBase
     public IActionResult GetOAuthConfigStatus()
     {
         var clientId = IConfigBase.Config.ReadConfig()["oAuthMSLClientID"]?.ToString();
-        if (string.IsNullOrEmpty(clientId) || clientId.Length != 27)
+        return Ok(new ApiResponse<object>
         {
-            return Ok(new ApiResponse<object>
+            Code = 200,
+            Message = "",
+            Data = new
             {
-                Code = 200,
-                Message = "",
-                Data = new
-                {
-                    allowOAuth = false,
-                }
-            });
-        }
-        else
-        {
-            return Ok(new ApiResponse<object>
-            {
-                Code = 200,
-                Message = "",
-                Data = new
-                {
-                    allowOAuth = true,
-                }
-            });
-        }
+                allowOAuth = !string.IsNullOrEmpty(clientId) && clientId.Length == 27,
+                allowPasskey = AccountSecurityService.HasPasskeysForSite(Request)
+            }
+        });
     }
 
     [HttpPost("login")]

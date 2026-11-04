@@ -28,6 +28,11 @@ export interface WebpanelSettingsModel {
   webpPanelTerminalBlurLight: number;
   webpPanelTerminalBlurDark: number;
   webPanelColorizeLogLevel: number;
+  webPanelDefaultThemeMode?: string;
+  webPanelDefaultBrandTheme?: string;
+  webPanelDefaultLayout?: string;
+  webPanelDefaultEnableCustomTheme?: boolean;
+  webPanelDefaultExpandMutex?: boolean;
 }
 
 export interface SslSettingsResponse {

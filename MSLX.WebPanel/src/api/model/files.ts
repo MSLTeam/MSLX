@@ -1,9 +1,20 @@
 export interface UploadInitResponse {
   uploadId: string;
+  resumed?: boolean;
+  receivedChunks?: number[];
 }
 
 export interface UploadFinishResponse {
   uploadId: string;
+  size?: number;
+  blake3?: string;
+}
+
+export interface UploadStatusResponse {
+  uploadId: string;
+  receivedChunks: number[];
+  receivedCount: number;
+  status: 'uploading' | string;
 }
 
 export interface UploadPackageCheckJarResponse {
@@ -29,6 +40,8 @@ export interface FilesListResponse {
 }
 
 export interface PluginsAndModsListModel{
+  path?: string;
+  directoryExists?: boolean;
   totalCount: number;
   activeCount: number;
   disableCount: number;

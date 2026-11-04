@@ -1,20 +1,37 @@
 import { ref, onUnmounted } from 'vue';
 import { getPageNodeId } from '@/utils/nodeTarget';
-import { initUpload, uploadChunk, finishUpload, deleteUpload } from '@/api/files';
+import {
+  deleteUpload,
+  getUploadStatus,
+} from '@/api/files';
+import {
+  computeFastFileFingerprint,
+  deleteUploadResumeRecord,
+  getUploadResumeRecords,
+  saveUploadResumeRecord,
+  type UploadFileHandleLike,
+  type UploadResumeRecord,
+} from '@/utils/uploadResume';
+import { uploadFileInChunks } from '@/utils/chunkedUpload';
 
-// 动态计算并发数
-function calcConcurrency(speedMBps: number): number {
-  if (speedMBps <= 0) return 2;
-  if (speedMBps < 0.5) return 1;
-  if (speedMBps < 2) return 2;
-  return 4;
+export interface UploadStartOptions {
+  fileHandle?: UploadFileHandleLike;
+  resumeRecord?: UploadResumeRecord;
+  kind?: 'package' | 'core';
 }
 
-// 指数退避与抖动
-function backoffDelay(attempt: number): Promise<void> {
-  const base = Math.min(30_000, 500 * 2 ** attempt);
-  const jitter = Math.random() * base * 0.3;
-  return new Promise((r) => setTimeout(r, base + jitter));
+export interface PendingUploadResume {
+  record: UploadResumeRecord;
+  file?: File;
+  fileHandle?: UploadFileHandleLike;
+  permissionRequired: boolean;
+}
+
+function getHttpStatus(error: any): number | undefined {
+  const responseCode = error?.responseData?.code ?? error?.response?.data?.code;
+  return typeof responseCode === 'number'
+    ? responseCode
+    : error?.status ?? error?.response?.status;
 }
 
 export function useFileUpload() {
@@ -26,6 +43,8 @@ export function useFileUpload() {
   const fileKey = ref(''); // 成功后的文件 Key
 
   let abortController: AbortController | null = null;
+  let activeUploadId = '';
+  let activeResumeRecord: UploadResumeRecord | null = null;
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 B';
@@ -35,171 +54,168 @@ export function useFileUpload() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const startUpload = async (file: File): Promise<string> => {
-    if (abortController) {
-      abortController.abort();
-    }
-    abortController = new AbortController();
+  const startUpload = async (file: File, options: UploadStartOptions = {}): Promise<string> => {
+    abortController?.abort();
+    const currentAbortController = new AbortController();
+    abortController = currentAbortController;
 
     isUploading.value = true;
     uploadProgress.value = 0;
     uploadedFileName.value = file.name;
     uploadedFileSize.value = formatFileSize(file.size);
     fileKey.value = '';
-
-    let committedBytes = 0;
-    let currentSpeedMBps = 0;
-    const startTime = Date.now();
-
-    const isLargeFile = file.size > 200 * 1024 * 1024;
-    const chunkSize = isLargeFile ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
-    const totalChunks = Math.ceil(file.size / chunkSize);
-    const maxRetries = 5;
-
-    const chunkIndices = Array.from({ length: totalChunks }, (_, i) => i);
-    const activeChunkProgressMap = new Map<number, number>();
-    let lastUpdateTime = 0;
-
-    const updateProgress = () => {
-      const now = Date.now();
-      if (now - lastUpdateTime < 100) return;
-      lastUpdateTime = now;
-
-      let activeLoadedBytes = 0;
-      for (const loaded of activeChunkProgressMap.values()) {
-        activeLoadedBytes += loaded;
-      }
-      const totalLoadedBytes = committedBytes + activeLoadedBytes;
-      const percent = Math.min((totalLoadedBytes / file.size) * 98, 98);
-
-      uploadProgress.value = Math.max(uploadProgress.value, Number(percent.toFixed(1)));
-
-      const elapsed = (now - startTime) / 1000;
-      if (elapsed > 0) {
-        currentSpeedMBps = totalLoadedBytes / 1024 / 1024 / elapsed;
-      }
-    };
+    activeUploadId = '';
+    activeResumeRecord = null;
+    const isCurrentUpload = () => abortController === currentAbortController && !currentAbortController.signal.aborted;
 
     try {
-      const initRes = await initUpload(targetNodeId);
-      const uploadId = (initRes as any).uploadId;
-      if (!uploadId) throw new Error('无法获取上传凭证');
-
-      const processChunk = async (index: number) => {
-        if (abortController?.signal.aborted) throw new Error('已取消');
-
-        const start = index * chunkSize;
-        const end = Math.min(file.size, start + chunkSize);
-        const chunkBlob = file.slice(start, end);
-        let lastError: any;
-
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-          if (abortController?.signal.aborted) throw new Error('已取消');
-
-          try {
-            await uploadChunk(
-              uploadId,
-              index,
-              chunkBlob,
-              (e: any) => {
-                if (e && e.loaded) {
-                  activeChunkProgressMap.set(index, e.loaded);
-                  updateProgress();
-                }
-              },
-              abortController?.signal,
-            );
-
-            committedBytes += chunkBlob.size;
-            activeChunkProgressMap.delete(index);
-            updateProgress();
-            return;
-          } catch (err: any) {
-            lastError = err;
-            if (attempt < maxRetries) {
-              activeChunkProgressMap.set(index, 0);
-              updateProgress();
-              await backoffDelay(attempt);
-            }
+      const uploadNodeId = options.resumeRecord?.nodeId || targetNodeId;
+      const result = await uploadFileInChunks(file, {
+        nodeId: uploadNodeId,
+        signal: currentAbortController.signal,
+        resumeRecord: options.resumeRecord,
+        kind: options.kind,
+        onSession: (record) => {
+          if (!isCurrentUpload()) return;
+          activeUploadId = record.uploadId;
+          activeResumeRecord = record;
+          if (options.fileHandle) {
+            record.fileHandle = options.fileHandle;
+            record.updatedAt = Date.now();
+            void saveUploadResumeRecord(record).catch(() => {});
           }
-        }
-        throw new Error(`分片 ${index} 失败: ${(lastError as any)?.message}`);
-      };
-
-      await new Promise<void>((resolve, reject) => {
-        let hasError = false;
-        const activeWorkers = new Set<Promise<void>>();
-
-        const spawnWorkers = () => {
-          if (hasError || abortController?.signal.aborted) return;
-
-          const targetConcurrency = Math.min(calcConcurrency(currentSpeedMBps), totalChunks);
-
-          while (activeWorkers.size < targetConcurrency && chunkIndices.length > 0) {
-            const index = chunkIndices.shift()!;
-            const p = processChunk(index)
-              .then(() => {
-                activeWorkers.delete(p);
-                if (chunkIndices.length === 0 && activeWorkers.size === 0) {
-                  resolve();
-                } else {
-                  spawnWorkers();
-                }
-              })
-              .catch((err) => {
-                hasError = true;
-                abortController?.abort();
-                reject(err);
-              });
-            activeWorkers.add(p);
-          }
-          if (chunkIndices.length === 0 && activeWorkers.size === 0 && !hasError) {
-            resolve();
-          }
-        };
-
-        spawnWorkers();
+        },
+        onProgress: (progress) => {
+          if (!isCurrentUpload()) return;
+          uploadProgress.value = Math.max(uploadProgress.value, progress);
+        },
+        onStatus: (status) => {
+          if (!isCurrentUpload()) return;
+          if (status === 'merging') uploadProgress.value = 99;
+        },
       });
-
-      if (abortController.signal.aborted) throw new Error('已取消');
-
-      uploadProgress.value = 99;
-      const finishRes = await finishUpload(uploadId, totalChunks);
-      const finalKey = (finishRes as any).uploadId;
-
-      uploadProgress.value = 100;
+      if (!isCurrentUpload()) throw new Error('已取消');
+      const finalKey = result.response.uploadId;
+      if (!finalKey) throw new Error('上传合并未返回文件标识');
+      activeUploadId = '';
+      activeResumeRecord = null;
       fileKey.value = finalKey;
+      uploadProgress.value = 100;
       return finalKey;
     } catch (error: any) {
-      if (error.message !== '已取消') {
-        throw error;
+      if (error?.message === '已取消' || currentAbortController.signal.aborted) {
+        throw new Error('已取消');
       }
-      throw new Error('已取消');
+      throw error;
     } finally {
-      if (!abortController?.signal.aborted) {
+      if (abortController === currentAbortController) {
+        abortController = null;
         isUploading.value = false;
       }
     }
   };
 
-  const cancelUpload = () => {
+  const cancelUpload = async () => {
     abortController?.abort();
+    const record = activeResumeRecord;
+    if (record && activeResumeRecord === record) {
+      record.cancelledAt = Date.now();
+      record.updatedAt = Date.now();
+      await saveUploadResumeRecord(record).catch(() => {});
+    }
     isUploading.value = false;
   };
 
   const removeUploadData = async () => {
-    if (fileKey.value) {
-      await deleteUpload(fileKey.value).catch(() => {});
+    const uploadId = activeUploadId;
+    const finalKey = fileKey.value;
+    if (finalKey) {
+      await deleteUpload(finalKey, targetNodeId).catch(() => {});
       fileKey.value = '';
     }
+    if (uploadId && uploadId !== finalKey) {
+      await deleteUpload(uploadId, activeResumeRecord?.nodeId || targetNodeId).catch(() => {});
+    }
+    if (activeResumeRecord) {
+      await deleteUploadResumeRecord(activeResumeRecord.key).catch(() => {});
+    }
+    activeUploadId = '';
+    activeResumeRecord = null;
     uploadedFileName.value = '';
     uploadedFileSize.value = '';
     uploadProgress.value = 0;
   };
 
+  const restorePendingUpload = async (kind?: 'package' | 'core'): Promise<PendingUploadResume | null> => {
+    const records = await getUploadResumeRecords(targetNodeId).catch(() => []);
+    for (const record of records) {
+      if (!record.uploadId || !record.fingerprint) continue;
+      if (record.cancelledAt) continue;
+      if (kind) {
+        const matchesKind = record.kind
+          ? record.kind === kind
+          : kind === 'package'
+            ? /\.(?:zip|mrpack)$/i.test(record.fileName)
+            : /\.jar$/i.test(record.fileName);
+        if (!matchesKind) continue;
+      }
+
+      // 浏览器中的恢复记录可能在 Daemon 重启后仍然存在，但服务端会话和
+      // 临时分片已经被清理。只有服务端确认会话仍有效时，才把它显示为可恢复任务。
+      try {
+        const status = await getUploadStatus(record.uploadId, record.nodeId);
+        const receivedChunks = (status.receivedChunks || []).filter(
+          (index) => Number.isInteger(index) && index >= 0 && index < record.totalChunks,
+        );
+        record.receivedChunks = receivedChunks;
+        record.updatedAt = Date.now();
+        await saveUploadResumeRecord(record).catch(() => {});
+      } catch (error) {
+        const status = getHttpStatus(error);
+        if (status === 403 || status === 404) {
+          // 会话已过期、失效或属于已重启前的 Daemon，不能再提示用户恢复。
+          await deleteUploadResumeRecord(record.key).catch(() => {});
+        }
+        // 网络暂不可用时保留本地记录，但不把未经服务端确认的记录显示为未完成任务。
+        continue;
+      }
+
+      const fileHandle = record.fileHandle;
+      if (!fileHandle) {
+        return { record, permissionRequired: true };
+      }
+
+      try {
+        let permission = await fileHandle.queryPermission?.({ mode: 'read' });
+        if (permission === 'granted') {
+          const file = await fileHandle.getFile();
+          const fingerprint = await computeFastFileFingerprint(file);
+          if (fingerprint === record.fingerprint) {
+            return { record, file, fileHandle, permissionRequired: false };
+          }
+          await deleteUploadResumeRecord(record.key).catch(() => {});
+          continue;
+        }
+
+        if (permission === 'prompt' && fileHandle.requestPermission) {
+          // 刷新后自动请求权限可能被浏览器拦截，交给页面按钮在用户操作时重试。
+          permission = 'prompt';
+        }
+        return { record, fileHandle, permissionRequired: permission !== 'granted' };
+      } catch {
+        return { record, fileHandle, permissionRequired: true };
+      }
+    }
+    return null;
+  };
+
+  const resumeUpload = (file: File, record: UploadResumeRecord, fileHandle?: UploadFileHandleLike) => {
+    return startUpload(file, { resumeRecord: record, fileHandle });
+  };
+
   // 组件销毁时自动终止正在进行的上传
   onUnmounted(() => {
-    cancelUpload();
+    void cancelUpload();
   });
 
   return {
@@ -209,6 +225,8 @@ export function useFileUpload() {
     uploadedFileSize,
     fileKey,
     startUpload,
+    restorePendingUpload,
+    resumeUpload,
     cancelUpload,
     removeUploadData,
   };

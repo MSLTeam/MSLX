@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.Models;
+using MSLX.Daemon.Services;
 
 namespace MSLX.Daemon.Controllers.AuthControllers;
 
@@ -23,6 +24,7 @@ public class UserController : ControllerBase
         
         var dto = new UserDto
         {
+            Security = AccountSecurityService.Summary(user),
             Id = user.Id,
             Username = user.Username,
             Name = user.Name,

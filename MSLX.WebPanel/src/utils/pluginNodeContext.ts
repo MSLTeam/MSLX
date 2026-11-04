@@ -2,7 +2,7 @@ import { defineComponent, h, inject, onBeforeUnmount, provide, shallowRef } from
 import * as signalR from '@microsoft/signalr';
 import { request } from '@/utils/request';
 import { BASE_URL_NAME, TOKEN_NAME } from '@/config/global';
-import { getPageNodeId, getNodeTarget, nodeResourceUrl } from './nodeTarget';
+import { getPageNodeId, getNodeTarget, nodeResourceUrl, getPluginPublicUrl } from './nodeTarget';
 import { getMediaToken, getDownloadToken } from './scopedToken';
 import { getHubUrl, getHubOptions } from './hub';
 
@@ -37,6 +37,7 @@ export function createPluginNodeContext(nodeId = getPageNodeId(), pluginId = '')
   return Object.freeze({
     nodeId, pluginId, request: client,
     getTarget: () => { assertActive(); return getNodeTarget(nodeId); },
+    publicPageUrl: (path: string, options?: { absolute?: boolean }) => getPluginPublicUrl(path, nodeId, options),
     async resourceUrl(path: string, scope: 'media' | 'download' = 'media') {
       assertActive();
       const token = await (scope === 'media' ? getMediaToken(nodeId) : getDownloadToken(nodeId));

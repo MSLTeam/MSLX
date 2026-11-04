@@ -7,6 +7,7 @@ import { initUpload, uploadChunk, finishUpload } from '@/api/files';
 import { uploadFilesToStaticImages } from '@/api/files';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { WebpanelSettingsModel } from '@/api/model/settings';
+import { useSettingStore } from './setting';
 
 export const useWebpanelStore = defineStore('webpanel', {
   state: () => ({
@@ -20,6 +21,11 @@ export const useWebpanelStore = defineStore('webpanel', {
       webpPanelTerminalBlurLight: 5.0,
       webPanelStyleDarkBackground: '',
       webPanelColorizeLogLevel: 1,
+      webPanelDefaultThemeMode: 'auto',
+      webPanelDefaultBrandTheme: 'default',
+      webPanelDefaultLayout: 'side',
+      webPanelDefaultEnableCustomTheme: false,
+      webPanelDefaultExpandMutex: true,
     } as WebpanelSettingsModel,
     loading: false,
     submitLoading: false,
@@ -30,6 +36,8 @@ export const useWebpanelStore = defineStore('webpanel', {
       try {
         const res = await getWebpanelStyleSettings();
         this.settings = res;
+        const settingStore = useSettingStore();
+        settingStore.applyDefaultTheme(res);
       } catch (e: any) {
         console.error('获取面板样式失败', e);
       } finally {

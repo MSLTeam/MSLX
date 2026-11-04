@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: write 
+  id-token: write
 
 jobs:
   build-and-publish-release:
@@ -57,8 +58,14 @@ jobs:
       - name: 打包 SDK
         run: dotnet pack MSLX.SDK/MSLX.SDK.csproj -c Release --no-build -o ./out /p:PackageVersion=${{ env.PACKAGE_VERSION }}
 
+      - name: NuGet 登录 (OIDC)
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ vars.NUGET_USER || 'xiaoyululu' }}
+
       - name: 推送到 NuGet
-        run: dotnet nuget push ./out/*.nupkg -k ${{ secrets.NUGET_API_KEY }} -s https://api.nuget.org/v3/index.json --skip-duplicate
+        run: dotnet nuget push ./out/*.nupkg -k "${{ steps.login.outputs.NUGET_API_KEY }}" -s https://api.nuget.org/v3/index.json --skip-duplicate
 
       - name: 上传到 GitHub Release
         uses: softprops/action-gh-release@v2

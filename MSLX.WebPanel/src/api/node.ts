@@ -13,6 +13,13 @@ export function getSlaveNodes() {
   });
 }
 
+export function getPublicSlaveNode(nodeId: string) {
+  return request.get<any>({
+    url: '/api/node/public-target',
+    params: { nodeId }
+  }, { requestToSlaveNode: false, withToken: false });
+}
+
 export function unlinkSlaveNode(id: string, force = false) {
   return request.post({
     url: `/api/node/delete/${id}${force ? '?force=true' : ''}`

@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
+using MSLX.Daemon.Services;
 using MSLX.Daemon.Utils;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.Models;
@@ -22,6 +23,13 @@ namespace MSLX.Daemon.Controllers.FilesControllers;
 [Route("api/files")]
 public class FilesListController : ControllerBase
 {
+    private readonly UploadSessionService _uploadSessions;
+
+    public FilesListController(UploadSessionService uploadSessions)
+    {
+        _uploadSessions = uploadSessions;
+    }
+
     private static readonly FileExtensionContentTypeProvider _contentTypeProvider = new()
     {
         Mappings =
@@ -425,6 +433,11 @@ public class FilesListController : ControllerBase
         var server = IConfigBase.ServerList.GetServer(id);
         if (server == null) return NotFound(new ApiResponse<object> { Code = 404, Message = "实例不存在" });
 
+        if (!_uploadSessions.IsOwned(request.UploadId, User))
+        {
+            return BadRequest(new ApiResponse<object> { Code = 403, Message = "上传会话不存在、已过期或无权访问" });
+        }
+
         string tempBasePath = Path.Combine(IConfigBase.GetAppDataPath(), "Temp", "Uploads");
         string tempFilePath = Path.Combine(tempBasePath, request.UploadId + ".tmp");
 
@@ -460,6 +473,7 @@ public class FilesListController : ControllerBase
             }
 
             System.IO.File.Move(tempFilePath, targetPath,true);
+            _uploadSessions.Remove(request.UploadId);
 
             return Ok(new ApiResponse<object> 
             { 

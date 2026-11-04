@@ -2,6 +2,7 @@
 import { confirmNodeAction } from '@/utils/nodeDialog';
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import { useMediaQuery } from '@vueuse/core';
 import {
   MessagePlugin,
   type TableRowData,
@@ -41,6 +42,9 @@ const rawList = ref<FileItem[]>([]); // 原始数据
 const filterText = ref(''); // 搜索关键词
 const selectedRowKeys = ref<Array<string | number>>([]); // 多选选中项
 const errorMsg = ref(''); // 用于存储加载失败的错误信息
+const currentFolderPath = ref('');
+const directoryExists = ref(true);
+let fetchSequence = 0;
 
 // --- 计算属性：过滤后的列表 ---
 const displayList = computed(() => {
@@ -51,11 +55,13 @@ const displayList = computed(() => {
 
 
 // --- 表格列定义 ---
+const isMobile = useMediaQuery('(max-width: 767px)');
 const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
-  { colKey: 'row-select', type: 'multiple', width: 50, fixed: 'left' },
+  { colKey: 'row-select', type: 'multiple', width: 50, fixed: isMobile.value ? undefined : 'left' },
   {
     title: '文件名',
     colKey: 'name',
+    minWidth: 240,
     sorter: (a, b) => a.name.localeCompare(b.name),
     ellipsis: true,
   },
@@ -67,19 +73,26 @@ const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
   {
     title: '操作',
     colKey: 'op',
-    width: 180,
-    fixed: 'right',
+    width: isMobile.value ? 120 : 180,
+    fixed: isMobile.value ? undefined : 'right',
     align: 'right'
   },
 ]);
 
 // --- 核心逻辑：获取列表 ---
 const fetchData = async (checkClient = false) => {
+  const sequence = ++fetchSequence;
   loading.value = true;
+  currentFolderPath.value = '';
+  rawList.value = [];
   selectedRowKeys.value = [];
   errorMsg.value = ''; // 每次请求前重置错误信息
   try {
     const res = await getPluginsOrModsList(instanceId, mode.value, checkClient);
+    if (sequence !== fetchSequence) return;
+    if (!res.path) throw new Error('无法获取配置目录，请升级目标节点的 Daemon 后重试');
+    currentFolderPath.value = res.path;
+    directoryExists.value = res.directoryExists !== false;
 
     // 客户端模组
     const clientFiles = (res.clientJarFiles || []).map((name: string) => ({
@@ -105,13 +118,14 @@ const fetchData = async (checkClient = false) => {
     }
 
   } catch (e: any) {
+    if (sequence !== fetchSequence) return;
     const msg = e.message || '获取列表失败';
     // 这里保留 MessagePlugin 提示，同时设置页面内的 Alert
     // MessagePlugin.error(msg);
     errorMsg.value = msg; // 设置错误信息到变量
     rawList.value = [];
   } finally {
-    loading.value = false;
+    if (sequence === fetchSequence) loading.value = false;
   }
 };
 
@@ -184,6 +198,7 @@ const handleBulk = (action: 'enable' | 'disable' | 'delete') => {
 // 上传逻辑
 const showUploadDialog = ref(false);
 const handleUpload = () => {
+  if (loading.value || !currentFolderPath.value) return;
   showUploadDialog.value = true;
 };
 const onUploadSuccess = () => {
@@ -203,7 +218,7 @@ watch(() => route.params.serverId, (newId) => {
 </script>
 
 <template>
-  <div class="flex flex-col pb-6">
+  <div class="flex min-w-0 flex-col pb-6">
 
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-5 mb-4 pb-2 border-b border-dashed border-zinc-200/60 dark:border-zinc-700/60">
       <div class="flex items-center gap-2">
@@ -234,12 +249,12 @@ watch(() => route.params.serverId, (newId) => {
     <div class="flex flex-col-reverse md:flex-row justify-between items-stretch md:items-center gap-3 mb-4">
 
       <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-between md:justify-start">
-        <div class="flex items-center gap-2">
-          <t-button theme="primary" class="!rounded-lg shadow-sm" :disabled="errorMsg !== ''" @click="handleUpload">
+        <div class="flex min-w-0 flex-wrap items-center gap-2">
+          <t-button theme="primary" class="!rounded-lg shadow-sm" :disabled="loading || !currentFolderPath" @click="handleUpload">
             <template #icon><upload-icon /></template> 上传文件
           </t-button>
 
-          <t-button v-if="mode === 'mods'" variant="outline" class="!rounded-lg !bg-zinc-50 dark:!bg-zinc-800/50 !border-zinc-200 dark:!border-zinc-700 hover:!bg-zinc-100 dark:hover:!bg-zinc-800" :disabled="errorMsg !== ''" :loading="loading" @click="fetchData(true)">
+          <t-button v-if="mode === 'mods'" variant="outline" class="!rounded-lg !bg-zinc-50 dark:!bg-zinc-800/50 !border-zinc-200 dark:!border-zinc-700 hover:!bg-zinc-100 dark:hover:!bg-zinc-800" :disabled="loading || !currentFolderPath" :loading="loading" @click="fetchData(true)">
             <template #icon><search-icon /></template> 检测客户端模组
           </t-button>
 
@@ -276,7 +291,8 @@ watch(() => route.params.serverId, (newId) => {
     <div class="border border-zinc-200/60 dark:border-zinc-700/60 rounded-xl overflow-hidden shadow-sm bg-white/50 dark:bg-zinc-900/20">
       <t-table
         v-model:selected-row-keys="selectedRowKeys"
-        :pagination="{ defaultPageSize: 20, total: displayList.length, showJumper: true, defaultCurrent: 1 }"
+        :pagination="{ defaultPageSize: 20, total: displayList.length, showJumper: !isMobile, showPageSize: !isMobile, totalContent: !isMobile, defaultCurrent: 1, theme: isMobile ? 'simple' : 'default' }"
+        :table-content-width="isMobile ? '600px' : undefined"
         :data="displayList"
         :columns="columns"
         :row-key="'name'"
@@ -332,14 +348,15 @@ watch(() => route.params.serverId, (newId) => {
     </div>
 
     <div class="mt-4 text-[11px] text-[var(--td-text-color-secondary)] leading-relaxed tracking-wider space-y-1">
-      <p>提示：{{ mode === 'mods' ? '模组' : '插件' }}文件存放于服务器根目录的 /{{ mode }} 文件夹下。</p>
+      <p v-if="currentFolderPath">提示：{{ mode === 'mods' ? '模组' : '插件' }}文件存放于服务器相对路径 /{{ currentFolderPath }} 文件夹下。</p>
+      <p v-if="currentFolderPath && !directoryExists">当前目录尚未生成，上传文件后将自动创建。</p>
       <p>禁用文件后，会在文件名后添加 <code class="bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded font-mono text-[10px] text-[var(--td-text-color-secondary)]">.disabled</code> 后缀，服务器将自动忽略该文件。</p>
     </div>
 
     <upload-dialog
       v-model:visible="showUploadDialog"
       :instance-id="instanceId"
-      :current-path="mode"
+      :current-path="currentFolderPath"
       :allow-folder="false"
       @success="onUploadSuccess"
     />
