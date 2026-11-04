@@ -125,57 +125,106 @@ interface ChunkCrc32cOptions {
   signal?: AbortSignal;
 }
 
+interface CrcTask {
+  id: number;
+  chunk: Blob;
+  signal?: AbortSignal;
+  abort: () => void;
+  resolve: (value: string) => void;
+  reject: (reason: unknown) => void;
+  settled: boolean;
+}
+
+interface CrcWorkerSlot {
+  worker?: Worker;
+  task?: CrcTask;
+}
+
+const crcQueue: CrcTask[] = [];
+const crcWorkerSlots: CrcWorkerSlot[] = [];
+let nextCrcTaskId = 0;
+
+function settleCrcTask(task: CrcTask, error?: unknown, result?: string, discardWorker = false) {
+  if (task.settled) return;
+  task.settled = true;
+  task.signal?.removeEventListener('abort', task.abort);
+  const queuedIndex = crcQueue.indexOf(task);
+  if (queuedIndex >= 0) crcQueue.splice(queuedIndex, 1);
+  const slot = crcWorkerSlots.find((candidate) => candidate.task === task);
+  if (slot) {
+    slot.task = undefined;
+    if (discardWorker && slot.worker) {
+      slot.worker.onmessage = null;
+      slot.worker.onerror = null;
+      slot.worker.onmessageerror = null;
+      slot.worker.terminate();
+      slot.worker = undefined;
+    }
+  }
+  if (result !== undefined) task.resolve(result);
+  else task.reject(error);
+  // 失败、取消和同步 postMessage 异常也必须继续调度后续任务。
+  queueMicrotask(runCrcQueue);
+}
+
+function runCrcQueue() {
+  while (crcQueue.length > 0) {
+    let slot = crcWorkerSlots.find((candidate) => !candidate.task);
+    if (!slot) {
+      if (crcWorkerSlots.length >= 2) return;
+      slot = {};
+      crcWorkerSlots.push(slot);
+    }
+    const currentSlot = slot;
+    const task = crcQueue.shift()!;
+    currentSlot.task = task;
+    try {
+      if (!currentSlot.worker) {
+        const worker = new Worker(new URL('./blake3Worker.ts', import.meta.url), { type: 'module' });
+        currentSlot.worker = worker;
+        worker.onmessage = (event: MessageEvent<{ taskId?: number; crc32c?: string; error?: string }>) => {
+          const activeTask = currentSlot.task;
+          if (currentSlot.worker !== worker || !activeTask || event.data.taskId !== activeTask.id) return;
+          if (typeof event.data.crc32c === 'string') settleCrcTask(activeTask, undefined, event.data.crc32c);
+          else if (event.data.error) settleCrcTask(activeTask, new Error(event.data.error));
+        };
+        const fail = () => {
+          if (currentSlot.worker !== worker) return;
+          if (currentSlot.task) {
+            settleCrcTask(currentSlot.task, new Error('计算分片 CRC32C 的 Worker 通信失败'), undefined, true);
+          } else {
+            worker.terminate();
+            currentSlot.worker = undefined;
+          }
+        };
+        worker.onerror = fail;
+        worker.onmessageerror = fail;
+      }
+      currentSlot.worker.postMessage({ type: 'crc32c', taskId: task.id, chunk: task.chunk });
+    } catch (error) {
+      settleCrcTask(task, error, undefined, true);
+    }
+  }
+}
+
 function computeChunkCrc32cWithWorker(chunk: Blob, signal?: AbortSignal): Promise<string> {
   return new Promise((resolve, reject) => {
-    let worker: Worker;
-    try {
-      worker = new Worker(new URL('./blake3Worker.ts', import.meta.url), { type: 'module' });
-    } catch (error) {
-      reject(error);
-      return;
-    }
-
-    const cleanup = () => {
-      worker.terminate();
-      signal?.removeEventListener('abort', abort);
+    const task: CrcTask = {
+      id: ++nextCrcTaskId,
+      chunk,
+      signal,
+      abort: () => settleCrcTask(task, new Error('已取消'), undefined, true),
+      resolve,
+      reject,
+      settled: false,
     };
-    const abort = () => {
-      cleanup();
-      reject(new Error('已取消'));
-    };
-
-    worker.onmessage = (event: MessageEvent<{ crc32c?: string; error?: string }>) => {
-      if (event.data.crc32c) {
-        cleanup();
-        resolve(event.data.crc32c);
-      } else if (event.data.error) {
-        cleanup();
-        reject(new Error(event.data.error));
-      }
-    };
-    worker.onerror = (event) => {
-      cleanup();
-      reject(new Error(event.message || '计算分片 CRC32C 失败'));
-    };
-    signal?.addEventListener('abort', abort, { once: true });
+    signal?.addEventListener('abort', task.abort, { once: true });
     if (signal?.aborted) {
-      abort();
+      task.abort();
       return;
     }
-
-    void chunk
-      .arrayBuffer()
-      .then((buffer) => {
-        if (signal?.aborted) {
-          abort();
-          return;
-        }
-        worker.postMessage({ type: 'crc32c', buffer }, [buffer]);
-      })
-      .catch((error) => {
-        cleanup();
-        reject(error);
-      });
+    crcQueue.push(task);
+    runCrcQueue();
   });
 }
 
@@ -192,7 +241,7 @@ export async function computeChunkCrc32c(chunk: Blob, options: ChunkCrc32cOption
       // Worker 创建或加载失败时保留兼容回退，避免不支持模块 Worker 的浏览器无法上传。
     }
   }
-  return computeChunkCrc32cLocal(chunk);
+  return computeChunkCrc32cLocal(chunk, options.signal);
 }
 
 /**

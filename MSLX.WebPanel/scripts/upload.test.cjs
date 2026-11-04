@@ -435,3 +435,238 @@ test('a canceled initialization cannot replace the active upload session', { tim
     await second;
   }
 });
+
+
+async function setupCrcWorkers(failAt) {
+  const noble = await import('@noble/hashes/blake3.js');
+  const hash = evaluate(readSource('utils/uploadHash.ts'), { '@noble/hashes/blake3.js': noble });
+  const workers = [];
+  let fallbackCount = 0;
+  class MockWorker {
+    constructor() {
+      if (failAt === 'create') throw new Error('create failed');
+      this.messages = [];
+      this.terminated = false;
+      workers.push(this);
+    }
+    postMessage(message) {
+      if (failAt === 'post') throw new Error('post failed');
+      this.messages.push(message);
+    }
+    terminate() { this.terminated = true; }
+    reply(messageIndex = this.messages.length - 1, crc32c = 'e3069283') {
+      this.onmessage?.({ data: { taskId: this.messages[messageIndex].taskId, crc32c } });
+    }
+  }
+  // Only replace import.meta in the test evaluator; production keeps Vite's Worker URL detection.
+  const resume = evaluate(readSource('utils/uploadResume.ts').replaceAll('import.meta.url', '"file:///worker-test.ts"'), {
+    '@noble/hashes/blake3.js': noble,
+    './uploadHash': {
+      ...hash,
+      computeChunkCrc32cLocal: (...args) => { fallbackCount++; return hash.computeChunkCrc32cLocal(...args); },
+    },
+  }, { Worker: MockWorker });
+  return { ...resume, workers, fallbackCount: () => fallbackCount };
+}
+
+const flushCrcQueue = () => new Promise(resolve => queueMicrotask(resolve));
+const crcInput = () => new Blob(['123456789']);
+
+function trackedAbortController() {
+  const controller = new AbortController();
+  const listeners = new Set();
+  const add = controller.signal.addEventListener.bind(controller.signal);
+  const remove = controller.signal.removeEventListener.bind(controller.signal);
+  controller.signal.addEventListener = (type, listener, options) => {
+    if (type === 'abort') listeners.add(listener);
+    add(type, listener, options);
+  };
+  controller.signal.removeEventListener = (type, listener, options) => {
+    if (type === 'abort') listeners.delete(listener);
+    remove(type, listener, options);
+  };
+  return { controller, listeners };
+}
+
+test('CRC workers reuse two slots, dispatch FIFO, and ignore stale task results', async () => {
+  const pool = await setupCrcWorkers();
+  const blobs = Array.from({ length: 5 }, crcInput);
+  for (const blob of blobs) blob.arrayBuffer = () => assert.fail('main thread must not read the chunk');
+  const controllers = blobs.map(trackedAbortController);
+  const tasks = blobs.map((blob, index) => pool.computeChunkCrc32c(blob, { signal: controllers[index].controller.signal }));
+  assert.equal(pool.workers.length, 2);
+  const [first, second] = pool.workers;
+  assert.equal(first.messages[0].chunk, blobs[0]);
+  assert.equal(second.messages[0].chunk, blobs[1]);
+  second.reply(); // Completion order must not dictate queue order.
+  await flushCrcQueue();
+  assert.equal(second.messages[1].chunk, blobs[2]);
+  let thirdSettled = false;
+  tasks[2].then(() => { thirdSettled = true; });
+  second.reply(0, 'stale');
+  await flushCrcQueue();
+  assert.equal(thirdSettled, false);
+  first.reply();
+  await flushCrcQueue();
+  assert.equal(first.messages[1].chunk, blobs[3]);
+  second.reply();
+  await flushCrcQueue();
+  assert.equal(second.messages[2].chunk, blobs[4]);
+  first.reply();
+  second.reply();
+  assert.deepEqual(await Promise.all(tasks), Array(5).fill('e3069283'));
+  assert.equal(pool.workers.length, 2);
+  assert.equal(pool.fallbackCount(), 0);
+  for (const { listeners } of controllers) assert.equal(listeners.size, 0);
+});
+
+test('canceling queued CRC work removes it without terminating other workers or reading its Blob', async () => {
+  const pool = await setupCrcWorkers();
+  const first = pool.computeChunkCrc32c(crcInput());
+  const second = pool.computeChunkCrc32c(crcInput());
+  const { controller, listeners } = trackedAbortController();
+  const canceled = pool.computeChunkCrc32c(crcInput(), { signal: controller.signal });
+  const rejection = assert.rejects(canceled, /^Error: 已取消$/);
+  const lastBlob = crcInput();
+  const last = pool.computeChunkCrc32c(lastBlob);
+  controller.abort();
+  await rejection;
+  assert.equal(listeners.size, 0);
+  assert.equal(pool.workers.some(worker => worker.terminated), false);
+  pool.workers[0].reply();
+  await flushCrcQueue();
+  assert.equal(pool.workers[0].messages[1].chunk, lastBlob);
+  pool.workers[1].reply();
+  pool.workers[0].reply();
+  await Promise.all([first, second, last]);
+  assert.equal(pool.fallbackCount(), 0);
+});
+
+test('canceling active CRC work replaces only its worker and ignores messages from the old instance', async () => {
+  const pool = await setupCrcWorkers();
+  const { controller, listeners } = trackedAbortController();
+  const canceled = pool.computeChunkCrc32c(crcInput(), { signal: controller.signal });
+  const rejection = assert.rejects(canceled, /^Error: 已取消$/);
+  const second = pool.computeChunkCrc32c(crcInput());
+  const next = pool.computeChunkCrc32c(crcInput());
+  const [old, unaffected] = pool.workers;
+  const lateMessage = old.onmessage;
+  const lateError = old.onerror;
+  controller.abort();
+  await rejection;
+  await flushCrcQueue();
+  const replacement = pool.workers[2];
+  assert.equal(old.terminated, true);
+  assert.equal(unaffected.terminated, false);
+  assert.equal(pool.workers.filter(worker => !worker.terminated).length, 2);
+  let nextSettled = false;
+  next.then(() => { nextSettled = true; });
+  lateMessage({ data: { taskId: replacement.messages[0].taskId, crc32c: 'stale' } });
+  lateError({ message: 'late error' });
+  await flushCrcQueue();
+  assert.equal(nextSettled, false);
+  replacement.reply();
+  unaffected.reply();
+  await Promise.all([next, second]);
+  assert.equal(pool.fallbackCount(), 0);
+  assert.equal(listeners.size, 0);
+});
+
+for (const failure of ['create', 'post', 'error', 'messageerror', 'response']) {
+  test(`CRC ${failure} failure settles, falls back, and keeps the queue moving`, async () => {
+    const pool = await setupCrcWorkers(failure);
+    const controllers = Array.from({ length: 4 }, trackedAbortController);
+    const tasks = controllers.map(({ controller }) => pool.computeChunkCrc32c(crcInput(), { signal: controller.signal }));
+    if (!['create', 'post'].includes(failure)) {
+      let processed = 0;
+      while (processed < tasks.length) {
+        const active = pool.workers.filter(worker => !worker.terminated && worker.messages.length);
+        assert.ok(active.length > 0, 'queued work must obtain a worker slot');
+        for (const worker of active) {
+          if (failure === 'response') {
+            const message = worker.messages.shift();
+            worker.onmessage({ data: { taskId: message.taskId, error: 'hash failed' } });
+          } else {
+            worker[`on${failure}`]({ message: 'failed' });
+          }
+          processed++;
+        }
+        await flushCrcQueue();
+      }
+    }
+    assert.deepEqual(await Promise.all(tasks), Array(4).fill('e3069283'));
+    assert.equal(pool.fallbackCount(), 4);
+    assert.ok(pool.workers.filter(worker => !worker.terminated).length <= 2);
+    for (const { listeners } of controllers) assert.equal(listeners.size, 0);
+  });
+}
+
+test('incremental CRC reads at most 1 MiB at a time and agrees across inputs and Worker messages', async () => {
+  const noble = await import('@noble/hashes/blake3.js');
+  const hash = evaluate(readSource('utils/uploadHash.ts'), { '@noble/hashes/blake3.js': noble });
+  const scope = { messages: [], postMessage(message) { this.messages.push(message); } };
+  evaluate(readSource('utils/blake3Worker.ts'), { './uploadHash': hash }, { globalThis: scope });
+  for (const size of [0, 1024 * 1024 - 1, 1024 * 1024, 1024 * 1024 + 17]) {
+    const bytes = Uint8Array.from({ length: size }, (_, index) => index % 251);
+    let crc = 0xffffffff;
+    for (const byte of bytes) {
+      crc ^= byte;
+      for (let bit = 0; bit < 8; bit++) crc = (crc >>> 1) ^ ((crc & 1) ? 0x82f63b78 : 0);
+    }
+    const expected = ((crc ^ 0xffffffff) >>> 0).toString(16).padStart(8, '0');
+    const blob = new Blob([bytes]);
+    const slice = blob.slice.bind(blob);
+    blob.arrayBuffer = () => assert.fail('must not read the entire Blob');
+    blob.slice = (start, end) => { assert.ok(end - start <= 1024 * 1024); return slice(start, end); };
+    assert.equal(await hash.computeChunkCrc32cLocal(bytes.buffer), expected);
+    assert.equal(await hash.computeChunkCrc32cLocal(blob), expected);
+    await scope.onmessage({ data: { type: 'crc32c', taskId: size, chunk: blob } });
+    assert.deepEqual(scope.messages.pop(), { taskId: size, crc32c: expected });
+  }
+  await scope.onmessage({ data: { type: 'crc32c', taskId: 42 } });
+  assert.equal(scope.messages.pop().taskId, 42);
+});
+
+test('CRC fallback honors cancellation before reading, during reading and between blocks', async () => {
+  const pool = await setupCrcWorkers();
+  const controller = new AbortController();
+  controller.abort();
+  await assert.rejects(pool.computeChunkCrc32c(crcInput(), { signal: controller.signal }), /^Error: 已取消$/);
+  assert.equal(pool.workers.length, 0);
+  for (const phase of ['read', 'yield']) {
+    const controller = new AbortController();
+    const blob = new Blob([new Uint8Array(1024 * 1024 + 1)]);
+    const slice = blob.slice.bind(blob);
+    let reads = 0;
+    blob.slice = (...args) => {
+      reads++;
+      const block = slice(...args);
+      const arrayBuffer = block.arrayBuffer.bind(block);
+      block.arrayBuffer = async () => {
+        if (phase === 'read') controller.abort();
+        else setTimeout(() => controller.abort(), 0);
+        return arrayBuffer();
+      };
+      return block;
+    };
+    await assert.rejects(pool.computeChunkCrc32c(blob, { useWorker: false, signal: controller.signal }), /^Error: 已取消$/);
+    assert.equal(reads, 1);
+  }
+});
+
+test('BLAKE3 Worker skips timer yields while main-thread fallback retains them', async () => {
+  const noble = await import('@noble/hashes/blake3.js');
+  let yields = 0;
+  const hash = evaluate(readSource('utils/uploadHash.ts'), { '@noble/hashes/blake3.js': noble }, {
+    setTimeout: callback => { yields++; queueMicrotask(callback); },
+  });
+  const file = new File([new Uint8Array(4 * 1024 * 1024 + 17).fill(42)], 'hash.bin');
+  const expected = await hash.computeFileBlake3Local(file);
+  assert.equal(yields, 2);
+  yields = 0;
+  const scope = { messages: [], postMessage(message) { this.messages.push(message); } };
+  evaluate(readSource('utils/blake3Worker.ts'), { './uploadHash': hash }, { globalThis: scope });
+  await scope.onmessage({ data: { type: 'blake3', file } });
+  assert.equal(scope.messages.pop().blake3, expected);
+  assert.equal(yields, 0);
+});

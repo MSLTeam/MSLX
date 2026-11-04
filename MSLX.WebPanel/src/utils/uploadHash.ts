@@ -17,12 +17,27 @@ export function toHex(bytes: Uint8Array): string {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-export async function computeChunkCrc32cLocal(chunk: Blob | ArrayBuffer): Promise<string> {
-  const bytes = new Uint8Array(chunk instanceof Blob ? await chunk.arrayBuffer() : chunk);
+export async function computeChunkCrc32cLocal(
+  chunk: Blob | ArrayBuffer,
+  signal?: AbortSignal,
+  yieldBetweenBlocks = true,
+): Promise<string> {
+  const blockSize = 1024 * 1024;
+  const size = chunk instanceof Blob ? chunk.size : chunk.byteLength;
   let crc = 0xffffffff;
-  for (const byte of bytes) {
-    crc = CRC32C_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+  for (let offset = 0; offset < size; offset += blockSize) {
+    if (signal?.aborted) throw new Error('已取消');
+    const length = Math.min(blockSize, size - offset);
+    const bytes = chunk instanceof Blob
+      ? new Uint8Array(await chunk.slice(offset, offset + length).arrayBuffer())
+      : new Uint8Array(chunk, offset, length);
+    if (signal?.aborted) throw new Error('已取消');
+    for (let index = 0; index < bytes.length; index++) {
+      crc = CRC32C_TABLE[(crc ^ bytes[index]) & 0xff] ^ (crc >>> 8);
+    }
+    if (yieldBetweenBlocks) await new Promise<void>((resolve) => setTimeout(resolve, 0));
   }
+  if (signal?.aborted) throw new Error('已取消');
   return ((crc ^ 0xffffffff) >>> 0).toString(16).padStart(8, '0');
 }
 
@@ -30,6 +45,7 @@ export async function computeFileBlake3Local(
   file: File,
   signal?: AbortSignal,
   onProgress?: (_progress: number) => void,
+  yieldBetweenBlocks = true,
 ): Promise<string> {
   const hasher = blake3.create();
   const blockSize = 4 * 1024 * 1024;
@@ -38,7 +54,7 @@ export async function computeFileBlake3Local(
     const chunk = new Uint8Array(await file.slice(offset, Math.min(file.size, offset + blockSize)).arrayBuffer());
     hasher.update(chunk);
     onProgress?.(file.size === 0 ? 1 : Math.min((offset + chunk.length) / file.size, 1));
-    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    if (yieldBetweenBlocks) await new Promise<void>((resolve) => setTimeout(resolve, 0));
   }
   return toHex(hasher.digest());
 }
