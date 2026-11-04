@@ -88,11 +88,13 @@ export function useFileUpload() {
           if (status === 'merging') uploadProgress.value = 99;
         },
       });
-      activeUploadId = result.uploadId;
+      const finalKey = result.response.uploadId;
+      if (!finalKey) throw new Error('上传合并未返回文件标识');
+      activeUploadId = '';
       activeResumeRecord = null;
-      fileKey.value = result.uploadId;
+      fileKey.value = finalKey;
       uploadProgress.value = 100;
-      return result.uploadId;
+      return finalKey;
     } catch (error: any) {
       if (error?.message === '已取消' || currentAbortController.signal.aborted) {
         throw new Error('已取消');

@@ -38,11 +38,8 @@ function deferred() {
 
 const immediateTimer = callback => { queueMicrotask(callback); return 0; };
 
-function setupUpload(api = {}) {
-  const events = new EventTarget();
-  return evaluate(readSource('hooks/useFileUpload.ts'), {
-    vue: { ref: value => ({ value }), onUnmounted: () => {} },
-    '@/utils/nodeTarget': { getPageNodeId: () => 'local' },
+function setupChunkedUpload(api = {}, resume = {}) {
+  return evaluate(readSource('utils/chunkedUpload.ts'), {
     '@/api/files': {
       initUpload: async () => ({ uploadId: 'test-upload' }),
       rememberUploadTarget: () => {},
@@ -58,14 +55,21 @@ function setupUpload(api = {}) {
       getUploadResumeRecords: async () => [],
       saveUploadResumeRecord: async () => {},
       deleteUploadResumeRecord: async () => {},
+      ...resume,
     },
   }, {
-    window: {
-      addEventListener: events.addEventListener.bind(events),
-      removeEventListener: events.removeEventListener.bind(events),
-      setTimeout, clearTimeout,
-    },
+    window: { setTimeout, clearTimeout },
     setTimeout: immediateTimer,
+  });
+}
+
+function setupUpload(api = {}, resume = {}) {
+  return evaluate(readSource('hooks/useFileUpload.ts'), {
+    vue: { ref: value => ({ value }), onUnmounted: () => {} },
+    '@/utils/nodeTarget': { getPageNodeId: () => 'local' },
+    '@/api/files': api,
+    '@/utils/uploadResume': { saveUploadResumeRecord: async () => {}, ...resume },
+    '@/utils/chunkedUpload': setupChunkedUpload(api, resume),
   }).useFileUpload();
 }
 
@@ -180,6 +184,7 @@ function fileUploader(api = {}) {
   const source = scriptStatements('pages/instance/files/components/FileUploader.vue',
     ['uploadSingleFile', 'calcConcurrency', 'backoffDelay']);
   const bindings = {
+    ...setupChunkedUpload(api),
     targetNodeId: 'local', props: {},
     initUpload: async () => ({ uploadId: 'test-upload' }),
     uploadChunk: async () => {}, finishUpload: async () => {},
@@ -194,7 +199,7 @@ test('file manager retains failure feedback and still recognizes user cancellati
   const failed = { file: new File(['data'], 'file.txt') };
   await fileUploader({ uploadChunk: async () => { throw new Error('HTTP 413'); } })(failed);
   assert.equal(failed.status, 'error');
-  assert.equal(failed.errorMsg, 'HTTP 413');
+  assert.match(failed.errorMsg, /HTTP 413/);
 
   const canceled = { file: new File(['data'], 'file.txt') };
   await fileUploader({ uploadChunk: async () => { canceled.abortController.abort(); throw new Error('canceled'); } })(canceled);
@@ -206,7 +211,7 @@ test('file manager accepts a folder containing empty and non-empty files', async
   const saved = [];
   const upload = fileUploader({
     props: { instanceId: 1, currentPath: '/' },
-    finishUpload: async (_id, chunks) => saved.push(chunks),
+    finishUpload: async (_id, chunks) => { saved.push(chunks); return { uploadId: 'test-upload' }; },
     saveUploadedFile: async () => {},
   });
   for (const file of [new File([], 'empty.txt'), new File(['data'], 'normal.txt')]) {
@@ -265,4 +270,69 @@ test('hash helpers and Worker agree on standard vectors and multiple blocks', as
     await scope.onmessage({ data: { type: 'blake3', file } });
     assert.equal(scope.messages.pop().blake3, expected);
   }
+});
+
+for (const phase of ['init', 'status', 'session']) {
+  test(`cancellation during ${phase} settles without starting chunks`, { timeout: 2000 }, async () => {
+    const started = deferred();
+    const release = deferred();
+    const controller = new AbortController();
+    const pause = async (value) => {
+      started.resolve();
+      await release.promise;
+      return value;
+    };
+    const api = {
+      uploadChunk: async () => assert.fail('canceled session must not send chunks'),
+      ...(phase === 'init' ? { initUpload: () => pause({ uploadId: 'test-upload' }) } : {}),
+      ...(phase === 'status' ? { getUploadStatus: () => pause({ receivedChunks: [] }) } : {}),
+    };
+    const { uploadFileInChunks } = setupChunkedUpload(api);
+    const upload = uploadFileInChunks(new File(['data'], 'file.txt'), {
+      nodeId: 'local', signal: controller.signal,
+      ...(phase === 'status' ? { resumeRecord: { key: 'local:test', uploadId: 'test-upload' } } : {}),
+      ...(phase === 'session' ? { onSession: () => pause() } : {}),
+    });
+    const rejection = assert.rejects(upload, /^Error: 已取消$/);
+    await started.promise;
+    controller.abort();
+    release.resolve();
+    await rejection;
+  });
+}
+
+test('failure waits for sibling cleanup and aborts background hashing', { timeout: 2000 }, async () => {
+  const bothStarted = deferred();
+  const cleanup = deferred();
+  const releaseCleanup = deferred();
+  let hashAborted = false;
+  let requests = 0;
+  let settled = false;
+  const { uploadFileInChunks } = setupChunkedUpload({
+    uploadChunk: async (_id, index, _blob, _progress, signal) => {
+      if (++requests === 2) bothStarted.resolve();
+      await bothStarted.promise;
+      if (index === 0) throw Object.assign(new Error('too large'), { status: 413 });
+      await new Promise(resolve => signal.addEventListener('abort', resolve, { once: true }));
+      cleanup.resolve();
+      await releaseCleanup.promise;
+      throw new Error('sibling canceled');
+    },
+  }, {
+    computeFileBlake3WithOptions: async (_file, { signal }) => {
+      await new Promise(resolve => signal.addEventListener('abort', resolve, { once: true }));
+      hashAborted = true;
+      throw new Error('hash canceled');
+    },
+  });
+  const upload = uploadFileInChunks(new File([new Uint8Array(10 * 1024 * 1024 + 1)], 'file.bin'), {
+    nodeId: 'local', signal: new AbortController().signal,
+  });
+  const rejection = assert.rejects(upload, /HTTP 413.*too large/).then(() => { settled = true; });
+  await cleanup.promise;
+  assert.equal(settled, false);
+  releaseCleanup.resolve();
+  await rejection;
+  assert.equal(hashAborted, true);
+  assert.equal(requests, 2);
 });

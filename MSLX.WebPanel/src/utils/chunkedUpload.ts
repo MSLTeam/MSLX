@@ -53,10 +53,22 @@ function isRetryableUploadError(error: any): boolean {
   return status === 408 || status === 422 || status === 425 || status === 429 || status >= 500;
 }
 
-function backoffDelay(attempt: number): Promise<void> {
+function backoffDelay(attempt: number, signal: AbortSignal): Promise<void> {
   const base = Math.min(30_000, 500 * 2 ** attempt);
   const jitter = Math.random() * base * 0.3;
-  return new Promise((resolve) => setTimeout(resolve, base + jitter));
+  return new Promise((resolve, reject) => {
+    const onAbort = () => {
+      clearTimeout(timer);
+      signal.removeEventListener('abort', onAbort);
+      reject(new Error('已取消'));
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort);
+      resolve();
+    }, base + jitter);
+    signal.addEventListener('abort', onAbort, { once: true });
+    if (signal.aborted) onAbort();
+  });
 }
 
 function calcConcurrency(speedMBps: number): number {
@@ -110,7 +122,7 @@ export async function uploadFileInChunks(
   file: File,
   options: ChunkedUploadOptions,
 ): Promise<ChunkedUploadResult> {
-  const { nodeId, signal } = options;
+  const { nodeId, signal: callerSignal } = options;
   const chunkSize = chunkSizeFor(file);
   const totalChunks = Math.ceil(file.size / chunkSize);
   const progressMax = options.progressMax ?? 98;
@@ -129,6 +141,13 @@ export async function uploadFileInChunks(
   const ensureNotAborted = () => {
     if (signal.aborted) throw new Error('已取消');
   };
+
+  // 内部失败也要停止同组请求，但不能把它误报为用户取消。
+  const controller = new AbortController();
+  const signal = controller.signal;
+  const onCallerAbort = () => controller.abort();
+  callerSignal.addEventListener('abort', onCallerAbort, { once: true });
+  if (callerSignal.aborted) controller.abort();
 
   try {
     ensureNotAborted();
@@ -186,6 +205,7 @@ export async function uploadFileInChunks(
     resumeRecord.updatedAt = Date.now();
     await saveUploadResumeRecord(resumeRecord).catch(() => {});
     await options.onSession?.(resumeRecord);
+    ensureNotAborted();
 
     let committedBytes = 0;
     for (const index of receivedChunks) committedBytes += chunkBytes(file, chunkSize, index);
@@ -216,6 +236,7 @@ export async function uploadFileInChunks(
       ensureNotAborted();
       const chunk = file.slice(index * chunkSize, Math.min(file.size, (index + 1) * chunkSize));
       const chunkCrc32c = await computeChunkCrc32c(chunk, { signal });
+      ensureNotAborted();
       let lastError: any;
 
       for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -245,6 +266,7 @@ export async function uploadFileInChunks(
             nodeId,
             chunkCrc32c,
           );
+          ensureNotAborted();
           receivedChunks.add(index);
           committedBytes += chunk.size;
           activeChunkProgressMap.delete(index);
@@ -256,11 +278,10 @@ export async function uploadFileInChunks(
         } catch (error: any) {
           lastError = error;
           if (signal.aborted) throw new Error('已取消');
-          if (attempt < MAX_RETRIES && isRetryableUploadError(error)) {
-            activeChunkProgressMap.set(index, 0);
-            updateProgress();
-            await backoffDelay(attempt);
-          }
+          if (!isRetryableUploadError(error) || attempt >= MAX_RETRIES) break;
+          activeChunkProgressMap.set(index, 0);
+          updateProgress();
+          await backoffDelay(attempt, signal);
         } finally {
           window.clearTimeout(watchdogTimer);
           signal.removeEventListener('abort', abortAttempt);
@@ -276,42 +297,69 @@ export async function uploadFileInChunks(
       } catch {
         // 保留原始错误，避免状态查询失败掩盖分片错误。
       }
-      throw lastError || new Error(`分片 ${index} 失败`);
+      ensureNotAborted();
+      const status = getHttpStatus(lastError);
+      const suffix = status ? ` (HTTP ${status})` : '';
+      throw new Error(`分片 ${index} 失败${suffix}: ${lastError?.message || '网络连接中断'}`);
     };
 
     const runChunkQueue = async (pendingIndices: number[]) => {
-      await new Promise<void>((resolve, reject) => {
-        let hasError = false;
-        const activeWorkers = new Set<Promise<void>>();
-        const spawnWorkers = () => {
-          if (hasError || signal.aborted) return;
-          const targetConcurrency = Math.min(calcConcurrency(currentSpeedMBps), Math.max(1, pendingIndices.length));
-          while (activeWorkers.size < targetConcurrency && pendingIndices.length > 0) {
-            const index = pendingIndices.shift()!;
-            const worker = processChunk(index)
-              .then(() => {
-                activeWorkers.delete(worker);
-                if (pendingIndices.length === 0 && activeWorkers.size === 0) resolve();
-                else spawnWorkers();
-              })
-              .catch((error) => {
-                activeWorkers.delete(worker);
-                if (hasError) return;
-                hasError = true;
-                reject(error);
-              });
-            activeWorkers.add(worker);
-          }
-          if (pendingIndices.length === 0 && activeWorkers.size === 0 && !hasError) resolve();
-        };
-        spawnWorkers();
-      });
+      ensureNotAborted();
+      let onAbort = () => {};
+      try {
+        await new Promise<void>((resolve, reject) => {
+          let hasError = false;
+          let firstError: unknown;
+          const activeWorkers = new Set<Promise<void>>();
+          const settle = () => {
+            if (activeWorkers.size > 0) return;
+            if (hasError) reject(firstError);
+            else if (pendingIndices.length === 0) resolve();
+          };
+          onAbort = () => {
+            if (!hasError) {
+              hasError = true;
+              firstError = new Error('已取消');
+            }
+            settle();
+          };
+          signal.addEventListener('abort', onAbort, { once: true });
+          const spawnWorkers = () => {
+            if (hasError || signal.aborted) {
+              onAbort();
+              return;
+            }
+            const targetConcurrency = Math.min(calcConcurrency(currentSpeedMBps), Math.max(1, pendingIndices.length));
+            while (activeWorkers.size < targetConcurrency && pendingIndices.length > 0) {
+              const index = pendingIndices.shift()!;
+              const worker = processChunk(index)
+                .catch((error) => {
+                  if (hasError) return;
+                  hasError = true;
+                  firstError = error;
+                  controller.abort();
+                })
+                .finally(() => {
+                  activeWorkers.delete(worker);
+                  if (!hasError) spawnWorkers();
+                  settle();
+                });
+              activeWorkers.add(worker);
+            }
+            settle();
+          };
+          spawnWorkers();
+        });
+      } finally {
+        signal.removeEventListener('abort', onAbort);
+      }
     };
 
     await runChunkQueue(Array.from({ length: totalChunks }, (_, index) => index).filter((index) => !receivedChunks.has(index)));
     ensureNotAborted();
     options.onStatus?.('merging');
     const blake3 = await fileBlake3Promise;
+    ensureNotAborted();
     if (!resumeRecord.blake3) {
       resumeRecord.blake3 = blake3;
       resumeRecord.updatedAt = Date.now();
@@ -321,6 +369,7 @@ export async function uploadFileInChunks(
 
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
+        ensureNotAborted();
         finishResponse = await finishUpload(uploadId, totalChunks, nodeId, file.size, chunkSize, blake3);
         break;
       } catch (error: any) {
@@ -335,15 +384,16 @@ export async function uploadFileInChunks(
           continue;
         }
         if (!isRetryableUploadError(error)) throw error;
-        await backoffDelay(attempt);
+        await backoffDelay(attempt, signal);
       }
     }
 
+    ensureNotAborted();
     if (!finishResponse) throw new Error('上传合并未返回结果');
     await deleteUploadResumeRecord(resumeRecord.key).catch(() => {});
     return { uploadId, blake3, response: finishResponse, resumeRecord };
   } catch (error: any) {
-    if (error?.message === '已取消' || signal.aborted) {
+    if (callerSignal.aborted) {
       if (resumeRecord) {
         resumeRecord.cancelledAt = Date.now();
         resumeRecord.updatedAt = Date.now();
@@ -352,6 +402,9 @@ export async function uploadFileInChunks(
       throw new Error('已取消');
     }
     throw error;
+  } finally {
+    callerSignal.removeEventListener('abort', onCallerAbort);
+    controller.abort();
   }
 }
 
