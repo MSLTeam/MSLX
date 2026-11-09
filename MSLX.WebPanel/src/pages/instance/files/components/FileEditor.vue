@@ -215,7 +215,7 @@ const extensions = computed(() => {
     case 'toml':
     case 'ini':
     case 'conf':
-      result.push(StreamLanguage.define(toml));
+      result.push(StreamLanguage.define(toml as any));
       break;
     case 'properties':
     case 'log':

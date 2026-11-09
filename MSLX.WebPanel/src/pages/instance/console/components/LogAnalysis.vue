@@ -321,6 +321,8 @@ watch(isDark, () => {
               editor-id="report-preview"
               :model-value="formData.result"
               :theme="mdTheme as Themes"
+              :no-katex="true"
+              :no-mermaid="true"
               class="md-preview-wrapper !bg-transparent"
             />
           </div>

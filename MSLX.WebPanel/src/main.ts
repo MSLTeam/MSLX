@@ -13,6 +13,7 @@ import { store } from './store';
 import router from './router';
 import '@/style/index.less';
 import './permission';
+import './config/markdown';
 import App from './App.vue';
 import { request } from '@/utils/request';
 import { useFileUpload } from '@/hooks/useFileUpload';

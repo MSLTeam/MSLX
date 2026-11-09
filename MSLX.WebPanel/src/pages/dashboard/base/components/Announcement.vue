@@ -67,6 +67,8 @@ const handleMdClick = (e: MouseEvent) => {
             editor-id="announcement-preview"
             :model-value="notice"
             :theme="mdTheme as Themes"
+            :no-katex="true"
+            :no-mermaid="true"
             class="custom-md-preview bg-transparent text-left !p-0"
           />
         </div>

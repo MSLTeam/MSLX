@@ -751,6 +751,8 @@ watch(isDark, (val) => {
               v-if="currentDetail.description"
               :model-value="currentDetail.description"
               :theme="mdTheme as Themes"
+              :no-katex="true"
+              :no-mermaid="true"
               class="custom-md-preview bg-transparent text-left !p-0"
             />
             <div v-else class="text-[var(--td-text-color-secondary)] text-center my-8">
