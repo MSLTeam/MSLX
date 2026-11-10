@@ -35,7 +35,7 @@ public class UpdateSslSettingsRequest : IValidatableObject
             if (!string.IsNullOrWhiteSpace(Certificate) && string.IsNullOrWhiteSpace(PrivateKey))
                 yield return new ValidationResult("提交了证书，必须提供对应的私钥。", new[] { nameof(PrivateKey) });
 
-            if (string.IsNullOrWhiteSpace(PrivateKey) && !string.IsNullOrWhiteSpace(Certificate))
+            if (string.IsNullOrWhiteSpace(Certificate) && !string.IsNullOrWhiteSpace(PrivateKey))
                 yield return new ValidationResult("提交了私钥，必须提供对应的证书。", new[] { nameof(Certificate) });
         }
 
@@ -71,16 +71,27 @@ public static class CertificateHelper
 
     public static bool IsValidPrivateKey(string pem, out string? errorMessage)
     {
-        try
+        using var rsa = RSA.Create();
+        using var ecdsa = ECDsa.Create();
+        if (CanImportPem(rsa, pem) || CanImportPem(ecdsa, pem))
         {
-            using var rsa = RSA.Create();
-            rsa.ImportFromPem(pem);
             errorMessage = null;
             return true;
         }
-        catch (Exception ex)
+
+        errorMessage = "私钥格式无效，请提供 PEM 格式的 RSA 或 ECDSA 私钥。";
+        return false;
+    }
+
+    private static bool CanImportPem(AsymmetricAlgorithm key, string pem)
+    {
+        try
         {
-            errorMessage = $"私钥格式无效: {ex.Message}";
+            key.ImportFromPem(pem);
+            return true;
+        }
+        catch (Exception ex) when (ex is ArgumentException or CryptographicException)
+        {
             return false;
         }
     }

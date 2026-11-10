@@ -5,6 +5,7 @@ using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.Models;
 using MSLX.SDK.Models.Settings;
 using System.Net;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using MSLX.Daemon.Services.NodeServices;
 using MSLX.Daemon.Services.PluginsService;
@@ -194,6 +195,8 @@ public class SettingsController : ControllerBase
 
     #region SSL设置
 
+    private static readonly object SslSettingsLock = new();
+
     [HttpGet("ssl")]
     [Authorize(Roles = "admin")]
     public IActionResult GetSslSettings()
@@ -233,66 +236,93 @@ public class SettingsController : ControllerBase
     [Authorize(Roles = "admin")]
     public IActionResult UpdateSslSettings([FromBody] UpdateSslSettingsRequest request)
     {
+        lock (SslSettingsLock)
+        {
+            return SaveSslSettings(request);
+        }
+    }
+
+    private IActionResult SaveSslSettings(UpdateSslSettingsRequest request)
+    {
+        X509Certificate2? loadedCertificate = null;
         try
         {
             string certDir = Path.Combine(IConfigBase.GetAppConfigPath(), "certs");
-            if (!Directory.Exists(certDir))
-            {
-                Directory.CreateDirectory(certDir);
-            }
+            string pemPath = Path.Combine(certDir, "server.pem");
+            string keyPath = Path.Combine(certDir, "server.key");
+            string? certificatePem = request.Certificate?.Trim();
+            string? privateKeyPem = request.PrivateKey?.Trim();
 
-            // 自签名
             if (request.UseSelfSignedCert)
             {
-                using var rsa = System.Security.Cryptography.RSA.Create(2048);
-                var dnBuilder = new System.Security.Cryptography.X509Certificates.X500DistinguishedNameBuilder();
+                using var rsa = RSA.Create(2048);
+                var dnBuilder = new X500DistinguishedNameBuilder();
                 dnBuilder.AddCommonName("MSLX Local Certificate");
                 dnBuilder.AddOrganizationName("净善宫");
                 dnBuilder.AddOrganizationalUnitName("纳西妲最可爱啦!");
                 dnBuilder.AddLocalityName("Sumeru");
-                dnBuilder.AddCountryOrRegion("CN"); 
-                var req = new System.Security.Cryptography.X509Certificates.CertificateRequest(
-                    dnBuilder.Build(),
-                    rsa,
-                    System.Security.Cryptography.HashAlgorithmName.SHA256,
-                    System.Security.Cryptography.RSASignaturePadding.Pkcs1);
+                dnBuilder.AddCountryOrRegion("CN");
+                var req = new CertificateRequest(dnBuilder.Build(), rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 
-                // 把本地回环签进去
                 var sanBuilder = new SubjectAlternativeNameBuilder();
                 sanBuilder.AddDnsName("localhost");
                 sanBuilder.AddIpAddress(IPAddress.Loopback);
                 req.CertificateExtensions.Add(sanBuilder.Build());
 
-                using var cert = req.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1),
-                    DateTimeOffset.UtcNow.AddYears(10));
-                
-                System.IO.File.WriteAllText(Path.Combine(certDir, "server.pem"), cert.ExportCertificatePem());
-                System.IO.File.WriteAllText(Path.Combine(certDir, "server.key"), rsa.ExportRSAPrivateKeyPem());
+                // PEM 分别保存证书和私钥，签发时无需把私钥附加到证书。
+                var now = DateTimeOffset.UtcNow;
+                using var cert = req.Create(req.SubjectName, X509SignatureGenerator.CreateForRSA(rsa, RSASignaturePadding.Pkcs1),
+                    now.AddDays(-1), now.AddYears(10), RandomNumberGenerator.GetBytes(16));
+                certificatePem = cert.ExportCertificatePem();
+                privateKeyPem = rsa.ExportRSAPrivateKeyPem();
             }
-            // 自定义证书
-            else if (!string.IsNullOrWhiteSpace(request.Certificate) && !string.IsNullOrWhiteSpace(request.PrivateKey))
+
+            bool replaceCertificate = !string.IsNullOrEmpty(certificatePem) && !string.IsNullOrEmpty(privateKeyPem);
+            if (request.EnableSsl && !replaceCertificate &&
+                (!System.IO.File.Exists(pemPath) || !System.IO.File.Exists(keyPath)))
             {
-                System.IO.File.WriteAllText(Path.Combine(certDir, "server.pem"), request.Certificate.Trim());
-                System.IO.File.WriteAllText(Path.Combine(certDir, "server.key"), request.PrivateKey.Trim());
+                return BadRequest(new ApiResponse<object>
+                {
+                    Code = 400,
+                    Message = "无法开启 SSL：请提交完整的证书和私钥，或生成自签名证书。"
+                });
             }
-            
-            if (request.EnableSsl)
+
+            // 写入前确认 HTTPS 证书可加载，避免错误的私钥覆盖已有配置。
+            if (request.EnableSsl || (replaceCertificate && !request.UseSelfSignedCert))
             {
-                string checkPem = Path.Combine(IConfigBase.GetAppConfigPath(), "certs", "server.pem");
-                if (!System.IO.File.Exists(checkPem))
+                try
+                {
+                    loadedCertificate = SslCertificateManager.LoadCertificate(
+                        replaceCertificate ? certificatePem! : System.IO.File.ReadAllText(pemPath),
+                        replaceCertificate ? privateKeyPem! : System.IO.File.ReadAllText(keyPath));
+                }
+                catch (CryptographicException ex)
                 {
                     return BadRequest(new ApiResponse<object>
                     {
                         Code = 400,
-                        Message = "无法开启 SSL：未找到证书文件，请一起提交证书内容或勾选生成自签名证书。"
+                        Message = $"无法加载 SSL 证书和私钥，请检查证书与私钥是否匹配。{ex.Message}"
                     });
                 }
             }
 
-            IConfigBase.Config.WriteConfigKey("enableSsl", request.EnableSsl);
+            if (replaceCertificate)
+            {
+                Directory.CreateDirectory(certDir);
+                System.IO.File.WriteAllText(pemPath, certificatePem!);
+                System.IO.File.WriteAllText(keyPath, privateKeyPem!);
+            }
+
+            IConfigBase.Config.UpdateConfig(config =>
+            {
+                config["enableSsl"] = request.EnableSsl;
+                return config;
+            });
             if (request.EnableSsl)
             {
-                SslCertificateManager.ReloadCertificate();
+                SslCertificateManager.ReplaceCertificate(loadedCertificate!);
+                loadedCertificate = null;
             }
 
             return Ok(new ApiResponse<object>
@@ -308,6 +338,10 @@ public class SettingsController : ControllerBase
                 Code = 500,
                 Message = $"保存 SSL 配置失败: {ex.Message}"
             });
+        }
+        finally
+        {
+            loadedCertificate?.Dispose();
         }
     }
 
