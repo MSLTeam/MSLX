@@ -11,6 +11,7 @@ import LayoutSideNav from './components/LayoutSideNav.vue';
 
 import { prefix } from '@/config/global';
 import '@/style/layout.less';
+import { useWindowSizeFn } from '@/hooks/event/useWindowSizeFn';
 
 import defaultLightBg from '@/assets/bg_light_new.jpg';
 import defaultDarkBg from '@/assets/bg_night_new.jpg';
@@ -22,6 +23,7 @@ const settingStore = useSettingStore();
 const userStore = useUserStore();
 const webpanelStore = useWebpanelStore();
 const setting = storeToRefs(settingStore);
+useWindowSizeFn(() => settingStore.updateConfig({ isMobileLayout: window.innerWidth < 480 }), { immediate: true });
 
 const getImageUrl = (fileName: string, defaultImg: string) => {
   if (!fileName) return defaultImg;
@@ -78,7 +80,7 @@ watch(
       -webkit-backdrop-filter: blur(var(--term-blur-dark)) !important;
       }
     </component>
-    <template v-if="setting.layout.value === 'side'">
+    <template v-if="setting.effectiveLayout.value === 'side'">
       <t-layout key="side" :class="mainLayoutCls">
         <t-aside><layout-side-nav /></t-aside>
         <t-layout>

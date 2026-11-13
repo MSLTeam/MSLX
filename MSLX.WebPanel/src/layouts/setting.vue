@@ -25,7 +25,7 @@ const initStyleConfig = () => {
   for (const key in styleConfig) {
     if (Object.prototype.hasOwnProperty.call(styleConfig, key)) {
       // @ts-ignore
-      styleConfig[key] = settingStore[key];
+      styleConfig[key] = key === 'layout' ? settingStore.effectiveLayout : settingStore[key];
     }
   }
   return styleConfig;
@@ -51,9 +51,6 @@ const isDarkMode = computed({
   },
 });
 
-if (isMobile.value && formData.value.layout === 'side') {
-  formData.value.layout = 'top';
-}
 const isColoPickerDisplay = ref(false);
 
 const showSettingPanel = computed({
@@ -284,7 +281,7 @@ const handleCloseDrawer = () => {
             >
               <div class="flex flex-col">
                 <span class="text-[14px] font-bold text-[var(--td-text-color-primary)]">当前布局</span>
-                <span class="text-[11px] text-zinc-400 mt-0.5">选择侧边栏或顶部导航</span>
+                <span class="text-[11px] text-zinc-400 mt-0.5">移动端默认顶栏，自定义后保留所选布局</span>
               </div>
 
               <!-- 滑动底座 -->

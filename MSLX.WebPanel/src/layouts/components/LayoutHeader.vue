@@ -3,7 +3,7 @@
     v-if="settingStore.showHeader"
     :show-logo="settingStore.showHeaderLogo"
     :theme="settingStore.displayMode"
-    :layout="settingStore.layout"
+    :layout="settingStore.effectiveLayout"
     :is-fixed="settingStore.isHeaderFixed"
     :menu="headerMenu"
     :is-compact="settingStore.isSidebarCompact"
@@ -20,7 +20,7 @@ const permissionStore = usePermissionStore();
 const settingStore = useSettingStore();
 const { routers: menuRouters } = storeToRefs(permissionStore);
 const headerMenu = computed(() => {
-  if (settingStore.layout === 'mix') {
+  if (settingStore.effectiveLayout === 'mix') {
     if (settingStore.splitMenu) {
       return menuRouters.value.map((menu) => ({
         ...menu,
