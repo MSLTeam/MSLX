@@ -25,6 +25,9 @@ const loading = ref(false);
 const submitLoading = ref(false);
 const savedMode = ref(false);
 const savedLinkKey = ref('');
+const linkKeyChanged = computed(() => sysData.canManageNodeMode && sysData.isSlaveMode &&
+  !sysData.linkKeyLocked && sysData.slaveLinkKey !== savedLinkKey.value);
+const generateLinkKey = () => { sysData.slaveLinkKey = generateRandomString(32); };
 
 const sysData = reactive<SettingsModel>({
   isSlaveMode: false,
@@ -93,7 +96,9 @@ const onSysSubmit = async () => {
       payload.slaveLinkKey = slaveLinkKey;
     await updateSettings(payload, targetNodeId);
     await initData();
-    MessagePlugin.success('系统设置保存成功');
+    MessagePlugin.success(payload.slaveLinkKey !== undefined
+      ? '配对密钥已更新，全部主节点配对已解除，请使用新密钥重新配对'
+      : '系统设置保存成功');
   } catch (error: any) {
     MessagePlugin.error(error.message);
   } finally {
@@ -161,13 +166,16 @@ onMounted(() => {
             <t-form-item v-if="sysData.isSlaveMode" label="配对密钥">
               <template #help>
                 <span class="text-xs text-[var(--td-text-color-secondary)]">
-                  {{ sysData.linkKeyLocked ? '由启动参数 --linkkey 控制，移除参数并重启后可在此修改。' : '供主节点首次配对使用，更换后已有配对仍有效。首次留空将自动生成。' }}
+                  {{ sysData.linkKeyLocked ? '由启动参数 --linkkey 控制，移除参数并重启后可在此修改。' : '修改密钥并保存后，将解除全部主节点配对并断开远程连接，需使用新密钥重新配对。首次留空将自动生成。' }}
                 </span>
               </template>
-              <div class="flex w-full flex-wrap items-center gap-2">
+              <div class="flex w-full flex-wrap items-center gap-2 [&>.t-button]:!ml-0">
                 <t-input v-model="sysData.slaveLinkKey" type="password" :disabled="sysData.linkKeyLocked"
                   :maxlength="256" autocomplete="new-password" class="!w-full sm:!w-80" placeholder="请输入配对密钥" />
-                <t-button variant="outline" :disabled="!sysData.slaveLinkKey" @click="copyText(sysData.slaveLinkKey || '')">复制</t-button>
+                <t-button type="button" variant="outline" :disabled="!sysData.slaveLinkKey" @click="copyText(sysData.slaveLinkKey || '')">复制</t-button>
+                <t-button type="button" variant="outline" :disabled="sysData.linkKeyLocked" @click="generateLinkKey">随机生成</t-button>
+                <t-alert v-if="linkKeyChanged" theme="warning" class="w-full"
+                  message="配对密钥已修改，尚未生效。保存后将断开全部已配对主节点，需在主节点解除旧配对后使用新密钥重新配对。" />
               </div>
             </t-form-item>
           </template>

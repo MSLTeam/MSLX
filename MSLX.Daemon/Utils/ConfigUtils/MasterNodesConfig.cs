@@ -141,6 +141,24 @@ namespace MSLX.Daemon.Utils.ConfigUtils
             finally { _lock.ExitWriteLock(); }
         }
 
+        // 先撤销磁盘上的配对再提交新密钥；设置保存失败时恢复原关系。
+        public void ClearRelationships(Action saveSettings)
+        {
+            _lock.EnterWriteLock();
+            try
+            {
+                IConfigBase.SaveNodeJson(_path, new JArray());
+                try { saveSettings(); }
+                catch
+                {
+                    IConfigBase.SaveNodeJson(_path, _mastersCache);
+                    throw;
+                }
+                _mastersCache = new JArray();
+            }
+            finally { _lock.ExitWriteLock(); }
+        }
+
         public bool RemoveMaster(string masterId)
         {
             _lock.EnterWriteLock();

@@ -27,13 +27,19 @@ public static class NodeModeService
             blocked = nodes.GetAllNodes().Any(n => !n.PendingRemoval);
             if (blocked) mode = false;
         }
-        IConfigBase.Config.UpdateConfig(config =>
+        void SaveSettings() => IConfigBase.Config.UpdateConfig(config =>
         {
             if (mode.HasValue) config["IsSlaveMode"] = mode.Value;
             if (LinkKeyLocked) config["SlaveLinkKey"] = linkKey;
             EnsureLinkKey(config);
             return config;
         });
+        if (LinkKeyLocked && linkKey != IConfigBase.Config.ReadConfigKey("SlaveLinkKey")?.ToString())
+        {
+            using var masters = new MasterNodesConfig();
+            masters.ClearRelationships(SaveSettings);
+        }
+        else SaveSettings();
         return blocked;
     }
 
@@ -56,7 +62,8 @@ public static class NodeModeService
                 if (mode == true && !wasSlave && IConfigBase.NodeList.GetAllNodes().Any(n => !n.PendingRemoval))
                     throw new SyncConflictException("已有已配对的子节点，请先解除配对再切换到子节点模式");
 
-                IConfigBase.Config.UpdateConfig(config =>
+                bool keyChanged = linkKey != null && linkKey != currentKey;
+                void SaveSettings() => IConfigBase.Config.UpdateConfig(config =>
                 {
                     update(config);
                     if (mode.HasValue) config["IsSlaveMode"] = mode.Value;
@@ -64,13 +71,15 @@ public static class NodeModeService
                     EnsureLinkKey(config);
                     return config;
                 });
-                if (wasSlave != IsSlaveMode)
+                if (keyChanged) IConfigBase.MasterNodes.ClearRelationships(SaveSettings);
+                else SaveSettings();
+                if (wasSlave != IsSlaveMode || keyChanged)
                 {
                     previousLifetime = _modeLifetime;
                     _modeLifetime = new CancellationTokenSource();
                 }
             }
-            // 发布新模式后结束旧委派连接，本机连接不订阅此取消信号。
+            // 模式或密钥变更后结束旧委派连接，本机连接不订阅此取消信号。
             previousLifetime?.Cancel();
         }
         finally
@@ -95,7 +104,7 @@ public static class NodeModeService
         {
             RequireSlaveMode();
             if (lifetime.IsCancellationRequested)
-                throw new HttpRequestException("节点运行模式已变化，请重新连接", null, HttpStatusCode.Unauthorized);
+                throw new HttpRequestException("节点运行模式或配对密钥已变化，请重新配对或连接", null, HttpStatusCode.Unauthorized);
             return publish();
         }
     }
