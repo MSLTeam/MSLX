@@ -159,7 +159,7 @@ const handleCloseDrawer = () => {
           </div>
           <div class="flex flex-col gap-3">
             <div
-              class="flex items-center justify-between p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-700/50 transition-colors hover:border-zinc-300 dark:hover:border-zinc-600"
+              class="drawer-card flex items-center justify-between p-4 rounded-xl border transition-colors"
             >
               <div class="flex flex-col">
                 <span class="text-[14px] font-bold text-[var(--td-text-color-primary)]">跟随系统</span>
@@ -170,7 +170,7 @@ const handleCloseDrawer = () => {
 
             <div
               v-show="!isAutoMode"
-              class="flex items-center justify-between p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-700/50 transition-colors hover:border-zinc-300 dark:hover:border-zinc-600 animate-fade-in"
+              class="drawer-card flex items-center justify-between p-4 rounded-xl border transition-colors animate-fade-in"
             >
               <div class="flex flex-col">
                 <span class="text-[14px] font-bold text-[var(--td-text-color-primary)]">暗黑模式</span>
@@ -187,7 +187,7 @@ const handleCloseDrawer = () => {
             个性化
           </div>
           <div
-            class="flex items-center justify-between p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-700/50 transition-colors hover:border-zinc-300 dark:hover:border-zinc-600"
+            class="drawer-card flex items-center justify-between p-4 rounded-xl border transition-colors"
           >
             <div class="flex flex-col">
               <span class="text-[14px] font-bold text-[var(--td-text-color-primary)]">开启背景美化</span>
@@ -202,7 +202,7 @@ const handleCloseDrawer = () => {
           <div class="text-[13px] font-bold text-[var(--td-text-color-secondary)] mb-4 tracking-widest uppercase">
             主题色
           </div>
-          <div class="p-5 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-700/50">
+          <div class="drawer-card p-5 rounded-xl border">
             <div class="flex flex-wrap gap-4 items-center">
               <div
                 v-for="item in COLOR_OPTIONS.slice(0, -1)"
@@ -277,7 +277,7 @@ const handleCloseDrawer = () => {
           </div>
           <div class="flex flex-col gap-3">
             <div
-              class="flex items-center justify-between p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-700/50 transition-colors hover:border-zinc-300 dark:hover:border-zinc-600"
+              class="drawer-card flex items-center justify-between p-4 rounded-xl border transition-colors"
             >
               <div class="flex flex-col">
                 <span class="text-[14px] font-bold text-[var(--td-text-color-primary)]">当前布局</span>
@@ -323,7 +323,7 @@ const handleCloseDrawer = () => {
 
             <div
               v-show="formData.layout === 'side'"
-              class="flex items-center justify-between p-4 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/30 border border-zinc-100 dark:border-zinc-700/50 transition-colors hover:border-zinc-300 dark:hover:border-zinc-600 animate-fade-in"
+              class="drawer-card flex items-center justify-between p-4 rounded-xl border transition-colors animate-fade-in"
             >
               <div class="flex flex-col">
                 <span class="text-[14px] font-bold text-[var(--td-text-color-primary)]">自动折叠菜单</span>
@@ -355,16 +355,6 @@ const handleCloseDrawer = () => {
 <style scoped>
 @reference "@/style/tailwind/index.css";
 
-/* 抽屉基础样式穿透 */
-:deep(.t-drawer__content-wrapper) {
-  @apply !bg-white dark:!bg-zinc-800 !border-l !border-zinc-200/50 dark:!border-zinc-700/50;
-}
-:deep(.t-drawer__header) {
-  @apply !px-6 !py-5 !border-b !border-zinc-100 dark:!border-zinc-700/50;
-}
-:deep(.t-drawer__header-title) {
-  @apply !text-[16px] !font-bold !text-zinc-800 dark:!text-zinc-100;
-}
 :deep(.t-drawer__body) {
   @apply !p-0;
 }
