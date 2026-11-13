@@ -137,7 +137,7 @@ html[theme-mode='dark'] .t-select__dropdown .t-popup__content,
 }
 
 .t-select-option {
-  @apply !rounded-lg !my-0.5 !px-3 !py-2 !text-zinc-700 dark:!text-zinc-300 !text-sm !transition-all !duration-150 !cursor-pointer;
+  @apply !h-auto !min-h-8 !rounded-lg !my-0.5 !px-3 !py-2 !text-zinc-700 dark:!text-zinc-300 !text-sm !transition-all !duration-150 !cursor-pointer;
   background: transparent;
 }
 
