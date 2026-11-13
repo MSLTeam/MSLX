@@ -44,6 +44,8 @@ public class SettingsController : ControllerBase
     {
         bool isEmbeddedDaemon = IsEmbeddedDaemon();
         var config = IConfigBase.Config.ReadConfig();
+        bool canManageMode = User?.IsInRole("admin") == true && User.Identity?.AuthenticationType != "NodeAuth";
+        if (HttpContext != null) Response.Headers.CacheControl = "no-store";
 
         return Ok(new ApiResponse<object>
             {
@@ -63,6 +65,11 @@ public class SettingsController : ControllerBase
                     ListenPort = config["listenPort"] ?? 1027,
                     AllowExternalAccess = isEmbeddedDaemon ? config["allowExternalAccess"] ?? false : false,
                     IsEmbeddedDaemon = isEmbeddedDaemon,
+                    IsSlaveMode = (bool?)config["IsSlaveMode"] ?? false,
+                    CanManageNodeMode = canManageMode,
+                    ModeLocked = NodeModeService.ModeLocked,
+                    LinkKeyLocked = NodeModeService.LinkKeyLocked,
+                    SlaveLinkKey = canManageMode ? config["SlaveLinkKey"]?.ToString() : null,
                     OAuthMSLClientID = config["oAuthMSLClientID"] ?? "",
                     OAuthMSLClientSecret = config["oAuthMSLClientSecret"] ?? "",
                     DownloadThreadCount = config["downloadThreadCount"] ?? 5,
@@ -80,32 +87,46 @@ public class SettingsController : ControllerBase
     {
         bool isEmbeddedDaemon = IsEmbeddedDaemon();
 
-        IConfigBase.Config.WriteConfigKey("allowNormalUserChangeUserName", request.AllowNormalUserChangeUserName);
-        IConfigBase.Config.WriteConfigKey("allowNormalUserEditFrpConfig", request.AllowNormalUserEditFrpConfig);
-        IConfigBase.Config.WriteConfigKey("allowNormalUserOfflineDownload", request.AllowNormalUserOfflineDownload);
-        IConfigBase.Config.WriteConfigKey("enableSsrfProtection", request.EnableSsrfProtection);
-        if (!isEmbeddedDaemon)
+        if (User?.Identity?.AuthenticationType == "NodeAuth" &&
+            (request.IsSlaveMode.HasValue || request.SlaveLinkKey != null))
+            return StatusCode(403, new ApiResponse<object> { Code = 403, Message = "运行模式和配对密钥仅允许本机管理员修改" });
+
+        try
         {
-            IConfigBase.Config.WriteConfigKey("fireWallBanLocalAddr", request.FireWallBanLocalAddr);
+            NodeModeService.UpdateSettings(request.IsSlaveMode, request.SlaveLinkKey, config =>
+            {
+                config["allowNormalUserChangeUserName"] = request.AllowNormalUserChangeUserName;
+                config["allowNormalUserEditFrpConfig"] = request.AllowNormalUserEditFrpConfig;
+                config["allowNormalUserOfflineDownload"] = request.AllowNormalUserOfflineDownload;
+                config["enableSsrfProtection"] = request.EnableSsrfProtection;
+                if (!isEmbeddedDaemon)
+                {
+                    config["fireWallBanLocalAddr"] = request.FireWallBanLocalAddr;
+                }
+                config["openWebConsoleOnLaunch"] = request.OpenWebConsoleOnLaunch;
+                config["neoForgeInstallerMirrors"] = request.NeoForgeInstallerMirrors;
+                if (!isEmbeddedDaemon)
+                {
+                    config["listenHost"] = request.ListenHost;
+                }
+                config["listenPort"] = request.ListenPort;
+                if (isEmbeddedDaemon)
+                {
+                    config["allowExternalAccess"] = request.AllowExternalAccess;
+                }
+                config["oAuthMSLClientID"] = request.OAuthMSLClientID;
+                config["oAuthMSLClientSecret"] = request.OAuthMSLClientSecret;
+                config["downloadThreadCount"] = request.DownloadThreadCount;
+                config["enableCdnProxy"] = request.EnableCdnProxy;
+                config["cdnProxyIpHeader"] = request.CdnProxyIpHeader ?? "X-Forwarded-For";
+                config["cdnProxySecretValue"] = request.CdnProxySecretValue ?? "";
+            });
         }
-        IConfigBase.Config.WriteConfigKey("openWebConsoleOnLaunch", request.OpenWebConsoleOnLaunch);
-        IConfigBase.Config.WriteConfigKey("neoForgeInstallerMirrors", request.NeoForgeInstallerMirrors);
-        if (!isEmbeddedDaemon)
-        {
-            IConfigBase.Config.WriteConfigKey("listenHost", request.ListenHost);
-        }
-        IConfigBase.Config.WriteConfigKey("listenPort", request.ListenPort);
-        if (isEmbeddedDaemon)
-        {
-            IConfigBase.Config.WriteConfigKey("allowExternalAccess", request.AllowExternalAccess);
-        }
-        IConfigBase.Config.WriteConfigKey("oAuthMSLClientID", request.OAuthMSLClientID);
-        IConfigBase.Config.WriteConfigKey("oAuthMSLClientSecret", request.OAuthMSLClientSecret);
-        IConfigBase.Config.WriteConfigKey("downloadThreadCount", request.DownloadThreadCount);
-        IConfigBase.Config.WriteConfigKey("enableCdnProxy", request.EnableCdnProxy);
-        IConfigBase.Config.WriteConfigKey("cdnProxyIpHeader", request.CdnProxyIpHeader ?? "X-Forwarded-For");
-        IConfigBase.Config.WriteConfigKey("cdnProxySecretValue", request.CdnProxySecretValue ?? "");
-        
+        catch (SyncConflictException ex)
+        { return Conflict(new ApiResponse<object> { Code = 409, Message = ex.Message }); }
+        catch (InvalidDataException ex)
+        { return BadRequest(new ApiResponse<object> { Code = 400, Message = ex.Message }); }
+
         return Ok(new ApiResponse<object>
             {
                 Code = 200,

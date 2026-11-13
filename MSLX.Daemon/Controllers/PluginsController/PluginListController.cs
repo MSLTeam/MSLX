@@ -147,7 +147,7 @@ public class PluginListController : ControllerBase
     {
         bool isAuthenticated, isAdmin;
         var nodeId = Request.Headers["x-node-id"].FirstOrDefault();
-        if (!string.IsNullOrEmpty(nodeId) && (bool?)IConfigBase.Config.ReadConfigKey("IsSlaveMode") == true)
+        if (!string.IsNullOrEmpty(nodeId))
         {
             try
             {

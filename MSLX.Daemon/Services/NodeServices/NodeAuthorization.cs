@@ -14,19 +14,21 @@ namespace MSLX.Daemon.Services.NodeServices;
 public sealed class NodeAuthorization(IMemoryCache cache)
 {
     private static readonly HttpClient Client = new() { Timeout = TimeSpan.FromSeconds(3) };
-    public sealed record Lease(ClaimsPrincipal Principal, JArray Resources, DateTimeOffset Until)
+    public sealed record Lease(ClaimsPrincipal Principal, JArray Resources, DateTimeOffset Until, CancellationToken ModeChanged = default)
     {
         public ClaimsPrincipal CreatePrincipal() => new(Principal.Identities.Select(identity => identity.Clone()));
     }
 
     public async Task<Lease> VerifyAsync(string nodeId, string token, CancellationToken cancellationToken, bool refresh = false)
     {
+        var modeLifetime = NodeModeService.CaptureAuthorization();
         var master = IConfigBase.MasterNodes.GetMasterById(nodeId);
         if (master == null || master.NodeId != nodeId)
             throw new HttpRequestException("节点关系已解除或不存在", null, HttpStatusCode.Unauthorized);
         var key = "NODE_AUTH_" + nodeId + "_" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(token)));
-        if (!refresh && cache.TryGetValue(key, out Lease? cached) && cached != null && cached.Until > DateTimeOffset.UtcNow)
-            return cached;
+        if (!refresh && cache.TryGetValue(key, out Lease? cached) && cached != null &&
+            !cached.ModeChanged.IsCancellationRequested && cached.Until > DateTimeOffset.UtcNow)
+            return NodeModeService.PublishAuthorization(modeLifetime, () => cached);
         // 撤权生效目标不超过约15秒
         var until = DateTimeOffset.UtcNow.AddSeconds(15);
         try
@@ -52,9 +54,12 @@ public sealed class NodeAuthorization(IMemoryCache cache)
             };
             if (!string.IsNullOrEmpty(data["scope"]?.ToString())) claims.Add(new("Scope", data["scope"]!.ToString()));
             claims.AddRange(resources.Select(r => new Claim("Resource", r.ToString())));
-            var lease = new Lease(new ClaimsPrincipal(new ClaimsIdentity(claims, "NodeAuth")), resources, until);
-            cache.Set(key, lease, until);
-            return lease;
+            var lease = new Lease(new ClaimsPrincipal(new ClaimsIdentity(claims, "NodeAuth")), resources, until, modeLifetime);
+            return NodeModeService.PublishAuthorization(modeLifetime, () =>
+            {
+                cache.Set(key, lease, until);
+                return lease;
+            });
         }
         catch
         {
@@ -120,6 +125,7 @@ public sealed class NodeAuthorizationHubFilter(NodeAuthorization authorization) 
 
     private async Task MonitorAsync(HubCallerContext caller, HttpContext http, NodeAuthorization.Lease lease)
     {
+        using var modeRegistration = lease.ModeChanged.Register(caller.Abort);
         try
         {
             while (!caller.ConnectionAborted.IsCancellationRequested)

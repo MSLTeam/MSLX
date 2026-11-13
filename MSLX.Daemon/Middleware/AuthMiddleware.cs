@@ -174,7 +174,7 @@ namespace MSLX.Daemon.Middleware
             bool isSlaveMode = bool.Parse(IConfigBase.Config.ReadConfigKey("IsSlaveMode")?.ToString() ?? "false");
             var nodeId = context.Request.Headers["x-node-id"].FirstOrDefault()
                 ?? context.Request.Query["x-node-id"].ToString();
-            if (isSlaveMode && !string.IsNullOrEmpty(nodeId))
+            if (!string.IsNullOrEmpty(nodeId))
             {
                 try
                 {
@@ -253,9 +253,9 @@ namespace MSLX.Daemon.Middleware
                 {
                     // 子节点需要允许本机管理员在配对前配置 HTTPS。
                     var allowedSettings = context.User.IsInRole("admin") &&
-                        (path == "/api/settings/ssl" ||
-                         (context.User.Identity?.AuthenticationType == "NodeAuth" &&
-                          (path == "/api/settings" || path == "/api/settings/sync")));
+                        (path == "/api/settings" || path == "/api/settings/ssl" ||
+                         (context.User.Identity?.AuthenticationType == "NodeAuth" && path == "/api/settings/sync") ||
+                         (context.User.Identity?.AuthenticationType != "NodeAuth" && path == "/api/settings/webpanel/style"));
                     if (path.StartsWithSegments("/api/user") || path.StartsWithSegments("/api/settings") || path.StartsWithSegments("/api/admin"))
                     {
                         if (!allowedSettings && !path.StartsWithSegments("/api/user/logout"))

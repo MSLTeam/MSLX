@@ -1,4 +1,9 @@
 export interface SettingsModel {
+  isSlaveMode?: boolean;
+  slaveLinkKey?: string | null;
+  canManageNodeMode?: boolean;
+  modeLocked?: boolean;
+  linkKeyLocked?: boolean;
   allowNormalUserChangeUserName: boolean;
   allowNormalUserEditFrpConfig: boolean;
   allowNormalUserOfflineDownload: boolean;

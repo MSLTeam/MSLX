@@ -4,6 +4,11 @@ namespace MSLX.SDK.Models.Settings;
 
 public class UpdateSettingsRequest
 {
+    public bool? IsSlaveMode { get; set; }
+
+    [StringLength(256, MinimumLength = 1, ErrorMessage = "配对密钥长度必须在 1–256 个字符之间")]
+    public string? SlaveLinkKey { get; set; }
+
     [Required(ErrorMessage = "系统设置-是否允许普通用户修改用户名 (allowNormalUserChangeUserName) 不能为空")]
     public Boolean AllowNormalUserChangeUserName { get; set; }
 

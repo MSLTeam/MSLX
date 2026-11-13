@@ -97,39 +97,20 @@ var argLinkKey = builder.Configuration["linkkey"];
 
 bool hasSlaveSwitch = args.Any(a => a.Equals("--slave", StringComparison.OrdinalIgnoreCase) || a.Equals("/slave", StringComparison.OrdinalIgnoreCase));
 
+bool? forcedSlaveMode = null;
 if (hasSlaveSwitch || !string.IsNullOrWhiteSpace(argSlave))
 {
-    bool isSlave = true;
-    if (!string.IsNullOrWhiteSpace(argSlave) && bool.TryParse(argSlave, out bool parsedSlave))
-    {
-        isSlave = parsedSlave;
-    }
-    
-    IConfigBase.Config.WriteConfigKey("IsSlaveMode", isSlave);
-    configUpdated = true;
-    
-    if (isSlave)
-    {
-        string currentKey = IConfigBase.Config.ReadConfigKey("SlaveLinkKey")?.ToString() ?? "";
-        if (string.IsNullOrWhiteSpace(argLinkKey) && string.IsNullOrWhiteSpace(currentKey))
-        {
-            argLinkKey = StringServices.GenerateRandomString(32);
-        }
-    }
-}
-
-if (!string.IsNullOrWhiteSpace(argLinkKey))
-{
-    IConfigBase.Config.WriteConfigKey("SlaveLinkKey", argLinkKey);
+    forcedSlaveMode = !bool.TryParse(argSlave, out var parsedMode) || parsedMode;
     configUpdated = true;
 }
+if (!string.IsNullOrWhiteSpace(argLinkKey)) configUpdated = true;
+bool modeBlocked = NodeModeService.ConfigureStartup(forcedSlaveMode, argLinkKey);
 
-if (configUpdated)
+if (configUpdated || modeBlocked)
 {
     var loggerTemp = LoggerFactory.Create(l => l.AddConsole()).CreateLogger("Bootstrap");
-    var slaveModeVal = IConfigBase.Config.ReadConfigKey("IsSlaveMode")?.ToString() ?? "false";
-    var linkKeyVal = IConfigBase.Config.ReadConfigKey("SlaveLinkKey")?.ToString() ?? "未设置";
-    loggerTemp.LogInformation($"检测到启动参数，配置已更新为 Host: {argHost}, Port: {argPort}, IsSlaveMode: {slaveModeVal}, SlaveLinkKey: {linkKeyVal}");
+    if (modeBlocked) loggerTemp.LogWarning("已有已配对的子节点，启动参数切换被拒绝，继续使用主节点模式");
+    loggerTemp.LogInformation("启动配置已更新，当前子节点模式: {IsSlaveMode}", NodeModeService.IsSlaveMode);
 }
 
 // 读取最终配置
