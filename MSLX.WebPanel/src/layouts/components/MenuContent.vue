@@ -213,6 +213,11 @@ const getTarget = (path: string) => nodeNavigationUrl(path);
   @apply !h-[40px] !pl-[42px] !pr-3 !text-[13.5px] !font-normal !text-[var(--td-text-color-secondary)] dark:!text-zinc-400;
 }
 
+/* 弹出菜单已独立呈现层级，无需沿用侧栏展开时的缩进。 */
+:global(.t-menu__popup .modern-menu-wrapper:not(.is-horizontal) .t-menu__item.t-submenu__item) {
+  @apply !mx-0 !px-3;
+}
+
 /* 统一图标样式 */
 :deep(.t-icon) {
   @apply !text-[20px] !shrink-0 !opacity-70 !transition-colors !duration-200;

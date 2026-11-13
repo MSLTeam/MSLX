@@ -1,0 +1,27 @@
+/* ================= 分页组件统一风格 ================= */
+.t-pagination {
+  --td-radius-default: 12px;
+  --td-comp-size-xs: 32px;
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+/* 为最长的页容量文字和箭头留出空间，弹层会跟随输入框宽度。 */
+.t-pagination__select .t-input {
+  min-inline-size: 7.5rem;
+  @apply !px-3;
+}
+
+.t-pagination__select .t-input__suffix {
+  margin-inline-start: auto;
+  padding-inline-start: 8px;
+}
+
+.t-pagination .t-pagination__jump {
+  background-color: transparent;
+  padding-inline-start: 0;
+}
+
+.t-pagination .t-input-number {
+  min-inline-size: 3.5rem;
+}

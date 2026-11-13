@@ -12,6 +12,22 @@ namespace MSLX.Daemon.Utils
         private static readonly object _lock = new object();
         public static string? CurrentSubject { get { lock (_lock) return _cachedCert?.Subject; } }
         
+        internal static X509Certificate2 LoadCertificate(string certificatePem, string privateKeyPem)
+        {
+            using var certificate = X509Certificate2.CreateFromPem(certificatePem, privateKeyPem);
+            return X509CertificateLoader.LoadPkcs12(certificate.Export(X509ContentType.Pkcs12), null);
+        }
+
+        internal static void ReplaceCertificate(X509Certificate2 certificate)
+        {
+            lock (_lock)
+            {
+                var previous = _cachedCert;
+                _cachedCert = certificate;
+                previous?.Dispose();
+            }
+        }
+
         public static X509Certificate2? GetCertificate()
         {
             if (_cachedCert == null)
@@ -36,14 +52,7 @@ namespace MSLX.Daemon.Utils
                 {
                     try
                     {
-                        using var pemCert = X509Certificate2.CreateFromPemFile(pemPath, keyPath);
-                        
-                        var newCert = new X509Certificate2(pemCert.Export(X509ContentType.Pkcs12));
-
-                        var oldCert = _cachedCert;
-                        _cachedCert = newCert;
-                        
-                        oldCert?.Dispose();
+                        ReplaceCertificate(LoadCertificate(File.ReadAllText(pemPath), File.ReadAllText(keyPath)));
                         loadSuccess = true;
                     }
                     catch (Exception ex)
@@ -59,9 +68,7 @@ namespace MSLX.Daemon.Utils
                 // 临时证书
                 if (!loadSuccess)
                 {
-                    var oldCert = _cachedCert;
-                    _cachedCert = GenerateFallbackCertificate();
-                    oldCert?.Dispose();
+                    ReplaceCertificate(GenerateFallbackCertificate());
                 }
             }
         }

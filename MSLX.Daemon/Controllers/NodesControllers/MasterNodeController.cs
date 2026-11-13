@@ -17,7 +17,6 @@ namespace MSLX.Daemon.Controllers.NodesControllers
     public class MasterNodeController : ControllerBase
     {
         private readonly ILogger<MasterNodeController> _logger;
-        private static readonly SemaphoreSlim LinkLock = new(1, 1);
         private static string? _activePairingId;
 
         internal static bool IsPairingInProgress(string pairingId) =>
@@ -32,6 +31,8 @@ namespace MSLX.Daemon.Controllers.NodesControllers
         [HttpPost("session")]
         public IActionResult CreateSession([FromBody] NodeSessionRequest request)
         {
+            if (NodeModeService.IsSlaveMode)
+                return BadRequest(new ApiResponse<object> { Code = 400, Message = "节点凭据只能由主节点签发" });
             var user = NodeCallerAuthorization.GetCaller(User);
             if (user == null) return Unauthorized(new ApiResponse<object> { Code = 401, Message = "需要有效的主节点登录会话或 APIKey" });
             if (request.Scope is not (null or "" or "media" or "download")) return BadRequest();
@@ -177,9 +178,12 @@ namespace MSLX.Daemon.Controllers.NodesControllers
             if (addressError != null) return BadRequest(new ApiResponse<object> { Code = 400, Message = addressError });
             if (!Guid.TryParseExact(request.PairingId, "N", out _)) return BadRequest(new ApiResponse<object> { Code = 400, Message = "配对标识无效，请重新打开链接窗口" });
             if (string.IsNullOrWhiteSpace(request.LinkKey)) return BadRequest(new ApiResponse<object> { Code = 400, Message = "配对密钥不能为空" });
-            await LinkLock.WaitAsync(HttpContext.RequestAborted);
+            if (!NodeModeService.OperationLock.Wait(0))
+                return Conflict(new ApiResponse<object> { Code = 409, Message = "正在处理节点配对或设置，请稍后重试" });
             try
             {
+                if (NodeModeService.IsSlaveMode)
+                    return Conflict(new ApiResponse<object> { Code = 409, Message = "运行模式已变化，请刷新后重试" });
                 if (IConfigBase.NodeList.GetAllNodes().Any(n => string.Equals(n.NodeUrl.TrimEnd('/'), request.NodeUrl, StringComparison.OrdinalIgnoreCase)))
                     return Conflict(new ApiResponse<object> { Code = 409, Message = "此地址已登记，请编辑已有关系或完成解除链接" });
                 var protocol = await GeneralApi.GetAsync($"{request.NodeUrl}/api/node/protocol");
@@ -243,7 +247,7 @@ namespace MSLX.Daemon.Controllers.NodesControllers
                 _logger.LogError(ex, "链接子节点时发生异常");
                 return BadRequest(new ApiResponse<object> { Code = 500, Message = "链接子节点时发生异常，请查看主节点日志了解详情" });
             }
-            finally { Volatile.Write(ref _activePairingId, null); LinkLock.Release(); }
+            finally { Volatile.Write(ref _activePairingId, null); NodeModeService.OperationLock.Release(); }
         }
 
         [Authorize]
@@ -357,6 +361,8 @@ namespace MSLX.Daemon.Controllers.NodesControllers
         [HttpPost("verify-token")]
         public IActionResult VerifyToken([FromBody] VerifyTokenRequest request, [FromHeader(Name = "x-api-key")] string commsKey)
         {
+            if (NodeModeService.IsSlaveMode)
+                return StatusCode(503, new ApiResponse<object> { Code = 503, Message = "当前模式已暂停主节点服务" });
             // 子节点用户鉴权接口，需要 commsKey （独立的通讯key，专门用于子节点找主节点通讯）
             var node = IConfigBase.NodeList.GetAllNodes().FirstOrDefault(n => n.CommsKey == commsKey);
             if (node == null)
@@ -402,6 +408,8 @@ namespace MSLX.Daemon.Controllers.NodesControllers
         [HttpPost("report-stats")]
         public IActionResult ReportStats([FromBody] NodeStatsPayload stats, [FromHeader(Name = "x-api-key")] string commsKey)
         {
+            if (NodeModeService.IsSlaveMode)
+                return StatusCode(503, new ApiResponse<object> { Code = 503, Message = "当前模式已暂停主节点服务" });
             var node = IConfigBase.NodeList.GetAllNodes().FirstOrDefault(n => n.CommsKey == commsKey);
             if (node == null) return Unauthorized(new ApiResponse<object> { Code = 401, Message = "无效的通讯密钥" });
 

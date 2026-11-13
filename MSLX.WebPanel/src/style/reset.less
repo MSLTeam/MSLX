@@ -91,3 +91,29 @@ a {
   margin-top: 0.75rem !important;
   margin-bottom: 0.75rem !important;
 }
+
+/* 本地自包含 Markdown 代码高亮样式（适配亮色/暗色主题） */
+.md-editor-preview {
+  .hljs-keyword, .hljs-selector-tag, .hljs-subst { color: #a626a4; }
+  .hljs-string, .hljs-title, .hljs-section, .hljs-attribute, .hljs-literal, .hljs-template-tag, .hljs-template-variable, .hljs-type, .hljs-addition { color: #50a14f; }
+  .hljs-comment, .hljs-quote { color: #a0a1a7; font-style: italic; }
+  .hljs-number, .hljs-regexp, .hljs-link { color: #986801; }
+  .hljs-variable, .hljs-template-variable { color: #e45649; }
+  .hljs-symbol, .hljs-bullet { color: #4078f2; }
+  .hljs-built_in, .hljs-class .hljs-title { color: #c18401; }
+  .hljs-meta { color: #4078f2; }
+  .hljs-deletion { color: #e45649; }
+}
+
+html[theme-mode='dark'] .md-editor-preview,
+html.dark .md-editor-preview {
+  .hljs-keyword, .hljs-selector-tag, .hljs-subst { color: #c678dd; }
+  .hljs-string, .hljs-title, .hljs-section, .hljs-attribute, .hljs-literal, .hljs-template-tag, .hljs-template-variable, .hljs-type, .hljs-addition { color: #98c379; }
+  .hljs-comment, .hljs-quote { color: #5c6370; font-style: italic; }
+  .hljs-number, .hljs-regexp, .hljs-link { color: #d19a66; }
+  .hljs-variable, .hljs-template-variable { color: #e06c75; }
+  .hljs-symbol, .hljs-bullet { color: #61aeee; }
+  .hljs-built_in, .hljs-class .hljs-title { color: #e6c07b; }
+  .hljs-meta { color: #61aeee; }
+  .hljs-deletion { color: #e06c75; }
+}

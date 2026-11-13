@@ -174,6 +174,7 @@ const columns = computed(() => {
   const operationCol = {
     colKey: 'operation',
     title: '操作',
+    className: 'whitespace-nowrap',
     width: isMobile.value ? 50 : 80,
     align: 'center',
     fixed: isMobile.value ? 'right' : undefined, // 手机端固定操作列在右侧
@@ -728,7 +729,8 @@ const paginationConfig = computed(() => ({
   pageSize: pageSize.value,
   total: totalCount.value,
   pageSizeOptions: [20, 50, 100],
-  layout: isMobile.value ? 'total, prev, pager, next' : 'total, size, prev, pager, next, jumper',
+  showPageSize: !isMobile.value,
+  showJumper: !isMobile.value,
   maxPageBtnNum: isMobile.value ? 3 : 5,
   size: 'small' as const,
 }));
@@ -843,12 +845,12 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex flex-col mx-auto w-full pb-8">
+  <div class="flex flex-col mx-auto w-full min-w-0 pb-8">
     <div
-      class="card-enter-anim design-card bg-[var(--td-bg-color-container)] border-y md:border border-zinc-200/60 dark:border-zinc-700/60 md:rounded-xl shadow-sm flex flex-col min-h-[calc(100vh-100px)] md:min-h-[600px] -mx-4 md:mx-0 overflow-hidden"
+      class="card-enter-anim design-card bg-[var(--td-bg-color-container)] border-y md:border border-zinc-200/60 dark:border-zinc-700/60 rounded-xl shadow-sm flex flex-col min-w-0 min-h-[calc(100vh-100px)] md:min-h-[600px] overflow-hidden"
     >
       <div
-        class="sticky top-0 z-10 p-3 md:px-5 md:py-4 !bg-inherit border-b border-zinc-200/60 dark:border-zinc-800 flex items-center justify-between gap-3 md:gap-4 overflow-x-auto hide-scrollbar"
+        class="sticky top-0 z-10 p-3 md:px-5 md:py-4 !bg-inherit border-b border-zinc-200/60 dark:border-zinc-800 flex flex-col items-stretch xl:flex-row xl:flex-wrap xl:items-center justify-between gap-3 md:gap-4"
       >
         <div ref="breadcrumbContainerRef" class="flex-1 min-w-0 flex items-center overflow-x-auto hide-scrollbar">
           <t-breadcrumb :max-item-width="isMobile ? '80px' : '150px'">
@@ -903,7 +905,7 @@ onUnmounted(() => {
           </t-breadcrumb>
         </div>
 
-        <div class="flex items-center gap-2 shrink-0 min-w-max">
+        <div class="flex flex-wrap items-center gap-2 min-w-0">
           <t-input
             v-model="searchKey"
             placeholder="搜索文件..."

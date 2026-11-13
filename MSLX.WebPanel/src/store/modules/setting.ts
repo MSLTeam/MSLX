@@ -35,6 +35,7 @@ const getInitialCustomizedStatus = (): boolean => {
 const state = {
   ...STYLE_CONFIG,
   isThemeCustomized: getInitialCustomizedStatus(),
+  isMobileLayout: window.innerWidth < 480,
   showSettingPanel: false,
   colorList: COLOR_TOKEN,
   chartColors: LIGHT_CHART_COLORS,
@@ -46,9 +47,10 @@ export type TState = typeof state;
 export const useSettingStore = defineStore('setting', {
   state: () => state,
   getters: {
-    showSidebar: (state) => state.layout !== 'top',
-    showSidebarLogo: (state) => state.layout === 'side',
-    showHeaderLogo: (state) => state.layout !== 'side',
+    effectiveLayout: (state) => state.isMobileLayout && !state.isThemeCustomized ? 'top' : state.layout,
+    showSidebar(): boolean { return this.effectiveLayout !== 'top'; },
+    showSidebarLogo(): boolean { return this.effectiveLayout === 'side'; },
+    showHeaderLogo(): boolean { return this.effectiveLayout !== 'side'; },
     displayMode: (state): 'dark' | 'light' => {
       if (state.mode === 'auto') {
         return state.systemTheme as 'dark' | 'light';
@@ -83,6 +85,7 @@ export const useSettingStore = defineStore('setting', {
       this.colorList = { ...this.colorList, ...payload };
     },
     setThemeCustomized(val: boolean) {
+      if (val && !this.isThemeCustomized) this.layout = this.effectiveLayout;
       this.isThemeCustomized = val;
     },
     applyDefaultTheme(defaults: {

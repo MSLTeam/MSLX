@@ -77,13 +77,13 @@ const handleClearFinished = async () => {
 </script>
 
 <template>
-  <t-drawer v-model:visible="isVisible" header="后台任务中心" size="350px" :footer="false">
+  <t-drawer v-model:visible="isVisible" header="后台任务中心" size="350px" :footer="false" :close-btn="true">
     <div class="flex flex-col h-full">
-      <div class="flex justify-between items-center mb-4 px-1 gap-2">
+      <div class="flex flex-wrap justify-between items-center mb-4 px-1 gap-2">
         <span class="text-sm text-[var(--td-text-color-secondary)] whitespace-nowrap">
           运行中: <span class="text-[var(--color-primary)] font-bold">{{ taskStore.runningCount }}</span>
         </span>
-        <div class="flex-1 flex justify-end items-center gap-2">
+        <div class="flex-1 min-w-0 flex flex-wrap justify-end items-center gap-2">
           <node-switcher width="130px" independent :model-value="taskStore.nodeId" @change="(id) => taskStore.nodeId = id" />
           <t-button variant="text" theme="primary" size="small" @click="handleClearFinished" class="px-1">
             清空已结束
@@ -100,7 +100,7 @@ const handleClearFinished = async () => {
         <div
           v-for="task in taskStore.tasks"
           :key="task.id"
-          class="bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 shadow-sm flex flex-col gap-2 relative"
+          class="drawer-card border rounded-xl p-3 flex flex-col gap-2 relative"
         >
           <div class="flex justify-between items-start gap-2">
             <div class="flex items-center gap-2 overflow-hidden">

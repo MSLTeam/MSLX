@@ -101,7 +101,7 @@ export default defineConfig(async ({ mode:_mode }: ConfigEnv): Promise<UserConfi
               }
               if (id.includes('echarts') || id.includes('zrender')) return 'mslx-libs-charts';
               if (id.includes('prettier')) return 'mslx-libs-formatter';
-              if (id.includes('md-editor-v3') || id.includes('codemirror')) return 'mslx-libs-editor';
+              if (id.includes('md-editor-v3') || id.includes('codemirror') || id.includes('highlight.js')) return 'mslx-libs-editor';
               if (id.includes('artplayer')) return 'mslx-libs-artplayer';
               return 'mslx-libs';
             }

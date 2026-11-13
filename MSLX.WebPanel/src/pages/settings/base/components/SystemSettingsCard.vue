@@ -23,8 +23,18 @@ const updateStore = useUpdateStore();
 
 const loading = ref(false);
 const submitLoading = ref(false);
+const savedMode = ref(false);
+const savedLinkKey = ref('');
+const linkKeyChanged = computed(() => sysData.canManageNodeMode && sysData.isSlaveMode &&
+  !sysData.linkKeyLocked && sysData.slaveLinkKey !== savedLinkKey.value);
+const generateLinkKey = () => { sysData.slaveLinkKey = generateRandomString(32); };
 
 const sysData = reactive<SettingsModel>({
+  isSlaveMode: false,
+  slaveLinkKey: '',
+  canManageNodeMode: false,
+  modeLocked: false,
+  linkKeyLocked: false,
   allowNormalUserChangeUserName: true,
   allowNormalUserEditFrpConfig: true,
   allowNormalUserOfflineDownload: false,
@@ -58,6 +68,8 @@ const initData = async () => {
   try {
     const sysRes = await getSettings(targetNodeId);
     Object.assign(sysData, sysRes);
+    savedMode.value = sysRes.isSlaveMode ?? false;
+    savedLinkKey.value = sysRes.slaveLinkKey ?? '';
     if (sysData.isEmbeddedDaemon) {
       sysData.fireWallBanLocalAddr = false;
       sysData.listenHost = 'localhost';
@@ -77,8 +89,16 @@ const onSysSubmit = async () => {
       sysData.fireWallBanLocalAddr = false;
       sysData.listenHost = 'localhost';
     }
-    await updateSettings(sysData, targetNodeId);
-    MessagePlugin.success('系统设置保存成功');
+    const { isSlaveMode, slaveLinkKey, canManageNodeMode, modeLocked, linkKeyLocked, ...settings } = sysData;
+    const payload: SettingsModel = settings;
+    if (canManageNodeMode && !modeLocked && isSlaveMode !== savedMode.value) payload.isSlaveMode = isSlaveMode;
+    if (canManageNodeMode && isSlaveMode && !linkKeyLocked && slaveLinkKey !== savedLinkKey.value)
+      payload.slaveLinkKey = slaveLinkKey;
+    await updateSettings(payload, targetNodeId);
+    await initData();
+    MessagePlugin.success(payload.slaveLinkKey !== undefined
+      ? '配对密钥已更新，全部主节点配对已解除，请使用新密钥重新配对'
+      : '系统设置保存成功');
   } catch (error: any) {
     MessagePlugin.error(error.message);
   } finally {
@@ -130,6 +150,35 @@ onMounted(() => {
             >
             <div class="h-px bg-zinc-200/60 dark:bg-zinc-700/60 flex-1"></div>
           </div>
+
+          <template v-if="sysData.canManageNodeMode">
+            <t-form-item label="运行模式">
+              <template #help>
+                <span class="text-xs text-[var(--td-text-color-secondary)]">
+                  {{ sysData.modeLocked ? '由启动参数 --slave 控制，移除参数并重启后可在此修改。' : '保存后立即生效。主节点已配对子节点时，请先解除配对再切换。' }}
+                </span>
+              </template>
+              <t-radio-group v-model="sysData.isSlaveMode" :disabled="sysData.modeLocked">
+                <t-radio :value="false">主节点</t-radio>
+                <t-radio :value="true">子节点</t-radio>
+              </t-radio-group>
+            </t-form-item>
+            <t-form-item v-if="sysData.isSlaveMode" label="配对密钥">
+              <template #help>
+                <span class="text-xs text-[var(--td-text-color-secondary)]">
+                  {{ sysData.linkKeyLocked ? '由启动参数 --linkkey 控制，移除参数并重启后可在此修改。' : '修改密钥并保存后，将解除全部主节点配对并断开远程连接，需使用新密钥重新配对。首次留空将自动生成。' }}
+                </span>
+              </template>
+              <div class="flex w-full flex-wrap items-center gap-2 [&>.t-button]:!ml-0">
+                <t-input v-model="sysData.slaveLinkKey" type="password" :disabled="sysData.linkKeyLocked"
+                  :maxlength="256" autocomplete="new-password" class="!w-full sm:!w-80" placeholder="请输入配对密钥" />
+                <t-button type="button" variant="outline" :disabled="!sysData.slaveLinkKey" @click="copyText(sysData.slaveLinkKey || '')">复制</t-button>
+                <t-button type="button" variant="outline" :disabled="sysData.linkKeyLocked" @click="generateLinkKey">随机生成</t-button>
+                <t-alert v-if="linkKeyChanged" theme="warning" class="w-full"
+                  message="配对密钥已修改，尚未生效。保存后将断开全部已配对主节点，需在主节点解除旧配对后使用新密钥重新配对。" />
+              </div>
+            </t-form-item>
+          </template>
 
           <t-form-item v-if="!isEmbeddedDaemon" label="软件更新">
             <t-button

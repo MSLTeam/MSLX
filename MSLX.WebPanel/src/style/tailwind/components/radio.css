@@ -1,7 +1,8 @@
 /* ================= 单选框与分段控制器统一风格 ================= */
 
-.t-radio-group.t-radio-group__outline,
-.t-radio-group.t-radio-group--filled {
+/* 分段背景仅用于按钮式选项，避免普通圆形单选框带上底色。 */
+.t-radio-group.t-radio-group__outline:has(.t-radio-button),
+.t-radio-group.t-radio-group--filled:has(.t-radio-button) {
   @apply !bg-zinc-100/80 dark:!bg-zinc-900/80 !rounded-[8px] !p-[2px] !border-none !shadow-inner !relative !inline-flex !gap-0 !m-0 !w-auto;
 }
 

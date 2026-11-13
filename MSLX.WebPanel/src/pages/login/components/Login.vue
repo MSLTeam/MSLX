@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, onBeforeUnmount, computed } from 'vue';
+import { ref, reactive, onMounted, onUnmounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { MessagePlugin } from 'tdesign-vue-next';
 import type { FormInstanceFunctions, FormRule } from 'tdesign-vue-next';
@@ -104,7 +104,6 @@ const onSubmit = async ({ validateResult }) => {
         requiresTwoFactor.value = true;
         return;
       }
-      cancelTwoFactor();
       finishLogin();
     } catch (e: any) {
       MessagePlugin.error(e.message || '登录失败，请检查账号密码');
@@ -151,7 +150,6 @@ const handlePasskey = async () => {
       throw error;
     }
     await userStore.completeLogin(result.token, '');
-    cancelTwoFactor();
     finishLogin();
   } catch (error: any) {
     if (!passkeyCancelled(error)) MessagePlugin.error(error.message || '通行密钥登录失败');
@@ -159,7 +157,8 @@ const handlePasskey = async () => {
     loading.value = false;
   }
 };
-onBeforeUnmount(() => {
+onUnmounted(() => {
+  // 表单离开后再清理，避免登录成功时清空密码触发必填提示。
   cancelTwoFactor();
   passkeyAbort?.abort();
 });
@@ -404,9 +403,8 @@ onMounted(() => {
     display: flex;
     justify-content: center;
     align-items: center;
-    flex-wrap: wrap;
-    column-gap: 24px;
-    row-gap: 8px;
+    flex-wrap: nowrap;
+    column-gap: 12px;
   }
 
   .two-factor-return {
@@ -424,6 +422,7 @@ onMounted(() => {
     align-items: center;
     justify-content: center;
     font-size: 14px;
+    white-space: nowrap;
     color: var(--td-text-color-secondary);
     cursor: pointer;
     padding: 4px 0;
@@ -480,6 +479,21 @@ onMounted(() => {
     &:active {
       opacity: 0.8;
       transform: scale(0.98);
+    }
+  }
+}
+
+@media (max-width: 360px) {
+  .login-form {
+    .alternative-login {
+      column-gap: 8px;
+    }
+    .msl-link-btn {
+      font-size: 12px;
+      :deep(.t-icon) {
+        font-size: 14px;
+        margin-right: 4px;
+      }
     }
   }
 }

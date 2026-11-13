@@ -1,0 +1,64 @@
+/* ================= 浮动抽屉统一风格 ================= */
+.t-drawer {
+  --drawer-gap: 12px;
+}
+
+.t-drawer .t-drawer__content-wrapper {
+  @apply !rounded-3xl !border !border-zinc-200/60 dark:!border-zinc-700/60 !bg-zinc-100/95 dark:!bg-zinc-900/95 !backdrop-blur-xl;
+  max-width: calc(100% - var(--drawer-gap) * 2);
+  max-height: calc(100% - var(--drawer-gap) * 2);
+  box-shadow: 0 24px 80px -20px rgb(0 0 0 / 24%), 0 4px 16px rgb(0 0 0 / 6%);
+}
+
+.t-drawer .drawer-card {
+  @apply !bg-white dark:!bg-zinc-800/90 !border-zinc-200/80 dark:!border-zinc-700 !shadow-sm;
+}
+
+.t-drawer .t-drawer__content-wrapper--right {
+  top: var(--drawer-gap);
+  right: var(--drawer-gap);
+}
+
+.t-drawer .t-drawer__content-wrapper--left {
+  top: var(--drawer-gap);
+  left: var(--drawer-gap);
+}
+
+.t-drawer .t-drawer__content-wrapper--top {
+  top: var(--drawer-gap);
+  left: var(--drawer-gap);
+}
+
+.t-drawer .t-drawer__content-wrapper--bottom {
+  bottom: var(--drawer-gap);
+  left: var(--drawer-gap);
+}
+
+.t-drawer .t-drawer__header {
+  @apply !px-6 !py-5 !pr-14 !border-b !border-zinc-100 dark:!border-zinc-800 !text-base !font-bold !text-zinc-800 dark:!text-zinc-100;
+  flex-shrink: 0;
+}
+
+.t-drawer .t-drawer__body {
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+
+.t-drawer .t-drawer__footer {
+  @apply !border-zinc-100 dark:!border-zinc-800 !bg-transparent;
+  flex-shrink: 0;
+}
+
+.t-drawer .t-drawer__close-btn {
+  @apply !rounded-full !bg-zinc-100/80 dark:!bg-zinc-800 !text-zinc-500 dark:!text-zinc-400 hover:!bg-zinc-200 dark:hover:!bg-zinc-700;
+  top: 18px;
+  right: 18px;
+  width: 28px;
+  height: 28px;
+}
+
+@media (max-width: 640px) {
+  .t-drawer {
+    --drawer-gap: 8px;
+  }
+}

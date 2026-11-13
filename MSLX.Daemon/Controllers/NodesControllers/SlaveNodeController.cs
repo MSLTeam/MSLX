@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MSLX.Daemon.Utils;
+using MSLX.Daemon.Services.NodeServices;
 using MSLX.Daemon.Utils.ConfigUtils;
 using MSLX.SDK.Models;
 using MSLX.SDK.Models.Node;
@@ -78,28 +79,34 @@ namespace MSLX.Daemon.Controllers.NodesControllers
         [HttpPost("accept-link")]
         public async Task<IActionResult> AcceptLink([FromBody] AcceptLinkRequest request)
         {
-            if (request.ProtocolVersion != JwtUtils.NodeProtocolVersion)
-                return BadRequest(new ApiResponse<object> { Code = 400, Message = "节点协议不兼容，请一起升级" });
-            bool isSlaveMode = bool.Parse(IConfigBase.Config.ReadConfigKey("IsSlaveMode")?.ToString() ?? "false");
-            if (!isSlaveMode) return BadRequest(new ApiResponse<object> { Code = 400, Message = "当前并非子节点模式，拒绝链接请求" });
-
-            string currentLinkKey = IConfigBase.Config.ReadConfigKey("SlaveLinkKey")?.ToString() ?? "";
-            if (string.IsNullOrEmpty(currentLinkKey) || currentLinkKey != request.LinkKey)
+            if (!NodeModeService.OperationLock.Wait(0))
+                return Conflict(new ApiResponse<object> { Code = 409, Message = "正在处理节点配对或设置，请稍后重试" });
+            try
             {
-                _logger.LogWarning("子节点拒绝链接: LinkKey 验证不匹配。客户端主节点地址: {MasterUrl}", request.MasterUrl);
-                return Unauthorized(new ApiResponse<object> { Code = 401, Message = "子节点 LinkKey 错误" });
-            }
+                if (request.ProtocolVersion != JwtUtils.NodeProtocolVersion)
+                    return BadRequest(new ApiResponse<object> { Code = 400, Message = "节点协议不兼容，请一起升级" });
+                bool isSlaveMode = bool.Parse(IConfigBase.Config.ReadConfigKey("IsSlaveMode")?.ToString() ?? "false");
+                if (!isSlaveMode) return BadRequest(new ApiResponse<object> { Code = 400, Message = "当前并非子节点模式，拒绝链接请求" });
 
-            if (!Guid.TryParseExact(request.PairingId, "N", out _))
-                return BadRequest(new ApiResponse<object> { Code = 400, Message = "配对标识无效" });
-            var connectionError = await CheckMasterConnectionAsync(request, MasterProbeClient, HttpContext.RequestAborted);
-            if (connectionError != null)
-            {
-                _logger.LogWarning("{Message}", connectionError);
-                return BadRequest(new ApiResponse<object> { Code = 400, Message = connectionError });
+                string currentLinkKey = IConfigBase.Config.ReadConfigKey("SlaveLinkKey")?.ToString() ?? "";
+                if (string.IsNullOrEmpty(currentLinkKey) || currentLinkKey != request.LinkKey)
+                {
+                    _logger.LogWarning("子节点拒绝链接: LinkKey 验证不匹配。客户端主节点地址: {MasterUrl}", request.MasterUrl);
+                    return Unauthorized(new ApiResponse<object> { Code = 401, Message = "子节点 LinkKey 错误" });
+                }
+
+                if (!Guid.TryParseExact(request.PairingId, "N", out _))
+                    return BadRequest(new ApiResponse<object> { Code = 400, Message = "配对标识无效" });
+                var connectionError = await CheckMasterConnectionAsync(request, MasterProbeClient, HttpContext.RequestAborted);
+                if (connectionError != null)
+                {
+                    _logger.LogWarning("{Message}", connectionError);
+                    return BadRequest(new ApiResponse<object> { Code = 400, Message = connectionError });
+                }
+                var master = IConfigBase.MasterNodes.AcceptPairing(request);
+                return Ok(new ApiResponse<object> { Code = 200, Message = "链接成功", Data = new { nodeId = master.NodeId, commsKey = master.CommsKey } });
             }
-            var master = IConfigBase.MasterNodes.AcceptPairing(request);
-            return Ok(new ApiResponse<object> { Code = 200, Message = "链接成功", Data = new { nodeId = master.NodeId, commsKey = master.CommsKey } });
+            finally { NodeModeService.OperationLock.Release(); }
         }
 
         [AllowAnonymous]
