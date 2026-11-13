@@ -453,9 +453,9 @@ const handleAvatarClick = () => {
 :global(.mobile-full-width-popup) {
   position: fixed !important;
   top: 48px !important;
-  left: 0 !important;
-  width: 100vw !important; /* 满宽 */
-  max-width: 100vw !important;
+  left: 8px !important;
+  width: calc(100% - 16px) !important;
+  max-width: calc(100% - 16px) !important;
   transform: none !important;
   margin-top: 0 !important;
 }
@@ -463,6 +463,14 @@ const handleAvatarClick = () => {
 :global(.mobile-full-width-popup .t-default-menu) {
   width: 100% !important;
   max-width: 100% !important;
+  border-radius: 16px;
+}
+
+:global(.mobile-full-width-popup > .t-popup__content) {
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 /* 放大移动端菜单项 */
