@@ -27,8 +27,9 @@ using MSLX.SDK.Interfaces;
 
 System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
-var builder = WebApplication.CreateBuilder(args);
+Environment.SetEnvironmentVariable("DOTNET_HOSTBUILDER__RELOADCONFIGONCHANGE", "false");
 
+var builder = WebApplication.CreateBuilder(args);
 
 // 日志配置
 Log.Logger = new LoggerConfiguration()
