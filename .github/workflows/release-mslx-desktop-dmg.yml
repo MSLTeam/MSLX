@@ -169,9 +169,13 @@ jobs:
           DIST_DIR="./dist"
           mkdir -p "$DIST_DIR"
 
-          DOTNET_RUNTIME_VERSION=$(dotnet --list-runtimes | awk '$1 == "Microsoft.AspNetCore.App" { print $2 }' | tail -n 1)
+          TARGET_TFM=$(sed -n "s:.*<TargetFramework>\(net[0-9]*\.[0-9]*\)</TargetFramework>.*:\1:p" MSLX.Desktop/MSLX.Desktop.csproj | head -n 1)
+          DOTNET_MAJOR=$(echo "$TARGET_TFM" | sed -E "s/net([0-9]+)\..*/\1/")
+          DOTNET_MAJOR=${DOTNET_MAJOR:-10}
+
+          DOTNET_RUNTIME_VERSION=$(dotnet --list-runtimes | awk -v major="$DOTNET_MAJOR" '$1 == "Microsoft.AspNetCore.App" && $2 ~ ("^" major "\\.") { print $2 }' | sort -V | tail -n 1)
           if [[ -z "$DOTNET_RUNTIME_VERSION" ]]; then
-            echo "::error::无法确定 ASP.NET Core Runtime 版本"
+            echo "::error::无法确定 ASP.NET Core Runtime ${DOTNET_MAJOR}.x 版本"
             exit 1
           fi
 
