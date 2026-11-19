@@ -120,7 +120,7 @@ public class UploadController : ControllerBase
     public async Task<IActionResult> UploadChunk(
         string uploadId,
         [FromForm] int index,
-        [FromForm] IFormFile file,
+        IFormFile file,
         [FromForm] string? crc32c = null)
     {
         var normalizedUploadId = uploadId ?? string.Empty;
