@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { HEADER_ACTION_SLOT } from '@/utils/pluginHeaderActions';
 
 export const usePluginUIStore = defineStore('pluginUI', {
   state: () => ({
@@ -12,7 +13,8 @@ export const usePluginUIStore = defineStore('pluginUI', {
     registerExtension(slotName: string, extObj: any, nodeId = this.nodeId) {
       const slots = this.extensionsByNode[nodeId] ||= {};
       const current = slots[slotName] ||= [];
-      if (!current.some(item => item === extObj || item.component === extObj.component)) slots[slotName] = [...current, extObj];
+      if (!current.some(item => item === extObj || (slotName === HEADER_ACTION_SLOT
+        ? item.key === extObj.key : item.component === extObj.component))) slots[slotName] = [...current, extObj];
     },
     clear() { this.extensionsByNode = {}; this.error = ''; this.loading = false; },
   },

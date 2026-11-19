@@ -7,6 +7,7 @@ import { markRaw, ref } from 'vue';
 import { BASE_URL_NAME, TOKEN_NAME } from '@/config/global';
 import { getPageNodeId, getNodeTarget, pluginNodePages } from './nodeTarget';
 import { bindPluginComponent } from './pluginNodeContext';
+import { HEADER_ACTION_SLOT, registerHeaderActions } from './pluginHeaderActions';
 import { request } from './request';
 
 export const pluginStateChanged = ref(false);
@@ -98,7 +99,12 @@ function install(configs: Array<{ id: string; config: any }>, nodeId: string) {
       };
       collect(route);
     }
-    for (const ext of config.extensions || []) {
+    const extensions = config.extensions || [];
+    for (const item of registerHeaderActions(extensions, id, nodeId, component => bindPluginComponent(component, nodeId, id))) {
+      ui.registerExtension(HEADER_ACTION_SLOT, item, nodeId);
+    }
+    for (const ext of extensions) {
+      if (!ext || ext.slot === HEADER_ACTION_SLOT) continue;
       if (ext.slot && ext.component) ui.registerExtension(ext.slot, {
         ...ext, pluginId: id, nodeId,
         component: markRaw(bindPluginComponent(ext.component, nodeId, id)),

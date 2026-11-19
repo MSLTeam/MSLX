@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue';
+import { computed, onMounted, provide, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRoute } from 'vue-router';
 import { useSettingStore } from '@/store';
@@ -12,6 +12,7 @@ import LayoutSideNav from './components/LayoutSideNav.vue';
 import { prefix } from '@/config/global';
 import '@/style/layout.less';
 import { useWindowSizeFn } from '@/hooks/event/useWindowSizeFn';
+import { headerPluginActionsKey, useHeaderPluginActions } from '@/hooks/useHeaderPluginActions';
 
 import defaultLightBg from '@/assets/bg_light_new.jpg';
 import defaultDarkBg from '@/assets/bg_night_new.jpg';
@@ -24,6 +25,9 @@ const userStore = useUserStore();
 const webpanelStore = useWebpanelStore();
 const setting = storeToRefs(settingStore);
 useWindowSizeFn(() => settingStore.updateConfig({ isMobileLayout: window.innerWidth < 480 }), { immediate: true });
+const headerPluginActions = useHeaderPluginActions();
+provide(headerPluginActionsKey, headerPluginActions);
+const { panels, openPanel, closePanel } = headerPluginActions;
 
 const getImageUrl = (fileName: string, defaultImg: string) => {
   if (!fileName) return defaultImg;
@@ -100,6 +104,15 @@ watch(
       </t-layout>
     </template>
     <setting-com />
+    <teleport to="body">
+      <component
+        :is="panel.component"
+        v-for="panel in panels"
+        :key="panel.key"
+        :visible="openPanel === panel"
+        @update:visible="!$event && closePanel(panel)"
+      />
+    </teleport>
   </div>
 </template>
 
