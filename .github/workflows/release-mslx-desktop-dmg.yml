@@ -65,10 +65,9 @@ jobs:
           merge-multiple: true
 
 
-      - name: 设置 .NET 10 环境
+      - name: 设置 .NET 环境
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 10.0.x
           global-json-file: global.json
 
       - name: 确定版本号 (Tag vs Manual)
