@@ -208,8 +208,8 @@ onMounted(async () => {
     <t-dialog
       v-model:visible="eulaDialogVisible"
       header="是否同意 EULA"
-      :confirm-btn="{ content: '同意', theme: 'primary', class: '!rounded-lg !font-bold' }"
-      :cancel-btn="{ content: '不同意', theme: 'default', class: '!rounded-lg !font-bold' }"
+      :confirm-btn="{ content: '同意', theme: 'primary' }"
+      :cancel-btn="{ content: '不同意', theme: 'default' }"
       @confirm="handleAgreeEula(true)"
       @cancel="handleAgreeEula(false)"
     >
