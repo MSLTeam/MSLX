@@ -73,7 +73,7 @@ const moreItems = computed(() => [
       class="header-btn"
       @click="directItem.select?.($event, $event.currentTarget as HTMLElement)"
     >
-      <t-icon v-if="!directItem.icon || typeof directItem.icon === 'string'" :name="directItem.icon || 'app'" class="text-[20px]" />
+      <t-icon v-if="!directItem.icon || typeof directItem.icon === 'string'" :name="typeof directItem.icon === 'string' ? directItem.icon : 'app'" class="text-[20px]" />
       <component :is="directItem.icon" v-else class="text-[20px]" />
     </t-button>
   </div>

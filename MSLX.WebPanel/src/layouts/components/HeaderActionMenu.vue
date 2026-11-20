@@ -153,7 +153,7 @@ defineExpose({ close: () => setVisible(false) });
           tabindex="-1"
           @click="select(item, $event)"
         >
-          <t-icon v-if="!item.icon || typeof item.icon === 'string'" :name="item.icon || 'app'" aria-hidden="true" />
+          <t-icon v-if="!item.icon || typeof item.icon === 'string'" :name="typeof item.icon === 'string' ? item.icon : 'app'" aria-hidden="true" />
           <component :is="item.icon" v-else aria-hidden="true" />
           <span class="min-w-0 break-words">{{ item.label }}</span>
           <t-icon v-if="item.items" name="chevron-right" class="ml-auto shrink-0" aria-hidden="true" />
