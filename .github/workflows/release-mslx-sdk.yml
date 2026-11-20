@@ -19,10 +19,10 @@ jobs:
       - name: 签出代码
         uses: actions/checkout@v4
 
-      - name: 设置 .NET 10 环境
+      - name: 设置 .NET 环境
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '10.0.x'
+          global-json-file: global.json
 
       - name: 确定正式版本号
         id: version

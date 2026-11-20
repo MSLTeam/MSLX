@@ -112,12 +112,18 @@ namespace MSLX.Daemon.Services
         {
             try
             {
-                // 解析 Cron 表达式 支持秒级
-                CronExpression expression = CronExpression.Parse(task.Cron, CronFormat.IncludeSeconds);
+                if (string.IsNullOrWhiteSpace(task.Cron)) return false;
+
+                // 解析 Cron 表达式（自动兼容标准 5 位与秒级 6 位）
+                var parts = task.Cron.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var format = parts.Length > 5 ? CronFormat.IncludeSeconds : CronFormat.Standard;
+                CronExpression expression = CronExpression.Parse(task.Cron, format);
 
                 // 处理 LastRunTime 的时区问题，确保它是 UTC
                 DateTime fromTimeUtc = task.LastRunTime.HasValue 
-                    ? task.LastRunTime.Value.ToUniversalTime() 
+                    ? (task.LastRunTime.Value.Kind == DateTimeKind.Unspecified
+                        ? DateTime.SpecifyKind(task.LastRunTime.Value, DateTimeKind.Utc)
+                        : task.LastRunTime.Value.ToUniversalTime())
                     : nowUtc.AddMinutes(-1);
 
                 // 获取下一次运行时间

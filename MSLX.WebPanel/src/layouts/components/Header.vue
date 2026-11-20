@@ -9,6 +9,8 @@ import type { MenuRoute } from '@/types/interface';
 
 import MenuContent from './MenuContent.vue';
 import TaskDrawer from './TaskDrawer.vue';
+import HeaderPluginActions from './HeaderPluginActions.vue';
+import type { HeaderMenuItem } from './HeaderActionMenu.vue';
 import NodeSwitcher from '@/components/node-switcher/index.vue';
 import { isNodePage, nodeNavigationUrl } from '@/utils/nodeTarget';
 import { useTaskStore } from '@/store';
@@ -118,6 +120,14 @@ const navToCNB = () => {
 const navToHelper = () => {
   window.open('https://mslx.mslmc.cn');
 };
+
+const mobileOperations = computed<HeaderMenuItem[]>(() => [
+  { key: 'github', label: 'GitHub 仓库', icon: 'logo-github', select: navToGitHub },
+  { key: 'cnb', label: 'CNB 仓库', icon: 'git-branch', select: navToCNB },
+  { key: 'tasks', label: '后台任务', icon: 'task', badge: taskStore.runningCount > 0, select: () => { taskDrawerVisible.value = true; } },
+  { key: 'help', label: '帮助文档', icon: 'help-circle', select: navToHelper },
+  { key: 'settings', label: '系统设置', icon: 'setting', select: toggleSettingPanel },
+]);
 
 // --- 头像特效状态控制 ---
 const isAvatarAnimating = ref(false);
@@ -313,38 +323,7 @@ const handleAvatarClick = () => {
             </t-tooltip>
           </div>
 
-          <div class="flex lg:hidden items-center">
-            <t-dropdown :min-column-width="140" trigger="click">
-              <template #dropdown>
-                <t-dropdown-menu>
-                  <t-dropdown-item class="operations-dropdown-item" @click="navToGitHub">
-                    <t-icon name="logo-github" class="text-lg mr-2"></t-icon>
-                    <span>GitHub 仓库</span>
-                  </t-dropdown-item>
-                  <t-dropdown-item class="operations-dropdown-item mt-1" @click="navToCNB">
-                    <t-icon name="git-branch" class="text-lg mr-2"></t-icon>
-                    <span>CNB 仓库</span>
-                  </t-dropdown-item>
-                  <t-dropdown-item class="operations-dropdown-item mt-1" @click="taskDrawerVisible = true">
-                    <t-icon name="task" class="text-lg mr-2"></t-icon>
-                    <span>后台任务</span>
-                    <t-badge v-if="taskStore.runningCount > 0" dot class="ml-auto"></t-badge>
-                  </t-dropdown-item>
-                  <t-dropdown-item class="operations-dropdown-item mt-1" @click="navToHelper">
-                    <t-icon name="help-circle" class="text-lg mr-2"></t-icon>
-                    <span>帮助文档</span>
-                  </t-dropdown-item>
-                  <t-dropdown-item class="operations-dropdown-item mt-1" @click="toggleSettingPanel">
-                    <t-icon name="setting" class="text-lg mr-2"></t-icon>
-                    <span>系统设置</span>
-                  </t-dropdown-item>
-                </t-dropdown-menu>
-              </template>
-              <t-button theme="default" shape="square" variant="text" class="header-btn">
-                <t-icon name="more" class="text-[20px]" />
-              </t-button>
-            </t-dropdown>
-          </div>
+          <header-plugin-actions :mobile-items="mobileOperations" />
         </div>
       </template>
     </t-head-menu>

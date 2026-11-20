@@ -52,13 +52,15 @@ public class CreateTaskRequest
 
             try
             {
-                // 尝试用 Cronos 解析（支持秒级）
-                CronExpression.Parse(str, CronFormat.IncludeSeconds);
+                // 尝试用 Cronos 解析（自动兼容标准 5 位与秒级 6 位）
+                var parts = str.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var format = parts.Length > 5 ? CronFormat.IncludeSeconds : CronFormat.Standard;
+                CronExpression.Parse(str, format);
                 return ValidationResult.Success;
             }
             catch (Exception)
             {
-                return new ValidationResult(ErrorMessage ?? "Cron 表达式格式无效 (示例: '0 0 12 * * ?')");
+                return new ValidationResult(ErrorMessage ?? "Cron 表达式格式无效 (示例: '0 0 12 * * ?' 或 '0 12 * * *')");
             }
         }
     }

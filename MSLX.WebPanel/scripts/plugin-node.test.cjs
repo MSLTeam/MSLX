@@ -19,6 +19,7 @@ function storage() {
   return values;
 }
 const constants = { BASE_URL_NAME: 'BASE', TOKEN_NAME: 'TOKEN' };
+const headerActions = load('utils/pluginHeaderActions', {});
 const allSlots = ['instance-console-dropdown', 'instance-console-overview-bottom', 'instance-setting-more', 'instance-settings-tab',
   'dashboard-index-after-system-status', 'frp-console-control-panel-bottom', 'frp-create-provider', 'settings-profile-bottom', 'settings-daemon-bottom'];
 
@@ -134,6 +135,7 @@ test('node registry loads child-only plugins and different versions without mixi
     '@/api/model/plugins': { PluginMultiNodeSupport },
     './nodeTarget': { getPageNodeId: () => 'local', getNodeTarget: node => ({ baseUrl: `http://${node}.test` }), pluginNodePages: new Set() },
     './pluginNodeContext': { bindPluginComponent: (component, nodeId) => ({ component, nodeId }) },
+    './pluginHeaderActions': headerActions,
     './request': { request: { get: async () => ({ features: { pluginMultiNode: true } }) } },
     importer: url => { loaded.push(url); return { pluginConfig: {
       routes: [{ name: 'SharedPlugin', path: '/plugin-shared', component: {}, meta: { title: 'Shared' } }],
@@ -234,6 +236,7 @@ test('child node public plugin route preserves anonymous: true and registers int
     '@/api/model/plugins': { PluginMultiNodeSupport },
     './nodeTarget': { getPageNodeId: () => 'slave-a', getNodeTarget: () => ({ baseUrl: 'http://slave.test' }), pluginNodePages: new Set() },
     './pluginNodeContext': { bindPluginComponent: (component, nodeId) => ({ component, nodeId }) },
+    './pluginHeaderActions': headerActions,
     './request': { request: { get: async () => ({ features: { pluginMultiNode: true } }) } },
     importer: () => ({ pluginConfig: {
       routes: [{ name: 'PublicPage', path: '/public-view', component: {}, meta: { anonymous: true, title: 'Public' } }]
@@ -245,4 +248,87 @@ test('child node public plugin route preserves anonymous: true and registers int
 
   assert.equal(permission.routers[0].meta.anonymous, true);
   assert.equal(permission.whiteListRouters.includes('/public-view'), true);
+});
+
+test('top bar registers all action types, binds windows to their node and skips malformed or duplicate entries', () => {
+  const entry = (type, values) => ({ id: type, label: type, type, ...values });
+  const top = (type, values) => ({ slot: 'header-action', ...entry(type, values) });
+  const component = { render() {} };
+  const run = async () => {};
+  const named = { name: 'PluginPage', params: { id: 42 }, query: { source: 'header' }, hash: '#details' };
+  const entries = [
+    top('drawer', { component, roleCode: ['admin'] }),
+    top('floating', { component, placement: 'more' }),
+    top('route', { to: named }),
+    top('link', { href: 'https://example.test/path', target: '_self' }),
+    top('action', { run }),
+    top('dropdown', { items: [entry('action', { run }), entry('action', { run }), entry('dropdown', { items: [] })] }),
+    top('action', { run, label: 'duplicate' }),
+    top('route', { id: 'external-route', to: '//example.test' }),
+    top('route', { id: 'external-route-object', to: { path: '/\\example.test' } }),
+    top('link', { id: 'unsafe-link', href: 'javascript:alert(1)' }),
+    top('floating', { id: 'missing-component' }),
+    top('action', { id: 'invalid-role', roleCode: ['owner'], run }),
+  ];
+  const result = headerActions.registerHeaderActions(entries, 'demo', 'child', window => ({ window, node: 'child' }));
+  assert.deepEqual(result.map(item => item.type), ['drawer', 'floating', 'route', 'link', 'action', 'dropdown']);
+  assert.deepEqual(result[0].roleCode, ['admin']);
+  assert.equal(result[1].placement, 'more');
+  assert.equal(result[1].component.window, component);
+  assert.equal(result[1].component.node, 'child');
+  assert.equal(result[2].to, named);
+  assert.equal(result[3].target, '_self');
+  assert.equal(result[4].run, run);
+  assert.equal(result[5].items.length, 1);
+  assert.notEqual(result[5].items[0].key, result[4].key);
+});
+
+test('header windows retain state on close and dispose callbacks and windows when the node changes', async () => {
+  const user = vue.reactive({ token: 'fixture', isAdmin: true });
+  const makeEntries = node => ({ 'header-action': headerActions.registerHeaderActions([
+    { slot: 'header-action', type: 'floating', id: 'notes', label: 'Notes', component: {} },
+    { slot: 'header-action', type: 'drawer', id: 'admin', label: 'Admin', component: {}, roleCode: ['admin'] },
+    { slot: 'header-action', type: 'action', id: 'wait', label: 'Wait', run: context => new Promise(resolve => {
+      context.signal.addEventListener('abort', () => resolve());
+    }) },
+  ], 'fixture', node, component => component) });
+  const ui = vue.reactive({ extensions: makeEntries('local') });
+  const { useHeaderPluginActions } = load('hooks/useHeaderPluginActions', {
+    '@/store': { useUserStore: () => user, usePluginUIStore: () => ui },
+    '@/utils/pluginHeaderActions': headerActions,
+    '@/utils/pluginNodeContext': { createPluginNodeContext(nodeId) {
+      const abort = new AbortController();
+      return { nodeId, signal: abort.signal, dispose: () => abort.abort() };
+    } },
+    'tdesign-vue-next': { MessagePlugin: {} },
+  });
+  let controller;
+  const app = renderer().createApp({ setup() {
+    controller = useHeaderPluginActions();
+    return () => vue.h('div');
+  } });
+  app.mount({ children: [] });
+  const [floating, drawer, action] = controller.visibleEntries.value;
+  let focused = false;
+  controller.showPanel(floating, null);
+  controller.showPanel(drawer, { getClientRects: () => [1], focus: () => { focused = true; } });
+  assert.equal(controller.openPanel.value, drawer);
+  controller.closePanel(drawer);
+  assert.equal(controller.openPanel.value, undefined);
+  assert.deepEqual([...controller.panels], [floating, drawer]);
+  const result = controller.runAction(action);
+  const context = controller.pending.get(action);
+  assert.equal(context.nodeId, 'local');
+  await controller.runAction(action);
+  assert.equal(focused, true);
+  assert.equal(controller.pending.get(action), context);
+  ui.extensions = makeEntries('child');
+  user.isAdmin = false;
+  await vue.nextTick();
+  await result;
+  assert.equal(context.signal.aborted, true);
+  assert.equal(controller.pending.size, 0);
+  assert.equal(controller.panels.size, 0);
+  assert.deepEqual(controller.visibleEntries.value.map(entry => [entry.id, entry.nodeId]), [['notes', 'child'], ['wait', 'child']]);
+  app.unmount();
 });

@@ -1,6 +1,6 @@
 <template>
   <t-layout :class="`${prefix}-layout`">
-    <t-content :class="`${prefix}-content-layout`">
+    <t-content :class="`${prefix}-content-layout`" class="has-[>.plugin-loading-card]:flex has-[>.plugin-loading-card]:flex-col">
       <l-breadcrumb v-if="settingStore.showBreadcrumb" />
       <l-content />
     </t-content>
