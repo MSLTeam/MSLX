@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import type { PropType } from 'vue';
 import { useRouter } from 'vue-router';
+import { useMediaQuery } from '@vueuse/core';
 import { useSettingStore, useUserStore, useNodeStore } from '@/store';
 import { getActive } from '@/router';
 import { prefix } from '@/config/global';
@@ -61,7 +62,9 @@ const toggleSettingPanel = () => {
 };
 
 const active = computed(() => getActive());
+const isDesktop = useMediaQuery('(min-width: 1024px)');
 const mobileMenuVisible = ref(false);
+watch(isDesktop, () => { mobileMenuVisible.value = false; });
 const taskDrawerVisible = ref(false);
 const taskStore = useTaskStore();
 
@@ -168,15 +171,23 @@ const handleAvatarClick = () => {
           </t-button>
         </div>
 
-        <div v-if="layout !== 'side'" class="flex lg:hidden ml-1 items-center">
+        <div v-else-if="!isDesktop" class="flex ml-1 items-center">
           <t-popup
-            v-model="mobileMenuVisible"
+            v-model:visible="mobileMenuVisible"
+            trigger="click"
             placement="bottom"
             overlay-class-name="mobile-full-width-popup"
             :overlay-style="{ padding: '0', boxShadow: 'none' }"
             attach="body"
           >
-            <t-button class="header-btn" theme="default" shape="square" variant="text">
+            <t-button
+              class="header-btn"
+              theme="default"
+              shape="square"
+              variant="text"
+              aria-label="导航菜单"
+              :aria-expanded="mobileMenuVisible"
+            >
               <t-icon name="app" class="text-[24px]" />
             </t-button>
 
@@ -195,8 +206,8 @@ const handleAvatarClick = () => {
         </div>
       </template>
 
-      <template v-if="layout !== 'side'" #default>
-        <div class="hidden lg:flex flex-1 items-center">
+      <template v-if="layout !== 'side' && isDesktop" #default>
+        <div class="flex flex-1 items-center">
           <menu-content class="header-menu-reset" :nav-data="menu" :is-horizontal="true" />
         </div>
       </template>
@@ -243,7 +254,7 @@ const handleAvatarClick = () => {
                 alt="avatar"
               />
               <div
-                class="items-center text-sm font-bold text-zinc-700 dark:text-zinc-200 ml-1 truncate max-w-[100px]"
+                class="items-center text-sm font-bold text-zinc-700 dark:text-zinc-200 ml-1 truncate max-w-[100px] max-[360px]:max-w-16"
                 :class="showNodeSwitcher ? 'hidden sm:flex' : 'flex'"
               >
                 {{ userStore.userInfo.name || userStore.userInfo.username || '用户' }}
@@ -398,6 +409,20 @@ const handleAvatarClick = () => {
 }
 
 @media (max-width: 639px) {
+  .header-menu-clear :deep(.t-menu__logo:not(:empty)) {
+    margin-inline-end: 4px;
+    padding-inline-start: 8px;
+    gap: 8px;
+  }
+
+  .header-menu-clear :deep(.t-menu__logo > *) {
+    margin-inline-start: 0;
+  }
+
+  .header-menu-clear :deep(.user-profile-btn) {
+    padding-inline: 8px !important;
+  }
+
   .compact-user-profile :deep(.t-button__suffix) {
     display: none;
   }
