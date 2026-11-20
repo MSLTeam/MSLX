@@ -4,6 +4,11 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import { CheckCircleIcon, ErrorCircleIcon, TimeIcon } from 'tdesign-icons-vue-next';
 import { CronExpressionParser } from 'cron-parser';
 
+interface ExecutionItem {
+  formattedTime: string;
+  weekday: string;
+}
+
 const props = defineProps({
   visible: { type: Boolean, default: false },
   initialValue: { type: String, default: '' },
@@ -13,6 +18,8 @@ const emits = defineEmits(['update:visible', 'confirm']);
 
 // --- 模式管理 ---
 const mode = ref<'preset' | 'novice' | 'pro'>('preset');
+const isManualEdit = ref(false);
+const customCron = ref('*/10 * * * * *');
 
 // --- 预设模式数据 ---
 const selectedPreset = ref('*/10 * * * * *'); // 默认选中第一条
@@ -23,11 +30,14 @@ const presetOptions = [
   { label: '每 30 分钟', value: '0 */30 * * * *' },
   { label: '每小时', value: '0 0 * * * ?' },
   { label: '每天凌晨 3 点', value: '0 0 3 * * ?' },
-  { label: '每周日凌晨 3 点', value: '0 0 3 ? * 1' },
+  { label: '每周日凌晨 3 点', value: '0 0 3 ? * 0' },
+  { label: '每周一凌晨 3 点', value: '0 0 3 ? * 1' },
 ];
 
 const applyPreset = (val: string) => {
   selectedPreset.value = val;
+  customCron.value = val;
+  isManualEdit.value = false;
 };
 
 // --- 简单模式数据 (原新手模式) ---
@@ -48,39 +58,60 @@ const timeUnits = [
   { label: '时', value: 'hour', min: 0, max: 23 },
   { label: '日', value: 'day', min: 1, max: 31 },
   { label: '月', value: 'month', min: 1, max: 12 },
-  { label: '周', value: 'week', min: 1, max: 7 },
+  { label: '周', value: 'week', min: 0, max: 6 },
 ];
+
 const state = ref<Record<string, any>>({
   second: { type: 'every', start: 0, step: 1, specifics: [] },
   minute: { type: 'every', start: 0, step: 1, specifics: [] },
   hour: { type: 'every', start: 0, step: 1, specifics: [] },
   day: { type: 'every', start: 1, step: 1, specifics: [] },
   month: { type: 'every', start: 1, step: 1, specifics: [] },
-  week: { type: 'any', start: 1, step: 1, specifics: [] },
+  week: { type: 'every', start: 0, step: 1, specifics: [] },
 });
+
+// 遵循标准 Unix/Vixie Cron 星期映射 (0=周日, 1=周一, ..., 6=周六, 兼容 7=周日)
 const weekOptions = [
-  { label: '周日', value: 1 },
-  { label: '周一', value: 2 },
-  { label: '周二', value: 3 },
-  { label: '周三', value: 4 },
-  { label: '周四', value: 5 },
-  { label: '周五', value: 6 },
-  { label: '周六', value: 7 },
+  { label: '周一', value: 1 },
+  { label: '周二', value: 2 },
+  { label: '周三', value: 3 },
+  { label: '周四', value: 4 },
+  { label: '周五', value: 5 },
+  { label: '周六', value: 6 },
+  { label: '周日', value: 0 },
 ];
 
 // --- 计算逻辑 ---
 const proCron = computed(() => {
   const getVal = (unit: string, defaultVal = '*') => {
     const s = state.value[unit];
-    if (unit === 'week' && s.type === 'any') return '?';
-    if (unit === 'week' && state.value['day'].type !== 'every') return '?';
-    if (unit === 'day' && state.value['week'].type !== 'any') return '?';
+    if (!s) return defaultVal;
 
-    if (s.type === 'every') return '*';
+    // 周的处理:
+    if (unit === 'week') {
+      if (s.type === 'every' || s.type === 'any') {
+        // 如果“日”指定了具体日期，“周”根据惯例输出 ?
+        return state.value.day?.type === 'specific' ? '?' : '*';
+      }
+      if (s.type === 'specific') {
+        if (!s.specifics || s.specifics.length === 0) return '0';
+        return [...s.specifics].sort((a: number, b: number) => a - b).join(',');
+      }
+    }
+
+    // 日的处理:
+    if (unit === 'day') {
+      // 如果“周”指定了具体星期，“日”输出 ?
+      if (state.value.week?.type === 'specific') {
+        return '?';
+      }
+    }
+
+    if (s.type === 'every' || s.type === 'any') return '*';
     if (s.type === 'interval') return `${s.start}/${s.step}`;
     if (s.type === 'specific') {
-      if (s.specifics.length === 0) return unit === 'day' || unit === 'month' ? '1' : '0';
-      return s.specifics.sort((a: number, b: number) => a - b).join(',');
+      if (!s.specifics || s.specifics.length === 0) return unit === 'day' || unit === 'month' ? '1' : '0';
+      return [...s.specifics].sort((a: number, b: number) => a - b).join(',');
     }
     return defaultVal;
   };
@@ -90,7 +121,7 @@ const proCron = computed(() => {
   const h = getVal('hour');
   const d = getVal('day');
   const M = getVal('month');
-  const w = getVal('week', '?');
+  const w = getVal('week');
   return `${s} ${m} ${h} ${d} ${M} ${w}`;
 });
 
@@ -110,29 +141,67 @@ const noviceCron = computed(() => {
   }
 });
 
-// 最终表达式根据当前处于哪个 Tab 模式来决定
+// 最终表达式根据当前模式和是否手动编辑决定
 const finalCron = computed(() => {
+  if (isManualEdit.value) return customCron.value;
   if (mode.value === 'preset') return selectedPreset.value;
   if (mode.value === 'novice') return noviceCron.value;
   return proCron.value;
 });
 
+// 当切换模式或控件变动时，同步 customCron
+watch(
+  [mode, selectedPreset, noviceCron, proCron],
+  () => {
+    if (!isManualEdit.value) {
+      if (mode.value === 'preset') {
+        customCron.value = selectedPreset.value;
+      } else if (mode.value === 'novice') {
+        customCron.value = noviceCron.value;
+      } else {
+        customCron.value = proCron.value;
+      }
+    }
+  },
+  { immediate: true },
+);
+
 // --- 下5次执行时间计算 ---
-const nextExecutions = ref<string[]>([]);
+const nextExecutions = ref<ExecutionItem[]>([]);
 const cronError = ref('');
+const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
 
 const calculateNextRuns = () => {
+  const expr = finalCron.value?.trim();
+  if (!expr) {
+    cronError.value = 'Cron 表达式不能为空';
+    nextExecutions.value = [];
+    return;
+  }
+
   try {
-    const interval = CronExpressionParser.parse(finalCron.value, {
+    const interval = CronExpressionParser.parse(expr, {
       currentDate: new Date(),
     });
 
-    nextExecutions.value = interval.take(5).map((d: any) => {
-      return new Date(d.toString()).toLocaleString();
-    });
+    const items: ExecutionItem[] = [];
+    const dates = interval.take(5);
+    for (const d of dates) {
+      const date = d.toDate();
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      const formattedTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+      const weekday = weekdays[date.getDay()];
+      items.push({ formattedTime, weekday });
+    }
+
+    nextExecutions.value = items;
     cronError.value = '';
   } catch {
-    // 解析失败
     cronError.value = '无法解析当前 Cron 表达式，请检查规则是否冲突';
     nextExecutions.value = [];
   }
@@ -146,23 +215,113 @@ watch(
   { immediate: true },
 );
 
+// --- 初始值反解析逻辑 ---
+const parseFieldToState = (fieldStr: string, unit: string) => {
+  const minDefault = unit === 'day' || unit === 'month' ? 1 : 0;
+  if (fieldStr === '*' || fieldStr === '?') {
+    return { type: 'every', start: minDefault, step: 1, specifics: [] };
+  }
+  if (fieldStr.includes('/')) {
+    const [startS, stepS] = fieldStr.split('/');
+    const start = startS === '*' || startS === '?' ? minDefault : parseInt(startS, 10);
+    const step = parseInt(stepS, 10);
+    if (!isNaN(start) && !isNaN(step)) {
+      return { type: 'interval', start, step, specifics: [] };
+    }
+  }
+  // 逗号分隔或单个数值
+  const nums = fieldStr
+    .split(',')
+    .map((s) => {
+      let n = parseInt(s.trim(), 10);
+      if (unit === 'week' && n === 7) n = 0; // 容错兼容: 周日 7 转 0
+      return n;
+    })
+    .filter((n) => !isNaN(n));
+
+  if (nums.length > 0) {
+    return { type: 'specific', start: minDefault, step: 1, specifics: nums };
+  }
+  return null;
+};
+
+const parseCronToState = (cronStr: string): boolean => {
+  const cleanStr = cronStr.trim();
+  // 检查是否与预设一致
+  const foundPreset = presetOptions.find((p) => p.value === cleanStr);
+  if (foundPreset) {
+    mode.value = 'preset';
+    selectedPreset.value = cleanStr;
+    customCron.value = cleanStr;
+    isManualEdit.value = false;
+    return true;
+  }
+
+  const parts = cleanStr.split(/\s+/);
+  if (parts.length < 5 || parts.length > 6) return false;
+
+  const is6 = parts.length === 6;
+  const secStr = is6 ? parts[0] : '0';
+  const minStr = is6 ? parts[1] : parts[0];
+  const hourStr = is6 ? parts[2] : parts[1];
+  const dayStr = is6 ? parts[3] : parts[2];
+  const monthStr = is6 ? parts[4] : parts[3];
+  const weekStr = is6 ? parts[5] : parts[4];
+
+  const parsedSec = parseFieldToState(secStr, 'second');
+  const parsedMin = parseFieldToState(minStr, 'minute');
+  const parsedHour = parseFieldToState(hourStr, 'hour');
+  const parsedDay = parseFieldToState(dayStr, 'day');
+  const parsedMonth = parseFieldToState(monthStr, 'month');
+  const parsedWeek = parseFieldToState(weekStr, 'week');
+
+  if (parsedSec && parsedMin && parsedHour && parsedDay && parsedMonth && parsedWeek) {
+    state.value.second = parsedSec;
+    state.value.minute = parsedMin;
+    state.value.hour = parsedHour;
+    state.value.day = parsedDay;
+    state.value.month = parsedMonth;
+    state.value.week = parsedWeek;
+    mode.value = 'pro';
+    isManualEdit.value = false;
+    customCron.value = cleanStr;
+    return true;
+  }
+
+  return false;
+};
+
 // --- 交互逻辑 ---
 watch(
   () => props.visible,
   (val) => {
-    // 弹窗打开时，如果有外界传进来的初始值，直接切到专业模式并验证
-    if (val && props.initialValue) {
-      mode.value = 'pro';
+    if (val) {
+      if (props.initialValue && props.initialValue.trim()) {
+        const parsed = parseCronToState(props.initialValue.trim());
+        if (!parsed) {
+          // 复杂或无法分解的表达式，以自定义模式展示
+          mode.value = 'pro';
+          customCron.value = props.initialValue.trim();
+          isManualEdit.value = true;
+        }
+      } else {
+        // 如果没有初始值，默认进入预设模式
+        mode.value = 'preset';
+        customCron.value = selectedPreset.value;
+        isManualEdit.value = false;
+      }
       calculateNextRuns();
-    } else if (val && !props.initialValue) {
-      // 如果没有初始值，默认进入预设模式
-      mode.value = 'preset';
     }
   },
 );
 
+const handleManualCronChange = () => {
+  isManualEdit.value = true;
+  calculateNextRuns();
+};
+
 const handleConfirm = () => {
-  if (cronError.value) {
+  if (cronError.value || !finalCron.value) {
     MessagePlugin.warning('当前表达式无效，无法保存');
     return;
   }
@@ -178,6 +337,7 @@ const getSpecificOptions = (unit: string) => {
   return arr;
 };
 </script>
+
 <template>
   <t-dialog
     :visible="visible"
@@ -192,7 +352,12 @@ const getSpecificOptions = (unit: string) => {
     <div class="flex flex-col gap-5 p-5 md:p-6 bg-zinc-50/50 dark:bg-zinc-950/20">
 
       <div class="flex justify-center">
-        <t-radio-group v-model="mode" variant="default-filled" class="!bg-zinc-100 dark:!bg-zinc-800 border border-[var(--td-component-border)] !rounded-lg p-0.5 shadow-sm">
+        <t-radio-group
+          v-model="mode"
+          variant="default-filled"
+          class="!bg-zinc-100 dark:!bg-zinc-800 border border-[var(--td-component-border)] !rounded-lg p-0.5 shadow-sm"
+          @change="isManualEdit = false"
+        >
           <t-radio-button value="preset" class="!px-4">⭐ 预设模式</t-radio-button>
           <t-radio-button value="novice" class="!px-4">🚀 简单模式</t-radio-button>
           <t-radio-button value="pro" class="!px-4">🛠️ 专业模式</t-radio-button>
@@ -239,17 +404,17 @@ const getSpecificOptions = (unit: string) => {
           <t-tab-panel v-for="unit in timeUnits" :key="unit.value" :value="unit.value" :label="unit.label">
             <div class="p-5 max-h-[260px] overflow-y-auto custom-scrollbar">
 
-              <t-radio-group v-model="state[unit.value].type" direction="vertical" class="w-full gap-4 !bg-transparent">
+              <t-radio-group v-model="state[unit.value].type" direction="vertical" class="w-full gap-4 !bg-transparent" @change="isManualEdit = false">
                 <t-radio value="every" class="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                  {{ unit.value === 'week' ? '不指定 (?)' : `每${unit.label} (*)` }}
+                  {{ unit.value === 'week' ? '不指定 (通配符)' : `每${unit.label} (*)` }}
                 </t-radio>
 
                 <t-radio v-if="unit.value !== 'week'" value="interval" class="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                   <div class="flex items-center gap-2 flex-wrap">
                     <span>周期: 从</span>
-                    <t-input-number v-model="state[unit.value].start" :min="unit.min" :max="unit.max" size="small" theme="column" class="!w-[70px]" />
+                    <t-input-number v-model="state[unit.value].start" :min="unit.min" :max="unit.max" size="small" theme="column" class="!w-[70px]" @change="isManualEdit = false" />
                     <span>{{ unit.label }} 开始，每</span>
-                    <t-input-number v-model="state[unit.value].step" :min="1" :max="unit.max" size="small" theme="column" class="!w-[70px]" />
+                    <t-input-number v-model="state[unit.value].step" :min="1" :max="unit.max" size="small" theme="column" class="!w-[70px]" @change="isManualEdit = false" />
                     <span>{{ unit.label }} 执行一次</span>
                   </div>
                 </t-radio>
@@ -268,6 +433,7 @@ const getSpecificOptions = (unit: string) => {
                   v-model="state[unit.value].specifics"
                   :options="unit.value === 'week' ? weekOptions : getSpecificOptions(unit.value)"
                   class="grid grid-cols-[repeat(auto-fill,minmax(55px,1fr))] gap-2.5"
+                  @change="isManualEdit = false"
                 />
               </div>
 
@@ -280,10 +446,19 @@ const getSpecificOptions = (unit: string) => {
 
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-dashed border-zinc-200 dark:border-zinc-700/60">
           <span class="font-bold text-[var(--td-text-color-primary)] text-sm">当前表达式:</span>
-          <div class="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-900 px-3 py-1.5 rounded-lg border border-zinc-100 dark:border-zinc-800 shadow-inner">
-            <span class="font-mono text-lg font-bold tracking-wider text-[var(--color-primary)]">{{ finalCron }}</span>
-            <t-tag v-if="!cronError" theme="success" variant="light" size="small" class="!rounded"><template #icon><check-circle-icon /></template> 有效</t-tag>
-            <t-tag v-else theme="danger" variant="light" size="small" class="!rounded"><template #icon><error-circle-icon /></template> 无效</t-tag>
+          <div class="flex items-center gap-3">
+            <t-input
+              v-model="customCron"
+              class="font-mono text-base font-bold tracking-wider !w-[240px] sm:!w-[280px]"
+              placeholder="例如: 0 0 3 * * ?"
+              @change="handleManualCronChange"
+            />
+            <t-tag v-if="!cronError" theme="success" variant="light" size="small" class="!rounded">
+              <template #icon><check-circle-icon /></template> 有效
+            </t-tag>
+            <t-tag v-else theme="danger" variant="light" size="small" class="!rounded">
+              <template #icon><error-circle-icon /></template> 无效
+            </t-tag>
           </div>
         </div>
 
@@ -297,9 +472,18 @@ const getSpecificOptions = (unit: string) => {
           </div>
 
           <ul v-else class="grid grid-cols-1 sm:grid-cols-2 gap-2 m-0 p-0 list-none">
-            <li v-for="(time, index) in nextExecutions" :key="index" class="text-sm font-mono font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-800/40 !px-4 !py-3 rounded-lg border border-zinc-100 dark:border-zinc-700/50 flex items-center transition-colors hover:border-[var(--color-primary)]/30 hover:bg-[var(--color-primary)]/5">
-              <span class="text-[var(--td-text-color-secondary)] w-6 font-bold opacity-70">#{{ index + 1 }}</span>
-              {{ time }}
+            <li
+              v-for="(item, index) in nextExecutions"
+              :key="index"
+              class="text-sm font-mono font-medium text-zinc-700 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-800/40 !px-4 !py-3 rounded-lg border border-zinc-100 dark:border-zinc-700/50 flex items-center justify-between transition-colors hover:border-[var(--color-primary)]/30 hover:bg-[var(--color-primary)]/5"
+            >
+              <div class="flex items-center gap-2">
+                <span class="text-[var(--td-text-color-secondary)] w-6 font-bold opacity-70">#{{ index + 1 }}</span>
+                <span>{{ item.formattedTime }}</span>
+              </div>
+              <span class="text-xs px-2 py-0.5 rounded font-semibold bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                {{ item.weekday }}
+              </span>
             </li>
           </ul>
         </div>
@@ -313,7 +497,6 @@ const getSpecificOptions = (unit: string) => {
 <style scoped lang="less">
 @import '@/style/scrollbar';
 @reference "@/style/tailwind/index.css";
-
 
 .custom-scrollbar {
   .scrollbar-mixin();
@@ -343,6 +526,4 @@ const getSpecificOptions = (unit: string) => {
     }
   }
 }
-
-
 </style>

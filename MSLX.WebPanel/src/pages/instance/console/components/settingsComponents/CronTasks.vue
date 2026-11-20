@@ -375,7 +375,7 @@ onMounted(fetchData);
         <t-form ref="formRef" :data="formData" :rules="rules" label-width="0" class="p-0">
           <div v-for="(field, idx) in [
             { title: '任务名称', desc: '给计划任务起个易识别的名字', key: 'name' },
-            { title: '触发规则 (Cron)', desc: '支持秒级精度 (秒 分 时 日 月 周)', key: 'cron' },
+            { title: '触发规则 (Cron)', desc: '支持标准 5 位 (分 时 日 月 周) 或 6 位秒级 (秒 分 时 日 月 周)', key: 'cron' },
             { title: '执行操作', desc: '选择触发时要执行的动作类型', key: 'type' }
           ]" :key="idx" class="flex flex-col md:flex-row md:items-start justify-between p-5 border-b border-dashed border-zinc-100 dark:border-zinc-800 last:border-0">
             <div class="flex-1 md:max-w-[40%] pr-0 md:pr-8 mb-3 md:mb-0">
