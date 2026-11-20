@@ -1,14 +1,21 @@
 <template>
-  <Result v-if="nodePage && route.query.node && !node"
+  <result v-if="nodePage && route.query.node && !node"
     :type="nodeStore.fetchError ? 'wifi' : '403'"
     :title="nodeStore.fetchError ? '节点列表加载失败' : '节点不可用'"
     :tip="nodeStore.fetchError || '节点不存在、已解除链接或无访问权限'">
     <t-button :loading="nodeStore.loading" @click="nodeStore.fetchNodes(true)">重试</t-button>
-  </Result>
-  <Result v-else-if="pluginUI.error" type="wifi" title="目标节点插件加载失败" :tip="pluginUI.error">
+  </result>
+  <result v-else-if="pluginUI.error" type="wifi" title="目标节点插件加载失败" :tip="pluginUI.error">
     <t-button :loading="pluginUI.loading" @click="retryPlugins">重试</t-button>
-  </Result>
-  <t-loading v-else-if="pluginUI.loading" text="正在加载目标节点插件" />
+  </result>
+  <loading-card
+    v-else-if="pluginUI.loading"
+    class="plugin-loading-card grow"
+    role="status"
+    text="正在加载目标节点插件"
+    description=""
+    min-height="320px"
+  />
   <router-view v-if="(!nodePage || !route.query.node || node) && !pluginUI.error && !pluginUI.loading" v-slot="{ Component }">
     <transition name="fade" mode="out-in">
       <keep-alive v-if="!nodePage">
@@ -28,6 +35,7 @@ import { loadAllPlugins, activatePluginNode } from '@/utils/pluginManager';
 import { isNodePage } from '@/utils/nodeTarget';
 import { useNodeStore } from '@/store/modules/node';
 import Result from '@/components/result/index.vue';
+import LoadingCard from '@/components/loading-card/index.vue';
 const route = useRoute();
 const router = useRouter();
 const pluginUI = usePluginUIStore();
