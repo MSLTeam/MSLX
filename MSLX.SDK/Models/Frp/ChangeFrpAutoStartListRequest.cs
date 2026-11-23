@@ -4,9 +4,10 @@ namespace MSLX.SDK.Models.Frp;
 
 public class UpdateFrpAutoStartRequest
 {
-    [Required(ErrorMessage = "ID 列表不能为空")]
     [EnsureEightDigitIds(ErrorMessage = "列表包含非法的 ID，所有 ID 必须为 8 位数字")]
-    public required List<int> FrpIds { get; init; }
+    public List<int>? FrpIds { get; init; }
+
+    public List<string>? Tags { get; init; }
 }
 
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter)]

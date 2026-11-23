@@ -13,18 +13,25 @@ namespace MSLX.Daemon.Controllers.FrpControllers;
 public class FrpAutoStartController : ControllerBase
 {
     private const string ConfigKey = "frpAutoStartList";
+    private const string TagsConfigKey = "frpAutoStartTags";
 
     [HttpGet]
     public IActionResult GetFrpAutoStartList()
     {
         var configValue = IConfigBase.Config.ReadConfigKey(ConfigKey);
         var list = configValue?.ToObject<List<int>>() ?? [];
+        var tagsValue = IConfigBase.Config.ReadConfigKey(TagsConfigKey);
+        var tags = tagsValue?.ToObject<List<string>>() ?? [];
 
         return Ok(new ApiResponse<object>
         {
             Code = 200,
             Message = "获取成功",
-            Data = list
+            Data = new
+            {
+                frpIds = list,
+                tags = tags
+            }
         });
     }
 
@@ -34,18 +41,29 @@ public class FrpAutoStartController : ControllerBase
         try
         {
             // 去重并过滤无效 ID
-            var validIds = req.FrpIds
+            var validIds = (req.FrpIds ?? [])
                 .Distinct()
                 .Where(id => IConfigBase.FrpList.IsFrpIdValid(id))
                 .ToList();
 
+            var validTags = (req.Tags ?? [])
+                .Where(t => !string.IsNullOrWhiteSpace(t))
+                .Select(t => t.Trim())
+                .Distinct()
+                .ToList();
+
             IConfigBase.Config.WriteConfigKey(ConfigKey, JArray.FromObject(validIds));
+            IConfigBase.Config.WriteConfigKey(TagsConfigKey, JArray.FromObject(validTags));
 
             return Ok(new ApiResponse<object>
             {
                 Code = 200,
                 Message = $"修改成功，已保存 {validIds.Count} 个有效配置",
-                Data = validIds
+                Data = new
+                {
+                    frpIds = validIds,
+                    tags = validTags
+                }
             });
         }
         catch (Exception ex)

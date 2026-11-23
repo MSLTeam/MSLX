@@ -507,18 +507,40 @@ public class FrpProcessService : IFrpProcessService
                 var configToken = IConfigBase.Config.ReadConfigKey("frpAutoStartList");
                 var autoStartIds = configToken?.ToObject<List<int>>() ?? new List<int>();
 
-                if (autoStartIds.Count == 0) return;
+                var tagsToken = IConfigBase.Config.ReadConfigKey("frpAutoStartTags");
+                var autoStartTags = tagsToken?.ToObject<List<string>>() ?? new List<string>();
+
+                var tunnelsToStart = new HashSet<int>(autoStartIds.Where(id => IConfigBase.FrpList.IsFrpIdValid(id)));
+
+                if (autoStartTags.Count > 0)
+                {
+                    var tagSet = new HashSet<string>(autoStartTags, StringComparer.OrdinalIgnoreCase);
+                    var allTunnels = IConfigBase.FrpList.GetFrpList();
+                    foreach (var item in allTunnels)
+                    {
+                        int id = item["ID"]?.Value<int>() ?? 0;
+                        if (id <= 0 || !IConfigBase.FrpList.IsFrpIdValid(id)) continue;
+
+                        var rawTags = item["Tags"];
+                        List<string> tunnelTags = rawTags switch
+                        {
+                            JArray arr => arr.Select(t => t.ToString()).ToList(),
+                            JValue val when val.Value is string str => str.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(),
+                            _ => new List<string>()
+                        };
+
+                        if (tunnelTags.Any(t => tagSet.Contains(t)))
+                        {
+                            tunnelsToStart.Add(id);
+                        }
+                    }
+                }
+
+                if (tunnelsToStart.Count == 0) return;
 
                 int count = 0;
-                foreach (var id in autoStartIds)
+                foreach (var id in tunnelsToStart)
                 {
-                    // id，你在吗~
-                    if (!IConfigBase.FrpList.IsFrpIdValid(id))
-                    {
-                        _logger.LogWarning($"[AutoStart] 跳过 ID [{id}]：隧道配置不存在。");
-                        continue;
-                    }
-
                     _logger.LogInformation($"[AutoStart] 正在启动 FRP 隧道 [{id}]...");
 
                     var (success, msg) = StartFrp(id);

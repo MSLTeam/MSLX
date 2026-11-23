@@ -65,6 +65,7 @@ const autoStartState = reactive({
   loading: false,
   submitting: false,
   selectedIds: [] as number[],
+  selectedTags: [] as string[],
 });
 
 // 打开设置弹窗
@@ -75,8 +76,14 @@ const openAutoStartSettings = async () => {
     if (tunnelsStore.frpList.length === 0) {
       await tunnelsStore.getTunnels();
     }
-    const res = await getFrpAutoStartList();
-    autoStartState.selectedIds = res || [];
+    const res: any = await getFrpAutoStartList();
+    if (Array.isArray(res)) {
+      autoStartState.selectedIds = res || [];
+      autoStartState.selectedTags = [];
+    } else if (res) {
+      autoStartState.selectedIds = res.frpIds || [];
+      autoStartState.selectedTags = res.tags || [];
+    }
   } catch (error: any) {
     MessagePlugin.error('获取自启动配置失败 ' + error.message);
   } finally {
@@ -88,7 +95,10 @@ const openAutoStartSettings = async () => {
 const handleSaveAutoStart = async () => {
   autoStartState.submitting = true;
   try {
-    await postChangeFrpAutoStartList(autoStartState.selectedIds);
+    await postChangeFrpAutoStartList({
+      frpIds: autoStartState.selectedIds,
+      tags: autoStartState.selectedTags,
+    });
     MessagePlugin.success('自启动设置已更新');
     autoStartState.visible = false;
   } catch (error: any) {
@@ -98,49 +108,94 @@ const handleSaveAutoStart = async () => {
   }
 };
 
-// ================= 自启动快捷批量选择 =================
-const getAutoStartTagTunnelIds = (tag: string) => {
+// ================= 自启动标签与隧道选择 =================
+const isTunnelCoveredByTag = (item: FrpListModel) => {
+  return (item.tags || []).some((t) => autoStartState.selectedTags.includes(t));
+};
+
+const isTunnelAutoStart = (item: FrpListModel) => {
+  return isTunnelCoveredByTag(item) || autoStartState.selectedIds.includes(item.id);
+};
+
+const isAutoStartTagActive = (tag: string) => {
   if (tag === '__untagged__') {
-    return tunnelsStore.frpList
+    const untaggedIds = tunnelsStore.frpList
       .filter((i) => !i.tags || i.tags.length === 0)
       .map((i) => i.id);
+    if (untaggedIds.length === 0) return false;
+    return untaggedIds.every((id) => autoStartState.selectedIds.includes(id));
   }
+  return autoStartState.selectedTags.includes(tag);
+};
+
+const getTagTunnelCount = (tag: string) => {
+  if (tag === '__untagged__') {
+    return untaggedCount.value;
+  }
+  return tunnelsStore.frpList.filter((i) => (i.tags || []).includes(tag)).length;
+};
+
+const getUntaggedSelectedCount = () => {
   return tunnelsStore.frpList
-    .filter((i) => (i.tags || []).includes(tag))
-    .map((i) => i.id);
-};
-
-const isAutoStartTagAllSelected = (tag: string) => {
-  const ids = getAutoStartTagTunnelIds(tag);
-  if (ids.length === 0) return false;
-  return ids.every((id) => autoStartState.selectedIds.includes(id));
-};
-
-const getAutoStartTagSelectedCount = (tag: string) => {
-  const ids = getAutoStartTagTunnelIds(tag);
-  return ids.filter((id) => autoStartState.selectedIds.includes(id)).length;
+    .filter((i) => (!i.tags || i.tags.length === 0) && autoStartState.selectedIds.includes(i.id))
+    .length;
 };
 
 const handleToggleAutoStartTag = (tag: string) => {
-  const ids = getAutoStartTagTunnelIds(tag);
-  if (ids.length === 0) return;
+  if (tag === '__untagged__') {
+    const untaggedIds = tunnelsStore.frpList
+      .filter((i) => !i.tags || i.tags.length === 0)
+      .map((i) => i.id);
+    if (untaggedIds.length === 0) return;
 
-  const allSelected = ids.every((id) => autoStartState.selectedIds.includes(id));
-  if (allSelected) {
-    autoStartState.selectedIds = autoStartState.selectedIds.filter((id) => !ids.includes(id));
+    const allSelected = untaggedIds.every((id) => autoStartState.selectedIds.includes(id));
+    if (allSelected) {
+      autoStartState.selectedIds = autoStartState.selectedIds.filter((id) => !untaggedIds.includes(id));
+    } else {
+      const newSelected = new Set([...autoStartState.selectedIds, ...untaggedIds]);
+      autoStartState.selectedIds = Array.from(newSelected);
+    }
+    return;
+  }
+
+  const idx = autoStartState.selectedTags.indexOf(tag);
+  if (idx > -1) {
+    autoStartState.selectedTags.splice(idx, 1);
   } else {
-    const newSelected = new Set([...autoStartState.selectedIds, ...ids]);
-    autoStartState.selectedIds = Array.from(newSelected);
+    autoStartState.selectedTags.push(tag);
+    // 移除已被该标签覆盖的显式隧道 ID
+    const tagTunnelIds = tunnelsStore.frpList
+      .filter((i) => (i.tags || []).includes(tag))
+      .map((i) => i.id);
+    autoStartState.selectedIds = autoStartState.selectedIds.filter((id) => !tagTunnelIds.includes(id));
+  }
+};
+
+const handleToggleTunnel = (item: FrpListModel) => {
+  if (isTunnelCoveredByTag(item)) return;
+  const idx = autoStartState.selectedIds.indexOf(item.id);
+  if (idx > -1) {
+    autoStartState.selectedIds.splice(idx, 1);
+  } else {
+    autoStartState.selectedIds.push(item.id);
   }
 };
 
 const handleSelectAllAutoStart = () => {
-  autoStartState.selectedIds = tunnelsStore.frpList.map((i) => i.id);
+  autoStartState.selectedTags = [...allExistingTags.value];
+  autoStartState.selectedIds = tunnelsStore.frpList
+    .filter((i) => !i.tags || i.tags.length === 0)
+    .map((i) => i.id);
 };
 
 const handleDeselectAllAutoStart = () => {
+  autoStartState.selectedTags = [];
   autoStartState.selectedIds = [];
 };
+
+const totalAutoStartCount = computed(() => {
+  return tunnelsStore.frpList.filter((item) => isTunnelAutoStart(item)).length;
+});
 
 // 配置文件 → 颜色
 const getConfigTheme = (type: string) => {
@@ -701,22 +756,22 @@ onMounted(() => {
             <div class="text-sm">
               <p class="text-[var(--td-text-color-primary)] font-bold mb-1">自启动策略说明</p>
               <p class="text-[var(--td-text-color-secondary)] leading-relaxed m-0">
-                勾选的隧道将在 MSLX 守护进程启动时自动加载并运行。
+                勾选的隧道或选中的标签将在 MSLX 守护进程启动时自动加载并运行。支持将整个标签设置为自启动，新添加该标签的隧道也将自动生效。
               </p>
             </div>
           </div>
 
           <div v-if="tunnelsStore.frpList.length > 0" class="flex flex-col gap-4">
-            <!-- 快捷批量选择栏 -->
+            <!-- 标签自启动设置栏 -->
             <div class="flex flex-col gap-2 p-3 bg-zinc-50/70 dark:bg-zinc-800/40 rounded-xl border border-[var(--td-component-border)]">
               <div class="flex items-center justify-between text-xs text-[var(--td-text-color-secondary)]">
                 <span class="font-bold flex items-center gap-1.5 text-[var(--td-text-color-primary)]">
                   <tag-icon size="14" class="text-[var(--color-primary)]" />
-                  按标签快捷选择
+                  按标签设置自启动
                 </span>
                 <div class="flex items-center gap-2">
                   <span class="text-xs">
-                    已选 <span class="font-bold text-[var(--color-primary)]">{{ autoStartState.selectedIds.length }}</span> / {{ tunnelsStore.frpList.length }}
+                    已生效 <span class="font-bold text-[var(--color-primary)]">{{ totalAutoStartCount }}</span> / {{ tunnelsStore.frpList.length }}
                   </span>
                   <span class="text-zinc-300 dark:text-zinc-600">|</span>
                   <t-link theme="primary" size="small" hover="color" @click="handleSelectAllAutoStart">全选</t-link>
@@ -733,66 +788,85 @@ onMounted(() => {
                   v-for="tag in allExistingTags"
                   :key="tag"
                   size="small"
-                  :variant="isAutoStartTagAllSelected(tag) ? 'base' : 'outline'"
-                  :theme="isAutoStartTagAllSelected(tag) ? 'primary' : 'default'"
+                  :variant="isAutoStartTagActive(tag) ? 'base' : 'outline'"
+                  :theme="isAutoStartTagActive(tag) ? 'primary' : 'default'"
                   shape="round"
                   @click="handleToggleAutoStartTag(tag)"
                 >
-                  {{ tag }} ({{ getAutoStartTagSelectedCount(tag) }}/{{ getAutoStartTagTunnelIds(tag).length }})
+                  {{ tag }} ({{ getTagTunnelCount(tag) }})
                 </t-button>
 
                 <t-button
                   v-if="untaggedCount > 0"
                   size="small"
-                  :variant="isAutoStartTagAllSelected('__untagged__') ? 'base' : 'outline'"
-                  :theme="isAutoStartTagAllSelected('__untagged__') ? 'primary' : 'default'"
+                  :variant="isAutoStartTagActive('__untagged__') ? 'base' : 'outline'"
+                  :theme="isAutoStartTagActive('__untagged__') ? 'primary' : 'default'"
                   shape="round"
                   @click="handleToggleAutoStartTag('__untagged__')"
                 >
-                  未分类 ({{ getAutoStartTagSelectedCount('__untagged__') }}/{{ untaggedCount }})
+                  未分类 ({{ getUntaggedSelectedCount() }}/{{ untaggedCount }})
                 </t-button>
               </div>
             </div>
 
-            <!-- 隧道多选列表 -->
+            <!-- 隧道列表 -->
             <div class="max-h-[50vh] overflow-y-auto custom-scrollbar pr-1">
-              <t-checkbox-group v-model="autoStartState.selectedIds" class="w-full">
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div
-                    v-for="item in tunnelsStore.frpList"
-                    :key="item.id"
-                    :class="[
-                      'p-3 rounded-xl border transition-colors cursor-pointer',
-                      autoStartState.selectedIds.includes(item.id)
-                        ? 'bg-primary/5 border-primary/40'
-                        : 'bg-zinc-50/50 dark:bg-zinc-800/40 border-[var(--td-component-border)] hover:bg-zinc-100 dark:hover:bg-zinc-700/60'
-                    ]"
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div
+                  v-for="item in tunnelsStore.frpList"
+                  :key="item.id"
+                  :class="[
+                    'p-3 rounded-xl border transition-colors select-none',
+                    isTunnelCoveredByTag(item)
+                      ? 'bg-primary/5 border-primary/40 cursor-default'
+                      : 'cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700/60',
+                    !isTunnelCoveredByTag(item) && autoStartState.selectedIds.includes(item.id)
+                      ? 'bg-primary/5 border-primary/40'
+                      : 'bg-zinc-50/50 dark:bg-zinc-800/40 border-[var(--td-component-border)]'
+                  ]"
+                  @click="handleToggleTunnel(item)"
+                >
+                  <t-checkbox
+                    :checked="isTunnelAutoStart(item)"
+                    :disabled="isTunnelCoveredByTag(item)"
+                    class="!w-full"
+                    @click.stop
+                    @change="() => handleToggleTunnel(item)"
                   >
-                    <t-checkbox :value="item.id" class="!w-full">
-                      <div class="flex flex-col gap-1.5 w-full ml-1 overflow-hidden">
-                        <div class="flex items-center justify-between w-full">
-                          <span class="text-sm font-medium text-[var(--td-text-color-primary)] truncate pr-2">{{
-                            item.name
-                          }}</span>
-                          <span class="text-[10px] font-mono text-zinc-400 shrink-0">#{{ item.id }}</span>
-                        </div>
-                        <div v-if="item.tags && item.tags.length > 0" class="flex flex-wrap gap-1">
+                    <div class="flex flex-col gap-1.5 w-full ml-1 overflow-hidden">
+                      <div class="flex items-center justify-between w-full">
+                        <span class="text-sm font-medium text-[var(--td-text-color-primary)] truncate pr-2">{{
+                          item.name
+                        }}</span>
+                        <div class="flex items-center gap-1.5 shrink-0">
                           <t-tag
-                            v-for="tag in item.tags"
-                            :key="tag"
+                            v-if="isTunnelCoveredByTag(item)"
                             size="small"
+                            theme="primary"
                             variant="light"
-                            :theme="getTagTheme(tag) as any"
-                            class="!text-[10px] !px-1.5 !h-4.5 !font-normal"
+                            class="!text-[10px] !px-1.5 !h-4.5"
                           >
-                            {{ tag }}
+                            标签自启动
                           </t-tag>
+                          <span class="text-[10px] font-mono text-zinc-400">#{{ item.id }}</span>
                         </div>
                       </div>
-                    </t-checkbox>
-                  </div>
+                      <div v-if="item.tags && item.tags.length > 0" class="flex flex-wrap gap-1">
+                        <t-tag
+                          v-for="tag in item.tags"
+                          :key="tag"
+                          size="small"
+                          variant="light"
+                          :theme="getTagTheme(tag) as any"
+                          class="!text-[10px] !px-1.5 !h-4.5 !font-normal"
+                        >
+                          {{ tag }}
+                        </t-tag>
+                      </div>
+                    </div>
+                  </t-checkbox>
                 </div>
-              </t-checkbox-group>
+              </div>
             </div>
           </div>
           <div v-else class="py-12 text-center text-zinc-400 italic">暂无可用隧道</div>
