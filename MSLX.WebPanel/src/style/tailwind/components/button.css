@@ -26,7 +26,8 @@
 
 /* 小按钮统一尺寸与间距，保留显式的圆形和胶囊形。 */
 .t-button.t-size-s {
-  @apply min-h-6 min-w-6 gap-1 px-1.5 text-xs/4 shadow-none;
+  /* 保留内容对 flex 最小宽度的约束，避免文字被裁掉。 */
+  @apply min-h-6 gap-1 overflow-clip px-1.5 text-xs/4 shadow-none;
 }
 
 .t-button.t-size-s:not(.t-button--shape-circle, .t-button--shape-round) {
@@ -34,11 +35,16 @@
 }
 
 .t-button.t-size-s:is(.t-button--shape-circle, .t-button--shape-square) {
-  @apply px-0;
+  @apply min-w-6 px-0;
 }
 
 .t-button.t-size-s > :is(.t-icon, .t-button__text, .t-button__suffix) {
   @apply !m-0;
+}
+
+/* 自定义图标尺寸也必须收在小按钮的点击区域内。 */
+.t-button.t-size-s > .t-icon {
+  @apply max-h-3.5 max-w-3.5 shrink-0;
 }
 
 /* 已设置 gap 的工具栏直接使用容器间距。 */
