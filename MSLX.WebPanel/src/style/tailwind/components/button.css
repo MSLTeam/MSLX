@@ -23,3 +23,33 @@
 .t-button--variant-text {
   @apply bg-transparent shadow-none active:scale-100 hover:bg-zinc-100 dark:hover:bg-zinc-800;
 }
+
+/* 小按钮统一尺寸与间距，保留显式的圆形和胶囊形。 */
+.t-button.t-size-s {
+  @apply min-h-6 min-w-6 gap-1 px-1.5 text-xs/4 shadow-none;
+}
+
+.t-button.t-size-s:not(.t-button--shape-circle, .t-button--shape-round) {
+  @apply rounded-lg;
+}
+
+.t-button.t-size-s:is(.t-button--shape-circle, .t-button--shape-square) {
+  @apply px-0;
+}
+
+.t-button.t-size-s > :is(.t-icon, .t-button__text, .t-button__suffix) {
+  @apply !m-0;
+}
+
+/* 已设置 gap 的工具栏直接使用容器间距。 */
+:where(.flex, .inline-flex):where([class^='gap-'], [class*=' gap-']) > .t-button.t-size-s + .t-button.t-size-s {
+  @apply ml-0;
+}
+
+.t-button.t-size-s.t-button--variant-outline:not(.t-is-disabled, .t-button--ghost) {
+  @apply bg-current/5 ring-inset ring-current/20 hover:bg-current/10;
+}
+
+.t-button.t-size-s.t-button--variant-outline.t-button--theme-primary:not(.t-is-disabled, .t-button--ghost) {
+  @apply text-primary;
+}
