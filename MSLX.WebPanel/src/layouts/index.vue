@@ -209,8 +209,7 @@ body .global-layout-bg.custom-theme-enabled,
   :deep(.design-card),
   :deep(.t-textarea__inner),
   :deep(.t-input-number),
-  :deep(.t-input),
-  :deep(.t-select__wrap .t-input) {
+  :deep(.t-input) {
     background-color: rgba(255, 255, 255, var(--comp-op-light)) !important;
     border-color: rgba(255, 255, 255, 0.3) !important;
 
@@ -243,8 +242,7 @@ body .global-layout-bg.custom-theme-enabled,
 
     :deep(.t-input),
     :deep(.t-textarea__inner),
-    :deep(.t-input-number),
-    :deep(.t-select__wrap .t-input) {
+    :deep(.t-input-number) {
       background-color: transparent !important;
       border-color: var(--td-component-border) !important;
     }
