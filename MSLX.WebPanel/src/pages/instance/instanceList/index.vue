@@ -14,9 +14,11 @@ import {
   GridViewIcon,
   LoadingIcon,
   MinusCircleFilledIcon,
+  PlayCircleIcon,
   RefreshIcon,
   FilterIcon,
   SearchIcon,
+  StopCircleIcon,
   TagIcon,
   ViewListIcon,
   UsergroupIcon,
@@ -448,15 +450,20 @@ const handleConfirmDelete = async () => {
         <section v-for="group in visibleGroups" :key="group.key" class="flex flex-col gap-3.5">
           <div
             v-if="viewMode === 'category'"
-            class="design-card flex items-center justify-between gap-3 px-5 py-3 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
+            class="design-card flex flex-wrap items-center justify-between gap-3 px-5 py-3 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
           >
-            <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-              <h3 class="min-w-0 break-all text-base font-bold m-0">{{ group.label }}</h3>
-              <span class="rounded-full px-2.5 py-0.5 text-xs bg-[var(--td-bg-color-secondarycontainer)] text-[var(--td-text-color-secondary)]">
+            <div class="flex min-w-0 grow basis-24 flex-wrap items-center gap-x-3 gap-y-1">
+              <div class="flex min-w-0 items-center gap-2 sm:gap-3">
+                <span aria-hidden="true" class="h-4 w-1.5 shrink-0 rounded-full bg-[var(--color-primary)]"></span>
+                <h3 class="m-0 min-w-0 break-all text-base font-bold tracking-tight text-[var(--td-text-color-primary)]">
+                  {{ group.label }}
+                </h3>
+              </div>
+              <span class="rounded-full px-2.5 py-0.5 text-xs font-medium bg-[var(--td-bg-color-secondarycontainer)] text-[var(--td-text-color-secondary)]">
                 {{ group.items.filter((item) => item.status === 2).length }}/{{ group.items.length }} 运行中
               </span>
             </div>
-            <div v-if="!isBatchMode" class="flex shrink-0 flex-row-reverse items-center gap-1.5">
+            <div v-if="!isBatchMode" class="ml-auto flex shrink-0 flex-row-reverse items-center gap-1.5">
               <t-button
                 size="small"
                 shape="square"
@@ -480,15 +487,21 @@ const handleConfirmDelete = async () => {
                   class="flex items-center gap-1.5"
                 >
                   <t-button
-                    size="small" variant="outline" theme="primary"
+                    size="small" variant="outline" theme="primary" shape="round"
                     :disabled="batchLoading || !group.items.some((item) => item.status === 0)"
                     @click="batchGroup('start', group)"
-                  >全部启动</t-button>
+                  >
+                    <template #icon><play-circle-icon size="14" aria-hidden="true" /></template>
+                    全部启动
+                  </t-button>
                   <t-button
-                    size="small" variant="outline" theme="danger"
+                    size="small" variant="outline" theme="danger" shape="round"
                     :disabled="batchLoading || !group.items.some((item) => item.status === 2)"
                     @click="batchGroup('stop', group)"
-                  >全部停止</t-button>
+                  >
+                    <template #icon><stop-circle-icon size="14" aria-hidden="true" /></template>
+                    全部停止
+                  </t-button>
                 </div>
               </transition>
             </div>

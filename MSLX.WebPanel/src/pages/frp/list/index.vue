@@ -497,18 +497,20 @@ onMounted(() => {
           <!-- 分类视图下的分组标题卡片 (仅在分类模式下显示) -->
           <div
             v-if="viewMode === 'category'"
-            class="design-card flex items-center justify-between px-5 py-3 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
+            class="design-card flex flex-wrap items-center justify-between gap-3 px-5 py-3 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
           >
-            <div class="flex items-center gap-3">
-              <span class="w-1.5 h-4 rounded-full bg-[var(--color-primary)]"></span>
-              <h3 class="text-base font-bold text-[var(--td-text-color-primary)] m-0 flex items-center gap-2.5 tracking-tight">
-                {{ group.label }}
-              </h3>
-              <span class="text-xs px-2.5 py-0.5 rounded-full bg-[var(--td-bg-color-secondarycontainer)] text-[var(--td-text-color-secondary)] font-medium">
+            <div class="flex min-w-0 grow basis-24 flex-wrap items-center gap-x-3 gap-y-1">
+              <div class="flex min-w-0 items-center gap-2 sm:gap-3">
+                <span aria-hidden="true" class="h-4 w-1.5 shrink-0 rounded-full bg-[var(--color-primary)]"></span>
+                <h3 class="m-0 min-w-0 break-all text-base font-bold tracking-tight text-[var(--td-text-color-primary)]">
+                  {{ group.label }}
+                </h3>
+              </div>
+              <span class="shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium bg-[var(--td-bg-color-secondarycontainer)] text-[var(--td-text-color-secondary)]">
                 {{ group.runningCount }}/{{ group.totalCount }} 运行中
               </span>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="ml-auto flex shrink-0 items-center gap-2">
               <t-button
                 size="small"
                 variant="outline"
