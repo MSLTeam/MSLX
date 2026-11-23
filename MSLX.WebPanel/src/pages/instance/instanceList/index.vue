@@ -582,12 +582,6 @@ const handleConfirmDelete = async () => {
                 </div>
               </div>
 
-              <div v-if="item.tags?.length" class="flex flex-wrap gap-1.5">
-                <t-tag v-for="tag in item.tags" :key="tag" :title="tag" size="small" variant="light" :theme="getTagTheme(tag)" class="max-w-full">
-                  <span class="truncate">{{ tag }}</span>
-                </t-tag>
-              </div>
-
               <div v-if="item.expireTime" class="mt-2 w-full flex">
                 <t-tag
                   size="small"
@@ -612,38 +606,68 @@ const handleConfirmDelete = async () => {
               </div>
 
               <div
-                class="flex items-center justify-between pt-3 mt-auto border-t border-dashed border-zinc-200 dark:border-zinc-700/60"
+                class="flex items-center justify-between gap-2 min-h-10 pt-3 mt-auto border-t border-dashed border-zinc-200 dark:border-zinc-700/60"
               >
                 <span
-                  class="text-xs text-[var(--td-text-color-secondary)] group-hover:text-[var(--color-primary)] transition-colors font-semibold"
+                  class="shrink-0 whitespace-nowrap text-xs text-[var(--td-text-color-secondary)] group-hover:text-[var(--color-primary)] transition-colors font-semibold"
                 >
                   {{ isBatchMode ? (selectedIds.includes(item.id) ? '点击取消选择' : '点击选择实例') : '控制台 →' }}
                 </span>
 
-                <div class="flex items-center gap-1" v-if="!isBatchMode">
-                  <t-button
-                    v-if="userStore.isAdmin"
-                    size="small"
-                    shape="circle"
-                    variant="text"
-                    :aria-label="`编辑 ${item.name} 的实例设置`"
-                    title="实例设置"
-                    @click.stop="settingsInstanceId = item.id"
-                    @auxclick.middle.stop.prevent
-                  >
-                    <template #icon><edit-icon /></template>
-                  </t-button>
-                  <t-button
-                    v-if="userStore.isAdmin"
-                    class="hover:!bg-red-500/10"
-                    shape="circle"
-                    size="small"
-                    theme="danger"
-                    variant="text"
-                    @click.stop="(e) => handleDelete(e, item)"
-                  >
-                    <template #icon><delete-icon size="32" /></template>
-                  </t-button>
+                <div class="flex min-w-0 items-center gap-2">
+                  <t-popup v-if="item.tags?.length" trigger="click" placement="top-right" :disabled="isBatchMode">
+                    <button
+                      type="button"
+                      class="flex min-w-0 items-center gap-1 rounded-md text-left focus-visible:outline-2 focus-visible:outline-primary"
+                      :aria-label="`查看 ${item.name} 的标签`"
+                      :tabindex="isBatchMode ? -1 : 0"
+                      @click="!isBatchMode && $event.stopPropagation()"
+                      @auxclick.middle="!isBatchMode && $event.stopPropagation()"
+                    >
+                      <t-tag
+                        v-for="tag in item.tags.slice(0, 2)"
+                        :key="tag"
+                        size="small"
+                        variant="light"
+                        :theme="getTagTheme(tag)"
+                        :max-width="80"
+                        class="min-w-0 max-w-24"
+                      >
+                        {{ tag }}
+                      </t-tag>
+                      <t-tag v-if="item.tags.length > 2" size="small" variant="light" class="shrink-0">
+                        +{{ item.tags.length - 2 }}
+                      </t-tag>
+                    </button>
+                    <template #content>
+                      <ul class="m-0 max-h-48 w-max max-w-[min(16rem,80vw)] overflow-y-auto list-none p-1 text-xs">
+                        <li v-for="tag in item.tags" :key="tag" class="break-all py-0.5">{{ tag }}</li>
+                      </ul>
+                    </template>
+                  </t-popup>
+                  <div v-if="!isBatchMode && userStore.isAdmin" class="flex shrink-0 items-center gap-1">
+                    <t-button
+                      size="small"
+                      shape="circle"
+                      variant="text"
+                      :aria-label="`编辑 ${item.name} 的实例设置`"
+                      title="实例设置"
+                      @click.stop="settingsInstanceId = item.id"
+                      @auxclick.middle.stop.prevent
+                    >
+                      <template #icon><edit-icon /></template>
+                    </t-button>
+                    <t-button
+                      class="hover:!bg-red-500/10"
+                      shape="circle"
+                      size="small"
+                      theme="danger"
+                      variant="text"
+                      @click.stop="(e) => handleDelete(e, item)"
+                    >
+                      <template #icon><delete-icon size="32" /></template>
+                    </t-button>
+                  </div>
                 </div>
               </div>
             </div>
