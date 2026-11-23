@@ -511,7 +511,7 @@ onMounted(() => {
           <!-- 分类视图下的分组标题卡片 (仅在分类模式下显示) -->
           <div
             v-if="viewMode === 'category'"
-            class="design-card flex items-center justify-between px-5 py-3 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left backdrop-blur-sm"
+            class="design-card flex items-center justify-between px-5 py-3 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
           >
             <div class="flex items-center gap-3">
               <span class="w-1.5 h-4 rounded-full bg-[var(--color-primary)]"></span>
