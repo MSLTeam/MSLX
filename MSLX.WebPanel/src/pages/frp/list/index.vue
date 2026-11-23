@@ -424,47 +424,42 @@ onMounted(() => {
       <!-- 分类筛选栏  -->
       <div
         v-if="viewMode === 'category' && allExistingTags.length > 0 && !loading && !isError && tunnelsStore.frpList.length > 0"
-        class="pt-3.5 border-t border-dashed border-[var(--td-component-border)]/80 flex items-center justify-between gap-3 overflow-x-auto scrollbar-none flex-wrap w-full"
+        class="flex flex-wrap items-center gap-2 pt-3 border-t border-dashed border-[var(--td-component-border)]"
       >
-        <div class="flex items-center gap-2.5 flex-wrap">
-          <span class="text-xs font-bold text-[var(--td-text-color-secondary)] uppercase tracking-wider flex items-center gap-1.5 shrink-0">
-            <tag-icon size="14" class="text-[var(--color-primary)]" />
-            分类:
-          </span>
-          <t-button
-            size="small"
-            :variant="activeTagFilter === 'all' ? 'base' : 'outline'"
-            :theme="activeTagFilter === 'all' ? 'primary' : 'default'"
-            shape="round"
-            class="!text-xs"
-            @click="activeTagFilter = 'all'"
-          >
-            全部 ({{ tunnelsStore.frpList.length }})
-          </t-button>
-          <t-button
-            v-for="tag in allExistingTags"
-            :key="tag"
-            size="small"
-            :variant="activeTagFilter === tag ? 'base' : 'outline'"
-            :theme="activeTagFilter === tag ? 'primary' : 'default'"
-            shape="round"
-            class="!text-xs"
-            @click="activeTagFilter = tag"
-          >
-            {{ tag }} ({{ tunnelsStore.frpList.filter((i) => (i.tags || []).includes(tag)).length }})
-          </t-button>
-          <t-button
-            v-if="untaggedCount > 0"
-            size="small"
-            :variant="activeTagFilter === '__untagged__' ? 'base' : 'outline'"
-            :theme="activeTagFilter === '__untagged__' ? 'primary' : 'default'"
-            shape="round"
-            class="!text-xs"
-            @click="activeTagFilter = '__untagged__'"
-          >
-            未分类 ({{ untaggedCount }})
-          </t-button>
-        </div>
+        <span class="flex shrink-0 items-center gap-1.5 text-xs font-bold tracking-wider text-[var(--td-text-color-secondary)]">
+          <tag-icon size="14" class="text-[var(--color-primary)]" />
+          分类：
+        </span>
+        <t-button
+          size="small"
+          :variant="activeTagFilter === 'all' ? 'base' : 'outline'"
+          :theme="activeTagFilter === 'all' ? 'primary' : 'default'"
+          shape="round"
+          @click="activeTagFilter = 'all'"
+        >
+          全部 ({{ tunnelsStore.frpList.length }})
+        </t-button>
+        <t-button
+          v-for="tag in allExistingTags"
+          :key="tag"
+          size="small"
+          :variant="activeTagFilter === tag ? 'base' : 'outline'"
+          :theme="activeTagFilter === tag ? 'primary' : 'default'"
+          shape="round"
+          @click="activeTagFilter = tag"
+        >
+          {{ tag }} ({{ tunnelsStore.frpList.filter((i) => (i.tags || []).includes(tag)).length }})
+        </t-button>
+        <t-button
+          v-if="untaggedCount > 0"
+          size="small"
+          :variant="activeTagFilter === '__untagged__' ? 'base' : 'outline'"
+          :theme="activeTagFilter === '__untagged__' ? 'primary' : 'default'"
+          shape="round"
+          @click="activeTagFilter = '__untagged__'"
+        >
+          未分类 ({{ untaggedCount }})
+        </t-button>
       </div>
     </div>
 
@@ -730,7 +725,7 @@ onMounted(() => {
               <!-- 标签选择按钮组 (仅当有标签或存在未分类时呈现) -->
               <div
                 v-if="allExistingTags.length > 0 || untaggedCount > 0"
-                class="flex flex-wrap gap-1.5 pt-2 border-t border-dashed border-[var(--td-component-border)]"
+                class="flex flex-wrap items-center gap-2 pt-3 border-t border-dashed border-[var(--td-component-border)]"
               >
                 <t-button
                   v-for="tag in allExistingTags"
@@ -739,7 +734,6 @@ onMounted(() => {
                   :variant="isAutoStartTagAllSelected(tag) ? 'base' : 'outline'"
                   :theme="isAutoStartTagAllSelected(tag) ? 'primary' : 'default'"
                   shape="round"
-                  class="!text-xs"
                   @click="handleToggleAutoStartTag(tag)"
                 >
                   {{ tag }} ({{ getAutoStartTagSelectedCount(tag) }}/{{ getAutoStartTagTunnelIds(tag).length }})
@@ -751,7 +745,6 @@ onMounted(() => {
                   :variant="isAutoStartTagAllSelected('__untagged__') ? 'base' : 'outline'"
                   :theme="isAutoStartTagAllSelected('__untagged__') ? 'primary' : 'default'"
                   shape="round"
-                  class="!text-xs"
                   @click="handleToggleAutoStartTag('__untagged__')"
                 >
                   未分类 ({{ getAutoStartTagSelectedCount('__untagged__') }}/{{ untaggedCount }})

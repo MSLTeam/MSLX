@@ -436,7 +436,6 @@ const handleConfirmDelete = async () => {
           :theme="activeTagFilter === filter.key ? 'primary' : 'default'"
           shape="round"
           size="small"
-          class="max-w-full [&_.t-button__text]:truncate"
           @click="activeTagFilter = filter.key"
         >
           {{ filter.label }}
