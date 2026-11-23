@@ -543,11 +543,33 @@ public class InstanceLifecycleService : IInstanceLifecycleService
                     try
                     {
                         _instanceConsole.SendCommand(kvp.Key, "stop");
-                        context.Process.WaitForExit(5000);
+                        if (!context.Process.WaitForExit(5000))
+                        {
+                            if (context.IsDocker)
+                            {
+                                try
+                                {
+                                    Process.Start(new ProcessStartInfo
+                                    {
+                                        FileName = "docker",
+                                        Arguments = $"rm -f mslx-container-{kvp.Key}",
+                                        CreateNoWindow = true,
+                                        UseShellExecute = false
+                                    })?.WaitForExit(3000);
+                                }
+                                catch { }
+                            }
+
+                            context.Process.Kill(true);
+                        }
                     }
                     catch
                     {
-                        context.Process.Kill(true);
+                        try
+                        {
+                            context.Process.Kill(true);
+                        }
+                        catch { }
                     }
                 }
             }
