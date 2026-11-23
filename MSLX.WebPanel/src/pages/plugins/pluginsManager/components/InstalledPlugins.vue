@@ -220,6 +220,7 @@ const pollUpdateStatus = (taskId: string, pluginId: string) => {
           title: '插件更新成功',
           content: res.message || '新版本插件已就绪！',
           duration: 5000,
+          closeBtn: true,
         });
         setTimeout(async () => {
           await getList(); // 重新拉取最新插件列表

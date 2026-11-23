@@ -667,6 +667,7 @@ const togglePathEdit = () => {
       title: '风险操作',
       content: '修改实例路径会导致面板无法找到原有文件。请确保您已手动移动了文件，或您明确知道自己在做什么。',
       duration: 5000,
+      closeBtn: true,
     });
   }
   isPathEditable.value = !isPathEditable.value;
