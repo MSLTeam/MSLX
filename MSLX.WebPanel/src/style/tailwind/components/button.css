@@ -76,3 +76,31 @@
 .t-button.t-size-s.t-button--variant-outline.t-button--theme-primary:not(.t-is-disabled, .t-button--ghost) {
   @apply text-primary;
 }
+
+/* 禁用态保留主题色，弱化显示并取消悬停、按压效果。 */
+@layer components {
+  .t-button.t-size-s:is(:disabled, .t-is-disabled):not(.t-is-loading) {
+    @apply !cursor-not-allowed !scale-100 !opacity-60 !bg-transparent !border-transparent !ring-transparent;
+    @apply !text-zinc-700 dark:!text-zinc-200;
+
+    &.t-button--theme-primary {
+      @apply !text-primary;
+    }
+
+    &.t-button--theme-danger {
+      @apply !text-error;
+    }
+
+    &.t-button--theme-warning {
+      @apply !text-warning;
+    }
+
+    &.t-button--theme-success {
+      @apply !text-success;
+    }
+
+    &:is(.t-button--variant-outline, .t-button--variant-dashed) {
+      @apply !border-current/60 !ring-current/20;
+    }
+  }
+}
