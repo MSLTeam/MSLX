@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { confirmNodeAction } from '@/utils/nodeDialog';
 import { ref, onMounted, watch, nextTick, onUnmounted, computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { useInstanceSettingsTarget } from '../instanceSettingsTarget';
 import {
   MessagePlugin,
   type FormRules,
@@ -14,7 +14,7 @@ import { useUserStore, useTunnelsStore, useTaskStore } from '@/store';
 import { LockOnIcon, LockOffIcon } from 'tdesign-icons-vue-next';
 
 // API
-import { getInstanceSettings, postInstanceSettings } from '@/api/instance';
+import { getInstanceList, getInstanceSettings, postInstanceSettings } from '@/api/instance';
 import { getJavaVersionList } from '@/api/mslapi/java';
 import { getLocalJavaList } from '@/api/localJava';
 import { initUpload, uploadChunk, finishUpload, deleteUpload } from '@/api/files';
@@ -24,15 +24,22 @@ import { type UpdateInstanceModel } from '@/api/model/instance';
 import ServerCoreSelector from '@/pages/instance/createInstance/components/ServerCoreSelector.vue';
 import DockerImageSelector from '@/components/docker-image-selector/index.vue';
 
-const route = useRoute();
+const { instanceId, nodeId, isCurrent } = useInstanceSettingsTarget();
 const userStore = useUserStore();
 const tunnelsStore = useTunnelsStore();
 
-const instanceId = computed(() => {
-  const idStr = route.params.serverId as string;
-  if (!idStr) return NaN;
-  return parseInt(idStr);
-});
+const savedTags = ref<string[]>();
+const tags = ref<string[]>([]);
+const knownTags = ref<string[]>([]);
+const tagInputValue = ref('');
+const tagOptions = computed(() =>
+  [...new Set([...knownTags.value, ...tags.value])].map((tag) => ({ label: tag, value: tag })),
+);
+const addTag = (value: string) => {
+  const tag = value.trim();
+  if (tag && !tags.value.includes(tag)) tags.value = [...tags.value, tag];
+  tagInputValue.value = '';
+};
 
 const emits = defineEmits<{
   (_e: 'success'): void;
@@ -42,6 +49,7 @@ const emits = defineEmits<{
 const formRef = ref<FormInstanceFunctions | null>(null);
 const loading = ref(false);
 const submitting = ref(false);
+const loaded = ref(false);
 
 // 路径编辑状态
 const isPathEditable = ref(false);
@@ -112,7 +120,7 @@ const regionPathRules: FormRules[string] = [
 
 // 数据模型
 const formData = ref<UpdateInstanceModel>({
-  id: instanceId.value,
+  id: instanceId,
   name: '',
   base: '',
   java: '',
@@ -606,34 +614,38 @@ const onCoreSelected = (data: { core: string; version: string; url: string; sha2
 const triggerFileSelect = () => uploadInputRef.value?.click();
 const onFileChange = async (event: Event) => {
   const input = event.target as HTMLInputElement;
-  if (!input.files?.length) return;
+  if (!input.files?.length || !isCurrent()) return;
   const file = input.files[0];
 
   if (formData.value.coreFileKey) {
     try {
-      await deleteUpload(formData.value.coreFileKey);
+      await deleteUpload(formData.value.coreFileKey, nodeId);
     } catch {
       console.error('删除上传失败');
     }
   }
 
+  if (!isCurrent()) return;
   uploadedFileName.value = file.name;
   isUploading.value = true;
   uploadProgress.value = 0;
 
   try {
-    const initRes = await initUpload();
+    const initRes = await initUpload(nodeId);
     const uploadId = (initRes as any).uploadId;
     const chunkSize = 5 * 1024 * 1024;
     const totalChunks = Math.ceil(file.size / chunkSize);
 
     for (let i = 0; i < totalChunks; i++) {
+      if (!isCurrent()) return;
       const chunk = file.slice(i * chunkSize, Math.min(file.size, (i + 1) * chunkSize));
       await uploadChunk(uploadId, i, chunk);
       uploadProgress.value = Math.floor(((i + 1) / totalChunks) * 100);
     }
 
+    if (!isCurrent()) return;
     const finishRes = await finishUpload(uploadId, totalChunks);
+    if (!isCurrent()) return;
     formData.value.coreFileKey = (finishRes as any).uploadId;
     formData.value.core = file.name;
     formData.value.coreUrl = '';
@@ -756,23 +768,31 @@ const rules = computed<FormRules>(() => {
 });
 
 const initData = async () => {
-  const currentInstanceId = instanceId.value;
-  if (!Number.isSafeInteger(currentInstanceId) || currentInstanceId <= 0 || route.name !== 'InstanceConsole') {
-    return;
-  }
+  if (!isCurrent() || loading.value) return;
   loading.value = true;
+  loaded.value = false;
   initialized.value = false;
   try {
     await fetchJavaVersions();
+    if (!isCurrent()) return;
     await tunnelsStore.getTunnels();
-    const res = await getInstanceSettings(currentInstanceId);
-    if (route.name !== 'InstanceConsole' || instanceId.value !== currentInstanceId) {
-      return;
+    if (!isCurrent()) return;
+    const { tags: instanceTags, ...res } = await getInstanceSettings(instanceId, nodeId);
+    if (!isCurrent()) return;
+    savedTags.value = instanceTags;
+    tags.value = [...(instanceTags ?? [])];
+    tagInputValue.value = '';
+    if (instanceTags && userStore.isAdmin) {
+      void getInstanceList(nodeId).then((items) => {
+        if (isCurrent()) knownTags.value = items.flatMap((item) => item.tags ?? []);
+      }).catch(() => {
+        // The tag field still accepts new values without suggestions.
+      });
     }
-    formData.value.id = currentInstanceId;
     formData.value = {
       ...formData.value,
       ...res,
+      id: instanceId,
       bindFrpId: res.bindFrpId || '',
       coreUrl: '',
       coreFileKey: '',
@@ -847,8 +867,9 @@ const initData = async () => {
       authSelectType.value = 'custom';
       customAuthUrl.value = authUrl;
     }
+    loaded.value = true;
   } catch (e: any) {
-    if (route.name === 'InstanceConsole' && instanceId.value === currentInstanceId) {
+    if (isCurrent()) {
       MessagePlugin.error('获取配置失败: ' + e.message);
     }
   } finally {
@@ -857,23 +878,12 @@ const initData = async () => {
   }
 };
 
-watch(
-  () => route.params.serverId,
-  (newId) => {
-    if (route.name !== 'InstanceConsole') {
-      return;
-    }
-
-    if (newId) {
-      initData();
-    }
-  },
-);
 onMounted(initData);
 
 const onSubmit = async () => {
+  if (!loaded.value || submitting.value || !isCurrent()) return;
   const result = await formRef.value?.validate();
-  if (result !== true) return;
+  if (result !== true || !isCurrent()) return;
 
   formData.value.serverPropertiesPath = normalizeRelativeInstancePath(
     formData.value.serverPropertiesPath,
@@ -903,7 +913,7 @@ const onSubmit = async () => {
           },
         });
       });
-      if (!confirm) return;
+      if (!confirm || !isCurrent()) return;
     }
   }
 
@@ -934,7 +944,13 @@ const onSubmit = async () => {
   }
   submitting.value = true;
   try {
-    const res = await postInstanceSettings(formData.value);
+    const nextTags = [...new Set(tags.value.map((tag) => tag.trim()).filter(Boolean))];
+    const previousTags = savedTags.value;
+    const changed = previousTags && (
+      nextTags.length !== previousTags.length || nextTags.some((tag) => !previousTags.includes(tag))
+    );
+    const res = await postInstanceSettings({ ...formData.value, tags: changed ? nextTags : undefined }, nodeId);
+    if (!isCurrent()) return;
     const needListen = (res as any).data?.needListen ?? (res as any).needListen;
 
     if (needListen) {
@@ -944,11 +960,13 @@ const onSubmit = async () => {
       MessagePlugin.success('配置已保存');
       submitting.value = false;
       await initData();
-      emits('success');
-      emits('saved');
+      if (isCurrent()) {
+        emits('success');
+        emits('saved');
+      }
     }
   } catch (e: any) {
-    MessagePlugin.error(e.message || '保存失败');
+    if (isCurrent()) MessagePlugin.error(e.message || '保存失败');
     submitting.value = false;
   }
 };
@@ -958,7 +976,7 @@ const startSignalRListening = async () => {
   progressPercent.value = 0;
   progressLogs.value = [];
 
-  const hubUrlStr = getHubUrl('/api/hubs/updateProgressHub');
+  const hubUrlStr = getHubUrl('/api/hubs/updateProgressHub', nodeId);
 
   hubConnection.value = new HubConnectionBuilder()
     .withUrl(hubUrlStr, getHubOptions(hubUrlStr))
@@ -966,6 +984,7 @@ const startSignalRListening = async () => {
     .build();
 
   hubConnection.value.on('UpdateStatus', (msg: string, prog: number, isErr: boolean) => {
+    if (!isCurrent()) return;
     progressLogs.value.push({ time: new Date().toLocaleTimeString(), msg: isErr ? `[错误] ${msg}` : msg });
     nextTick(() => {
       const div = document.getElementById('update-log-box');
@@ -982,7 +1001,7 @@ const startSignalRListening = async () => {
 
   try {
     await hubConnection.value.start();
-    await hubConnection.value.invoke('JoinGroup', instanceId.value.toString());
+    if (isCurrent()) await hubConnection.value.invoke('JoinGroup', instanceId.toString());
   } catch {
     progressLogs.value.push({ time: '-', msg: '连接失败' });
   }
@@ -990,10 +1009,17 @@ const startSignalRListening = async () => {
 
 const closeSignalR = (success = false) => {
   hubConnection.value?.stop();
-  setTimeout(() => {
+  setTimeout(async () => {
+    if (!isCurrent()) return;
     showProgressDialog.value = false;
     submitting.value = false;
-    if (success) initData();
+    if (success) {
+      await initData();
+      if (isCurrent()) {
+        emits('success');
+        emits('saved');
+      }
+    }
   }, 1000);
 };
 
@@ -1031,6 +1057,32 @@ onUnmounted(() => {
           </div>
           <div class="w-full md:w-[340px] shrink-0 flex items-center">
             <t-input v-model="formData.name" placeholder="请输入名称" class="w-full" />
+          </div>
+        </div>
+
+        <div
+          v-if="savedTags !== undefined"
+          role="group"
+          aria-labelledby="instance-settings-tags-label"
+          aria-describedby="instance-settings-tags-help"
+          class="flex flex-col md:flex-row md:items-start justify-between p-3 md:p-4 border-b border-dashed border-zinc-100 dark:border-zinc-800/60 rounded-xl"
+        >
+          <div class="flex-1 pr-0 md:pr-8 mb-3 md:mb-0">
+            <span id="instance-settings-tags-label" class="text-sm font-medium text-[var(--td-text-color-primary)]">分类标签</span>
+            <p id="instance-settings-tags-help" class="text-xs text-[var(--td-text-color-secondary)] mt-1">
+              选择已有标签，或输入新标签后按回车添加。
+            </p>
+          </div>
+          <div class="w-full md:w-[340px] shrink-0">
+            <t-select
+              v-model="tags"
+              v-model:input-value="tagInputValue"
+              :options="tagOptions"
+              :input-props="{ name: 'tags' }"
+              multiple filterable creatable clearable
+              placeholder="选择或输入标签"
+              @create="addTag"
+            />
           </div>
         </div>
 
@@ -2304,6 +2356,7 @@ onUnmounted(() => {
             type="submit"
             class="!rounded-full !px-6 shadow-md shadow-[var(--color-primary)]/30"
             :loading="submitting"
+            :disabled="!loaded"
           >
             保存设置
           </t-button>

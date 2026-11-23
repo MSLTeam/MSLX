@@ -12,6 +12,7 @@ import {
   changeFileMode,
 } from '@/api/files';
 import { getServerCoreDownloadInfo, getServerCoreGameVersion } from '@/api/mslapi/serverCore';
+import { useInstanceSettingsTarget } from '../../instanceSettingsTarget';
 
 const props = defineProps<{
   visible: boolean;
@@ -19,6 +20,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits(['update:visible', 'success']);
+const { isCurrent } = useInstanceSettingsTarget();
 
 // 状态管理
 const userStore = useUserStore();
@@ -86,6 +88,11 @@ watch(
 const pollDownload = (taskId: string) => {
   return new Promise((resolve, reject) => {
     const timer = setInterval(async () => {
+      if (!isCurrent()) {
+        clearInterval(timer);
+        reject(new Error('实例设置已关闭'));
+        return;
+      }
       try {
         const statusData = await getOfflineDownloadTaskStatus(taskId);
         progress.value = statusData.progress;
@@ -110,6 +117,11 @@ const pollDownload = (taskId: string) => {
 const pollDecompress = (taskId: string) => {
   return new Promise((resolve, reject) => {
     const timer = setInterval(async () => {
+      if (!isCurrent()) {
+        clearInterval(timer);
+        reject(new Error('实例设置已关闭'));
+        return;
+      }
       try {
         const statusData: any = await getDeompressStatus(taskId);
         progress.value = statusData.progress || 0;
@@ -159,6 +171,7 @@ const executeAutoUpdate = async () => {
   try {
     // 获取下载地址
     const dlInfo = await getServerCoreDownloadInfo('bedrock-server', selectedVersion.value);
+    if (!isCurrent()) return;
     if (!dlInfo || !dlInfo.url) throw new Error('无法获取版本下载链接');
     const targetFileName = 'bedrock_update_temp.zip';
 
@@ -170,6 +183,7 @@ const executeAutoUpdate = async () => {
     if (!dlTaskId) throw new Error('未能获取下载任务ID');
 
     await pollDownload(dlTaskId);
+    if (!isCurrent()) return;
 
     // 解压
     currentAction.value = 'unzipping';
@@ -180,6 +194,7 @@ const executeAutoUpdate = async () => {
     if (!unTaskId) throw new Error('未能获取解压任务ID');
 
     await pollDecompress(unTaskId);
+    if (!isCurrent()) return;
 
     // 赋权
     if (!isWin.value) {
@@ -194,10 +209,12 @@ const executeAutoUpdate = async () => {
     statusMsg.value = '基岩版服务端更新成功！';
 
     setTimeout(() => {
+      if (!isCurrent()) return;
       emit('success');
       isVisible.value = false;
     }, 2000);
   } catch (err: any) {
+    if (!isCurrent()) return;
     currentAction.value = 'error';
     statusMsg.value = err.message || '更新过程中发生异常';
     MessagePlugin.error(statusMsg.value);

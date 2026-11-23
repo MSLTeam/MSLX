@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { confirmNodeAction } from '@/utils/nodeDialog';
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useUserStore } from '@/store';
-import { useRoute } from 'vue-router';
+import { useInstanceSettingsTarget } from '../instanceSettingsTarget';
 import { MessagePlugin, type FormRules, type FormInstanceFunctions } from 'tdesign-vue-next';
 import {
   TimeIcon,
@@ -29,8 +29,7 @@ import { changeUrl } from '@/router';
 import { DOC_URLS } from '@/api/docs';
 import { COMMON_COMMAND_PRESETS, shiftCronMinutes, generateAdvanceNoticePayload } from '@/utils/cronHelper';
 
-const route = useRoute();
-const instanceId = computed(() => parseInt(route.params.serverId as string));
+const { instanceId, isCurrent } = useInstanceSettingsTarget();
 const userStore = useUserStore();
 
 // --- 状态管理 ---
@@ -118,10 +117,11 @@ const rules: FormRules = {
 // --- 方法 ---
 
 const fetchData = async () => {
-  if (!instanceId.value) return;
+  if (!isCurrent()) return;
+  if (!instanceId) return;
   loading.value = true;
   try {
-    const res = await getCronTasks(instanceId.value);
+    const res = await getCronTasks(instanceId);
     taskList.value = res || [];
   } catch (e: any) {
     MessagePlugin.error(e.message || '获取列表失败');
@@ -164,14 +164,14 @@ const handleCancelCreate = () => {
 // 提交保存
 const handleSubmit = async () => {
   const result = await formRef.value?.validate();
-  if (result !== true) return;
+  if (result !== true || !isCurrent()) return;
 
   submitLoading.value = true;
   try {
     if (isEditingId.value) {
       // 更新
       await updateCronTask(
-        instanceId.value,
+        instanceId,
         formData.value.id,
         formData.value.name,
         formData.value.cron,
@@ -184,7 +184,7 @@ const handleSubmit = async () => {
     } else {
       // 创建
       await addCronTask(
-        instanceId.value,
+        instanceId,
         formData.value.name,
         formData.value.cron,
         formData.value.payload,
@@ -211,6 +211,7 @@ const handleDelete = (item: CronTaskItemModel) => {
     theme: 'danger',
     onConfirm: async () => {
       try {
+        if (!isCurrent()) return;
         await deleteCronTask(item.id);
         MessagePlugin.success('已删除');
         fetchData();
@@ -283,6 +284,7 @@ const updateAdvanceFormPreview = () => {
 };
 
 const handleConfirmCreateAdvance = async () => {
+  if (!isCurrent()) return;
   if (!advanceForm.value.name || !advanceForm.value.cron) {
     MessagePlugin.warning('任务名称与 Cron 规则不能为空');
     return;
@@ -294,7 +296,7 @@ const handleConfirmCreateAdvance = async () => {
   advanceLoading.value = true;
   try {
     await addCronTask(
-      instanceId.value,
+      instanceId,
       advanceForm.value.name,
       advanceForm.value.cron,
       advanceForm.value.payload,
@@ -335,7 +337,6 @@ const getColorByType = (type: string) => {
   return 'primary';
 };
 
-watch(() => instanceId.value, fetchData);
 onMounted(fetchData);
 </script>
 

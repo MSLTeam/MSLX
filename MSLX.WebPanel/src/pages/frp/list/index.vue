@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { confirmNodeAction } from '@/utils/nodeDialog';
+import { getTagTheme } from '@/utils/tagTheme';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import {
   AddIcon,
@@ -150,16 +151,6 @@ const getConfigTheme = (type: string) => {
     json: 'success',
   };
   return map[type] || 'default';
-};
-
-// 标签色彩哈希映射
-const getTagTheme = (tag: string) => {
-  const themes = ['primary', 'success', 'warning', 'danger'];
-  let hash = 0;
-  for (let i = 0; i < tag.length; i++) {
-    hash = (hash << 5) - hash + tag.charCodeAt(i);
-  }
-  return themes[Math.abs(hash) % themes.length];
 };
 
 async function getList() {
@@ -588,7 +579,7 @@ onMounted(() => {
                     :key="tag"
                     size="small"
                     variant="light"
-                    :theme="getTagTheme(tag) as any"
+                    :theme="getTagTheme(tag)"
                     class="!text-[11px] !px-2 !h-5 !font-medium"
                   >
                     {{ tag }}

@@ -35,6 +35,7 @@ export interface PythonInfoModel {
 export interface InstanceListModel {
   id: number;
   name: string;
+  tags?: string[];
   basePath: string;
   java: string;
   core: string;
@@ -73,6 +74,7 @@ export interface InstanceInfoModel {
 export interface UpdateInstanceModel {
   id: number;
   name: string;
+  tags?: string[];
   base: string;
   java: string;
   core: string;
@@ -138,6 +140,7 @@ export interface UpdateInstanceModel {
 export interface InstanceSettingsModel {
   id: number;
   name: string;
+  tags?: string[];
   base: string;
   java: string;
   core: string;

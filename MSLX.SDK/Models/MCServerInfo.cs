@@ -9,6 +9,7 @@ public class McServerInfo
     {
         public int ID { get; set; }
         public required string Name { get; set; }
+        public List<string> Tags { get; set; } = [];
         public DateTime? ExpireTime { get; set; }
         public required string Base { get; set; }
         public required string Java { get; set; }

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { confirmNodeAction } from '@/utils/nodeDialog';
-import { ref, onMounted, watch, computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, onMounted, computed } from 'vue';
+import { useInstanceSettingsTarget } from '../instanceSettingsTarget';
 import { MessagePlugin, type PrimaryTableCol, type TableRowData } from 'tdesign-vue-next';
 import { DeleteIcon, DownloadIcon, TimeIcon, FileIcon, RefreshIcon } from 'tdesign-icons-vue-next';
 
@@ -10,14 +10,7 @@ import { getBackupDownloadUrl, getInstanceBackupFiles, postDeleteBackupFiles } f
 import { type InstanceBackupFilesModel } from '@/api/model/instance';
 import { getDownloadToken } from '@/utils/scopedToken';
 
-const route = useRoute();
-
-// 实例 ID
-const instanceId = computed(() => {
-  const idStr = route.params.serverId as string;
-  if (!idStr) return NaN;
-  return parseInt(idStr);
-});
+const { instanceId, isCurrent, nodeId } = useInstanceSettingsTarget();
 
 // 数据状态
 const loading = ref(false);
@@ -61,12 +54,13 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // 初始化数据
 const initData = async () => {
-  if (!instanceId.value) return;
+  if (!isCurrent()) return;
+  if (!instanceId) return;
 
   loading.value = true;
   selectedRowKeys.value = [];
   try {
-    const res = await getInstanceBackupFiles(instanceId.value);
+    const res = await getInstanceBackupFiles(instanceId);
     tableData.value = (res as any).data || res;
   } catch (e: any) {
     MessagePlugin.error('获取备份列表失败: ' + e.message);
@@ -90,7 +84,8 @@ const handleDelete = (row: InstanceBackupFilesModel) => {
     onConfirm: async () => {
       confirmDialog.hide();
       try {
-        await postDeleteBackupFiles(instanceId.value, row.fileName);
+        if (!isCurrent()) return;
+        await postDeleteBackupFiles(instanceId, row.fileName);
         MessagePlugin.success('删除成功');
         await initData();
       } catch (e: any) {
@@ -105,8 +100,9 @@ const handleDelete = (row: InstanceBackupFilesModel) => {
 
 const handleDownload = async (row: InstanceBackupFilesModel) => {
   try {
-    const dlToken = await getDownloadToken();
-    const url = getBackupDownloadUrl(instanceId.value, row.fileName, dlToken);
+    const dlToken = await getDownloadToken(nodeId);
+    if (!isCurrent()) return;
+    const url = getBackupDownloadUrl(instanceId, row.fileName, dlToken);
     window.open(url, '_blank');
   } catch (e: any) {
     MessagePlugin.error('下载失败！' + e.message);
@@ -121,11 +117,12 @@ const handleBatchDownload = async () => {
   if (count === 0) return;
 
   MessagePlugin.info(`开始下载 ${count} 个文件，请注意允许浏览器弹窗...`);
-  const dlToken = await getDownloadToken();
+  const dlToken = await getDownloadToken(nodeId);
 
   selectedRowKeys.value.forEach((fileName, index) => {
     setTimeout(() => {
-      const url = getBackupDownloadUrl(instanceId.value, fileName, dlToken);
+      if (!isCurrent()) return;
+      const url = getBackupDownloadUrl(instanceId, fileName, dlToken);
       window.open(url, '_blank');
     }, index * 1000);
   });
@@ -160,7 +157,8 @@ const handleBatchDelete = () => {
 
 
           try {
-            await postDeleteBackupFiles(instanceId.value, fileName);
+            if (!isCurrent()) return;
+            await postDeleteBackupFiles(instanceId, fileName);
             successCount++;
           } catch (e) {
             failCount++;
@@ -196,14 +194,6 @@ const handleBatchDelete = () => {
 };
 
 // 监听路由变化
-watch(
-  () => route.params.serverId,
-  (newId) => {
-    if (newId) {
-      initData();
-    }
-  },
-);
 
 onMounted(() => {
   initData();

@@ -1,6 +1,6 @@
 {
   "name": "mslx-webpanel",
-  "version": "1.7.8",
+  "version": "1.7.9.1",
   "scripts": {
     "test:node": "node --test scripts/*.test.cjs",
     "dev": "node sync-version.js && vite --mode development",

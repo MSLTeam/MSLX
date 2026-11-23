@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed, onMounted, ref } from 'vue';
+import { useInstanceSettingsTarget } from '../instanceSettingsTarget';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { ImageIcon, RefreshIcon, UploadIcon } from 'tdesign-icons-vue-next';
 import { downloadFileStream, finishUpload, initUpload, saveUploadedFile, uploadChunk } from '@/api/files';
@@ -10,8 +10,7 @@ import { InstanceInfoModel } from '@/api/model/instance';
 import PluginSlot from '@/components/PluginSlot.vue';
 import { useTaskStore } from '@/store';
 
-const route = useRoute();
-const instanceId = computed(() => parseInt(route.params.serverId as string));
+const { instanceId, isCurrent, nodeId } = useInstanceSettingsTarget();
 
 // --- 状态管理 ---
 const loading = ref(false);
@@ -45,11 +44,12 @@ let initialCropSize = 0;
 
 // --- 获取当前图标 ---
 const fetchCurrentIcon = async () => {
+  if (!isCurrent()) return;
   loading.value = true;
   errorMsg.value = '';
 
   try {
-    const blobData = await downloadFileStream(instanceId.value, 'server-icon.png');
+    const blobData = await downloadFileStream(instanceId, 'server-icon.png');
     const blob = (blobData as any).data || blobData;
 
     if (blob instanceof Blob) {
@@ -199,7 +199,8 @@ const confirmCropAndUpload = async () => {
     });
 
     // 开始上传流程
-    const initRes = await initUpload();
+    if (!isCurrent()) return;
+    const initRes = await initUpload(nodeId);
     const uploadId = (initRes as any).uploadId || (initRes as any).data?.uploadId;
     if (!uploadId) throw new Error('初始化上传失败：未获取到 uploadId');
 
@@ -207,7 +208,8 @@ const confirmCropAndUpload = async () => {
     await finishUpload(uploadId, 1);
 
     //  server-icon.png
-    await saveUploadedFile(instanceId.value, uploadId, 'server-icon.png', '');
+    if (!isCurrent()) return;
+    await saveUploadedFile(instanceId, uploadId, 'server-icon.png', '');
 
     MessagePlugin.success('服务器图标已成功更新！');
     showCropDialog.value = false;
@@ -226,8 +228,9 @@ const instanceInfo = ref<InstanceInfoModel | null>(null);
 const showBedrockUpdater = ref(false);
 const taskStore = useTaskStore();
 const fetchInstanceInfo = async () => {
+  if (!isCurrent()) return;
   try {
-    instanceInfo.value = await getInstanceInfo(instanceId.value);
+    instanceInfo.value = await getInstanceInfo(instanceId);
   } catch (e) {
     console.error('获取实例信息失败', e);
   }
@@ -255,6 +258,7 @@ const exportOptions = ref({
 const isExporting = ref(false);
 
 const handleExport = async () => {
+  if (!isCurrent()) return;
   const excludes = [];
   if (!exportOptions.value.world) excludes.push('world');
   if (!exportOptions.value.logs) excludes.push('logs');
@@ -266,7 +270,7 @@ const handleExport = async () => {
 
   isExporting.value = true;
   try {
-    const res = await exportInstancePack(instanceId.value, excludes);
+    const res = await exportInstancePack(instanceId, excludes);
     MessagePlugin.success(`导出任务已提交，您可以在顶部栏“后台任务”中查看打包进度！`);
     showExportDialog.value = false;
     taskStore.fetchTasks();
@@ -283,21 +287,6 @@ onMounted(() => {
   fetchInstanceInfo();
 });
 
-watch(
-  () => route.params.serverId,
-  (newId) => {
-    if (route.name !== 'InstanceConsole') {
-      return;
-    }
-    if (newId) {
-      currentIconUrl.value = null;
-      localImageSrc.value = '';
-      fetchCurrentIcon();
-      fetchInstanceInfo();
-    }
-  },
-  { immediate: true },
-);
 </script>
 
 <template>

@@ -1,17 +1,24 @@
 <script lang="ts" setup>
 import { confirmNodeAction } from '@/utils/nodeDialog';
-import { onMounted, reactive, ref, watch, computed } from 'vue';
+import { getTagTheme } from '@/utils/tagTheme';
+import { onMounted, reactive, ref, watch, computed, defineAsyncComponent } from 'vue';
+import { useRoute } from 'vue-router';
 import {
   AddIcon,
+  ArrowLeftIcon,
   CheckCircleFilledIcon,
   CloseCircleFilledIcon,
   CpuIcon,
   DeleteIcon,
+  EditIcon,
+  GridViewIcon,
   LoadingIcon,
   MinusCircleFilledIcon,
   RefreshIcon,
   FilterIcon,
   SearchIcon,
+  TagIcon,
+  ViewListIcon,
   UsergroupIcon,
 } from 'tdesign-icons-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
@@ -35,6 +42,10 @@ const userStore = useUserStore();
 const nodeStore = useNodeStore();
 
 import NodeSwitcher from '@/components/node-switcher/index.vue';
+const InstanceSettings = defineAsyncComponent(() => import('../console/components/InstanceSettings.vue'));
+const route = useRoute();
+const settingsInstanceId = ref<number>();
+watch(() => route.fullPath, () => { settingsInstanceId.value = undefined; }, { flush: 'sync' });
 
 const handleNodeChange = (_val: string) => {
   store.refreshInstanceList();
@@ -45,6 +56,8 @@ watch(
   () => {
     selectedIds.value = [];
     isBatchMode.value = false;
+    activeTagFilter.value = 'all';
+    settingsInstanceId.value = undefined;
     store.refreshInstanceList();
   },
 );
@@ -67,6 +80,49 @@ const filteredInstanceList = computed(() => {
       String(item.id).includes(keyword) ||
       item.core?.toLowerCase().includes(keyword)
     );
+  });
+});
+
+const viewModeKey = 'mslx_instance_view_mode';
+const viewMode = ref(localStorage.getItem(viewModeKey) === 'category' ? 'category' : 'flat');
+const activeTagFilter = ref('all');
+const expandedGroupKey = ref('');
+watch([activeTagFilter, viewMode, searchKeyword, () => nodeStore.activeNodeId], () => {
+  expandedGroupKey.value = '';
+});
+const toggleViewMode = () => {
+  viewMode.value = viewMode.value === 'flat' ? 'category' : 'flat';
+  localStorage.setItem(viewModeKey, viewMode.value);
+  activeTagFilter.value = 'all';
+};
+
+const tagKey = (tag: string) => `tag:${tag}`;
+const allTags = computed(() => [...new Set(store.instanceList.flatMap((item) => item.tags ?? []))]);
+const hasUntagged = computed(() => store.instanceList.some((item) => !item.tags?.length));
+const tagFilters = computed(() => [
+  { key: 'all', label: '全部' },
+  ...allTags.value.map((tag) => ({ key: tagKey(tag), label: tag })),
+  ...(hasUntagged.value ? [{ key: 'untagged', label: '未分类' }] : []),
+]);
+watch(tagFilters, (filters) => {
+  if (!filters.some((filter) => filter.key === activeTagFilter.value)) activeTagFilter.value = 'all';
+});
+
+const visibleGroups = computed(() => {
+  const list = filteredInstanceList.value;
+  if (viewMode.value === 'flat') return list.length ? [{ key: 'all', label: '', items: list }] : [];
+  const groups = new Map<string, InstanceListModel[]>();
+  for (const item of list) {
+    const keys = item.tags?.length ? [...new Set(item.tags)].map(tagKey) : ['untagged'];
+    for (const key of keys) {
+      const group = groups.get(key);
+      if (group) group.push(item);
+      else groups.set(key, [item]);
+    }
+  }
+  return tagFilters.value.flatMap(({ key, label }) => {
+    const items = groups.get(key);
+    return items && (activeTagFilter.value === 'all' || activeTagFilter.value === key) ? [{ key, label, items }] : [];
   });
 });
 
@@ -112,8 +168,13 @@ const handleCardClick = (e: Event, item: InstanceListModel, newTab = false) => {
 };
 
 // 批量执行操作
-const handleBatchAction = (action: 'start' | 'stop' | 'restart' | 'delete') => {
-  if (selectedIds.value.length === 0) {
+const handleBatchAction = (
+  action: 'start' | 'stop' | 'restart' | 'delete',
+  ids = selectedIds.value,
+  groupLabel?: string,
+) => {
+  const targetIds = [...new Set(ids)];
+  if (!targetIds.length || batchLoading.value) {
     MessagePlugin.warning('请先选择要操作的实例');
     return;
   }
@@ -126,10 +187,14 @@ const handleBatchAction = (action: 'start' | 'stop' | 'restart' | 'delete') => {
   };
   const actionName = actionMap[action];
   const isDelete = action === 'delete';
+  const nodeId = getPageNodeId();
+  const scope = groupLabel
+    ? `「${groupLabel}」分组${searchKeyword.value.trim() ? '中符合当前搜索的' : '中的'}`
+    : '已选中的';
 
   const confirmDialog = confirmNodeAction({
     header: `确认批量${actionName}`,
-    body: `您确定要对已选中的 ${selectedIds.value.length} 个实例执行${actionName}操作吗？${
+    body: `您确定要对${scope} ${targetIds.length} 个实例执行${actionName}操作吗？${
       isDelete ? '（注意：删除操作不可逆，批量删除默认不清理磁盘上的服务端数据文件）' : ''
     }`,
     theme: isDelete ? 'danger' : ('primary' as any),
@@ -139,11 +204,11 @@ const handleBatchAction = (action: 'start' | 'stop' | 'restart' | 'delete') => {
       const msg = MessagePlugin.loading(`正在批量${actionName}中，请稍候...`);
 
       try {
-        const promises = selectedIds.value.map((id) => {
+        const promises = targetIds.map((id) => {
           if (isDelete) {
             return postDeleteInstance(id, false);
           } else {
-            return postInstanceAction(id, action);
+            return postInstanceAction(id, action, nodeId);
           }
         });
 
@@ -160,9 +225,11 @@ const handleBatchAction = (action: 'start' | 'stop' | 'restart' | 'delete') => {
         }
 
         // 刷新列表并清中状态
-        selectedIds.value = [];
-        isBatchMode.value = false;
-        await store.refreshInstanceList();
+        if (getPageNodeId() === nodeId) {
+          selectedIds.value = [];
+          isBatchMode.value = false;
+          await store.refreshInstanceList();
+        }
       } catch (e: any) {
         MessagePlugin.error(`批量操作出现异常: ${e.message}`);
       } finally {
@@ -171,6 +238,11 @@ const handleBatchAction = (action: 'start' | 'stop' | 'restart' | 'delete') => {
       }
     },
   });
+};
+
+const batchGroup = (action: 'start' | 'stop', group: { label: string; items: InstanceListModel[] }) => {
+  const status = action === 'start' ? 0 : 2;
+  handleBatchAction(action, group.items.filter((item) => item.status === status).map((item) => item.id), group.label);
 };
 
 const getImageUrl = (name: string, id: number) => {
@@ -248,8 +320,9 @@ const handleConfirmDelete = async () => {
 <template>
   <div class="mx-auto flex flex-col gap-6 text-[var(--td-text-color-primary)] pb-5">
     <div
-      class="design-card flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
+      class="design-card flex flex-col gap-4 p-5 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
     >
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
       <div class="flex flex-col gap-1 items-start shrink-0 min-w-0">
         <h2 class="text-lg font-bold tracking-tight text-[var(--td-text-color-primary)] m-0">服务端列表</h2>
         <p class="text-sm text-[var(--td-text-color-secondary)] m-0">
@@ -270,6 +343,20 @@ const handleConfirmDelete = async () => {
               <search-icon />
             </template>
           </t-input>
+
+          <t-tooltip :content="viewMode === 'flat' ? '切换为分类视图' : '切换为平铺视图'">
+            <t-button
+              shape="square"
+              variant="dashed"
+              :aria-label="viewMode === 'flat' ? '切换为分类视图' : '切换为平铺视图'"
+              @click="toggleViewMode"
+            >
+              <template #icon>
+                <view-list-icon v-if="viewMode === 'flat'" />
+                <grid-view-icon v-else />
+              </template>
+            </t-button>
+          </t-tooltip>
 
           <t-button variant="outline" :disabled="!store.instanceList?.length" @click="toggleBatchMode">
             <template #icon><filter-icon /></template>
@@ -329,13 +416,88 @@ const handleConfirmDelete = async () => {
           <t-button variant="outline" :disabled="batchLoading" @click="toggleBatchMode">取消批量</t-button>
         </template>
       </div>
+      </div>
+
+      <div
+        v-if="viewMode === 'category' && tagFilters.length > 1"
+        role="search"
+        aria-label="按标签筛选服务端"
+        class="flex flex-wrap items-center gap-2 pt-3 border-t border-dashed border-[var(--td-component-border)]"
+      >
+        <span class="flex shrink-0 items-center gap-1.5 text-xs font-bold tracking-wider text-[var(--td-text-color-secondary)]">
+          <tag-icon size="14" class="text-[var(--color-primary)]" />
+          分类：
+        </span>
+        <t-button
+          v-for="filter in tagFilters"
+          :key="filter.key"
+          :aria-pressed="activeTagFilter === filter.key"
+          :variant="activeTagFilter === filter.key ? 'base' : 'outline'"
+          :theme="activeTagFilter === filter.key ? 'primary' : 'default'"
+          shape="round"
+          size="small"
+          class="max-w-full [&_.t-button__text]:truncate"
+          @click="activeTagFilter = filter.key"
+        >
+          {{ filter.label }}
+        </t-button>
+      </div>
     </div>
 
     <div v-loading="false" class="relative min-h-[400px]">
-      <template v-if="filteredInstanceList && filteredInstanceList.length > 0">
+      <div v-if="visibleGroups.length" class="flex flex-col gap-6">
+        <section v-for="group in visibleGroups" :key="group.key" class="flex flex-col gap-3.5">
+          <div
+            v-if="viewMode === 'category'"
+            class="design-card flex items-center justify-between gap-3 px-5 py-3 bg-[var(--td-bg-color-container)]/80 rounded-2xl border border-[var(--td-component-border)] shadow-sm text-left"
+          >
+            <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
+              <h3 class="min-w-0 break-all text-base font-bold m-0">{{ group.label }}</h3>
+              <span class="rounded-full px-2.5 py-0.5 text-xs bg-[var(--td-bg-color-secondarycontainer)] text-[var(--td-text-color-secondary)]">
+                {{ group.items.filter((item) => item.status === 2).length }}/{{ group.items.length }} 运行中
+              </span>
+            </div>
+            <div v-if="!isBatchMode" class="flex shrink-0 flex-row-reverse items-center gap-1.5">
+              <t-button
+                size="small"
+                shape="square"
+                variant="text"
+                :aria-label="`${group.label}分组操作`"
+                :aria-expanded="expandedGroupKey === group.key"
+                :aria-controls="`instance-group-actions-${encodeURIComponent(group.key)}`"
+                @click="expandedGroupKey = expandedGroupKey === group.key ? '' : group.key"
+              >
+                <template #icon><arrow-left-icon /></template>
+              </t-button>
+              <transition
+                enter-active-class="motion-safe:transition motion-safe:duration-150"
+                enter-from-class="translate-x-2 opacity-0"
+                leave-active-class="motion-safe:transition motion-safe:duration-150"
+                leave-to-class="translate-x-2 opacity-0"
+              >
+                <div
+                  v-show="expandedGroupKey === group.key"
+                  :id="`instance-group-actions-${encodeURIComponent(group.key)}`"
+                  class="flex items-center gap-1.5"
+                >
+                  <t-button
+                    size="small" variant="outline" theme="primary"
+                    :disabled="batchLoading || !group.items.some((item) => item.status === 0)"
+                    @click="batchGroup('start', group)"
+                  >全部启动</t-button>
+                  <t-button
+                    size="small" variant="outline" theme="danger"
+                    :disabled="batchLoading || !group.items.some((item) => item.status === 2)"
+                    @click="batchGroup('stop', group)"
+                  >全部停止</t-button>
+                </div>
+              </transition>
+            </div>
+          </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
           <div
-            v-for="(item, index) in filteredInstanceList"
+            v-for="(item, index) in group.items"
             :key="item.id"
             class="list-item-anim h-full"
             :style="{ animationDelay: `${index * 0.05}s` }"
@@ -420,6 +582,12 @@ const handleConfirmDelete = async () => {
                 </div>
               </div>
 
+              <div v-if="item.tags?.length" class="flex flex-wrap gap-1.5">
+                <t-tag v-for="tag in item.tags" :key="tag" :title="tag" size="small" variant="light" :theme="getTagTheme(tag)" class="max-w-full">
+                  <span class="truncate">{{ tag }}</span>
+                </t-tag>
+              </div>
+
               <div v-if="item.expireTime" class="mt-2 w-full flex">
                 <t-tag
                   size="small"
@@ -455,6 +623,18 @@ const handleConfirmDelete = async () => {
                 <div class="flex items-center gap-1" v-if="!isBatchMode">
                   <t-button
                     v-if="userStore.isAdmin"
+                    size="small"
+                    shape="circle"
+                    variant="text"
+                    :aria-label="`编辑 ${item.name} 的实例设置`"
+                    title="实例设置"
+                    @click.stop="settingsInstanceId = item.id"
+                    @auxclick.middle.stop.prevent
+                  >
+                    <template #icon><edit-icon /></template>
+                  </t-button>
+                  <t-button
+                    v-if="userStore.isAdmin"
                     class="hover:!bg-red-500/10"
                     shape="circle"
                     size="small"
@@ -469,15 +649,25 @@ const handleConfirmDelete = async () => {
             </div>
           </div>
         </div>
-      </template>
+        </section>
+      </div>
 
       <div
         v-else
         class="flex flex-col items-center justify-center py-24 bg-white/40 dark:bg-zinc-800/40 rounded-2xl border-2 border-dashed border-[var(--td-component-border)]"
       >
-        <t-empty class="!bg-transparent" description="暂无服务端实例" />
+        <t-empty class="!bg-transparent" :description="store.instanceList.length ? '没有符合条件的服务端实例' : '暂无服务端实例'" />
       </div>
     </div>
+
+    <instance-settings
+      v-if="settingsInstanceId"
+      :key="settingsInstanceId"
+      :server-id="settingsInstanceId"
+      open-on-mount
+      @closed="settingsInstanceId = undefined"
+      @saved="store.refreshInstanceList"
+    />
 
     <t-dialog
       v-model:visible="deleteState.visible"

@@ -10,6 +10,7 @@ public class UpdateServerRequest : IValidatableObject
 
     [Required(ErrorMessage = "服务器名称 (Name) 不能为空")]
     public required string Name { get; set; }
+    public List<string>? Tags { get; set; }
 
     [Required(ErrorMessage = "基础路径 (Base) 不能为空")]
     public required string Base { get; set; }
