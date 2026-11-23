@@ -146,7 +146,6 @@ const handleCloseDrawer = () => {
     :size="drawerSize"
     :footer="false"
     header="面板样式"
-    :close-btn="true"
     class="setting-drawer-container"
     @close-btn-click="handleCloseDrawer"
   >

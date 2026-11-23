@@ -4,14 +4,14 @@
 }
 
 .t-drawer .t-drawer__content-wrapper {
-  @apply !rounded-3xl !border !border-zinc-200/60 dark:!border-zinc-700/60 !bg-zinc-100/95 dark:!bg-zinc-900/95 !backdrop-blur-xl;
+  @apply !rounded-3xl !border !border-zinc-200/60 dark:!border-zinc-700/60 !bg-zinc-50 dark:!bg-zinc-900/95 !backdrop-blur-xl;
   max-width: calc(100% - var(--drawer-gap) * 2);
   max-height: calc(100% - var(--drawer-gap) * 2);
   box-shadow: 0 24px 80px -20px rgb(0 0 0 / 24%), 0 4px 16px rgb(0 0 0 / 6%);
 }
 
 .t-drawer .drawer-card {
-  @apply !bg-white dark:!bg-zinc-800/90 !border-zinc-200/80 dark:!border-zinc-700 !shadow-sm;
+  @apply !bg-white dark:!bg-zinc-800/90 !border-zinc-200 dark:!border-zinc-700 !shadow-sm;
 }
 
 .t-drawer .t-drawer__content-wrapper--right {
