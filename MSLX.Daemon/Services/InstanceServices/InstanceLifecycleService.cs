@@ -175,7 +175,16 @@ public class InstanceLifecycleService : IInstanceLifecycleService
         return (true, "正在启动服务器...");
     }
 
-    public Task<bool> AgreeEULA(uint instanseId, bool agree) => _launcher.AgreeEULA(instanseId, agree);
+    public async Task<bool> AgreeEULA(uint instanseId, bool agree)
+    {
+        var result = await _launcher.AgreeEULA(instanseId, agree);
+        if (result)
+        {
+            StartServer(instanseId, skipEulaCheck: true);
+        }
+
+        return result;
+    }
     /// <summary>
     /// 停止服务器
     /// </summary>
