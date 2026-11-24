@@ -49,7 +49,7 @@ internal sealed class RecommendedPluginPreinstaller(
 
             stagingDirectory = Path.Combine(IConfigBase.GetAppDataPath(), "Temp", "PluginPreinstall", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(stagingDirectory);
-            var downloaded = new List<(string Id, string Path)>();
+            var downloaded = new List<(string AppId, string Path)>();
             foreach (var plugin in recommendations)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -61,20 +61,20 @@ internal sealed class RecommendedPluginPreinstaller(
                 }
                 catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
                 {
-                    logger.LogWarning(ex, "[插件预装] 下载插件失败: {PluginId}", plugin.AppId);
+                    logger.LogWarning(ex, "[插件预装] 下载插件失败: {AppId}", plugin.AppId);
                 }
             }
 
             logger.LogInformation("[插件预装] 下载完成，正在启用 {Count} 个插件", downloaded.Count);
             var enabledCount = 0;
-            foreach (var (id, path) in downloaded)
+            foreach (var (appId, path) in downloaded)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 try
                 {
+                    // 插件中心的 AppId 可能与 DLL 声明的插件 ID 不同。
                     var installed = await packages.InstallAsync(path, new UploadPluginRequest
                     {
-                        ExpectedPluginId = id,
                         Enabled = true,
                         Overwrite = false
                     }, cancellationToken);
@@ -83,7 +83,7 @@ internal sealed class RecommendedPluginPreinstaller(
                 }
                 catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
                 {
-                    logger.LogWarning(ex, "[插件预装] 安装或启用插件失败: {PluginId}", id);
+                    logger.LogWarning(ex, "[插件预装] 安装或启用插件失败: {AppId}", appId);
                 }
             }
 
