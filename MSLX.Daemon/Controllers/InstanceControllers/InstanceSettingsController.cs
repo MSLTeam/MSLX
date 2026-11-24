@@ -188,7 +188,8 @@ public class InstanceSettingsController : ControllerBase
             }
 
             // 保存到磁盘
-            IConfigBase.ServerList.UpdateServer(server);
+            if (!IConfigBase.ServerList.UpdateServer(server, request.Tags))
+                return NotFound(ApiResponseService.NotFound());
 
             return Ok(new ApiResponse<object>
             {

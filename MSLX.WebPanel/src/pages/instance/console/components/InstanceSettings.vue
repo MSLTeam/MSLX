@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, provide, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { StoreIcon, SettingIcon, TimeIcon, Setting1Icon, BackupIcon, MoreIcon } from 'tdesign-icons-vue-next';
 import { usePluginUIStore } from '@/store';
+import { getPageNodeId } from '@/utils/nodeTarget';
+import { instanceSettingsTargetKey, type InstanceSettingsTarget } from './instanceSettingsTarget';
 
 import GeneralSettings from './settingsComponents/GeneralSettings.vue';
 import ModsPluginsManager from './settingsComponents/ModsPluginsManager.vue';
@@ -12,11 +14,15 @@ import BackupManager from './settingsComponents/BackupManager.vue';
 import More from './settingsComponents/More.vue';
 
 const route = useRoute();
-const instanceId = computed(() => parseInt(route.params.serverId as string));
+const props = defineProps<{ serverId: number; openOnMount?: boolean }>();
 const pluginUIStore = usePluginUIStore();
 
 const visible = ref(false);
 const currentTab = ref(0);
+let target: InstanceSettingsTarget;
+
+provide(instanceSettingsTargetKey, () => target);
+watch([() => props.serverId, () => route.fullPath], () => { visible.value = false; }, { flush: 'sync' });
 
 const defaultMenuItems = [
   { label: '实例设置', icon: SettingIcon },
@@ -38,13 +44,28 @@ const allMenuItems = computed(() => [
 ]);
 
 const open = () => {
+  const path = route.fullPath;
+  const instanceId = props.serverId;
+  if (!Number.isSafeInteger(instanceId) || instanceId <= 0) return;
+  const opened: InstanceSettingsTarget = {
+    instanceId,
+    nodeId: getPageNodeId(),
+    isCurrent: () => visible.value && target === opened && route.fullPath === path && props.serverId === instanceId,
+  };
+  target = opened;
+  currentTab.value = 0;
   visible.value = true;
 };
 
 const emits = defineEmits<{
   (e: 'success'): void;
   (e: 'saved'): void;
+  (e: 'closed'): void;
 }>();
+
+onMounted(() => {
+  if (props.openOnMount) open();
+});
 
 defineExpose({ open });
 </script>
@@ -58,8 +79,9 @@ defineExpose({ open });
     attach="body"
     :footer="false"
     class="settings-dialog"
+    @closed="emits('closed')"
   >
-    <div class="flex flex-col md:flex-row h-[75vh] md:h-[72vh] overflow-hidden bg-white/50 dark:bg-zinc-900/30 rounded-b-xl">
+    <div v-if="visible" class="flex flex-col md:flex-row h-[75vh] md:h-[72vh] overflow-hidden bg-white/50 dark:bg-zinc-900/30 rounded-b-xl">
 
       <div class="flex flex-row md:flex-col w-full md:w-40 shrink-0 border-b md:border-b-0 md:border-r border-zinc-200/60 dark:border-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-950/30 overflow-x-auto md:overflow-y-auto hide-scrollbar md:pt-3">
 
@@ -96,7 +118,7 @@ defineExpose({ open });
 
           <div v-if="currentTab === 0" class="tab-panel-anim"><general-settings @success="emits('success')" @saved="emits('saved')" /></div>
           <div v-if="currentTab === 1" class="tab-panel-anim"><mods-plugins-manager /></div>
-          <div v-if="currentTab === 2" class="tab-panel-anim"><server-properties :instance-id="21" /></div>
+          <div v-if="currentTab === 2" class="tab-panel-anim"><server-properties /></div>
           <div v-if="currentTab === 3" class="tab-panel-anim"><cron-tasks /></div>
           <div v-if="currentTab === 4" class="tab-panel-anim"><backup-manager /></div>
           <div v-if="currentTab === 5" class="tab-panel-anim"><more /></div>
@@ -109,8 +131,8 @@ defineExpose({ open });
             <div v-if="currentTab === defaultMenuItems.length + extIndex" class="tab-panel-anim">
               <component
                 :is="ext.component"
-                :server-id="instanceId"
-                :instance-id="instanceId"
+                :server-id="serverId"
+                :instance-id="serverId"
                 @success="emits('success')"
                 @saved="emits('saved')"
               />

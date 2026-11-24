@@ -136,18 +136,26 @@ namespace MSLX.Daemon.Utils.ConfigUtils
             }
         }
 
-        public bool UpdateServer(McServerInfo.ServerInfo updatedServer)
+        public bool UpdateServer(McServerInfo.ServerInfo updatedServer, IReadOnlyList<string>? tags = null)
         {
             _serverListLock.EnterWriteLock();
             try
             {
-                var target = _serverListCache
+                var next = (JArray)_serverListCache.DeepClone();
+                var target = next
                     .FirstOrDefault(s => s["ID"]?.Value<uint>() == updatedServer.ID);
 
                 if (target == null) return false;
 
-                target.Replace(JObject.FromObject(updatedServer));
-                IConfigBase.SaveJson(_serverListPath, _serverListCache);
+                var replacement = JObject.FromObject(updatedServer);
+                // Unrelated edits may have read the instance before its tags changed.
+                replacement["Tags"] = tags == null
+                    ? (target["Tags"] as JArray)?.DeepClone() ?? new JArray()
+                    : new JArray(tags.Where(tag => !string.IsNullOrWhiteSpace(tag))
+                        .Select(tag => tag.Trim()).Distinct(StringComparer.Ordinal));
+                target.Replace(replacement);
+                IConfigBase.SaveJsonAtomically(_serverListPath, next);
+                _serverListCache = next;
                 return true;
             }
             finally

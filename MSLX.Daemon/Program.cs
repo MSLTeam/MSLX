@@ -30,6 +30,9 @@ System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Inst
 Environment.SetEnvironmentVariable("DOTNET_HOSTBUILDER__RELOADCONFIGONCHANGE", "false");
 
 var builder = WebApplication.CreateBuilder(args);
+var appDataPath = IConfigBase.GetAppDataPath();
+// 检查是否初始化，初始化则预安装插件
+var shouldPreinstallPlugins = RecommendedPluginPreinstaller.IsFirstStartup(appDataPath);
 
 // 日志配置
 Log.Logger = new LoggerConfiguration()
@@ -42,7 +45,7 @@ Log.Logger = new LoggerConfiguration()
         outputTemplate: "{Level:w4}: {SourceContext}[{EventId}]{NewLine}      {Message:lj}{NewLine}{Exception}"
     )
     .WriteTo.File(
-        path: Path.Combine(IConfigBase.GetAppDataPath(), "Logs", "mslx-daemon-log-.txt"),         // 存放在 Logs 文件夹下
+        path: Path.Combine(appDataPath, "Logs", "mslx-daemon-log-.txt"),         // 存放在 Logs 文件夹下
         rollingInterval: RollingInterval.Day, // 按天生成文件
         retainedFileCountLimit: 5,            // 只保留最新 5 个文件
         outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff local}] [{Level:w4}] {SourceContext}[{EventId}] {Message:lj}{NewLine}{Exception}"
@@ -223,6 +226,8 @@ builder.Services.AddSingleton<IMSLXEvents, MSLXEventBus>();
 var pluginManager = new PluginManager();
 builder.Services.AddSingleton(pluginManager);
 builder.Services.AddSingleton<PluginPackageService>();
+if (shouldPreinstallPlugins)
+    builder.Services.AddHostedService<RecommendedPluginPreinstaller>(); // 预安装插件服务
 builder.Services.AddSingleton<NodeSyncService>();
 builder.Services.AddSingleton<Microsoft.AspNetCore.Mvc.Infrastructure.IActionDescriptorChangeProvider>(HotReloadActionDescriptorChangeProvider.Instance);
 builder.Services.Replace(ServiceDescriptor.Transient<Microsoft.AspNetCore.Mvc.Controllers.IControllerActivator, PluginControllerActivator>());

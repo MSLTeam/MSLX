@@ -117,7 +117,14 @@ defineExpose({ close: () => setVisible(false) });
 </script>
 
 <template>
-  <t-popup :visible="visible" trigger="click" placement="bottom-right" attach="body" @visible-change="setVisible">
+  <t-popup
+    :visible="visible"
+    trigger="click"
+    placement="bottom-right"
+    attach="body"
+    overlay-inner-class-name="header-action-popup"
+    @visible-change="setVisible"
+  >
     <t-button
       ref="trigger"
       theme="default"
@@ -179,7 +186,7 @@ defineExpose({ close: () => setVisible(false) });
   inline-size: 100%;
   min-block-size: 36px;
   padding: 6px 10px;
-  border-radius: var(--td-radius-default);
+  border-radius: var(--radius-xl);
   text-align: start;
   color: var(--td-text-color-primary);
 }

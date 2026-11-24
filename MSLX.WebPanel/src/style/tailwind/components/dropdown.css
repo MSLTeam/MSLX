@@ -6,13 +6,15 @@
 
 /* 毛玻璃菜单层 */
 .t-dropdown__menu,
-.t-menu__popup {
+.t-menu__popup,
+.t-popup__content.header-action-popup {
   @apply !bg-white/90 dark:!bg-zinc-800/90 !backdrop-blur-md !rounded-2xl !border !border-zinc-200/50 dark:!border-zinc-700/50 !shadow-xl !overflow-hidden !p-2;
   box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.1) !important;
 }
 
 html[theme-mode='dark'] .t-dropdown__menu,
-html[theme-mode='dark'] .t-menu__popup {
+html[theme-mode='dark'] .t-menu__popup,
+html[theme-mode='dark'] .t-popup__content.header-action-popup {
   box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5) !important;
 }
 

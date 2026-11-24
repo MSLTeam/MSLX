@@ -87,6 +87,7 @@ public class InstanceInfoController : ControllerBase
                 {
                     id,
                     name = item["Name"]?.Value<string>(),
+                    tags = item["Tags"] as JArray ?? new JArray(),
                     basePath = item["Base"]?.Value<string>(),
                     java = item["Java"]?.Value<string>(),
                     core = item["Core"]?.Value<string>(),

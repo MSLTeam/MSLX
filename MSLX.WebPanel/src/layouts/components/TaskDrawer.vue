@@ -77,7 +77,7 @@ const handleClearFinished = async () => {
 </script>
 
 <template>
-  <t-drawer v-model:visible="isVisible" header="后台任务中心" size="350px" :footer="false" :close-btn="true">
+  <t-drawer v-model:visible="isVisible" header="后台任务中心" size="350px" :footer="false">
     <div class="flex flex-col h-full">
       <div class="flex flex-wrap justify-between items-center mb-4 px-1 gap-2">
         <span class="text-sm text-[var(--td-text-color-secondary)] whitespace-nowrap">

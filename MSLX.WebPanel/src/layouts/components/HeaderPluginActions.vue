@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, inject, shallowRef, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { useMediaQuery } from '@vueuse/core';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { headerPluginActionsKey } from '@/hooks/useHeaderPluginActions';
 import { nodeNavigationUrl } from '@/utils/nodeTarget';
@@ -10,14 +9,13 @@ import type { RegisteredHeaderAction } from '@/utils/pluginHeaderActions';
 import HeaderActionMenu from './HeaderActionMenu.vue';
 import type { HeaderMenuItem } from './HeaderActionMenu.vue';
 
-const props = defineProps<{ mobileItems: HeaderMenuItem[] }>();
+const props = defineProps<{ mobileItems?: HeaderMenuItem[] }>();
 const router = useRouter();
-const desktop = useMediaQuery('(min-width: 1024px)');
 const moreMenu = shallowRef<InstanceType<typeof HeaderActionMenu>>();
 const directMenu = shallowRef<InstanceType<typeof HeaderActionMenu>>();
 const { showPanel, pending, runAction, permitted, visibleEntries, leaves } = inject(headerPluginActionsKey)!;
 
-watch([visibleEntries, desktop], () => {
+watch(visibleEntries, () => {
   moreMenu.value?.close();
   directMenu.value?.close();
 });
@@ -47,10 +45,10 @@ function menuItem(entry: RegisteredHeaderAction): HeaderMenuItem {
   return { ...item, select: (_event, trigger) => showPanel(entry, trigger) };
 }
 
-const directEntry = computed(() => desktop.value ? visibleEntries.value.find(entry => entry.placement !== 'more') : undefined);
+const directEntry = computed(() => props.mobileItems ? undefined : visibleEntries.value.find(entry => entry.placement !== 'more'));
 const directItem = computed(() => directEntry.value && menuItem(directEntry.value));
 const moreItems = computed(() => [
-  ...(desktop.value ? [] : props.mobileItems),
+  ...(props.mobileItems ?? []),
   ...visibleEntries.value.filter(entry => entry !== directEntry.value).map(menuItem),
 ]);
 </script>

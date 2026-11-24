@@ -19,6 +19,9 @@ import { request } from '@/utils/request';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import { createPluginNodeContext, usePluginNodeContext } from '@/utils/pluginNodeContext';
 
+// 抽屉默认显示关闭按钮
+Object.assign(TDesign.Drawer.props?.closeBtn ?? {}, { default: true });
+
 // 映射出去给插件用的东西
 (window as any).Vue = Vue;
 (window as any).VueRouter = VueRouter;

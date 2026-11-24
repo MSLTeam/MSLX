@@ -461,7 +461,7 @@ watch(
       top="15vh"
       attach="body"
       :footer="false"
-      :z-index="1027"
+      :z-index="3000"
     >
       <div class="min-h-[150px] max-h-[50vh] overflow-y-auto custom-scrollbar p-2">
         <t-loading

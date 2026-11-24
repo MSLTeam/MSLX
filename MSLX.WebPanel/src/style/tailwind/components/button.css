@@ -23,3 +23,84 @@
 .t-button--variant-text {
   @apply bg-transparent shadow-none active:scale-100 hover:bg-zinc-100 dark:hover:bg-zinc-800;
 }
+
+/* 胶囊按钮沿用面板的常规圆角。 */
+.t-button.t-button--shape-round {
+  @apply rounded-xl;
+}
+
+/* 小按钮统一尺寸与间距，保留显式的圆形。 */
+.t-button.t-size-s {
+  /* 保留内容对 flex 最小宽度的约束，避免文字被裁掉。 */
+  @apply min-h-6 gap-1 overflow-clip px-1.5 text-xs/4 shadow-none;
+}
+
+.t-button.t-size-s:not(.t-button--shape-circle) {
+  @apply rounded-lg;
+}
+
+.t-button.t-size-s.t-button--shape-round {
+  @apply max-w-full px-2;
+}
+
+.t-button.t-size-s.t-button--shape-round > .t-button__text {
+  @apply block min-w-0 truncate;
+}
+
+.t-button.t-size-s:is(.t-button--shape-circle, .t-button--shape-square) {
+  @apply min-w-6 px-0;
+}
+
+.t-button.t-size-s > :is(.t-icon, .t-button__text, .t-button__suffix) {
+  @apply !m-0;
+}
+
+/* 自定义图标尺寸也必须收在小按钮的点击区域内。 */
+.t-button.t-size-s > .t-icon {
+  @apply max-h-3.5 max-w-3.5 shrink-0;
+}
+
+/* 已设置 gap 的工具栏直接使用容器间距。 */
+:where(.flex, .inline-flex):where([class^='gap-'], [class*=' gap-']) > .t-button.t-size-s + .t-button.t-size-s {
+  @apply ml-0;
+}
+
+.t-button.t-size-s.t-button--variant-outline:not(.t-is-disabled, .t-button--ghost) {
+  @apply bg-current/5 ring-inset ring-current/20 hover:bg-current/10;
+}
+
+.t-button.t-size-s.t-button--shape-round.t-button--variant-outline.t-button--theme-default:not(.t-is-disabled, .t-button--ghost) {
+  @apply bg-zinc-100 ring-zinc-200 hover:bg-zinc-200 dark:bg-zinc-800 dark:ring-zinc-700 dark:hover:bg-zinc-700;
+}
+
+.t-button.t-size-s.t-button--variant-outline.t-button--theme-primary:not(.t-is-disabled, .t-button--ghost) {
+  @apply text-primary;
+}
+
+/* 禁用态保留主题色，弱化显示并取消悬停、按压效果。 */
+@layer components {
+  .t-button.t-size-s:is(:disabled, .t-is-disabled):not(.t-is-loading) {
+    @apply !cursor-not-allowed !scale-100 !opacity-60 !bg-transparent !border-transparent !ring-transparent;
+    @apply !text-zinc-700 dark:!text-zinc-200;
+
+    &.t-button--theme-primary {
+      @apply !text-primary;
+    }
+
+    &.t-button--theme-danger {
+      @apply !text-error;
+    }
+
+    &.t-button--theme-warning {
+      @apply !text-warning;
+    }
+
+    &.t-button--theme-success {
+      @apply !text-success;
+    }
+
+    &:is(.t-button--variant-outline, .t-button--variant-dashed) {
+      @apply !border-current/60 !ring-current/20;
+    }
+  }
+}

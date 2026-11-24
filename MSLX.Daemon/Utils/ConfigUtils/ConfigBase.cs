@@ -93,7 +93,9 @@ public static class IConfigBase
     }
 
     // 节点关系变更必须先写盘才能识别到
-    public static void SaveNodeJson(string path, JArray data)
+    public static void SaveNodeJson(string path, JArray data) => SaveJsonAtomically(path, data);
+
+    internal static void SaveJsonAtomically(string path, JArray data)
     {
         var temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
         try

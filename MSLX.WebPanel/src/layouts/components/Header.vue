@@ -241,6 +241,8 @@ const handleAvatarClick = () => {
             </t-tooltip>
           </div>
 
+          <header-plugin-actions v-if="isDesktop" />
+
           <t-popup
             trigger="click"
             placement="bottom-right"
@@ -334,7 +336,7 @@ const handleAvatarClick = () => {
             </t-tooltip>
           </div>
 
-          <header-plugin-actions :mobile-items="mobileOperations" />
+          <header-plugin-actions v-if="!isDesktop" :mobile-items="mobileOperations" />
         </div>
       </template>
     </t-head-menu>

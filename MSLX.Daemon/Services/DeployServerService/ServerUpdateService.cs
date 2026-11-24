@@ -112,6 +112,9 @@ public class ServerUpdateService : BackgroundService
              }
         };
 
+        ServerDeploymentService.ReportProgress reportDeployment = (msg, progress, isErr, ex) =>
+            report(msg, progress >= 100 ? 99 : progress, isErr, ex);
+
         await report("正在准备更新...", 0);
 
         try 
@@ -186,7 +189,7 @@ public class ServerUpdateService : BackgroundService
             // 检查 Java
             if (!string.IsNullOrEmpty(req.Java))
             {
-                await _deployer.EnsureJavaAsync(sid, req.Java, report,null);
+                await _deployer.EnsureJavaAsync(sid, req.Java, reportDeployment, null);
                 server.Java = req.Java; // 下载成功后再保存路径
             }
 
@@ -195,25 +198,29 @@ public class ServerUpdateService : BackgroundService
             {
                 string coreName = server.Core;
                 
-                await _deployer.DeployCoreAsync(sid, server.Base, coreName, req.CoreFileKey, req.CoreUrl, req.CoreSha256, report,null);
+                await _deployer.DeployCoreAsync(sid, server.Base, coreName, req.CoreFileKey, req.CoreUrl, req.CoreSha256, reportDeployment, null);
                 if (!string.IsNullOrWhiteSpace(req.CoreFileKey)) _uploadSessions.Remove(req.CoreFileKey);
             }
 
             // NeoForge 安装
             if ((server.Core.Contains("forge") || server.Core.Contains("neoforge")) && server.Core.Contains(".jar") && !server.Core.Contains("arclight"))
             {
-               string? newArgs = await _deployer.InstallForgeIfNeededAsync(sid, server.Base, server.Core, server.Java, report, server.DockerImage);
+               string? newArgs = await _deployer.InstallForgeIfNeededAsync(sid, server.Base, server.Core, server.Java, reportDeployment, server.DockerImage);
                if(newArgs != null) server.Core = newArgs;
             }
 
             // 保存最终配置
-            IConfigBase.ServerList.UpdateServer(server);
+            if (!IConfigBase.ServerList.UpdateServer(server, req.Tags))
+            {
+                await report("找不到服务器配置", -1, true);
+                return;
+            }
             
             await report("更新完成！", 100);
         }
-        catch
+        catch (Exception ex)
         {
-             // 不用处理啥
+            await report(ex.Message, -1, true, ex);
         }
     }
 }

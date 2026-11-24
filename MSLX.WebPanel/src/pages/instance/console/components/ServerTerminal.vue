@@ -259,7 +259,7 @@ const colorizePtyChunk = (chunk: string): string => {
 };
 
 const terminalFontFamily =
-  '"Maple Mono", "Maple Mono CN", "Cascadia Code", Consolas, Menlo, "PingFang SC", "Microsoft YaHei", monospace';
+  '"Maple Mono", "Maple Mono CN", "Cascadia Code", Consolas, Menlo, "DejaVu Sans Mono", "Liberation Mono", "Ubuntu Mono", "Noto Sans Mono", monospace';
 
 // 初始化日志终端
 const initLogTerminal = () => {

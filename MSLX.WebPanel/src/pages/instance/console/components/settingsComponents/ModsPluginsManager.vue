@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { confirmNodeAction } from '@/utils/nodeDialog';
-import { ref, onMounted, computed, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, onMounted, computed } from 'vue';
+import { useInstanceSettingsTarget } from '../instanceSettingsTarget';
 import { useMediaQuery } from '@vueuse/core';
 import {
   MessagePlugin,
@@ -23,8 +23,7 @@ import { getPluginsOrModsList, setPluginsOrModsStatus } from '@/api/files';
 
 import UploadDialog from '@/pages/instance/files/components/FileUploader.vue';
 
-const route = useRoute();
-const instanceId = parseInt(route.params.serverId as string);
+const { instanceId, isCurrent } = useInstanceSettingsTarget();
 
 // --- 类型定义 ---
 interface FileItem {
@@ -81,6 +80,7 @@ const columns = computed<PrimaryTableCol<TableRowData>[]>(() => [
 
 // --- 核心逻辑：获取列表 ---
 const fetchData = async (checkClient = false) => {
+  if (!isCurrent()) return;
   const sequence = ++fetchSequence;
   loading.value = true;
   currentFolderPath.value = '';
@@ -89,7 +89,7 @@ const fetchData = async (checkClient = false) => {
   errorMsg.value = ''; // 每次请求前重置错误信息
   try {
     const res = await getPluginsOrModsList(instanceId, mode.value, checkClient);
-    if (sequence !== fetchSequence) return;
+    if (sequence !== fetchSequence || !isCurrent()) return;
     if (!res.path) throw new Error('无法获取配置目录，请升级目标节点的 Daemon 后重试');
     currentFolderPath.value = res.path;
     directoryExists.value = res.directoryExists !== false;
@@ -118,7 +118,7 @@ const fetchData = async (checkClient = false) => {
     }
 
   } catch (e: any) {
-    if (sequence !== fetchSequence) return;
+    if (sequence !== fetchSequence || !isCurrent()) return;
     const msg = e.message || '获取列表失败';
     // 这里保留 MessagePlugin 提示，同时设置页面内的 Alert
     // MessagePlugin.error(msg);
@@ -142,6 +142,7 @@ const handleAction = async (action: 'enable' | 'disable' | 'delete', targets: st
   const confirmAction = async () => {
     try {
       loading.value = true;
+      if (!isCurrent()) return;
       const res = await setPluginsOrModsStatus(instanceId, mode.value, action, targets);
       const { successCount, failCount } = res || {};
 
@@ -212,9 +213,6 @@ onMounted(() => {
   fetchData();
 });
 
-watch(() => route.params.serverId, (newId) => {
-  if(newId) location.reload();
-});
 </script>
 
 <template>

@@ -61,17 +61,20 @@ export function getTunnelInfo(id:number){
 }
 
 // 自启动相关
+export interface FrpAutoStartConfig {
+  frpIds?: number[];
+  tags?: string[];
+}
+
 export function getFrpAutoStartList() {
-  return request.get<number[]>({
+  return request.get<FrpAutoStartConfig | number[]>({
     url: '/api/frp/autostart',
   });
 }
 
-export function postChangeFrpAutoStartList(ids: number[]) {
+export function postChangeFrpAutoStartList(data: { frpIds?: number[]; tags?: string[] }) {
   return request.post({
     url: '/api/frp/autostart',
-    data: {
-      frpIds:ids,
-    },
+    data,
   });
 }

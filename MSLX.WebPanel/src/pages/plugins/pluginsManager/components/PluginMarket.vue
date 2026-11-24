@@ -178,6 +178,7 @@ const pollInstallStatus = (taskId: string) => {
           title: '插件安装成功',
           content: '新插件已就绪并已自动热加载生效！',
           duration: 5000,
+          closeBtn: true,
         });
         setTimeout(async () => {
           const { pluginStateChanged } = await import('@/utils/pluginManager');

@@ -103,7 +103,7 @@ const initTerminal = () => {
     cursorStyle: 'bar',
     fontSize: 14,
     fontFamily:
-      '"Maple Mono", "Maple Mono CN", "Cascadia Code", Consolas, Menlo, "PingFang SC", "Microsoft YaHei", monospace',
+      '"Maple Mono", "Maple Mono CN", "Cascadia Code", Consolas, Menlo, "DejaVu Sans Mono", "Liberation Mono", "Ubuntu Mono", "Noto Sans Mono", monospace',
     lineHeight: 1.4,
     theme: isDark ? termThemes.dark : termThemes.light,
     allowTransparency: true,

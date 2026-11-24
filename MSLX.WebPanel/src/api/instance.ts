@@ -118,13 +118,13 @@ export async function postDeleteInstance(id:number,deleteFiles:boolean = false) 
   });
 }
 
-export async function getInstanceList() {
+export async function getInstanceList(targetNodeId?: string) {
   return await request.get<InstanceListModel[]>({
     url: '/api/instance/list',
-  });
+  }, { targetNodeId });
 }
 
-export async function postInstanceAction(id:number, action:string){
+export async function postInstanceAction(id:number, action:string, targetNodeId?: string){
   return await request.post({
     url: '/api/instance/action',
     data:{
@@ -132,7 +132,7 @@ export async function postInstanceAction(id:number, action:string){
       action: action
     },
     timeout: 60 * 1000, // 可能存在小聪明开了又关 导致关闭操作耗时。
-  });
+  }, { targetNodeId });
 }
 
 export async function getInstanceInfo(id:number){
@@ -144,17 +144,17 @@ export async function getInstanceInfo(id:number){
   });
 }
 
-export async function getInstanceSettings(id:number){
+export async function getInstanceSettings(id:number, targetNodeId?: string){
   return await request.get<InstanceSettingsModel>({
     url: `/api/instance/settings/general/${id}`,
-  });
+  }, { targetNodeId });
 }
 
-export async function postInstanceSettings(data:InstanceSettingsModel){
+export async function postInstanceSettings(data:InstanceSettingsModel, targetNodeId?: string){
   return await request.post<UpdateInstanceResponseModel>({
     url: `/api/instance/settings/general/${data.id}`,
     data: data
-  });
+  }, { targetNodeId });
 }
 
 export async function getInstanceBackupFiles(id:number){

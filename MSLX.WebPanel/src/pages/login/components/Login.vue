@@ -129,6 +129,7 @@ const finishLogin = () => {
   NotificationPlugin.success({
     content: `欢迎回来！${userStore.userInfo.name}`,
     title: 'MSLX 控制台',
+    closeBtn: true,
   });
 
   // 检查更新

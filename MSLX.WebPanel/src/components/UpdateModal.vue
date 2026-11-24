@@ -421,7 +421,7 @@ onUnmounted(() => {
         <div class="mt-4 px-1">
           <span class="text-[12px] text-zinc-400">
             <info-circle-icon size="14px" class="inline-block mr-1" />
-            更新将自动重启守护进程，运行中的实例将被强制停止，建议您在更新前手动结束所有实例以保存数据。
+            更新将自动重启守护进程，运行中的实例将被自动停止 (若停止超时将被强制结束)，建议您在更新前手动结束所有实例以保存数据。
           </span>
         </div>
       </div>

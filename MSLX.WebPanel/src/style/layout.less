@@ -44,6 +44,13 @@
   }
 }
 
+// TDesign 将通知挂在 body 下，并以内联样式区分位置。
+body:has(.@{starter-prefix}-header-layout) .t-notification-list__show[style*='top:'] {
+  margin-block-start: var(--td-comp-size-xxxl);
+  // 导航下拉菜单使用 TDesign Popup 的 5500 层级。
+  z-index: 5499 !important;
+}
+
 .t-menu--dark .t-menu__operations .t-icon {
   color: rgba(255, 255, 255, 0.55);
   &:hover {

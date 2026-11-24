@@ -740,27 +740,4 @@ onUnmounted(async () => {
 }
 /* ============================================================= */
 
-/* 修复 t-tag-input 标签垂直拉伸换行问题 */
-:deep(.t-tag-input) {
-  height: auto !important;
-  min-height: 36px !important;
-  padding: 4px 8px !important;
-  display: inline-flex !important;
-  flex-wrap: wrap !important;
-  align-items: center !important;
-}
-
-:deep(.t-tag-input .t-input__prefix) {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  align-items: center !important;
-  gap: 4px !important;
-}
-
-:deep(.t-tag-input .t-tag) {
-  display: inline-flex !important;
-  width: auto !important;
-  max-width: 100% !important;
-  margin: 2px 0 !important;
-}
 </style>

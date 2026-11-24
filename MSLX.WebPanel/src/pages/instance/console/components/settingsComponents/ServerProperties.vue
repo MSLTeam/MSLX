@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { ref, computed, onMounted } from 'vue';
+import { useInstanceSettingsTarget } from '../instanceSettingsTarget';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { SaveIcon, RefreshIcon } from 'tdesign-icons-vue-next';
 
@@ -8,10 +8,8 @@ import { getFileContent, saveFileContent } from '@/api/files';
 import { getInstanceSettings } from '@/api/instance';
 import { SERVER_PROPERTIES_SCHEMA, type PropertySchema } from './metadatas/serverPropertiesMeta';
 
-const route = useRoute();
-
+const { instanceId, isCurrent, nodeId } = useInstanceSettingsTarget();
 // --- 状态定义 ---
-const instanceId = ref(0);
 const loading = ref(false);
 const saving = ref(false);
 const propertiesMap = ref<Record<string, string>>({});
@@ -72,17 +70,18 @@ const stringifyProperties = (map: Record<string, string>) => {
 // --- 数据获取与保存 ---
 
 const loadServerPropertiesPath = async () => {
-  const settings = await getInstanceSettings(instanceId.value);
+  const settings = await getInstanceSettings(instanceId, nodeId);
   serverPropertiesPath.value = normalizeServerPropertiesPath(settings.serverPropertiesPath);
 };
 
 const loadData = async () => {
-  if (!instanceId.value) return;
+  if (!isCurrent()) return;
   loading.value = true;
   fileMissing.value = false;
   try {
     await loadServerPropertiesPath();
-    const res = await getFileContent(instanceId.value, serverPropertiesPath.value);
+    if (!isCurrent()) return;
+    const res = await getFileContent(instanceId, serverPropertiesPath.value);
     if (res) {
       rawFileContent.value = res;
       propertiesMap.value = parseProperties(res);
@@ -100,10 +99,11 @@ const loadData = async () => {
 };
 
 const handleSave = async () => {
+  if (!isCurrent()) return;
   saving.value = true;
   try {
     const content = stringifyProperties(propertiesMap.value);
-    await saveFileContent(instanceId.value, serverPropertiesPath.value, content);
+    await saveFileContent(instanceId, serverPropertiesPath.value, content);
     MessagePlugin.success('配置文件已保存');
     // 重新加载
     loadData();
@@ -179,19 +179,7 @@ const setBindValue = (key: string, value: any, type: string) => {
 
 // --- 生命周期 ---
 
-watch(
-  () => route.params.serverId,
-  (newId) => {
-    if (route.name !== 'InstanceConsole') {
-      return;
-    }
-    if (newId) {
-      instanceId.value = parseInt(newId as string);
-      loadData();
-    }
-  },
-  { immediate: true },
-);
+onMounted(loadData);
 </script>
 
 <template>
