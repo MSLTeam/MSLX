@@ -151,7 +151,6 @@ export async function loadAllPlugins(nodeId = getPageNodeId(), force = false): P
         const configs = await Promise.all(plugins.filter(plugin => plugin.status === '已启用' && plugin.entryPath &&
           (nodeId === 'local' || plugin.supportsMultiNode !== PluginMultiNodeSupport.Unsupported)).map(async plugin => {
           const url = new URL(plugin.entryPath, getNodeTarget(nodeId).baseUrl);
-          url.searchParams.set('revision', plugin.frontendRevision || plugin.version);
           const module = await import(/* @vite-ignore */ url.toString());
           if (!module.pluginConfig) throw new Error(`插件 ${plugin.name} 未导出 pluginConfig`);
           return { id: plugin.id, config: module.pluginConfig };

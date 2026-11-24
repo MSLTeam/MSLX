@@ -22,7 +22,6 @@ export interface PluginListModel {
   entryPath: string;
   status: string;
   supportsMultiNode?: PluginMultiNodeSupport;
-  frontendRevision?: string;
   syncInfo?: any;
   hasPublicPages?: boolean;
   isPublicAccessEnabled?: boolean;

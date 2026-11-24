@@ -114,7 +114,6 @@ public class PluginListController : ControllerBase
                 path = p.DllPath,
                 status = status,
                 supportsMultiNode = p.Metadata.SupportsMultiNode,
-                frontendRevision = System.IO.File.GetLastWriteTimeUtc(p.DllPath).Ticks.ToString(),
                 syncInfo = _includeSyncInfo ? _packages.Describe(p.Metadata.Id) : null,
                 hasPublicPages = p.Metadata.HasPublicPages,
                 isPublicAccessEnabled = IsPublicAccessEnabled(p.Metadata.Id)
@@ -135,7 +134,6 @@ public class PluginListController : ControllerBase
             entryPath = $"/plugins/{p.Metadata.Id.ToLower()}/{p.Metadata.Version.ToLower()}/mslx-plugin-entry.js",
             status = status,
             supportsMultiNode = p.Metadata.SupportsMultiNode,
-            frontendRevision = System.IO.File.GetLastWriteTimeUtc(p.DllPath).Ticks.ToString(),
             hasPublicPages = p.Metadata.HasPublicPages,
             isPublicAccessEnabled = IsPublicAccessEnabled(p.Metadata.Id)
         };
@@ -288,7 +286,6 @@ public class PluginListController : ControllerBase
                 path = dllPath,
                 status = status,
                 supportsMultiNode = metadata.SupportsMultiNode,
-                frontendRevision = System.IO.File.GetLastWriteTimeUtc(dllPath).Ticks.ToString(),
                 syncInfo = _includeSyncInfo && System.IO.File.Exists(dllPath) ? _packages.Describe(metadata.Id) : null,
                 hasPublicPages = metadata.HasPublicPages,
                 isPublicAccessEnabled = IsPublicAccessEnabled(metadata.Id)
