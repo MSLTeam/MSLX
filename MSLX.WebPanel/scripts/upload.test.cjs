@@ -670,3 +670,38 @@ test('BLAKE3 Worker skips timer yields while main-thread fallback retains them',
   assert.equal(scope.messages.pop().blake3, expected);
   assert.equal(yields, 0);
 });
+
+test('webpanel background upload sends zero-based chunk index 0 for single-chunk upload', async () => {
+  const calls = [];
+  const { useWebpanelStore } = evaluate(readSource('store/modules/webpanel.ts'), {
+    pinia: { defineStore: (_id, options) => () => ({ ...options.state(), ...options.actions }) },
+    '@/api/settings': { getWebpanelStyleSettings: async () => ({}), updateWebpanelStyleSettings: async () => {} },
+    '@/api/files': {
+      initUpload: async () => {
+        calls.push(['init']);
+        return { uploadId: 'bg-upload' };
+      },
+      uploadChunk: async (uploadId, index, chunk) => {
+        calls.push(['chunk', uploadId, index, chunk.size]);
+      },
+      finishUpload: async (uploadId, totalChunks) => {
+        calls.push(['finish', uploadId, totalChunks]);
+      },
+      uploadFilesToStaticImages: async (fileKey, fileName) => {
+        calls.push(['static', fileKey, fileName]);
+      },
+    },
+    'tdesign-vue-next': { MessagePlugin: { success: () => {}, error: () => {} } },
+    '@/api/model/settings': {},
+    './setting': { useSettingStore: () => ({ applyDefaultTheme: () => {} }) },
+  });
+  const file = new File([new Uint8Array([1, 2, 3, 4])], 'bg.png', { type: 'image/png' });
+  const result = await useWebpanelStore().uploadImage(file);
+  assert.equal(result, 'bg.png');
+  assert.deepEqual(calls, [
+    ['init'],
+    ['chunk', 'bg-upload', 0, 4],
+    ['finish', 'bg-upload', 1],
+    ['static', 'bg-upload', 'bg.png'],
+  ]);
+});

@@ -76,7 +76,7 @@ export const useWebpanelStore = defineStore('webpanel', {
 
       try {
         const { uploadId } = await initUpload();
-        await uploadChunk(uploadId, 1, file);
+        await uploadChunk(uploadId, 0, file);
         await finishUpload(uploadId, 1);
         await uploadFilesToStaticImages(uploadId, file.name);
 
