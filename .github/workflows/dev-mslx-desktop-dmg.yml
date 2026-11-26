@@ -25,6 +25,11 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
+      - name: 调整 Dev 版本号配置
+        run: |
+          perl -i -pe 's{(<(?:Daemon|Desktop|Panel)BaseVersion>\s*\d+\.\d+\.\d+)(?:\.(\d+))?(\s*</(?:Daemon|Desktop|Panel)BaseVersion>)}{$1 . "." . (defined($2) ? $2 + 1 : 1) . $3}ge; s{<VersionSuffix>.*?</VersionSuffix>}{<VersionSuffix>-dev</VersionSuffix>}g;' Version.props
+          cat Version.props
+
       - name: 设置 .NET 环境
         uses: actions/setup-dotnet@v4
         with:
